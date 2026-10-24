@@ -1,14 +1,18 @@
 // The Shift assistant in the app, for everyone (Keith 2026-10-24: "The in-app
 // assistant is not just for organizers, it's for all users"). The organizer
-// assistant's design (src/app/api/organizers/assistant/route.ts) without the
-// approval cards: this first version only reads and points.
+// assistant's design (src/app/api/organizers/assistant/route.ts), cards
+// included: a tool that saves something pauses the turn on an approval card
+// in thread.pending until the person taps (Keith 2026-10-24: "saving as a
+// requirement for building rides ... would be logical"; Shift 01436).
 //
 // GET  ?thread_id=      the conversation so far (latest if no id); ?list=1 lists them
-// POST { thread_id?, message?, new_thread?, carry_from?, rating?, screen? }
+// POST { thread_id?, message?, decision?: { tool_use_id, approve, confirm_text? }, new_thread?,
+//        carry_from?, rating?, screen?, match_id? }
 //      streams newline-delimited JSON events while the assistant works:
 //      {type:'thread', id} {type:'text', delta} {type:'tool', id, label}
 //      {type:'tool_done', id, ok, link?} {type:'choices', options}
-//      {type:'long'} {type:'error', message} {type:'done'}
+//      {type:'approval', tool_use_id, card} {type:'long'} {type:'error', message} {type:'done'}
+//      match_id: opened from a Shift Together ride plan; checked as the person.
 //      link is { screen, params?, label }: the app maps screen to its own route.
 // DELETE ?thread_id= | ?all=1   forget your conversations
 //
@@ -20,7 +24,7 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { choicesFilter, splitChoices } from '@/lib/assistant/choices'
 import { SYSTEM_PROMPT, contextBlock, screenLabel } from '@/lib/shift-assistant/prompt'
-import { ACTIVITY, TOOLS, runTool, type ToolCtx, type ToolResult } from '@/lib/shift-assistant/tools'
+import { ACTIVITY, NEEDS_APPROVAL, TOOLS, approvalCard, runApproved, runTool, type ApprovalCard, type ToolCtx, type ToolResult } from '@/lib/shift-assistant/tools'
 
 export const runtime = 'nodejs'
 export const maxDuration = 300
@@ -35,7 +39,11 @@ const MONTHLY_CAP = 2000
 const SOFT_CONTEXT = 50_000
 const HARD_CONTEXT = 120_000
 
-type Thread = { id: string }
+type PendingCard = { tool_use_id: string; name: string; input: Record<string, unknown>; card: ApprovalCard; decided?: boolean }
+type Pending = { results: Record<string, Anthropic.Beta.BetaToolResultBlockParam>; order: string[]; cards: PendingCard[] }
+type Thread = { id: string; pending: Pending | null }
+const sameText = (a: unknown, b: unknown) => String(a ?? '').trim().toLowerCase() === String(b ?? '').trim().toLowerCase()
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 // ── Auth: a signed-in person the assistant is on for ──
 
@@ -58,7 +66,7 @@ async function authorize(request: Request, opts: { ownDataOnly?: boolean } = {})
 }
 
 async function loadThread(admin: SupabaseClient, userId: string, threadId?: string | null): Promise<Thread | null> {
-  let q = admin.from('member_assistant_threads').select('id').eq('user_id', userId).is('archived_at', null)
+  let q = admin.from('member_assistant_threads').select('id, pending').eq('user_id', userId).is('archived_at', null)
   q = threadId ? q.eq('id', threadId) : q.order('updated_at', { ascending: false }).limit(1)
   const { data } = await q.maybeSingle()
   return (data as Thread | null) ?? null
@@ -117,10 +125,11 @@ type Item =
   | { kind: 'user'; text: string }
   | { kind: 'carried' }
   | { kind: 'assistant'; text: string; msgId?: number; rated?: 'up' | 'down' }
-  | { kind: 'tool'; id: string; label: string; ok?: boolean; link?: ToolResult['link'] }
+  | { kind: 'tool'; id: string; label: string; ok?: boolean; link?: ToolResult['link']; card?: { title: string; decision: 'approved' | 'declined' } }
   | { kind: 'choices'; options: string[] }
+  | { kind: 'approval'; tool_use_id: string; card: ApprovalCard }
 
-function transcript(messages: { id?: number; role: string; content: unknown }[], ratings: Map<number, boolean>): Item[] {
+function transcript(messages: { id?: number; role: string; content: unknown }[], pending: Pending | null, ratings: Map<number, boolean>): Item[] {
   const items: Item[] = []
   const byId = new Map<string, Extract<Item, { kind: 'tool' }>>()
   for (const m of messages) {
@@ -147,20 +156,22 @@ function transcript(messages: { id?: number; role: string; content: unknown }[],
         try { parsed = JSON.parse(String(b.content ?? '{}')) } catch { /* not ours */ }
         it.ok = !b.is_error
         if (parsed._link) it.link = parsed._link as ToolResult['link']
+        if (parsed._card) it.card = parsed._card as { title: string; decision: 'approved' | 'declined' }
       }
     }
   }
+  const waiting = new Set((pending?.cards ?? []).filter((c) => !c.decided).map((c) => c.tool_use_id))
   const lastUser = items.map((i) => i.kind).lastIndexOf('user')
-  return items
-    .filter((i, idx) => i.kind !== 'choices' || idx > lastUser)
-    .filter((i) => i.kind !== 'tool' || i.label || i.link)
+  const cleaned = items.filter((i, idx) => i.kind !== 'choices' || idx > lastUser)
+  for (const c of pending?.cards ?? []) if (!c.decided) cleaned.push({ kind: 'approval', tool_use_id: c.tool_use_id, card: c.card })
+  return cleaned.filter((i) => i.kind !== 'tool' || ((i.label || i.link || i.card) && !waiting.has(i.id)))
 }
 
-function resultBlock(id: string, r: ToolResult): Anthropic.Beta.BetaToolResultBlockParam {
+function resultBlock(id: string, r: ToolResult, extra?: Record<string, unknown>): Anthropic.Beta.BetaToolResultBlockParam {
   return {
     type: 'tool_result',
     tool_use_id: id,
-    content: JSON.stringify({ ...r.content, ...(r.link ? { _link: r.link } : {}) }),
+    content: JSON.stringify({ ...r.content, ...(r.link ? { _link: r.link } : {}), ...(extra ?? {}) }),
     ...(r.isError ? { is_error: true } : {}),
   }
 }
@@ -173,10 +184,12 @@ export async function GET(request: Request) {
   const auth = await authorize(request, { ownDataOnly: listing })
   if ('error' in auth) return auth.error
   if (listing) {
-    const { data } = await auth.admin.from('member_assistant_threads').select('id, title, updated_at')
+    const { data } = await auth.admin.from('member_assistant_threads').select('id, title, updated_at, pending')
       .eq('user_id', auth.user.id).is('archived_at', null).order('updated_at', { ascending: false }).limit(50)
     return Response.json({
-      threads: ((data ?? []) as { id: string; title: string | null; updated_at: string }[]).map((t) => ({ id: t.id, title: t.title || 'Conversation', updated_at: t.updated_at })),
+      threads: ((data ?? []) as { id: string; title: string | null; updated_at: string; pending: Pending | null }[]).map((t) => ({
+        id: t.id, title: t.title || 'Conversation', updated_at: t.updated_at, waiting: !!t.pending?.cards?.some((c) => !c.decided),
+      })),
     })
   }
   const thread = await loadThread(auth.admin, auth.user.id, url.searchParams.get('thread_id'))
@@ -186,7 +199,7 @@ export async function GET(request: Request) {
     auth.admin.from('member_assistant_ratings').select('message_id, up').eq('thread_id', thread.id).eq('user_id', auth.user.id),
   ])
   const ratings = new Map(((rated.data ?? []) as { message_id: number; up: boolean }[]).map((r) => [Number(r.message_id), r.up]))
-  return Response.json({ thread_id: thread.id, items: transcript(messages, ratings), long: (await contextSize(auth.admin, thread.id)) > SOFT_CONTEXT })
+  return Response.json({ thread_id: thread.id, items: transcript(messages, thread.pending, ratings), long: (await contextSize(auth.admin, thread.id)) > SOFT_CONTEXT })
 }
 
 // ── DELETE ──
@@ -211,10 +224,12 @@ export async function POST(request: Request) {
   const body = (await request.json().catch(() => null)) as {
     thread_id?: string | null
     message?: string
+    decision?: { tool_use_id: string; approve: boolean; confirm_text?: string }
     new_thread?: boolean
     carry_from?: string
     rating?: { message_id: number; up: boolean; note?: string }
     screen?: string
+    match_id?: string
   } | null
   const auth = await authorize(request)
   if ('error' in auth) return auth.error
@@ -243,7 +258,16 @@ export async function POST(request: Request) {
   }
 
   const text = (body?.message ?? '').trim().slice(0, 2000)
-  if (!text) return Response.json({ error: 'Say something first.' }, { status: 400 })
+  if (!text && !body?.decision) return Response.json({ error: 'Say something first.' }, { status: 400 })
+
+  // Opened from a Shift Together ride plan: only the id travels, checked as
+  // the person (get_ride_plan returns nothing for a match that isn't theirs).
+  let planNote: string | null = null
+  if (typeof body?.match_id === 'string' && UUID.test(body.match_id)) {
+    const { data: plan } = await userClient.rpc('get_ride_plan', { p_match_id: body.match_id })
+    const role = (plan as { role?: string } | null)?.role
+    if (role === 'guide' || role === 'learner') planNote = `their first ride plan (match_id ${body.match_id}), where they are the ${role}. Read it with get_ride_plan before answering about it.`
+  }
 
   // Caps: this person per rolling day, everyone per month.
   const monthStart = new Date()
@@ -263,7 +287,7 @@ export async function POST(request: Request) {
 
   const lockUntil = new Date(Date.now() + 3 * 60_000).toISOString()
   let thread = body?.new_thread ? null : await loadThread(admin, user.id, body?.thread_id)
-  if (thread && (await contextSize(admin, thread.id)) > HARD_CONTEXT) {
+  if (thread && !body?.decision && (await contextSize(admin, thread.id)) > HARD_CONTEXT) {
     return Response.json({ error: 'This conversation has got too long to continue. Start a fresh one; the assistant brings a summary.', long: true }, { status: 409 })
   }
   let carryNote: string | null = null
@@ -274,12 +298,12 @@ export async function POST(request: Request) {
   }
   if (thread) {
     const { data: claimed } = await admin.from('member_assistant_threads').update({ busy_until: lockUntil }).eq('id', thread.id)
-      .or(`busy_until.is.null,busy_until.lt."${new Date().toISOString()}"`).select('id').maybeSingle()
+      .or(`busy_until.is.null,busy_until.lt."${new Date().toISOString()}"`).select('id, pending').maybeSingle()
     if (!claimed) return Response.json({ error: "I'm still working on your last question. Give it a moment." }, { status: 409 })
     thread = claimed as Thread
   } else {
     const { data, error } = await admin.from('member_assistant_threads')
-      .insert({ user_id: user.id, title: text.slice(0, 80), busy_until: lockUntil }).select('id').single()
+      .insert({ user_id: user.id, title: text.slice(0, 80) || 'Conversation', busy_until: lockUntil }).select('id, pending').single()
     if (error || !data) return Response.json({ error: 'Could not start a conversation.' }, { status: 500 })
     thread = data as Thread
   }
@@ -303,10 +327,59 @@ export async function POST(request: Request) {
         await admin.from('member_assistant_messages').insert({ thread_id: threadId, role: r, content, ...(extra ?? {}) })
         await admin.from('member_assistant_threads').update({ updated_at: new Date().toISOString() }).eq('id', threadId)
       }
+      const setPending = async (p: Pending | null) => { await admin.from('member_assistant_threads').update({ pending: p }).eq('id', threadId) }
+      const userBlocks = (): unknown[] => [
+        ...(carryNote ? [{ type: 'text', text: carryNote }] : []),
+        ...(text ? [{ type: 'text', text }] : []),
+      ]
 
       try {
         emit({ type: 'thread', id: threadId })
-        await append('user', [...(carryNote ? [{ type: 'text', text: carryNote }] : []), { type: 'text', text }])
+        let pending = thread!.pending
+
+        // 1. Settle the cards: a decision, or a typed reply instead.
+        if (pending) {
+          if (body?.decision) {
+            const c = pending.cards.find((x) => x.tool_use_id === body.decision!.tool_use_id && !x.decided)
+            if (c && body.decision.approve && c.card.confirmText && !sameText(body.decision.confirm_text, c.card.confirmText)) {
+              emit({ type: 'error', message: `Type "${c.card.confirmText}" to confirm.` })
+              emit({ type: 'done' })
+              return
+            }
+            if (c) {
+              c.decided = true
+              let r: ToolResult
+              if (body.decision.approve) {
+                emit({ type: 'tool', id: c.tool_use_id, label: ACTIVITY[c.name] ?? c.name })
+                r = await runApproved(ctx, c.name, c.input)
+                emit({ type: 'tool_done', id: c.tool_use_id, ok: !r.isError, link: r.link })
+              } else {
+                r = { content: { declined: true, note: 'They chose not to do this. Ask what they would like instead.' } }
+              }
+              pending.results[c.tool_use_id] = resultBlock(c.tool_use_id, r, { _card: { title: c.card.title, decision: body.decision.approve ? 'approved' : 'declined' } })
+            }
+          } else {
+            for (const c of pending.cards.filter((x) => !x.decided)) {
+              c.decided = true
+              pending.results[c.tool_use_id] = resultBlock(c.tool_use_id,
+                { content: { not_approved: true, note: 'They replied instead of approving. Nothing was saved.' } },
+                { _card: { title: c.card.title, decision: 'declined' } })
+            }
+          }
+          if (pending.cards.some((x) => !x.decided)) {
+            await setPending(pending)
+            emit({ type: 'done' })
+            return
+          }
+          const content: unknown[] = pending.order.map((id) => pending!.results[id])
+          content.push(...userBlocks())
+          await append('user', content)
+          await setPending(null)
+          pending = null
+        } else {
+          if (!text) { emit({ type: 'done' }); return }
+          await append('user', userBlocks())
+        }
 
         const client = new Anthropic()
         const today = new Date().toLocaleDateString('en-US', { timeZone: 'America/New_York', weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
@@ -321,7 +394,7 @@ export async function POST(request: Request) {
             output_config: { effort: 'medium' },
             system: [
               { type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } },
-              { type: 'text', text: contextBlock({ today, firstName, screen: screenLabel(body?.screen) }) },
+              { type: 'text', text: contextBlock({ today, firstName, screen: planNote ?? screenLabel(body?.screen) }) },
             ],
             tools: tools as Anthropic.Beta.BetaToolUnion[],
             cache_control: { type: 'ephemeral' },
@@ -347,13 +420,28 @@ export async function POST(request: Request) {
             emit({ type: 'error', message: 'That got too long. Ask again in a smaller piece.' })
             break
           }
-          const results = await Promise.all(uses.map(async (u) => {
+          // Reads run side by side; a tool that saves waits on its card.
+          const results: Record<string, Anthropic.Beta.BetaToolResultBlockParam> = {}
+          const cards: PendingCard[] = []
+          await Promise.all(uses.map(async (u) => {
+            const input = (u.input ?? {}) as Record<string, unknown>
+            if (NEEDS_APPROVAL.has(u.name)) {
+              const a = await approvalCard(ctx, u.name, input)
+              if ('card' in a) cards.push({ tool_use_id: u.id, name: u.name, input: a.input, card: a.card })
+              else results[u.id] = resultBlock(u.id, a.result)
+              return
+            }
             if (ACTIVITY[u.name]) emit({ type: 'tool', id: u.id, label: ACTIVITY[u.name] })
-            const r = await runTool(ctx, u.name, (u.input ?? {}) as Record<string, unknown>)
+            const r = await runTool(ctx, u.name, input)
             emit({ type: 'tool_done', id: u.id, ok: !r.isError, link: r.link })
-            return resultBlock(u.id, r)
+            results[u.id] = resultBlock(u.id, r)
           }))
-          await append('user', results)
+          if (cards.length) {
+            await setPending({ results, order: uses.map((u) => u.id), cards })
+            for (const c of cards) emit({ type: 'approval', tool_use_id: c.tool_use_id, card: c.card })
+            break
+          }
+          await append('user', uses.map((u) => results[u.id]))
         }
         if ((await contextSize(admin, threadId)) > SOFT_CONTEXT) emit({ type: 'long' })
         emit({ type: 'done' })

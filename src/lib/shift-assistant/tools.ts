@@ -7,12 +7,15 @@ import { haversineMiles } from '@/lib/nearby/share'
 import { eventModeOf } from '@/components/commute/event-card'
 import { excerptOf } from '@/lib/commute/try-it-event'
 import { todayKey } from '@/lib/organizers/ride-words'
+import { RIDE_PLAN_ACTIVITY, RIDE_PLAN_NEEDS_APPROVAL, RIDE_PLAN_TOOLS, ridePlanCard, runApprovedRidePlan, runRidePlanTool, type RidePlanCard } from '@/lib/shift-assistant/ride-plan-tools'
 
 // The Shift assistant's tools, for everyone in the app (Keith 2026-10-24).
-// The first version only reads and points: every tool here answers a
-// question or offers a button to an app screen, and nothing changes what
-// anyone else sees, so there are no approval cards yet. Reads run as the
-// person (their bearer token), so every table's own rules apply.
+// Most answer a question or offer a button to an app screen. A tool that
+// saves something waits on an approval card first (NEEDS_APPROVAL; Keith
+// 2026-10-24: "its role is ultimately to be helpful and simplify things for
+// users, so saving as a requirement for building rides ... would be
+// logical"). Everything runs as the person (their bearer token), so every
+// table's own rules apply.
 
 export type ToolCtx = {
   /** Supabase as the person (their bearer token). */
@@ -33,7 +36,7 @@ export type ToolResult = {
   link?: ScreenLink
 }
 
-const SCREENS = ['commute', 'commute_setup', 'around_you', 'rides', 'event', 'ride', 'rewards', 'log_trip'] as const
+const SCREENS = ['commute', 'commute_setup', 'around_you', 'rides', 'event', 'ride', 'rewards', 'log_trip', 'ride_plan'] as const
 type Screen = (typeof SCREENS)[number]
 
 const FUNCTIONS = `${(process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').replace(/\/$/, '')}/functions/v1`
@@ -57,7 +60,13 @@ export const ACTIVITY: Record<string, string> = {
   get_weather: 'Checking the forecast',
   find_place: 'Looking up the place',
   find_rides_and_events: 'Looking for rides and events',
+  ...RIDE_PLAN_ACTIVITY,
 }
+
+/** Tools that save something: the turn pauses on a card until the person approves. */
+export const NEEDS_APPROVAL = new Set([...RIDE_PLAN_NEEDS_APPROVAL])
+
+export type ApprovalCard = RidePlanCard & { confirmText?: string }
 
 export const TOOLS: Anthropic.Tool[] = [
   {
@@ -115,14 +124,15 @@ export const TOOLS: Anthropic.Tool[] = [
       required: ['near'],
     },
   },
+  ...RIDE_PLAN_TOOLS,
   {
     name: 'open_screen',
-    description: "A button to a screen of the Shift app, for things done there: commute (their saved commute), commute_setup (set home and work), around_you (the map of what's near them), rides (group rides and events), event or ride (one of them, by id), rewards (the rewards shop), log_trip (log a trip by hand).",
+    description: "A button to a screen of the Shift app, for things done there: commute (their saved commute), commute_setup (set home and work), around_you (the map of what's near them), rides (group rides and events), event or ride (one of them, by id), rewards (the rewards shop), log_trip (log a trip by hand), ride_plan (a Shift Together first ride plan, by its match_id).",
     input_schema: {
       type: 'object',
       properties: {
         screen: { type: 'string', enum: [...SCREENS] },
-        id: nullable('string', 'For event (an id from find_rides_and_events) or ride.'),
+        id: nullable('string', 'For event (an id from find_rides_and_events), ride, or ride_plan (the match_id).'),
         label: { type: 'string', description: 'The button text, a few words with a verb ("See your commute").' },
       },
       required: ['screen', 'label'],
@@ -286,9 +296,13 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
         const screen = SCREENS.find((s) => s === input.screen)
         if (!screen) return fail('Unknown screen.')
         const id = typeof input.id === 'string' && /^[A-Za-z0-9_-]{1,100}$/.test(input.id) ? input.id : null
-        if ((screen === 'event' || screen === 'ride') && !id) return fail(`An ${screen} button needs its id.`)
-        return ok({ shown: true, next: 'The button shows under your reply. Now write the reply itself: what you found, in words (for events: name, day and time, where, how far). Do not mention the button.' }, { screen, ...(id ? { params: { id } } : {}), label: String(input.label || 'Open').slice(0, 40) })
+        if ((screen === 'event' || screen === 'ride' || screen === 'ride_plan') && !id) return fail(`A ${screen} button needs its id.`)
+        const params: Record<string, string> | null = id ? (screen === 'ride_plan' ? { match: id } : { id }) : null
+        return ok({ shown: true, next: 'The button shows under your reply. Now write the reply itself: what you found, in words (for events: name, day and time, where, how far). Do not mention the button.' }, { screen, ...(params ? { params } : {}), label: String(input.label || 'Open').slice(0, 40) })
       }
+      case 'get_ride_plan':
+      case 'design_ride_plan_route':
+        return await runRidePlanTool(ctx, name, input)
       case 'note_feedback': {
         await ctx.admin.from('admin_notifications').insert({
           level: 'info',
@@ -300,6 +314,23 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
         return ok({ noted: true })
       }
     }
+    return fail(`Unknown tool ${name}`)
+  } catch (e) {
+    return fail(e instanceof Error ? e.message : String(e))
+  }
+}
+
+/** The card for a tool that saves, or a result when it can't go ahead. */
+export async function approvalCard(ctx: ToolCtx, name: string, input: Record<string, unknown>):
+  Promise<{ card: ApprovalCard; input: Record<string, unknown> } | { result: ToolResult }> {
+  if (RIDE_PLAN_NEEDS_APPROVAL.has(name)) return ridePlanCard(ctx, name, input)
+  return { result: fail(`Unknown tool ${name}`) }
+}
+
+/** Run a saving tool once the person approved its card. */
+export async function runApproved(ctx: ToolCtx, name: string, input: Record<string, unknown>): Promise<ToolResult> {
+  try {
+    if (RIDE_PLAN_NEEDS_APPROVAL.has(name)) return await runApprovedRidePlan(ctx, name, input)
     return fail(`Unknown tool ${name}`)
   } catch (e) {
     return fail(e instanceof Error ? e.message : String(e))
