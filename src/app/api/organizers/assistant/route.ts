@@ -396,7 +396,13 @@ export async function POST(request: Request) {
   const encoder = new TextEncoder()
   const stream = new ReadableStream({
     async start(controller) {
-      const emit = (e: Record<string, unknown>) => controller.enqueue(encoder.encode(JSON.stringify(e) + '\n'))
+      // If the person leaves mid-reply the stream closes; the turn still
+      // finishes and is saved, so the reply is there when they come back.
+      let open = true
+      const emit = (e: Record<string, unknown>) => {
+        if (!open) return
+        try { controller.enqueue(encoder.encode(JSON.stringify(e) + '\n')) } catch { open = false }
+      }
       const append = async (r: 'user' | 'assistant', content: unknown, extra?: Record<string, unknown>) => {
         await admin.from('ride_assistant_messages').insert({ thread_id: threadId, role: r, content, ...(extra ?? {}) })
         await admin.from('ride_assistant_threads').update({ updated_at: new Date().toISOString() }).eq('id', threadId)

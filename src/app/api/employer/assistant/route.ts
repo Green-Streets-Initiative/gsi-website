@@ -562,7 +562,13 @@ export async function POST(request: Request) {
   const encoder = new TextEncoder()
   const stream = new ReadableStream({
     async start(controller) {
-      const emit = (e: Record<string, unknown>) => controller.enqueue(encoder.encode(JSON.stringify(e) + '\n'))
+      // If the person leaves mid-reply the stream closes; the turn still
+      // finishes and is saved, so the reply is there when they come back.
+      let open = true
+      const emit = (e: Record<string, unknown>) => {
+        if (!open) return
+        try { controller.enqueue(encoder.encode(JSON.stringify(e) + '\n')) } catch { open = false }
+      }
       const append = async (r: 'user' | 'assistant', content: unknown, extra?: Record<string, unknown>) => {
         await admin.from('employer_assistant_messages').insert({ thread_id: threadId, role: r, content, author_email: r === 'user' ? user.email : null, ...(extra ?? {}) })
         await admin.from('employer_assistant_threads').update({ updated_at: new Date().toISOString() }).eq('id', threadId)
@@ -621,7 +627,7 @@ export async function POST(request: Request) {
           if (pending.cards.some((x) => !x.decided)) {
             await setPending(pending)
             emit({ type: 'done' })
-            controller.close()
+            try { controller.close() } catch { /* they left */ }
             return
           }
           const content: unknown[] = pending.order.map((id) => pending!.results[id])
@@ -632,7 +638,7 @@ export async function POST(request: Request) {
         } else {
           if (!text && attachments.length === 0 && !listNote) {
             emit({ type: 'done' })
-            controller.close()
+            try { controller.close() } catch { /* they left */ }
             return
           }
           await append('user', userBlocks())
