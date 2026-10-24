@@ -776,10 +776,11 @@ export async function approvalCard(ctx: ToolCtx, name: string, input: Record<str
         const kind = String(input.kind)
         const occ = input.occurrence_id ? findDate(d, input.occurrence_id) : null
         const note = typeof input.note === 'string' ? input.note.trim().slice(0, 280) : ''
-        const dry = await shiftFn<{ would_notify?: number }>(ctx, 'ride-update', {
+        const dry = await shiftFn<{ would_notify?: number; guests_not_answered?: number }>(ctx, 'ride-update', {
           series_id: d.ride.id, occurrence_id: occ?.id, kind, note: note || undefined, dry_run: true,
         })
         const n = dry.would_notify ?? 0
+        const skipped = dry.guests_not_answered ?? 0
         return {
           card: {
             title: `Post “${UPDATE_KIND_LABEL[kind] ?? kind}”${occ ? ` for ${dateLabel(occ.date)}` : ''}?`,
@@ -787,6 +788,7 @@ export async function approvalCard(ctx: ToolCtx, name: string, input: Record<str
               note ? `“${note}”` : null,
               kind === 'on' && occ ? 'Also marks the date as on.' : null,
               n > 0 ? `Reaches ${n} ${n === 1 ? 'person' : 'people'} by app or email, and the ride page.` : 'Nobody has answered yet; it goes on the ride page.',
+              skipped > 0 ? `Skips ${skipped} web sign-up${skipped === 1 ? '' : 's'} who ${skipped === 1 ? "hasn't" : "haven't"} answered this date.` : null,
             ].filter(Boolean) as string[],
             cta: 'Post it', tone: 'primary',
           },
@@ -935,9 +937,13 @@ export async function approvalCard(ctx: ToolCtx, name: string, input: Record<str
   }
 }
 
-type Sent = { notified?: number; sent?: number; emailed?: number }
-// The count the screens show ("sent to N"): everyone it went out to.
-const sentText = (s: Sent | null) => ({ sent_to: s?.notified ?? 0 })
+type Sent = { notified?: number; sent?: number; emailed?: number; guests_not_answered?: number }
+// The count the screens show ("sent to N"): everyone it went out to. Web
+// sign-ups hear about one date only once they've said Going or Maybe for it.
+const sentText = (s: Sent | null) => ({
+  sent_to: s?.notified ?? 0,
+  ...(s?.guests_not_answered ? { web_signups_not_told: s.guests_not_answered, why: 'Web sign-ups hear about a date only after they say Going or Maybe for it.' } : {}),
+})
 
 /** Runs exactly what the card showed, as the organizer. */
 export async function runApproved(ctx: ToolCtx, name: string, input: Record<string, unknown>): Promise<ToolResult> {
