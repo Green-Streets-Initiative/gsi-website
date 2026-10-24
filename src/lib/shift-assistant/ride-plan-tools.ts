@@ -24,20 +24,30 @@ import { findPlace } from '@/lib/organizer-assistant/tools'
 // The designed route never goes through the model: design returns a short
 // recipe (pins and the option chosen per leg), and the card recomputes it,
 // so what the guide approves is exactly what is saved.
+//
+// 01438: a plan has a way. Bike and walk plans route with plan-ride-route
+// (mode bike or walk) and find their spots with ride-plan-spots (walk mode
+// finds crossings, buttons, paths, steps); a transit plan is a trip from
+// ride-plan-transit, and its stops to show come from the trip's legs, the
+// same as the app (lib/ride-plan.ts transitSpots, kept in step by hand).
 
 type Ctx = { user: import('@supabase/supabase-js').SupabaseClient; token: string }
 type LatLng = { lat: number; lng: number }
-type Spot = { id: string; kind: string; lat: number; lng: number; streets: string[]; on: boolean; note?: string | null }
+type Spot = { id: string; kind: string; lat: number; lng: number; streets: string[]; on: boolean; note?: string | null; title?: string | null; leg?: number; button?: boolean }
+type Way = 'bike' | 'walk' | 'transit'
+type Stop = { name: string; lat: number; lng: number; door?: { name: string; lat: number; lng: number } | null }
+type Leg = { kind: 'walk' | 'transit'; minutes: number; line?: string | null; short?: string | null; vehicle?: string | null; headsign?: string | null; board?: Stop | null; alight?: Stop | null; stops?: number | null; stopBefore?: string | null; departAt?: string | null }
+type Trip = { minutes: number; departAt: string | null; arriveAt: string | null; changes: number; walkMinutes: number; fare: string | null; legs: Leg[]; waypoints: LatLng[]; mbta: boolean }
 type View = {
   role: 'learner' | 'guide'
   learner_name: string
   guide_name: string
   learner_modes: string[] | null
   plan: {
-    status: string; skill: string | null; worries: string[]
+    status: string; way?: Way; skill: string | null; worries: string[]
     meet_lat: number | null; meet_lng: number | null; meet_label: string | null
     end_lat: number | null; end_lng: number | null; end_label: string | null
-    route: { waypoints: LatLng[]; distanceMiles?: number } | null
+    route: { waypoints: LatLng[]; distanceMiles?: number; transit?: Trip } | null
     spots: Spot[]; ride_at: string | null
     helped: string[]; unsure: string[]; solo_day: string | null
   } | null
@@ -47,7 +57,8 @@ type Result = { content: Record<string, unknown>; isError?: boolean; link?: { sc
 const FUNCTIONS = `${(process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').replace(/\/$/, '')}/functions/v1`
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 const GOALS = ['calmest', 'flattest', 'shortest'] as const
-type Goal = (typeof GOALS)[number]
+const TRANSIT_GOALS = ['fewest_changes', 'fastest', 'least_walking'] as const
+type Goal = (typeof GOALS)[number] | (typeof TRANSIT_GOALS)[number]
 const r1 = (n: number) => Math.round(n * 10) / 10
 const ok = (content: Record<string, unknown>, link?: Result['link']): Result => ({ content, link })
 const fail = (error: string): Result => ({ content: { error }, isError: true })
@@ -58,6 +69,26 @@ const SPOT_WORDS: Record<string, string> = {
   signal: 'traffic light', stop: 'stop sign', bike_box: 'bike box', door_zone: 'parked cars (door zone)',
   tracks: 'trolley tracks', bus_stop: 'bus stop', left_turn: 'left turn', lock_up: 'bike rack near the end',
   crossing: 'busy crossing', steep: 'steep hill', wrong_way: 'one-way the other way', note: 'note',
+  walk_signal: 'walk signal', crossing_open: 'busy crossing with no light', path: 'path', steps: 'steps',
+  no_sidewalk: 'no sidewalk', dark: 'dark stretch',
+  entrance: 'the way in', pay: 'paying', platform: 'which platform', transfer: 'change', your_stop: 'get off',
+  bus_board: 'getting on the bus', exit: 'the way out',
+}
+const stopName = (n: string | null | undefined) => (n ?? '').replace(/\s+@\s+/g, ' & ')
+/** A spot in words, for the model: "walk signal (press the button) at Essex St & Mass Ave", "change at Park Street". */
+function spotPhrase(s: Spot, trip?: Trip | null): string {
+  const leg = s.leg != null ? trip?.legs[s.leg] : undefined
+  const line = leg ? `${leg.line ?? leg.short ?? ''}${leg.headsign ? ` toward ${leg.headsign}` : ''}` : ''
+  switch (s.kind) {
+    case 'platform': return `which platform: ${line}`
+    case 'bus_board': return `getting on the ${line}`
+    case 'transfer': return `change at ${stopName(s.title)} to the ${line}`
+    case 'your_stop': return `get off at ${stopName(s.title)}${leg?.stops ? ` after ${leg.stops} stops` : ''}${leg?.stopBefore ? ` (the stop before is ${stopName(leg.stopBefore)})` : ''}`
+    case 'entrance': return `the way in: ${stopName(s.title)}`
+    case 'exit': return `the way out: ${stopName(s.title)}`
+    case 'pay': return `paying${trip?.fare ? `: ${trip.fare} each` : ''}`
+    default: return `${SPOT_WORDS[s.kind] ?? s.kind}${s.button ? ' (press the button)' : ''}${s.streets.length ? ` at ${s.streets.join(' & ')}` : ''}`
+  }
 }
 
 export const RIDE_PLAN_ACTIVITY: Record<string, string> = {
@@ -69,18 +100,20 @@ export const RIDE_PLAN_ACTIVITY: Record<string, string> = {
 export const RIDE_PLAN_TOOLS: Anthropic.Tool[] = [
   {
     name: 'get_ride_plan',
-    description: "A Shift Together first ride plan, as this person sees it: whether they are the guide or the learner, both first names, the learner's skill and what they want help with, the meeting spot and end spot (public places, never anyone's home or work), the route's length, the spots shown on the way (kind, streets, the guide's notes), the day and time, and where it stands (learner_shared = the guide plans next; planned = waiting on the learner's OK; confirmed; ridden).",
+    description: "A Shift Together first trip plan (by bike, on foot or by transit), as this person sees it: the way, whether they are the guide or the learner, both first names, how the learner gets around now and what they want help with, the meeting spot and end spot (public places, never anyone's home or work), the route's length or the transit trip's lines, the spots shown on the way (in order, with the guide's notes), the day and time, any new time one of them asked for, and where it stands (learner_shared = the guide plans next; planned = waiting on the learner's OK; confirmed; ridden).",
     input_schema: { type: 'object', properties: { match_id: { type: 'string' } }, required: ['match_id'] },
   },
   {
     name: 'design_ride_plan_route',
-    description: "Plan a bike route for a first ride plan, from its meeting spot to its end spot, for one goal: calmest (most paths and protected lanes, the default), flattest (least climbing) or shortest. through: places to pass in words (\"the Community Path\", \"Bow Market\"), found near the meeting spot. Returns miles, minutes, how calm, climbing, left turns and the spots worth stopping at, plus a recipe for save_ride_plan_route. Nothing is saved. Either person can ask; only the guide can save.",
+    description: "Plan the route for a first trip plan, in the plan's own way, from its meeting spot to its end spot. Bike or walk: goal calmest (paths and quiet streets, the default), flattest or shortest; through = places to pass in words (\"the Community Path\", \"Bow Market\"), found near the meeting spot. Transit: goal fewest_changes (the default), fastest or least_walking; through is ignored; date and time (Eastern) give the real departure. Returns miles or minutes, how calm or which lines, the spots worth stopping at in order, plus a recipe for save_ride_plan_route. Nothing is saved. Either person can ask; only the guide can save.",
     input_schema: {
       type: 'object',
       properties: {
         match_id: { type: 'string' },
-        goal: { type: 'string', enum: [...GOALS] },
-        through: { type: 'array', items: { type: 'string' }, description: 'Up to 3 places to pass, in order.' },
+        goal: { type: 'string', enum: [...GOALS, ...TRANSIT_GOALS] },
+        through: { type: 'array', items: { type: 'string' }, description: 'Bike or walk: up to 3 places to pass, in order.' },
+        date: { type: 'string', description: 'Transit: YYYY-MM-DD, for the departure times.' },
+        time: { type: 'string', description: 'Transit: HH:MM, 24-hour, Eastern time.' },
       },
       required: ['match_id'],
     },
@@ -121,13 +154,13 @@ const placesOf = (v: View) => {
 
 // ── Routing ─────────────────────────────────────────────────────────────
 
-async function planLegs(token: string, pins: LatLng[]): Promise<PlannedRoute> {
+async function planLegs(token: string, pins: LatLng[], mode: 'bike' | 'walk' = 'bike'): Promise<PlannedRoute> {
   const pairs = pins.slice(1).map((to, i) => [pins[i], to])
   const legs = await Promise.all(pairs.map(async ([a, b]) => {
     const res = await fetch(`${FUNCTIONS}/plan-ride-route`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ pins: [a, b], mode: 'bike' }),
+      body: JSON.stringify({ pins: [a, b], mode }),
       signal: AbortSignal.timeout(110_000),
     })
     const json = (await res.json().catch(() => ({}))) as PlannedRoute & { error?: string }
@@ -151,14 +184,14 @@ function pick(options: PlannedLegOption[], goal: Goal): number {
 
 /** The spots along a route, with the app's default choice of which to show
  *  (lib/ride-plan.ts defaultSpotsOn, kept in step by hand). */
-async function spotsFor(ctx: Ctx, route: { waypoints: LatLng[]; flags: unknown[] }, end: LatLng, worries: string[]): Promise<{ spots: Spot[]; complete: boolean }> {
+async function spotsFor(ctx: Ctx, route: { waypoints: LatLng[]; flags: unknown[] }, end: LatLng, worries: string[], way: Way = 'bike'): Promise<{ spots: Spot[]; complete: boolean }> {
   let found: Omit<Spot, 'on'>[] = []
   let complete = false
   try {
     const res = await fetch(`${FUNCTIONS}/ride-plan-spots`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, Authorization: `Bearer ${ctx.token}` },
-      body: JSON.stringify({ waypoints: route.waypoints, end }),
+      body: JSON.stringify({ waypoints: route.waypoints, end, ...(way === 'walk' ? { mode: 'walk' } : {}) }),
       signal: AbortSignal.timeout(100_000),
     })
     const j = (await res.json().catch(() => ({}))) as { spots?: Omit<Spot, 'on'>[]; ok?: boolean }
@@ -168,12 +201,15 @@ async function spotsFor(ctx: Ctx, route: { waypoints: LatLng[]; flags: unknown[]
   ;(route.flags as { type?: string; kind?: string; description?: string; lat?: number; lng?: number }[])
     .filter((f) => f.type === 'concern' && f.lat != null && f.lng != null)
     .forEach((f, i) => {
-      const kind = f.kind === 'steep' ? 'steep' : f.kind === 'wrong_way' ? 'wrong_way' : 'crossing'
+      const kind = f.kind === 'steep' ? 'steep' : f.kind === 'wrong_way' ? 'wrong_way'
+        : way === 'walk' && f.kind === 'sidewalks' ? 'no_sidewalk' : way === 'walk' && f.kind === 'lighting' ? 'dark' : 'crossing'
       const after = f.description?.includes(':') ? f.description.split(':').slice(1).join(':') : ''
       const streets = after.split(/\s*&\s*|\s+near\s+/).map((x) => x.trim()).filter(Boolean).slice(0, 2)
       found.push({ id: `${kind}-flag-${i}`, kind, lat: f.lat!, lng: f.lng!, streets })
     })
-  const limit: Record<string, number> = { signal: worries.includes('traffic') ? 3 : 1, stop: 1, door_zone: 2, bus_stop: 0 }
+  const limit: Record<string, number> = way === 'walk'
+    ? { walk_signal: worries.includes('crossings') ? 3 : 1, crossing_open: 3, crossing: 2, path: 2, steps: 1, steep: worries.includes('hills') ? 2 : 1, no_sidewalk: 2, dark: worries.includes('dark') ? 2 : 1 }
+    : { signal: worries.includes('traffic') ? 3 : 1, stop: 1, door_zone: 2, bus_stop: 0 }
   const shown: Record<string, number> = {}
   const doorStreets = new Set<string>()
   const corners = new Set<string>()
@@ -197,7 +233,73 @@ async function spotsFor(ctx: Ctx, route: { waypoints: LatLng[]; flags: unknown[]
   return { spots, complete }
 }
 
-type Recipe = { pins: (LatLng & { label?: string })[]; chosen: number[]; goal: Goal }
+// ── Transit ─────────────────────────────────────────────────────────────
+
+async function transitTrips(token: string, from: LatLng, to: LatLng, departAt: string | null): Promise<Trip[]> {
+  const res = await fetch(`${FUNCTIONS}/ride-plan-transit`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ from, to, ...(departAt ? { departAt } : {}) }),
+    signal: AbortSignal.timeout(60_000),
+  })
+  const j = (await res.json().catch(() => ({}))) as { ok?: boolean; trips?: Trip[] }
+  return res.ok && j.ok ? j.trips ?? [] : []
+}
+const lineKey = (t: Trip) => t.legs.filter((l) => l.kind === 'transit').map((l) => `${l.short ?? l.line}>${l.headsign ?? ''}`).join('|')
+function pickTrip(trips: Trip[], goal: Goal): Trip | null {
+  if (!trips.length) return null
+  const score = (t: Trip) => goal === 'fastest' ? t.minutes : goal === 'least_walking' ? t.walkMinutes * 100 + t.minutes : t.changes * 1000 + t.minutes
+  return [...trips].sort((a, b) => score(a) - score(b))[0]
+}
+/** The trip's stops to show, in order (the app's transitSpots). */
+function transitSpots(trip: Trip): Spot[] {
+  const out: Spot[] = []
+  const rides = trip.legs.map((l, i) => ({ l, i })).filter(({ l }) => l.kind === 'transit' && l.board && l.alight)
+  rides.forEach(({ l, i }, n) => {
+    const bus = l.vehicle === 'bus'
+    const at = (p: LatLng) => ({ lat: p.lat, lng: p.lng })
+    if (n === 0) {
+      const door = l.board!.door
+      const pay: Spot = { id: `pay-${i}`, kind: 'pay', ...at(l.board!), streets: [], title: l.board!.name, leg: i, on: true }
+      if (bus) {
+        if (trip.mbta) out.push(pay)
+        out.push({ id: `bus-${i}`, kind: 'bus_board', ...at(l.board!), streets: [], title: l.board!.name, leg: i, on: true })
+      } else {
+        out.push({ id: `entrance-${i}`, kind: 'entrance', ...at(door ?? l.board!), streets: [], title: door?.name ?? l.board!.name, leg: i, on: true })
+        if (trip.mbta) out.push(pay)
+        out.push({ id: `platform-${i}`, kind: 'platform', ...at(l.board!), streets: [], title: l.board!.name, leg: i, on: true })
+      }
+    } else {
+      out.push({ id: `transfer-${i}`, kind: 'transfer', ...at(l.board!), streets: [], title: l.board!.name, leg: i, on: true })
+      if (bus) out.push({ id: `bus-${i}`, kind: 'bus_board', ...at(l.board!), streets: [], title: l.board!.name, leg: i, on: true })
+    }
+    out.push({ id: `stop-${i}`, kind: 'your_stop', ...at(l.alight!), streets: [], title: l.alight!.name, leg: i, on: true })
+    if (n === rides.length - 1 && l.alight!.door) {
+      out.push({ id: `exit-${i}`, kind: 'exit', ...at(l.alight!.door), streets: [], title: l.alight!.door.name, leg: i, on: true })
+    }
+  })
+  return out
+}
+function transitRoute(trip: Trip, meet: LatLng, end: LatLng) {
+  return { waypoints: trip.waypoints.length >= 2 ? trip.waypoints : [meet, end], pins: [meet, end], comfortSegments: null, comfortRating: null, comfortSummary: null, flags: [], minutes: trip.minutes, transit: trip }
+}
+const tripLines = (t: Trip) => t.legs.filter((l) => l.kind === 'transit').map((l) =>
+  `${l.line ?? l.short}${l.headsign ? ` toward ${l.headsign}` : ''}, ${stopName(l.board?.name)} to ${stopName(l.alight?.name)}${l.stops ? ` (${l.stops} stops)` : ''}`)
+/** Next weekday at 8:00 AM Eastern, as the trip finder's default departure. */
+function nextWeekdayEight(): string {
+  const d = new Date()
+  for (let i = 1; i < 8; i++) {
+    const c = new Date(d.getTime() + i * 864e5)
+    const wd = c.toLocaleDateString('en-US', { timeZone: 'America/New_York', weekday: 'short' })
+    if (wd !== 'Sat' && wd !== 'Sun') {
+      const ymd = c.toLocaleDateString('en-CA', { timeZone: 'America/New_York' })
+      return easternIso(ymd, '08:00')!
+    }
+  }
+  return new Date(d.getTime() + 864e5).toISOString()
+}
+
+type Recipe = { pins: (LatLng & { label?: string })[]; chosen: number[]; goal: Goal; way?: Way; key?: string }
 const encode = (r: Recipe) => Buffer.from(JSON.stringify(r)).toString('base64url')
 function decode(s: unknown): Recipe | null {
   if (typeof s !== 'string' || s.length > 4000) return null
@@ -205,8 +307,14 @@ function decode(s: unknown): Recipe | null {
     const r = JSON.parse(Buffer.from(s, 'base64url').toString('utf8')) as Recipe
     const okPin = (p: LatLng) => Number.isFinite(p?.lat) && Number.isFinite(p?.lng) && p.lat > 40 && p.lat < 44 && p.lng > -75 && p.lng < -69
     if (!Array.isArray(r.pins) || r.pins.length < 2 || r.pins.length > 6 || !r.pins.every(okPin)) return null
+    if (r.way === 'transit') {
+      if (r.pins.length !== 2 || typeof r.key !== 'string' || r.key.length > 400) return null
+      if (!(TRANSIT_GOALS as readonly string[]).includes(r.goal)) return null
+      return r
+    }
+    if (r.way && r.way !== 'bike' && r.way !== 'walk') return null
     if (!Array.isArray(r.chosen) || r.chosen.length !== r.pins.length - 1 || !r.chosen.every((c) => Number.isInteger(c) && c >= 0 && c < 5)) return null
-    if (!GOALS.includes(r.goal)) return null
+    if (!(GOALS as readonly string[]).includes(r.goal)) return null
     return r
   } catch { return null }
 }
@@ -214,7 +322,7 @@ function decode(s: unknown): Recipe | null {
 /** Build the route a recipe describes. The planner caches its answers, so
  *  the card shows exactly what design described. */
 async function build(ctx: Ctx, recipe: Recipe) {
-  const plan = await planLegs(ctx.token, recipe.pins)
+  const plan = await planLegs(ctx.token, recipe.pins, recipe.way === 'walk' ? 'walk' : 'bike')
   if (plan.legs.some((l) => !l.options.length)) throw new Error("The planner couldn't connect those places. Try without the stop.")
   const draft = routeFromPlan(plan, recipe.chosen, recipe.pins)
   return { draft, miles: routeMiles(draft.waypoints), minutes: plan.legs.reduce((a, l, i) => a + (l.options[recipe.chosen[i]]?.durationMinutes ?? 0), 0) }
@@ -241,7 +349,11 @@ export async function runRidePlanTool(ctx: Ctx, name: string, input: Record<stri
   if (name === 'get_ride_plan') {
     const p = v.plan
     const shown = (p?.spots ?? []).filter((s) => s.on)
+    const trip = p?.route?.transit ?? null
+    const fmt = (iso: string) => new Date(iso).toLocaleString('en-US', { timeZone: 'America/New_York', weekday: 'long', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+    const pp = p as (typeof p & { proposed_at?: string | null; proposed_by?: string | null }) | null
     return ok({
+      way: p?.way ?? 'bike',
       you_are: v.role,
       learner: v.learner_name, guide: v.guide_name,
       learner_wants_to_try: v.learner_modes,
@@ -253,9 +365,11 @@ export async function runRidePlanTool(ctx: Ctx, name: string, input: Record<stri
       learner_rides: p?.skill ?? null,
       learner_wants_help_with: p?.worries ?? [],
       meeting_spot: p?.meet_label ?? null, end_spot: p?.end_label ?? null,
-      miles: p?.route?.distanceMiles ?? (p?.route?.waypoints?.length ? r1(routeMiles(p.route.waypoints)) : null),
-      ride_at: p?.ride_at ? new Date(p.ride_at).toLocaleString('en-US', { timeZone: 'America/New_York', weekday: 'long', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : null,
-      spots_in_order: shown.map((s) => ({ what: SPOT_WORDS[s.kind] ?? s.kind, streets: s.streets.join(' & ') || null, guide_note: s.note ?? null })),
+      miles: trip ? null : p?.route?.distanceMiles ?? (p?.route?.waypoints?.length ? r1(routeMiles(p.route.waypoints)) : null),
+      ...(trip ? { transit_trip: { lines: tripLines(trip), minutes: trip.minutes, changes: trip.changes, walking_minutes: trip.walkMinutes, fare_each: trip.fare } } : {}),
+      ride_at: p?.ride_at ? fmt(p.ride_at) : null,
+      ...(pp?.proposed_at ? { new_time_asked: { when: fmt(pp.proposed_at), by: pp.proposed_by, note: 'The other person says whether it works on the plan screen.' } } : {}),
+      spots_in_order: shown.map((s) => ({ what: spotPhrase(s, trip), guide_note: s.note ?? null })),
       after_the_ride: p?.status === 'ridden' ? { helped: p.helped, still_hard: p.unsure, riding_alone_on: p.solo_day } : null,
       meeting_spot_coords: p?.meet_lat != null ? { lat: p.meet_lat, lng: p.meet_lng } : null,
     })
@@ -264,7 +378,29 @@ export async function runRidePlanTool(ctx: Ctx, name: string, input: Record<stri
   if (name === 'design_ride_plan_route') {
     const places = placesOf(v)
     if (!places) return fail('The learner has not picked the meeting spot and end spot yet.')
+    const way: Way = v.plan?.way ?? 'bike'
+    if (way === 'transit') {
+      const goal: Goal = TRANSIT_GOALS.find((g) => g === input.goal) ?? 'fewest_changes'
+      const at = input.date && input.time ? easternIso(String(input.date), String(input.time)) : null
+      const trips = await transitTrips(ctx.token, places.meet, places.end, at ?? nextWeekdayEight())
+      const trip = pickTrip(trips, goal)
+      if (!trip) return ok({ planned: false, note: "The trip finder couldn't find a bus or train trip between these spots right now." })
+      const spots = transitSpots(trip)
+      const first = trip.legs.find((l) => l.kind === 'transit')
+      return ok({
+        planned: true, way, goal,
+        from: places.meet.label, to: places.end.label,
+        lines: tripLines(trip),
+        minutes: trip.minutes, changes: trip.changes, walking_minutes: trip.walkMinutes, fare_each: trip.fare,
+        ...(first?.departAt ? { departs: new Date(first.departAt).toLocaleTimeString('en-US', { timeZone: 'America/New_York', hour: 'numeric', minute: '2-digit' }) + (at ? '' : ' (on a weekday morning; times change with the day picked)') } : {}),
+        other_ways: trips.filter((t) => lineKey(t) !== lineKey(trip)).map((t) => ({ lines: tripLines(t), minutes: t.minutes, changes: t.changes })),
+        stops_to_show: spots.map((s) => spotPhrase(s, trip)),
+        recipe: encode({ pins: [places.meet, places.end], chosen: [], goal, way: 'transit', key: lineKey(trip) }),
+        can_save: v.role === 'guide' && v.plan?.status === 'learner_shared',
+      })
+    }
     const goal: Goal = GOALS.find((g) => g === input.goal) ?? 'calmest'
+    const mode = way === 'walk' ? 'walk' : 'bike'
     const through = (Array.isArray(input.through) ? input.through : []).filter((x): x is string => typeof x === 'string' && x.trim().length > 1).slice(0, 3)
     const vias: (LatLng & { label?: string })[] = []
     const missed: string[] = []
@@ -275,28 +411,35 @@ export async function runRidePlanTool(ctx: Ctx, name: string, input: Record<stri
       else missed.push(q)
     }
     const pins = [{ ...places.meet }, ...vias, { ...places.end }]
-    const plan = await planLegs(ctx.token, pins)
+    const plan = await planLegs(ctx.token, pins, mode)
     if (plan.legs.some((l) => !l.options.length)) return ok({ planned: false, note: "The planner couldn't connect those places. Try without the stop, or another one." })
     const chosen = plan.legs.map((l) => pick(l.options, goal))
     const draft = routeFromPlan(plan, chosen, pins)
-    const { spots, complete } = await spotsFor(ctx, draft, places.end, v.plan?.worries ?? [])
+    const { spots, complete } = await spotsFor(ctx, draft, places.end, v.plan?.worries ?? [], way)
     const segs = draft.comfortSegments ?? []
     const shown = spots.filter((s) => s.on)
     return ok({
       planned: true,
+      way,
       goal,
       from: places.meet.label, to: places.end.label,
       through: vias.map((x) => x.label),
       ...(missed.length ? { not_found: missed } : {}),
       miles: r1(routeMiles(draft.waypoints)),
-      riding_minutes: plan.legs.reduce((a, l, i) => a + (l.options[chosen[i]]?.durationMinutes ?? 0), 0),
-      calm_pct: Math.round(comfortableShare(segs as CalmSegment[]) * 100),
-      by_comfort: comfortBreakdown(segs).map((c) => `${c.pct}% ${c.rating.replace('_', ' ')}`),
+      [way === 'walk' ? 'walking_minutes' : 'riding_minutes']: plan.legs.reduce((a, l, i) => a + (l.options[chosen[i]]?.durationMinutes ?? 0), 0),
+      // The comfort scale is the bike's (protected lanes, bike lanes): on foot it would mislead.
+      ...(way === 'bike' ? {
+        calm_pct: Math.round(comfortableShare(segs as CalmSegment[]) * 100),
+        by_comfort: comfortBreakdown(segs).map((c) => `${c.pct}% ${c.rating.replace('_', ' ')}`),
+      } : {}),
       climbing_ft: draft.elevation ? Math.round(draft.elevation.ascent_ft) : null,
-      left_turns: spots.filter((s) => s.kind === 'left_turn').length,
-      spots_shown: shown.map((s) => `${SPOT_WORDS[s.kind] ?? s.kind}${s.streets.length ? ` at ${s.streets.join(' & ')}` : ''}`),
+      ...(way === 'bike' ? { left_turns: spots.filter((s) => s.kind === 'left_turn').length } : {
+        crossings: spots.filter((s) => s.kind === 'walk_signal' || s.kind === 'crossing_open' || s.kind === 'crossing').length,
+        crossings_without_a_light: spots.filter((s) => s.kind === 'crossing_open').length,
+      }),
+      spots_shown: shown.map((s) => spotPhrase(s)),
       ...(complete ? {} : { spots_note: 'The map data was busy, so some spots may be missing.' }),
-      recipe: encode({ pins, chosen, goal }),
+      recipe: encode({ pins, chosen, goal, way }),
       can_save: v.role === 'guide' && v.plan?.status === 'learner_shared',
     })
   }
@@ -320,10 +463,33 @@ export async function ridePlanCard(ctx: Ctx, name: string, input: Record<string,
   const rideAt = easternIso(String(input.date ?? ''), String(input.time ?? ''))
   if (!rideAt || new Date(rideAt).getTime() < Date.now() + 30 * 60_000) return { result: fail('Pick a day and time that are still ahead.') }
   const places = placesOf(v)!
+  const way: Way = v.plan.way ?? 'bike'
+  if ((recipe.way ?? 'bike') !== way) return { result: fail('Design the route again: the plan is for another way now.') }
+  const when = new Date(rideAt).toLocaleString('en-US', { timeZone: 'America/New_York', weekday: 'long', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+  if (way === 'transit') {
+    // The same lines at the time picked, for the real departure; else the trip as designed.
+    const trips = await transitTrips(ctx.token, places.meet, places.end, rideAt)
+    const trip = trips.find((t) => lineKey(t) === recipe.key) ?? pickTrip(trips, recipe.goal)
+    if (!trip) return { result: fail("The trip finder couldn't find that trip at that time. Try another time.") }
+    const spots = transitSpots(trip)
+    return {
+      card: {
+        title: `Send ${v.learner_name} the plan`,
+        lines: [
+          `${when}`,
+          `${places.meet.label} to ${places.end.label}, about ${trip.minutes} min`,
+          ...tripLines(trip).slice(0, 2),
+          `${v.learner_name} gets a notice and says whether the time works.`,
+        ],
+        cta: `Send to ${v.learner_name}`,
+        tone: 'primary',
+      },
+      input: { match_id: input.match_id, ride_at: rideAt, route: transitRoute(trip, places.meet, places.end), spots },
+    }
+  }
   let built
   try { built = await build(ctx, recipe) } catch (e) { return { result: fail(e instanceof Error ? e.message : String(e)) } }
-  const { spots } = await spotsFor(ctx, built.draft, places.end, v.plan.worries ?? [])
-  const when = new Date(rideAt).toLocaleString('en-US', { timeZone: 'America/New_York', weekday: 'long', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+  const { spots } = await spotsFor(ctx, built.draft, places.end, v.plan.worries ?? [], way)
   const shown = spots.filter((s) => s.on)
   return {
     card: {
