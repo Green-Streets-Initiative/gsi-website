@@ -646,7 +646,7 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
   }
 }
 
-async function findPlace(query: string): Promise<Record<string, unknown>> {
+export async function findPlace(query: string): Promise<Record<string, unknown>> {
   const key = process.env.GOOGLE_PLACES_API_KEY || process.env.GOOGLE_ROUTES_API_KEY
   if (!query.trim() || !key) return { places: [] }
   const res = await fetch('https://places.googleapis.com/v1/places:searchText', {
@@ -672,7 +672,7 @@ async function findPlace(query: string): Promise<Record<string, unknown>> {
 }
 
 /** NWS hourly forecast around a date's start, at its meeting point. */
-async function forecast(lat: number | null, lng: number | null, date: string, start: string): Promise<Record<string, unknown>> {
+export async function forecast(lat: number | null, lng: number | null, date: string, start: string): Promise<Record<string, unknown>> {
   if (lat == null || lng == null) return { available: false, note: 'This date has no meeting point.' }
   const days = (new Date(`${date}T12:00:00Z`).getTime() - new Date(`${todayKey()}T12:00:00Z`).getTime()) / 864e5
   if (days < 0) return { available: false, note: 'That date has passed.' }
