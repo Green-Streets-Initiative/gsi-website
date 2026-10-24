@@ -357,7 +357,19 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
 
             {/* Action row (desktop; phones get the bottom bar) */}
             <div className="mb-8 hidden flex-wrap gap-2 lg:flex">
-              {(event.location_lat && event.location_lng) && !deadline && (
+              {/* A ride planned in Shift: answering Going is the point of the page. */}
+              {rideCode && !isPast && (
+                <Link
+                  href={`/rides/${rideCode}?date=${event.event_date}`}
+                  className="inline-flex items-center gap-2 rounded-[10px] bg-blue px-5 py-2.5 text-[13px] font-bold text-white transition-opacity hover:opacity-85"
+                  onClick={() => posthog.capture('ride_page_open', { from: 'event_detail', surface: 'actions' })}
+                >
+                  <Users size={15} />
+                  RSVP
+                </Link>
+              )}
+              {/* Directions stay under the map for a Shift ride, so RSVP leads here. */}
+              {(event.location_lat && event.location_lng) && !deadline && !(rideCode && !isPast) && (
                 <a
                   href={directionsUrl(event)}
                   target="_blank"
@@ -539,7 +551,7 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
               {rideCode && !isPast && (
                 <Link
                   href={`/rides/${rideCode}?date=${event.event_date}`}
-                  className="inline-flex items-center gap-2 rounded-[10px] bg-blue px-5 py-2.5 text-[13px] font-bold text-white transition-opacity hover:opacity-85"
+                  className="inline-flex items-center gap-2 rounded-[10px] bg-blue px-5 py-2.5 text-[13px] font-bold text-white transition-opacity hover:opacity-85 lg:hidden"
                   onClick={() => posthog.capture('ride_page_open', { from: 'event_detail', surface: 'details' })}
                 >
                   <Users size={15} />
@@ -597,7 +609,18 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
             )}
 
             <div className="mt-8 border-t border-(--ev-line) pt-5">
-              <FixListingLink event={{ id: event.id, title: event.title }} />
+              {/* A ride planned in Shift is the organizer's own listing, not one built from public posts. */}
+              {event.ride_series_id && !event.source_id ? (
+                <p className="text-[14px] text-(--ev-ink-80)">
+                  Your ride?{' '}
+                  <Link href={`/organizers/rides/${event.ride_series_id}`} className="font-semibold text-(--ev-accent) hover:underline">
+                    Change it in organizer tools
+                  </Link>
+                  .
+                </p>
+              ) : (
+                <FixListingLink event={{ id: event.id, title: event.title }} />
+              )}
             </div>
           </div>
         </div>

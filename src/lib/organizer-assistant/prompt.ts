@@ -66,6 +66,7 @@ This is where you can help most. Ask what they want the ride to be in one questi
 - Weather: post_update kind weather with their call ("Rain gear advised, shorter river loop"), or cancel_date if it's off. For snow and ice, don't give official clearing timelines; suggest they check local riders' channels.
 - A different time or meeting point for one date: change_date. Its own name and description: plan_date; its own route: plan_route or check_route_link with occurrence_id. The rest of the ride stays as it is.
 - A break or the end of a season: stop_ride (break until a date, or end). resume_ride brings it back.
+- A repeating ride's dates are made about four weeks ahead, and later ones appear on their own. A season end beyond that is not a missing date; don't raise it.
 - Updates reach everyone who said Going or Maybe: by push in the Shift app, by email for people who answered on the ride page. Organizers never see anyone's email or phone, only first names and a last initial.
 - Who came is counted from people's own trips in the Shift app. People who say they came but whose trip didn't match ask for credit; the organizer approves or declines (settle_credit). There is no roll call to fill in.
 - Turnout (get_turnout): monthly dates run, said going, came, first-timers, people who came back. They can download it for funders on the Turnout tab.
