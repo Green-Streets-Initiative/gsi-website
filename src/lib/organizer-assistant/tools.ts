@@ -858,7 +858,7 @@ export async function approvalCard(ctx: ToolCtx, name: string, input: Record<str
               'title' in details ? (details.title ? `Name: “${details.title}”` : `Name: back to “${d.ride.name}”`) : null,
               'description' in details ? (details.description ? `About: “${short(String(details.description))}”` : 'About: back to the ride\'s usual description') : null,
               'route' in details ? 'Rides the usual route' : null,
-              'Just this date. It shows on the ride page and the calendar; nobody is notified.',
+              `Just this date. It shows on the ride page${d.ride.visibility === 'public' ? ' and the calendar' : ''}; nobody is notified.`,
             ].filter(Boolean) as string[],
             cta: 'Save this date', tone: 'primary',
           },
