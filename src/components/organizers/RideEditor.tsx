@@ -558,7 +558,7 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
             <Field label="Visibility">
               <div className="grid gap-2 sm:grid-cols-2">
                 {([
-                  ['public', 'Public', 'On the Green Streets events calendar and in the app, after a quick review. Straight away when your organization is verified.'],
+                  ['public', 'Public', 'On the Green Streets events calendar and in the app, straight away.'],
                   ['invite', 'Invite only', 'Only people with your ride link or code can find it.'],
                 ] as const).map(([v, label, hint]) => (
                   <button key={v} type="button" aria-pressed={f.visibility === v} onClick={() => set('visibility', v)}

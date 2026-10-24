@@ -21,7 +21,7 @@ export function rideStateBadges(r: Pick<DashboardRide, 'status' | 'visibility' |
       ? { tone: 'good', text: 'On the calendar' }
       : r.calendar_status === 'rejected'
         ? { tone: 'off', text: 'Not on the calendar' }
-        : { tone: 'info', text: 'Calendar review pending' })
+        : { tone: 'info', text: 'Off the calendar' })
   }
   if (r.my_role === 'leader') out.push({ tone: 'plain', text: 'Co-organizer' })
   if (r.my_role === 'admin') out.push({ tone: 'plain', text: 'GSI admin view' })

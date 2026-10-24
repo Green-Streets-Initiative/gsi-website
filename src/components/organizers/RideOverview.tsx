@@ -103,9 +103,7 @@ export default function RideOverview() {
   const r = detail.ride
   const today = todayKey()
   const [msg, setMsg] = useState<{ tone: 'good' | 'off'; text: string } | null>(
-    params.get('saved') === 'held'
-      ? { tone: 'good', text: 'Saved. Part of that route has a crash history, so GSI reviews it before the ride is back on the public calendar.' }
-      : params.get('saved') === 'date' ? { tone: 'good', text: 'Saved. The ride page shows that date\u2019s plan.' }
+    params.get('saved') === 'date' ? { tone: 'good', text: 'Saved. The ride page shows that date\u2019s plan.' }
       : params.get('saved') ? { tone: 'good', text: 'Saved. The ride page and the app show your changes.' } : null,
   )
   const [cancelling, setCancelling] = useState<DetailDate | null>(null)
@@ -176,9 +174,6 @@ export default function RideOverview() {
   return (
     <div className="grid grid-cols-[minmax(0,1fr)] gap-5">
       {msg && <Toast tone={msg.tone} onClose={closeMsg}>{msg.text}</Toast>}
-      {r.route_risk === 'high' && r.visibility === 'public' && r.calendar_status === 'pending' && (
-        <Notice tone="warn">Part of this route has a crash history, so GSI reviews it before it goes on the public calendar. Your ride page works now.</Notice>
-      )}
 
       {(params.get('created') || detail.updates.length === 0) && !ended && <ShareCard code={r.invite_code} fresh={!!params.get('created')} rideId={r.id} />}
 

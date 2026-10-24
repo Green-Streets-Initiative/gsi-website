@@ -169,7 +169,7 @@ export default function DateEditor({ ride, date, dates, onSaved }: {
       try { localStorage.removeItem(draftKey) } catch { /* ignore */ }
       setDirty(false)
       await onSaved?.().catch(() => {})
-      router.push(`${back}?saved=${res.calendar_held ? 'held' : 'date'}`)
+      router.push(`${back}?saved=date`)
     } catch (e) {
       setErr(errorText(e, "We couldn't save this date. Your changes are kept here; try again."))
       setSaving(false)

@@ -733,7 +733,7 @@ export async function approvalCard(ctx: ToolCtx, name: string, input: Record<str
           scheduleLine(p),
           `Meet at ${p.meetup_name}${p.meetup_address ? `, ${p.meetup_address}` : ''}`,
           paceLine(p),
-          p.visibility === 'invite' ? 'Invite only: people with the ride link or code can find it' : 'Public: on the Green Streets events calendar after a quick review',
+          p.visibility === 'invite' ? 'Invite only: people with the ride link or code can find it' : 'Public: on the Green Streets events calendar straight away',
           p.description ? `“${String(p.description).slice(0, 160)}${String(p.description).length > 160 ? '…' : ''}”` : null,
         ].filter(Boolean) as string[]
         return { card: { title: `Create “${String(p.name).trim()}”?`, lines, mapUrl: mapsUrl(p.meetup_lat, p.meetup_lng), cta: 'Create the ride', tone: 'primary' }, input: { payload: p } }
@@ -754,7 +754,7 @@ export async function approvalCard(ctx: ToolCtx, name: string, input: Record<str
         if ('end_time' in change) lines.push(after.end_time ? `Back by ${clock(String(after.end_time))}` : 'No end time')
         if ('meetup_lat' in change) lines.push(`Meet at ${after.meetup_name}${after.meetup_address ? `, ${after.meetup_address}` : ''}`)
         if ('pace' in change || 'no_drop' in change) lines.push(paceLine(after) ?? 'Pace not stated')
-        if ('visibility' in change) lines.push(after.visibility === 'invite' ? 'Invite only' : 'Public, on the events calendar after a quick review')
+        if ('visibility' in change) lines.push(after.visibility === 'invite' ? 'Invite only' : 'Public, on the events calendar')
         if ('description' in change) lines.push(after.description ? `Description: “${String(after.description).slice(0, 160)}”` : 'No description')
         if ('tags' in change) lines.push(`Tags: ${((after.tags as string[]) ?? []).map((t) => TAG_OPTIONS.find((o) => o.key === t)?.label ?? t).join(', ') || 'none'}`)
         if ('registration_url' in change) lines.push(after.registration_url ? `Registration link: ${after.registration_url}` : 'No registration link')

@@ -315,7 +315,7 @@ export interface ScoredRoute {
 /**
  * The planner's score for a line the organizer already has (an import): the
  * same comfort and crash-history checks a drawn route gets, so a risky route
- * goes to review whichever way it came in.
+ * gets the same warning whichever way it came in.
  */
 export const scoreRoute = (polyline: { lat: number; lng: number }[], pace: string | null) =>
   shiftFunction<ScoredRoute>('plan-ride-route', { pins: polyline.slice(0, 2), polyline, mode: 'bike', pace: pace ?? undefined }, 90_000)

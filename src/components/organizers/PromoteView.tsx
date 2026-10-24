@@ -357,7 +357,7 @@ export default function PromoteView() {
               <p className="text-[14px] text-(--ev-ink-75)">
                 {r.visibility !== 'public' ? 'Invite-only rides stay off the calendar.'
                   : listed ? 'Listed for you, and updated when the ride changes.'
-                  : r.calendar_status === 'pending' ? 'Listed for you once we check it, usually within a day.'
+                  : r.calendar_status === 'pending' ? 'Off the calendar for now.'
                   : "Not listed. Write to keith@gogreenstreets.org if that's a mistake."}
               </p>
             </div>
