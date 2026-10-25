@@ -408,7 +408,8 @@ export async function POST(request: Request) {
         }
 
         const client = new Anthropic()
-        const today = new Date().toLocaleDateString('en-US', { timeZone: 'America/New_York', weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
+        // With the time, so "today at 11 AM" can be seen to be over at 4 PM.
+        const today = new Date().toLocaleString('en-US', { timeZone: 'America/New_York', weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })
         const tools = TOOLS.map((t, i) => (i === TOOLS.length - 1 ? { ...t, cache_control: { type: 'ephemeral' as const } } : t))
         for (let step = 0; step < MAX_STEPS; step++) {
           const history = await loadMessages(admin, threadId)

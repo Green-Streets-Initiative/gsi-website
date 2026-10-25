@@ -104,7 +104,7 @@ export const TOOLS: Anthropic.Tool[] = [
   },
   {
     name: 'compare_ways',
-    description: 'The Commute Advisor for a regular trip between two places: each way (walk, bike, e-bike, transit, drive, and two-part trips like bike to the train or park and ride) with door-to-door minutes, monthly cost, when to leave, and which way it recommends; plus the transit route, nearby Bluebikes, and how calm the bike route is. Use for a commute or any trip they make often.',
+    description: 'The Commute Advisor for a regular trip between two places: each way (walk, bike, transit, drive, and two-part trips like bike to the train or park and ride) with door-to-door minutes, monthly cost, when to leave, and which way it recommends; plus the transit route, nearby Bluebikes, and how calm the bike route is. Use for a commute or any trip they make often.',
     input_schema: {
       type: 'object',
       properties: {
@@ -338,7 +338,11 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
           .order('event_date', { ascending: true }).limit(300)
         if (error) throw new Error(error.message)
         type Row = { content_id: string; event_date: string; event_time: string | null; location_name: string | null; location_lat: number | null; location_lng: number | null; event_type: string | null; organizer_name: string | null; pace: string | null; no_drop: boolean | null; content_items: { title: string; summary: string | null; primary_mode: string | null } }
+        // Today's rides that already started are over for this person: a ride
+        // at 11 AM offered at 4 PM sent them to an empty meeting spot.
+        const nowHm = new Date().toLocaleTimeString('en-GB', { timeZone: 'America/New_York', hour: '2-digit', minute: '2-digit' })
         const found = ((data ?? []) as unknown as Row[]).flatMap((r) => {
+          if (r.event_date === today && r.event_time && r.event_time.slice(0, 5) < nowHm) return []
           if (r.location_lat == null || r.location_lng == null) return []
           const d = haversineMiles(near.lat, near.lng, Number(r.location_lat), Number(r.location_lng))
           if (!Number.isFinite(d) || d > miles) return []
