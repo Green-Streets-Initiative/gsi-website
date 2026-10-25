@@ -646,7 +646,9 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
   }
 }
 
-export async function findPlace(query: string): Promise<Record<string, unknown>> {
+/** `near` ranks places close to someone first (the Shift assistant passes the
+ *  phone's location when the app shares it); otherwise Greater Boston. */
+export async function findPlace(query: string, near?: { lat: number; lng: number } | null): Promise<Record<string, unknown>> {
   const key = process.env.GOOGLE_PLACES_API_KEY || process.env.GOOGLE_ROUTES_API_KEY
   if (!query.trim() || !key) return { places: [] }
   const res = await fetch('https://places.googleapis.com/v1/places:searchText', {
@@ -659,7 +661,7 @@ export async function findPlace(query: string): Promise<Record<string, unknown>>
     body: JSON.stringify({
       textQuery: query.slice(0, 200),
       maxResultCount: 4,
-      locationBias: { circle: { center: { latitude: 42.3736, longitude: -71.1097 }, radius: 40000 } },
+      locationBias: { circle: { center: { latitude: near?.lat ?? 42.3736, longitude: near?.lng ?? -71.1097 }, radius: near ? 15000 : 40000 } },
     }),
     signal: AbortSignal.timeout(10_000),
   })

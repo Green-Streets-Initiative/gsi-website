@@ -7,13 +7,19 @@
 //
 // GET  ?thread_id=      the conversation so far (latest if no id); ?list=1 lists them
 // POST { thread_id?, message?, decision?: { tool_use_id, approve, confirm_text? }, new_thread?,
-//        carry_from?, rating?, screen?, match_id? }
+//        carry_from?, rating?, screen?, match_id?, here?: { lat, lng } }
 //      streams newline-delimited JSON events while the assistant works:
 //      {type:'thread', id} {type:'text', delta} {type:'tool', id, label}
 //      {type:'tool_done', id, ok, link?} {type:'choices', options}
 //      {type:'approval', tool_use_id, card} {type:'long'} {type:'error', message} {type:'done'}
 //      match_id: opened from a Shift Together ride plan; checked as the person.
+//      here: where the phone is, sent with each question when the person has
+//      allowed location (Keith 2026-10-25). Used for that answer: it reaches the
+//      model as context and as the start of a trip they ask about; the server
+//      keeps nothing of it beyond the trips in their own conversation.
 //      link is { screen, params?, label }: the app maps screen to its own route.
+//      trip (on tool_done and in the transcript) is a planned trip the app
+//      draws as a card: TripCard in lib/shift-assistant/tools.
 // DELETE ?thread_id= | ?all=1   forget your conversations
 //
 // Stored exactly as the model saw it (Shift 01440), private to the person.
@@ -24,7 +30,8 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { choicesFilter, splitChoices } from '@/lib/assistant/choices'
 import { SYSTEM_PROMPT, contextBlock, screenLabel } from '@/lib/shift-assistant/prompt'
-import { ACTIVITY, NEEDS_APPROVAL, TOOLS, approvalCard, runApproved, runTool, type ApprovalCard, type ToolCtx, type ToolResult } from '@/lib/shift-assistant/tools'
+import { ACTIVITY, NEEDS_APPROVAL, TOOLS, approvalCard, runApproved, runTool, type ApprovalCard, type ToolCtx, type ToolResult, type TripCard } from '@/lib/shift-assistant/tools'
+import { inServiceArea } from '@/lib/server/trip'
 
 export const runtime = 'nodejs'
 export const maxDuration = 300
@@ -125,7 +132,7 @@ type Item =
   | { kind: 'user'; text: string }
   | { kind: 'carried' }
   | { kind: 'assistant'; text: string; msgId?: number; rated?: 'up' | 'down' }
-  | { kind: 'tool'; id: string; label: string; ok?: boolean; link?: ToolResult['link']; card?: { title: string; decision: 'approved' | 'declined' } }
+  | { kind: 'tool'; id: string; label: string; ok?: boolean; link?: ToolResult['link']; trip?: TripCard; card?: { title: string; decision: 'approved' | 'declined' } }
   | { kind: 'choices'; options: string[] }
   | { kind: 'approval'; tool_use_id: string; card: ApprovalCard }
 
@@ -156,6 +163,7 @@ function transcript(messages: { id?: number; role: string; content: unknown }[],
         try { parsed = JSON.parse(String(b.content ?? '{}')) } catch { /* not ours */ }
         it.ok = !b.is_error
         if (parsed._link) it.link = parsed._link as ToolResult['link']
+        if (parsed._trip) it.trip = parsed._trip as TripCard
         if (parsed._card) it.card = parsed._card as { title: string; decision: 'approved' | 'declined' }
       }
     }
@@ -164,14 +172,14 @@ function transcript(messages: { id?: number; role: string; content: unknown }[],
   const lastUser = items.map((i) => i.kind).lastIndexOf('user')
   const cleaned = items.filter((i, idx) => i.kind !== 'choices' || idx > lastUser)
   for (const c of pending?.cards ?? []) if (!c.decided) cleaned.push({ kind: 'approval', tool_use_id: c.tool_use_id, card: c.card })
-  return cleaned.filter((i) => i.kind !== 'tool' || ((i.label || i.link || i.card) && !waiting.has(i.id)))
+  return cleaned.filter((i) => i.kind !== 'tool' || ((i.label || i.link || i.trip || i.card) && !waiting.has(i.id)))
 }
 
 function resultBlock(id: string, r: ToolResult, extra?: Record<string, unknown>): Anthropic.Beta.BetaToolResultBlockParam {
   return {
     type: 'tool_result',
     tool_use_id: id,
-    content: JSON.stringify({ ...r.content, ...(r.link ? { _link: r.link } : {}), ...(extra ?? {}) }),
+    content: JSON.stringify({ ...r.content, ...(r.link ? { _link: r.link } : {}), ...(r.trip ? { _trip: r.trip } : {}), ...(extra ?? {}) }),
     ...(r.isError ? { is_error: true } : {}),
   }
 }
@@ -230,6 +238,7 @@ export async function POST(request: Request) {
     rating?: { message_id: number; up: boolean; note?: string }
     screen?: string
     match_id?: string
+    here?: { lat?: unknown; lng?: unknown }
   } | null
   const auth = await authorize(request)
   if ('error' in auth) return auth.error
@@ -311,7 +320,12 @@ export async function POST(request: Request) {
 
   const { data: profile } = await admin.from('users').select('first_name').eq('id', user.id).maybeSingle()
   const firstName = (profile as { first_name?: string | null } | null)?.first_name?.trim() || null
-  const ctx: ToolCtx = { user: userClient, admin, token, userId: user.id, email: user.email ?? user.id }
+  const hereLat = Number(body?.here?.lat)
+  const hereLng = Number(body?.here?.lng)
+  const here = Number.isFinite(hereLat) && Number.isFinite(hereLng) && inServiceArea(hereLat, hereLng)
+    ? { lat: Math.round(hereLat * 1e5) / 1e5, lng: Math.round(hereLng * 1e5) / 1e5 }
+    : null
+  const ctx: ToolCtx = { user: userClient, admin, token, userId: user.id, email: user.email ?? user.id, here }
 
   const encoder = new TextEncoder()
   const stream = new ReadableStream({
@@ -329,11 +343,13 @@ export async function POST(request: Request) {
       }
       const setPending = async (p: Pending | null) => { await admin.from('member_assistant_threads').update({ pending: p }).eq('id', threadId) }
       // One button per screen in a turn: a save that links to the plan and an
-      // open_screen to the same plan would otherwise show two.
+      // open_screen to the same plan would otherwise show two. The map is one
+      // button whatever its params: a trip's card already opens it, and a
+      // bare open_screen beside it was a second "See it on the map".
       const shown = new Set<string>()
       const once = (r: ToolResult): ToolResult => {
         if (!r.link) return r
-        const key = JSON.stringify([r.link.screen, r.link.params ?? null])
+        const key = r.link.screen === 'around_you' ? 'around_you' : JSON.stringify([r.link.screen, r.link.params ?? null])
         if (shown.has(key)) return { ...r, link: undefined }
         shown.add(key)
         return r
@@ -362,7 +378,7 @@ export async function POST(request: Request) {
               if (body.decision.approve) {
                 emit({ type: 'tool', id: c.tool_use_id, label: ACTIVITY[c.name] ?? c.name })
                 r = once(await runApproved(ctx, c.name, c.input))
-                emit({ type: 'tool_done', id: c.tool_use_id, ok: !r.isError, link: r.link })
+                emit({ type: 'tool_done', id: c.tool_use_id, ok: !r.isError, link: r.link, trip: r.trip })
               } else {
                 r = { content: { declined: true, note: 'They chose not to do this. Ask what they would like instead.' } }
               }
@@ -404,7 +420,7 @@ export async function POST(request: Request) {
             output_config: { effort: 'medium' },
             system: [
               { type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } },
-              { type: 'text', text: contextBlock({ today, firstName, screen: planNote ?? screenLabel(body?.screen) }) },
+              { type: 'text', text: contextBlock({ today, firstName, screen: planNote ?? screenLabel(body?.screen), here }) },
             ],
             tools: tools as Anthropic.Beta.BetaToolUnion[],
             cache_control: { type: 'ephemeral' },
@@ -443,7 +459,7 @@ export async function POST(request: Request) {
             }
             if (ACTIVITY[u.name]) emit({ type: 'tool', id: u.id, label: ACTIVITY[u.name] })
             const r = once(await runTool(ctx, u.name, input))
-            emit({ type: 'tool_done', id: u.id, ok: !r.isError, link: r.link })
+            emit({ type: 'tool_done', id: u.id, ok: !r.isError, link: r.link, trip: r.trip })
             results[u.id] = resultBlock(u.id, r)
           }))
           if (cards.length) {

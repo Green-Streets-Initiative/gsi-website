@@ -4,6 +4,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { findPlace, forecast } from '@/lib/organizer-assistant/tools'
 import { getTrip, inServiceArea } from '@/lib/server/trip'
 import { haversineMiles } from '@/lib/nearby/share'
+import { decodePolyline, encodePolyline } from '@/lib/geo/polyline'
 import { eventModeOf } from '@/components/commute/event-card'
 import { excerptOf } from '@/lib/commute/try-it-event'
 import { todayKey } from '@/lib/organizers/ride-words'
@@ -25,6 +26,8 @@ export type ToolCtx = {
   token: string
   userId: string
   email: string
+  /** Where the phone is, when the app shared it for this question. */
+  here?: { lat: number; lng: number } | null
 }
 
 /** A button under the reply. The app maps `screen` to one of its own routes. */
@@ -34,6 +37,23 @@ export type ToolResult = {
   content: Record<string, unknown>
   isError?: boolean
   link?: ScreenLink
+  trip?: TripCard
+}
+
+/** A planned trip, drawn by the app as a card under the reply: a small map,
+ *  minutes and miles, the comfort strip and the Google Maps hand-off (Keith
+ *  2026-10-25: route planning needs visuals, not paragraphs). The line is
+ *  thinned to about 60 points: enough for a thumbnail and for Google's via
+ *  points, small enough to keep in the conversation the model reads. */
+export type TripCard = {
+  from: { name: string; lat: number; lng: number }
+  to: { name: string; lat: number; lng: number }
+  bike_minutes: number | null
+  bike_miles: number | null
+  /** Comfort in travel order, neighbouring stretches of the same kind merged. */
+  comfort: { rating: string; miles: number }[]
+  polyline: string | null
+  transit_minutes: number | null
 }
 
 const SCREENS = ['commute', 'commute_setup', 'around_you', 'rides', 'event', 'ride', 'rewards', 'log_trip', 'ride_plan'] as const
@@ -42,12 +62,20 @@ type Screen = (typeof SCREENS)[number]
 const FUNCTIONS = `${(process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').replace(/\/$/, '')}/functions/v1`
 
 const ok = (content: Record<string, unknown>, link?: ScreenLink): ToolResult => ({ content, link })
+
+function thinLine(encoded: string | null | undefined, max = 60): string | null {
+  if (!encoded) return null
+  const pts = decodePolyline(encoded)
+  if (pts.length <= max) return encoded
+  const step = (pts.length - 1) / (max - 1)
+  return encodePolyline(Array.from({ length: max }, (_, i) => pts[Math.round(i * step)]))
+}
 const fail = (error: string): ToolResult => ({ content: { error }, isError: true })
 const nullable = (t: string, description?: string) => ({ type: [t, 'null'], ...(description ? { description } : {}) })
 
 const placeSchema = {
   type: 'object',
-  description: 'A place from find_place or get_my_places: its name and coordinates.',
+  description: 'A place from find_place or get_my_places, or their location from the context ("Your location"): its name and coordinates.',
   properties: { name: { type: 'string' }, lat: { type: 'number' }, lng: { type: 'number' } },
   required: ['lat', 'lng'],
 } as const
@@ -238,21 +266,54 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
         if (!from || !to) return fail('Both places need coordinates. Look them up with find_place first.')
         if (!inServiceArea(from.lat, from.lng) || !inServiceArea(to.lat, to.lng)) return ok({ available: false, note: 'Trip checks cover Massachusetts and nearby. This trip is outside it.' })
         const r = await getTrip(from, to, to.name ?? '')
-        const tiers = (r.bike_comfort?.segments ?? []).reduce<Record<string, number>>((a, s) => ({ ...a, [s.rating]: round1((a[s.rating] ?? 0) + s.distance_mi) }), {})
-        return ok({
-          miles: round1(r.distance_miles),
-          transit: r.transit_minutes == null ? null : {
-            minutes: r.transit_minutes, walking_minutes: r.transit_walk_minutes, fare: r.transit_fare,
-            legs: r.steps.map((s) => ({ line: s.label, from: s.boardStop ?? null, to: s.alightStop ?? null, toward: s.headsign ?? null, stops: s.numStops ?? null })),
+        const segs = r.bike_comfort?.segments ?? []
+        const tiers = segs.reduce<Record<string, number>>((a, s) => ({ ...a, [s.rating]: round1((a[s.rating] ?? 0) + s.distance_mi) }), {})
+        const runs = segs.reduce<{ rating: string; miles: number }[]>((a, s) => {
+          const last = a[a.length - 1]
+          if (last && last.rating === s.rating) last.miles += s.distance_mi
+          else a.push({ rating: s.rating, miles: s.distance_mi })
+          return a
+        }, []).map((x) => ({ rating: x.rating, miles: Math.round(x.miles * 100) / 100 }))
+        const bikeMiles = segs.length ? round1(segs.reduce((a, s) => a + s.distance_mi, 0)) : null
+        const fromName = (from.name ?? '').trim() || 'Start'
+        const toName = (to.name ?? '').trim() || 'Destination'
+        const trip: TripCard = {
+          from: { name: fromName.slice(0, 80), lat: from.lat, lng: from.lng },
+          to: { name: toName.slice(0, 80), lat: to.lat, lng: to.lng },
+          bike_minutes: r.bike_minutes ?? null,
+          bike_miles: bikeMiles,
+          comfort: runs.slice(0, 24),
+          polyline: thinLine(r.bike_polyline),
+          transit_minutes: r.transit_minutes ?? null,
+        }
+        const coord = (n: number) => n.toFixed(5)
+        return {
+          content: {
+            card: 'A route card shows under your reply: a small map of the bike route, its minutes and miles, a strip of how calm each stretch is, and buttons to open it in Google Maps or see the full trip. Do not repeat its numbers or list its streets. Say in one or two sentences which way you would go and why, and anything worth knowing (a busy stretch, the transit time if they might not bike).',
+            miles: round1(r.distance_miles),
+            transit: r.transit_minutes == null ? null : {
+              minutes: r.transit_minutes, walking_minutes: r.transit_walk_minutes, fare: r.transit_fare,
+              legs: r.steps.map((s) => ({ line: s.label, from: s.boardStop ?? null, to: s.alightStop ?? null, toward: s.headsign ?? null, stops: s.numStops ?? null })),
+            },
+            bike: {
+              minutes: r.bike_minutes, miles: bikeMiles, estimate: r.bike_is_estimate,
+              miles_by_kind: tiers, kinds: 'path = its own path away from traffic, protected = a separated lane, bike_lane = a painted lane, shared_road = no bike lane',
+              named_paths: r.bike_steps.map((s) => s.label),
+              streets: (r.bike_comfort?.streets ?? []).slice(0, 8).map((s) => ({ street: s.label, kind: s.rating, miles: round1(s.distance_mi) })),
+              calmer_or_quicker_option: r.bike_alt ? { minutes: r.bike_alt.minutes, overall: r.bike_alt.comfort?.rating ?? null } : null,
+            },
           },
-          bike: {
-            minutes: r.bike_minutes, estimate: r.bike_is_estimate,
-            miles_by_kind: tiers, kinds: 'path = its own path away from traffic, protected = a separated lane, bike_lane = a painted lane, shared_road = no bike lane',
-            named_paths: r.bike_steps.map((s) => s.label),
-            streets: (r.bike_comfort?.streets ?? []).slice(0, 8).map((s) => ({ street: s.label, kind: s.rating, miles: round1(s.distance_mi) })),
-            calmer_or_quicker_option: r.bike_alt ? { minutes: r.bike_alt.minutes, overall: r.bike_alt.comfort?.rating ?? null } : null,
+          trip,
+          // For app versions without the card: the same trip on the map.
+          link: {
+            screen: 'around_you',
+            params: {
+              from_lat: coord(from.lat), from_lng: coord(from.lng), from_name: trip.from.name,
+              to_lat: coord(to.lat), to_lng: coord(to.lng), to_name: trip.to.name,
+            },
+            label: 'See the full trip',
           },
-        }, { screen: 'around_you', params: { lat: String(to.lat), lng: String(to.lng) }, label: 'See it on the map' })
+        }
       }
       case 'get_weather': {
         const p = asPlace(input.place)
@@ -262,7 +323,7 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
         return ok(await forecast(p.lat, p.lng, date, time))
       }
       case 'find_place':
-        return ok(await findPlace(String(input.query ?? '')))
+        return ok(await findPlace(String(input.query ?? ''), ctx.here))
       case 'find_rides_and_events': {
         const near = asPlace(input.near)
         if (!near) return fail('The place needs coordinates. Look it up with find_place first.')
