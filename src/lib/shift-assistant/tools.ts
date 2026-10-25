@@ -289,7 +289,7 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
         const coord = (n: number) => n.toFixed(5)
         return {
           content: {
-            card: 'A route card shows under your reply: a small map of the bike route, its minutes and miles, a strip of how calm each stretch is, and buttons to open it in Google Maps or see the full trip. Do not repeat its numbers or list its streets. Say in one or two sentences which way you would go and why, and anything worth knowing (a busy stretch, the transit time if they might not bike).',
+            card: 'A route card shows under your reply: a small map of the bike route, its minutes and miles, a strip of how calm each stretch is, and buttons to open it in Google Maps or see the full trip. Write at most two short sentences with no minutes, miles or percentages (the card shows them) and no street list: which way you would go and why, and anything worth knowing (a busy stretch, a train or bus that also works).',
             miles: round1(r.distance_miles),
             transit: r.transit_minutes == null ? null : {
               minutes: r.transit_minutes, walking_minutes: r.transit_walk_minutes, fare: r.transit_fare,
