@@ -7,6 +7,7 @@
 // says:   the person's messages, in order (one conversation)
 // checks: requireTools / forbidTools   tools the model called (or must not)
 //         requireTrip / forbidTrip     a route card was (or wasn't) drawn
+//         requireCard / forbidCard     an approval card was (or wasn't) shown (never tapped)
 //         mustMatch / mustNotMatch     regexes on the whole reply text
 // setup / teardown: async (w) => …    change the test account's own data
 // rubric: what the grader reads the conversation for.
@@ -35,6 +36,22 @@ export const SCENARIOS = [
     rubric: 'A correct walking time (a few minutes, it is close by). Must not give the transit or bike minutes as the walking time.' },
   { id: 'cargo', group: 'trips', says: ['Can I do a grocery run to Market Basket in Somerville by bike from home?'],
     rubric: 'Yes with a route card; mentions how to carry groceries, ideally a cargo bike option (CargoB) for a big shop.' },
+
+  // ── Doing things for them (Keith 2026-10-25: expand what it can do) ─────
+  { id: 'save-work', group: 'actions', says: ['Save Kendall Square as my work.'], checks: { requireTools: ['save_place'], requireCard: true },
+    rubric: 'Shows a card to save Work at Kendall Square for them to approve. Does not claim it is saved before they approve.' },
+  { id: 'move-home', group: 'actions', says: ['I moved. My new home is 100 Broadway, Somerville.'], checks: { forbidCard: true },
+    rubric: 'Welcomes the move briefly and sends them to commute setup to change Home (a button). Does not claim it changed their home.' },
+  { id: 'settings-off', group: 'actions', says: ['Stop sending me the weekly summary.'], checks: { requireTools: ['get_my_settings'], requireCard: true },
+    rubric: 'A card turning the weekly summary off, nothing else changed. Short.' },
+  { id: 'reward-status', group: 'actions', says: ["Where's my New Routes reward?"], checks: { requireTools: ['get_my_activity'] },
+    rubric: 'Looks at their record and says plainly what it found (this account has none). Never invents a status. Points them to info@gogreenstreets.org only as the fallback.' },
+  { id: 'wrong-trip', group: 'actions', says: ['My bike ride yesterday got saved as a drive.'], checks: { requireTools: ['get_my_activity'] },
+    rubric: 'Looks for the trip. If it finds it, names it and adds a button to that trip; if not (this account has no trips), says so and offers logging it by hand. Never claims it changed the trip.' },
+  { id: 'line-status', group: 'actions', says: ['Is the Red Line running normally this week?'], checks: { requireTools: ['get_service_alerts'] },
+    rubric: 'Says what the alerts show (or that none are planned) with days, and that everyday delays are not shown. Short.' },
+  { id: 'how-am-i-doing', group: 'actions', says: ['How am I doing this month?'], checks: { requireTools: ['get_my_activity'] },
+    rubric: 'Answers from their record in a couple of short sentences (this account has no trips: encourages a first one). Never says points buy rewards.' },
 
   // ── Feedback: ideas, gaps, complaints, praise ───────────────────────────
   { id: 'feature-request', group: 'feedback', says: ['Can you show me bike lanes that are being built near me? That would be really useful.'], checks: { requireTools: ['note_feedback'] },

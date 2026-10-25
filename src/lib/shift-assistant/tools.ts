@@ -29,6 +29,8 @@ export type ToolCtx = {
   email: string
   /** Where the phone is, when the app shared it for this question. */
   here?: { lat: number; lng: number } | null
+  /** Newer screens the person's app build can open; older builds send none. */
+  screens?: Set<string>
 }
 
 /** A button under the reply. The app maps `screen` to one of its own routes. */
@@ -57,7 +59,11 @@ export type TripCard = {
   transit_minutes: number | null
 }
 
-const SCREENS = ['commute', 'commute_setup', 'around_you', 'rides', 'event', 'ride', 'rewards', 'log_trip', 'ride_plan'] as const
+/** Screens added after the first release: offered only to builds that list them. */
+const NEWER_SCREENS = new Set(['trip', 'trip_history', 'my_rewards', 'notifications', 'vacation'])
+const canOpen = (ctx: ToolCtx, screen: string) => !NEWER_SCREENS.has(screen) || !!ctx.screens?.has(screen)
+
+const SCREENS = ['commute', 'commute_setup', 'around_you', 'rides', 'event', 'ride', 'rewards', 'log_trip', 'ride_plan', 'trip', 'trip_history', 'my_rewards', 'notifications', 'vacation'] as const
 type Screen = (typeof SCREENS)[number]
 
 const FUNCTIONS = `${(process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').replace(/\/$/, '')}/functions/v1`
@@ -90,11 +96,13 @@ export const ACTIVITY: Record<string, string> = {
   find_place: 'Looking up the place',
   find_rides_and_events: 'Looking for rides and events',
   get_service_alerts: 'Checking service alerts',
+  get_my_activity: 'Reading your trips and rewards',
+  get_my_settings: 'Reading your settings',
   ...RIDE_PLAN_ACTIVITY,
 }
 
 /** Tools that save something: the turn pauses on a card until the person approves. */
-export const NEEDS_APPROVAL = new Set([...RIDE_PLAN_NEEDS_APPROVAL])
+export const NEEDS_APPROVAL = new Set([...RIDE_PLAN_NEEDS_APPROVAL, 'save_place', 'change_settings'])
 
 export type ApprovalCard = RidePlanCard & { confirmText?: string }
 
@@ -165,15 +173,49 @@ export const TOOLS: Anthropic.Tool[] = [
       },
     },
   },
+  {
+    name: 'get_my_activity',
+    description: "The person's own Shift record: their recent trips (when, how, how far, and Home or Work when a trip starts or ends there), trip counts by way of travel for the last 7 and 30 days, their points and badges, the rewards they've won and where each one is (waiting for them to pick a shop, being sent, delivered, expired), and any campaign they're in (New Routes, Shift Your Semester). Use for \"how am I doing\", \"where's my reward\", or a trip that was recorded wrong.",
+    input_schema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'save_place',
+    description: "Save one of the person's places (Work, School, Gym, a friend's, any name they give) so trips and the commute can use it. Saving a name they already have moves that place. Not for Home: a new home changes their town and neighborhood groups, so send them to commute_setup for that. The person approves on a card first.",
+    input_schema: {
+      type: 'object',
+      properties: {
+        label: { type: 'string', description: 'The name, as they say it: "Work", "School", "Mom\'s".' },
+        place: placeSchema,
+        address: nullable('string', 'The street address from find_place, when there is one.'),
+      },
+      required: ['label', 'place'],
+    },
+  },
+  {
+    name: 'get_my_settings',
+    description: "The person's notification settings (which kinds of phone notices are on) and their email lists.",
+    input_schema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'change_settings',
+    description: "Turn phone notices or email lists on or off for the person, using the keys and ids from get_my_settings. The person approves on a card first.",
+    input_schema: {
+      type: 'object',
+      properties: {
+        notifications: nullable('object', 'Notification keys to set, e.g. {"weekly_summary": false}.'),
+        emails: nullable('array', 'Email lists to set: [{"id": "...", "on": false}].'),
+      },
+    },
+  },
   ...RIDE_PLAN_TOOLS,
   {
     name: 'open_screen',
-    description: "A button to a screen of the Shift app, for things done there: commute (their saved commute), commute_setup (set home and work), around_you (the map of what's near them), rides (group rides and events), event or ride (one of them, by id), rewards (rewards they've won), log_trip (log a trip by hand), ride_plan (a Shift Together first ride plan, by its match_id).",
+    description: "A button to a screen of the Shift app, for things done there: commute (their saved commute), commute_setup (set home and work), around_you (the map of what's near them), rides (group rides and events), event or ride (one of them, by id), rewards (rewards they've won), log_trip (log a trip by hand), ride_plan (a Shift Together first ride plan, by its match_id), trip (one recorded trip, by its id from get_my_activity, where they can change how they traveled), trip_history (all their trips), my_rewards (rewards they've won), notifications (notification settings), vacation (pause tracking while away).",
     input_schema: {
       type: 'object',
       properties: {
         screen: { type: 'string', enum: [...SCREENS] },
-        id: nullable('string', 'For event (an id from find_rides_and_events), ride, or ride_plan (the match_id).'),
+        id: nullable('string', 'For event (an id from find_rides_and_events), ride, ride_plan (the match_id), or trip (an id from get_my_activity).'),
         label: { type: 'string', description: 'The button text, a few words with a verb ("See your commute").' },
       },
       required: ['screen', 'label'],
@@ -205,6 +247,36 @@ function asPlace(v: unknown): Place | null {
 const round1 = (n: number) => Math.round(n * 10) / 10
 
 const SUBWAY = ['Red', 'Orange', 'Blue', 'Mattapan', 'Green-B', 'Green-C', 'Green-D', 'Green-E']
+
+/** Phone notices, by the names the Notifications screen shows. */
+const NOTICES: Record<string, string> = {
+  streak_reminders: 'Streak reminders',
+  competition_updates: 'Competition updates',
+  weekly_summary: 'Weekly summary',
+  community_milestones: 'Community milestones',
+  community_events: 'Community events near you',
+  ride_updates: 'Group rides',
+  weather_nudges: 'Weather nudges',
+  did_you_know: 'Tips & insights',
+  campaign_emails: 'Shift updates (email)',
+}
+
+const MODE_WORDS: Record<string, string> = {
+  walk: 'walk', bike: 'bike', transit_bus: 'bus', transit_train: 'train', transit_commuter_rail: 'Commuter Rail',
+  carpool: 'carpool', escooter: 'e-scooter', ferry: 'ferry', drive: 'drive', other: 'other',
+}
+
+const bostonWhen = (iso: string) => new Date(iso).toLocaleString('en-US', {
+  timeZone: 'America/New_York', weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit',
+})
+
+/** A saved place's name when a point is within about 250 m of it. Trips
+ *  carry exact points; the model only ever sees "Home" or "Work". */
+function nearPlace(places: { label: string; lat: number; lng: number }[], lat: number | null, lng: number | null): string | null {
+  if (lat == null || lng == null) return null
+  const hit = places.find((p) => haversineMiles(p.lat, p.lng, lat, lng) < 0.16)
+  return hit?.label ?? null
+}
 
 /** Service changes in the words the model needs: which lines, what, when. */
 function alertFacts(ds: Disruption[]) {
@@ -407,14 +479,77 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
       case 'open_screen': {
         const screen = SCREENS.find((s) => s === input.screen)
         if (!screen) return fail('Unknown screen.')
+        if (!canOpen(ctx, screen)) return ok({ shown: false, note: "Their version of the app can't open that screen from here yet. Tell them where it is in a few words instead (a trip: Recent trips on the Home tab, then tap the trip; rewards they've won: the Rewards tab; notifications or vacation: Profile)." })
         const id = typeof input.id === 'string' && /^[A-Za-z0-9_-]{1,100}$/.test(input.id) ? input.id : null
-        if ((screen === 'event' || screen === 'ride' || screen === 'ride_plan') && !id) return fail(`A ${screen} button needs its id.`)
+        if ((screen === 'event' || screen === 'ride' || screen === 'ride_plan' || screen === 'trip') && !id) return fail(`A ${screen} button needs its id.`)
         const params: Record<string, string> | null = id ? (screen === 'ride_plan' ? { match: id } : { id }) : null
         return ok({ shown: true, next: 'The button shows under your reply. Now write the reply itself: what you found, in words (for events: name, day and time, where, how far). Do not mention the button.' }, { screen, ...(params ? { params } : {}), label: String(input.label || 'Open').slice(0, 40) })
       }
       case 'get_ride_plan':
       case 'design_ride_plan_route':
         return await runRidePlanTool(ctx, name, input)
+      case 'get_my_activity': {
+        const since30 = new Date(Date.now() - 30 * 864e5).toISOString()
+        const [tripsQ, placesQ, userQ, badgesQ, rewardsQ, awardsQ, nr, sem] = await Promise.all([
+          ctx.user.from('trips').select('id, mode, distance_miles, duration_minutes, started_at, start_lat, start_lng, end_lat, end_lng, detection_method, needs_mode_confirmation')
+            .eq('user_id', ctx.userId).gte('started_at', since30).order('started_at', { ascending: false }).limit(200),
+          ctx.user.from('saved_locations').select('label, lat, lng').eq('user_id', ctx.userId).limit(20),
+          ctx.user.from('users').select('xp_balance').eq('id', ctx.userId).single(),
+          ctx.user.rpc('get_progress_badges', { p_user_id: ctx.userId }),
+          ctx.user.rpc('get_my_catalog_rewards'),
+          ctx.user.rpc('get_my_awards'),
+          ctx.user.rpc('get_campaign_status', { p_campaign: 'NEWROUTES' }),
+          ctx.user.rpc('get_campaign_status', { p_campaign: 'SEMESTER' }),
+        ])
+        type T = { id: string; mode: string; distance_miles: number | null; duration_minutes: number | null; started_at: string; start_lat: number | null; start_lng: number | null; end_lat: number | null; end_lng: number | null; detection_method: string; needs_mode_confirmation: boolean }
+        const trips = (tripsQ.data ?? []) as T[]
+        const places = ((placesQ.data ?? []) as { label: string; lat: number | null; lng: number | null }[])
+          .filter((p): p is { label: string; lat: number; lng: number } => p.lat != null && p.lng != null)
+        const since7 = Date.now() - 7 * 864e5
+        const count = (xs: T[]) => xs.reduce<Record<string, number>>((a, t) => ({ ...a, [MODE_WORDS[t.mode] ?? t.mode]: (a[MODE_WORDS[t.mode] ?? t.mode] ?? 0) + 1 }), {})
+        const b = (badgesQ.data ?? {}) as { total_badges?: number; recent_badges?: { name?: string }[]; next_badge?: { name?: string; progress_current?: number; progress_target?: number } | null }
+        type R = { status: string; value_cents: number; source: string; title: string | null; brand_name: string | null; earned_at: string; expires_at: string; delivered_at: string | null; merchant: { name: string } | null }
+        const rewards = (((rewardsQ.data ?? []) as R[]) ?? []).slice(0, 10).map((r) => ({
+          what: r.title ?? r.brand_name ?? 'Reward', value: `$${(r.value_cents / 100).toFixed(0)}`, from: r.source,
+          status: r.status, status_means: ({ earned: 'won, waiting for them to pick a shop in My rewards', selected: 'shop picked, being prepared', fulfilling: 'being sent', delivered: 'delivered, in My rewards', failed: 'delivery failed; the team has been told', expired: 'expired before a shop was picked' } as Record<string, string>)[r.status] ?? r.status,
+          shop: r.merchant?.name ?? null, won: r.earned_at?.slice(0, 10), expires: r.expires_at?.slice(0, 10), delivered: r.delivered_at?.slice(0, 10) ?? null,
+        }))
+        const campaign = (c: unknown) => {
+          const v = (c ?? {}) as { flagged?: boolean; campaign_enabled?: boolean; status?: string; merchant_name?: string; expires_at?: string }
+          return v.flagged ? { status: v.status ?? null, shop: v.merchant_name ?? null, expires: v.expires_at?.slice(0, 10) ?? null } : null
+        }
+        const awards = ((awardsQ.data ?? {}) as { awards?: unknown[] }).awards ?? []
+        return ok({
+          trips_last_7_days: count(trips.filter((t) => new Date(t.started_at).getTime() >= since7)),
+          trips_last_30_days: count(trips),
+          recent_trips: trips.slice(0, 15).map((t) => ({
+            id: t.id, when: bostonWhen(t.started_at), how: MODE_WORDS[t.mode] ?? t.mode,
+            miles: t.distance_miles != null ? round1(t.distance_miles) : null, minutes: t.duration_minutes != null ? Math.round(t.duration_minutes) : null,
+            from: nearPlace(places, t.start_lat, t.start_lng), to: nearPlace(places, t.end_lat, t.end_lng),
+            logged: t.detection_method === 'manual' ? 'by hand' : 'automatically', unconfirmed: t.needs_mode_confirmation || undefined,
+          })),
+          points: (userQ.data as { xp_balance?: number } | null)?.xp_balance ?? 0,
+          points_note: 'Points show on leaderboards. They are not money and do not buy rewards.',
+          badges: { total: b.total_badges ?? 0, recent: (b.recent_badges ?? []).slice(0, 3).map((x) => x.name), next: b.next_badge?.name ? { name: b.next_badge.name, progress: `${b.next_badge.progress_current ?? 0} of ${b.next_badge.progress_target ?? '?'}` } : null },
+          rewards,
+          prizes_won: awards.length,
+          campaigns: { new_routes: campaign(nr.data), shift_your_semester: campaign(sem.data) },
+          fixing_a_trip: 'To change how a trip was recorded, offer open_screen trip with its id; they change it there (within 7 days of the trip).',
+        })
+      }
+      case 'get_my_settings': {
+        const [u, e] = await Promise.all([
+          ctx.user.from('users').select('notification_preferences').eq('id', ctx.userId).single(),
+          ctx.user.rpc('get_my_email_subscriptions'),
+        ])
+        const prefs = ((u.data as { notification_preferences?: Record<string, boolean> } | null)?.notification_preferences ?? {})
+        const em = (e.data ?? {}) as { all_off?: boolean; subscriptions?: { id: string; topic: string; names?: { en?: string }; on: boolean }[] }
+        return ok({
+          notifications: Object.entries(NOTICES).map(([key, name]) => ({ key, name, on: prefs[key] ?? true })),
+          email_lists: (em.subscriptions ?? []).map((x) => ({ id: x.id, name: x.names?.en ?? x.topic, on: x.on })),
+          ...(em.all_off ? { note: 'They turned off all Shift email.' } : {}),
+        }, canOpen(ctx, 'notifications') ? { screen: 'notifications', label: 'Open notification settings' } : undefined)
+      }
       case 'note_feedback': {
         await ctx.admin.from('admin_notifications').insert({
           level: 'info',
@@ -436,6 +571,39 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
 export async function approvalCard(ctx: ToolCtx, name: string, input: Record<string, unknown>):
   Promise<{ card: ApprovalCard; input: Record<string, unknown> } | { result: ToolResult }> {
   if (RIDE_PLAN_NEEDS_APPROVAL.has(name)) return ridePlanCard(ctx, name, input)
+  if (name === 'save_place') {
+    const label = String(input.label ?? '').trim().slice(0, 40)
+    const place = asPlace(input.place)
+    if (!label || !place) return { result: fail('A place needs a name and coordinates. Look it up with find_place first.') }
+    if (/^home$/i.test(label)) return { result: fail('Home is set in commute setup, because it also sets their town and neighborhood. Offer open_screen commute_setup.') }
+    const address = typeof input.address === 'string' && input.address.trim() ? input.address.trim().slice(0, 200) : null
+    const { data } = await ctx.user.from('saved_locations').select('id, label').eq('user_id', ctx.userId).ilike('label', label).limit(1)
+    const existing = (data ?? [])[0] as { id: string; label: string } | undefined
+    return {
+      card: { title: existing ? `Move "${existing.label}"` : `Save "${label}"`, lines: [address ?? place.name ?? 'This spot'], cta: 'Save', tone: 'primary' },
+      input: { label: existing?.label ?? label, id: existing?.id ?? null, address: address ?? place.name ?? null, lat: place.lat, lng: place.lng },
+    }
+  }
+  if (name === 'change_settings') {
+    const notices = Object.entries((input.notifications ?? {}) as Record<string, unknown>)
+      .filter(([k, v]) => k in NOTICES && typeof v === 'boolean') as [string, boolean][]
+    const { data: e } = await ctx.user.rpc('get_my_email_subscriptions')
+    const lists = ((e ?? {}) as { subscriptions?: { id: string; topic: string; names?: { en?: string }; on: boolean }[] }).subscriptions ?? []
+    const emails = (Array.isArray(input.emails) ? input.emails : []).flatMap((x) => {
+      const v = x as { id?: unknown; on?: unknown }
+      const l = lists.find((s) => s.id === v.id)
+      return l && typeof v.on === 'boolean' ? [{ id: l.id, name: l.names?.en ?? l.topic, on: v.on }] : []
+    })
+    if (!notices.length && !emails.length) return { result: fail('Nothing to change. Use the keys and ids from get_my_settings.') }
+    return {
+      card: {
+        title: 'Change your settings',
+        lines: [...notices.map(([k, on]) => `${NOTICES[k]}: ${on ? 'on' : 'off'}`), ...emails.map((m) => `${m.name} email: ${m.on ? 'on' : 'off'}`)],
+        cta: 'Save', tone: 'primary',
+      },
+      input: { notifications: Object.fromEntries(notices), emails: emails.map(({ id, on }) => ({ id, on })) },
+    }
+  }
   return { result: fail(`Unknown tool ${name}`) }
 }
 
@@ -443,6 +611,30 @@ export async function approvalCard(ctx: ToolCtx, name: string, input: Record<str
 export async function runApproved(ctx: ToolCtx, name: string, input: Record<string, unknown>): Promise<ToolResult> {
   try {
     if (RIDE_PLAN_NEEDS_APPROVAL.has(name)) return await runApprovedRidePlan(ctx, name, input)
+    if (name === 'save_place') {
+      // As the app saves it (lib/queries.ts upsertSavedLocation): the same
+      // row when the name exists, so a commute pointing at it follows.
+      const row = { label: String(input.label), address_text: input.address ?? null, lat: Number(input.lat), lng: Number(input.lng), updated_at: new Date().toISOString() }
+      const { error } = input.id
+        ? await ctx.user.from('saved_locations').update(row).eq('id', String(input.id)).eq('user_id', ctx.userId)
+        : await ctx.user.from('saved_locations').insert({ ...row, user_id: ctx.userId })
+      if (error) return fail("That didn't save. Try again in a moment.")
+      return ok({ saved: true, label: row.label, note: 'Saved. It shows in their places and in trip planning.' })
+    }
+    if (name === 'change_settings') {
+      const notices = (input.notifications ?? {}) as Record<string, boolean>
+      if (Object.keys(notices).length) {
+        const { data } = await ctx.user.from('users').select('notification_preferences').eq('id', ctx.userId).single()
+        const prefs = { ...((data as { notification_preferences?: Record<string, boolean> } | null)?.notification_preferences ?? {}), ...notices }
+        const { error } = await ctx.user.from('users').update({ notification_preferences: prefs }).eq('id', ctx.userId)
+        if (error) return fail("That didn't save. Try again in a moment.")
+      }
+      for (const m of (input.emails ?? []) as { id: string; on: boolean }[]) {
+        const { error } = await ctx.user.rpc('set_my_email_subscription', { p_id: m.id, p_on: m.on })
+        if (error) return fail("The email change didn't save. Try again in a moment.")
+      }
+      return ok({ saved: true, note: 'Saved. The Notifications screen shows the same switches.' })
+    }
     return fail(`Unknown tool ${name}`)
   } catch (e) {
     return fail(e instanceof Error ? e.message : String(e))

@@ -36,7 +36,8 @@ import { inServiceArea } from '@/lib/server/trip'
 export const runtime = 'nodejs'
 export const maxDuration = 300
 
-const MODEL = 'claude-sonnet-5-5'
+// A local server can try another model for the stress test (scripts/member-assistant-eval).
+const MODEL = process.env.SHIFT_ASSISTANT_MODEL || 'claude-sonnet-5-5'
 const SUMMARY_MODEL = 'claude-haiku-5-5'
 const MAX_STEPS = 8
 /** Model calls per person per rolling day, and for everyone per calendar
@@ -240,6 +241,8 @@ export async function POST(request: Request) {
     screen?: string
     match_id?: string
     here?: { lat?: unknown; lng?: unknown }
+    /** Newer screens this app build can open (lib/assistant.ts NEWER_SCREENS). */
+    screens?: unknown
   } | null
   const auth = await authorize(request)
   if ('error' in auth) return auth.error
@@ -326,7 +329,8 @@ export async function POST(request: Request) {
   const here = Number.isFinite(hereLat) && Number.isFinite(hereLng) && inServiceArea(hereLat, hereLng)
     ? { lat: Math.round(hereLat * 1e5) / 1e5, lng: Math.round(hereLng * 1e5) / 1e5 }
     : null
-  const ctx: ToolCtx = { user: userClient, admin, token, userId: user.id, email: user.email ?? user.id, here }
+  const screens = new Set(Array.isArray(body?.screens) ? body.screens.filter((x): x is string => typeof x === 'string').slice(0, 30) : [])
+  const ctx: ToolCtx = { user: userClient, admin, token, userId: user.id, email: user.email ?? user.id, here, screens }
 
   const encoder = new TextEncoder()
   const stream = new ReadableStream({
@@ -448,6 +452,11 @@ export async function POST(request: Request) {
             emit({ type: 'error', message: 'That got too long. Ask again in a smaller piece.' })
             break
           }
+          // A reply written before its tools is already on screen; without
+          // this the model wrote it again after open_screen (stress test,
+          // 2026-10-25: three cases, despite the prompt's one-reply rule).
+          const wrote = msg.content.some((b) => b.type === 'text' && b.text.trim().length > 0)
+          const already = wrote ? { _already_replied: 'Your reply this turn is already on their screen. Do not repeat or rephrase it. Write nothing more unless this result changes the answer; then one short sentence.' } : undefined
           // Reads run side by side; a tool that saves waits on its card.
           const results: Record<string, Anthropic.Beta.BetaToolResultBlockParam> = {}
           const cards: PendingCard[] = []
@@ -462,7 +471,7 @@ export async function POST(request: Request) {
             if (ACTIVITY[u.name]) emit({ type: 'tool', id: u.id, label: ACTIVITY[u.name] })
             const r = once(await runTool(ctx, u.name, input))
             emit({ type: 'tool_done', id: u.id, ok: !r.isError, link: r.link, trip: r.trip })
-            results[u.id] = resultBlock(u.id, r)
+            results[u.id] = resultBlock(u.id, r, already)
           }))
           if (cards.length) {
             await setPending({ results, order: uses.map((u) => u.id), cards })
@@ -470,6 +479,12 @@ export async function POST(request: Request) {
             break
           }
           await append('user', uses.map((u) => results[u.id]))
+          // Buttons and feedback notes need no words after them: when the
+          // reply is already written, end the turn instead of asking the
+          // model again (it repeated itself even when told not to). The
+          // next question's user turn follows these results; the API
+          // combines the two.
+          if (wrote && uses.every((u) => u.name === 'open_screen' || u.name === 'note_feedback')) break
         }
         if ((await contextSize(admin, threadId)) > SOFT_CONTEXT) emit({ type: 'long' })
         emit({ type: 'done' })

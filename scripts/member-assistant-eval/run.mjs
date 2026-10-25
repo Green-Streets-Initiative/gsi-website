@@ -73,7 +73,8 @@ async function ask(body) {
   const res = await fetch(`${BASE}/api/shift/assistant`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${TOKEN}` },
-    body: JSON.stringify({ here: HERE, ...body }),
+    // The screens a current app build can open (Shift lib/assistant.ts).
+    body: JSON.stringify({ here: HERE, screens: ['trip', 'trip_history', 'my_rewards', 'notifications', 'vacation'], ...body }),
   })
   if (!res.ok) return { status: res.status, error: (await res.json().catch(() => ({}))).error ?? res.statusText, events: [] }
   const raw = await res.text()
@@ -83,7 +84,7 @@ async function ask(body) {
 const created = new Set()
 
 async function runScenario(sc) {
-  const out = { id: sc.id, group: sc.group, transcript: [], failures: [], errors: [], trips: [] }
+  const out = { id: sc.id, group: sc.group, transcript: [], failures: [], errors: [], trips: [], cards: [] }
   if (sc.setup) await sc.setup(w)
   let threadId = null
   try {
@@ -113,7 +114,10 @@ async function runScenario(sc) {
             const t = e.trip
             out.transcript.push(`[ROUTE CARD] to ${t.to?.name ?? t.name ?? '?'} from ${t.from?.name ?? '?'}: bike ${t.bike_minutes ?? '?'} min, transit ${t.transit_minutes ?? '?'} min`)
           } else if (e.type === 'tool_done' && e.link) out.transcript.push(`[button: ${e.link.label}]`)
-          else if (e.type === 'choices') out.transcript.push(`[CHOICE BUTTONS] ${e.options.map((o) => o.label ?? o).join(' | ')}`)
+          else if (e.type === 'approval') {
+            out.cards.push(e.card)
+            out.transcript.push(`[APPROVAL CARD, not tapped] ${e.card.title}: ${e.card.lines.join(' / ')}`)
+          } else if (e.type === 'choices') out.transcript.push(`[CHOICE BUTTONS] ${e.options.map((o) => o.label ?? o).join(' | ')}`)
           else if (e.type === 'error') {
             out.errors.push(e.message)
             out.transcript.push(`[ERROR SHOWN] ${e.message}`)
@@ -147,6 +151,8 @@ async function runScenario(sc) {
   for (const t of ck.forbidTools ?? []) if (tools.includes(t)) out.failures.push(`called ${t}`)
   if (ck.requireTrip && !out.trips.length) out.failures.push('no route card')
   if (ck.forbidTrip && out.trips.length) out.failures.push('drew a route card it should not have')
+  if (ck.requireCard && !out.cards.length) out.failures.push('no approval card')
+  if (ck.forbidCard && out.cards.length) out.failures.push('showed an approval card it should not have')
   for (const re of ck.mustMatch ?? []) if (!new RegExp(re, 'i').test(said)) out.failures.push(`reply never says ${re}`)
   for (const re of ck.mustNotMatch ?? []) if (new RegExp(re).test(said)) out.failures.push(`reply says ${re}`)
   if (tools.filter((t) => t === 'note_feedback').length > 2) out.failures.push(`note_feedback called ${tools.filter((t) => t === 'note_feedback').length} times`)
