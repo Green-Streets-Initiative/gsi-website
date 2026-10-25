@@ -8,6 +8,7 @@ import { decodePolyline, encodePolyline } from '@/lib/geo/polyline'
 import { eventModeOf } from '@/components/commute/event-card'
 import { excerptOf } from '@/lib/commute/try-it-event'
 import { todayKey } from '@/lib/organizers/ride-words'
+import { getTownCivicEvents, getTownDirectory, getTownResources, townSlug } from '@/lib/towns/queries'
 import { dayLabel, fetchDisruptions, fetchElevatorClosures, routeIdsForLabels, type Disruption } from '@/lib/nearby/disruptions'
 import { RIDE_PLAN_ACTIVITY, RIDE_PLAN_NEEDS_APPROVAL, RIDE_PLAN_TOOLS, ridePlanCard, runApprovedRidePlan, runRidePlanTool, type RidePlanCard } from '@/lib/shift-assistant/ride-plan-tools'
 
@@ -33,8 +34,9 @@ export type ToolCtx = {
   screens?: Set<string>
 }
 
-/** A button under the reply. The app maps `screen` to one of its own routes. */
-export type ScreenLink = { screen: Screen; params?: Record<string, string>; label: string }
+/** A button under the reply: a screen the app maps to one of its own routes,
+ *  or a web page (only ever an address from our own tables or site). */
+export type ScreenLink = { screen: Screen; params?: Record<string, string>; label: string } | { href: string; label: string; external?: boolean }
 
 export type ToolResult = {
   content: Record<string, unknown>
@@ -98,6 +100,7 @@ export const ACTIVITY: Record<string, string> = {
   get_service_alerts: 'Checking service alerts',
   get_my_activity: 'Reading your trips and rewards',
   get_my_settings: 'Reading your settings',
+  get_town_info: 'Looking up your town',
   ...RIDE_PLAN_ACTIVITY,
 }
 
@@ -189,6 +192,30 @@ export const TOOLS: Anthropic.Tool[] = [
         address: nullable('string', 'The street address from find_place, when there is one.'),
       },
       required: ['label', 'place'],
+    },
+  },
+  {
+    name: 'get_town_info',
+    description: "What Green Streets knows about a town, from its town page: where to report a problem (a broken signal, a pothole, a blocked bike lane), the transportation and public works departments, construction updates, bike and pedestrian committees, advocacy and community groups, bike repair, commuter services, public meetings; and upcoming hearings and comment periods on street and transit projects there, with what's being decided and how to weigh in. Their home town unless they name another.",
+    input_schema: {
+      type: 'object',
+      properties: {
+        town: nullable('string', 'A town or city name ("Cambridge"). Leave empty for their home town.'),
+        topic: nullable('string', 'report_issue, construction_info, town_dept, public_meetings, bike_ped_committee, advocacy_group, community_group, bike_repair, commuter_services, get_updates, bike_share, or hearings. Leave empty for an overview.'),
+      },
+    },
+  },
+  {
+    name: 'open_link',
+    description: "A button to the web page of one item from get_town_info: a resource (by its id) or a hearing (by its id), or the town's page (kind town_page, id = the town name). The address comes from our records; never write a web address yourself.",
+    input_schema: {
+      type: 'object',
+      properties: {
+        kind: { type: 'string', enum: ['resource', 'hearing', 'town_page'] },
+        id: { type: 'string' },
+        label: { type: 'string', description: 'The button text, a few words with a verb ("Report it to Somerville").' },
+      },
+      required: ['kind', 'id', 'label'],
     },
   },
   {
@@ -536,6 +563,65 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
           campaigns: { new_routes: campaign(nr.data), shift_your_semester: campaign(sem.data) },
           fixing_a_trip: 'To change how a trip was recorded, offer open_screen trip with its id; they change it there (within 7 days of the trip).',
         })
+      }
+      case 'get_town_info': {
+        const asked = typeof input.town === 'string' ? input.town.trim().toLowerCase() : ''
+        const towns = await getTownDirectory()
+        let town = asked ? towns.find((t) => t.town_name.toLowerCase() === asked) : undefined
+        if (!asked) {
+          // Their home town; else the town their saved Home, or their phone, is in.
+          const { data } = await ctx.user.from('users').select('home_town').eq('id', ctx.userId).single()
+          let home = ((data as { home_town?: string | null } | null)?.home_town ?? '').toLowerCase()
+          if (!home) {
+            const { data: h } = await ctx.user.from('saved_locations').select('lat, lng').eq('user_id', ctx.userId).ilike('label', 'home').limit(1)
+            const at = ((h ?? [])[0] as { lat: number | null; lng: number | null } | undefined)
+            const point = at?.lat != null && at?.lng != null ? { lat: at.lat, lng: at.lng } : ctx.here ?? null
+            if (point) {
+              const { data: nid } = await ctx.admin.rpc('find_neighborhood_for_point', { p_lat: point.lat, p_lng: point.lng })
+              const { data: nb } = nid ? await ctx.admin.from('neighborhoods').select('town').eq('id', nid as string).maybeSingle() : { data: null }
+              home = ((nb as { town?: string } | null)?.town ?? '').toLowerCase()
+            }
+          }
+          town = towns.find((t) => t.town_name.toLowerCase() === home)
+          if (!town) return ok({ found: false, note: "Their town isn't known. Ask which town they mean." })
+        }
+        if (!town) return ok({ found: false, note: `No town page for ${input.town}. Towns are covered across Massachusetts; check the spelling or ask for the nearest one.` })
+        const topic = typeof input.topic === 'string' ? input.topic : ''
+        const [resources, hearings] = await Promise.all([
+          topic === 'hearings' ? Promise.resolve([]) : getTownResources(town.group_id),
+          !topic || topic === 'hearings' || topic === 'public_meetings' || topic === 'construction_info' ? getTownCivicEvents(town.town_name) : Promise.resolve([]),
+        ])
+        const pick = topic && topic !== 'hearings' ? resources.filter((r) => r.category === topic) : resources
+        return ok({
+          town: town.town_name,
+          resources: pick.slice(0, topic ? 12 : 20).map((r) => ({
+            id: r.id, kind: r.category, name: r.name, about: excerptOf(r.description, 160),
+            phone: r.contact_phone, email: r.contact_email, when: r.happens_at ? bostonWhen(r.happens_at) : null, has_page: !!r.url,
+          })),
+          hearings: hearings.slice(0, 8).map((h) => ({
+            id: h.id, what: h.digest_headline ?? h.community_name ?? h.title, kind: h.hearing_type,
+            when: h.hearing_date ? `${dayLabel(`${h.hearing_date}T12:00:00`)}${h.hearing_time ? ` at ${h.hearing_time.slice(0, 5)}` : ''}` : null,
+            where: h.hearing_location_name, online: !!h.virtual_link, comment_by: h.comment_deadline, comment_email: h.comment_email,
+            deciding: h.whats_deciding?.status === 'ok' ? h.whats_deciding.on_the_table ?? null : null,
+            ways_to_weigh_in: h.whats_deciding?.status === 'ok' ? (h.whats_deciding.ways_to_weigh_in ?? []).slice(0, 3) : [],
+          })),
+          note: 'Name the one or two that fit and how to reach them (phone or email when listed). For a web page, add open_link with the id. Describe a hearing neutrally: what is being decided and how to weigh in, never which side to take.',
+        }, { href: `/shift/towns/${townSlug(town.town_name, town.state)}`, label: `See ${town.town_name}'s page` })
+      }
+      case 'open_link': {
+        const id = String(input.id ?? '')
+        const label = String(input.label || 'Open').slice(0, 40)
+        if (input.kind === 'town_page') {
+          const t = (await getTownDirectory()).find((x) => x.town_name.toLowerCase() === id.trim().toLowerCase())
+          return t ? ok({ shown: true }, { href: `/shift/towns/${townSlug(t.town_name, t.state)}`, label }) : fail('No town page by that name.')
+        }
+        if (!/^[0-9a-f-]{36}$/i.test(id)) return fail('Use an id from get_town_info.')
+        const { data } = input.kind === 'hearing'
+          ? await ctx.admin.from('infrastructure_hearings').select('url:source_url').eq('id', id).eq('status', 'published').maybeSingle()
+          : await ctx.admin.from('town_resources').select('url').eq('id', id).eq('status', 'approved').maybeSingle()
+        const url = (data as { url?: string | null } | null)?.url
+        if (!url || !/^https?:\/\//.test(url)) return fail('That one has no web page. Give the phone or email instead.')
+        return ok({ shown: true, next: 'The button shows under your reply. Write the reply itself; do not mention the button.' }, { href: url, label, external: true })
       }
       case 'get_my_settings': {
         const [u, e] = await Promise.all([

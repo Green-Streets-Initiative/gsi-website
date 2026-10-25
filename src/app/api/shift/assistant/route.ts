@@ -354,7 +354,8 @@ export async function POST(request: Request) {
       const shown = new Set<string>()
       const once = (r: ToolResult): ToolResult => {
         if (!r.link) return r
-        const key = r.link.screen === 'around_you' ? 'around_you' : JSON.stringify([r.link.screen, r.link.params ?? null])
+        const l = r.link
+        const key = 'href' in l ? l.href : l.screen === 'around_you' ? 'around_you' : JSON.stringify([l.screen, l.params ?? null])
         if (shown.has(key)) return { ...r, link: undefined }
         shown.add(key)
         return r
