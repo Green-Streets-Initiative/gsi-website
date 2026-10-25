@@ -95,6 +95,7 @@ export const RIDE_PLAN_ACTIVITY: Record<string, string> = {
   get_ride_plan: 'Reading the ride plan',
   design_ride_plan_route: 'Planning the route (up to a minute)',
   save_ride_plan_route: 'Saving the plan',
+  move_ride_plan_time: 'Asking to move the time',
 }
 
 export const RIDE_PLAN_TOOLS: Anthropic.Tool[] = [
@@ -132,9 +133,22 @@ export const RIDE_PLAN_TOOLS: Anthropic.Tool[] = [
       required: ['match_id', 'recipe', 'date', 'time'],
     },
   },
+  {
+    name: 'move_ride_plan_time',
+    description: "Either person (guide or learner). Ask the other person to move a planned first trip to a new day and time (01438). The person approves on a card first; the other gets a notice and says whether it works on the plan screen. Only when the plan has a day and time already (planned or confirmed).",
+    input_schema: {
+      type: 'object',
+      properties: {
+        match_id: { type: 'string' },
+        date: { type: 'string', description: 'YYYY-MM-DD, in the future.' },
+        time: { type: 'string', description: 'HH:MM, 24-hour, Eastern time.' },
+      },
+      required: ['match_id', 'date', 'time'],
+    },
+  },
 ]
 
-export const RIDE_PLAN_NEEDS_APPROVAL = new Set(['save_ride_plan_route'])
+export const RIDE_PLAN_NEEDS_APPROVAL = new Set(['save_ride_plan_route', 'move_ride_plan_time'])
 
 async function readPlan(ctx: Ctx, matchId: unknown): Promise<View | string> {
   if (typeof matchId !== 'string' || !UUID.test(matchId)) return 'That ride plan id is not valid.'
@@ -456,6 +470,17 @@ export async function ridePlanCard(ctx: Ctx, name: string, input: Record<string,
   Promise<{ card: RidePlanCard; input: Record<string, unknown> } | { result: Result }> {
   const v = await readPlan(ctx, input.match_id)
   if (typeof v === 'string') return { result: fail(v) }
+  if (name === 'move_ride_plan_time') {
+    if (!v.plan || !['planned', 'confirmed'].includes(v.plan.status)) return { result: fail('This plan has no day and time to move yet.') }
+    const at = easternIso(String(input.date ?? ''), String(input.time ?? ''))
+    if (!at || new Date(at).getTime() < Date.now() + 30 * 60_000) return { result: fail('Pick a day and time at least 30 minutes ahead.') }
+    const other = v.role === 'guide' ? v.learner_name : v.guide_name
+    const when = new Date(at).toLocaleString('en-US', { timeZone: 'America/New_York', weekday: 'long', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+    return {
+      card: { title: `Ask ${other} to move it`, lines: [when, `${other} gets a notice and says whether it works.`], cta: `Send to ${other}`, tone: 'primary' },
+      input: { match_id: input.match_id, ride_at: at },
+    }
+  }
   if (v.role !== 'guide') return { result: fail('Only the guide can save the route. The learner can ask their guide for a change.') }
   if (v.plan?.status !== 'learner_shared') return { result: fail(v.plan ? 'This plan already has a route. They can change it on the plan screen.' : 'The learner has not shared their answers yet.') }
   const recipe = decode(input.recipe)
@@ -514,6 +539,12 @@ export async function ridePlanCard(ctx: Ctx, name: string, input: Record<string,
 
 export async function runApprovedRidePlan(ctx: Ctx, name: string, input: Record<string, unknown>): Promise<Result> {
   const matchId = String(input.match_id)
+  if (name === 'move_ride_plan_time') {
+    const { data, error } = await ctx.user.rpc('propose_ride_plan_time', { p_match_id: matchId, p_ride_at: input.ride_at })
+    const res = (data ?? {}) as { ok?: boolean; reason?: string }
+    if (error || res.ok === false) return fail(res.reason === 'needs_time' ? 'That time is too soon or too far off. Pick another.' : "That didn't send. Try again in a moment.")
+    return ok({ sent: true, note: 'Sent. The other person gets a notice and says whether the new time works, on the plan screen.' }, planLink(matchId, 'See the plan'))
+  }
   const { data, error } = await ctx.user.rpc('set_ride_plan_route', {
     p_match_id: matchId, p_route: input.route, p_spots: input.spots, p_ride_at: input.ride_at,
   })
