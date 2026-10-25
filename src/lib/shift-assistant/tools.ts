@@ -8,6 +8,7 @@ import { decodePolyline, encodePolyline } from '@/lib/geo/polyline'
 import { eventModeOf } from '@/components/commute/event-card'
 import { excerptOf } from '@/lib/commute/try-it-event'
 import { todayKey } from '@/lib/organizers/ride-words'
+import { dayLabel, fetchDisruptions, fetchElevatorClosures, routeIdsForLabels, type Disruption } from '@/lib/nearby/disruptions'
 import { RIDE_PLAN_ACTIVITY, RIDE_PLAN_NEEDS_APPROVAL, RIDE_PLAN_TOOLS, ridePlanCard, runApprovedRidePlan, runRidePlanTool, type RidePlanCard } from '@/lib/shift-assistant/ride-plan-tools'
 
 // The Shift assistant's tools, for everyone in the app (Keith 2026-10-24).
@@ -88,6 +89,7 @@ export const ACTIVITY: Record<string, string> = {
   get_weather: 'Checking the forecast',
   find_place: 'Looking up the place',
   find_rides_and_events: 'Looking for rides and events',
+  get_service_alerts: 'Checking service alerts',
   ...RIDE_PLAN_ACTIVITY,
 }
 
@@ -152,10 +154,21 @@ export const TOOLS: Anthropic.Tool[] = [
       required: ['near'],
     },
   },
+  {
+    name: 'get_service_alerts',
+    description: "MBTA service changes on some lines, happening now or coming up: shuttle buses, suspensions and station closures, with dates; and elevators out of service right now. check_trip already includes them for its own lines, so use this when someone asks about a line or a station directly (\"is the Red Line running?\", \"any elevators out at Park Street?\").",
+    input_schema: {
+      type: 'object',
+      properties: {
+        lines: nullable('array', 'Line names as the T writes them: Red, Orange, Blue, Mattapan, Green-B, Green-C, Green-D, Green-E, a bus number ("87"), or a Commuter Rail line ("Framingham/Worcester Line"). Leave empty for all subway lines.'),
+        days_ahead: nullable('integer', 'How far ahead to look for planned changes. Default 7.'),
+      },
+    },
+  },
   ...RIDE_PLAN_TOOLS,
   {
     name: 'open_screen',
-    description: "A button to a screen of the Shift app, for things done there: commute (their saved commute), commute_setup (set home and work), around_you (the map of what's near them), rides (group rides and events), event or ride (one of them, by id), rewards (the rewards shop), log_trip (log a trip by hand), ride_plan (a Shift Together first ride plan, by its match_id).",
+    description: "A button to a screen of the Shift app, for things done there: commute (their saved commute), commute_setup (set home and work), around_you (the map of what's near them), rides (group rides and events), event or ride (one of them, by id), rewards (rewards they've won), log_trip (log a trip by hand), ride_plan (a Shift Together first ride plan, by its match_id).",
     input_schema: {
       type: 'object',
       properties: {
@@ -190,6 +203,17 @@ function asPlace(v: unknown): Place | null {
 }
 
 const round1 = (n: number) => Math.round(n * 10) / 10
+
+const SUBWAY = ['Red', 'Orange', 'Blue', 'Mattapan', 'Green-B', 'Green-C', 'Green-D', 'Green-E']
+
+/** Service changes in the words the model needs: which lines, what, when. */
+function alertFacts(ds: Disruption[]) {
+  return ds.slice(0, 8).map((d) => ({
+    lines: d.lines.map((l) => l.name),
+    what: d.header,
+    when: d.status === 'now' ? `now${d.end ? `, until ${dayLabel(d.end)}` : ''}` : `from ${dayLabel(d.start)}${d.end ? ` to ${dayLabel(d.end)}` : ''}`,
+  }))
+}
 
 export async function runTool(ctx: ToolCtx, name: string, input: Record<string, unknown>): Promise<ToolResult> {
   try {
@@ -266,6 +290,14 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
         if (!from || !to) return fail('Both places need coordinates. Look them up with find_place first.')
         if (!inServiceArea(from.lat, from.lng) || !inServiceArea(to.lat, to.lng)) return ok({ available: false, note: 'Trip checks cover Massachusetts and nearby. This trip is outside it.' })
         const r = await getTrip(from, to, to.name ?? '')
+        // Service changes and broken elevators on this trip's own lines and
+        // stations, so the answer reflects today rather than a normal day.
+        const lineIds = await routeIdsForLabels(r.steps.map((s) => s.label))
+        const [alerts, elevators] = lineIds.length
+          ? await Promise.all([fetchDisruptions({ routeIds: lineIds, daysAhead: 7 }), fetchElevatorClosures(lineIds)])
+          : [[], []]
+        const stations = r.steps.flatMap((s) => [s.boardStop, s.alightStop]).filter((n): n is string => !!n)
+        const elevatorsOut = elevators.filter((e) => stations.some((n) => e.header.startsWith(n.replace(/ Station$/, '')))).map((e) => e.header)
         const segs = r.bike_comfort?.segments ?? []
         const tiers = segs.reduce<Record<string, number>>((a, s) => ({ ...a, [s.rating]: round1((a[s.rating] ?? 0) + s.distance_mi) }), {})
         const runs = segs.reduce<{ rating: string; miles: number }[]>((a, s) => {
@@ -294,6 +326,8 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
             transit: r.transit_minutes == null ? null : {
               minutes: r.transit_minutes, walking_minutes: r.transit_walk_minutes, fare: r.transit_fare,
               legs: r.steps.map((s) => ({ line: s.label, from: s.boardStop ?? null, to: s.alightStop ?? null, toward: s.headsign ?? null, stops: s.numStops ?? null })),
+              service_changes: alertFacts(alerts),
+              elevators_out_at_these_stations: elevatorsOut,
             },
             bike: {
               minutes: r.bike_minutes, miles: bikeMiles, estimate: r.bike_is_estimate,
@@ -314,6 +348,19 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
             label: 'See the full trip',
           },
         }
+      }
+      case 'get_service_alerts': {
+        const asked = Array.isArray(input.lines) ? input.lines.filter((l): l is string => typeof l === 'string').slice(0, 10) : []
+        const ids = asked.length ? await routeIdsForLabels(asked) : SUBWAY
+        if (!ids.length) return ok({ found: false, note: `No T line matched ${asked.join(', ')}. Use names like Red, Green-D, 87 or Framingham/Worcester Line.` })
+        const days = typeof input.days_ahead === 'number' ? Math.min(Math.max(Math.round(input.days_ahead), 0), 30) : 7
+        const [alerts, elevators] = await Promise.all([fetchDisruptions({ routeIds: ids, daysAhead: days }), fetchElevatorClosures(ids)])
+        return ok({
+          lines: asked.length ? asked : 'all subway lines',
+          service_changes: alertFacts(alerts),
+          elevators_out_now: elevators.slice(0, 15).map((e) => e.header),
+          note: alerts.length ? 'Say what changes for them and when, in plain words. mbta.com/alerts has the details.' : `No shuttles, suspensions or station closures in the next ${days} days. Normal delays don't show here.`,
+        })
       }
       case 'get_weather': {
         const p = asPlace(input.place)

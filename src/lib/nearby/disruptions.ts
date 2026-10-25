@@ -195,3 +195,40 @@ export function dayLabel(iso: string): string {
     timeZone: 'America/New_York',
   })
 }
+
+/**
+ * Elevators out of service right now on these lines, for trips where stairs
+ * matter (the Shift assistant). Each header starts with the station's name:
+ * "Downtown Crossing Elevator 869 (Alewife platform to …) is unavailable…".
+ */
+export async function fetchElevatorClosures(routeIds: string[]): Promise<{ header: string; url: string | null }[]> {
+  if (!routeIds.length) return []
+  const params = new URLSearchParams({
+    'filter[route]': [...new Set(routeIds)].join(','),
+    'filter[activity]': 'USING_WHEELCHAIR',
+    'filter[lifecycle]': 'NEW,ONGOING',
+    'page[limit]': '100',
+  })
+  try {
+    const res = await fetch(`https://api-v3.mbta.com/alerts?${params}`)
+    if (!res.ok) return []
+    const json = await res.json()
+    const now = Date.now()
+    const seen = new Set<string>()
+    const out: { header: string; url: string | null }[] = []
+    for (const a of json?.data ?? []) {
+      const at = a?.attributes
+      if (at?.effect !== 'ELEVATOR_CLOSURE') continue
+      const live = ((at.active_period ?? []) as Period[]).some(
+        (p) => new Date(p.start).getTime() <= now && (!p.end || new Date(p.end).getTime() > now),
+      )
+      const header = String(at.header ?? '').replace(GLYPH_STRIP, '').trim()
+      if (!live || !header || seen.has(header)) continue
+      seen.add(header)
+      out.push({ header, url: typeof at.url === 'string' && at.url ? at.url : null })
+    }
+    return out
+  } catch {
+    return []
+  }
+}
