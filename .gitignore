@@ -48,3 +48,6 @@ supabase/.temp/
 
 # local media
 tmp-videos/
+
+# Member assistant stress test transcripts stay local
+scripts/member-assistant-eval/reports/

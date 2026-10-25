@@ -41,7 +41,8 @@ const SUMMARY_MODEL = 'claude-haiku-5-5'
 const MAX_STEPS = 8
 /** Model calls per person per rolling day, and for everyone per calendar
  *  month, so a loop or a runaway can't run costs up. */
-const DAILY_PERSON_CAP = 40
+// A local server can raise it for the stress test (scripts/member-assistant-eval).
+const DAILY_PERSON_CAP = Number(process.env.SHIFT_ASSISTANT_DAILY_CAP) || 40
 const MONTHLY_CAP = 2000
 const SOFT_CONTEXT = 50_000
 const HARD_CONTEXT = 120_000
