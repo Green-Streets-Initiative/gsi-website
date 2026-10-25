@@ -77,6 +77,64 @@ export const BIO_LINKS: BioLink[] = [
     url: 'https://www.gogreenstreets.org/programs/walk-ride-days',
     until: '2026-10-30T23:59:00-04:00',
   },
+  // Halloween week (Social Lead W44). The card prints /links/halloween, which is
+  // not a slug on purpose: unknown slugs land on this page, where these five show.
+  {
+    slug: 'trekortreat',
+    label: 'Trek or Treat Ride, Concord',
+    sublabel: 'Tue Oct 27, 4 PM. Minuteman Bike Share, 2 miles of rail trail',
+    url: 'https://www.gogreenstreets.org/events/trek-or-treat-ride-bruce-freeman-rail-trail-2026-10-27',
+    until: '2026-10-27T16:00:00-04:00',
+  },
+  {
+    slug: 'halloweenwalk',
+    label: 'Halloween walk, Beacon Hill',
+    sublabel: 'Wed Oct 28, 6 PM. Boston Women over 40 Walking Group',
+    url: 'https://www.meetup.com/women-over-40-walk/events/317037706/',
+    until: '2026-10-28T18:00:00-04:00',
+  },
+  {
+    slug: 'commuterchallenge',
+    label: 'Great Commuter Challenge: RSVP',
+    sublabel: 'Sat Oct 31, 10 AM, Jamaica Plain. Bikes Not Bombs',
+    url: 'https://docs.google.com/forms/d/e/1FAIpQLScqEab8MwWgLvjKZkSnaE0_QUOL_CPoQoN6arhOKS16Rz5qlA/viewform',
+    until: '2026-10-31T10:00:00-04:00',
+  },
+  {
+    slug: 'scarierthanmassave',
+    label: "Costume ride: What's Scarier Than Mass Ave?",
+    sublabel: 'Sat Oct 31, 11 AM, Central Square. Boston Cafe Bikers',
+    url: 'https://partiful.com/e/2lujnt4TCoLinzEYBvVC',
+    until: '2026-10-31T11:00:00-04:00',
+  },
+  {
+    slug: 'hallowheels',
+    label: 'SCUL Hallowheels',
+    sublabel: 'Sat Oct 31, 8:30 PM, Allston Pump Track',
+    url: 'https://www.gogreenstreets.org/events/scul-hallowheels-2026-10-31',
+    until: '2026-10-31T20:30:00-04:00',
+  },
+  {
+    slug: 'lights',
+    label: 'Free bike lights in Everett',
+    sublabel: 'Mon Nov 2, 5 to 7 PM, Northern Strand at West and Wellington',
+    url: 'https://www.gogreenstreets.org/events/light-up-your-ride-free-bike-lights-in-everett-2026-11-02',
+    until: '2026-11-02T19:00:00-05:00',
+  },
+  {
+    slug: 'smartnav',
+    label: 'Smart Navigation class: register',
+    sublabel: 'Wed Nov 4, 6:30 PM, Wellesley Free Library or online',
+    url: 'https://wellesleyfreelibrary.libcal.com/event/16890530',
+    until: '2026-11-04T18:30:00-05:00',
+  },
+  {
+    slug: 'semester',
+    label: 'Students: Shift Your Semester, unlock $15',
+    sublabel: 'Code SEMESTER and your school email, through Dec 15',
+    url: 'https://shift.gogreenstreets.org/go/semester',
+    until: '2026-12-15T23:59:00-05:00',
+  },
 
   // ── Always here (pinned) ──
   {
