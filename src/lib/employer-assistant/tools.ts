@@ -188,6 +188,12 @@ const BASE_TOOLS: Anthropic.Tool[] = [
     },
   },
   {
+    name: 'preview_invitation_email',
+    description:
+      "The invitation email and its reminder exactly as employees get them (the same templates invite_employees sends, with this company's name, code and join link): subject and text. Use it when they ask what the email says or looks like, before or after sending. Changes nothing.",
+    input_schema: { type: 'object', properties: {} },
+  },
+  {
     name: 'set_email_domains',
     description: 'Set the company email domains (e.g. "loomissayles.com"), used to verify who works there. Replaces the list. Needs approval. Admins only.',
     input_schema: {
@@ -298,6 +304,7 @@ export const ACTIVITY: Record<string, string> = {
   save_challenge_changes: 'Saving the changes',
   discard_draft: 'Removing the draft',
   invite_employees: 'Sending invitations',
+  preview_invitation_email: 'Reading the invitation email',
   set_email_domains: 'Updating email domains',
   set_join_policy: 'Updating who can join',
   set_year_plan: 'Updating the year plan',
@@ -334,6 +341,42 @@ function bodyForSave(input: Record<string, unknown>): Body {
 async function rpc(ctx: ToolCtx, fn: string, args: Record<string, unknown>) {
   const { data, error } = await ctx.user.rpc(fn, args)
   return { data: data as Record<string, unknown> | null, error: error?.message ?? null }
+}
+
+/** An email's HTML as the lines a reader sees (no styles, links kept as text). */
+function emailText(html: string): string {
+  return html
+    .replace(/<(head|style|script)[\s\S]*?<\/\1>/gi, '')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/(p|div|tr|h[1-6]|li|table)>/gi, '\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&#39;|&rsquo;|&#x27;/g, '’')
+    .replace(/&quot;/g, '"')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .split('\n')
+    .map((l) => l.replace(/\s+/g, ' ').trim())
+    .filter(Boolean)
+    .join('\n')
+    .slice(0, 3000)
+}
+
+/** The invitation and reminder as employees get them (the portal's "How this looks to them"); nothing is sent. */
+async function invitationPreview(ctx: ToolCtx) {
+  const res = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/employer-invites`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${ctx.token}` },
+    body: JSON.stringify({ preview: { group_id: ctx.groupId, inviter_email: ctx.email } }),
+  })
+  const json = (await res.json().catch(() => null)) as { invite?: { subject?: string; html?: string }; reminder?: { subject?: string; html?: string } } | null
+  if (!res.ok || !json?.invite?.html || !json?.reminder?.html) return null
+  return {
+    invitation: { subject: json.invite.subject ?? '', text: emailText(json.invite.html) },
+    reminder: { subject: json.reminder.subject ?? '', text: emailText(json.reminder.html) },
+    note: 'Sent from Shift on the company’s behalf; the reminder goes a few days later to anyone who hasn’t joined. The portal shows both as they look: Employees > Invite employees.',
+  }
 }
 
 async function edgeTopUp(ctx: ToolCtx, payload: Record<string, unknown>) {
@@ -523,6 +566,11 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
         return { content: await seasonalTemplates(ctx) }
       case 'get_challenge':
         return { content: await getChallenge(ctx, String(input.competition_id ?? '')) }
+      case 'preview_invitation_email': {
+        const p = await invitationPreview(ctx)
+        if (!p) return { content: { error: 'the preview could not be loaded just now; the portal shows it under Employees > Invite employees' }, isError: true }
+        return { content: p, link: { href: '/shift/employers/portal/employees?invite=1', label: 'See it in the portal' } }
+      }
       case 'get_draft': {
         const d = await draftRow(ctx, String(input.draft_id ?? ''))
         if (!d) return { content: { error: 'draft not found on this account' }, isError: true }
