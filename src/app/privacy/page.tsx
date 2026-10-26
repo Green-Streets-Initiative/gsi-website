@@ -95,16 +95,15 @@ export default function PrivacyPage() {
                 <li>Technical metadata needed to process a trip, such as timestamps, device operating system, and app version</li>
               </Ul>
               <P>
-                Shift is not designed to retain a continuous raw location history indefinitely.
-                Location data is used to identify completed trips, after which we retain a trip
-                record such as mode, distance, duration, general area or neighborhood, timestamp,
-                and related impact metrics.
+                Location data is used to identify completed trips. For each trip we keep where it
+                started and ended and the path it took, along with its mode, distance, duration,
+                timestamp, and related impact metrics, as described under Trip Records. Location
+                readings taken outside a trip are not kept as a continuous location history.
               </P>
               <P>
-                Raw GPS coordinates may be processed on-device, in transit, or temporarily in our
-                systems as needed for trip detection, debugging, security, fraud prevention, or
-                service operation, but they are not retained indefinitely unless otherwise
-                disclosed or required by law.
+                Raw GPS readings may also be processed on-device, in transit, or temporarily in
+                our systems as needed for trip detection, debugging, security, fraud prevention,
+                or service operation.
               </P>
             </Section>
 
@@ -167,9 +166,17 @@ export default function PrivacyPage() {
                 <li>Date and time</li>
                 <li>Trip mode (walk, bike, transit, car)</li>
                 <li>Distance</li>
-                <li>Neighborhood or general area (not precise endpoints)</li>
+                <li>Where the trip started and ended, and the path it took</li>
+                <li>The neighborhood and town where it started and ended</li>
                 <li>Calculated impact metrics (CO&#8322; avoided, estimated cost savings, calories burned)</li>
               </Ul>
+              <P>
+                Start and end points and paths are used to show your trips on a map, recognize
+                trips between your saved places, classify transit trips, and count trips by
+                neighborhood and town. They are kept for as long as your account is active and are
+                deleted when you delete the trip or your account, as described under Data
+                Retention.
+              </P>
             </Section>
 
             <Section title="Competition and Community Data">
@@ -214,6 +221,31 @@ export default function PrivacyPage() {
                 This profile is <strong>never based on information you enter manually</strong>{' '}
                 &mdash; it is derived entirely from your trip history. It is deleted when you
                 delete your account, and you can view and delete it at any time in app settings.
+              </P>
+            </Section>
+
+            <Section title="Shift Assistant">
+              <P>
+                The Shift app includes an optional assistant that answers questions about getting
+                around and about your own Shift activity.
+              </P>
+              <P>
+                To answer, it reads your question, your saved places, your recent trips (times,
+                how you traveled, and &ldquo;Home&rdquo; or &ldquo;Work&rdquo;, not map points),
+                your points, badges and rewards, and your phone&apos;s location when you allow it,
+                rounded to about 100 meters. It saves a place or changes a setting only after you
+                tap Approve.
+              </P>
+              <P>
+                Your questions and what the assistant looks up to answer them are processed by
+                Anthropic, which provides the AI model, and places and transit directions are
+                looked up with Google Maps Platform, as described under With Service Providers.
+              </P>
+              <P>
+                GSI staff may read conversations to fix problems and improve the assistant.
+                Conversations are deleted 12 months after your last message, and when you delete
+                your account. You can delete a conversation, or all of them, from the assistant
+                in the app, or by contacting <a href="mailto:info@gogreenstreets.org" className="font-semibold text-forest underline-offset-4 hover:underline">info@gogreenstreets.org</a>.
               </P>
             </Section>
 
@@ -346,6 +378,8 @@ export default function PrivacyPage() {
                 <li><strong>Supabase</strong> (database and authentication infrastructure): Your account and trip data is stored in Supabase&apos;s secure cloud infrastructure.</li>
                 <li><strong>Expo / EAS</strong> (app delivery and updates): Used to deliver the app and push over-the-air updates.</li>
                 <li><strong>Push notification services</strong> (Apple APNs / Google FCM): Used to deliver notifications to your device. These services receive your device token but not your location or trip data.</li>
+                <li><strong>Anthropic</strong> (the AI behind the Shift assistant): Receives your questions to the assistant and what it looks up to answer them. Under its terms, Anthropic doesn&apos;t use this to train its models.</li>
+                <li><strong>Google Maps Platform:</strong> Finds places and plans transit for the Shift assistant and the Around You map. It receives the places involved, not your name or email.</li>
                 <li><strong>MBTA API or transit-data providers:</strong> Used to compare trip patterns against transit data for transit trip classification and service disruption features.</li>
                 <li><strong>Analytics, diagnostics, and infrastructure providers:</strong> Used to understand app performance, diagnose crashes, maintain security, and improve functionality.</li>
               </Ul>
@@ -432,6 +466,7 @@ export default function PrivacyPage() {
                 <li><strong>Inactive accounts:</strong> Accounts with no activity for 24 consecutive months may be deactivated and data deleted, with prior notice sent to your registered email.</li>
                 <li><strong>XP, rewards, and offer activity:</strong> Your XP or tier status, reward history, offer access history, and related records are deleted or de-identified when you delete your account, subject to ordinary backup cycles, legal obligations, fraud prevention, tax or accounting requirements, dispute resolution, and program, sponsor, or partner reporting needs. Aggregate or anonymized counts may be retained for program reporting, sponsor reporting, partner reporting, grant reporting, research, planning, and community impact measurement because they no longer identify you.</li>
                 <li><strong>Route profile:</strong> Your inferred route profile is deleted within 30 days of account deletion.</li>
+                <li><strong>Assistant conversations:</strong> Deleted 12 months after your last message in a conversation, or sooner when you delete them or your account.</li>
               </Ul>
             </Section>
 
@@ -474,6 +509,7 @@ export default function PrivacyPage() {
                 <li><strong>Account information:</strong> You may view and update certain account information in the app.</li>
                 <li><strong>Location permissions:</strong> You may revoke background location permission at any time in your device settings. Revoking background location permission will disable automatic trip detection, but you may still be able to use Shift to log trips manually.</li>
                 <li><strong>Saved locations:</strong> You may view, edit, or delete saved locations in app settings.</li>
+                <li><strong>Assistant conversations:</strong> You may delete a conversation, or all of them, from the assistant in the app, or by contacting <a href="mailto:info@gogreenstreets.org" className="font-semibold text-forest underline-offset-4 hover:underline">info@gogreenstreets.org</a>.</li>
                 <li><strong>Inferred route profile:</strong> You may view and delete your inferred route profile in app settings.</li>
                 <li><strong>Notifications:</strong> You may adjust or disable notifications in the app&apos;s notification settings or in your device settings.</li>
                 <li><strong>Account deletion:</strong> You may delete your account in the app or by contacting <a href="mailto:info@gogreenstreets.org" className="font-semibold text-forest underline-offset-4 hover:underline">info@gogreenstreets.org</a>. When you delete your account, we delete or de-identify personal information associated with your account as described in the Data Retention section.</li>
