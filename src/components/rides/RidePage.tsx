@@ -7,7 +7,7 @@ import EventMap from '@/components/events/EventMap'
 import RouteMap from '@/components/organizers/RouteMap'
 import { buildIcs, gcalUrl as eventGcalUrl } from '@/lib/event-calendar'
 import { routeMiles } from '@/lib/organizers/route-geo'
-import StoreBadges from '@/components/StoreBadges'
+import RideStoreBadges from '@/components/rides/RideStoreBadges'
 import OrganizerChannels from '@/components/rides/OrganizerChannels'
 import RideFacts from '@/components/rides/RideFacts'
 import type { RideHost } from '@/lib/rides/host'
@@ -541,7 +541,7 @@ export default function RidePage({ ride, host = null, ascentFt = null, initialDa
               <p className="mt-1 text-[14px] text-(--ev-ink-80)">
                 On the day, Shift shows where the group is so you can catch up, and counts your ride toward local rewards.
               </p>
-              <StoreBadges className="mt-3" placement="ride_page" height={40} />
+              <RideStoreBadges code={ride.code} className="mt-3" placement="ride_page" height={40} />
             </div>
           </section>
         </div>

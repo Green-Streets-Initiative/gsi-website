@@ -1,4 +1,4 @@
-import StoreBadges from '@/components/StoreBadges'
+import RideStoreBadges from '@/components/rides/RideStoreBadges'
 import type { AppOnlyRide } from '@/lib/rides/public'
 import '@/components/events/events-tone.css'
 
@@ -17,7 +17,7 @@ export default function AppOnlyRidePage({ ride }: { ride: AppOnlyRide }) {
           This {what} runs in the Shift app, where families see the schedule, the meeting spot and the group&rsquo;s live location.
           Get Shift, then join with code <span className="font-bold tracking-wider text-(--ev-ink)">{ride.code}</span>.
         </p>
-        <StoreBadges className="mt-5" placement="ride_page_bus" height={40} />
+        <RideStoreBadges code={ride.code} className="mt-5" placement="ride_page_bus" height={40} />
       </div>
     </div>
   )
