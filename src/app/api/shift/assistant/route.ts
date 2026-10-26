@@ -7,7 +7,7 @@
 //
 // GET  ?thread_id=      the conversation so far (latest if no id); ?list=1 lists them
 // POST { thread_id?, message?, decision?: { tool_use_id, approve, confirm_text? }, new_thread?,
-//        carry_from?, rating?, screen?, match_id?, here?: { lat, lng } }
+//        carry_from?, rating?, screen?, match_id?, here?: { lat, lng }, attachments?: [{ path }] }
 //      streams newline-delimited JSON events while the assistant works:
 //      {type:'thread', id} {type:'text', delta} {type:'tool', id, label}
 //      {type:'tool_done', id, ok, link?} {type:'choices', options}
@@ -17,6 +17,8 @@
 //      allowed location (Keith 2026-10-25). Used for that answer: it reaches the
 //      model as context and as the start of a trip they ask about; the server
 //      keeps nothing of it beyond the trips in their own conversation.
+//      attachments: one picture the app uploaded to <user>/inbox/ in the private
+//      member-assistant-uploads bucket (lib/shift-assistant/uploads).
 //      link is { screen, params?, label }: the app maps screen to its own route.
 //      trip (on tool_done and in the transcript) is a planned trip the app
 //      draws as a card: TripCard in lib/shift-assistant/tools.
@@ -32,6 +34,7 @@ import { choicesFilter, splitChoices } from '@/lib/assistant/choices'
 import { SYSTEM_PROMPT, contextBlock, screenLabel } from '@/lib/shift-assistant/prompt'
 import { ACTIVITY, NEEDS_APPROVAL, TOOLS, approvalCard, runApproved, runTool, type ApprovalCard, type ToolCtx, type ToolResult, type TripCard } from '@/lib/shift-assistant/tools'
 import { inServiceArea } from '@/lib/server/trip'
+import { claimUpload, foldersIn, imageMark, inboxPath, lastImage, markedPath, removeFolders, signedUrls, withImages } from '@/lib/shift-assistant/uploads'
 
 export const runtime = 'nodejs'
 export const maxDuration = 300
@@ -99,6 +102,7 @@ async function summarizeThread(admin: SupabaseClient, threadId: string): Promise
   for (const m of await loadMessages(admin, threadId)) {
     for (const b of Array.isArray(m.content) ? (m.content as Record<string, unknown>[]) : []) {
       if (b.type !== 'text' || typeof b.text !== 'string' || !b.text.trim() || b.text.startsWith('[Carried over')) continue
+      if (markedPath(b.text)) { lines.push('Person: (sent a picture)'); continue }
       lines.push(`${m.role === 'user' ? 'Person' : 'Assistant'}: ${b.text.replace(/<choices>[\s\S]*?<\/choices>/g, '').trim()}`)
     }
   }
@@ -134,13 +138,14 @@ async function logUsage(admin: SupabaseClient, feature: string, model: string, u
 
 type Item =
   | { kind: 'user'; text: string }
+  | { kind: 'user_image'; url: string }
   | { kind: 'carried' }
   | { kind: 'assistant'; text: string; msgId?: number; rated?: 'up' | 'down' }
   | { kind: 'tool'; id: string; label: string; ok?: boolean; link?: ToolResult['link']; trip?: TripCard; card?: { title: string; decision: 'approved' | 'declined' } }
   | { kind: 'choices'; options: string[] }
   | { kind: 'approval'; tool_use_id: string; card: ApprovalCard }
 
-function transcript(messages: { id?: number; role: string; content: unknown }[], pending: Pending | null, ratings: Map<number, boolean>): Item[] {
+function transcript(messages: { id?: number; role: string; content: unknown }[], pending: Pending | null, ratings: Map<number, boolean>, images: Map<string, string>): Item[] {
   const items: Item[] = []
   const byId = new Map<string, Extract<Item, { kind: 'tool' }>>()
   for (const m of messages) {
@@ -148,6 +153,8 @@ function transcript(messages: { id?: number; role: string; content: unknown }[],
     for (const b of blocks) {
       if (b.type === 'text' && typeof b.text === 'string' && b.text.trim()) {
         if (m.role === 'user' && b.text.startsWith('[Carried over')) { items.push({ kind: 'carried' }); continue }
+        const pic = m.role === 'user' ? markedPath(b.text) : null
+        if (pic) { items.push({ kind: 'user_image', url: images.get(pic) ?? '' }); continue }
         if (m.role === 'user') { items.push({ kind: 'user', text: b.text }); continue }
         const sp = splitChoices(b.text)
         if (sp.text) {
@@ -173,7 +180,7 @@ function transcript(messages: { id?: number; role: string; content: unknown }[],
     }
   }
   const waiting = new Set((pending?.cards ?? []).filter((c) => !c.decided).map((c) => c.tool_use_id))
-  const lastUser = items.map((i) => i.kind).lastIndexOf('user')
+  const lastUser = Math.max(items.map((i) => i.kind).lastIndexOf('user'), items.map((i) => i.kind).lastIndexOf('user_image'))
   const cleaned = items.filter((i, idx) => i.kind !== 'choices' || idx > lastUser)
   for (const c of pending?.cards ?? []) if (!c.decided) cleaned.push({ kind: 'approval', tool_use_id: c.tool_use_id, card: c.card })
   return cleaned.filter((i) => i.kind !== 'tool' || ((i.label || i.link || i.trip || i.card) && !waiting.has(i.id)))
@@ -211,7 +218,11 @@ export async function GET(request: Request) {
     auth.admin.from('member_assistant_ratings').select('message_id, up').eq('thread_id', thread.id).eq('user_id', auth.user.id),
   ])
   const ratings = new Map(((rated.data ?? []) as { message_id: number; up: boolean }[]).map((r) => [Number(r.message_id), r.up]))
-  return Response.json({ thread_id: thread.id, items: transcript(messages, thread.pending, ratings), long: (await contextSize(auth.admin, thread.id)) > SOFT_CONTEXT })
+  const pics = messages.flatMap((m) => m.role === 'user' && Array.isArray(m.content)
+    ? (m.content as Record<string, unknown>[]).map((b) => (b.type === 'text' ? markedPath(b.text) : null)).filter((p): p is string => !!p)
+    : [])
+  const images = await signedUrls(auth.admin, pics, 3600)
+  return Response.json({ thread_id: thread.id, items: transcript(messages, thread.pending, ratings, images), long: (await contextSize(auth.admin, thread.id)) > SOFT_CONTEXT })
 }
 
 // ── DELETE ──
@@ -223,6 +234,10 @@ export async function DELETE(request: Request) {
   const id = url.searchParams.get('thread_id')
   const all = url.searchParams.get('all') === '1'
   if (!id && !all) return Response.json({ error: 'thread_id required' }, { status: 400 })
+  if (!all && !UUID.test(id!)) return Response.json({ error: 'thread_id required' }, { status: 400 })
+  // Their pictures first: a conversation's files sit in its own folder.
+  const mine = all ? [...(await foldersIn(auth.admin, auth.user.id)).map((f) => `${auth.user.id}/${f}`)] : [`${auth.user.id}/${id}`]
+  await removeFolders(auth.admin, mine)
   let q = auth.admin.from('member_assistant_threads').delete().eq('user_id', auth.user.id)
   if (!all) q = q.eq('id', id!)
   const { error } = await q
@@ -245,6 +260,8 @@ export async function POST(request: Request) {
     here?: { lat?: unknown; lng?: unknown }
     /** Newer screens this app build can open (lib/assistant.ts NEWER_SCREENS). */
     screens?: unknown
+    /** A picture the app uploaded first (one per question). */
+    attachments?: { path?: unknown }[]
   } | null
   const auth = await authorize(request)
   if ('error' in auth) return auth.error
@@ -273,7 +290,8 @@ export async function POST(request: Request) {
   }
 
   const text = (body?.message ?? '').trim().slice(0, 2000)
-  if (!text && !body?.decision) return Response.json({ error: 'Say something first.' }, { status: 400 })
+  const upload = Array.isArray(body?.attachments) ? inboxPath(user.id, body.attachments[0]?.path) : null
+  if (!text && !upload && !body?.decision) return Response.json({ error: 'Say something first.' }, { status: 400 })
 
   // Opened from a Shift Together ride plan: only the id travels, checked as
   // the person (get_ride_plan returns nothing for a match that isn't theirs).
@@ -309,7 +327,7 @@ export async function POST(request: Request) {
     thread = claimed as Thread
   } else {
     const { data, error } = await admin.from('member_assistant_threads')
-      .insert({ user_id: user.id, title: text.slice(0, 80) || 'Conversation', busy_until: lockUntil }).select('id, pending').single()
+      .insert({ user_id: user.id, title: text.slice(0, 80) || (upload ? 'Picture' : 'Conversation'), busy_until: lockUntil }).select('id, pending').single()
     if (error || !data) return Response.json({ error: 'Could not start a conversation.' }, { status: 500 })
     thread = data as Thread
   }
@@ -354,13 +372,23 @@ export async function POST(request: Request) {
         shown.add(key)
         return r
       }
+      let picture: string | null = null
       const userBlocks = (): unknown[] => [
         ...(carryNote ? [{ type: 'text', text: carryNote }] : []),
+        ...(picture ? [{ type: 'text', text: imageMark(picture) }] : []),
         ...(text ? [{ type: 'text', text }] : []),
       ]
 
       try {
         emit({ type: 'thread', id: threadId })
+        if (upload) {
+          picture = await claimUpload(admin, user.id, threadId, upload)
+          if (!picture) {
+            emit({ type: 'error', message: "That picture didn't come through. Try attaching it again." })
+            emit({ type: 'done' })
+            return
+          }
+        }
         let pending = thread!.pending
 
         // 1. Settle the cards: a decision, or a typed reply instead.
@@ -403,7 +431,7 @@ export async function POST(request: Request) {
           await setPending(null)
           pending = null
         } else {
-          if (!text) { emit({ type: 'done' }); return }
+          if (!text && !picture) { emit({ type: 'done' }); return }
           await append('user', userBlocks())
         }
 
@@ -413,8 +441,12 @@ export async function POST(request: Request) {
         const tools = TOOLS.map((t, i) => (i === TOOLS.length - 1 ? { ...t, cache_control: { type: 'ephemeral' as const } } : t))
         // Text from a later step starts a new paragraph, not the end of the last sentence.
         let wroteBefore = false
+        const pictures = new Map<string, { media_type: string; data: string } | null>()
         for (let step = 0; step < MAX_STEPS; step++) {
-          const history = await loadMessages(admin, threadId)
+          const stored = await loadMessages(admin, threadId)
+          // A problem report carries the newest picture to the team.
+          ctx.screenshot = lastImage(stored)
+          const history = await withImages(admin, stored, pictures)
           const s = client.beta.messages.stream({
             model: MODEL,
             max_tokens: 8000,

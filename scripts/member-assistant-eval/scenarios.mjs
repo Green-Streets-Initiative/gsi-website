@@ -55,6 +55,8 @@ export const SCENARIOS = [
 
   { id: 'report-problem', group: 'actions', says: ['Who do I call about a broken walk signal near my house?'], checks: { requireTools: ['get_town_info'] },
     rubric: "Names the right place to report it in their town (Somerville, from their saved Home) with the phone or email when listed, and a button to the report page. Short." },
+  { id: 'route-link', group: 'actions', says: ['My friend sent me this ride, is it doable for me? https://ridewithgps.com/routes/43581604'], checks: { requireTools: ['check_route_link'] },
+    rubric: 'Reads the route: miles, climbing and how much is on calm streets or paths, from the tool. Notices it ends somewhere else (Concord) if the tool says it is not a loop. Offers to get them to the start. Short.' },
   { id: 'hearings', group: 'actions', says: ['Are there any hearings about bike lanes coming up in Cambridge?'], checks: { requireTools: ['get_town_info'] },
     rubric: 'At most two, one line each: what is being decided, when, how to weigh in. Neutral: never says which side to take. Facts only from the tool.' },
 

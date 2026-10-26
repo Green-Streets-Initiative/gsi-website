@@ -10,6 +10,9 @@ import { excerptOf } from '@/lib/commute/try-it-event'
 import { todayKey } from '@/lib/organizers/ride-words'
 import { getTownCivicEvents, getTownDirectory, getTownResources, townSlug } from '@/lib/towns/queries'
 import { dayLabel, fetchDisruptions, fetchElevatorClosures, routeIdsForLabels, type Disruption } from '@/lib/nearby/disruptions'
+import { fetchRideWithGps } from '@/lib/organizers/rwgps'
+import { summarizeRoute } from '@/lib/organizer-assistant/route-designer'
+import { signedUrls } from '@/lib/shift-assistant/uploads'
 import { RIDE_PLAN_ACTIVITY, RIDE_PLAN_NEEDS_APPROVAL, RIDE_PLAN_TOOLS, ridePlanCard, runApprovedRidePlan, runRidePlanTool, type RidePlanCard } from '@/lib/shift-assistant/ride-plan-tools'
 
 // The Shift assistant's tools, for everyone in the app (Keith 2026-10-24).
@@ -32,6 +35,8 @@ export type ToolCtx = {
   here?: { lat: number; lng: number } | null
   /** Newer screens the person's app build can open; older builds send none. */
   screens?: Set<string>
+  /** The newest picture they attached in this conversation, sent with a problem report. */
+  screenshot?: string | null
 }
 
 /** A button under the reply: a screen the app maps to one of its own routes,
@@ -101,6 +106,7 @@ export const ACTIVITY: Record<string, string> = {
   get_my_activity: 'Reading your trips and rewards',
   get_my_settings: 'Reading your settings',
   get_town_info: 'Looking up your town',
+  check_route_link: 'Reading the route',
   ...RIDE_PLAN_ACTIVITY,
 }
 
@@ -140,6 +146,15 @@ export const TOOLS: Anthropic.Tool[] = [
         leave_time: nullable('string', 'HH:MM, 24-hour, Eastern time, when they said a time. Empty for now.'),
       },
       required: ['from', 'to'],
+    },
+  },
+  {
+    name: 'check_route_link',
+    description: 'Read a Ride with GPS route link they pasted (from a club, a friend, a ride listing): its name, distance, climbing, how much is on calm streets, paths and protected lanes, spots to take carefully, new lanes on it, and where it starts and ends. To get them to the start, pass start to check_trip.',
+    input_schema: {
+      type: 'object',
+      properties: { url: { type: 'string', description: 'The ridewithgps.com/routes/… or /trips/… link, as pasted.' } },
+      required: ['url'],
     },
   },
   {
@@ -666,15 +681,35 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
           ...(em.all_off ? { note: 'They turned off all Shift email.' } : {}),
         }, canOpen(ctx, 'notifications') ? { screen: 'notifications', label: 'Open notification settings' } : undefined)
       }
+      case 'check_route_link': {
+        const r = await fetchRideWithGps(String(input.url ?? ''))
+        if (!r.ok) return fail(r.error)
+        const first = r.waypoints[0]
+        const last = r.waypoints[r.waypoints.length - 1]
+        const at = (p: { lat: number; lng: number }, name: string) => ({ lat: Math.round(p.lat * 1e5) / 1e5, lng: Math.round(p.lng * 1e5) / 1e5, name })
+        const loop = haversineMiles(first.lat, first.lng, last.lat, last.lng) < 0.3
+        // How it rides comes from the ride planner; distance and climbing stand without it.
+        const rides = await summarizeRoute(ctx.token, r.waypoints, null, r.elevation).catch(() => null)
+        return ok({
+          name: r.name,
+          miles: r.distance_mi,
+          climbing_ft: r.elevation?.ascent_ft != null ? Math.round(r.elevation.ascent_ft) : null,
+          ...(rides ?? { note: "Couldn't check how calm the streets are just now." }),
+          start: at(first, 'Start of the route'),
+          ...(loop ? { loop: true } : { end: at(last, 'End of the route') }),
+        })
+      }
       case 'note_feedback': {
+        // A picture they attached goes with it, as a link that works for a week.
+        const shot = ctx.screenshot ? (await signedUrls(ctx.admin, [ctx.screenshot], 7 * 86_400)).get(ctx.screenshot) ?? null : null
         await ctx.admin.from('admin_notifications').insert({
           level: 'info',
           source: 'shift_assistant',
           title: `Shift assistant feedback (${String(input.kind)}): ${String(input.summary).slice(0, 120)}`,
-          body: [input.their_words ? `"${String(input.their_words).slice(0, 1500)}"` : null, `${ctx.email}`].filter(Boolean).join('\n'),
-          context: { kind: 'shift_assistant_feedback', feedback_kind: input.kind, user_id: ctx.userId },
+          body: [input.their_words ? `"${String(input.their_words).slice(0, 1500)}"` : null, `${ctx.email}`, shot ? `Their picture (link works for 7 days): ${shot}` : null].filter(Boolean).join('\n'),
+          context: { kind: 'shift_assistant_feedback', feedback_kind: input.kind, user_id: ctx.userId, ...(ctx.screenshot ? { screenshot_path: ctx.screenshot } : {}) },
         })
-        return ok({ noted: true })
+        return ok({ noted: true, ...(shot ? { picture_sent: true } : {}) })
       }
     }
     return fail(`Unknown tool ${name}`)

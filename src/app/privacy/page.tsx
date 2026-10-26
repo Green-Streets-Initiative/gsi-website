@@ -237,6 +237,13 @@ export default function PrivacyPage() {
                 tap Approve.
               </P>
               <P>
+                If you attach a picture, such as a screenshot, the assistant looks at it to answer
+                you. It is stored privately with that conversation and deleted with it. If you
+                report a problem, the Green Streets team sees the picture with your report. If you
+                share a Ride with GPS route link, we read that public route from Ride with GPS to
+                answer you.
+              </P>
+              <P>
                 Your questions and what the assistant looks up to answer them are processed by
                 Anthropic, which provides the AI model, and places and transit directions are
                 looked up with Google Maps Platform, as described under With Service Providers.
