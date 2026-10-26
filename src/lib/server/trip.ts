@@ -3,7 +3,7 @@ import 'server-only'
 import { unstable_cache } from 'next/cache'
 import {
   buildReachRow,
-  laneIndexFor,
+  laneIndexAlong,
   crashesFor,
   haversineMiles,
   nextMonday830,
@@ -89,7 +89,7 @@ async function computeTrip(
   departAt?: string,
 ): Promise<ReachRow> {
   const [laneIndex, crashes] = await Promise.all([
-    laneIndexFor(from.lat, from.lng),
+    laneIndexAlong(from, [to]),
     crashesFor(from.lat, from.lng),
   ])
   return buildReachRow(

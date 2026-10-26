@@ -37,7 +37,7 @@ import { PRICES } from '@/lib/facts/prices'
  * while local testing (which deletes .next and varies coordinates) missed
  * both stale layers entirely. One constant, four call sites, no drift.
  */
-export const REACH_ROW_VERSION = 'v18' // v18: pick among Google's transit alternatives (transit-choice)
+export const REACH_ROW_VERSION = 'v19' // v19: comfort scored against the lane map along the whole ride, not 3 mi around the start
 
 const GOOGLE_ROUTES_KEY = process.env.GOOGLE_ROUTES_API_KEY
 
@@ -590,6 +590,44 @@ function buildLaneIndex(network: BikeNetworkResponse): LaneVertex[] {
   return index
 }
 
+/**
+ * The lane vertices near a point: the 3 x 3 grid cells around it, so every
+ * vertex within one cell (~110 m north-south, ~107 m east-west) is included.
+ * A superset of both prefilters below (classifySample's 0.001 deg / 0.0012
+ * deg, matchBikeCorridors' tighter one), which still decide.
+ *
+ * The index now spans the whole ride, several 3-mile lane maps' worth (100k+
+ * vertices), and every route is sampled every ~120 m: a straight scan of the
+ * index per sample is billions of comparisons for a region's curated list.
+ */
+const GRID_CELL_LAT = 0.001
+const GRID_CELL_LNG = 0.0013
+const laneGrids = new WeakMap<LaneVertex[], Map<string, LaneVertex[]>>()
+
+function nearbyVertices(index: LaneVertex[], lat: number, lng: number): LaneVertex[] {
+  let grid = laneGrids.get(index)
+  if (!grid) {
+    grid = new Map()
+    for (const v of index) {
+      const key = `${Math.floor(v.lat / GRID_CELL_LAT)},${Math.floor(v.lng / GRID_CELL_LNG)}`
+      const cell = grid.get(key)
+      if (cell) cell.push(v)
+      else grid.set(key, [v])
+    }
+    laneGrids.set(index, grid)
+  }
+  const r = Math.floor(lat / GRID_CELL_LAT)
+  const c = Math.floor(lng / GRID_CELL_LNG)
+  const out: LaneVertex[] = []
+  for (let dr = -1; dr <= 1; dr++) {
+    for (let dc = -1; dc <= 1; dc++) {
+      const cell = grid.get(`${r + dr},${c + dc}`)
+      if (cell) for (const v of cell) out.push(v)
+    }
+  }
+  return out
+}
+
 const SAMPLE_STEP_METERS = 240 // ~0.15 mi
 const MATCH_RADIUS_METERS = 40
 const MIN_COVERAGE = 0.15
@@ -618,7 +656,7 @@ function matchBikeCorridors(encodedPolyline: string, index: LaneVertex[]): Reach
     const [slat, slng] = samples[s]
     let best: LaneVertex | null = null
     let bestD = MATCH_RADIUS_METERS
-    for (const v of index) {
+    for (const v of nearbyVertices(index, slat, slng)) {
       if (!v.key) continue
       // Cheap prefilter (~0.0006° ≈ 60 m) before the exact distance
       if (Math.abs(v.lat - slat) > 0.0006 || Math.abs(v.lng - slng) > 0.0008) continue
@@ -681,7 +719,7 @@ function classifySample(
   // Collect every nearby vertex first: the rating has to be decided AFTER we
   // know which street we're on, not while we're still finding out.
   const nearby: LaneVertex[] = []
-  for (const v of index) {
+  for (const v of nearbyVertices(index, slat, slng)) {
     if (Math.abs(v.lat - slat) > 0.001 || Math.abs(v.lng - slng) > 0.0012) continue
     const d = haversineMeters(slat, slng, v.lat, v.lng)
     if (v.key && d < farD) { farD = d; farKey = v.key; farDisplay = v.display }
@@ -1017,6 +1055,11 @@ const CRASH_NEAR_METERS = 46
  */
 const COMFORT_TIE_BAND = 0.05
 
+/** The smallest comfort difference we state, or trade minutes for. Kendall/MIT
+ *  from Union Square set this bar: the two routes came back at the same 14
+ *  minutes and within a point of each other on protection. */
+const MIN_COMFORT_GAP = 0.08
+
 /** How many mapped crash clusters this route passes. */
 function crashCount(encodedPolyline: string, clusters: CrashCluster[]): number {
   if (clusters.length === 0) return 0
@@ -1078,17 +1121,25 @@ function chooseBikeRoute(
     console.log('[crash]', scored.map(r =>
       `${r.minutes}min comfort=${(r.scored?.score ?? 0).toFixed(3)} band=${band(r)} clusters=${r.crashes}`).join(' | '))
   }
-  const primary = scored
+  const calmest = scored
     .filter(r => r.minutes <= limit)
     .sort((a, b) => band(b) - band(a) || a.crashes - b.crashes || a.minutes - b.minutes)[0]
-  if (!primary) return null
+  if (!calmest) return null
+  // Never make someone ride longer for a comfort gain too small to name: a
+  // quicker route within MIN_COMFORT_GAP of the calmest, past no more crash
+  // clusters, is the same ride as far as we can honestly say, so the quicker
+  // one wins. Union Square to Kendall (2026-10-26): a 16-minute route beat a
+  // 12-minute one with no shared road at all, on 0.05 of comfort.
+  const primary = scored
+    .filter(r =>
+      r.minutes < calmest.minutes &&
+      (r.scored?.score ?? 0) >= (calmest.scored?.score ?? 0) - MIN_COMFORT_GAP &&
+      r.crashes <= calmest.crashes)
+    .sort((a, b) => a.minutes - b.minutes)[0] ?? calmest
   // The contrast worth showing is calmest against quickest — but only when
   // it's a real one. Same route, same streets, or a comfort gap too small to
   // state honestly, and the "choice" is noise: we'd be asking someone to
-  // decide between two things we can't tell apart. Kendall/MIT from Union
-  // Square is the case that set this bar — the two routes came back at the
-  // same 14 minutes and within a point of each other on protection.
-  const MIN_COMFORT_GAP = 0.08
+  // decide between two things we can't tell apart (MIN_COMFORT_GAP).
   const quickest = [...scored].sort((a, b) => a.minutes - b.minutes)[0]
   const gap = (primary.scored?.score ?? 0) - (quickest?.scored?.score ?? 0)
   const alt =
@@ -1206,13 +1257,10 @@ async function computeReach(
   // Lane-vertex index for bike-route matching + comfort scoring, and the
   // crash clusters routes are ranked against — both on shared 24 h caches, so
   // every destination in the region pays for them once between them.
-  const [network, crashes] = await Promise.all([
-    getBikeNetwork(lat3, lng3, 3).catch(
-      () => ({ geojson: { type: 'FeatureCollection' as const, features: [] }, nearest_protected: null, counts: { path: 0, protected: 0, painted: 0 } })
-    ),
+  const [laneIndex, crashes] = await Promise.all([
+    laneIndexAlong({ lat: lat3, lng: lng3 }, candidates),
     getCrashClusters(lat3, lng3, 6),
   ])
-  const laneIndex = buildLaneIndex(network)
 
   const rows: ReachRow[] = await Promise.all(
     candidates.map(d => buildReachRow({ lat: lat3, lng: lng3 }, d, laneIndex, departureTime, crashes))
@@ -1284,12 +1332,73 @@ export async function crashesFor(lat: number, lng: number): Promise<CrashCluster
   return getCrashClusters(lat, lng, 6)
 }
 
-/** The lane index a reach row is scored against — shared 24 h bike-network
- *  cache, so the trip planner pays nothing extra for it. */
-export async function laneIndexFor(lat: number, lng: number): Promise<LaneVertex[]> {
-  return buildLaneIndex(await getBikeNetwork(lat, lng, 3).catch(
-    () => ({ geojson: { type: 'FeatureCollection' as const, features: [] }, nearest_protected: null, counts: { path: 0, protected: 0, painted: 0 } })
-  ))
+/**
+ * The lane map along each ride, not just around its start.
+ *
+ * getBikeNetwork serves at most 3 miles around a point. Scored against the
+ * start's map alone, everything past 3 miles read as "shared road": Arlington
+ * Center to the Seaport (Keith 2026-10-26) showed 5.2 of 9.2 miles shared
+ * road on a route that is 7.4 miles of path (the full Community Path to
+ * Lechmere, North Point Park) and 1.3 protected, and the calmer-route search
+ * couldn't aim at a facility it couldn't see. Telling people a calm route is
+ * a busy one steers them off exactly the routes we want them on.
+ *
+ * Maps are taken every TILE_STEP_MILES along the straight line to each
+ * destination, centres snapped to a ~1.4 mi grid so neighbouring rides (and
+ * the region's curated list) share getBikeNetwork's cache. Step + snap leave
+ * ~0.75 mi of the 3 mi radius for a route bending off the straight line.
+ */
+const TILE_RADIUS_MILES = 3
+const TILE_STEP_MILES = 2.5
+const TILE_GRID_LAT = 0.02
+const TILE_GRID_LNG = 0.027
+/** Lane maps fetched at once: each fans out to MAPC, MassDOT and Overpass. */
+const TILE_CONCURRENCY = 4
+
+export async function laneIndexAlong(
+  origin: { lat: number; lng: number },
+  dests: { lat: number; lng: number }[],
+): Promise<LaneVertex[]> {
+  const centres = new Map<string, { lat: number; lng: number }>()
+  const add = (lat: number, lng: number) => {
+    const r = Math.round(lat / TILE_GRID_LAT)
+    const c = Math.round(lng / TILE_GRID_LNG)
+    centres.set(`${r},${c}`, {
+      lat: Math.round(r * TILE_GRID_LAT * 1000) / 1000,
+      lng: Math.round(c * TILE_GRID_LNG * 1000) / 1000,
+    })
+  }
+  add(origin.lat, origin.lng)
+  for (const d of dests) {
+    const miles = haversineMiles(origin.lat, origin.lng, d.lat, d.lng)
+    const steps = Math.ceil(miles / TILE_STEP_MILES)
+    for (let i = 1; i <= steps; i++) {
+      const f = i / steps
+      add(origin.lat + (d.lat - origin.lat) * f, origin.lng + (d.lng - origin.lng) * f)
+    }
+  }
+
+  const empty = { geojson: { type: 'FeatureCollection' as const, features: [] }, nearest_protected: null, counts: { path: 0, protected: 0, painted: 0 } }
+  const list = [...centres.values()]
+  const networks: BikeNetworkResponse[] = []
+  for (let i = 0; i < list.length; i += TILE_CONCURRENCY) {
+    networks.push(...await Promise.all(
+      list.slice(i, i + TILE_CONCURRENCY).map(c => getBikeNetwork(c.lat, c.lng, TILE_RADIUS_MILES).catch(() => empty)),
+    ))
+  }
+
+  // Neighbouring maps overlap: keep each vertex once.
+  const seen = new Set<string>()
+  const index: LaneVertex[] = []
+  for (const n of networks) {
+    for (const v of buildLaneIndex(n)) {
+      const k = `${v.lat},${v.lng},${v.quality},${v.key ?? ''}`
+      if (seen.has(k)) continue
+      seen.add(k)
+      index.push(v)
+    }
+  }
+  return index
 }
 
 /** Straight-line miles between two points — exported for the trip planner,
