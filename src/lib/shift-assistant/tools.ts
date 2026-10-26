@@ -130,8 +130,17 @@ export const TOOLS: Anthropic.Tool[] = [
   },
   {
     name: 'check_trip',
-    description: 'One trip to one place, the way Around You answers it: transit minutes, how much of it is walking, the lines and where to change, the fare, bike minutes, and how calm the bike route is street by street (paths, protected lanes, painted lanes, shared roads), with a calmer option when there is one. Use for a one-off trip (a Saturday errand, a new place).',
-    input_schema: { type: 'object', properties: { from: placeSchema, to: placeSchema }, required: ['from', 'to'] },
+    description: 'One trip to one place, the way Around You answers it: transit minutes, how much of it is walking, the lines and where to change, the fare, bike minutes, and how calm the bike route is street by street (paths, protected lanes, painted lanes, shared roads), with a calmer option when there is one. Transit is planned for when they leave: now, unless you pass a day and time. Use for a one-off trip (a Saturday errand, a new place).',
+    input_schema: {
+      type: 'object',
+      properties: {
+        from: placeSchema,
+        to: placeSchema,
+        leave_date: nullable('string', 'YYYY-MM-DD, when they said a day ("Saturday", "tomorrow"). Empty for now.'),
+        leave_time: nullable('string', 'HH:MM, 24-hour, Eastern time, when they said a time. Empty for now.'),
+      },
+      required: ['from', 'to'],
+    },
   },
   {
     name: 'get_weather',
@@ -293,6 +302,16 @@ const MODE_WORDS: Record<string, string> = {
   carpool: 'carpool', escooter: 'e-scooter', ferry: 'ferry', drive: 'drive', other: 'other',
 }
 
+/** A Boston wall-clock day and time ("2026-10-31", "10:00") as an instant. */
+function bostonIso(date: string, time: string): string | null {
+  const d = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date)
+  const t = /^(\d{2}):(\d{2})$/.exec(time)
+  if (!d || !t) return null
+  const guess = Date.UTC(+d[1], +d[2] - 1, +d[3], +t[1], +t[2])
+  const wall = (tz: string) => new Date(new Date(guess).toLocaleString('en-US', { timeZone: tz })).getTime()
+  return new Date(guess + (wall('UTC') - wall('America/New_York'))).toISOString()
+}
+
 const bostonWhen = (iso: string) => new Date(iso).toLocaleString('en-US', {
   timeZone: 'America/New_York', weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit',
 })
@@ -388,7 +407,13 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
         const to = asPlace(input.to)
         if (!from || !to) return fail('Both places need coordinates. Look them up with find_place first.')
         if (!inServiceArea(from.lat, from.lng) || !inServiceArea(to.lat, to.lng)) return ok({ available: false, note: 'Trip checks cover Massachusetts and nearby. This trip is outside it.' })
-        const r = await getTrip(from, to, to.name ?? '')
+        // Transit for when they'd leave: the day and time they asked about, else now.
+        const leaveDate = typeof input.leave_date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(input.leave_date) ? input.leave_date : null
+        const leaveTime = typeof input.leave_time === 'string' && /^\d{2}:\d{2}$/.test(input.leave_time) ? input.leave_time : null
+        const departAt = leaveDate || leaveTime
+          ? bostonIso(leaveDate ?? todayKey(), leaveTime ?? '08:00') ?? new Date().toISOString()
+          : new Date().toISOString()
+        const r = await getTrip(from, to, to.name ?? '', departAt)
         // Service changes and broken elevators on this trip's own lines and
         // stations, so the answer reflects today rather than a normal day.
         const lineIds = await routeIdsForLabels(r.steps.map((s) => s.label))
@@ -422,7 +447,8 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
           content: {
             card: 'A route card shows under your reply: a small map of the bike route, its minutes and miles, a strip of how calm each stretch is, and buttons to open it in Google Maps or see the full trip. Write at most two short sentences with no minutes, miles or percentages (the card shows them) and no street list: which way you would go and why, and anything worth knowing (a busy stretch, a train or bus that also works).',
             miles: round1(r.distance_miles),
-            transit: r.transit_minutes == null ? null : {
+            transit: r.transit_minutes == null ? { none: `No transit found leaving ${bostonWhen(departAt)}.` } : {
+              leaving: bostonWhen(departAt),
               minutes: r.transit_minutes, walking_minutes: r.transit_walk_minutes, fare: r.transit_fare,
               legs: r.steps.map((s) => ({ line: s.label, from: s.boardStop ?? null, to: s.alightStop ?? null, toward: s.headsign ?? null, stops: s.numStops ?? null })),
               service_changes: alertFacts(alerts),

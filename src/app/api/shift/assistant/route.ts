@@ -40,11 +40,13 @@ export const maxDuration = 300
 const MODEL = process.env.SHIFT_ASSISTANT_MODEL || 'claude-sonnet-5-5'
 const SUMMARY_MODEL = 'claude-haiku-5-5'
 const MAX_STEPS = 8
-/** Model calls per person per rolling day, and for everyone per calendar
- *  month, so a loop or a runaway can't run costs up. */
+/** Questions per person per Boston day, and for everyone per calendar
+ *  month, so a loop or a runaway can't run costs up. Counted in
+ *  member_assistant_usage (Shift 01440), which deleting a conversation
+ *  doesn't touch; a question costs about 1.5 cents. */
 // A local server can raise it for the stress test (scripts/member-assistant-eval).
-const DAILY_PERSON_CAP = Number(process.env.SHIFT_ASSISTANT_DAILY_CAP) || 40
-const MONTHLY_CAP = 2000
+const DAILY_PERSON_CAP = Number(process.env.SHIFT_ASSISTANT_DAILY_CAP) || 30
+const MONTHLY_CAP = Number(process.env.SHIFT_ASSISTANT_MONTHLY_CAP) || 3000
 const SOFT_CONTEXT = 50_000
 const HARD_CONTEXT = 120_000
 
@@ -282,26 +284,17 @@ export async function POST(request: Request) {
     if (role === 'guide' || role === 'learner') planNote = `their first ride plan (match_id ${body.match_id}), where they are the ${role}. Read it with get_ride_plan before answering about it.`
   }
 
-  // Caps: this person per rolling day, everyone per month.
-  const monthStart = new Date()
-  monthStart.setUTCDate(1)
-  monthStart.setUTCHours(0, 0, 0, 0)
-  const [{ count: month }, { data: mine }] = await Promise.all([
-    admin.from('member_assistant_messages').select('id', { count: 'exact', head: true }).eq('role', 'assistant').gte('created_at', monthStart.toISOString()),
-    admin.from('member_assistant_threads').select('id').eq('user_id', user.id),
-  ])
-  if ((month ?? 0) >= MONTHLY_CAP) return Response.json({ error: "The assistant has reached this month's limit. Every screen of the app works as usual." }, { status: 429 })
-  const myIds = ((mine ?? []) as { id: string }[]).map((t) => t.id)
-  if (myIds.length) {
-    const { count: today } = await admin.from('member_assistant_messages').select('id', { count: 'exact', head: true })
-      .in('thread_id', myIds).eq('role', 'assistant').gte('created_at', new Date(Date.now() - 86_400_000).toISOString())
-    if ((today ?? 0) >= DAILY_PERSON_CAP) return Response.json({ error: "You've used the assistant a lot today. It'll be ready again tomorrow; every screen works as usual." }, { status: 429 })
-  }
-
   const lockUntil = new Date(Date.now() + 3 * 60_000).toISOString()
   let thread = body?.new_thread ? null : await loadThread(admin, user.id, body?.thread_id)
   if (thread && !body?.decision && (await contextSize(admin, thread.id)) > HARD_CONTEXT) {
     return Response.json({ error: 'This conversation has got too long to continue. Start a fresh one; the assistant brings a summary.', long: true }, { status: 409 })
+  }
+  // A new question takes one from the caps; approving a card answers one already asked.
+  if (!body?.decision) {
+    const { data: took, error: capError } = await admin.rpc('take_member_assistant_question', { p_user_id: user.id, p_daily: DAILY_PERSON_CAP, p_monthly: MONTHLY_CAP })
+    if (capError) return Response.json({ error: 'The assistant is unavailable right now. Every screen of the app works as usual.' }, { status: 503 })
+    if (took === 'monthly') return Response.json({ error: "The assistant has reached this month's limit. Every screen of the app works as usual." }, { status: 429 })
+    if (took === 'daily') return Response.json({ error: "You've used the assistant a lot today. It'll be ready again tomorrow; every screen works as usual." }, { status: 429 })
   }
   let carryNote: string | null = null
   if (!thread && body?.carry_from) {
@@ -327,7 +320,8 @@ export async function POST(request: Request) {
   const hereLat = Number(body?.here?.lat)
   const hereLng = Number(body?.here?.lng)
   const here = Number.isFinite(hereLat) && Number.isFinite(hereLng) && inServiceArea(hereLat, hereLng)
-    ? { lat: Math.round(hereLat * 1e5) / 1e5, lng: Math.round(hereLng * 1e5) / 1e5 }
+    // About 100 m: enough to plan from, not a doorstep.
+    ? { lat: Math.round(hereLat * 1e3) / 1e3, lng: Math.round(hereLng * 1e3) / 1e3 }
     : null
   const screens = new Set(Array.isArray(body?.screens) ? body.screens.filter((x): x is string => typeof x === 'string').slice(0, 30) : [])
   const ctx: ToolCtx = { user: userClient, admin, token, userId: user.id, email: user.email ?? user.id, here, screens }
@@ -417,6 +411,8 @@ export async function POST(request: Request) {
         // With the time, so "today at 11 AM" can be seen to be over at 4 PM.
         const today = new Date().toLocaleString('en-US', { timeZone: 'America/New_York', weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })
         const tools = TOOLS.map((t, i) => (i === TOOLS.length - 1 ? { ...t, cache_control: { type: 'ephemeral' as const } } : t))
+        // Text from a later step starts a new paragraph, not the end of the last sentence.
+        let wroteBefore = false
         for (let step = 0; step < MAX_STEPS; step++) {
           const history = await loadMessages(admin, threadId)
           const s = client.beta.messages.stream({
@@ -433,10 +429,16 @@ export async function POST(request: Request) {
             cache_control: { type: 'ephemeral' },
             messages: history.map(({ role, content }) => ({ role, content })) as Anthropic.Beta.BetaMessageParam[],
           } as Anthropic.Beta.MessageCreateParamsStreaming)
-          const visible = choicesFilter((delta) => emit({ type: 'text', delta }))
+          let stepStarted = false
+          const visible = choicesFilter((delta) => {
+            if (!stepStarted && wroteBefore && delta.trim()) delta = `\n\n${delta.replace(/^\s+/, '')}`
+            if (delta.trim()) stepStarted = true
+            emit({ type: 'text', delta })
+          })
           s.on('text', (delta) => visible.push(delta))
           const msg = await s.finalMessage()
           visible.flush()
+          if (stepStarted) wroteBefore = true
           await logUsage(admin, 'chat', msg.model, msg.usage)
           const options = splitChoices(msg.content.filter((b): b is Anthropic.Beta.BetaTextBlock => b.type === 'text').map((b) => b.text).join('')).options
           if (options.length) emit({ type: 'choices', options })
@@ -453,11 +455,11 @@ export async function POST(request: Request) {
             emit({ type: 'error', message: 'That got too long. Ask again in a smaller piece.' })
             break
           }
-          // A reply written before its tools is already on screen; without
-          // this the model wrote it again after open_screen (stress test,
-          // 2026-10-25: three cases, despite the prompt's one-reply rule).
+          // A reply written before its tools is already on screen (see the
+          // button-only stop below). No note rides in the tool result: the
+          // model read one as an instruction planted in data and told the
+          // person so (2026-10-25).
           const wrote = msg.content.some((b) => b.type === 'text' && b.text.trim().length > 0)
-          const already = wrote ? { _already_replied: 'Your reply this turn is already on their screen. Do not repeat or rephrase it. Write nothing more unless this result changes the answer; then one short sentence.' } : undefined
           // Reads run side by side; a tool that saves waits on its card.
           const results: Record<string, Anthropic.Beta.BetaToolResultBlockParam> = {}
           const cards: PendingCard[] = []
@@ -472,7 +474,7 @@ export async function POST(request: Request) {
             if (ACTIVITY[u.name]) emit({ type: 'tool', id: u.id, label: ACTIVITY[u.name] })
             const r = once(await runTool(ctx, u.name, input))
             emit({ type: 'tool_done', id: u.id, ok: !r.isError, link: r.link, trip: r.trip })
-            results[u.id] = resultBlock(u.id, r, already)
+            results[u.id] = resultBlock(u.id, r)
           }))
           if (cards.length) {
             await setPending({ results, order: uses.map((u) => u.id), cards })

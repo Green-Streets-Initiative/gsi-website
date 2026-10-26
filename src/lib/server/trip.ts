@@ -49,6 +49,10 @@ export async function getTrip(
   from: { lat: number; lng: number },
   to: { lat: number; lng: number },
   name: string,
+  /** When they'd leave (ISO). Without it, transit is planned for a weekday
+   *  morning (next Monday 8:30), the comparison the web map has always shown;
+   *  the Shift assistant passes the time someone asked about. */
+  departAt?: string,
 ): Promise<ReachRow> {
   // Round to ~110 m so a neighborhood's first visitor pays for everyone,
   // matching the reach cache's convention.
@@ -56,12 +60,14 @@ export async function getTrip(
   const t = { lat: round3(to.lat), lng: round3(to.lng) }
   // Versioned with the row shape — see REACH_ROW_VERSION. Unversioned,
   // this cache kept serving pre-fix rows after the classifier changed.
-  const key = `${REACH_ROW_VERSION}:${f.lat},${f.lng}|${t.lat},${t.lng}`
+  // A departure is kept to the quarter hour so nearby asks share a plan.
+  const depart = departAt ? quarterHour(departAt) : undefined
+  const key = `${REACH_ROW_VERSION}:${f.lat},${f.lng}|${t.lat},${t.lng}${depart ? `@${depart}` : ''}`
 
   const cached = cache.get(key)
   if (cached && cached.expires > Date.now()) return { ...cached.row, name }
 
-  const row = await durableTrip(f, t)
+  const row = await durableTrip(f, t, depart)
 
   if (cache.size >= CACHE_MAX_ENTRIES) {
     const oldest = cache.keys().next().value
@@ -80,6 +86,7 @@ const durableTrip = unstable_cache(computeTrip, [`nearby-trip-${REACH_ROW_VERSIO
 async function computeTrip(
   from: { lat: number; lng: number },
   to: { lat: number; lng: number },
+  departAt?: string,
 ): Promise<ReachRow> {
   const [laneIndex, crashes] = await Promise.all([
     laneIndexFor(from.lat, from.lng),
@@ -97,12 +104,20 @@ async function computeTrip(
       distance_miles: haversineMiles(from.lat, from.lng, to.lat, to.lng),
     },
     laneIndex,
-    nextMonday830(),
+    departAt ?? nextMonday830(),
     crashes,
     // Someone typed this destination — worth the extra calls to see whether a
     // calmer line exists that Google's own alternates all missed.
     true,
   )
+}
+
+/** The next quarter hour at or after this time, and never in the past
+ *  (Google plans no transit for a departure that's gone). */
+function quarterHour(iso: string): string {
+  const q = 15 * 60_000
+  const t = Math.max(new Date(iso).getTime() || Date.now(), Date.now())
+  return new Date(Math.ceil(t / q) * q).toISOString()
 }
 
 function round3(n: number): number {
