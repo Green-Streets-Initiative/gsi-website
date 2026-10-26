@@ -33,7 +33,7 @@ import AdvisorVisibilityCard from './AdvisorVisibilityCard'
 import { advisorDraftPath, encodeAdvisorDraft } from './advisor-draft'
 import LivePagePreview from '@/components/employer/LivePagePreview'
 import { useEmployerLocations, locationTitle, type LocationDraft } from '../_lib/use-employer-locations'
-import { employerAdvisorUrl, onThisSite } from '@/lib/employer/office-links'
+import { employerAdvisorUrl, employerNearbyUrl, locationAsOffice, onThisSite } from '@/lib/employer/office-links'
 import { bikeShareMembership, bikeShareSystemNear } from '@/lib/employer/bike-share'
 import type { EmployerBenefits } from '@/lib/types/commute'
 
@@ -187,13 +187,18 @@ export default function AdvisorPage() {
     window.open(advisorDraftPath(slugOrCode, locations.length > 1 ? previewLocation?.id : null, draftPayload), '_blank', 'noopener')
   }
 
-  // With more than one location, each gets its own link that opens the
-  // Advisor with that site picked (Keith 2026-09-30: the hero linked one
-  // site even when several were configured). Same links as the Share Kit.
-  const siteLinks =
-    group?.slug && locations.length > 1
-      ? locations.map((l) => ({ id: l.id, title: locationTitle(l), url: employerAdvisorUrl(group.slug!, l.id) }))
-      : []
+  // Links per office, same as the Share Kit. With more than one location each
+  // gets an Advisor link that opens with that site picked (Keith 2026-09-30),
+  // and every office has its own Nearby page, listed here where offices are
+  // added (Keith 2026-10-26: the Nearby links were hard to find).
+  const siteLinks = group?.slug
+    ? locations.map((l) => ({
+        id: l.id,
+        title: locationTitle(l),
+        advisor: locations.length > 1 ? employerAdvisorUrl(group.slug!, l.id) : null,
+        nearby: employerNearbyUrl(group.slug!, locationAsOffice(l)),
+      }))
+    : []
   const [siteCopied, setSiteCopied] = useState<string | null>(null)
   function copySite(id: string, url: string) {
     navigator.clipboard.writeText(url)
@@ -451,32 +456,31 @@ export default function AdvisorPage() {
             {siteLinks.length > 0 && (
               <div className="mt-1 grid gap-1.5">
                 <p className="text-[14px] text-white/85">
-                  Or link straight to one location:
+                  {siteLinks.length > 1 ? 'Each office' : 'Your office'} also has a Nearby page: a live map of transit,
+                  Bluebikes and bike paths around it.
                 </p>
-                <ul className="grid gap-1.5">
+                <ul className="grid gap-3">
                   {siteLinks.map((sl) => (
-                    <li key={sl.id} className="flex flex-wrap items-center gap-2 text-[15px]">
-                      <span className="min-w-0 flex-1 truncate">
-                        <span className="font-semibold text-white">{sl.title}</span>
-                        <span className="text-white/85"> · {sl.url.replace(/^https:\/\/(www\.)?/, '')}</span>
+                    <li key={sl.id} className="grid gap-1.5 text-[15px]">
+                      <span className="min-w-0 truncate font-semibold text-white">{sl.title}</span>
+                      <span className="flex flex-wrap items-center gap-x-5 gap-y-1.5">
+                      {sl.advisor && (
+                        <SiteLink
+                          label="Commute Advisor"
+                          url={sl.advisor}
+                          copied={siteCopied === `a-${sl.id}`}
+                          onCopy={() => copySite(`a-${sl.id}`, sl.advisor!)}
+                        />
+                      )}
+                      {sl.nearby && (
+                        <SiteLink
+                          label="Nearby"
+                          url={sl.nearby}
+                          copied={siteCopied === `n-${sl.id}`}
+                          onCopy={() => copySite(`n-${sl.id}`, sl.nearby!)}
+                        />
+                      )}
                       </span>
-                      <button
-                        type="button"
-                        className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[14px] font-semibold text-white ring-1 ring-white/35 hover:bg-white/10"
-                        onClick={() => copySite(sl.id, sl.url)}
-                      >
-                        <Copy size={12} strokeWidth={2} />
-                        {siteCopied === sl.id ? 'Copied!' : 'Copy'}
-                      </button>
-                      <a
-                        href={onThisSite(sl.url)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[14px] font-semibold text-white ring-1 ring-white/35 hover:bg-white/10"
-                      >
-                        <ExternalLink size={12} strokeWidth={2} />
-                        Open
-                      </a>
                     </li>
                   ))}
                 </ul>
@@ -898,5 +902,24 @@ export default function AdvisorPage() {
       </div>}
       <div className="h-2" />
     </div>
+  )
+}
+
+/** One office link in the hero: its name, then Copy and Open. */
+function SiteLink({ label, url, copied, onCopy }: { label: string; url: string; copied: boolean; onCopy: () => void }) {
+  const pill =
+    'inline-flex min-h-[32px] items-center gap-1 rounded-md px-2.5 py-1 text-[14px] font-semibold text-white ring-1 ring-white/35 hover:bg-white/10'
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      <span className="text-white/85">{label}</span>
+      <button type="button" className={pill} onClick={onCopy} aria-label={`Copy the ${label} link`}>
+        <Copy size={12} strokeWidth={2} />
+        {copied ? 'Copied!' : 'Copy'}
+      </button>
+      <a href={onThisSite(url)} target="_blank" rel="noopener noreferrer" className={pill} aria-label={`Open the ${label} page`}>
+        <ExternalLink size={12} strokeWidth={2} />
+        Open
+      </a>
+    </span>
   )
 }

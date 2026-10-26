@@ -107,7 +107,7 @@ export default function LocationsCard({
     <Card>
       <CardHead
         title="Locations"
-        sub="Every office, branch or site where your staff work. Each one gets its own Commute Advisor link and Nearby page in your Share Kit."
+        sub="Every office, branch or site where your staff work. Each one gets its own Commute Advisor link and Nearby page, listed at the top of this page."
       />
       <div className="grid gap-3 px-6 py-5">
         {rows.map((r, i) => (

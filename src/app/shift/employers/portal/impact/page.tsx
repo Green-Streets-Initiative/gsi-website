@@ -233,7 +233,7 @@ export default function ImpactPage() {
       sub: (
         <>
           joined · add a headcount on{' '}
-          <Link href={`${PORTAL}/setup`} className="font-semibold text-white underline underline-offset-2 hover:text-white">
+          <Link href={`${PORTAL}/setup?step=success`} className="font-semibold text-white underline underline-offset-2 hover:text-white">
             Setup
           </Link>
         </>
@@ -473,14 +473,14 @@ export default function ImpactPage() {
           <p className="mt-1.5 text-[14px] leading-[1.5] text-ink-tertiary">
             {goalCard.reached ? 'Goal reached. ' : ''}
             {goalCard.launch ? `Launch date ${goalCard.launch}. ` : ''}
-            <Link href={`${PORTAL}/setup`} className="font-medium text-accent no-underline hover:underline">
+            <Link href={`${PORTAL}/setup?step=success`} className="font-medium text-accent no-underline hover:underline">
               Change the goal on the Setup page
             </Link>
           </p>
         </Card>
       ) : hasGoal ? null : (
         <p className="text-[15px] text-ink-muted">
-          <Link href={`${PORTAL}/setup`} className="font-medium text-accent no-underline hover:underline">
+          <Link href={`${PORTAL}/setup?step=success`} className="font-medium text-accent no-underline hover:underline">
             Set a goal on the Setup page
           </Link>{' '}
           to see how your team tracks against it here.

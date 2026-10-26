@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { MessageSquareText, Search, Trophy, UserPlus, Wallet, Printer, LogOut, ShieldCheck, type LucideIcon } from 'lucide-react'
+import { ListChecks, MessageSquareText, Search, Trophy, UserPlus, Wallet, Printer, LogOut, ShieldCheck, type LucideIcon } from 'lucide-react'
 import { usePortal } from '../_lib/portal-context'
 import { computeSetupSteps, nextSetupStep } from '../_lib/setup-steps'
 import { visibleNav, isNavItem } from './Sidebar'
@@ -60,6 +60,19 @@ export default function CommandPalette({ onClose }: { onClose: () => void }) {
         href: '/shift/employers/portal/settings#team',
         icon: ShieldCheck,
       },
+      // Setup leaves the sidebar once it's done; the goal is still edited there.
+      ...(setupIncomplete || loading
+        ? []
+        : [
+            {
+              id: 'p-setup-done',
+              type: 'page' as const,
+              label: 'Setup and goal',
+              sub: 'Goal, headcount, key dates, champions',
+              href: '/shift/employers/portal/setup?step=success',
+              icon: ListChecks,
+            },
+          ]),
     ]
 
     const actions: ResultItem[] = [
@@ -92,7 +105,7 @@ export default function CommandPalette({ onClose }: { onClose: () => void }) {
     if (!canAsk || !q) return found
     const ask: ResultItem = { id: 'ask', type: 'ask', label: query.trim(), icon: MessageSquareText, run: () => openAssistant(query.trim()) }
     return askFirst ? [ask, ...found] : [...found, ask]
-  }, [query, members, role, isAdmin, isGsiAdmin, setupIncomplete, signOut, canAsk, askFirst])
+  }, [query, members, role, isAdmin, isGsiAdmin, setupIncomplete, loading, signOut, canAsk, askFirst])
 
   // Reset the highlight when the list changes (adjusted during render, not in an effect).
   const [seenQuery, setSeenQuery] = useState(query)

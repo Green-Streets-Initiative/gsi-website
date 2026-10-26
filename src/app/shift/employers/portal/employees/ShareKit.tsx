@@ -145,8 +145,11 @@ export default function ShareKit() {
   // Branded tools for the office. Both need the group's slug; Nearby also
   // needs the office address saved on the Commute Advisor page.
   const advisorUrl = group.slug ? employerAdvisorUrl(group.slug) : null
-  const nearbyUrl = group.slug ? employerNearbyUrl(group.slug, benefitsForm) : null
-  const nearbyPrintUrl = group.slug ? employerNearbyUrl(group.slug, benefitsForm, { print: true }) : null
+  // The first location when there are any, so the card's link matches the
+  // office named in its title.
+  const firstOffice = locations[0] ? locationAsOffice(locations[0]) : benefitsForm
+  const nearbyUrl = group.slug ? employerNearbyUrl(group.slug, firstOffice) : null
+  const nearbyPrintUrl = group.slug ? employerNearbyUrl(group.slug, firstOffice, { print: true }) : null
 
   const advisorBlurb = advisorUrl
     ? `Planning your trip to the office? We set up a Commute Advisor page for ${group.name}. Enter where you're starting from and it lays out your walking, biking and transit options to our office.\n\n${advisorUrl}`
@@ -528,7 +531,7 @@ export default function ShareKit() {
         {group.slug && (
           <Card id="kit-nearby">
             <CardHead
-              title={sites.length > 0 ? `Nearby page for ${sites[0].title}` : 'Nearby page for your office'}
+              title={sites.length > 1 ? 'Nearby pages for your offices' : sites.length > 0 ? `Nearby page for ${sites[0].title}` : 'Nearby page for your office'}
               sub="A live map of T stops, bus arrivals, Bluebikes docks and bike paths around your office, with your logo. Good for new hires, a welcome email or the break room."
             />
             {nearbyUrl ? (
@@ -585,6 +588,36 @@ export default function ShareKit() {
                     </a>
                   )}
                 </div>
+                {/* Every office has its own page (the preview shows the first). */}
+                {sites.length > 1 && (
+                  <div className="grid gap-2 border-t border-line-2 pt-4">
+                    <p className="text-[14px] font-semibold text-ink">Each office</p>
+                    {sites.map((s) =>
+                      s.nearby ? (
+                        <div key={s.id} className="grid gap-1.5">
+                          <span className="min-w-0 truncate text-[15px] font-semibold text-ink">{s.title}</span>
+                          <span className="flex flex-wrap items-center gap-2">
+                          <Button variant="secondary" size="sm" icon={Copy} onClick={() => copy(s.nearby!, `nearby-${s.id}`)}>
+                            {copiedField === `nearby-${s.id}` ? 'Copied!' : 'Copy link'}
+                          </Button>
+                          <a href={onThisSite(s.nearby)} target="_blank" rel="noopener noreferrer" className="contents">
+                            <Button variant="ghost" size="sm" icon={ExternalLink}>
+                              Open
+                            </Button>
+                          </a>
+                          {s.print && (
+                            <a href={onThisSite(s.print)} target="_blank" rel="noopener noreferrer" className="contents">
+                              <Button variant="ghost" size="sm" icon={Printer}>
+                                Printable
+                              </Button>
+                            </a>
+                          )}
+                          </span>
+                        </div>
+                      ) : null,
+                    )}
+                  </div>
+                )}
                 </div>
               </div>
             ) : (

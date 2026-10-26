@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, type ReactNode } from 'react'
-import { useRouter } from 'next/navigation'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Check, ChevronDown, ListChecks, HelpCircle, Mail, ChevronRight, MessageSquareText, Plus } from 'lucide-react'
 import PortalPageHead from '../_components/PortalPageHead'
 import PortalHeroPanel from '../_components/PortalHeroPanel'
@@ -36,13 +36,26 @@ export default function SetupPage() {
   const { group, challenges, memberCount, benefitsForm, loading, admins, isGsiAdmin } = usePortal()
   const withAssistant = assistantAvailable(group, isGsiAdmin)
   const router = useRouter()
+  const searchParams = useSearchParams()
 
   const steps = computeSetupSteps({ group, benefitsForm, memberCount, challenges })
   const next = nextSetupStep(steps)
 
   // The open row follows the data (first unfinished step) until the person
-  // picks one themselves; then their choice sticks.
-  const [pickedId, setPickedId] = useState<string | null | undefined>(undefined)
+  // picks one themselves; then their choice sticks. ?step=success (Impact's
+  // "Change the goal", Settings) opens that row on arrival.
+  const [pickedId, setPickedId] = useState<string | null | undefined>(() => {
+    const asked = searchParams.get('step')
+    return asked && steps.some((s) => s.id === asked) ? asked : undefined
+  })
+  // On a finished account that row sits under the "You're set up" card, so
+  // bring it into view once the page has loaded.
+  const scrolledToAsked = useRef(false)
+  useEffect(() => {
+    if (loading || !group || scrolledToAsked.current || !searchParams.get('step')) return
+    scrolledToAsked.current = true
+    document.getElementById(`setup-row-${searchParams.get('step')}`)?.scrollIntoView({ block: 'start' })
+  }, [loading, group, searchParams])
   const openId = pickedId === undefined ? (next?.id ?? null) : pickedId
 
   const teamStage = group ? participation(group, memberCount).stage : null
@@ -77,92 +90,97 @@ export default function SetupPage() {
       {withAssistant && !allDone ? (
         <h1 className="sr-only">Setup</h1>
       ) : (
-        <PortalPageHead title="Setup" subtitle={allDone ? `${group.name} is set up on Shift.` : 'Six steps to get your team going.'} />
+        <PortalPageHead
+          title="Setup"
+          subtitle={allDone ? 'Every step is done. Open one to change it.' : 'Six steps to get your team going.'}
+        />
       )}
 
       <div className="grid items-start gap-5 md:grid-cols-[minmax(0,1fr)_300px] lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="grid min-w-0 gap-3.5">
-          {allDone ? (
-            <AllSetCard
-              onInvite={() => router.push(`${PORTAL}/employees?invite=1`)}
-              onChallenge={() => router.push(`${PORTAL}/challenges`)}
-              onImpact={() => router.push(`${PORTAL}/impact`)}
-            />
-          ) : (
-            <>
-              {withAssistant ? (
-                // Assistant-led (Keith 2026-10-22: "the setup screen should
-                // probably be more assistant-led"): the assistant takes the
-                // steps one at a time; the list below is for doing it by hand.
-                <PortalHeroPanel
-                  title="Let's finish setting up"
-                  below={
-                    <div>
-                      <div className="mb-2 flex items-baseline justify-between gap-3 text-[15px] text-white">
-                        <span>{next ? <>Next: <strong>{next.label}</strong></> : 'Almost there'}</span>
-                        <span className="whitespace-nowrap font-semibold">
-                          {doneCount} of {steps.length} done
-                        </span>
-                      </div>
-                      <div className="h-2.5 w-full overflow-hidden rounded-full bg-white/20" aria-hidden>
-                        <div className="h-full rounded-full bg-white" style={{ width: `${pct}%` }} />
-                      </div>
-                    </div>
-                  }
-                  actions={
-                    <>
-                      <Button
-                        variant="secondary"
-                        icon={MessageSquareText}
-                        onClick={() => openAssistant('Help me finish setting up our account, one step at a time.')}
-                      >
-                        Finish setup with the assistant
-                      </Button>
-                      {next && (
-                        <button
-                          type="button"
-                          onClick={() => setPickedId(next.id)}
-                          className="rounded-[10px] px-3 py-2 text-[15px] font-semibold text-white hover:bg-white/10"
-                        >
-                          I&apos;ll do it myself
-                        </button>
-                      )}
-                    </>
-                  }
-                />
-              ) : (
-                <Card pad>
-                  <div className="mb-2.5 flex items-baseline justify-between gap-3">
-                    <strong className="text-[16px] text-ink">Setup progress</strong>
-                    <span className="text-[15px] font-semibold text-ink">
-                      {doneCount} of {steps.length} <span className="font-normal text-ink-muted">done</span>
+          {allDone ? null : withAssistant ? (
+            // Assistant-led (Keith 2026-10-22: "the setup screen should
+            // probably be more assistant-led"): the assistant takes the
+            // steps one at a time; the list below is for doing it by hand.
+            <PortalHeroPanel
+              title="Let's finish setting up"
+              below={
+                <div>
+                  <div className="mb-2 flex items-baseline justify-between gap-3 text-[15px] text-white">
+                    <span>{next ? <>Next: <strong>{next.label}</strong></> : 'Almost there'}</span>
+                    <span className="whitespace-nowrap font-semibold">
+                      {doneCount} of {steps.length} done
                     </span>
                   </div>
-                  <ProgressBar pct={pct} />
-                </Card>
-              )}
-
-              {steps.map((s) => (
-                <StepRow
-                  key={s.id}
-                  step={s}
-                  isOpen={openId === s.id}
-                  isNext={next?.id === s.id}
-                  onToggle={() => setPickedId(openId === s.id ? null : s.id)}
-                  onGo={() => s.route && router.push(s.route)}
-                  onSaved={() => advanceFrom(s.id)}
-                  adminNames={adminNames}
-                  onAsk={withAssistant && !s.done && SETUP_PROMPTS[s.id] ? () => openAssistant(SETUP_PROMPTS[s.id]) : undefined}
-                  meter={s.id === 'employees' ? <TeamMeter group={group} joined={memberCount} /> : undefined}
-                  stageBadge={s.id === 'employees' && teamStage ? <Badge tone={teamStage.tone}>{teamStage.label}</Badge> : undefined}
-                />
-              ))}
-            </>
+                  <div className="h-2.5 w-full overflow-hidden rounded-full bg-white/20" aria-hidden>
+                    <div className="h-full rounded-full bg-white" style={{ width: `${pct}%` }} />
+                  </div>
+                </div>
+              }
+              actions={
+                <>
+                  <Button
+                    variant="secondary"
+                    icon={MessageSquareText}
+                    onClick={() => openAssistant('Help me finish setting up our account, one step at a time.')}
+                  >
+                    Finish setup with the assistant
+                  </Button>
+                  {next && (
+                    <button
+                      type="button"
+                      onClick={() => setPickedId(next.id)}
+                      className="rounded-[10px] px-3 py-2 text-[15px] font-semibold text-white hover:bg-white/10"
+                    >
+                      I&apos;ll do it myself
+                    </button>
+                  )}
+                </>
+              }
+            />
+          ) : (
+            <Card pad>
+              <div className="mb-2.5 flex items-baseline justify-between gap-3">
+                <strong className="text-[16px] text-ink">Setup progress</strong>
+                <span className="text-[15px] font-semibold text-ink">
+                  {doneCount} of {steps.length} <span className="font-normal text-ink-muted">done</span>
+                </span>
+              </div>
+              <ProgressBar pct={pct} />
+            </Card>
           )}
+
+          {/* The steps stay open after setup: this is the only place the
+              goal, headcount, key dates and champions are edited, and the
+              rest link to where they live now (Keith 2026-10-26). */}
+          {steps.map((s) => (
+            <StepRow
+              key={s.id}
+              step={s}
+              finished={allDone}
+              isOpen={openId === s.id}
+              isNext={next?.id === s.id}
+              onToggle={() => setPickedId(openId === s.id ? null : s.id)}
+              onGo={() => s.route && router.push(s.route)}
+              onSaved={() => advanceFrom(s.id)}
+              adminNames={adminNames}
+              onAsk={withAssistant && !s.done && SETUP_PROMPTS[s.id] ? () => openAssistant(SETUP_PROMPTS[s.id]) : undefined}
+              meter={s.id === 'employees' ? <TeamMeter group={group} joined={memberCount} /> : undefined}
+              stageBadge={s.id === 'employees' && teamStage ? <Badge tone={teamStage.tone}>{teamStage.label}</Badge> : undefined}
+            />
+          ))}
         </div>
 
         {/* Side help */}
         <div className="grid min-w-0 gap-5">
+          {allDone && (
+            <NextUpCard
+              onInvite={() => router.push(`${PORTAL}/employees?invite=1`)}
+              onChallenge={() => router.push(`${PORTAL}/challenges`)}
+              onImpact={() => router.push(`${PORTAL}/impact`)}
+            />
+          )}
+
           {!allDone && !withAssistant && (
             <Card pad>
               <div className="mb-3 grid h-11 w-11 place-items-center rounded-xl bg-accent-soft text-accent">
@@ -215,8 +233,19 @@ export default function SetupPage() {
   )
 }
 
+/** What each row holds, for a finished account where every step is done. */
+const FINISHED_LABEL: Record<string, string> = {
+  success: 'Goal, headcount, key dates and champions',
+  profile: 'Company profile',
+  logo: 'Logo',
+  advisor: 'Offices and commuter benefits',
+  employees: 'Your team',
+  challenge: 'Challenges',
+}
+
 function StepRow({
   step: s,
+  finished,
   isOpen,
   isNext,
   onToggle,
@@ -228,6 +257,8 @@ function StepRow({
   stageBadge,
 }: {
   step: SetupStepDef
+  /** Every step is done: rows name what they hold, without status badges. */
+  finished: boolean
   isOpen: boolean
   isNext: boolean
   onToggle: () => void
@@ -244,7 +275,11 @@ function StepRow({
   const panelId = `setup-step-${s.id}`
   const buttonCopy = STEP_BUTTON[s.id]
   return (
-    <Card className="overflow-hidden" style={isOpen ? { borderColor: 'var(--color-accent)' } : undefined}>
+    <Card
+      id={`setup-row-${s.id}`}
+      className="scroll-mt-20 overflow-hidden"
+      style={isOpen ? { borderColor: 'var(--color-accent)' } : undefined}
+    >
       <button
         type="button"
         aria-expanded={isOpen}
@@ -261,13 +296,13 @@ function StepRow({
           {s.done && <Check size={14} strokeWidth={2.5} />}
         </span>
         <span className="min-w-0 flex-1">
-          <span className={`block text-[15px] font-semibold ${s.done ? 'text-ink-muted' : 'text-ink'}`}>
-            {s.done ? s.doneLabel : s.label}
+          <span className={`block text-[15px] font-semibold ${s.done && !finished ? 'text-ink-muted' : 'text-ink'}`}>
+            {finished ? (FINISHED_LABEL[s.id] ?? s.doneLabel) : s.done ? s.doneLabel : s.label}
           </span>
           {meter && <span className="mt-2 block">{meter}</span>}
         </span>
         <span className="hidden sm:inline-flex">
-          {stageBadge ? (
+          {finished && !stageBadge ? null : stageBadge ? (
             stageBadge
           ) : s.done ? (
             <Badge tone="success">Done</Badge>
@@ -322,7 +357,8 @@ function StepRow({
   )
 }
 
-function AllSetCard({
+/** Beside a finished setup: the three things to do from here. */
+function NextUpCard({
   onInvite,
   onChallenge,
   onImpact,
@@ -331,52 +367,33 @@ function AllSetCard({
   onChallenge: () => void
   onImpact: () => void
 }) {
+  const links = [
+    { label: 'Invite more employees', onClick: onInvite },
+    { label: 'Plan your next challenge', onClick: onChallenge },
+    { label: 'See your impact', onClick: onImpact },
+  ]
   return (
     <Card pad>
-      <div className="flex items-start gap-3.5">
-        <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-accent text-white">
-          <Check size={22} strokeWidth={2.5} />
-        </div>
-        <div className="min-w-0">
-          <h2 className="font-headline text-[22px] font-extrabold leading-[1.1] text-ink">You&apos;re set up</h2>
-          <p className="mt-1.5 max-w-[56ch] text-[14px] leading-[1.55] text-ink-muted">
-            Every setup step is done. From here it is about keeping people joining, giving them something to aim for,
-            and seeing what changes.
-          </p>
-          <ul className="mt-4 grid gap-2">
-            <li>
-              <button
-                type="button"
-                onClick={onInvite}
-                className="flex w-full items-center justify-between gap-3 rounded-[10px] border border-line px-4 py-3 text-left text-[14px] font-semibold text-ink transition-colors hover:border-accent hover:text-accent"
-              >
-                Invite more employees
-                <ChevronRight size={16} strokeWidth={1.75} />
-              </button>
-            </li>
-            <li>
-              <button
-                type="button"
-                onClick={onChallenge}
-                className="flex w-full items-center justify-between gap-3 rounded-[10px] border border-line px-4 py-3 text-left text-[14px] font-semibold text-ink transition-colors hover:border-accent hover:text-accent"
-              >
-                Plan your next challenge
-                <ChevronRight size={16} strokeWidth={1.75} />
-              </button>
-            </li>
-            <li>
-              <button
-                type="button"
-                onClick={onImpact}
-                className="flex w-full items-center justify-between gap-3 rounded-[10px] border border-line px-4 py-3 text-left text-[14px] font-semibold text-ink transition-colors hover:border-accent hover:text-accent"
-              >
-                See your impact
-                <ChevronRight size={16} strokeWidth={1.75} />
-              </button>
-            </li>
-          </ul>
-        </div>
+      <div className="mb-3 flex items-center gap-2.5">
+        <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-accent text-white" aria-hidden="true">
+          <Check size={16} strokeWidth={2.5} />
+        </span>
+        <strong className="text-[16px] text-ink">You&apos;re set up</strong>
       </div>
+      <ul className="grid gap-2">
+        {links.map((l) => (
+          <li key={l.label}>
+            <button
+              type="button"
+              onClick={l.onClick}
+              className="flex min-h-[44px] w-full items-center justify-between gap-3 rounded-[10px] border border-line px-4 py-2.5 text-left text-[15px] font-semibold text-ink transition-colors hover:border-accent hover:text-accent"
+            >
+              {l.label}
+              <ChevronRight size={16} strokeWidth={1.75} />
+            </button>
+          </li>
+        ))}
+      </ul>
     </Card>
   )
 }

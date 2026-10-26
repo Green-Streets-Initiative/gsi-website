@@ -37,6 +37,7 @@ const VIEW_OF: Record<string, SettingsView> = {
   company: 'company',
   account: 'company',
   branding: 'company',
+  setup: 'company',
   'public-listing': 'joining',
   plan: 'company',
   team: 'team',
@@ -566,6 +567,28 @@ export default function SettingsPage() {
                   </div>
                 )}
               </CardBody>
+            </Card>
+
+            {/* Goal and setup: Setup leaves the menu once every step is done,
+                and the goal, headcount, key dates and champions are edited
+                only there (Keith 2026-10-26). */}
+            <Card id="setup" pad>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <h3 className="text-[17px] font-bold tracking-[-0.01em] text-ink">Goal and setup</h3>
+                  <p className="mt-1 text-[14.5px] leading-[1.5] text-ink-muted">
+                    Your goal, headcount, launch date, key dates and champions
+                  </p>
+                </div>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  iconRight={ArrowRight}
+                  onClick={() => router.push('/shift/employers/portal/setup?step=success')}
+                >
+                  Open Setup
+                </Button>
+              </div>
             </Card>
 
             {/* Plan, for people who can't open Billing & rewards */}
