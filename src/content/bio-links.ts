@@ -94,6 +94,13 @@ export const BIO_LINKS: BioLink[] = [
     until: '2026-10-28T18:00:00-04:00',
   },
   {
+    slug: 'familyhalloweenride',
+    label: 'NEMBA Family Halloween Ride: sign up',
+    sublabel: 'Sat Oct 31, 10 AM, Waltham. Free, for kids and families',
+    url: 'https://www.eventbrite.com/e/gbnemba-2026-family-halloween-ride-tickets-2003420132547',
+    until: '2026-10-31T10:00:00-04:00',
+  },
+  {
     slug: 'commuterchallenge',
     label: 'Great Commuter Challenge: RSVP',
     sublabel: 'Sat Oct 31, 10 AM, Jamaica Plain. Bikes Not Bombs',
