@@ -92,6 +92,7 @@ export const UNLOCK_REGISTRY: Record<string, RegistryEntry> = {
     // No page of its own. The hub entry carries its own detail and links out.
     href: null,
     supplyLabel: 'First 200',
+    gateLabel: 'Massachusetts residents new to Shift',
   },
 }
 
