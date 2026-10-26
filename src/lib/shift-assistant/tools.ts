@@ -62,10 +62,10 @@ export type TripCard = {
 }
 
 /** Screens added after the first release: offered only to builds that list them. */
-const NEWER_SCREENS = new Set(['trip', 'trip_history', 'my_rewards', 'notifications', 'vacation'])
+const NEWER_SCREENS = new Set(['trip', 'trip_history', 'my_rewards', 'notifications', 'vacation', 'partner_request', 'partner_matches'])
 const canOpen = (ctx: ToolCtx, screen: string) => !NEWER_SCREENS.has(screen) || !!ctx.screens?.has(screen)
 
-const SCREENS = ['commute', 'commute_setup', 'around_you', 'rides', 'event', 'ride', 'rewards', 'log_trip', 'ride_plan', 'trip', 'trip_history', 'my_rewards', 'notifications', 'vacation'] as const
+const SCREENS = ['commute', 'commute_setup', 'around_you', 'rides', 'event', 'ride', 'rewards', 'log_trip', 'ride_plan', 'trip', 'trip_history', 'my_rewards', 'notifications', 'vacation', 'partner_request', 'partner_matches'] as const
 type Screen = (typeof SCREENS)[number]
 
 const FUNCTIONS = `${(process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').replace(/\/$/, '')}/functions/v1`
@@ -246,12 +246,14 @@ export const TOOLS: Anthropic.Tool[] = [
   ...RIDE_PLAN_TOOLS,
   {
     name: 'open_screen',
-    description: "A button to a screen of the Shift app, for things done there: commute (their saved commute), commute_setup (set home and work), around_you (the map of what's near them), rides (group rides and events), event or ride (one of them, by id), rewards (rewards they've won), log_trip (log a trip by hand), ride_plan (a Shift Together first ride plan, by its match_id), trip (one recorded trip, by its id from get_my_activity, where they can change how they traveled), trip_history (all their trips), my_rewards (rewards they've won), notifications (notification settings), vacation (pause tracking while away).",
+    description: "A button to a screen of the Shift app, for things done there: commute (their saved commute), commute_setup (set home and work), around_you (the map of what's near them), rides (group rides and events), event or ride (one of them, by id), rewards (rewards they've won), log_trip (log a trip by hand), ride_plan (a Shift Together first ride plan, by its match_id), trip (one recorded trip, by its id from get_my_activity, where they can change how they traveled), trip_history (all their trips), my_rewards (rewards they've won), notifications (notification settings), vacation (pause tracking while away), partner_request (Shift Together sign-up: kind newcomer = go with someone who knows the way, guide = show someone the way; mode bike, walk or transit), partner_matches (their Shift Together matches, where they also end a match or report a problem).",
     input_schema: {
       type: 'object',
       properties: {
         screen: { type: 'string', enum: [...SCREENS] },
         id: nullable('string', 'For event (an id from find_rides_and_events), ride, ride_plan (the match_id), or trip (an id from get_my_activity).'),
+        kind: nullable('string', 'partner_request only: newcomer or guide.'),
+        mode: nullable('string', 'partner_request only: bike, walk or transit.'),
         label: { type: 'string', description: 'The button text, a few words with a verb ("See your commute").' },
       },
       required: ['screen', 'label'],
@@ -535,7 +537,9 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
         if (!canOpen(ctx, screen)) return ok({ shown: false, note: "Their version of the app can't open that screen from here yet. Tell them where it is in a few words instead (a trip: Recent trips on the Home tab, then tap the trip; rewards they've won: the Rewards tab; notifications or vacation: Profile)." })
         const id = typeof input.id === 'string' && /^[A-Za-z0-9_-]{1,100}$/.test(input.id) ? input.id : null
         if ((screen === 'event' || screen === 'ride' || screen === 'ride_plan' || screen === 'trip') && !id) return fail(`A ${screen} button needs its id.`)
-        const params: Record<string, string> | null = id ? (screen === 'ride_plan' ? { match: id } : { id }) : null
+        const params: Record<string, string> | null = screen === 'partner_request'
+          ? { kind: input.kind === 'guide' ? 'guide' : 'newcomer', ...(['bike', 'walk', 'transit'].includes(String(input.mode)) ? { mode: String(input.mode) } : {}) }
+          : id ? (screen === 'ride_plan' ? { match: id } : { id }) : null
         return ok({ shown: true, next: 'The button shows under your reply. Now write the reply itself: what you found, in words (for events: name, day and time, where, how far). Do not mention the button.' }, { screen, ...(params ? { params } : {}), label: String(input.label || 'Open').slice(0, 40) })
       }
       case 'get_ride_plan':
