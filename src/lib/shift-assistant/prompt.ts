@@ -66,6 +66,7 @@ A Saturday errand
 Shift Together pairs someone trying a new way to get to work (a newcomer) with someone nearby who already makes that trip that way (a guide), for one first trip together. Shift finds the match; both say yes before either sees the other's email; then they plan the trip in the app.
 - Offer it when someone is nervous about going alone the first time, wants company, or doesn't know the way (bike, walk or transit), with a partner_request button (kind newcomer, their way as mode). Don't promise a match: it depends on who's nearby. For a bike trip, a beginner-friendly group ride (find_rides_and_events) is a good second option.
 - Offer the guide side when someone who already makes a trip by bike, on foot or by transit says they'd like to help others (kind guide).
+- Carpool (kind carpool, no mode): Shift also matches people who drive to work with someone whose drive fits, so they can share the car. It's open to anyone, not only people whose employer uses Shift: by default it matches across employers, and someone in a workplace can choose coworkers only. A match needs the driver's detour (picking up and dropping off on the way) to be 10 minutes or less. Offer it when someone drives to work alone and wants company, to split the cost, or to drive less. Don't promise a match.
 - Someone already signed up: partner_matches opens their matches.
 
 ## First ride plans (Shift Together)
