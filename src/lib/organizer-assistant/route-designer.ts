@@ -6,7 +6,7 @@ import { comfortBreakdown, routeFromPlan } from '@/lib/organizers/route-plan'
 import { routeMiles } from '@/lib/organizers/route-geo'
 import type { PlannedLegOption, PlannedRoute } from '@/lib/organizers/api'
 import type { LatLng } from '@/lib/organizers/types'
-import { getBikeNetwork, haversineMeters } from '@/lib/server/bike-network'
+import { getBikeNetwork, haversineMeters, type BikeNetworkResponse } from '@/lib/server/bike-network'
 import { getBikeShareDocks } from '@/lib/server/bluebikes'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { bikeFriendlyPlaces, type BikeFriendlyPlace } from '@/lib/server/bike-friendly'
@@ -223,20 +223,77 @@ function laneLength(coords: [number, number][]): number {
   return pathMiles(coords.map(([lng, lat]) => ({ lat, lng })))
 }
 
-/** The longest named protected lanes and car-free paths near the start. */
+/**
+ * The site's lane maps covering a ride's reach. getBikeNetwork serves at most
+ * 3 mi around a point, so a longer ride (reach up to 8 mi) used to see only
+ * the lanes within 3 mi of its start (2026-10-26, the same cap the trip
+ * planner had). Past 3 mi, maps are taken on a grid every MAP_STEP_MILES,
+ * centres snapped to the trip planner's grid (reach.ts laneIndexAlong) so the
+ * two share getBikeNetwork's cache.
+ */
+const MAP_RADIUS_MILES = 3
+const MAP_STEP_MILES = 3.5
+const MAP_GRID_LAT = 0.02
+const MAP_GRID_LNG = 0.027
+const MAP_CONCURRENCY = 4
+
+async function networksAround(start: LatLng, reachMi: number): Promise<BikeNetworkResponse[]> {
+  if (reachMi <= MAP_RADIUS_MILES) {
+    const net = await getBikeNetwork(start.lat, start.lng, Math.min(MAP_RADIUS_MILES, reachMi)).catch(() => null)
+    return net ? [net] : []
+  }
+  const centres = new Map<string, LatLng>()
+  const dLat = MAP_STEP_MILES / 69
+  const dLng = MAP_STEP_MILES / (69 * Math.cos((start.lat * Math.PI) / 180))
+  const k = Math.ceil(reachMi / MAP_STEP_MILES)
+  for (let i = -k; i <= k; i++) {
+    for (let j = -k; j <= k; j++) {
+      const c = { lat: start.lat + i * dLat, lng: start.lng + j * dLng }
+      if (miles(start, c) > reachMi + 1) continue
+      const r = Math.round(c.lat / MAP_GRID_LAT)
+      const q = Math.round(c.lng / MAP_GRID_LNG)
+      centres.set(`${r},${q}`, { lat: Math.round(r * MAP_GRID_LAT * 1000) / 1000, lng: Math.round(q * MAP_GRID_LNG * 1000) / 1000 })
+    }
+  }
+  const list = [...centres.values()]
+  const out: BikeNetworkResponse[] = []
+  for (let i = 0; i < list.length; i += MAP_CONCURRENCY) {
+    const got = await Promise.all(list.slice(i, i + MAP_CONCURRENCY).map((c) => getBikeNetwork(c.lat, c.lng, MAP_RADIUS_MILES).catch(() => null)))
+    for (const n of got) if (n) out.push(n)
+  }
+  return out
+}
+
+/**
+ * Named protected lanes and car-free paths within the ride's reach: the
+ * longest within 3 mi of the start first (what a showcase picks, as before
+ * the reach grew), then the farther ones, which a long loop's turnaround
+ * snaps to (snapToLane, onCalm).
+ */
 async function bestLanes(start: LatLng, radiusMi: number): Promise<Lane[]> {
-  const net = await getBikeNetwork(start.lat, start.lng, Math.min(3, radiusMi)).catch(() => null)
-  const byName = new Map<string, Lane>()
-  for (const f of net?.geojson.features ?? []) {
+  const nets = await networksAround(start, radiusMi)
+  const byName = new Map<string, Lane & { near: boolean }>()
+  for (const f of nets.flatMap((n) => n.geojson.features)) {
     const q = f.properties.quality
     const name = f.properties.name
     if ((q !== 'protected' && q !== 'path') || !name || f.properties.unpaved) continue
-    const len = laneLength(f.geometry.coordinates)
+    const coords = f.geometry.coordinates
+    let nearest = Infinity
+    for (const [lng, lat] of coords) nearest = Math.min(nearest, miles(start, { lat, lng }))
+    if (nearest > radiusMi) continue
+    const near = nearest <= MAP_RADIUS_MILES
+    const len = laneLength(coords)
     const cur = byName.get(name)
-    // Keep the longest single piece so the route rides one continuous stretch.
-    if (!cur || len > cur.lengthMi) byName.set(name, { name, coords: f.geometry.coordinates, lengthMi: len, quality: q })
+    // Keep one continuous piece per lane, so the route rides one stretch: one
+    // near the start over one far out, then the longest.
+    if (!cur || (near && !cur.near) || (near === cur.near && len > cur.lengthMi)) {
+      byName.set(name, { name, coords, lengthMi: len, quality: q, near })
+    }
   }
-  return [...byName.values()].filter((l) => l.lengthMi >= 0.3).sort((a, b) => b.lengthMi - a.lengthMi)
+  return [...byName.values()]
+    .filter((l) => l.lengthMi >= 0.3)
+    .sort((a, b) => Number(b.near) - Number(a.near) || b.lengthMi - a.lengthMi)
+    .map((l): Lane => ({ name: l.name, coords: l.coords, lengthMi: l.lengthMi, quality: l.quality }))
 }
 
 /**
