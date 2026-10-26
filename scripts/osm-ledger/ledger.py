@@ -522,12 +522,32 @@ def miles_by_class(ways):
 
 
 def main():
+    # Any crash still reaches the health check the same day (2026-10-25 and
+    # 10-26 failed silently: the monitor only saw a missing heartbeat).
+    ctx = {}
+    try:
+        run(ctx)
+    except Exception as e:
+        db = ctx.get("db")
+        if db and not db.dry:
+            try:
+                if ctx.get("sid"):
+                    db.req("PATCH", f"/rest/v1/osm_snapshots?id=eq.{ctx['sid']}",
+                           {"status": "skipped", "note": f"run failed: {e}"[:500]}, {"Prefer": "return=minimal"})
+                heartbeat(db, ctx["started"], "error", 0, f"failed: {e}")
+            except Exception as e2:
+                print(f"could not record the failure: {e2}", file=sys.stderr)
+        raise
+
+
+def run(ctx):
     pbf, data_ts = sys.argv[1], sys.argv[2]
     dry = "--dry-run" in sys.argv
     if "--compare-anyway" in sys.argv:  # testing: compare even when the extract isn't newer
         data_ts = "9999-01-01T00:00:00Z" if dry else data_ts
     started = datetime.now(timezone.utc)
     db = Db(os.environ.get("SUPABASE_URL", ""), os.environ.get("SUPABASE_SERVICE_ROLE_KEY", ""), dry)
+    ctx.update(db=db, started=started)
 
     h = BikeWays()
     h.apply_file(pbf, locations=True, idx="flex_mem")
@@ -599,7 +619,10 @@ def main():
         print("quarantined:", note)
         return
 
-    sid = snapshot("applied")
+    # "skipped" until every write below lands, then "applied": a run that dies
+    # halfway must not count as today's copy (snapshots 3 and 4 did).
+    sid = snapshot("skipped", "in progress")
+    ctx["sid"] = sid
     appeared = [k for k in new if k not in old]
     gone = [k for k in old if k not in new]
     changed = [k for k in new if k in old and (new[k]["version"] != old[k]["version"] or new[k]["tags_hash"] != old[k]["tags_hash"])]
@@ -668,8 +691,11 @@ def main():
     for e in events:
         print(f"  {e['kind']}: {e['name'] or '(unnamed)'} {e['class_before']}→{e['class_after']} {e['length_m']:.0f} m")
 
-    upserts = [{**new[k], "last_seen_snapshot": sid, **({"first_seen_snapshot": sid} if k in appeared else {})} for k in appeared + changed]
-    db.write("POST", "osm_bike_ways", upserts, "?on_conflict=way_id", "return=minimal,resolution=merge-duplicates")
+    # Two writes: PostgREST rejects a batch whose rows don't share one key set
+    # (PGRST102), and only new ways carry first_seen_snapshot.
+    upsert = ("?on_conflict=way_id", "return=minimal,resolution=merge-duplicates")
+    db.write("POST", "osm_bike_ways", [{**new[k], "first_seen_snapshot": sid, "last_seen_snapshot": sid} for k in appeared], *upsert)
+    db.write("POST", "osm_bike_ways", [{**new[k], "last_seen_snapshot": sid} for k in changed], *upsert)
     for i in range(0, len(gone), 200):
         ids = ",".join(str(k) for k in gone[i:i + 200])
         if not db.dry:
@@ -679,6 +705,9 @@ def main():
     for u in updates:
         if not db.dry:
             db.req("PATCH", f"/rest/v1/osm_bike_events?id=eq.{u.pop('id')}", u, {"Prefer": "return=minimal"})
+    if not db.dry:
+        db.req("PATCH", f"/rest/v1/osm_snapshots?id=eq.{sid}", {"status": "applied", "note": None}, {"Prefer": "return=minimal"})
+    ctx["sid"] = None
     heartbeat(db, started, "ok", len(events), f"+{len(appeared)} ~{len(changed)} -{len(gone)} ways; {len(events)} events")
     sync_car_free(db, h.car_free, started)
     sync_bike_parking(db, parking, started)
