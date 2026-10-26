@@ -108,6 +108,13 @@ export const BIO_LINKS: BioLink[] = [
     until: '2026-10-31T11:00:00-04:00',
   },
   {
+    slug: 'halloweenbikeride',
+    label: 'Boston Halloween Bike Ride',
+    sublabel: 'Sat Oct 31, meet 7:30 PM, Green Street station, JP',
+    url: 'https://www.gogreenstreets.org/events/boston-halloween-bike-ride-2026-10-31',
+    until: '2026-10-31T20:00:00-04:00',
+  },
+  {
     slug: 'hallowheels',
     label: 'SCUL Hallowheels',
     sublabel: 'Sat Oct 31, 8:30 PM, Allston Pump Track',
