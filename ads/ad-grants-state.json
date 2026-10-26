@@ -838,6 +838,13 @@
       "month_end_math": "pace ~115 impr/day -> ~3,560 impr in October -> ~178 clicks needed for 5%; already at 200, so October's 5% is effectively secured",
       "alerts": [],
       "emailed": false
+    },
+    {
+      "date": "2026-10-26",
+      "source": "scheduled quick check (ad-grants-pulse): SKIPPED, Claude in Chrome not connected (two tries, ~13:18 ET); account not read",
+      "mtd": null,
+      "alerts": [],
+      "emailed": false
     }
   ],
   "snapshots": [
