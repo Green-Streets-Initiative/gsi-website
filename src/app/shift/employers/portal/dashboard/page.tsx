@@ -9,7 +9,7 @@
 // is: the goal folds into the meters, top movers are on Employees, locations
 // and the full numbers on Impact, the plan on Billing, joins in the bell.
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { usePortal } from '../_lib/portal-context'
 import { computeSetupSteps } from '../_lib/setup-steps'
 import { assistantAvailable } from '../_components/AssistantPanel'
@@ -19,6 +19,17 @@ import { Card } from '@/components/employer/Card'
 
 /** Wall clock, kept out of render so the purity lint stays quiet. */
 const now = () => Date.now()
+
+// Teams where this browser said "Not for me" to joining. A convenience only:
+// if storage is blocked the step just shows again.
+const SKIP_JOIN_KEY = 'portal-skip-join'
+function readSkippedJoins(): string[] {
+  try {
+    return typeof window === 'undefined' ? [] : (JSON.parse(localStorage.getItem(SKIP_JOIN_KEY) ?? '[]') as string[])
+  } catch {
+    return []
+  }
+}
 
 /**
  * Days the loaded dashboard covers, from the window the RPC reports. Null
@@ -33,9 +44,10 @@ function loadedWindowDays(d: unknown): number | null {
 
 export default function DashboardPage() {
   const portal = usePortal()
-  const { group, challenges, memberCount, dashboard, dashboardError, members, benefitsForm, loading, refreshDashboard, isAdmin, isGsiAdmin } = portal
+  const { group, challenges, memberCount, dashboard, dashboardError, members, benefitsForm, loading, refreshDashboard, isAdmin, isGsiAdmin, selfMember, sessionEmail } = portal
   const otherWorkplaces = (portal as { otherWorkplaces?: number }).otherWorkplaces ?? 0
   const refetchedFor = useRef<string | null>(null)
+  const [skippedJoins, setSkippedJoins] = useState<string[]>(readSkippedJoins)
 
   // Home always shows the last 30 days. If another page's fetch left a
   // different window in the shared context, reload before showing it.
@@ -58,6 +70,23 @@ export default function DashboardPage() {
 
   const steps = computeSetupSteps({ group, benefitsForm, memberCount, challenges })
   const withAssistant = assistantAvailable(group, isGsiAdmin)
+  // The organizer isn't on their own team until they join in the app. GSI
+  // staff never are (account-health.sql leaves gogreenstreets.org out too).
+  const offerJoin =
+    selfMember === false &&
+    !!sessionEmail &&
+    !isGsiAdmin &&
+    !sessionEmail.endsWith('@gogreenstreets.org') &&
+    !skippedJoins.includes(group.id)
+  const skipJoin = () => {
+    const next = [...skippedJoins, group.id]
+    setSkippedJoins(next)
+    try {
+      localStorage.setItem(SKIP_JOIN_KEY, JSON.stringify(next))
+    } catch {
+      /* hidden for this visit only */
+    }
+  }
   const next = homeSuggestions({
     group,
     steps,
@@ -65,6 +94,7 @@ export default function DashboardPage() {
     memberCount,
     canAct: isAdmin || isGsiAdmin || portal.canManageChallenges,
     nowMs: now(),
+    joinYourself: offerJoin,
   })
   // The meters read 30-day figures; while another page's window is still in
   // the shared context (the reload above), they wait rather than mislabel.
@@ -85,7 +115,7 @@ export default function DashboardPage() {
       {withAssistant && <AssistantBar starters={next.starters} />}
 
       <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
-        <NextUp steps={next.steps} withAssistant={withAssistant} />
+        <NextUp steps={next.steps} withAssistant={withAssistant} onSkipJoin={skipJoin} />
         <ProgramHealthCard group={group} memberCount={memberCount} members={members} dashboard={dashboard30} />
       </div>
 

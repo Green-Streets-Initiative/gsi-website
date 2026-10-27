@@ -2,11 +2,12 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Check, Copy, Printer, SquaresFour } from '@phosphor-icons/react'
+import { Check, Copy, DeviceMobile, Printer, SquaresFour } from '@phosphor-icons/react'
 import { TEAM_CHALLENGE, type TeamResult } from '@/lib/employer/team-challenge'
 
 // The screen a new team lands on: the code, the note for staff (the kit's
-// forwardable note, with the join link), the flyer and the portal.
+// forwardable note, with the join link), the flyer, the portal and joining
+// the team yourself.
 
 function staffNote(company: string, code: string): string {
   const c = TEAM_CHALLENGE
@@ -93,6 +94,21 @@ export default function TeamReady({ team, tokenHash }: { team: TeamResult; token
               className="mt-4 inline-flex min-h-[48px] items-center gap-2 rounded-full bg-navy px-6 text-[16px] font-bold text-white hover:opacity-90"
             >
               <SquaresFour size={20} weight="bold" aria-hidden /> {tokenHash ? 'Open your portal' : 'Sign in to your portal'}
+            </a>
+          </section>
+          {/* Signing up doesn't put the organizer on the team (Keith 2026-10-27). */}
+          <section>
+            <h2 className="font-headline text-[1.4rem] font-extrabold text-navy">4. Join the team yourself</h2>
+            <p className="mt-2 text-[1.0625rem] leading-[1.6] text-ink-soft">
+              Get the Shift app and enter code {team.code}, so your trips count for the team too.
+            </p>
+            <a
+              href={`https://shift.gogreenstreets.org/join/${team.code}`}
+              target="_blank"
+              rel="noopener"
+              className="mt-4 inline-flex min-h-[48px] items-center gap-2 rounded-full border-2 border-navy px-6 text-[16px] font-bold text-navy hover:bg-navy hover:text-white"
+            >
+              <DeviceMobile size={20} weight="bold" aria-hidden /> Get the app
             </a>
           </section>
         </div>

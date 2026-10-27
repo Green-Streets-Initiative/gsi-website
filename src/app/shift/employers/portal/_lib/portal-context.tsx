@@ -61,6 +61,8 @@ interface PortalContextValue {
   dataFetchedAt: Date | null
   /** How many other workplace portals this email is on (the oldest one is shown). */
   otherWorkplaces: number
+  /** Whether the signed-in person is on this team in the app (a group_members row); null until loaded. */
+  selfMember: boolean | null
   /** A one-time notice from sign-in (a re-used magic link); the layout shows it as a toast and clears it. */
   authNotice: string | null
   clearAuthNotice: () => void
@@ -142,6 +144,7 @@ export function PortalProvider({ children }: { children: ReactNode }) {
   const [noWorkplace, setNoWorkplace] = useState(false)
   const [dataFetchedAt, setDataFetchedAt] = useState<Date | null>(null)
   const [otherWorkplaces, setOtherWorkplaces] = useState(0)
+  const [selfMember, setSelfMember] = useState<boolean | null>(null)
   const [authNotice, setAuthNotice] = useState<string | null>(null)
   const [attempt, setAttempt] = useState(0)
   const [group, setGroup] = useState<Group | null>(null)
@@ -263,7 +266,7 @@ export function PortalProvider({ children }: { children: ReactNode }) {
               .maybeSingle()
           : Promise.resolve({ data: null, error: null } as const)
 
-      const [challengeRes, flagshipRes, memberRes, dashboardRes, membersRes, poolRes, adminsRes] = await Promise.all([
+      const [challengeRes, flagshipRes, memberRes, dashboardRes, membersRes, poolRes, adminsRes, selfRes] = await Promise.all([
         supabase
           .from('competitions')
           .select('id, name, metric, starts_at, ends_at, prize_description, counting_rules, contact_name, contact_email')
@@ -297,6 +300,13 @@ export function PortalProvider({ children }: { children: ReactNode }) {
           .select('*')
           .eq('group_id', groupData.id)
           .order('created_at'),
+        // Signing up made the organizer a Shift account but not a member, so
+        // Home offers them the team (Keith 2026-10-27).
+        supabase
+          .from('group_members')
+          .select('user_id', { count: 'exact', head: true })
+          .eq('group_id', groupData.id)
+          .eq('user_id', userId),
       ])
 
       setDataFetchedAt(new Date())
@@ -349,6 +359,7 @@ export function PortalProvider({ children }: { children: ReactNode }) {
       }
 
       setMemberCount(memberRes.count ?? 0)
+      setSelfMember(selfRes.error ? null : (selfRes.count ?? 0) > 0)
 
       if (dashboardRes.data && !(dashboardRes.data as { error?: string }).error) {
         setDashboard(dashboardRes.data as DashboardData)
@@ -528,6 +539,7 @@ export function PortalProvider({ children }: { children: ReactNode }) {
     noWorkplace,
     dataFetchedAt,
     otherWorkplaces,
+    selfMember,
     authNotice,
     clearAuthNotice,
     isAdmin,

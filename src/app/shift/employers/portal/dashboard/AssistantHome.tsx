@@ -9,7 +9,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
-import { ArrowUp, BarChart3, Building2, ChevronRight, ImageIcon, MessageSquareText, Route, Target, Trophy, Users } from 'lucide-react'
+import { ArrowUp, BarChart3, Building2, ChevronRight, ExternalLink, ImageIcon, MessageSquareText, Route, Target, Trophy, UserPlus, Users } from 'lucide-react'
 import { openAssistant } from '../_components/AssistantPanel'
 import { Card } from '@/components/employer/Card'
 import Button from '@/components/employer/Button'
@@ -20,7 +20,8 @@ import type { Challenge, EmployerOnboarding, Group } from '../_lib/portal-types'
 const PORTAL = '/shift/employers/portal'
 const DAY = 86_400_000
 
-type Step = { id: string; icon: typeof Users; title: string; desc: string; prompt: string; href: string }
+// A 'join' step is the person's own: no assistant, an outside link and a way to say no.
+type Step = { id: string; icon: typeof Users; title: string; desc: string; prompt: string; href: string; kind?: 'join' }
 
 /** Setup steps, as tasks the assistant can take on. */
 const SETUP: Record<string, { icon: typeof Users; desc: string }> = {
@@ -41,8 +42,10 @@ export function homeSuggestions(args: {
   memberCount: number
   canAct: boolean
   nowMs: number
+  /** True when the signed-in person isn't on the team yet and hasn't said no. */
+  joinYourself?: boolean
 }): { steps: Step[]; starters: string[] } {
-  const { group, steps, challenges, memberCount, canAct, nowMs } = args
+  const { group, steps, challenges, memberCount, canAct, nowMs, joinYourself } = args
   const headcount = ((group.onboarding ?? {}) as EmployerOnboarding).headcount ?? null
   const own = challenges.filter((c) => !c.is_flagship)
   const upcoming = own.filter((c) => new Date(c.starts_at).getTime() > nowMs).sort((a, b) => a.starts_at.localeCompare(b.starts_at))[0]
@@ -64,6 +67,18 @@ export function homeSuggestions(args: {
       desc: `${headcount ? `${memberCount} of ${headcount.toLocaleString('en-US')}` : memberCount} joined · challenge starts in ${days} day${days === 1 ? '' : 's'}`,
       prompt: `Help me get my team into Shift before "${soon.name}" starts. I can attach our staff list.`,
       href: `${PORTAL}/employees?invite=1`,
+    })
+  }
+  // Signing up doesn't put the organizer on the team (Keith 2026-10-27).
+  if (joinYourself && group.invite_code) {
+    out.push({
+      id: 'join',
+      icon: UserPlus,
+      title: 'Join the team yourself',
+      desc: `In the app, enter code ${group.invite_code}.`,
+      prompt: '',
+      href: `https://shift.gogreenstreets.org/join/${group.invite_code}`,
+      kind: 'join',
     })
   }
   if (canAct) {
@@ -152,7 +167,7 @@ export function AssistantBar({ starters }: { starters: string[] }) {
 }
 
 /** At most three things to do now, each with the assistant (when it's on) or by hand. */
-export function NextUp({ steps, withAssistant }: { steps: Step[]; withAssistant: boolean }) {
+export function NextUp({ steps, withAssistant, onSkipJoin }: { steps: Step[]; withAssistant: boolean; onSkipJoin?: () => void }) {
   const router = useRouter()
   return (
     <Card className="ph-no-capture">
@@ -168,7 +183,18 @@ export function NextUp({ steps, withAssistant }: { steps: Step[]; withAssistant:
                 <p className="text-[16px] font-semibold leading-snug text-ink">{s.title}</p>
                 <p className="line-clamp-2 text-[14px] text-ink-muted">{s.desc}</p>
               </div>
-              {withAssistant ? (
+              {s.kind === 'join' ? (
+                <span className="flex shrink-0 flex-col items-end gap-1 sm:flex-row sm:items-center sm:gap-2">
+                  <Button variant="secondary" size="sm" iconRight={ExternalLink} onClick={() => window.open(s.href, '_blank', 'noopener')}>
+                    Get the app
+                  </Button>
+                  {onSkipJoin && (
+                    <button type="button" onClick={onSkipJoin} className="px-1 text-[14px] font-medium text-ink-muted hover:text-ink">
+                      Not for me
+                    </button>
+                  )}
+                </span>
+              ) : withAssistant ? (
                 <span className="flex shrink-0 flex-col items-end gap-1 sm:flex-row sm:items-center sm:gap-2">
                   <Button variant="secondary" size="sm" icon={MessageSquareText} onClick={() => openAssistant(s.prompt)}>
                     <span className="hidden sm:inline">With the assistant</span>
