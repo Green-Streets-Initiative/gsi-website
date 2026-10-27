@@ -18,7 +18,7 @@ export default function TermsPage() {
             Terms of Service
           </h1>
           <p className="mt-4 text-[15px] text-ink-soft">
-            Shift by Green Streets Initiative &middot; Last updated May 2026
+            Shift by Green Streets Initiative &middot; Last updated October 2026
           </p>
           <p className="mt-1 text-[15px] text-ink-soft">
             Contact: <a href="mailto:info@gogreenstreets.org" className="font-semibold text-forest underline-offset-4 hover:underline">info@gogreenstreets.org</a>
@@ -316,6 +316,27 @@ export default function TermsPage() {
                 GSI may remove, restrict, or decline to use user content that violates these
                 Terms, applicable law, program rules, consent terms, or the rights of any
                 third party.
+              </P>
+            </Section>
+
+            <Section title="The Shift Assistant">
+              <P>
+                Shift includes an optional assistant, in the app and in the tools for ride
+                organizers, that answers questions and helps with tasks. Its answers are written
+                by an AI model and can be wrong or out of date. Check routes, schedules, prices,
+                conditions, and anything that affects your safety before you rely on them. The
+                assistant does not give legal, medical, tax, or financial advice.
+              </P>
+              <P>
+                The assistant can do only what your own account can do. It saves, changes, sends,
+                or schedules something (such as a saved place, a setting, a trip reminder, or an
+                update to people on a ride) only after you approve it.
+              </P>
+              <P>
+                The Acceptable Use rules above apply to what you ask it and send it. How it handles
+                your information is described in the 
+                <a href="/privacy" className="font-semibold text-forest underline-offset-4 hover:underline">Privacy Policy</a> and in 
+                <a href="/shift/assistant-data" className="font-semibold text-forest underline-offset-4 hover:underline">The Shift assistant and your data</a>.
               </P>
             </Section>
 

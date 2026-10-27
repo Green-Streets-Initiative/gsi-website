@@ -906,11 +906,15 @@ function AssistantPanel({ groupId, seed, onSeedUsed, onClose }: { groupId: strin
             <ArrowUp size={16} />
           </button>
         </div>
+        {/* The same footer on every assistant (Keith 2026-10-27): the app's, the
+            organizer tools' and this one. Each links its own data note and terms. */}
         <p className="mt-2 text-center text-[14px] leading-[1.45] text-ink-muted">
-          Seen only by you and GSI. AI can make mistakes, so check what matters. Not legal or tax advice.{' '}
-          <a href="/shift/employers/assistant-data" target="_blank" rel="noopener" className="underline underline-offset-2 hover:text-ink">
-            Your data
-          </a>
+          AI can make mistakes, so check what matters. Not legal or tax advice.{' '}
+          <a href="/shift/employers/assistant-data" target="_blank" rel="noopener" className="underline underline-offset-2 hover:text-ink">Your data</a>
+          {' · '}
+          <a href="/privacy" target="_blank" rel="noopener" className="underline underline-offset-2 hover:text-ink">Privacy</a>
+          {' · '}
+          <a href="/shift/employers/agreement" target="_blank" rel="noopener" className="underline underline-offset-2 hover:text-ink">Terms</a>
         </p>
       </form>
     </aside>

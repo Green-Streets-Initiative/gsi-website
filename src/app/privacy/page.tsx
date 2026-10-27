@@ -260,6 +260,10 @@ export default function PrivacyPage() {
                 your account. You can delete a conversation, or all of them, from the assistant
                 in the app, or by contacting <a href="mailto:info@gogreenstreets.org" className="font-semibold text-forest underline-offset-4 hover:underline">info@gogreenstreets.org</a>.
               </P>
+              <P>
+                More detail is in{' '}
+                <a href="/shift/assistant-data" className="font-semibold text-forest underline-offset-4 hover:underline">The Shift assistant and your data</a>.
+              </P>
             </Section>
 
             <Section title="Saved Locations">

@@ -609,9 +609,15 @@ function AssistantPanel({ seed, onSeedUsed, onClose }: { seed: { prompt: string 
             <ArrowUp size={17} />
           </button>
         </div>
-        <p className="mt-2 text-center text-[13px] leading-[1.45] text-(--ev-ink-75)">
-          Seen only by you and GSI. AI can make mistakes, so check what matters.{' '}
+        {/* The same footer on every assistant (Keith 2026-10-27): the app's, the
+            employer portal's and this one. Each links its own data note and terms. */}
+        <p className="mt-2 text-center text-[14px] leading-[1.45] text-(--ev-ink-75)">
+          AI can make mistakes, so check what matters.{' '}
           <a href="/organizers/assistant-data" target="_blank" rel="noopener" className="underline underline-offset-2 hover:text-(--ev-ink)">Your data</a>
+          {' · '}
+          <a href="/privacy" target="_blank" rel="noopener" className="underline underline-offset-2 hover:text-(--ev-ink)">Privacy</a>
+          {' · '}
+          <a href="/terms" target="_blank" rel="noopener" className="underline underline-offset-2 hover:text-(--ev-ink)">Terms</a>
         </p>
       </form>
     </aside>
