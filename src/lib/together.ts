@@ -10,7 +10,7 @@ import { supabase } from '@/lib/supabase'
  */
 
 export type PartnerKind = 'newcomer' | 'guide' | 'carpool'
-export type PartnerWay = 'walk' | 'bike' | 'transit'
+export type PartnerWay = 'walk' | 'bike' | 'transit' | 'micro'
 export type CarpoolRole = 'driver' | 'rider' | 'either'
 export type PartnerDay = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun'
 export type PartnerTime = 'morning' | 'midday' | 'evening'
@@ -19,7 +19,9 @@ export const WAYS: { id: PartnerWay; label: string }[] = [
   { id: 'bike', label: 'Bike' },
   { id: 'walk', label: 'Walk' },
   { id: 'transit', label: 'Bus or train' },
+  { id: 'micro', label: 'Scooter or board' },
 ]
+export const isWay = (m: string): m is PartnerWay => m === 'bike' || m === 'walk' || m === 'transit' || m === 'micro'
 export const DAYS: { id: PartnerDay; label: string }[] = [
   { id: 'mon', label: 'Mon' }, { id: 'tue', label: 'Tue' }, { id: 'wed', label: 'Wed' },
   { id: 'thu', label: 'Thu' }, { id: 'fri', label: 'Fri' }, { id: 'sat', label: 'Sat' }, { id: 'sun', label: 'Sun' },
@@ -70,8 +72,10 @@ export type PartnerRequest = {
   days: PartnerDay[]
   time_of_day: PartnerTime[]
   arrive_by: string | null
+  leave_at: string | null
   status: 'open' | 'matched' | 'paused' | 'closed'
   source: 'app' | 'event_signup' | 'admin'
+  note: string | null
 }
 
 export async function myRequests(): Promise<PartnerRequest[]> {
@@ -129,6 +133,8 @@ export type SignUp = {
   times: PartnerTime[]
   carpoolRole: CarpoolRole | null
   arriveBy: string | null
+  leaveAt: string | null
+  note: string | null
 }
 
 /** The app's savePartnerRequest: the sign-up, then matching runs; returns how many matched. */
@@ -142,8 +148,8 @@ export async function saveSignUp(s: SignUp): Promise<{ ok: true; matches: number
     p_time_of_day: s.times,
     p_carpool_role: s.kind === 'carpool' ? s.carpoolRole ?? 'either' : null,
     p_arrive_by: s.arriveBy,
-    p_leave_at: null,
-    p_note: null,
+    p_leave_at: s.kind === 'carpool' ? s.leaveAt : null,
+    p_note: s.note,
     p_carpool_scope: s.kind === 'carpool' ? 'nearby' : null,
   })
   if (error) return { ok: false, reason: 'network' }
@@ -156,7 +162,7 @@ export async function stopSignUp(kind: PartnerKind): Promise<boolean> {
   return !error && !!(data as { ok?: boolean } | null)?.ok
 }
 
-/** A match as the person sees it (get_my_partner_matches). */
+/** A match as the person sees it (get_my_partner_matches; Shift lib/commute-partners.ts PartnerMatch). */
 export type Match = {
   id: string
   kind: 'guide' | 'carpool'
@@ -164,21 +170,39 @@ export type Match = {
   my_kind: PartnerKind
   my_answer: 'yes' | 'no' | null
   their_answer: 'yes' | 'waiting' | null
+  my_rating: Rating | null
   home_miles: number | null
   dest_miles: number | null
   detour_minutes?: number | null
   i_drive?: boolean | null
+  created_at: string
+  connected_at: string | null
   other: {
     first_name: string | null
-    shared_modes: string[]
+    modes: PartnerWay[]
+    shared_modes: PartnerWay[]
+    days: PartnerDay[]
+    time_of_day: PartnerTime[]
+    arrive_by: string | null
+    carpool_role: CarpoolRole | null
+    group_name: string | null
+    trips_60d: number | null
+    avatar_url: string | null
+    member_since: string | null
+    status_name: string | null
+    primary_mode: PartnerWay | 'drive' | null
+    shared_groups: { name: string; type: 'workplace' | 'school' | 'neighborhood' }[]
     shared_days: PartnerDay[]
     shared_times: PartnerTime[]
-    arrive_by: string | null
-    trips_60d: number | null
+    my_days: PartnerDay[]
+    my_times: PartnerTime[]
     email: string | null
     last_initial: string | null
   }
 }
+
+export type Rating = 'great' | 'ok' | 'not_good'
+export type ReportReason = 'no_show' | 'uncomfortable' | 'unsafe' | 'other'
 
 export async function myMatches(): Promise<Match[]> {
   const { data, error } = await supabase.rpc('get_my_partner_matches')
@@ -194,6 +218,74 @@ export async function answerMatch(matchId: string, yes: boolean): Promise<boolea
 export async function answerWent(matchId: string, went: boolean): Promise<boolean> {
   const { data, error } = await supabase.rpc('answer_went_together', { p_match_id: matchId, p_went: went })
   return !error && !!(data as { ok?: boolean } | null)?.ok
+}
+
+export async function rateMatch(matchId: string, rating: Rating, comment: string | null): Promise<boolean> {
+  const { data, error } = await supabase.rpc('rate_partner_match', { p_match_id: matchId, p_rating: rating, p_comment: comment })
+  return !error && !!(data as { ok?: boolean } | null)?.ok
+}
+
+export async function endMatch(matchId: string): Promise<boolean> {
+  const { data, error } = await supabase.rpc('end_partner_match', { p_match_id: matchId })
+  return !error && !!(data as { ok?: boolean } | null)?.ok
+}
+
+export async function reportMatch(matchId: string, reason: ReportReason, details: string | null): Promise<boolean> {
+  const { data, error } = await supabase.rpc('report_partner_match', { p_match_id: matchId, p_reason: reason, p_details: details })
+  return !error && !!(data as { ok?: boolean } | null)?.ok
+}
+
+/* How well a match fits, 1 (some) to 3 (strong); the app's own rules (Shift lib/commute-partners.ts). */
+export type FitLevel = 1 | 2 | 3 | null
+
+export function arriveGap(a: string | null | undefined, b: string | null | undefined): number | null {
+  if (!a || !b) return null
+  const mins = (x: string) => { const [h, m] = x.split(':').map(Number); return h * 60 + m }
+  return Math.abs(mins(a) - mins(b))
+}
+
+export function timingDaysKnown(m: Match): boolean {
+  return !!m.other.my_days?.length && !!m.other.days.length
+}
+
+export function timingFit(m: Match, myArrive?: string | null): FitLevel {
+  const o = m.other
+  const gap = m.my_kind === 'carpool' ? arriveGap(myArrive, o.arrive_by) : null
+  const gapLevel: FitLevel = gap == null ? null : gap <= 15 ? 3 : gap <= 30 ? 2 : 1
+  const timesKnown = !!o.my_times?.length && !!o.time_of_day.length
+  if (!timingDaysKnown(m) && !timesKnown) return gapLevel
+  if (timesKnown && !o.shared_times.length) return 1
+  const share = timingDaysKnown(m) ? o.shared_days.length / o.my_days.length : 1
+  const dayLevel = share >= 0.8 ? 3 : share >= 0.4 ? 2 : 1
+  return gapLevel == null ? dayLevel : (Math.min(dayLevel, gapLevel) as 1 | 2 | 3)
+}
+
+export function routeFit(m: Match): FitLevel {
+  if (m.my_kind === 'carpool' && m.detour_minutes != null) return m.detour_minutes <= 4 ? 3 : m.detour_minutes <= 7 ? 2 : 1
+  if (m.home_miles == null || m.dest_miles == null) return null
+  const far = Math.max(m.home_miles, m.dest_miles)
+  return far <= 0.5 ? 3 : far <= 1 ? 2 : 1
+}
+
+export function experienceFit(m: Match): FitLevel {
+  const n = m.other.trips_60d
+  if (n == null) return null
+  return n >= 40 ? 3 : n >= 15 ? 2 : 1
+}
+
+export function overallFit(m: Match, myArrive?: string | null): FitLevel {
+  const levels = [timingFit(m, myArrive), routeFit(m), m.my_kind === 'newcomer' ? experienceFit(m) : null]
+    .filter((x): x is 1 | 2 | 3 => x != null)
+  if (!levels.length) return null
+  const avg = levels.reduce((a, b) => a + b, 0) / levels.length
+  return avg >= 2.6 ? 3 : avg >= 1.8 ? 2 : 1
+}
+
+/** "8:30 AM" from "08:30". */
+export function clock(hhmm: string | null | undefined): string | null {
+  if (!hhmm) return null
+  const [h, m] = hhmm.split(':').map(Number)
+  return new Date(2026, 0, 5, h, m).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
 }
 
 /** The free road lesson (Shift 01454/01455), measured from their saved Home. */
