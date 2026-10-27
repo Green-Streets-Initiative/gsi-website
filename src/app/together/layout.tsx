@@ -1,5 +1,7 @@
 import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
+import Nav from '@/components/Nav'
+import Footer from '@/components/Footer'
 import TogetherShell from '@/components/together/TogetherShell'
 
 export const metadata: Metadata = {
@@ -9,6 +11,15 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 }
 
+/** The site's own header and footer (terms, privacy), like /rides/manage. */
 export default function TogetherLayout({ children }: { children: ReactNode }) {
-  return <TogetherShell>{children}</TogetherShell>
+  return (
+    <>
+      <Nav variant="light" />
+      <main className="bg-cream" style={{ paddingTop: '60px' }}>
+        <TogetherShell>{children}</TogetherShell>
+      </main>
+      <Footer variant="light" />
+    </>
+  )
 }

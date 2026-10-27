@@ -3,8 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
-import { LogOut, MailCheck } from 'lucide-react'
-import ShiftWordmark from '@/components/brand/ShiftWordmark'
+import { Car, Handshake, LogOut, MailCheck, MapPinned, Sprout, UsersRound, type LucideIcon } from 'lucide-react'
 import { toneClass } from '@/components/events/EventsTone'
 import { Button, Card, Field, Input, Notice, Spinner, cx } from '@/components/organizers/ui'
 import { supabase } from '@/lib/supabase'
@@ -23,6 +22,12 @@ type Phase = 'checking' | 'signed_out' | 'off' | 'ready' | 'error'
 
 type State = { phase: Phase; userId: string | null; email: string | null; notice: string | null; signOut: () => Promise<void> }
 const Ctx = createContext<State | null>(null)
+
+const WAYS_TO_GO: { label: string; Icon: LucideIcon }[] = [
+  { label: 'Go with someone who knows the way', Icon: Sprout },
+  { label: 'Show someone the way', Icon: UsersRound },
+  { label: 'Find a carpool partner', Icon: Car },
+]
 
 export function useTogether(): State {
   const v = useContext(Ctx)
@@ -91,30 +96,29 @@ export default function TogetherShell({ children }: { children: ReactNode }) {
 
   return (
     <Ctx.Provider value={{ phase, userId, email, notice, signOut }}>
-      <div className={cx('min-h-dvh bg-(--ev-bg) text-(--ev-ink)', toneClass('light'))}>
-        <TopBar />
-        <main className="mx-auto w-full max-w-[860px] px-4 pb-20 pt-6 sm:px-6 sm:pt-8">
+      <div className={cx('min-h-[70dvh] bg-(--ev-bg) text-(--ev-ink)', toneClass('light'))}>
+        <SubBar />
+        <div className="mx-auto w-full max-w-[920px] px-4 pb-16 pt-6 sm:px-6 sm:pt-8">
           <Gate>{children}</Gate>
-        </main>
+        </div>
       </div>
     </Ctx.Provider>
   )
 }
 
-function TopBar() {
+/** Under the site header once signed in: the two pages and the account. */
+function SubBar() {
   const { phase, email, signOut } = useTogether()
   const path = usePathname()
+  if (phase !== 'ready' && phase !== 'off') return null
   const nav = [
-    { href: '/together', label: 'Sign up', active: path === '/together' },
+    { href: '/together', label: 'Your sign-up', active: path === '/together' },
     { href: '/together/matches', label: 'Your matches', active: path.startsWith('/together/matches') },
   ]
   return (
-    <header className="sticky top-0 z-40 border-b border-(--ev-line) bg-(--ev-bar) backdrop-blur">
-      <div className="mx-auto flex h-[60px] max-w-[860px] items-center gap-3 px-4 sm:px-6">
-        <Link href="/together" className="flex shrink-0 items-center gap-2.5" aria-label="Shift Together home">
-          <ShiftWordmark tone="dark" height={22} />
-          <span className="hidden border-l border-(--ev-line-strong) pl-2.5 text-[14px] font-semibold text-(--ev-ink-80) sm:inline">Together</span>
-        </Link>
+    <div className="border-b border-(--ev-line) bg-(--ev-bar)">
+      <div className="mx-auto flex min-h-[56px] max-w-[920px] items-center gap-x-4 px-4 sm:px-6">
+        <span className="hidden font-display text-[17px] font-extrabold sm:inline">Shift Together</span>
         {phase === 'ready' && (
           <nav aria-label="Shift Together" className="flex items-center gap-1">
             {nav.map((n) => (
@@ -122,28 +126,99 @@ function TopBar() {
                 key={n.href}
                 href={n.href}
                 aria-current={n.active ? 'page' : undefined}
-                className={cx('rounded-lg px-3 py-2 text-[14px] font-semibold', n.active ? 'bg-(--ev-panel) text-(--ev-ink)' : 'text-(--ev-ink-80) hover:bg-(--ev-panel)')}
+                className={cx(
+                  'inline-flex min-h-[44px] items-center rounded-lg px-3 text-[15px] font-semibold',
+                  n.active ? 'bg-(--ev-panel) text-(--ev-ink)' : 'text-(--ev-ink-80) hover:bg-(--ev-panel)',
+                )}
               >
                 {n.label}
               </Link>
             ))}
           </nav>
         )}
-        {(phase === 'ready' || phase === 'off') && email && (
-          <div className="ml-auto flex min-w-0 items-center gap-2">
-            <span className="hidden truncate text-[14px] text-(--ev-ink-75) md:inline">{email}</span>
-            <button
-              type="button"
-              onClick={() => void signOut()}
-              className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg px-2.5 text-[14px] font-semibold text-(--ev-ink-80) hover:bg-(--ev-panel)"
-            >
-              <LogOut className="h-4 w-4" aria-hidden />
-              <span className="hidden sm:inline">Sign out</span>
-            </button>
-          </div>
-        )}
+        <div className="ml-auto flex min-w-0 items-center gap-1">
+          {email ? <span className="hidden truncate text-[14px] text-(--ev-ink-75) md:inline">{email}</span> : null}
+          <button
+            type="button"
+            onClick={() => void signOut()}
+            aria-label="Sign out"
+            className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center gap-1.5 rounded-lg px-2.5 text-[14px] font-semibold text-(--ev-ink-80) hover:bg-(--ev-panel)"
+          >
+            <LogOut className="h-4 w-4" aria-hidden />
+            <span className="hidden sm:inline">Sign out</span>
+          </button>
+        </div>
       </div>
-    </header>
+    </div>
+  )
+}
+
+const STEPS: { title: string; hint: string; Icon: LucideIcon }[] = [
+  { title: 'Tell us your trip', hint: 'What you\u2019d like to do, and where and when you go.', Icon: MapPinned },
+  { title: 'We find a match', hint: 'Someone nearby who makes a trip like yours.', Icon: UsersRound },
+  { title: 'You both say yes', hint: 'Then you see each other\u2019s email and plan the first trip.', Icon: Handshake },
+]
+
+/**
+ * Where the person is in Shift Together: tell us your trip, we find a match,
+ * you both say yes. Full (with a line each) on the sign-in page; compact on
+ * the signed-in pages, with the current step marked.
+ */
+export function Journey({ at, full = false }: { at?: 1 | 2 | 3; full?: boolean }) {
+  const step = at ? STEPS[at - 1] : null
+  return (
+    <>
+      {!full && step && at ? (
+        // Phones: one line, "Step 2 of 3", and three bars.
+        <div className="flex items-center gap-3 sm:hidden">
+          <span className="flex gap-1" aria-hidden>
+            {[1, 2, 3].map((n) => <span key={n} className={cx('h-2 w-6 rounded-full', n <= at ? 'bg-(--ev-accent)' : 'bg-(--ev-line-strong)')} />)}
+          </span>
+          <span className="text-[15px] font-semibold">Step {at} of 3: {step.title}</span>
+        </div>
+      ) : null}
+      <JourneySteps at={at} full={full} />
+    </>
+  )
+}
+
+function JourneySteps({ at, full }: { at?: 1 | 2 | 3; full: boolean }) {
+  return (
+    <ol className={cx('gap-3', full ? 'grid grid-cols-1 sm:grid-cols-3' : 'hidden grid-cols-3 gap-2 sm:grid')} aria-label="How Shift Together works">
+      {STEPS.map(({ title, hint, Icon }, i) => {
+        const n = (i + 1) as 1 | 2 | 3
+        const now = at === n
+        const done = at != null && n < at
+        return (
+          <li
+            key={title}
+            aria-current={now ? 'step' : undefined}
+            className={cx(
+              'flex gap-3 rounded-2xl border',
+              full ? 'items-start bg-white p-4' : 'flex-col items-start p-3 sm:flex-row sm:items-center',
+              now ? 'border-(--ev-accent) bg-white ring-2 ring-(--ev-accent-tint-15)' : 'border-(--ev-line)',
+              !full && !now && 'bg-transparent',
+            )}
+          >
+            <span
+              className={cx(
+                'flex h-10 w-10 shrink-0 items-center justify-center rounded-full',
+                now || done || full ? 'bg-(--ev-accent-fill) text-(--ev-on-accent-fill)' : 'bg-(--ev-panel) text-(--ev-ink-80)',
+              )}
+              aria-hidden
+            >
+              <Icon className="h-5 w-5" />
+            </span>
+            <span className="min-w-0">
+              <span className={cx('block font-bold leading-snug', full ? 'text-[17px]' : 'text-[14px] sm:text-[15px]')}>
+                {full ? `${n}. ${title}` : title}
+              </span>
+              {full ? <span className="mt-1 block text-[15px] leading-snug text-(--ev-ink-80)">{hint}</span> : null}
+            </span>
+          </li>
+        )
+      })}
+    </ol>
   )
 }
 
@@ -202,47 +277,59 @@ function SignIn() {
   }
 
   return (
-    // Phone: heading, then the sign-in, then the details. Wide: text left, sign-in right.
-    <div className="grid gap-6 pt-2 md:grid-cols-[1.1fr_1fr] md:items-center md:gap-x-8 md:pt-8">
-      <div className="md:col-start-1 md:row-start-1 md:self-end">
-        <p className="text-[15px] font-semibold text-(--ev-accent)">Shift Together</p>
-        <h1 className="mt-2 font-display text-[clamp(30px,4.2vw,42px)] font-extrabold leading-[1.05]">
-          Try a new way to get there, with someone who knows it
-        </h1>
-      </div>
-      <Card className="shadow-(--ev-shadow) md:col-start-2 md:row-span-2 md:row-start-1">
-        {sent ? (
-          <div>
-            <MailCheck className="h-8 w-8 text-(--ev-accent)" aria-hidden />
-            <h2 className="mt-3 font-display text-[22px] font-extrabold">Check your inbox</h2>
-            <p className="mt-2 text-[16px] leading-relaxed text-(--ev-ink-85)">
-              We sent a sign-in link to <strong>{sent}</strong>. Open it on this device to continue.
-            </p>
-          </div>
-        ) : (
-          <form onSubmit={send} className="grid gap-4">
-            <h2 className="font-display text-[22px] font-extrabold">Sign in with your email</h2>
-            {notice ? <Notice tone="warn">{notice}</Notice> : null}
-            <Field label="Email" htmlFor="together-email" error={err ?? undefined}>
-              <Input id="together-email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />
-            </Field>
-            <Button type="submit" variant="primary" busy={busy}>Email me a sign-in link</Button>
-            <p className="text-[14px] leading-snug text-(--ev-ink-75)">
-              Signed up at the Somerville Connection Expo? Use the same email, and we&rsquo;ll pick up where you left off.
-            </p>
-          </form>
-        )}
-      </Card>
-      <div className="md:col-start-1 md:row-start-2 md:self-start">
-        <ul className="space-y-2.5 text-[16px] leading-snug text-(--ev-ink-85)">
-          <li>Go with a neighbor who already bikes, walks or takes the bus or train on your trip.</li>
-          <li>Or show the way to someone trying it for the first time.</li>
-          <li>Or share the drive with someone whose trip fits yours.</li>
+    <div className="grid grid-cols-1 gap-8 pt-2 md:pt-6">
+      {/* Phone: heading, then the sign-in, then how it works. Wide: heading and ways left, sign-in right. */}
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-[1.15fr_1fr] md:items-start md:gap-x-10">
+        <div className="md:col-start-1 md:row-start-1">
+          <p className="text-[15px] font-semibold text-(--ev-accent)">Shift Together, from Green Streets Initiative</p>
+          <h1 className="mt-2 font-display text-[clamp(30px,4.2vw,44px)] font-extrabold leading-[1.05] text-balance">
+            Try a new way to get there, with someone who knows it
+          </h1>
+        </div>
+        <Card className="shadow-(--ev-shadow) md:col-start-2 md:row-span-2 md:row-start-1">
+          {sent ? (
+            <div>
+              <MailCheck className="h-8 w-8 text-(--ev-accent)" aria-hidden />
+              <h2 className="mt-3 font-display text-[22px] font-extrabold">Check your inbox</h2>
+              <p className="mt-2 text-[16px] leading-relaxed text-(--ev-ink-85)">
+                We sent a sign-in link to <strong>{sent}</strong>. Open it on this phone or computer to continue.
+              </p>
+              <button type="button" onClick={() => setSent(null)} className="mt-3 min-h-[44px] text-[15px] font-semibold text-(--ev-accent) underline">
+                Use a different email
+              </button>
+            </div>
+          ) : (
+            <form onSubmit={send} className="grid gap-4">
+              <h2 className="font-display text-[22px] font-extrabold">Sign in with your email</h2>
+              {notice ? <Notice tone="warn">{notice}</Notice> : null}
+              <Field label="Email" htmlFor="together-email" error={err ?? undefined}>
+                <Input id="together-email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />
+              </Field>
+              <Button type="submit" variant="primary" busy={busy}>Email me a sign-in link</Button>
+              <p className="text-[15px] leading-snug text-(--ev-ink-80)">
+                Met us at the Somerville Connection Expo? Use the email you gave us.
+              </p>
+            </form>
+          )}
+        </Card>
+        <ul className="grid gap-2 md:col-start-1 md:row-start-2" aria-label="Ways to take part">
+          {WAYS_TO_GO.map(({ label, Icon }) => (
+            <li key={label} className="flex items-center gap-3 text-[17px] font-semibold">
+              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-(--ev-panel) text-(--ev-accent)" aria-hidden>
+                <Icon className="h-5 w-5" />
+              </span>
+              {label}
+            </li>
+          ))}
         </ul>
-        <p className="mt-5 text-[15px] leading-snug text-(--ev-ink-75)">
-          Free, from Green Streets Initiative. Your match sees only your first name until you both say yes. No app needed.
-        </p>
       </div>
+      <section aria-labelledby="together-how">
+        <h2 id="together-how" className="mb-3 font-display text-[22px] font-extrabold">How it works</h2>
+        <Journey full />
+        <p className="mt-4 text-[15px] leading-snug text-(--ev-ink-80)">
+          Free, and no app needed. Your match sees only your first name until you both say yes.
+        </p>
+      </section>
     </div>
   )
 }

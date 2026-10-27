@@ -2,136 +2,389 @@
 
 import Link from 'next/link'
 import { useCallback, useEffect, useState } from 'react'
-import { Mail } from 'lucide-react'
-import { Badge, Button, Card, Notice, Spinner } from '@/components/organizers/ui'
-import { DAYS, TIMES, WAYS, answerMatch, answerWent, myMatches, track, type Match } from '@/lib/together'
+import { Briefcase, Car, Clock, GraduationCap, House, Mail, Medal, Route, Sprout } from 'lucide-react'
+import NextSteps from '@/components/together/NextSteps'
+import { Avatar, Chip, ChipRow, FitMeter, WAY_ICON } from '@/components/together/bits'
+import { Journey } from '@/components/together/TogetherShell'
+import { Button, Card, Notice, Spinner, Textarea, cx } from '@/components/organizers/ui'
+import {
+  TIMES, WAYS, answerMatch, answerWent, arriveGap, clock, endMatch, experienceFit, isWay, myMatches, myRequests,
+  overallFit, rateMatch, reportMatch, routeFit, timingDaysKnown, timingFit, track,
+  type Match, type PartnerRequest, type Rating, type ReportReason,
+} from '@/lib/together'
 
 /**
- * gogreenstreets.org/together/matches: the web version of the app's matches
- * screen (Phase A, Keith 2026-10-27). Yes or no; once both say yes, the other
- * person's email; after the trip, "did you go together?". Everything comes
- * from get_my_partner_matches, so a web person sees exactly what the app
- * would show, and nothing more before both say yes.
+ * gogreenstreets.org/together/matches: the app's matches screen
+ * (partner-matches.tsx) for the web, with the same card: a fit rating, the
+ * person's face, and timing, route and experience meters before the yes;
+ * their email once both say yes; "Did you go together?" a day later, then
+ * how it went; and "Something wrong?" to end the match or report a problem.
+ * Everything comes from the app's own RPCs, so a web person sees exactly
+ * what the app would show.
  */
 
-const label = (list: { id: string; label: string }[], ids: string[]) =>
-  ids.map((i) => list.find((x) => x.id === i)?.label ?? i).join(', ')
+const RATINGS: { id: Rating; label: string }[] = [{ id: 'great', label: 'Great' }, { id: 'ok', label: 'OK' }, { id: 'not_good', label: 'Not good' }]
+const REASONS: { id: ReportReason; label: string }[] = [
+  { id: 'no_show', label: 'They didn’t show up' },
+  { id: 'uncomfortable', label: 'I felt uncomfortable' },
+  { id: 'unsafe', label: 'I felt unsafe' },
+  { id: 'other', label: 'Something else' },
+]
+const SHORT: Record<Match['my_kind'], string> = {
+  newcomer: 'Can show you the way',
+  guide: 'Would like to try your trip',
+  carpool: 'Could share the drive',
+}
+const MOSTLY: Record<string, string> = {
+  walk: 'Mostly walks', bike: 'Mostly bikes', transit: 'Mostly takes transit', micro: 'Mostly scooters and boards', drive: 'Mostly drives',
+}
+const ROLE: Record<string, string> = { driver: 'Can drive', rider: 'Would ride along', either: 'Can drive or ride along' }
+const plural = (n: number, one: string, many: string) => (n === 1 ? one : many)
 
 export default function MatchesPage() {
   const [matches, setMatches] = useState<Match[] | null>(null)
+  const [requests, setRequests] = useState<PartnerRequest[]>([])
   const [failed, setFailed] = useState(false)
   const [busy, setBusy] = useState<string | null>(null)
+  const [problem, setProblem] = useState<string | null>(null)
+  const [notice, setNotice] = useState<string | null>(null)
 
+  const fetchAll = useCallback(() => Promise.all([myMatches(), myRequests().catch(() => [] as PartnerRequest[])]), [])
   const load = useCallback(async () => {
     try {
-      setMatches(await myMatches())
+      const [m, r] = await fetchAll()
+      setMatches(m)
+      setRequests(r)
     } catch {
       setFailed(true)
     }
-  }, [])
+  }, [fetchAll])
   useEffect(() => {
     let live = true
-    myMatches().then((m) => { if (live) setMatches(m) }).catch(() => { if (live) setFailed(true) })
+    fetchAll()
+      .then(([m, r]) => { if (live) { setMatches(m); setRequests(r) } })
+      .catch(() => { if (live) setFailed(true) })
+    track('together_matches_viewed')
     return () => { live = false }
-  }, [])
+  }, [fetchAll])
 
-  async function answer(m: Match, yes: boolean) {
+  async function run(m: Match, act: () => Promise<boolean>, event: `together_${string}`, props: Record<string, unknown> = {}, done?: string) {
     setBusy(m.id)
-    const ok = await answerMatch(m.id, yes)
-    track('together_match_answered', { kind: m.kind, yes, ok })
-    await load()
+    setProblem(null)
+    const ok = await act()
     setBusy(null)
+    if (!ok) return setProblem('That didn’t go through. Please try again.')
+    track(event, { kind: m.kind, my_kind: m.my_kind, ...props })
+    if (done) setNotice(done)
+    await load()
   }
 
-  async function went(m: Match, yes: boolean) {
-    setBusy(m.id)
-    const ok = await answerWent(m.id, yes)
-    track('together_went_answered', { kind: m.kind, went: yes, ok })
-    await load()
-    setBusy(null)
+  if (failed) {
+    return (
+      <Notice tone="off">
+        We couldn&rsquo;t load your matches.{' '}
+        <button type="button" className="font-semibold underline" onClick={() => { setFailed(false); void load() }}>Try again</button>
+      </Notice>
+    )
   }
-
-  if (failed) return <Notice tone="off">We couldn&rsquo;t load your matches. Try again in a minute.</Notice>
   if (!matches) return <Spinner label="Opening your matches" />
 
+  const open = requests.find((r) => r.status === 'open' || r.status === 'matched') ?? null
+  const myArrive = requests.find((r) => r.kind === 'carpool')?.arrive_by ?? null
+  const deciding = matches.some((m) => m.status === 'proposed')
+
   return (
-    <div className="grid gap-5">
-      <h1 className="font-display text-[clamp(28px,4vw,38px)] font-extrabold">Your matches</h1>
-      {matches.length === 0 && (
-        <Card>
-          <p className="text-[16px] leading-relaxed text-(--ev-ink-85)">
-            No matches yet. We&rsquo;ll email you as soon as someone&rsquo;s trip fits yours.
-          </p>
-          <Link href="/together" className="mt-4 inline-flex min-h-[44px] items-center font-semibold text-(--ev-accent) underline">Check or change your sign-up</Link>
-        </Card>
-      )}
-      {matches.map((m) => {
-        const name = m.other.first_name || 'Someone'
-        const ways = m.other.shared_modes?.length ? label(WAYS, m.other.shared_modes) : null
-        const days = m.other.shared_days?.length ? label(DAYS, m.other.shared_days) : null
-        const times = m.other.shared_times?.length ? label(TIMES, m.other.shared_times) : null
-        const role = m.kind === 'carpool'
-          ? (m.i_drive ? `You'd drive${m.detour_minutes != null ? `, about ${m.detour_minutes} extra minutes` : ''}` : `${name} would drive`)
-          : m.my_kind === 'guide' ? `You'd show ${name} the way` : `${name} would show you the way`
-        return (
-          <Card key={m.id} as="article">
-            <div className="flex flex-wrap items-center gap-3">
-              <span className="flex h-12 w-12 items-center justify-center rounded-full bg-(--ev-accent-fill) font-display text-[20px] font-extrabold text-(--ev-on-accent-fill)" aria-hidden>
-                {name.charAt(0).toUpperCase()}
-              </span>
-              <div className="min-w-0 flex-1">
-                <h2 className="text-[20px] font-bold">
-                  {name}{m.status !== 'proposed' && m.other.last_initial ? ` ${m.other.last_initial}.` : ''}
-                </h2>
-                <p className="text-[15px] text-(--ev-ink-80)">{role}</p>
-              </div>
-              <Badge tone={m.status === 'proposed' ? 'info' : 'good'}>
-                {m.status === 'proposed' ? 'Possible match' : m.status === 'connected' ? 'You both said yes' : 'Went together'}
-              </Badge>
-            </div>
+    <div className="grid grid-cols-1 gap-6">
+      <Journey at={matches.length ? 3 : 2} />
+      <div>
+        <h1 className="font-display text-[clamp(28px,4vw,38px)] font-extrabold">Your matches</h1>
+        {!matches.length || deciding ? (
+          <p className="mt-2 text-[16px] text-(--ev-ink-85)">If you both say yes, you each see the other&rsquo;s email to plan a first trip.</p>
+        ) : null}
+      </div>
+      {notice ? <Notice tone="good" onClose={() => setNotice(null)}>{notice}</Notice> : null}
+      {problem ? <Notice tone="off" onClose={() => setProblem(null)}>{problem}</Notice> : null}
 
-            <dl className="mt-4 grid gap-2 text-[15px] sm:grid-cols-3">
-              {m.home_miles != null && <div><dt className="text-(--ev-ink-75)">Starts</dt><dd className="font-semibold">{m.home_miles.toFixed(1)} mi from you</dd></div>}
-              {ways && <div><dt className="text-(--ev-ink-75)">Ways</dt><dd className="font-semibold">{ways}</dd></div>}
-              {(days || times) && <div><dt className="text-(--ev-ink-75)">When you both go</dt><dd className="font-semibold">{[days, times].filter(Boolean).join(' · ')}</dd></div>}
-            </dl>
-
-            {m.status === 'proposed' && m.my_answer == null && (
-              <div className="mt-5 flex flex-wrap gap-3">
-                <Button variant="primary" busy={busy === m.id} onClick={() => void answer(m, true)}>Yes, introduce us</Button>
-                <Button variant="ghost" disabled={busy === m.id} onClick={() => void answer(m, false)}>No thanks</Button>
-              </div>
-            )}
-            {m.status === 'proposed' && m.my_answer === 'yes' && (
-              <p className="mt-4 text-[15px] text-(--ev-ink-85)">You said yes. We&rsquo;ll email you when {name} answers.</p>
-            )}
-
-            {m.status !== 'proposed' && m.other.email && (
-              <a
-                href={`mailto:${m.other.email}?subject=${encodeURIComponent('Shift Together: our first trip')}`}
-                onClick={() => track('together_email_tapped', { kind: m.kind })}
-                className="mt-5 flex min-h-[48px] items-center gap-3 rounded-xl bg-(--ev-panel) px-4 py-2"
-              >
-                <Mail className="h-5 w-5 text-(--ev-accent)" aria-hidden />
-                <span>Email {name}: <strong>{m.other.email}</strong></span>
-              </a>
-            )}
-            {m.status === 'connected' && (
-              <div className="mt-5 grid gap-3 rounded-xl border border-(--ev-line) p-4">
-                <p className="text-[15px] font-semibold">After your trip: did you go together?</p>
-                <div className="flex flex-wrap gap-3">
-                  <Button size="sm" variant="primary" busy={busy === m.id} onClick={() => void went(m, true)}>We went</Button>
-                  <Button size="sm" disabled={busy === m.id} onClick={() => void went(m, false)}>We didn&rsquo;t go</Button>
-                </div>
-              </div>
-            )}
+      {matches.length === 0 ? (
+        open ? (
+          <>
+            <Card>
+              <h2 className="font-display text-[22px] font-extrabold">No matches yet</h2>
+              <p className="mt-2 text-[16px] text-(--ev-ink-85)">We&rsquo;ll email you as soon as someone&rsquo;s trip fits yours.</p>
+            </Card>
+            <NextSteps kind={open.kind} ways={open.modes.filter(isWay)} source="matches" />
+          </>
+        ) : (
+          <Card>
+            <h2 className="font-display text-[22px] font-extrabold">No matches yet</h2>
+            <p className="mt-2 text-[16px] text-(--ev-ink-85)">Tell us your trip, and Shift looks for someone who makes one like it.</p>
+            <Link href="/together" className="mt-4 inline-flex min-h-[44px] items-center rounded-[10px] bg-(--ev-accent-fill) px-4 text-[15px] font-semibold text-(--ev-on-accent-fill)">
+              Sign up
+            </Link>
           </Card>
         )
-      })}
-      <p className="text-[14px] leading-snug text-(--ev-ink-75)">
-        Planning the trip, counting it and unlocking rewards happen in the free Shift app.{' '}
-        <a href="https://shift.gogreenstreets.org/get" className="font-semibold underline">Get Shift</a>
-      </p>
+      ) : (
+        <ul className="grid grid-cols-1 gap-5">
+          {matches.map((m) => (
+            <MatchCard
+              key={m.id}
+              m={m}
+              busy={busy === m.id}
+              myArrive={myArrive}
+              onAnswer={(yes) => void run(m, () => answerMatch(m.id, yes), 'together_match_answered', { yes })}
+              onWent={() => void run(m, () => answerWent(m.id, true), 'together_went_answered', { went: true })}
+              onRate={(r, c) => void run(m, () => rateMatch(m.id, r, c.trim() || null), 'together_match_rated', { rating: r, has_comment: !!c.trim() })}
+              onEnd={() => void run(m, () => endMatch(m.id), 'together_match_ended', {}, 'Done. This match has ended.')}
+              onReport={(r, d) => void run(
+                m, () => reportMatch(m.id, r, d.trim() || null), 'together_match_reported', { reason: r },
+                `Thanks for telling us. The Green Streets team will look into it, and you won’t be matched with ${m.other.first_name || 'them'} again.`,
+              )}
+            />
+          ))}
+        </ul>
+      )}
     </div>
+  )
+}
+
+function MatchCard({ m, busy, myArrive, onAnswer, onWent, onRate, onEnd, onReport }: {
+  m: Match
+  busy: boolean
+  myArrive: string | null
+  onAnswer: (yes: boolean) => void
+  onWent: () => void
+  onRate: (rating: Rating, comment: string) => void
+  onEnd: () => void
+  onReport: (reason: ReportReason, details: string) => void
+}) {
+  const [rating, setRating] = useState<Rating | null>(null)
+  const [comment, setComment] = useState('')
+  const [wrongOpen, setWrongOpen] = useState(false)
+  const [reason, setReason] = useState<ReportReason | null>(null)
+  const [details, setDetails] = useState('')
+  const [confirmEnd, setConfirmEnd] = useState(false)
+  // Read once when the card mounts: "Did you go together?" waits a day after connecting.
+  const [now] = useState(() => Date.now())
+
+  const name = m.other.first_name || 'Someone'
+  const connected = m.status === 'connected' || m.status === 'went_together'
+  const fullName = connected && m.other.last_initial ? `${name} ${m.other.last_initial}.` : name
+  const askWent = m.status === 'connected' && !!m.connected_at && now - new Date(m.connected_at).getTime() > 24 * 3600_000
+  const carpool = m.my_kind === 'carpool'
+  const eyebrow = m.status === 'went_together' ? 'You went together' : connected ? 'You both said yes' : SHORT[m.my_kind]
+  const overall = m.status === 'proposed' ? overallFit(m, myArrive) : null
+  const since = m.other.member_since ? new Date(m.other.member_since).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : null
+  const timing = timingFit(m, myArrive)
+  const gap = carpool ? arriveGap(myArrive, m.other.arrive_by) : null
+  const detour = carpool && m.detour_minutes != null ? Math.max(1, Math.round(m.detour_minutes)) : null
+  const far = m.home_miles != null && m.dest_miles != null ? Math.max(m.home_miles, m.dest_miles) : null
+  const farText = far == null ? null : `Within ${Math.max(0.1, Math.round(far * 10) / 10)} mi`
+  const coworkers = m.other.shared_groups.some((g) => g.type === 'workplace')
+  const groups = connected && m.other.group_name && !m.other.shared_groups.some((g) => g.name === m.other.group_name)
+    ? [{ name: m.other.group_name, type: 'workplace' as const }, ...m.other.shared_groups]
+    : m.other.shared_groups
+  const Primary = m.other.primary_mode ? WAY_ICON[m.other.primary_mode] : null
+  const timingValue = gap != null
+    ? (gap === 0 ? 'Same time' : `${gap} min apart`)
+    : timing != null && timing > 1 && !timingDaysKnown(m) && m.other.shared_times.length
+      ? TIMES.filter((x) => m.other.shared_times.includes(x.id)).map((x) => x.label).join(', ')
+      : timing === 3 ? 'Same days' : timing === 2 ? 'Some days' : 'Different times'
+
+  return (
+    <Card as="li" className={cx('grid grid-cols-1 gap-5', connected && 'outline-2 outline-(--ev-accent)')}>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <span className="text-[15px] font-bold text-(--ev-accent)">{eyebrow}</span>
+        {overall ? (
+          <span className={cx(
+            'rounded-full px-3 py-1 text-[14px] font-bold',
+            overall === 3 ? 'bg-(--ev-accent-fill) text-(--ev-on-accent-fill)' : overall === 2 ? 'bg-(--ev-accent-tint-15) text-(--ev-ink)' : 'bg-(--ev-panel) text-(--ev-ink-80)',
+          )}>
+            {overall === 3 ? 'Great match' : overall === 2 ? 'Good match' : 'Possible match'}
+          </span>
+        ) : null}
+      </div>
+
+      <div className="flex items-center gap-4">
+        <Avatar name={name} url={m.other.avatar_url} />
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="text-[22px] font-bold leading-tight">{fullName}</h2>
+            {m.other.status_name ? <span className="rounded-full bg-(--ev-panel) px-2.5 py-0.5 text-[13px] font-bold">{m.other.status_name}</span> : null}
+          </div>
+          {Primary && m.other.primary_mode ? (
+            <p className="mt-1 flex items-center gap-1.5 text-[15px] text-(--ev-ink-85)">
+              <Primary className="h-4 w-4" aria-hidden /> {MOSTLY[m.other.primary_mode]}
+            </p>
+          ) : null}
+          {since ? <p className="text-[15px] text-(--ev-ink-80)">Member since {since}</p> : null}
+        </div>
+      </div>
+
+      {groups.length ? (
+        <div className="flex flex-wrap gap-2">
+          {groups.slice(0, 3).map((g) => {
+            const GI = g.type === 'workplace' ? Briefcase : g.type === 'school' ? GraduationCap : House
+            return (
+              <span key={`${g.type}:${g.name}`} className="inline-flex items-center gap-1.5 rounded-full bg-(--ev-panel) px-3 py-1 text-[14px] font-semibold">
+                <GI className="h-4 w-4 text-(--ev-accent)" aria-hidden /> {g.name}
+              </span>
+            )
+          })}
+        </div>
+      ) : null}
+
+      {m.status === 'proposed' || (carpool && connected) ? (
+        <div className="grid grid-cols-1 gap-1 rounded-xl bg-(--ev-panel) px-4 py-3">
+          {m.status === 'proposed' && timing != null ? (
+            <FitMeter icon={<Clock className="h-[18px] w-[18px]" />} label="Timing" level={timing} value={timingValue} />
+          ) : null}
+          {m.status === 'proposed' && (detour != null || farText) ? (
+            <FitMeter
+              icon={<Route className="h-[18px] w-[18px]" />}
+              label={detour != null ? 'Detour' : 'Route'}
+              level={routeFit(m)}
+              value={detour != null ? `+${detour} min for ${m.i_drive ? 'you' : 'them'}` : farText!}
+            />
+          ) : null}
+          {m.my_kind === 'newcomer' && m.other.trips_60d != null ? (
+            <FitMeter
+              icon={<Medal className="h-[18px] w-[18px]" />}
+              label="Experience"
+              level={experienceFit(m)}
+              value={`${m.other.trips_60d} ${plural(m.other.trips_60d, 'trip', 'trips')}`}
+            />
+          ) : null}
+          {m.my_kind === 'guide' && m.other.modes.length ? (
+            <ChipRow icon={<Sprout className="h-[18px] w-[18px]" />} label="Wants to try">
+              {m.other.modes.map((w) => {
+                const WI = WAY_ICON[w]
+                return (
+                  <span key={w} className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1 text-[14px] font-semibold">
+                    <WI className="h-4 w-4" aria-hidden /> {WAYS.find((x) => x.id === w)?.label ?? w}
+                  </span>
+                )
+              })}
+            </ChipRow>
+          ) : null}
+          {carpool ? (
+            <ChipRow icon={<Car className="h-[18px] w-[18px]" />} label="Role">
+              {m.other.carpool_role ? (
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1 text-[14px] font-semibold">
+                  <Car className="h-4 w-4" aria-hidden /> {ROLE[m.other.carpool_role]}
+                </span>
+              ) : null}
+              {m.other.arrive_by ? (
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1 text-[14px] font-semibold">
+                  <Clock className="h-4 w-4" aria-hidden /> Gets to work by {clock(m.other.arrive_by)}
+                </span>
+              ) : null}
+            </ChipRow>
+          ) : null}
+        </div>
+      ) : null}
+
+      {m.status === 'proposed' && !m.my_answer ? (
+        <div className="grid grid-cols-1 gap-2">
+          <div className="flex flex-wrap gap-3">
+            <Button variant="primary" busy={busy} onClick={() => onAnswer(true)}>I&rsquo;d like to go together</Button>
+            <Button disabled={busy} onClick={() => onAnswer(false)}>Not this one</Button>
+          </div>
+          <p className="text-[15px] text-(--ev-ink-80)">{name} only sees your email if you both say yes.</p>
+        </div>
+      ) : null}
+      {m.status === 'proposed' && m.my_answer === 'yes' ? (
+        <p className="text-[16px] font-semibold">You said yes. We&rsquo;ll email you if {name} says yes too.</p>
+      ) : null}
+
+      {connected && m.other.email ? (
+        <div className="grid grid-cols-1 gap-3">
+          <p className="text-[16px] font-semibold">
+            {m.status === 'went_together'
+              ? (carpool ? 'Next: agree on the days you’ll keep sharing the drive.' : 'Next: try the same trip on your own this week, while the route is fresh.')
+              : (carpool ? `Email ${name} to settle who drives, where to meet and your first day.` : `Email ${name} to pick a day for your first trip together.`)}
+          </p>
+          <div className="flex flex-wrap gap-3">
+            <a
+              href={`mailto:${m.other.email}?subject=${encodeURIComponent(carpool ? 'Sharing the drive' : 'Our first trip together')}`}
+              onClick={() => track('together_email_tapped', { kind: m.kind })}
+              className={cx(
+                'inline-flex min-h-[44px] items-center gap-2 rounded-[10px] px-4 text-[15px] font-semibold',
+                m.status === 'went_together' ? 'border border-(--ev-line-strong) bg-white' : 'bg-(--ev-accent-fill) text-(--ev-on-accent-fill)',
+              )}
+            >
+              <Mail className="h-4 w-4" aria-hidden /> Email {name}
+            </a>
+            {!carpool && m.status === 'connected' ? (
+              <Link
+                href="/nearby?plan=1"
+                onClick={() => track('together_plan_opened', { source: 'match' })}
+                className="inline-flex min-h-[44px] items-center gap-2 rounded-[10px] border border-(--ev-line-strong) bg-white px-4 text-[15px] font-semibold"
+              >
+                <Route className="h-4 w-4" aria-hidden /> Plan the route
+              </Link>
+            ) : null}
+          </div>
+          <p className="select-all break-all text-[15px] text-(--ev-ink-85)">{m.other.email}</p>
+          {m.status === 'connected' ? (
+            <p className="text-[15px] text-(--ev-ink-80)">
+              {carpool
+                ? (coworkers ? 'If you haven’t met, say hello at work before your first drive.' : 'For the first pickup, meet somewhere public and tell a friend your plan.')
+                : 'Meet somewhere public the first time, and tell a friend where you’re going.'}
+            </p>
+          ) : null}
+
+          {askWent ? (
+            <div className="grid grid-cols-1 gap-3 rounded-xl border border-(--ev-line) p-4">
+              <p className="text-[16px] font-bold">Did you go together?</p>
+              <div><Button busy={busy} onClick={onWent}>Yes, we went</Button></div>
+            </div>
+          ) : null}
+
+          {m.status === 'went_together' && !m.my_rating ? (
+            <div className="grid grid-cols-1 gap-3 rounded-xl border border-(--ev-line) p-4">
+              <p className="text-[16px] font-bold">How did it go with {name}?</p>
+              <div className="flex flex-wrap gap-2" role="radiogroup" aria-label={`How did it go with ${name}?`}>
+                {RATINGS.map((r) => <Chip key={r.id} role="radio" aria-checked={rating === r.id} on={rating === r.id} onClick={() => setRating(r.id)}>{r.label}</Chip>)}
+              </div>
+              <Textarea rows={2} maxLength={1000} value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Anything you'd like to tell us? (optional)" aria-label="Anything you'd like to tell us?" />
+              <p className="text-[15px] text-(--ev-ink-80)">Only the Green Streets team sees this. {name} doesn&rsquo;t.</p>
+              <div><Button variant="primary" busy={busy} disabled={!rating} onClick={() => rating && onRate(rating, comment)}>Send</Button></div>
+            </div>
+          ) : m.status === 'went_together' ? (
+            <p className="text-[15px] font-semibold">You went together. Thanks for letting us know.</p>
+          ) : null}
+
+          {!wrongOpen ? (
+            <button type="button" onClick={() => setWrongOpen(true)} className="min-h-[44px] justify-self-start text-[15px] font-semibold text-(--ev-ink-80) underline">
+              Something wrong?
+            </button>
+          ) : (
+            <div className="grid grid-cols-1 gap-3 rounded-xl border border-(--ev-line) p-4">
+              <p className="text-[16px] font-bold">Something wrong?</p>
+              {m.status === 'connected' ? (
+                confirmEnd ? (
+                  <div className="flex flex-wrap items-center gap-3">
+                    <span className="text-[15px]">You and {name} won&rsquo;t see this match anymore.</span>
+                    <Button size="sm" busy={busy} onClick={onEnd}>Yes, end it</Button>
+                  </div>
+                ) : (
+                  <div><Button size="sm" onClick={() => setConfirmEnd(true)}>End this match</Button></div>
+                )
+              ) : null}
+              <p className="text-[15px] font-bold">Or tell us what happened</p>
+              <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="What happened?">
+                {REASONS.map((r) => <Chip key={r.id} role="radio" aria-checked={reason === r.id} on={reason === r.id} onClick={() => setReason(r.id)}>{r.label}</Chip>)}
+              </div>
+              <Textarea rows={2} maxLength={1000} value={details} onChange={(e) => setDetails(e.target.value)} placeholder="What happened? (optional)" aria-label="What happened?" />
+              <p className="text-[15px] text-(--ev-ink-80)">Your report goes to the Green Streets team, not to {name}. If you&rsquo;re in danger, call 911.</p>
+              <div className="flex flex-wrap gap-3">
+                <Button busy={busy} disabled={!reason} onClick={() => reason && onReport(reason, details)}>Send report</Button>
+                <Button variant="ghost" onClick={() => setWrongOpen(false)}>Cancel</Button>
+              </div>
+            </div>
+          )}
+        </div>
+      ) : null}
+    </Card>
   )
 }
