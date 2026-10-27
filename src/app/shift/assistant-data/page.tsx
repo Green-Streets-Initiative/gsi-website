@@ -22,7 +22,7 @@ const SECTIONS: { heading: string; body: string[] }[] = [
     heading: 'What it is',
     body: [
       'The assistant is an optional part of the Shift app. You ask about getting around in your own words, and it answers with what Shift knows: trip comparisons, group rides and walks, fares, weather, service changes and your own activity.',
-      'It saves a place, changes a setting or sets a trip reminder only after you tap the button on its card.',
+      'It saves a place, changes a setting, sets a trip reminder or remembers something about you only after you tap the button on its card.',
     ],
   },
   {
@@ -30,6 +30,7 @@ const SECTIONS: { heading: string; body: string[] }[] = [
     body: [
       'The conversation, your saved places, your recent trips (times, how you traveled, and “Home” or “Work”, not map points), your points, badges and rewards, and your phone’s location when you allow it, rounded to about 100 meters.',
       'A picture you attach. It is stored privately with that conversation and deleted with it. If you report a problem, the Green Streets team sees the picture with your report.',
+      'Notes you asked it to remember, such as “I have an e-bike” or “I’d rather avoid busy streets”. Every new conversation starts with them, so you don’t have to say them again.',
       'A trip reminder you set keeps that trip’s start, destination and time. After the trip, Shift looks at your trips from around then for one that starts or ends near those places, to tell you it counted.',
       'To answer, it looks up places and directions with Google Maps, the forecast with the National Weather Service, service changes with the MBTA, and a Ride with GPS route when you share its link. These receive the places involved, not your name or email.',
     ],
@@ -46,6 +47,7 @@ const SECTIONS: { heading: string; body: string[] }[] = [
     heading: 'What Green Streets keeps',
     body: [
       'Green Streets staff may read conversations to fix problems and improve the assistant. Conversations are deleted 12 months after your last message, and when you delete your account. You can delete a conversation, or all of them, with the trash button in the assistant; its pictures and reminders go with it.',
+      'Notes you asked it to remember stay until you ask it to forget them (one, or everything), and are deleted with your account or 12 months after you last used the assistant. Deleting a conversation leaves them.',
       'When you ask for something Shift doesn’t do yet, or share feedback, the assistant passes a short note to Green Streets. We keep these notes, apart from the conversation, to decide what to build next.',
     ],
   },

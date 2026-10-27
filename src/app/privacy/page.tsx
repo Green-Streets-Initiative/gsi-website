@@ -243,6 +243,12 @@ export default function PrivacyPage() {
                 conversation deletes the reminder.
               </P>
               <P>
+                If you tap Remember on a note the assistant offers, such as &ldquo;I have an
+                e-bike&rdquo;, it keeps that note for your later conversations. It is deleted
+                when you ask the assistant to forget it, when you delete your account, or 12
+                months after you last used the assistant.
+              </P>
+              <P>
                 If you attach a picture, such as a screenshot, the assistant looks at it to answer
                 you. It is stored privately with that conversation and deleted with it. If you
                 report a problem, the Green Streets team sees the picture with your report. If you

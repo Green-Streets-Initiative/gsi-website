@@ -124,6 +124,8 @@ export function toolsFor(ctx: ToolCtx): Anthropic.Tool[] {
 }
 const WAY_WORDS: Record<string, string> = { walk: 'Walk', bike: 'Bike', transit: 'Transit' }
 const MAX_OPEN_PLANS = 5
+/** Notes they asked the assistant to keep (Shift 01466). */
+const MAX_MEMORIES = 30
 const nullable = (t: string, description?: string) => ({ type: [t, 'null'], ...(description ? { description } : {}) })
 
 const placeSchema = {
@@ -137,6 +139,7 @@ const placeSchema = {
 export const ACTIVITY: Record<string, string> = {
   get_my_places: 'Reading your places',
   cancel_reminder: 'Cancelling the reminder',
+  forget: 'Forgetting that',
   compare_ways: 'Comparing ways to get there',
   check_trip: 'Checking the trip',
   get_weather: 'Checking the forecast',
@@ -155,11 +158,12 @@ export const ACTIVITY: Record<string, string> = {
   save_place: 'Saving the place',
   change_settings: 'Saving your settings',
   set_reminder: 'Setting your reminder',
+  remember: 'Remembering that',
   ...RIDE_PLAN_ACTIVITY,
 }
 
 /** Tools that save something: the turn pauses on a card until the person approves. */
-export const NEEDS_APPROVAL = new Set([...RIDE_PLAN_NEEDS_APPROVAL, 'save_place', 'change_settings', 'set_reminder'])
+export const NEEDS_APPROVAL = new Set([...RIDE_PLAN_NEEDS_APPROVAL, 'save_place', 'change_settings', 'set_reminder', 'remember'])
 
 export type ApprovalCard = RidePlanCard & { confirmText?: string }
 
@@ -377,6 +381,25 @@ export const TOOLS: Anthropic.Tool[] = [
     name: 'cancel_reminder',
     description: 'Call off a reminder they asked for, by its id from the context ("Reminders they asked for").',
     input_schema: { type: 'object', properties: { id: { type: 'string' } }, required: ['id'] },
+  },
+  {
+    name: 'remember',
+    description: "Offer to keep a short note about them for their next conversations: something lasting about how they get around that will change your answers (their own bike or e-bike, a worry like busy streets or riding after dark, a goal, a usual schedule, who they travel with). Shows them a card with the note; nothing is kept until they tap Remember. Only after they said yes to your offer, or asked you to remember it.",
+    input_schema: {
+      type: 'object',
+      properties: {
+        note: { type: 'string', description: "One short sentence the way they'd say it about themselves (\"I have an e-bike\", \"I'd rather avoid busy streets\"), under 120 characters." },
+      },
+      required: ['note'],
+    },
+  },
+  {
+    name: 'forget',
+    description: 'Forget a note from "What they asked you to remember" by its id, or all of them when they ask you to forget everything. Needs no card: they asked.',
+    input_schema: {
+      type: 'object',
+      properties: { id: nullable('string'), all: nullable('boolean', 'true to forget every note') },
+    },
   },
   {
     name: 'note_feedback',
@@ -934,6 +957,16 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
           .eq('id', id).eq('user_id', ctx.userId).in('status', ['set', 'reminded']).select('id').maybeSingle()
         return data ? ok({ cancelled: true }) : fail('That reminder is already done or cancelled.')
       }
+      case 'forget': {
+        if (input.all === true) {
+          const { data } = await ctx.admin.from('member_assistant_memories').delete().eq('user_id', ctx.userId).select('id')
+          return ok({ forgotten: (data ?? []).length })
+        }
+        const id = String(input.id ?? '')
+        if (!/^[0-9a-f-]{36}$/i.test(id)) return fail('Use the id from "What they asked you to remember", or all.')
+        const { data } = await ctx.admin.from('member_assistant_memories').delete().eq('id', id).eq('user_id', ctx.userId).select('id').maybeSingle()
+        return data ? ok({ forgotten: 1 }) : fail('That note is already gone.')
+      }
       case 'note_feedback': {
         // A picture they attached goes with it, as a link that works for a week.
         const shot = ctx.screenshot ? (await signedUrls(ctx.admin, [ctx.screenshot], 7 * 86_400)).get(ctx.screenshot) ?? null : null
@@ -986,6 +1019,19 @@ export async function approvalCard(ctx: ToolCtx, name: string, input: Record<str
       input: { way, from_name: fromName, from_lat: from.lat, from_lng: from.lng, to_name: toName, to_lat: to.lat, to_lng: to.lng, leave_at: leave, remind_at: remind },
     }
   }
+  if (name === 'remember') {
+    const note = String(input.note ?? '').replace(/\s+/g, ' ').trim()
+    if (!note) return { result: fail('A note needs a sentence.') }
+    if (note.length > 160) return { result: fail('Keep the note to one short sentence.') }
+    const { data: kept } = await ctx.admin.from('member_assistant_memories').select('note').eq('user_id', ctx.userId)
+    const notes = ((kept ?? []) as { note: string }[]).map((m) => m.note.toLowerCase())
+    if (notes.includes(note.toLowerCase())) return { result: fail('You already remember that.') }
+    if (notes.length >= MAX_MEMORIES) return { result: fail(`You keep ${MAX_MEMORIES} notes at most. Offer to forget one first.`) }
+    return {
+      card: { title: 'Remember this?', lines: [note, 'For your next conversations. Ask me to forget it any time'], cta: 'Remember', tone: 'primary' },
+      input: { note },
+    }
+  }
   if (name === 'save_place') {
     const label = String(input.label ?? '').trim().slice(0, 40)
     const place = asPlace(input.place)
@@ -1031,6 +1077,11 @@ export async function runApproved(ctx: ToolCtx, name: string, input: Record<stri
       const { error } = await ctx.admin.from('member_assistant_plans').insert({ ...input, user_id: ctx.userId, thread_id: ctx.threadId })
       if (error) return fail("That reminder didn't save. Try again in a moment.")
       return ok({ saved: true, note: 'Set. Say in a sentence when the reminder comes and that you will check in after. They can ask you to cancel it.' })
+    }
+    if (name === 'remember') {
+      const { error } = await ctx.admin.from('member_assistant_memories').insert({ user_id: ctx.userId, note: String(input.note) })
+      if (error) return fail("That didn't save. Try again in a moment.")
+      return ok({ saved: true, note: 'Kept. Say so in a few words and carry on with what they asked.' })
     }
     if (name === 'save_place') {
       // As the app saves it (lib/queries.ts upsertSavedLocation): the same

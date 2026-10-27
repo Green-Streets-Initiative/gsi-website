@@ -445,8 +445,13 @@ export async function POST(request: Request) {
           .eq('user_id', user.id).in('status', ['set', 'reminded']).gt('leave_at', new Date().toISOString()).order('leave_at').limit(5)
         const reminders = ((plans ?? []) as { id: string; way: string; to_name: string; leave_at: string }[]).map((r) =>
           `${new Date(r.leave_at).toLocaleString('en-US', { timeZone: 'America/New_York', weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}, ${r.way} to ${r.to_name} (id ${r.id})`)
+        // Notes they asked it to keep (01466), oldest first.
+        const { data: kept } = await admin.from('member_assistant_memories').select('id, note')
+          .eq('user_id', user.id).order('created_at').limit(30)
+        const memories = ((kept ?? []) as { id: string; note: string }[]).map((m) => `${m.note} (id ${m.id})`)
         // Text from a later step starts a new paragraph, not the end of the last sentence.
         let wroteBefore = false
+        let retriedEmpty = false
         const pictures = new Map<string, { media_type: string; data: string } | null>()
         for (let step = 0; step < MAX_STEPS; step++) {
           const stored = await loadMessages(admin, threadId)
@@ -461,7 +466,7 @@ export async function POST(request: Request) {
             output_config: { effort: 'medium' },
             system: [
               { type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } },
-              { type: 'text', text: contextBlock({ today, firstName, screen: planNote ?? screenLabel(body?.screen), here, reminders }) },
+              { type: 'text', text: contextBlock({ today, firstName, screen: planNote ?? screenLabel(body?.screen), here, reminders, memories }) },
             ],
             tools: tools as Anthropic.Beta.BetaToolUnion[],
             cache_control: { type: 'ephemeral' },
@@ -481,6 +486,13 @@ export async function POST(request: Request) {
           const options = splitChoices(msg.content.filter((b): b is Anthropic.Beta.BetaTextBlock => b.type === 'text').map((b) => b.text).join('')).options
           if (options.length) emit({ type: 'choices', options })
           if (msg.content.length === 0) break
+          // A last step can come back with only its thinking and no words
+          // (2026-10-27: a reply that was just "Weekend is Oct 31 to Nov 1.").
+          // Ask once more instead of leaving them nothing.
+          if (!retriedEmpty && msg.stop_reason === 'end_turn' && !msg.content.some((b) => (b.type === 'text' && b.text.trim()) || b.type === 'tool_use')) {
+            retriedEmpty = true
+            continue
+          }
           await append('assistant', msg.content, { model: msg.model, usage: msg.usage })
           if (msg.stop_reason === 'refusal') {
             emit({ type: 'error', message: "I can't help with that one. Try asking another way." })
