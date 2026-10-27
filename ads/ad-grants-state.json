@@ -845,6 +845,63 @@
       "mtd": null,
       "alerts": [],
       "emailed": false
+    },
+    {
+      "date": "2026-10-27",
+      "source": "scheduled quick check (ad-grants-pulse), live account, This month = Oct 1-27 (authuser=9 redirected to 5)",
+      "mtd": {
+        "window": "2026-10-01..2026-10-27",
+        "impressions": 3268,
+        "clicks": 280,
+        "ctr_pct": 8.57,
+        "cost": 1386.52,
+        "conversions": 27
+      },
+      "by_campaign": {
+        "How-to Guides": {
+          "impressions": 2957,
+          "clicks": 268,
+          "conversions": 27
+        },
+        "Town Walking & Biking": {
+          "impressions": 257,
+          "clicks": 10
+        },
+        "GSI — Brand": {
+          "impressions": 14,
+          "clicks": 2
+        },
+        "New Routes — Movers": {
+          "impressions": 30,
+          "clicks": 0
+        },
+        "Shift App — Massachusetts": {
+          "impressions": 9,
+          "clicks": 0
+        },
+        "Shift Your Semester — Students": {
+          "impressions": 1,
+          "clicks": 0
+        }
+      },
+      "campaign_status": "How-to Guides and Brand Eligible (Limited) Limited by search volume; others Eligible. Budgets unchanged ($449.50/day).",
+      "banners": [
+        "Apply for financial products & services certification (since 10-12; do not apply)",
+        "Protect your account from unauthorized activity",
+        "Recommendation card: Add broad match keywords (not applied)"
+      ],
+      "ads": {
+        "total": 37,
+        "all_eligible": true,
+        "disapproved_seen": 0,
+        "limited_by_policy": 0,
+        "strength": "29 Average, 5 Good, 1 Excellent, 2 Poor",
+        "note": "NEW Poor: How-to Guides / Paying for the T RSA ('How to Pay for the T | MBTA Fares, Explained | CharlieCard or Tap to Pay?', the 10-05 rewrite that read Good at save), yet it is the account's best ad: 844 impr / 84 clicks (9.95%) / 5 conv this month. Ad strength is advisory, not a grant rule; not emailed. Weekly review may look at which assets Google wants (likely more distinct headlines/descriptions). Walking School Bus Ideas still Poor (known)."
+      },
+      "search_terms": "Named rows 171 clicks / 1,643 impr, 16 conv. Top ~30 by impressions all How-to Guides / Paying for the T transit lookups (boston public transportation 8/78, how to pay for the t in boston 2/25 with 1 conv, boston t 2/24, how to take the t in boston 1/24, charlie card 6/24, what is the t in boston 0/21, how to ride the t in boston 1/20). Nothing off-target; no negatives proposed.",
+      "month_end_math": "CTR 8.57% on 3,268 impr with 4 days left; October's 5% is secured. 27 conversions vs the 1 required.",
+      "alerts": [],
+      "emailed": false
     }
   ],
   "snapshots": [
