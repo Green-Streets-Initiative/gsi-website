@@ -13,6 +13,11 @@ import { dayLabel, fetchDisruptions, fetchElevatorClosures, routeIdsForLabels, t
 import { fetchRideWithGps } from '@/lib/organizers/rwgps'
 import { summarizeRoute } from '@/lib/organizer-assistant/route-designer'
 import { signedUrls } from '@/lib/shift-assistant/uploads'
+import { ALWAYS as FARES_FOR_EVERYONE, fareProgram, farePrograms } from '@/lib/facts/fare-programs'
+import { PRICES, usd } from '@/lib/facts/prices'
+import { BORROW_RENT_BLURB, nearbyBorrowRent } from '@/lib/nearby/borrow-rent'
+import { getBikeShareDocks } from '@/lib/server/bluebikes'
+import { getActiveRoams, getNextRoamEvent, getRoamDetail, getRoamTrailInfo } from '@/lib/roams/queries'
 import { RIDE_PLAN_ACTIVITY, RIDE_PLAN_NEEDS_APPROVAL, RIDE_PLAN_TOOLS, ridePlanCard, runApprovedRidePlan, runRidePlanTool, type RidePlanCard } from '@/lib/shift-assistant/ride-plan-tools'
 
 // The Shift assistant's tools, for everyone in the app (Keith 2026-10-24).
@@ -67,15 +72,18 @@ export type TripCard = {
 }
 
 /** Screens added after the first release: offered only to builds that list them. */
-const NEWER_SCREENS = new Set(['trip', 'trip_history', 'my_rewards', 'notifications', 'vacation', 'partner_request', 'partner_matches', 'bike_confidence'])
+const NEWER_SCREENS = new Set(['trip', 'trip_history', 'my_rewards', 'notifications', 'vacation', 'partner_request', 'partner_matches', 'bike_confidence', 'roam'])
 const canOpen = (ctx: ToolCtx, screen: string) => !NEWER_SCREENS.has(screen) || !!ctx.screens?.has(screen)
 
-const SCREENS = ['commute', 'commute_setup', 'around_you', 'rides', 'event', 'ride', 'rewards', 'log_trip', 'ride_plan', 'trip', 'trip_history', 'my_rewards', 'notifications', 'vacation', 'partner_request', 'partner_matches', 'bike_confidence'] as const
+const SCREENS = ['commute', 'commute_setup', 'around_you', 'rides', 'event', 'ride', 'rewards', 'log_trip', 'ride_plan', 'trip', 'trip_history', 'my_rewards', 'notifications', 'vacation', 'partner_request', 'partner_matches', 'bike_confidence', 'roam'] as const
 type Screen = (typeof SCREENS)[number]
 
 const FUNCTIONS = `${(process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').replace(/\/$/, '')}/functions/v1`
 
 const ok = (content: Record<string, unknown>, link?: ScreenLink): ToolResult => ({ content, link })
+
+/** Sign-up pages for find_bikes_to_try's programs (borrow-rent.ts holds their spots). */
+const TRY_URLS: Record<string, string> = { cargob: 'https://www.ridecargob.com/', pedal_power: 'https://communitypedalpower.org/' }
 
 function thinLine(encoded: string | null | undefined, max = 60): string | null {
   if (!encoded) return null
@@ -107,6 +115,10 @@ export const ACTIVITY: Record<string, string> = {
   get_my_settings: 'Reading your settings',
   get_town_info: 'Looking up your town',
   check_route_link: 'Reading the route',
+  get_fare_help: 'Checking fare discounts',
+  find_bikes_to_try: 'Looking for bikes to try',
+  find_roams: 'Looking for routes to explore',
+  get_roam: 'Reading the route',
   ...RIDE_PLAN_ACTIVITY,
 }
 
@@ -230,12 +242,46 @@ export const TOOLS: Anthropic.Tool[] = [
     },
   },
   {
-    name: 'open_link',
-    description: "A button to the web page of one item from get_town_info: a resource (by its id) or a hearing (by its id), or the town's page (kind town_page, id = the town name). The address comes from our records; never write a web address yourself.",
+    name: 'get_fare_help',
+    description: 'MBTA and Bluebikes fare discounts and free fares: who qualifies (age 65+, 75+ and not driving, a disability or Medicare card, legally blind, SNAP or MassHealth, college or school students, children), what each gives, and how to apply. Also the fares and transfer rule everyone gets.',
+    input_schema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'find_bikes_to_try',
+    description: 'Ways to try a bike near a place without buying one: CargoB e-cargo bikes rented by the minute (fixed hubs), Community Pedal Power free one-week e-bike loans (pickup areas), and Bluebikes stations with e-bikes there right now, with e-bike prices. For someone weighing an e-bike, getting back on a bike, or carrying groceries or kids.',
     input_schema: {
       type: 'object',
       properties: {
-        kind: { type: 'string', enum: ['resource', 'hearing', 'town_page'] },
+        near: placeSchema,
+        kind: nullable('string', 'cargo (for kids or heavy loads) or ebike. Leave empty for both.'),
+      },
+      required: ['near'],
+    },
+  },
+  {
+    name: 'find_roams',
+    description: "Roams: Shift's guided routes to explore on foot, by bike, or with transit (named trails and loops such as Fresh Pond, the Minuteman, the Charles River, the Emerald Necklace, and themed tours). Each with its length, time, kind and how far its start is. Find by name words, or nearest to a place.",
+    input_schema: {
+      type: 'object',
+      properties: {
+        query: nullable('string', 'Words from the name ("fresh pond", "minuteman"). Leave empty to list the nearest.'),
+        near: { ...placeSchema, type: ['object', 'null'] },
+        mode: nullable('string', 'walk, bike, transit (a tour by T) or multi (walking or biking with transit), to keep only that kind.'),
+      },
+    },
+  },
+  {
+    name: 'get_roam',
+    description: 'One Roam in full, by its id from find_roams (it adds the button to the Roam itself, so no open_screen): the full trail length and surface, where it starts and ends (or that it loops), how to get in, parking, trail closures and detours now, the stops along it, and its next group outing. To get them to the start, pass start to check_trip. Adds a button to the Roam.',
+    input_schema: { type: 'object', properties: { id: { type: 'string' } }, required: ['id'] },
+  },
+  {
+    name: 'open_link',
+    description: "A button to a web page: one item from get_town_info (a resource or a hearing, by its id), the town's page (kind town_page, id = the town name), a fare program (kind fare, its id from get_fare_help), or a bike-to-try program (kind bike_to_try, id cargob or pedal_power). The address comes from our records; never write a web address yourself.",
+    input_schema: {
+      type: 'object',
+      properties: {
+        kind: { type: 'string', enum: ['resource', 'hearing', 'town_page', 'fare', 'bike_to_try'] },
         id: { type: 'string' },
         label: { type: 'string', description: 'The button text, a few words with a verb ("Report it to Somerville").' },
       },
@@ -550,16 +596,20 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
       case 'open_screen': {
         const screen = SCREENS.find((s) => s === input.screen)
         if (!screen) return fail('Unknown screen.')
+        // A Roam opens on the website for builds without the Roam screen.
+        if (screen === 'roam' && !canOpen(ctx, 'roam') && typeof input.id === 'string' && /^[A-Za-z0-9_-]{1,100}$/.test(input.id)) {
+          return ok({ shown: true, next: 'The button shows under your reply. Now write the reply itself. Do not mention the button.' }, { href: `/shift/roams/${input.id}`, label: String(input.label || 'See the Roam').slice(0, 40) })
+        }
         if (!canOpen(ctx, screen)) return ok({ shown: false, note: "Their version of the app can't open that screen from here yet. Tell them where it is in a few words instead (a trip: Recent trips on the Home tab, then tap the trip; rewards they've won: the Rewards tab; notifications or vacation: Profile)." })
         const id = typeof input.id === 'string' && /^[A-Za-z0-9_-]{1,100}$/.test(input.id) ? input.id : null
-        if ((screen === 'event' || screen === 'ride' || screen === 'ride_plan' || screen === 'trip') && !id) return fail(`A ${screen} button needs its id.`)
+        if ((screen === 'event' || screen === 'ride' || screen === 'ride_plan' || screen === 'trip' || screen === 'roam') && !id) return fail(`A ${screen} button needs its id.`)
         const params: Record<string, string> | null = screen === 'partner_request'
           ? input.kind === 'carpool'
             ? { kind: 'carpool' }
             : { kind: input.kind === 'guide' ? 'guide' : 'newcomer', ...(['bike', 'walk', 'transit'].includes(String(input.mode)) ? { mode: String(input.mode) } : {}) }
           : screen === 'bike_confidence'
             ? (['ready', 'company', 'nervous', 'learn'].includes(String(input.answer)) ? { answer: String(input.answer) } : null)
-            : id ? (screen === 'ride_plan' ? { match: id } : { id }) : null
+            : id ? (screen === 'ride_plan' ? { match: id } : screen === 'roam' ? { roamId: id } : { id }) : null
         return ok({ shown: true, next: 'The button shows under your reply. Now write the reply itself: what you found, in words (for events: name, day and time, where, how far). Do not mention the button.' }, { screen, ...(params ? { params } : {}), label: String(input.label || 'Open').slice(0, 40) })
       }
       case 'get_ride_plan':
@@ -665,6 +715,10 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
           const t = (await getTownDirectory()).find((x) => x.town_name.toLowerCase() === id.trim().toLowerCase())
           return t ? ok({ shown: true }, { href: `/shift/towns/${townSlug(t.town_name, t.state)}`, label }) : fail('No town page by that name.')
         }
+        if (input.kind === 'fare' || input.kind === 'bike_to_try') {
+          const url = input.kind === 'fare' ? fareProgram(id, todayKey())?.url : TRY_URLS[id]
+          return url ? ok({ shown: true, next: 'The button shows under your reply. Write the reply itself; do not mention the button.' }, { href: url, label, external: true }) : fail('Use an id from get_fare_help or find_bikes_to_try.')
+        }
         if (!/^[0-9a-f-]{36}$/i.test(id)) return fail('Use an id from get_town_info.')
         const { data } = input.kind === 'hearing'
           ? await ctx.admin.from('infrastructure_hearings').select('url:source_url').eq('id', id).eq('status', 'published').maybeSingle()
@@ -703,6 +757,73 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
           start: at(first, 'Start of the route'),
           ...(loop ? { loop: true } : { end: at(last, 'End of the route') }),
         })
+      }
+      case 'get_fare_help': {
+        const today = todayKey()
+        return ok({
+          programs: farePrograms(today).map((p) => ({ id: p.id, name: p.name, who: p.who, gives: p.gives, apply: p.apply, ...(p.until ? { ends: p.until } : {}) })),
+          everyone: FARES_FOR_EVERYONE,
+          note: 'Two or three sentences: name only the one or two they may qualify for, what each gives and how to apply, and add open_link kind fare with its id. When you can tell someone qualifies (their age, a disability, a benefit), say so; otherwise ask the one question that decides it. Never guess eligibility from a name or a trip.',
+        })
+      }
+      case 'find_bikes_to_try': {
+        const at = asPlace(input.near)
+        if (!at) return fail('Need a place with coordinates.')
+        const kind = input.kind === 'cargo' || input.kind === 'ebike' ? input.kind : null
+        const borrow = nearbyBorrowRent(at.lat, at.lng, 4)
+          .filter((p) => !kind || (kind === 'cargo' ? p.org === 'cargob' : p.org === 'pedal_power'))
+          .slice(0, 4)
+          .map((p) => ({ program: p.org === 'cargob' ? 'cargob' : 'pedal_power', what: BORROW_RENT_BLURB[p.org], where: p.name.replace(/^.* — /, ''), miles_away: round1(p.distMiles), ...(p.approximate ? { exact_spot: 'given when they book' } : {}) }))
+        const docks = kind === 'cargo' ? [] : (await getBikeShareDocks(at.lat, at.lng, 1200))
+          .filter((d) => d.system_id === 'bluebikes' && d.num_ebikes_available > 0)
+          .slice(0, 3)
+          .map((d) => ({ station: d.name, ebikes_now: d.num_ebikes_available, miles_away: round1(d.distance_meters / 1609.34) }))
+        const bb = PRICES.bluebikes
+        return ok({
+          borrow_or_rent: borrow,
+          bluebikes_ebikes: docks,
+          bluebikes_ebike_price: `${usd(bb.ebikePerMinNonMember)} a minute without a membership, ${usd(bb.ebikePerMinMember)} with one, ${usd(bb.ebikePerMinIncomeEligible)} on the income-eligible membership`,
+          ...(borrow.length || docks.length ? {} : { note: 'Nothing within reach of there. Offer the nearest anyway with a wider look, or a bike class from find_rides_and_events.' }),
+          next: 'Offer the one that fits best, in a sentence, with open_link kind bike_to_try for CargoB or Community Pedal Power. Bike classes and test rides come from find_rides_and_events; nervous about traffic, offer open_screen bike_confidence.',
+        })
+      }
+      case 'find_roams': {
+        const all = await getActiveRoams()
+        const words = typeof input.query === 'string' ? input.query.toLowerCase().split(/[^a-z0-9]+/).filter((w) => w.length > 2 && !['the', 'loop', 'path', 'trail', 'route'].includes(w)) : []
+        const near = asPlace(input.near) ?? ctx.here ?? null
+        const mode = ['walk', 'bike', 'transit', 'multi'].includes(String(input.mode)) ? String(input.mode) : null
+        const found = all
+          .filter((r) => !mode || r.mode === mode)
+          .filter((r) => !words.length || words.every((w) => `${r.name} ${r.region ?? ''}`.toLowerCase().includes(w)))
+          .map((r) => ({ r, d: near && r.start_lat != null && r.start_lng != null ? haversineMiles(near.lat, near.lng, r.start_lat, r.start_lng) : null }))
+          .sort((a, b) => (words.length ? 0 : (a.d ?? 1e9) - (b.d ?? 1e9)))
+          .slice(0, 6)
+          .map(({ r, d }) => ({ id: r.id, name: r.name, kind: r.mode, miles: r.distance_miles != null ? round1(r.distance_miles) : null, minutes: r.estimated_minutes, about: r.hook ?? r.tagline, area: r.region, start_miles_away: d != null ? round1(d) : null }))
+        return ok({ roams: found, ...(found.length ? { next: 'For one they pick (or the one they named), call get_roam with its id.' } : { note: 'No Roam by that name. List the nearest instead, or read a route link they have with check_route_link.' }) })
+      }
+      case 'get_roam': {
+        const id = String(input.id ?? '')
+        const r = /^[A-Za-z0-9_-]{1,100}$/.test(id) ? await getRoamDetail(id) : null
+        if (!r) return fail('No Roam with that id. Use one from find_roams.')
+        const [event, trail] = await Promise.all([getNextRoamEvent(r.id), getRoamTrailInfo(r.id)])
+        const stops = [...r.checkpoints].sort((a, b) => a.sequence_order - b.sequence_order)
+        const first = stops[0]
+        const last = stops[stops.length - 1]
+        const loop = !!first && !!last && haversineMiles(first.lat, first.lng, last.lat, last.lng) < 0.3
+        const link: ScreenLink = canOpen(ctx, 'roam')
+          ? { screen: 'roam', params: { roamId: r.id }, label: 'Open the Roam' }
+          : { href: `/shift/roams/${encodeURIComponent(r.id)}`, label: 'See the Roam' }
+        return ok({
+          name: r.name, kind: r.mode, about: r.hook ?? r.tagline ?? excerptOf(r.description, 200),
+          route_miles: r.distance_miles != null ? round1(r.distance_miles) : null, minutes: r.estimated_minutes,
+          full_trail_miles: r.full_trail_miles, surface: r.surface, getting_in: r.access_note, parking: r.parking_note,
+          start: first ? { lat: first.lat, lng: first.lng, name: first.label } : null,
+          ...(loop ? { loop: true } : last && last !== first ? { end: { lat: last.lat, lng: last.lng, name: last.label } } : {}),
+          stops: stops.map((c) => c.label).slice(0, 10),
+          closures_now: trail.disruptions.map((d) => ({ trail: d.trail_name, on_this_route: d.affects === 'route', what: d.title, about: excerptOf(d.summary, 200), until: d.ends_on ?? d.ends_note, detour: d.detours?.[0]?.steps?.slice(0, 4) ?? null })),
+          next_group_outing: event ? { title: event.title, date: event.event_date, time: event.event_time?.slice(0, 5) ?? null, where: event.location_name, organizer: event.organizer_name } : null,
+          next: 'Answer what they asked (how long, where it starts, how to get there) in a sentence or two; any closure first. To get them to the start, pass start to check_trip.',
+        }, link)
       }
       case 'note_feedback': {
         // A picture they attached goes with it, as a link that works for a week.
