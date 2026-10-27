@@ -105,7 +105,7 @@ export default function EmailDomainsCard({ groupId, canManage }: { groupId: stri
       <CardHead title="Company email domains" sub="How employees prove they work here" />
       <CardBody>
         <p className="mb-3 text-[15px] leading-[1.55] text-ink-muted">
-          Employees confirm an address at one of these in the app. You never see it unless they win and share it.
+          People who sign in to Shift with an address at one of these are invited to join your team. You never see the address unless they win and share it.
         </p>
         <div className="mb-3 flex flex-wrap gap-2">
           {domains.length === 0 && <span className="text-[14px] text-ink-muted">None yet.</span>}
