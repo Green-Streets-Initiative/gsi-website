@@ -18,7 +18,7 @@ export default function TermsPage() {
             Terms of Service
           </h1>
           <p className="mt-4 text-[15px] text-ink-soft">
-            Shift by Green Streets Initiative &middot; Last updated May 2026
+            Shift by Green Streets Initiative &middot; Last updated October 2026
           </p>
           <p className="mt-1 text-[15px] text-ink-soft">
             Contact: <a href="mailto:info@gogreenstreets.org" className="font-semibold text-forest underline-offset-4 hover:underline">info@gogreenstreets.org</a>
@@ -337,8 +337,11 @@ export default function TermsPage() {
                 settings. Leaving a group does not delete your account or trip history.
               </P>
               <P>
-                Employers and schools receive only aggregate, anonymized data about their
-                group&apos;s participation. They do not receive individual trip data, location
+                If you join your employer&apos;s group, your employer can see your name and your
+                trip numbers, including your Shift Rate, miles, and CO2 avoided, as described in our
+                Privacy Policy. Employers do not receive your trip routes, location information, or
+                saved locations. Schools receive only aggregate, anonymized data about their
+                group&apos;s participation, and do not receive individual trip data, location
                 information, or your personal Shift Rate without your explicit consent.
               </P>
               <P>
