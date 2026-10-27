@@ -170,7 +170,7 @@ export async function createTeam(db: SupabaseClient, s: TeamChallengeSignup): Pr
 
     // The organizer's work domain (personal addresses are refused at step 1),
     // so the app can offer the team to coworkers who sign in with it (Shift
-    // 01460). Not worth failing the sign-up over.
+    // 01461). Not worth failing the sign-up over.
     const domain = email.split('@')[1]
     if (domain && domain !== 'gogreenstreets.org') {
       const { error: dErr } = await db.from('employer_email_domains').insert({ group_id: group.id, domain, created_by: userId })
