@@ -361,9 +361,12 @@ export default function PrivacyPage() {
               </P>
               <P>
                 We do not share individual trip records, precise location history, saved locations,
-                inferred route profile data, or personal Shift Rate with employers, schools,
-                sponsors, rewards partners, or other third parties without your explicit consent,
-                except as described in this Privacy Policy or required by law.
+                or inferred route profile data with employers, schools, sponsors, rewards partners,
+                or other third parties without your explicit consent, except as described in this
+                Privacy Policy or required by law. We do not share your personal Shift Rate with
+                schools, sponsors, or rewards partners without your explicit consent. If you join
+                your employer&apos;s group, your employer sees the information described under
+                &ldquo;With Employers&rdquo; below, including your Shift Rate.
               </P>
               <P>
                 If we materially change how we collect, use, share, or retain personal
@@ -429,20 +432,44 @@ export default function PrivacyPage() {
                 consent or as required by law.
               </P>
 
-              <H3>With Schools and Employers</H3>
+              <H3>With Employers</H3>
               <P>
-                If you join a school or employer challenge using an invite code, your participation
-                is voluntary, and your aggregate trip counts and impact statistics may be included
-                in reports provided to that organization.
+                Joining your employer&apos;s group in Shift, with an invite code, a join link, or
+                your work email, is voluntary. The people who run your employer&apos;s program can
+                see the following about you, by name, for the last 7 days, the last 30 days, or
+                all time, and can download it as a spreadsheet:
+              </P>
+              <Ul>
+                <li>Your display name, profile photo, and the date you joined</li>
+                <li>How many trips you took, and how many of them were walking, biking, transit, or other active trips</li>
+                <li>Your Shift Rate (the share of your trips that were active trips)</li>
+                <li>The miles you shifted and the CO2 emissions those trips avoided</li>
+                <li>If your employer funds rewards, the rewards you received</li>
+              </Ul>
+              <P>
+                Your employer does not see where you go. It does not receive your trip routes or
+                maps, GPS locations, trip start or end points, saved locations such as your home,
+                or inferred route profile data.
+              </P>
+              <P>
+                You can leave your employer&apos;s group at any time in the app. When you leave, you
+                no longer appear in your employer&apos;s list of members.
+              </P>
+
+              <H3>With Schools</H3>
+              <P>
+                If you join a school challenge using an invite code, your participation is
+                voluntary, and your aggregate trip counts and impact statistics may be included in
+                reports provided to that school.
               </P>
               <P>
                 These reports contain only anonymized or aggregated data unless you have explicitly
                 opted in to individual attribution.
               </P>
               <P>
-                Schools and employers do not receive individual trip data, location information,
-                saved locations, inferred route profile data, or your personal Shift Rate without
-                your explicit consent.
+                Schools do not receive individual trip data, location information, saved
+                locations, inferred route profile data, or your personal Shift Rate without your
+                explicit consent.
               </P>
 
               <H3>Legal Requirements</H3>

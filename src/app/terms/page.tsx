@@ -358,8 +358,11 @@ export default function TermsPage() {
                 settings. Leaving a group does not delete your account or trip history.
               </P>
               <P>
-                Employers and schools receive only aggregate, anonymized data about their
-                group&apos;s participation. They do not receive individual trip data, location
+                If you join your employer&apos;s group, your employer can see your name and your
+                trip numbers, including your Shift Rate, miles, and CO2 avoided, as described in our
+                Privacy Policy. Employers do not receive your trip routes, location information, or
+                saved locations. Schools receive only aggregate, anonymized data about their
+                group&apos;s participation, and do not receive individual trip data, location
                 information, or your personal Shift Rate without your explicit consent.
               </P>
               <P>
