@@ -13,6 +13,7 @@ import { dayLabel, fetchDisruptions, fetchElevatorClosures, routeIdsForLabels, t
 import { fetchRideWithGps } from '@/lib/organizers/rwgps'
 import { bikeParkingNear, summarizeRoute } from '@/lib/organizer-assistant/route-designer'
 import { myChallenges, myWorkplace, officeAt, workplaceFacts } from '@/lib/shift-assistant/my-challenges'
+import { myClosurePlans, myDrives, shuttlesFor } from '@/lib/shift-assistant/trip-data'
 import { signedUrls } from '@/lib/shift-assistant/uploads'
 import { ALWAYS as FARES_FOR_EVERYONE, fareProgram, farePrograms } from '@/lib/facts/fare-programs'
 import { PRICES, usd } from '@/lib/facts/prices'
@@ -96,10 +97,10 @@ export type TripCard = {
 const CARD_WAYS = 'card_ways'
 
 /** Screens added after the first release: offered only to builds that list them. */
-const NEWER_SCREENS = new Set(['trip', 'trip_history', 'my_rewards', 'notifications', 'vacation', 'partner_request', 'partner_matches', 'bike_confidence', 'roam'])
+const NEWER_SCREENS = new Set(['trip', 'trip_history', 'my_rewards', 'notifications', 'vacation', 'partner_request', 'partner_matches', 'bike_confidence', 'roam', 'closure_plan'])
 const canOpen = (ctx: ToolCtx, screen: string) => !NEWER_SCREENS.has(screen) || !!ctx.screens?.has(screen)
 
-const SCREENS = ['commute', 'commute_setup', 'around_you', 'rides', 'event', 'ride', 'rewards', 'log_trip', 'ride_plan', 'trip', 'trip_history', 'my_rewards', 'notifications', 'vacation', 'partner_request', 'partner_matches', 'bike_confidence', 'roam'] as const
+const SCREENS = ['commute', 'commute_setup', 'around_you', 'rides', 'event', 'ride', 'rewards', 'log_trip', 'ride_plan', 'trip', 'trip_history', 'my_rewards', 'notifications', 'vacation', 'partner_request', 'partner_matches', 'bike_confidence', 'roam', 'closure_plan'] as const
 type Screen = (typeof SCREENS)[number]
 
 const FUNCTIONS = `${(process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').replace(/\/$/, '')}/functions/v1`
@@ -150,6 +151,9 @@ export const ACTIVITY: Record<string, string> = {
   get_my_activity: 'Reading your trips and rewards',
   get_my_challenges: 'Checking your challenges',
   get_my_workplace: 'Reading your workplace benefits',
+  get_my_closure_plan: 'Opening your closure plan',
+  get_my_drives: 'Looking at your drives',
+  find_shuttles: 'Checking shuttles',
   get_my_settings: 'Reading your settings',
   get_town_info: 'Looking up your town',
   check_route_link: 'Reading the route',
@@ -272,6 +276,25 @@ export const TOOLS: Anthropic.Tool[] = [
     input_schema: { type: 'object', properties: {} },
   },
   {
+    name: 'get_my_closure_plan',
+    description: "Their plan for an MBTA closure on a trip they usually make (Shift writes one a week before a closure that touches their trip): the closure and its dates, their usual trip, the way around it by transit (shuttle buses and every step) and by bike (minutes, Bluebikes docks), which way they picked, and a free first Bluebikes ride when one is open to them. Use for \"how do I get to work during the shutdown\", \"what's my plan this weekend\", or any question about a closure on their own trip. Empty when no closure touches their trips; then get_service_alerts and check_trip.",
+    input_schema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'get_my_drives',
+    description: "The trips they drive regularly (from their recorded trips), each with what the drive costs a month in gas, wear and parking, and the walk, bike, Bluebikes, bus or train trip that Shift found competes with it: minutes against driving and parking, cost, how calm the bike route is, the line and stop. Also what their car costs to own and run a month (the app's full-picture estimate) and their driving miles this month. Use for \"what could I bike instead\", \"how much does driving cost me\", \"is it worth keeping the car\", or when they mention driving somewhere they go often.",
+    input_schema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'find_shuttles',
+    description: "Shuttles that aren't the MBTA, near a trip's start and end: TMA shuttles (EZRide, Lower Mystic Link, The Grid, Middlesex 3) and campus shuttles (MIT, Harvard, BU, BC, Tufts, Longwood, Brandeis, UMass Boston). For each stop: who runs it, who can ride, the routes, and the next departures today; and which routes go the whole way between the two places. Google directions don't know these. Use when a trip touches Cambridge, Kendall, Longwood, a campus, an office park, or they ask about a shuttle.",
+    input_schema: {
+      type: 'object',
+      properties: { from: placeSchema, to: { ...placeSchema, description: 'Where they are going, when there is a trip. Leave out to list shuttles near one place.' } },
+      required: ['from'],
+    },
+  },
+  {
     name: 'save_place',
     description: "Save one of the person's places (Work, School, Gym, a friend's, any name they give) so trips and the commute can use it. Saving a name they already have moves that place. Not for Home: a new home changes their town and neighborhood groups, so send them to commute_setup for that. The person approves on a card first.",
     input_schema: {
@@ -361,12 +384,12 @@ export const TOOLS: Anthropic.Tool[] = [
   ...RIDE_PLAN_TOOLS,
   {
     name: 'open_screen',
-    description: "A button to a screen of the Shift app, for things done there: commute (their saved commute), commute_setup (set home and work), around_you (the map of what's near them), rides (group rides and events), event or ride (one of them, by id; event also opens a challenge by its id from get_my_challenges), rewards (rewards they've won), log_trip (log a trip by hand), ride_plan (a Shift Together first ride plan, by its match_id), trip (one recorded trip, by its id from get_my_activity, where they can change how they traveled), trip_history (all their trips), my_rewards (rewards they've won), notifications (notification settings), vacation (pause tracking while away), partner_request (Shift Together sign-up: kind newcomer = go with someone who knows the way, guide = show someone the way, carpool = share the drive to work; mode bike, walk or transit, not for carpool), partner_matches (their Shift Together matches, where they also end a match or report a problem). Also bike_confidence: \"How do you feel about biking there?\", which sends them to the first step that fits (go, a guide, a free road riding lesson near Somerville, or learn-to-ride classes).",
+    description: "A button to a screen of the Shift app, for things done there: commute (their saved commute), commute_setup (set home and work), around_you (the map of what's near them), rides (group rides and events), event or ride (one of them, by id; event also opens a challenge by its id from get_my_challenges), rewards (rewards they've won), log_trip (log a trip by hand), ride_plan (a Shift Together first ride plan, by its match_id), trip (one recorded trip, by its id from get_my_activity, where they can change how they traveled), trip_history (all their trips), my_rewards (rewards they've won), notifications (notification settings), vacation (pause tracking while away), partner_request (Shift Together sign-up: kind newcomer = go with someone who knows the way, guide = show someone the way, carpool = share the drive to work; mode bike, walk or transit, not for carpool), partner_matches (their Shift Together matches, where they also end a match or report a problem), closure_plan (their plan for an MBTA closure, by its plan_id from get_my_closure_plan). Also bike_confidence: \"How do you feel about biking there?\", which sends them to the first step that fits (go, a guide, a free road riding lesson near Somerville, or learn-to-ride classes).",
     input_schema: {
       type: 'object',
       properties: {
         screen: { type: 'string', enum: [...SCREENS] },
-        id: nullable('string', 'For event (an id from find_rides_and_events, or a challenge id from get_my_challenges), ride, ride_plan (the match_id), or trip (an id from get_my_activity).'),
+        id: nullable('string', 'For event (an id from find_rides_and_events, or a challenge id from get_my_challenges), ride, ride_plan (the match_id), trip (an id from get_my_activity), or closure_plan (its plan_id).'),
         kind: nullable('string', 'partner_request only: newcomer, guide or carpool.'),
         mode: nullable('string', 'partner_request only: bike, walk or transit.'),
         answer: nullable('string', 'bike_confidence only: ready, company, nervous or learn, when they already said which.'),
@@ -525,11 +548,21 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
         const arrive = typeof input.arrive_by === 'string' && /^\d{2}:\d{2}$/.test(input.arrive_by) ? input.arrive_by : null
         // The engine itself, as this person: two-part trips (bike to the
         // train, park and ride) are counted against their own hourly budget.
-        const workplaceQ = myWorkplace(ctx).catch(() => null)
+        // The drive priced for their own car, plus what parking costs them at
+        // their office when the trip goes there (the app's commute screen
+        // prices it the same way).
+        const [workplace, carQ] = await Promise.all([
+          myWorkplace(ctx).catch(() => null),
+          ctx.user.from('users').select('vehicle_type').eq('id', ctx.userId).single(),
+        ])
+        const office = workplace ? officeAt(workplace, to.lat, to.lng) ?? officeAt(workplace, from.lat, from.lng) : null
+        const vt = (carQ.data as { vehicle_type?: string } | null)?.vehicle_type
+        const vehicle = vt === 'hybrid' || vt === 'ev' ? vt : null
+        const parking = office && workplace && !workplace.benefits.free_parking ? Number(workplace.benefits.parking_cost_monthly) || 0 : 0
         const res = await fetch(`${FUNCTIONS}/commute-advisor-compare`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, Authorization: `Bearer ${ctx.token}` },
-          body: JSON.stringify({ origin: { lat: from.lat, lng: from.lng }, destination: { lat: to.lat, lng: to.lng }, ...(arrive ? { arrive_by: arrive } : {}), include_combos: true }),
+          body: JSON.stringify({ origin: { lat: from.lat, lng: from.lng }, destination: { lat: to.lat, lng: to.lng }, ...(arrive ? { arrive_by: arrive } : {}), include_combos: true, ...(vehicle ? { vehicle } : {}), ...(parking ? { parking_monthly: parking } : {}) }),
           signal: AbortSignal.timeout(20_000),
         })
         if (!res.ok) return fail("The Commute Advisor didn't answer just now. Try again in a minute.")
@@ -563,10 +596,9 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
             ],
           },
         } : undefined
-        const workplace = await workplaceQ
-        const office = workplace ? officeAt(workplace, to.lat, to.lng) ?? officeAt(workplace, from.lat, from.lng) : null
         const result = ok({
-          ...(office && workplace ? { their_workplace: { ...workplaceFacts(workplace), this_office: office.address, note: "This trip is their commute. The monthly costs above don't include these benefits: say what they change (transit help lowers the transit cost, a bike share membership makes bike share free or cheaper, paid parking raises driving's cost) in one short sentence." } } : {}),
+          ...(office && workplace ? { their_workplace: { ...workplaceFacts(workplace), this_office: office.address, note: "This trip is their commute. The monthly costs above don't include these benefits: say what they change (transit help lowers the transit cost, a bike share membership makes bike share free or cheaper) in one short sentence. Driving's cost already includes what parking costs them there." } } : {}),
+          ...(vehicle ? { drive_priced_for: vehicle === 'ev' ? 'their electric car' : 'their hybrid' } : {}),
           ...(card ? { card: 'A comparison card shows under your reply: each way with its minutes and monthly cost side by side, the recommended one marked, and buttons for directions and the full trip. Write at most two short sentences with no minutes or dollar amounts (the card shows them): which way you would suggest for them and the one thing that tips it.' } : {}),
           miles: e.distance_miles != null ? round1(e.distance_miles) : null,
           recommended,
@@ -747,16 +779,16 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
         if (screen === 'roam' && !canOpen(ctx, 'roam') && typeof input.id === 'string' && /^[A-Za-z0-9_-]{1,100}$/.test(input.id)) {
           return ok({ shown: true, next: 'The button shows under your reply. Now write the reply itself. Do not mention the button.' }, { href: `/shift/roams/${input.id}`, label: String(input.label || 'See the Roam').slice(0, 40) })
         }
-        if (!canOpen(ctx, screen)) return ok({ shown: false, note: "Their version of the app can't open that screen from here yet. Tell them where it is in a few words instead (a trip: Recent trips on the Home tab, then tap the trip; rewards they've won: the Rewards tab; notifications or vacation: Profile)." })
+        if (!canOpen(ctx, screen)) return ok({ shown: false, note: "Their version of the app can't open that screen from here yet. Tell them where it is in a few words instead (a trip: Recent trips on the Home tab, then tap the trip; rewards they've won: the Rewards tab; notifications or vacation: Profile; a closure plan: the Around You card on Home)." })
         const id = typeof input.id === 'string' && /^[A-Za-z0-9_-]{1,100}$/.test(input.id) ? input.id : null
-        if ((screen === 'event' || screen === 'ride' || screen === 'ride_plan' || screen === 'trip' || screen === 'roam') && !id) return fail(`A ${screen} button needs its id.`)
+        if ((screen === 'event' || screen === 'ride' || screen === 'ride_plan' || screen === 'trip' || screen === 'roam' || screen === 'closure_plan') && !id) return fail(`A ${screen} button needs its id.`)
         const params: Record<string, string> | null = screen === 'partner_request'
           ? input.kind === 'carpool'
             ? { kind: 'carpool' }
             : { kind: input.kind === 'guide' ? 'guide' : 'newcomer', ...(['bike', 'walk', 'transit'].includes(String(input.mode)) ? { mode: String(input.mode) } : {}) }
           : screen === 'bike_confidence'
             ? (['ready', 'company', 'nervous', 'learn'].includes(String(input.answer)) ? { answer: String(input.answer) } : null)
-            : id ? (screen === 'ride_plan' ? { match: id } : screen === 'roam' ? { roamId: id } : { id }) : null
+            : id ? (screen === 'ride_plan' ? { match: id } : screen === 'roam' ? { roamId: id } : screen === 'closure_plan' ? { plan_id: id } : { id }) : null
         return ok({ shown: true, next: 'The button shows under your reply. Now write your whole answer to what they asked, with everything you found, not only what the button is for (for events: name, day and time, where, how far). Do not mention the button.' }, { screen, ...(params ? { params } : {}), label: String(input.label || 'Open').slice(0, 40) })
       }
       case 'get_ride_plan':
@@ -833,6 +865,19 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
       case 'get_my_workplace': {
         const w = await myWorkplace(ctx)
         return ok(w ? workplaceFacts(w) : { none: "Their employer doesn't offer Shift's commute program to them, so there are no workplace benefits on file. Their HR team knows what they offer." })
+      }
+      case 'get_my_closure_plan': {
+        const plans = await myClosurePlans(ctx)
+        return ok(plans.length
+          ? { plans, next: 'Lead with the way you would suggest for their trip and its minutes against their usual time. Offer open_screen closure_plan with the plan_id: they pick a way there, and the free Bluebikes ride is claimed there.' }
+          : { none: 'No closure plan: no planned MBTA closure touches a trip they usually make. For a line or a trip they ask about, use get_service_alerts or check_trip.' })
+      }
+      case 'get_my_drives':
+        return ok(await myDrives(ctx))
+      case 'find_shuttles': {
+        const from = asPlace(input.from)
+        if (!from) return fail('The place needs coordinates. Look it up with find_place first.')
+        return ok(await shuttlesFor(from, asPlace(input.to)))
       }
       case 'get_town_info': {
         const asked = typeof input.town === 'string' ? input.town.trim().toLowerCase() : ''

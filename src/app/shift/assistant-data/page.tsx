@@ -7,7 +7,7 @@ import Footer from '@/components/Footer'
 // portal). The organizer and employer versions are /organizers/assistant-data
 // and /shift/employers/assistant-data. Keep it in step with the code: the
 // model (api/shift/assistant/route.ts), what the tools read
-// (lib/shift-assistant/tools.ts, my-challenges.ts), pictures (Shift 01441), reminders (Shift
+// (lib/shift-assistant/tools.ts, my-challenges.ts, trip-data.ts), pictures (Shift 01441), reminders (Shift
 // 01465), and the privacy policy's Shift Assistant section. Anthropic's terms
 // as in the employer note (lib/employer-assistant/data-note.ts), checked
 // 2026-10-22.
@@ -21,7 +21,7 @@ const SECTIONS: { heading: string; body: string[] }[] = [
   {
     heading: 'What it is',
     body: [
-      'The assistant is an optional part of the Shift app. You ask about getting around in your own words, and it answers with what Shift knows: trip comparisons, group rides and walks, fares, weather, service changes, your challenges, your workplace’s commute benefits and your own activity.',
+      'The assistant is an optional part of the Shift app. You ask about getting around in your own words, and it answers with what Shift knows: trip comparisons, group rides and walks, fares, weather, service changes, shuttles, your closure plans, your challenges, your workplace’s commute benefits, what your drives cost and your own activity.',
       'It saves a place, changes a setting, sets a trip reminder or remembers something about you only after you tap the button on its card.',
     ],
   },
@@ -30,6 +30,7 @@ const SECTIONS: { heading: string; body: string[] }[] = [
     body: [
       'The conversation, your saved places, your recent trips (times, how you traveled, and “Home” or “Work”, not map points), your points, badges and rewards, and your phone’s location when you allow it, rounded to about 100 meters.',
       'Your challenges and groups: your own trip count, prizes and place on each leaderboard, and where your town, neighborhood or team stands. Other people show up only as numbers, never by name. If your employer offers Shift’s commute program, the commute benefits it set up there, such as help paying for transit, bike parking and its offices.',
+      'The plans Shift made for MBTA closures on your trips, and the way you picked. The drives Shift found you make often, with the walk, bike or transit trips it found to compare, and the answers you gave in the app about your car (such as what insurance costs you), to estimate what the car costs a month.',
       'A picture you attach. It is stored privately with that conversation and deleted with it. If you report a problem, the Green Streets team sees the picture with your report.',
       'Notes you asked it to remember, such as “I have an e-bike” or “I’d rather avoid busy streets”. Every new conversation starts with them, so you don’t have to say them again.',
       'A trip reminder you set keeps that trip’s start, destination and time. After the trip, Shift looks at your trips from around then for one that starts or ends near those places, to tell you it counted.',

@@ -234,7 +234,9 @@ export default function PrivacyPage() {
                 how you traveled, and &ldquo;Home&rdquo; or &ldquo;Work&rdquo;, not map points),
                 your points, badges and rewards, your challenges and groups (your own count and
                 place, never other people&apos;s names), the commute benefits your employer set up in
-                Shift, if it offers Shift&apos;s commute program, and your phone&apos;s location when
+                Shift, if it offers Shift&apos;s commute program, the plans Shift made for MBTA
+                closures on your trips, the drives Shift found you make often with the ways it found
+                to compare, the answers you gave in the app about your car&apos;s costs, and your phone&apos;s location when
                 you allow it, rounded to about 100 meters. It saves a place or changes a setting only after you
                 tap Approve.
               </P>
