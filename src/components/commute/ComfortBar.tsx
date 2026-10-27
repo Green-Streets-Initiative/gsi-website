@@ -14,9 +14,8 @@ const SEGMENT_LABELS: Record<string, string> = {
   shared_road: 'Shared',
 }
 
-// Roll up a flat segment list into per-rating mileage totals so we can show
-// a short numeric breakdown ("4.0 mi protected · 0.7 mi bike lane") instead
-// of enumerating every segment.
+// Roll up a flat segment list into per-rating mileage totals, shown as each
+// tier's share ("85% protected · 15% bike lane") instead of every segment.
 function rollup(segments: BikeComfortSegment[]) {
   const totals: Record<string, number> = {}
   const flexTotals: Record<string, number> = {}
@@ -55,9 +54,13 @@ export default function ComfortBar({ rating, segments, theme = 'dark', colors, l
     ? segments!.reduce((sum, s) => sum + (s.distance_mi || 0), 0)
     : 0
   const breakdown = hasSegments ? rollup(segments!) : []
+  // Shares, not miles (Keith 2026-10-27, like Google Maps): "74% shared use
+  // path" reads at a glance; the header keeps the total distance.
+  const breakdownMiles = breakdown.reduce((a, b) => a + b.miles, 0)
+  const pct = (miles: number) => (breakdownMiles > 0 ? Math.round((miles / breakdownMiles) * 100) : 0)
 
   const a11yLabel = hasSegments
-    ? `Route comfort: ${breakdown.map((b) => `${b.miles.toFixed(1)} miles ${L[b.rating] ?? b.rating}`).join(', ')}`
+    ? `Route comfort: ${breakdown.map((b) => `${pct(b.miles)}% ${L[b.rating] ?? b.rating}`).join(', ')}`
     : rating
       ? `Route comfort: ${L[rating] ?? rating}`
       : 'Route comfort'
@@ -103,7 +106,7 @@ export default function ComfortBar({ rating, segments, theme = 'dark', colors, l
                 className="inline-block h-2 w-2 rounded-full"
                 style={{ backgroundColor: C[b.rating] }}
               />
-              {b.miles.toFixed(1)} mi {L[b.rating]?.toLowerCase()}
+              {pct(b.miles)}% {L[b.rating]?.toLowerCase()}
             </div>
           ))}
         </div>
