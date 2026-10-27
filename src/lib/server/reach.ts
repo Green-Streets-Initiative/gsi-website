@@ -493,6 +493,43 @@ async function queryBikeRoutes(
   }
 }
 
+/** Google's walking route, for the Shift assistant's trip card when someone
+ *  asks about walking (or the walk is short enough to be worth showing).
+ *  One route, no alternates: walking has no comfort tiers to choose among. */
+export async function queryWalkRoute(
+  origin: { lat: number; lng: number },
+  dest: { lat: number; lng: number },
+): Promise<{ minutes: number; miles: number; encodedPolyline: string | null } | null> {
+  if (!GOOGLE_ROUTES_KEY) return null
+  try {
+    const resp = await fetch('https://routes.googleapis.com/directions/v2:computeRoutes', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Goog-Api-Key': GOOGLE_ROUTES_KEY,
+        'X-Goog-FieldMask': 'routes.duration,routes.distanceMeters,routes.polyline.encodedPolyline',
+      },
+      body: JSON.stringify({
+        origin: { location: { latLng: { latitude: origin.lat, longitude: origin.lng } } },
+        destination: { location: { latLng: { latitude: dest.lat, longitude: dest.lng } } },
+        travelMode: 'WALK',
+      }),
+      signal: AbortSignal.timeout(10000),
+    })
+    if (!resp.ok) return null
+    const data = await resp.json()
+    const r = (data.routes ?? [])[0] as { duration?: string; distanceMeters?: number; polyline?: { encodedPolyline?: string } } | undefined
+    if (!r?.duration) return null
+    return {
+      minutes: Math.max(1, Math.round(parseInt(r.duration.replace('s', '')) / 60)),
+      miles: Math.round(((r.distanceMeters ?? 0) / 1609.34) * 10) / 10,
+      encodedPolyline: r.polyline?.encodedPolyline ?? null,
+    }
+  } catch {
+    return null
+  }
+}
+
 /**
  * Manufacture a genuinely different, calmer alternate.
  *

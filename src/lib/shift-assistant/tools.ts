@@ -2,7 +2,7 @@ import 'server-only'
 import type Anthropic from '@anthropic-ai/sdk'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { findPlace, forecast } from '@/lib/organizer-assistant/tools'
-import { getTrip, inServiceArea } from '@/lib/server/trip'
+import { getTrip, getWalk, inServiceArea } from '@/lib/server/trip'
 import { haversineMiles } from '@/lib/nearby/share'
 import { decodePolyline, encodePolyline } from '@/lib/geo/polyline'
 import { eventModeOf } from '@/components/commute/event-card'
@@ -69,7 +69,28 @@ export type TripCard = {
   comfort: { rating: string; miles: number }[]
   polyline: string | null
   transit_minutes: number | null
+  /** Builds that list CARD_WAYS: which way the card leads with, and what it
+   *  needs to draw a walk or a transit trip instead of the ride. */
+  lead?: 'walk' | 'bike' | 'transit'
+  walk_minutes?: number | null
+  walk_miles?: number | null
+  walk_polyline?: string | null
+  /** The transit trip in its line colors, walking legs in slate. */
+  transit_segments?: { mode: 'walk' | 'transit'; color: string; polyline: string }[]
+  transit_lines?: { label: string; color: string }[]
+  /** compare_ways: the Commute Advisor's ways side by side, drawn as a
+   *  comparison card instead of a route card. */
+  compare?: {
+    miles: number | null
+    recommended: string | null
+    ways: { way: string; minutes: number | null; minutes_up_to: number | null; monthly_cost: number }[]
+  }
 }
+
+/** Builds that draw the walk and transit route cards and the comparison card
+ *  list this with their screens (Shift lib/assistant.ts). Older builds draw
+ *  only the bike card, so they get no card when it would lead with another way. */
+const CARD_WAYS = 'card_ways'
 
 /** Screens added after the first release: offered only to builds that list them. */
 const NEWER_SCREENS = new Set(['trip', 'trip_history', 'my_rewards', 'notifications', 'vacation', 'partner_request', 'partner_matches', 'bike_confidence', 'roam'])
@@ -148,7 +169,7 @@ export const TOOLS: Anthropic.Tool[] = [
   },
   {
     name: 'check_trip',
-    description: 'One trip to one place, the way Around You answers it: transit minutes, how much of it is walking, the lines and where to change, the fare, bike minutes, and how calm the bike route is street by street (paths, protected lanes, painted lanes, shared roads), with a calmer option when there is one. Transit is planned for when they leave: now, unless you pass a day and time. Use for a one-off trip (a Saturday errand, a new place).',
+    description: 'One trip to one place, the way Around You answers it: walking minutes and miles (for a walk up to about an hour, or whenever they ask about walking), transit minutes, how much of it is walking, the lines and where to change, the fare, bike minutes, and how calm the bike route is street by street (paths, protected lanes, painted lanes, shared roads), with a calmer option when there is one. Transit is planned for when they leave: now, unless you pass a day and time. Use for a one-off trip (a Saturday errand, a new place).',
     input_schema: {
       type: 'object',
       properties: {
@@ -156,6 +177,7 @@ export const TOOLS: Anthropic.Tool[] = [
         to: placeSchema,
         leave_date: nullable('string', 'YYYY-MM-DD, when they said a day ("Saturday", "tomorrow"). Empty for now.'),
         leave_time: nullable('string', 'HH:MM, 24-hour, Eastern time, when they said a time. Empty for now.'),
+        way: nullable('string', 'walk, bike or transit: the way they asked about, which the card leads with. Empty when they did not say.'),
       },
       required: ['from', 'to'],
     },
@@ -451,9 +473,28 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
           const s = xs?.[0]
           return s ? { name: s.name, bikes: s.bikes_available ?? null, docks: s.docks_available ?? null, miles_away: round1(s.distance_miles) } : null
         }
-        return ok({
+        const ways = (e.modes ?? []).filter((m) => m.viable)
+        const twoPart = (e.combos ?? []).filter((c) => c.qualifies !== false)
+        const recommended = e.recommended_with_combos || e.recommended_mode || null
+        // The card: one row per way, two-part trips priced by the month the
+        // way the app's commute screen does (cost_per_day × 20 workdays).
+        const card: TripCard | undefined = ctx.screens?.has(CARD_WAYS) && ways.length >= 2 ? {
+          from: { name: ((from.name ?? '').trim() || 'Start').slice(0, 80), lat: from.lat, lng: from.lng },
+          to: { name: ((to.name ?? '').trim() || 'Destination').slice(0, 80), lat: to.lat, lng: to.lng },
+          bike_minutes: null, bike_miles: null, comfort: [], polyline: null, transit_minutes: null,
+          compare: {
+            miles: e.distance_miles != null ? round1(e.distance_miles) : null,
+            recommended,
+            ways: [
+              ...ways.map((m) => ({ way: m.mode, minutes: m.time_minutes, minutes_up_to: m.time_minutes_max ?? null, monthly_cost: Math.round(m.monthly_cost) })),
+              ...twoPart.map((c) => ({ way: c.kind, minutes: c.minutes_total, minutes_up_to: null, monthly_cost: Math.round(c.cost_per_day * 20) })),
+            ],
+          },
+        } : undefined
+        const result = ok({
+          ...(card ? { card: 'A comparison card shows under your reply: each way with its minutes and monthly cost side by side, the recommended one marked, and buttons for directions and the full trip. Write at most two short sentences with no minutes or dollar amounts (the card shows them): which way you would suggest for them and the one thing that tips it.' } : {}),
           miles: e.distance_miles != null ? round1(e.distance_miles) : null,
-          recommended: e.recommended_with_combos || e.recommended_mode,
+          recommended,
           ways: (e.modes ?? []).filter((m) => m.viable).map((m) => ({
             way: m.mode, minutes: m.time_minutes, minutes_up_to: m.time_minutes_max ?? null, monthly_cost: m.monthly_cost, leave_by: m.leave_by ?? null, detail: m.detail,
           })),
@@ -465,6 +506,7 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
           bluebikes: { near_start: near(e.bluebikes_origin), near_end: near(e.bluebikes_dest) },
           ...(arrive ? {} : { assumed: 'Arriving by 9:00 on a weekday.' }),
         })
+        return card ? { ...result, trip: card } : result
       }
       case 'check_trip': {
         const from = asPlace(input.from)
@@ -477,7 +519,12 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
         const departAt = leaveDate || leaveTime
           ? bostonIso(leaveDate ?? todayKey(), leaveTime ?? '08:00') ?? new Date().toISOString()
           : new Date().toISOString()
-        const r = await getTrip(from, to, to.name ?? '', departAt)
+        const way = input.way === 'walk' || input.way === 'bike' || input.way === 'transit' ? input.way : null
+        // Walking for a walk up to about an hour, or whenever they asked about it.
+        const [r, walk] = await Promise.all([
+          getTrip(from, to, to.name ?? '', departAt),
+          way === 'walk' || haversineMiles(from.lat, from.lng, to.lat, to.lng) <= 2.5 ? getWalk(from, to) : Promise.resolve(null),
+        ])
         // Service changes and broken elevators on this trip's own lines and
         // stations, so the answer reflects today rather than a normal day.
         const lineIds = await routeIdsForLabels(r.steps.map((s) => s.label))
@@ -497,6 +544,8 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
         const bikeMiles = segs.length ? round1(segs.reduce((a, s) => a + s.distance_mi, 0)) : null
         const fromName = (from.name ?? '').trim() || 'Start'
         const toName = (to.name ?? '').trim() || 'Destination'
+        const lead = way === 'walk' && walk ? 'walk' : way === 'transit' && r.transit_minutes != null ? 'transit' : 'bike'
+        const newCards = !!ctx.screens?.has(CARD_WAYS)
         const trip: TripCard = {
           from: { name: fromName.slice(0, 80), lat: from.lat, lng: from.lng },
           to: { name: toName.slice(0, 80), lat: to.lat, lng: to.lng },
@@ -505,12 +554,30 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
           comfort: runs.slice(0, 24),
           polyline: thinLine(r.bike_polyline),
           transit_minutes: r.transit_minutes ?? null,
+          ...(newCards ? {
+            lead,
+            walk_minutes: walk?.minutes ?? null,
+            walk_miles: walk?.miles ?? null,
+            walk_polyline: thinLine(walk?.encodedPolyline),
+            ...(lead === 'transit' ? {
+              transit_segments: r.transit_segments.map((g) => ({ mode: g.mode, color: g.color, polyline: thinLine(g.polyline, 30)! })).filter((g) => g.polyline),
+              transit_lines: r.transit_segments.filter((g) => g.mode === 'transit' && g.label).map((g) => ({ label: g.label!, color: g.color })),
+            } : {}),
+          } : {}),
         }
+        // Older builds draw only the ride: no card when it would lead with another way.
+        const showCard = newCards || lead === 'bike'
+        const CARD_NOTE = {
+          bike: 'A route card shows under your reply: a small map of the bike route, its minutes and miles, a strip of how calm each stretch is, and buttons to open it in Google Maps or see the full trip. Write at most two short sentences with no minutes, miles or percentages (the card shows them) and no street list: which way you would go and why, and anything worth knowing (a busy stretch, a train or bus that also works).',
+          walk: 'A route card shows under your reply: a small map of the walking route, its minutes and miles, the bike and transit minutes beside it, and buttons for directions and the full trip. Write at most two short sentences with no minutes or miles (the card shows them): anything worth knowing on the way, or when biking or transit would serve them better.',
+          transit: 'A route card shows under your reply: a small map of the transit trip in its line colors, the lines, the total minutes, and buttons for directions and the full trip. Write at most two short sentences with no minutes (the card shows them): where to get on and where to change, and any service change today (an elevator outage only when they may need one).',
+        }[lead]
         const coord = (n: number) => n.toFixed(5)
         return {
           content: {
-            card: 'A route card shows under your reply: a small map of the bike route, its minutes and miles, a strip of how calm each stretch is, and buttons to open it in Google Maps or see the full trip. Write at most two short sentences with no minutes, miles or percentages (the card shows them) and no street list: which way you would go and why, and anything worth knowing (a busy stretch, a train or bus that also works).',
+            ...(showCard ? { card: CARD_NOTE } : {}),
             miles: round1(r.distance_miles),
+            walk: walk ? { minutes: walk.minutes, miles: walk.miles } : null,
             transit: r.transit_minutes == null ? { none: `No transit found leaving ${bostonWhen(departAt)}.` } : {
               leaving: bostonWhen(departAt),
               minutes: r.transit_minutes, walking_minutes: r.transit_walk_minutes, fare: r.transit_fare,
@@ -526,7 +593,7 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
               calmer_or_quicker_option: r.bike_alt ? { minutes: r.bike_alt.minutes, overall: r.bike_alt.comfort?.rating ?? null } : null,
             },
           },
-          trip,
+          ...(showCard ? { trip } : {}),
           // For app versions without the card: the same trip on the map.
           link: {
             screen: 'around_you',

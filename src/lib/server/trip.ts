@@ -7,6 +7,7 @@ import {
   crashesFor,
   haversineMiles,
   nextMonday830,
+  queryWalkRoute,
   REACH_ROW_VERSION,
   type ReachRow,
 } from './reach'
@@ -110,6 +111,22 @@ async function computeTrip(
     // calmer line exists that Google's own alternates all missed.
     true,
   )
+}
+
+/** The walking route between two points, cached a day like the trip itself.
+ *  A failed lookup throws inside the cache so it isn't kept, and reads as null. */
+const durableWalk = unstable_cache(
+  async (from: { lat: number; lng: number }, to: { lat: number; lng: number }) => {
+    const r = await queryWalkRoute(from, to)
+    if (!r) throw new Error('no walking route')
+    return r
+  },
+  ['trip-walk-v1'],
+  { revalidate: CACHE_TTL_MS / 1000 },
+)
+
+export async function getWalk(from: { lat: number; lng: number }, to: { lat: number; lng: number }) {
+  return durableWalk({ lat: round3(from.lat), lng: round3(from.lng) }, { lat: round3(to.lat), lng: round3(to.lng) }).catch(() => null)
 }
 
 /** The next quarter hour at or after this time, and never in the past
