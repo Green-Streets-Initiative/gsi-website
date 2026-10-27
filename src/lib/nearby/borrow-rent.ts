@@ -71,10 +71,10 @@ function haversineMiles(lat1: number, lng1: number, lat2: number, lng2: number):
   )
 }
 
-/** Points within 2 mi of the visitor, nearest first. */
-export function nearbyBorrowRent(lat: number, lng: number): (BorrowRentPoint & { distMiles: number })[] {
+/** Points within 2 mi of the visitor (or `radiusMiles`), nearest first. */
+export function nearbyBorrowRent(lat: number, lng: number, radiusMiles = RADIUS_MILES): (BorrowRentPoint & { distMiles: number })[] {
   return [...CARGOB_HUBS, ...PEDAL_POWER_PICKUPS]
     .map(p => ({ ...p, distMiles: haversineMiles(lat, lng, p.lat, p.lng) }))
-    .filter(p => p.distMiles <= RADIUS_MILES)
+    .filter(p => p.distMiles <= radiusMiles)
     .sort((a, b) => a.distMiles - b.distMiles)
 }
