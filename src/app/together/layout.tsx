@@ -6,7 +6,7 @@ import TogetherShell from '@/components/together/TogetherShell'
 
 export const metadata: Metadata = {
   title: 'Shift Together | Green Streets',
-  description: 'Try a new way to get there with a neighbor who knows it, show someone the way, or share a drive. Free, no app needed.',
+  description: 'Have a neighbor show you how to bike, walk or take transit, show someone else how, or share a drive. Free, no app needed.',
   // Not listed until Keith launches it (held 2026-10-27).
   robots: { index: false, follow: false },
 }

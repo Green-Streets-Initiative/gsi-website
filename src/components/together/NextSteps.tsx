@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useEffect, useState, type ReactNode } from 'react'
 import { Check, Link2, Mail, MapPinned, Smartphone, type LucideIcon } from 'lucide-react'
 import { Badge, Button, Card } from '@/components/organizers/ui'
-import { claimLesson, lessonOffer, track, type LessonOffer, type PartnerKind, type PartnerWay } from '@/lib/together'
+import { claimLesson, lessonOffer, track, waysText, type LessonOffer, type PartnerKind, type PartnerWay } from '@/lib/together'
 
 /**
  * What to do while Shift looks for a match, so "we'll email you" is never the
@@ -46,12 +46,12 @@ export default function NextSteps({ kind, ways, source }: { kind: PartnerKind; w
         {kind !== 'carpool' ? (
           <Tile
             Icon={copied ? Check : Link2}
-            title={kind === 'guide' ? 'Know someone who\u2019d like to try?' : 'Ask a friend who makes this trip'}
+            title={kind === 'guide' ? `Know someone who\u2019d like to start ${waysText(ways, 'ing')}?` : `Know someone who already ${waysText(ways, 'does')} to work?`}
             sub={copied
               ? 'Link copied. Send it to them.'
               : kind === 'guide'
-                ? 'Send them this page. If they sign up, Shift can match you.'
-                : 'Send them this page, and they can sign up to go with you.'}
+                ? 'Send them this page. If they live near you and work near your work, Shift can match you so you can show them how.'
+                : 'Send them this page. If they live near you and work near your work, Shift can match you so they can show you how.'}
             onClick={() => void invite()}
           />
         ) : null}

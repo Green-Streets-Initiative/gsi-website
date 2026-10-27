@@ -10,7 +10,7 @@ import { Journey, useTogether } from '@/components/together/TogetherShell'
 import { Badge, Button, Card, Field, Input, Notice, Spinner, Textarea, cx } from '@/components/organizers/ui'
 import {
   DAYS, TERMS_TEXT, TIMES, WAYS, acceptTerms, clock, hasAcceptedTerms, isWay, myPlaces, myRequests,
-  savePlace, saveSignUp, stopSignUp, track,
+  savePlace, saveSignUp, stopSignUp, track, waysText,
   type CarpoolRole, type PartnerDay, type PartnerKind, type PartnerRequest, type PartnerTime, type PartnerWay,
 } from '@/lib/together'
 
@@ -24,16 +24,16 @@ import {
  */
 
 const KINDS: { id: PartnerKind; title: string; hint: string; Icon: LucideIcon }[] = [
-  { id: 'newcomer', title: 'Go with someone who knows the way', hint: 'Try a new way with a neighbor the first time.', Icon: Sprout },
-  { id: 'guide', title: 'Show someone the way', hint: 'Help a neighbor try a trip you already make.', Icon: UsersRound },
-  { id: 'carpool', title: 'Find a carpool partner', hint: 'Share the drive with someone who goes your way.', Icon: Car },
+  { id: 'newcomer', title: 'Have someone show you how to bike, walk or take transit', hint: 'A neighbor who already makes your trip goes with you the first time.', Icon: Sprout },
+  { id: 'guide', title: 'Show someone how you bike, walk or take transit', hint: 'Go with a neighbor the first time they try the trip you already make.', Icon: UsersRound },
+  { id: 'carpool', title: 'Find a carpool partner', hint: 'Share the drive with someone who lives near you and works near your work.', Icon: Car },
 ]
 const KIND_ICON: Record<PartnerKind, LucideIcon> = { newcomer: Sprout, guide: UsersRound, carpool: Car }
-const KIND_LABEL: Record<PartnerKind, string> = { newcomer: 'Going with someone', guide: 'Showing the way', carpool: 'Sharing a drive' }
+const KIND_LABEL: Record<PartnerKind, string> = { newcomer: 'Someone to show me how', guide: 'Showing someone how', carpool: 'Sharing a drive' }
 const ROLES: { id: CarpoolRole; label: string }[] = [
   { id: 'driver', label: "I'd drive" }, { id: 'rider', label: "I'd ride along" }, { id: 'either', label: 'Either' },
 ]
-const COPY: Record<PartnerKind, { ways: string; trip: string; note: string; submit: string; privacy: string; doneTitle: string; doneBody: string }> = {
+const COPY: Record<PartnerKind, { ways: string; trip: string; note: string; submit: string; privacy: string; doneTitle: string; doneBody: (ways: PartnerWay[]) => string }> = {
   newcomer: {
     ways: 'What would you like to try?',
     trip: 'Which trip?',
@@ -41,7 +41,7 @@ const COPY: Record<PartnerKind, { ways: string; trip: string; note: string; subm
     submit: 'Find someone to go with',
     privacy: 'You each see the other’s email only after you both say yes.',
     doneTitle: 'Thanks, you’re signed up',
-    doneBody: 'We’ll email you when someone who makes this trip can show you the way.',
+    doneBody: (w) => `We’ll email you when we find someone who already ${waysText(w, 'does')} from near your home to near your work, and can go with you.`,
   },
   guide: {
     ways: 'How do you get around?',
@@ -50,7 +50,7 @@ const COPY: Record<PartnerKind, { ways: string; trip: string; note: string; subm
     submit: 'Count me in',
     privacy: 'You each see the other’s email only after you both say yes.',
     doneTitle: 'Thank you',
-    doneBody: 'We’ll email you when someone wants to try a trip like yours. You decide whether to say yes.',
+    doneBody: (w) => `We’ll email you when someone who lives near you and works near your work wants to start ${waysText(w, 'ing')}. You decide whether to say yes.`,
   },
   carpool: {
     ways: '',
@@ -59,7 +59,7 @@ const COPY: Record<PartnerKind, { ways: string; trip: string; note: string; subm
     submit: 'Find a carpool partner',
     privacy: 'Your answers stay private. Emails are shared only after you both say yes.',
     doneTitle: 'Thanks, you’re signed up',
-    doneBody: 'We’ll email you when Shift finds someone whose drive fits yours.',
+    doneBody: () => 'We’ll email you when Shift finds someone who lives near you, works near your work and keeps similar hours.',
   },
 }
 
@@ -225,7 +225,7 @@ export default function TogetherPage() {
           <h1 className="font-display text-[clamp(26px,3.6vw,32px)] font-extrabold">
             {saved && saved.matches === 0 ? COPY[saved.kind].doneTitle : 'You\u2019re signed up'}
           </h1>
-          {saved && saved.matches === 0 ? <p className="mt-1 text-[16px] text-(--ev-ink-85)">{COPY[saved.kind].doneBody}</p> : null}
+          {saved && saved.matches === 0 ? <p className="mt-1 text-[16px] text-(--ev-ink-85)">{COPY[saved.kind].doneBody(saved.ways)}</p> : null}
           <ul className="mt-4 grid gap-3">
             {requests.map((r) => {
               const Icon = KIND_ICON[r.kind]
@@ -422,7 +422,7 @@ function Saved({ matches }: { matches: number }) {
       <span className="flex items-start gap-3">
         <CheckCircle2 className="mt-0.5 h-6 w-6 shrink-0" aria-hidden />
         <span className="grid grid-cols-1 gap-1">
-          <strong className="text-[17px]">{matches === 1 ? 'Shift found someone who makes a trip like yours' : `Shift found ${matches} people who make a trip like yours`}</strong>
+          <strong className="text-[17px]">{matches === 1 ? 'Shift found someone who lives near you and works near your work' : `Shift found ${matches} people who live near you and work near your work`}</strong>
           <span>
             Say yes to anyone you&rsquo;d like to go with.{' '}
             <Link href="/together/matches" className="font-semibold underline">See your matches</Link>

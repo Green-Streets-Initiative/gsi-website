@@ -39,7 +39,7 @@ function shortLine(m: Match): string {
   return way ? `Would like you to show them how to ${way}` : 'Would like to try your trip'
 }
 const MOSTLY: Record<string, string> = {
-  walk: 'Mostly walks', bike: 'Mostly bikes', transit: 'Mostly takes transit', micro: 'Mostly scooters and boards', drive: 'Mostly drives',
+  walk: 'Mostly walks', bike: 'Mostly bikes', transit: 'Mostly takes the bus or train', micro: 'Mostly scooters and boards', drive: 'Mostly drives',
 }
 const ROLE: Record<string, string> = { driver: 'Can drive', rider: 'Would ride along', either: 'Can drive or ride along' }
 const plural = (n: number, one: string, many: string) => (n === 1 ? one : many)
@@ -113,14 +113,14 @@ export default function MatchesPage() {
           <>
             <Card>
               <h2 className="font-display text-[22px] font-extrabold">No matches yet</h2>
-              <p className="mt-2 text-[16px] text-(--ev-ink-85)">We&rsquo;ll email you as soon as someone&rsquo;s trip fits yours.</p>
+              <p className="mt-2 text-[16px] text-(--ev-ink-85)">We&rsquo;ll email you when we find someone who lives near you, works near your work and goes at the same times.</p>
             </Card>
             <NextSteps kind={open.kind} ways={open.modes.filter(isWay)} source="matches" />
           </>
         ) : (
           <Card>
             <h2 className="font-display text-[22px] font-extrabold">No matches yet</h2>
-            <p className="mt-2 text-[16px] text-(--ev-ink-85)">Tell us your trip, and Shift looks for someone who makes one like it.</p>
+            <p className="mt-2 text-[16px] text-(--ev-ink-85)">Tell us where and when you go, and Shift looks for someone nearby who goes at the same times.</p>
             <Link href="/together" className="mt-4 inline-flex min-h-[44px] items-center rounded-[10px] bg-(--ev-accent-fill) px-4 text-[15px] font-semibold text-(--ev-on-accent-fill)">
               Sign up
             </Link>

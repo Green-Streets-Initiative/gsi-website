@@ -24,8 +24,8 @@ type State = { phase: Phase; userId: string | null; email: string | null; notice
 const Ctx = createContext<State | null>(null)
 
 const WAYS_TO_GO: { label: string; Icon: LucideIcon }[] = [
-  { label: 'Go with someone who knows the way', Icon: Sprout },
-  { label: 'Show someone the way', Icon: UsersRound },
+  { label: 'Have someone show you how to bike, walk or take transit', Icon: Sprout },
+  { label: 'Show someone how you bike, walk or take transit', Icon: UsersRound },
   { label: 'Find a carpool partner', Icon: Car },
 ]
 
@@ -155,7 +155,7 @@ function SubBar() {
 
 const STEPS: { title: string; hint: string; Icon: LucideIcon }[] = [
   { title: 'Tell us your trip', hint: 'What you\u2019d like to do, and where and when you go.', Icon: MapPinned },
-  { title: 'We find a match', hint: 'Someone nearby who makes a trip like yours.', Icon: UsersRound },
+  { title: 'We find a match', hint: 'Someone who lives near you, works near your work and goes at the same times.', Icon: UsersRound },
   { title: 'You both say yes', hint: 'Then you see each other\u2019s email and plan the first trip.', Icon: Handshake },
 ]
 

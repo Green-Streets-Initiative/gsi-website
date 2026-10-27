@@ -21,6 +21,16 @@ export const WAYS: { id: PartnerWay; label: string }[] = [
   { id: 'transit', label: 'Bus or train' },
   { id: 'micro', label: 'Scooter or board' },
 ]
+/** The way in plain words, for copy that names it (Keith 2026-10-27: "TRY WHAT?! Please be specific."). */
+const WAY_DO: Record<PartnerWay, string> = { bike: 'bike', walk: 'walk', transit: 'take the bus or train', micro: 'ride a scooter' }
+const WAY_DOES: Record<PartnerWay, string> = { bike: 'bikes', walk: 'walks', transit: 'takes the bus or train', micro: 'rides a scooter' }
+const WAY_ING: Record<PartnerWay, string> = { bike: 'biking', walk: 'walking', transit: 'taking the bus or train', micro: 'riding a scooter' }
+/** "bike", "bike or walk", "biking, walking or riding a scooter"; with no way picked, the three main ones. */
+export function waysText(ways: PartnerWay[], form: 'do' | 'does' | 'ing'): string {
+  const list: PartnerWay[] = ways.length ? ways : ['bike', 'walk', 'transit']
+  const words = list.map((w) => ({ do: WAY_DO, does: WAY_DOES, ing: WAY_ING }[form])[w])
+  return words.length === 1 ? words[0] : `${words.slice(0, -1).join(', ')} or ${words[words.length - 1]}`
+}
 export const isWay = (m: string): m is PartnerWay => m === 'bike' || m === 'walk' || m === 'transit' || m === 'micro'
 export const DAYS: { id: PartnerDay; label: string }[] = [
   { id: 'mon', label: 'Mon' }, { id: 'tue', label: 'Tue' }, { id: 'wed', label: 'Wed' },
