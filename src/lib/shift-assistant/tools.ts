@@ -67,10 +67,10 @@ export type TripCard = {
 }
 
 /** Screens added after the first release: offered only to builds that list them. */
-const NEWER_SCREENS = new Set(['trip', 'trip_history', 'my_rewards', 'notifications', 'vacation', 'partner_request', 'partner_matches'])
+const NEWER_SCREENS = new Set(['trip', 'trip_history', 'my_rewards', 'notifications', 'vacation', 'partner_request', 'partner_matches', 'bike_confidence'])
 const canOpen = (ctx: ToolCtx, screen: string) => !NEWER_SCREENS.has(screen) || !!ctx.screens?.has(screen)
 
-const SCREENS = ['commute', 'commute_setup', 'around_you', 'rides', 'event', 'ride', 'rewards', 'log_trip', 'ride_plan', 'trip', 'trip_history', 'my_rewards', 'notifications', 'vacation', 'partner_request', 'partner_matches'] as const
+const SCREENS = ['commute', 'commute_setup', 'around_you', 'rides', 'event', 'ride', 'rewards', 'log_trip', 'ride_plan', 'trip', 'trip_history', 'my_rewards', 'notifications', 'vacation', 'partner_request', 'partner_matches', 'bike_confidence'] as const
 type Screen = (typeof SCREENS)[number]
 
 const FUNCTIONS = `${(process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').replace(/\/$/, '')}/functions/v1`
@@ -261,7 +261,7 @@ export const TOOLS: Anthropic.Tool[] = [
   ...RIDE_PLAN_TOOLS,
   {
     name: 'open_screen',
-    description: "A button to a screen of the Shift app, for things done there: commute (their saved commute), commute_setup (set home and work), around_you (the map of what's near them), rides (group rides and events), event or ride (one of them, by id), rewards (rewards they've won), log_trip (log a trip by hand), ride_plan (a Shift Together first ride plan, by its match_id), trip (one recorded trip, by its id from get_my_activity, where they can change how they traveled), trip_history (all their trips), my_rewards (rewards they've won), notifications (notification settings), vacation (pause tracking while away), partner_request (Shift Together sign-up: kind newcomer = go with someone who knows the way, guide = show someone the way, carpool = share the drive to work; mode bike, walk or transit, not for carpool), partner_matches (their Shift Together matches, where they also end a match or report a problem).",
+    description: "A button to a screen of the Shift app, for things done there: commute (their saved commute), commute_setup (set home and work), around_you (the map of what's near them), rides (group rides and events), event or ride (one of them, by id), rewards (rewards they've won), log_trip (log a trip by hand), ride_plan (a Shift Together first ride plan, by its match_id), trip (one recorded trip, by its id from get_my_activity, where they can change how they traveled), trip_history (all their trips), my_rewards (rewards they've won), notifications (notification settings), vacation (pause tracking while away), partner_request (Shift Together sign-up: kind newcomer = go with someone who knows the way, guide = show someone the way, carpool = share the drive to work; mode bike, walk or transit, not for carpool), partner_matches (their Shift Together matches, where they also end a match or report a problem). Also bike_confidence: \"How do you feel about biking there?\", which sends them to the first step that fits (go, a guide, a free road riding lesson near Somerville, or learn-to-ride classes).",
     input_schema: {
       type: 'object',
       properties: {
@@ -269,6 +269,7 @@ export const TOOLS: Anthropic.Tool[] = [
         id: nullable('string', 'For event (an id from find_rides_and_events), ride, ride_plan (the match_id), or trip (an id from get_my_activity).'),
         kind: nullable('string', 'partner_request only: newcomer, guide or carpool.'),
         mode: nullable('string', 'partner_request only: bike, walk or transit.'),
+        answer: nullable('string', 'bike_confidence only: ready, company, nervous or learn, when they already said which.'),
         label: { type: 'string', description: 'The button text, a few words with a verb ("See your commute").' },
       },
       required: ['screen', 'label'],
@@ -556,7 +557,9 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
           ? input.kind === 'carpool'
             ? { kind: 'carpool' }
             : { kind: input.kind === 'guide' ? 'guide' : 'newcomer', ...(['bike', 'walk', 'transit'].includes(String(input.mode)) ? { mode: String(input.mode) } : {}) }
-          : id ? (screen === 'ride_plan' ? { match: id } : { id }) : null
+          : screen === 'bike_confidence'
+            ? (['ready', 'company', 'nervous', 'learn'].includes(String(input.answer)) ? { answer: String(input.answer) } : null)
+            : id ? (screen === 'ride_plan' ? { match: id } : { id }) : null
         return ok({ shown: true, next: 'The button shows under your reply. Now write the reply itself: what you found, in words (for events: name, day and time, where, how far). Do not mention the button.' }, { screen, ...(params ? { params } : {}), label: String(input.label || 'Open').slice(0, 40) })
       }
       case 'get_ride_plan':
