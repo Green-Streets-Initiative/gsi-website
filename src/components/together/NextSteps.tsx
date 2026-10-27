@@ -37,20 +37,28 @@ export default function NextSteps({ kind, ways, source }: { kind: PartnerKind; w
     <section aria-labelledby="together-meanwhile" className="grid grid-cols-1 gap-3">
       <h2 id="together-meanwhile" className="font-display text-[22px] font-extrabold">While you wait</h2>
       {kind === 'newcomer' && ways.includes('bike') ? <LessonCard /> : null}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+      <div className={kind === 'carpool' ? 'grid grid-cols-1 gap-3 sm:max-w-[320px]' : 'grid grid-cols-1 gap-3 sm:grid-cols-3'}>
         {kind !== 'carpool' ? (
           <Tile Icon={MapPinned} title="Plan your route" sub={PLAN_SUB[way]} href="/nearby?plan=1" onClick={() => track('together_plan_opened', { source })} />
         ) : null}
-        <Tile
-          Icon={copied ? Check : Link2}
-          title={kind === 'guide' ? 'Invite someone who’d like to try' : kind === 'carpool' ? 'Invite someone who drives your way' : 'Bring someone you know'}
-          sub={copied ? 'Link copied. Send it to them.' : 'Copy a link to this page to send them.'}
-          onClick={() => void invite()}
-        />
+        {/* Why invite: a friend who already makes the trip can be your match, or someone who'd like to try can be the guide's.
+            Not for a carpool: anyone who already drives your way, you'd simply ask (Keith 2026-10-27). */}
+        {kind !== 'carpool' ? (
+          <Tile
+            Icon={copied ? Check : Link2}
+            title={kind === 'guide' ? 'Know someone who\u2019d like to try?' : 'Ask a friend who makes this trip'}
+            sub={copied
+              ? 'Link copied. Send it to them.'
+              : kind === 'guide'
+                ? 'Send them this page. If they sign up, Shift can match you.'
+                : 'Send them this page, and they can sign up to go with you.'}
+            onClick={() => void invite()}
+          />
+        ) : null}
         <Tile
           Icon={Smartphone}
           title="Get the Shift app"
-          sub="Plan the first trip with your match, and count every trip."
+          sub={kind === 'carpool' ? 'Plan trips and count every one.' : 'Plan the first trip with your match, and count every trip.'}
           href="https://shift.gogreenstreets.org/get"
           onClick={() => track('together_get_app', { source })}
         />

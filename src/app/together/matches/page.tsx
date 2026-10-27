@@ -30,10 +30,13 @@ const REASONS: { id: ReportReason; label: string }[] = [
   { id: 'unsafe', label: 'I felt unsafe' },
   { id: 'other', label: 'Something else' },
 ]
-const SHORT: Record<Match['my_kind'], string> = {
-  newcomer: 'Can show you the way',
-  guide: 'Would like to try your trip',
-  carpool: 'Could share the drive',
+// Plain words, as in the match notice (01462; Keith 2026-10-27: "too euphemistic").
+const DO: Record<string, string> = { bike: 'bike', walk: 'walk', transit: 'take the bus or train', micro: 'ride a scooter' }
+function shortLine(m: Match): string {
+  if (m.my_kind === 'carpool') return 'Could share your drive'
+  const way = DO[m.other.shared_modes?.[0] ?? (m.my_kind === 'guide' ? m.other.modes[0] : '') ?? ''] ?? null
+  if (m.my_kind === 'newcomer') return way ? `Can show you how to ${way}` : 'Makes a trip like yours'
+  return way ? `Would like you to show them how to ${way}` : 'Would like to try your trip'
 }
 const MOSTLY: Record<string, string> = {
   walk: 'Mostly walks', bike: 'Mostly bikes', transit: 'Mostly takes transit', micro: 'Mostly scooters and boards', drive: 'Mostly drives',
@@ -171,7 +174,7 @@ function MatchCard({ m, busy, myArrive, onAnswer, onWent, onRate, onEnd, onRepor
   const fullName = connected && m.other.last_initial ? `${name} ${m.other.last_initial}.` : name
   const askWent = m.status === 'connected' && !!m.connected_at && now - new Date(m.connected_at).getTime() > 24 * 3600_000
   const carpool = m.my_kind === 'carpool'
-  const eyebrow = m.status === 'went_together' ? 'You went together' : connected ? 'You both said yes' : SHORT[m.my_kind]
+  const eyebrow = m.status === 'went_together' ? 'You went together' : connected ? 'You both said yes' : shortLine(m)
   const overall = m.status === 'proposed' ? overallFit(m, myArrive) : null
   const since = m.other.member_since ? new Date(m.other.member_since).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : null
   const timing = timingFit(m, myArrive)
