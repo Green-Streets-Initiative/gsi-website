@@ -237,6 +237,12 @@ export default function PrivacyPage() {
                 tap Approve.
               </P>
               <P>
+                If you tap Remind me for a trip, we keep its start, destination and time with that
+                conversation. We send the reminder, then look at your trips from around that time
+                for one that starts or ends near those places, to tell you it counted. Deleting the
+                conversation deletes the reminder.
+              </P>
+              <P>
                 If you attach a picture, such as a screenshot, the assistant looks at it to answer
                 you. It is stored privately with that conversation and deleted with it. If you
                 report a problem, the Green Streets team sees the picture with your report. If you

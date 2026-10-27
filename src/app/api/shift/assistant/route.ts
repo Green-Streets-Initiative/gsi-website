@@ -32,7 +32,7 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { choicesFilter, splitChoices } from '@/lib/assistant/choices'
 import { SYSTEM_PROMPT, contextBlock, screenLabel } from '@/lib/shift-assistant/prompt'
-import { ACTIVITY, NEEDS_APPROVAL, TOOLS, approvalCard, runApproved, runTool, type ApprovalCard, type ToolCtx, type ToolResult, type TripCard } from '@/lib/shift-assistant/tools'
+import { ACTIVITY, NEEDS_APPROVAL, approvalCard, toolsFor, runApproved, runTool, type ApprovalCard, type ToolCtx, type ToolResult, type TripCard } from '@/lib/shift-assistant/tools'
 import { inServiceArea } from '@/lib/server/trip'
 import { claimUpload, foldersIn, imageMark, inboxPath, lastImage, markedPath, removeFolders, signedUrls, withImages } from '@/lib/shift-assistant/uploads'
 
@@ -342,7 +342,7 @@ export async function POST(request: Request) {
     ? { lat: Math.round(hereLat * 1e3) / 1e3, lng: Math.round(hereLng * 1e3) / 1e3 }
     : null
   const screens = new Set(Array.isArray(body?.screens) ? body.screens.filter((x): x is string => typeof x === 'string').slice(0, 30) : [])
-  const ctx: ToolCtx = { user: userClient, admin, token, userId: user.id, email: user.email ?? user.id, here, screens }
+  const ctx: ToolCtx = { user: userClient, admin, token, userId: user.id, email: user.email ?? user.id, here, screens, threadId }
 
   const encoder = new TextEncoder()
   const stream = new ReadableStream({
@@ -438,7 +438,13 @@ export async function POST(request: Request) {
         const client = new Anthropic()
         // With the time, so "today at 11 AM" can be seen to be over at 4 PM.
         const today = new Date().toLocaleString('en-US', { timeZone: 'America/New_York', weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })
-        const tools = TOOLS.map((t, i) => (i === TOOLS.length - 1 ? { ...t, cache_control: { type: 'ephemeral' as const } } : t))
+        const offered = toolsFor(ctx)
+        const tools = offered.map((t, i) => (i === offered.length - 1 ? { ...t, cache_control: { type: 'ephemeral' as const } } : t))
+        // Reminders they asked for (01465), so the assistant knows what's set and can cancel one.
+        const { data: plans } = await admin.from('member_assistant_plans').select('id, way, to_name, leave_at')
+          .eq('user_id', user.id).in('status', ['set', 'reminded']).gt('leave_at', new Date().toISOString()).order('leave_at').limit(5)
+        const reminders = ((plans ?? []) as { id: string; way: string; to_name: string; leave_at: string }[]).map((r) =>
+          `${new Date(r.leave_at).toLocaleString('en-US', { timeZone: 'America/New_York', weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}, ${r.way} to ${r.to_name} (id ${r.id})`)
         // Text from a later step starts a new paragraph, not the end of the last sentence.
         let wroteBefore = false
         const pictures = new Map<string, { media_type: string; data: string } | null>()
@@ -455,7 +461,7 @@ export async function POST(request: Request) {
             output_config: { effort: 'medium' },
             system: [
               { type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } },
-              { type: 'text', text: contextBlock({ today, firstName, screen: planNote ?? screenLabel(body?.screen), here }) },
+              { type: 'text', text: contextBlock({ today, firstName, screen: planNote ?? screenLabel(body?.screen), here, reminders }) },
             ],
             tools: tools as Anthropic.Beta.BetaToolUnion[],
             cache_control: { type: 'ephemeral' },

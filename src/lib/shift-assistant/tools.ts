@@ -38,6 +38,8 @@ export type ToolCtx = {
   email: string
   /** Where the phone is, when the app shared it for this question. */
   here?: { lat: number; lng: number } | null
+  /** This conversation, so a reminder can come back to it. */
+  threadId?: string
   /** Newer screens the person's app build can open; older builds send none. */
   screens?: Set<string>
   /** The newest picture they attached in this conversation, sent with a problem report. */
@@ -114,6 +116,14 @@ function thinLine(encoded: string | null | undefined, max = 60): string | null {
   return encodePolyline(Array.from({ length: max }, (_, i) => pts[Math.round(i * step)]))
 }
 const fail = (error: string): ToolResult => ({ content: { error }, isError: true })
+
+/** Reminders need a build whose notice opens the conversation (Shift lib/assistant.ts "plans"). */
+const PLAN_TOOLS = new Set(['set_reminder', 'cancel_reminder'])
+export function toolsFor(ctx: ToolCtx): Anthropic.Tool[] {
+  return ctx.screens?.has('plans') ? TOOLS : TOOLS.filter((t) => !PLAN_TOOLS.has(t.name))
+}
+const WAY_WORDS: Record<string, string> = { walk: 'Walk', bike: 'Bike', transit: 'Transit' }
+const MAX_OPEN_PLANS = 5
 const nullable = (t: string, description?: string) => ({ type: [t, 'null'], ...(description ? { description } : {}) })
 
 const placeSchema = {
@@ -126,6 +136,7 @@ const placeSchema = {
 /** Label shown while a tool runs. Tools missing here run without a line. */
 export const ACTIVITY: Record<string, string> = {
   get_my_places: 'Reading your places',
+  cancel_reminder: 'Cancelling the reminder',
   compare_ways: 'Comparing ways to get there',
   check_trip: 'Checking the trip',
   get_weather: 'Checking the forecast',
@@ -140,11 +151,15 @@ export const ACTIVITY: Record<string, string> = {
   find_bikes_to_try: 'Looking for bikes to try',
   find_roams: 'Looking for routes to explore',
   get_roam: 'Reading the route',
+  // Shown once they approve the card.
+  save_place: 'Saving the place',
+  change_settings: 'Saving your settings',
+  set_reminder: 'Setting your reminder',
   ...RIDE_PLAN_ACTIVITY,
 }
 
 /** Tools that save something: the turn pauses on a card until the person approves. */
-export const NEEDS_APPROVAL = new Set([...RIDE_PLAN_NEEDS_APPROVAL, 'save_place', 'change_settings'])
+export const NEEDS_APPROVAL = new Set([...RIDE_PLAN_NEEDS_APPROVAL, 'save_place', 'change_settings', 'set_reminder'])
 
 export type ApprovalCard = RidePlanCard & { confirmText?: string }
 
@@ -342,6 +357,26 @@ export const TOOLS: Anthropic.Tool[] = [
       },
       required: ['screen', 'label'],
     },
+  },
+  {
+    name: 'set_reminder',
+    description: "Offer to follow through on one trip they settled on for a day and time: a phone reminder an hour before they leave with the forecast, and a check-in here after (it notices when Shift records the trip). Shows them a card; nothing is set until they tap Remind me. Only when they said yes to your offer.",
+    input_schema: {
+      type: 'object',
+      properties: {
+        way: { type: 'string', enum: ['walk', 'bike', 'transit'] },
+        from: placeSchema,
+        to: placeSchema,
+        date: { type: 'string', description: 'YYYY-MM-DD, the day they go.' },
+        leave_time: { type: 'string', description: 'HH:MM, 24-hour, Eastern time, when they leave.' },
+      },
+      required: ['way', 'from', 'to', 'date', 'leave_time'],
+    },
+  },
+  {
+    name: 'cancel_reminder',
+    description: 'Call off a reminder they asked for, by its id from the context ("Reminders they asked for").',
+    input_schema: { type: 'object', properties: { id: { type: 'string' } }, required: ['id'] },
   },
   {
     name: 'note_feedback',
@@ -892,6 +927,13 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
           next: 'Answer what they asked (how long, where it starts, how to get there) in a sentence or two; any closure first. To get them to the start, pass start to check_trip.',
         }, link)
       }
+      case 'cancel_reminder': {
+        const id = String(input.id ?? '')
+        if (!/^[0-9a-f-]{36}$/i.test(id)) return fail('Use the id from "Reminders they asked for".')
+        const { data } = await ctx.admin.from('member_assistant_plans').update({ status: 'cancelled', closed_at: new Date().toISOString() })
+          .eq('id', id).eq('user_id', ctx.userId).in('status', ['set', 'reminded']).select('id').maybeSingle()
+        return data ? ok({ cancelled: true }) : fail('That reminder is already done or cancelled.')
+      }
       case 'note_feedback': {
         // A picture they attached goes with it, as a link that works for a week.
         const shot = ctx.screenshot ? (await signedUrls(ctx.admin, [ctx.screenshot], 7 * 86_400)).get(ctx.screenshot) ?? null : null
@@ -915,6 +957,35 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
 export async function approvalCard(ctx: ToolCtx, name: string, input: Record<string, unknown>):
   Promise<{ card: ApprovalCard; input: Record<string, unknown> } | { result: ToolResult }> {
   if (RIDE_PLAN_NEEDS_APPROVAL.has(name)) return ridePlanCard(ctx, name, input)
+  if (name === 'set_reminder') {
+    const from = asPlace(input.from)
+    const to = asPlace(input.to)
+    const way = ['walk', 'bike', 'transit'].includes(String(input.way)) ? String(input.way) : null
+    if (!from || !to || !way) return { result: fail('A reminder needs the way, both places with coordinates, a day and a time.') }
+    const leave = bostonIso(String(input.date ?? ''), String(input.leave_time ?? ''))
+    if (!leave) return { result: fail('Give the day as YYYY-MM-DD and the time as HH:MM.') }
+    const leaveMs = new Date(leave).getTime()
+    if (leaveMs < Date.now() + 20 * 60_000) return { result: fail('That is too soon for a reminder. Wish them a good trip instead.') }
+    if (leaveMs > Date.now() + 14 * 86400_000) return { result: fail('Reminders reach two weeks ahead. Offer one closer to the day.') }
+    const { count } = await ctx.admin.from('member_assistant_plans').select('id', { count: 'exact', head: true })
+      .eq('user_id', ctx.userId).in('status', ['set', 'reminded'])
+    if ((count ?? 0) >= MAX_OPEN_PLANS) return { result: fail(`They already have ${MAX_OPEN_PLANS} reminders coming up. Offer to cancel one first.`) }
+    // An hour ahead, or now when that hour has started.
+    const remind = new Date(Math.max(leaveMs - 3600_000, Date.now())).toISOString()
+    const fromName = (from.name ?? '').trim().slice(0, 80) || 'Start'
+    const toName = (to.name ?? '').trim().slice(0, 80) || 'Destination'
+    const weekday = (iso: string) => new Date(iso).toLocaleDateString('en-US', { timeZone: 'America/New_York', weekday: 'long' })
+    const clock = (iso: string) => new Date(iso).toLocaleTimeString('en-US', { timeZone: 'America/New_York', hour: 'numeric', minute: '2-digit' })
+    const sameDay = weekday(remind) === weekday(leave)
+    return {
+      card: {
+        title: `Remind me ${weekday(remind)} at ${clock(remind)}`,
+        lines: [`${WAY_WORDS[way]} to ${toName}, leaving ${sameDay ? '' : `${weekday(leave)} `}${clock(leave)}`, 'With the forecast, and a check-in after'],
+        cta: 'Remind me', tone: 'primary',
+      },
+      input: { way, from_name: fromName, from_lat: from.lat, from_lng: from.lng, to_name: toName, to_lat: to.lat, to_lng: to.lng, leave_at: leave, remind_at: remind },
+    }
+  }
   if (name === 'save_place') {
     const label = String(input.label ?? '').trim().slice(0, 40)
     const place = asPlace(input.place)
@@ -955,6 +1026,12 @@ export async function approvalCard(ctx: ToolCtx, name: string, input: Record<str
 export async function runApproved(ctx: ToolCtx, name: string, input: Record<string, unknown>): Promise<ToolResult> {
   try {
     if (RIDE_PLAN_NEEDS_APPROVAL.has(name)) return await runApprovedRidePlan(ctx, name, input)
+    if (name === 'set_reminder') {
+      if (!ctx.threadId) return fail("That reminder didn't save. Try again in a moment.")
+      const { error } = await ctx.admin.from('member_assistant_plans').insert({ ...input, user_id: ctx.userId, thread_id: ctx.threadId })
+      if (error) return fail("That reminder didn't save. Try again in a moment.")
+      return ok({ saved: true, note: 'Set. Say in a sentence when the reminder comes and that you will check in after. They can ask you to cancel it.' })
+    }
     if (name === 'save_place') {
       // As the app saves it (lib/queries.ts upsertSavedLocation): the same
       // row when the name exists, so a commute pointing at it follows.
