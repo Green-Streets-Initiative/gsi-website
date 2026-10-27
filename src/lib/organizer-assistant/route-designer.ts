@@ -159,7 +159,7 @@ interface BikeParkingPoint { lat: number; lng: number; capacity: number | null; 
  * OpenStreetMap (Shift 01425, filled by the OSM ledger job). Private racks
  * are left out. null when the table can't be read.
  */
-async function bikeParkingNear(points: LatLng[], radiusM: number): Promise<BikeParkingPoint[] | null> {
+export async function bikeParkingNear(points: LatLng[], radiusM: number): Promise<BikeParkingPoint[] | null> {
   if (points.length === 0) return []
   const db = createServerSupabaseClient()
   const dLat = radiusM / 111_000

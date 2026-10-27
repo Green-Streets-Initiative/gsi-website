@@ -11,7 +11,8 @@ import { todayKey } from '@/lib/organizers/ride-words'
 import { getTownCivicEvents, getTownDirectory, getTownResources, townSlug } from '@/lib/towns/queries'
 import { dayLabel, fetchDisruptions, fetchElevatorClosures, routeIdsForLabels, type Disruption } from '@/lib/nearby/disruptions'
 import { fetchRideWithGps } from '@/lib/organizers/rwgps'
-import { summarizeRoute } from '@/lib/organizer-assistant/route-designer'
+import { bikeParkingNear, summarizeRoute } from '@/lib/organizer-assistant/route-designer'
+import { myChallenges, myWorkplace, officeAt, workplaceFacts } from '@/lib/shift-assistant/my-challenges'
 import { signedUrls } from '@/lib/shift-assistant/uploads'
 import { ALWAYS as FARES_FOR_EVERYONE, fareProgram, farePrograms } from '@/lib/facts/fare-programs'
 import { PRICES, usd } from '@/lib/facts/prices'
@@ -147,6 +148,8 @@ export const ACTIVITY: Record<string, string> = {
   find_rides_and_events: 'Looking for rides and events',
   get_service_alerts: 'Checking service alerts',
   get_my_activity: 'Reading your trips and rewards',
+  get_my_challenges: 'Checking your challenges',
+  get_my_workplace: 'Reading your workplace benefits',
   get_my_settings: 'Reading your settings',
   get_town_info: 'Looking up your town',
   check_route_link: 'Reading the route',
@@ -259,6 +262,16 @@ export const TOOLS: Anthropic.Tool[] = [
     input_schema: { type: 'object', properties: {} },
   },
   {
+    name: 'get_my_challenges',
+    description: "Their challenges and where they stand: workplace challenges (what counts, how many of their trips count so far, each prize, how to win it, trips to go, spots left, Try something new prizes, their place on the leaderboard, who to ask), Walk/Ride Day and other Shift challenges they joined or can join, and each of their groups this month (their town, neighborhood, workplace or school: its place against others, shifted trips to pass the next one, their own trips and place among members). Use for \"how's my challenge going\", \"how many more trips\", \"what can I win\", \"what counts\", \"is my town winning\".",
+    input_schema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'get_my_workplace',
+    description: "Their employer's commute benefits, when their employer offers Shift's commute program: help paying for transit, a bike share membership, bike parking, showers, what parking costs, shuttles, other perks, who to ask, and the offices with their usual start times. Use for anything about getting to work, \"does my job pay for my T pass\", \"is there somewhere to lock my bike at work\". Says so when they have none.",
+    input_schema: { type: 'object', properties: {} },
+  },
+  {
     name: 'save_place',
     description: "Save one of the person's places (Work, School, Gym, a friend's, any name they give) so trips and the commute can use it. Saving a name they already have moves that place. Not for Home: a new home changes their town and neighborhood groups, so send them to commute_setup for that. The person approves on a card first.",
     input_schema: {
@@ -348,12 +361,12 @@ export const TOOLS: Anthropic.Tool[] = [
   ...RIDE_PLAN_TOOLS,
   {
     name: 'open_screen',
-    description: "A button to a screen of the Shift app, for things done there: commute (their saved commute), commute_setup (set home and work), around_you (the map of what's near them), rides (group rides and events), event or ride (one of them, by id), rewards (rewards they've won), log_trip (log a trip by hand), ride_plan (a Shift Together first ride plan, by its match_id), trip (one recorded trip, by its id from get_my_activity, where they can change how they traveled), trip_history (all their trips), my_rewards (rewards they've won), notifications (notification settings), vacation (pause tracking while away), partner_request (Shift Together sign-up: kind newcomer = go with someone who knows the way, guide = show someone the way, carpool = share the drive to work; mode bike, walk or transit, not for carpool), partner_matches (their Shift Together matches, where they also end a match or report a problem). Also bike_confidence: \"How do you feel about biking there?\", which sends them to the first step that fits (go, a guide, a free road riding lesson near Somerville, or learn-to-ride classes).",
+    description: "A button to a screen of the Shift app, for things done there: commute (their saved commute), commute_setup (set home and work), around_you (the map of what's near them), rides (group rides and events), event or ride (one of them, by id; event also opens a challenge by its id from get_my_challenges), rewards (rewards they've won), log_trip (log a trip by hand), ride_plan (a Shift Together first ride plan, by its match_id), trip (one recorded trip, by its id from get_my_activity, where they can change how they traveled), trip_history (all their trips), my_rewards (rewards they've won), notifications (notification settings), vacation (pause tracking while away), partner_request (Shift Together sign-up: kind newcomer = go with someone who knows the way, guide = show someone the way, carpool = share the drive to work; mode bike, walk or transit, not for carpool), partner_matches (their Shift Together matches, where they also end a match or report a problem). Also bike_confidence: \"How do you feel about biking there?\", which sends them to the first step that fits (go, a guide, a free road riding lesson near Somerville, or learn-to-ride classes).",
     input_schema: {
       type: 'object',
       properties: {
         screen: { type: 'string', enum: [...SCREENS] },
-        id: nullable('string', 'For event (an id from find_rides_and_events), ride, ride_plan (the match_id), or trip (an id from get_my_activity).'),
+        id: nullable('string', 'For event (an id from find_rides_and_events, or a challenge id from get_my_challenges), ride, ride_plan (the match_id), or trip (an id from get_my_activity).'),
         kind: nullable('string', 'partner_request only: newcomer, guide or carpool.'),
         mode: nullable('string', 'partner_request only: bike, walk or transit.'),
         answer: nullable('string', 'bike_confidence only: ready, company, nervous or learn, when they already said which.'),
@@ -512,6 +525,7 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
         const arrive = typeof input.arrive_by === 'string' && /^\d{2}:\d{2}$/.test(input.arrive_by) ? input.arrive_by : null
         // The engine itself, as this person: two-part trips (bike to the
         // train, park and ride) are counted against their own hourly budget.
+        const workplaceQ = myWorkplace(ctx).catch(() => null)
         const res = await fetch(`${FUNCTIONS}/commute-advisor-compare`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, Authorization: `Bearer ${ctx.token}` },
@@ -549,7 +563,10 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
             ],
           },
         } : undefined
+        const workplace = await workplaceQ
+        const office = workplace ? officeAt(workplace, to.lat, to.lng) ?? officeAt(workplace, from.lat, from.lng) : null
         const result = ok({
+          ...(office && workplace ? { their_workplace: { ...workplaceFacts(workplace), this_office: office.address, note: "This trip is their commute. The monthly costs above don't include these benefits: say what they change (transit help lowers the transit cost, a bike share membership makes bike share free or cheaper, paid parking raises driving's cost) in one short sentence." } } : {}),
           ...(card ? { card: 'A comparison card shows under your reply: each way with its minutes and monthly cost side by side, the recommended one marked, and buttons for directions and the full trip. Write at most two short sentences with no minutes or dollar amounts (the card shows them): which way you would suggest for them and the one thing that tips it.' } : {}),
           miles: e.distance_miles != null ? round1(e.distance_miles) : null,
           recommended,
@@ -579,9 +596,11 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
           : new Date().toISOString()
         const way = input.way === 'walk' || input.way === 'bike' || input.way === 'transit' ? input.way : null
         // Walking for a walk up to about an hour, or whenever they asked about it.
-        const [r, walk] = await Promise.all([
+        const [r, walk, racks] = await Promise.all([
           getTrip(from, to, to.name ?? '', departAt),
           way === 'walk' || haversineMiles(from.lat, from.lng, to.lat, to.lng) <= 2.5 ? getWalk(from, to) : Promise.resolve(null),
+          // Racks within about a block of where they're going (OSM, Shift 01425).
+          way === 'walk' || way === 'transit' ? Promise.resolve(null) : bikeParkingNear([to], 120),
         ])
         // Service changes and broken elevators on this trip's own lines and
         // stations, so the answer reflects today rather than a normal day.
@@ -649,6 +668,9 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
               named_paths: r.bike_steps.map((s) => s.label),
               streets: (r.bike_comfort?.streets ?? []).slice(0, 8).map((s) => ({ street: s.label, kind: s.rating, miles: round1(s.distance_mi) })),
               calmer_or_quicker_option: r.bike_alt ? { minutes: r.bike_alt.minutes, overall: r.bike_alt.comfort?.rating ?? null } : null,
+              parking_at_the_end: racks == null ? null : racks.length === 0
+                ? 'No public bike racks mapped within a block. A sign post or railing may do; worth asking there.'
+                : { racks_within_a_block: racks.length, spaces: racks.reduce((a, s) => a + (s.capacity ?? 2), 0), covered: racks.filter((s) => s.covered).length },
             },
           },
           ...(showCard ? { trip } : {}),
@@ -735,7 +757,7 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
           : screen === 'bike_confidence'
             ? (['ready', 'company', 'nervous', 'learn'].includes(String(input.answer)) ? { answer: String(input.answer) } : null)
             : id ? (screen === 'ride_plan' ? { match: id } : screen === 'roam' ? { roamId: id } : { id }) : null
-        return ok({ shown: true, next: 'The button shows under your reply. Now write the reply itself: what you found, in words (for events: name, day and time, where, how far). Do not mention the button.' }, { screen, ...(params ? { params } : {}), label: String(input.label || 'Open').slice(0, 40) })
+        return ok({ shown: true, next: 'The button shows under your reply. Now write your whole answer to what they asked, with everything you found, not only what the button is for (for events: name, day and time, where, how far). Do not mention the button.' }, { screen, ...(params ? { params } : {}), label: String(input.label || 'Open').slice(0, 40) })
       }
       case 'get_ride_plan':
       case 'design_ride_plan_route':
@@ -766,9 +788,26 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
           status: r.status, status_means: ({ earned: 'won, waiting for them to pick a shop in My rewards', selected: 'shop picked, being prepared', fulfilling: 'being sent', delivered: 'delivered, in My rewards', failed: 'delivery failed; the team has been told', expired: 'expired before a shop was picked' } as Record<string, string>)[r.status] ?? r.status,
           shop: r.merchant?.name ?? null, won: r.earned_at?.slice(0, 10), expires: r.expires_at?.slice(0, 10), delivered: r.delivered_at?.slice(0, 10) ?? null,
         }))
-        const campaign = (c: unknown) => {
-          const v = (c ?? {}) as { flagged?: boolean; campaign_enabled?: boolean; status?: string; merchant_name?: string; expires_at?: string }
-          return v.flagged ? { status: v.status ?? null, shop: v.merchant_name ?? null, expires: v.expires_at?.slice(0, 10) ?? null } : null
+        const campaign = (c: unknown, who: string) => {
+          const v = (c ?? {}) as {
+            flagged?: boolean; campaign_enabled?: boolean; status?: string; merchant_name?: string; expires_at?: string; trip_count?: number; trips_required?: number
+            window_ends_at?: string; unlocked?: boolean; value_cents?: number; eligible_to_join?: boolean; campaign_full?: boolean; slots_remaining?: number
+            window_days?: number; needs_verification?: boolean; waitlisted?: boolean; min_walk_miles?: number; max_trips_per_day?: number
+          }
+          const reward = v.value_cents ? `$${Math.round(v.value_cents / 100)}` : null
+          if (v.flagged) return {
+            in_it: true, status: v.status ?? null, reward, unlocked: v.unlocked ?? null,
+            trips: v.trips_required ? `${v.trip_count ?? 0} of ${v.trips_required}` : null,
+            trips_to_go: v.trips_required && !v.unlocked ? Math.max(0, v.trips_required - (v.trip_count ?? 0)) : null,
+            window_ends: v.window_ends_at ? bostonWhen(v.window_ends_at) : null,
+            shortest_walk_that_counts_miles: v.min_walk_miles ?? null, most_trips_a_day: v.max_trips_per_day ?? null,
+            shop: v.merchant_name ?? null, expires: v.expires_at?.slice(0, 10) ?? null,
+          }
+          if (v.campaign_enabled && v.eligible_to_join && !v.campaign_full) return {
+            in_it: false, can_join: true, for: who, reward, trips_required: v.trips_required ?? null, days_to_do_it: v.window_days ?? null,
+            spots_left: v.slots_remaining ?? null, verify_first: v.needs_verification || undefined, waitlisted: v.waitlisted || undefined,
+          }
+          return null
         }
         const awards = ((awardsQ.data ?? {}) as { awards?: unknown[] }).awards ?? []
         return ok({
@@ -785,9 +824,15 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
           badges: { total: b.total_badges ?? 0, recent: (b.recent_badges ?? []).slice(0, 3).map((x) => x.name), next: b.next_badge?.name ? { name: b.next_badge.name, progress: `${b.next_badge.progress_current ?? 0} of ${b.next_badge.progress_target ?? '?'}` } : null },
           rewards,
           prizes_won: awards.length,
-          campaigns: { new_routes: campaign(nr.data), shift_your_semester: campaign(sem.data) },
+          campaigns: { new_routes: campaign(nr.data, 'people who just moved'), shift_your_semester: campaign(sem.data, 'college students, who verify a school email') },
           fixing_a_trip: 'To change how a trip was recorded, offer open_screen trip with its id; they change it there (within 7 days of the trip).',
         })
+      }
+      case 'get_my_challenges':
+        return ok(await myChallenges(ctx))
+      case 'get_my_workplace': {
+        const w = await myWorkplace(ctx)
+        return ok(w ? workplaceFacts(w) : { none: "Their employer doesn't offer Shift's commute program to them, so there are no workplace benefits on file. Their HR team knows what they offer." })
       }
       case 'get_town_info': {
         const asked = typeof input.town === 'string' ? input.town.trim().toLowerCase() : ''

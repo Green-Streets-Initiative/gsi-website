@@ -232,8 +232,10 @@ export default function PrivacyPage() {
               <P>
                 To answer, it reads your question, your saved places, your recent trips (times,
                 how you traveled, and &ldquo;Home&rdquo; or &ldquo;Work&rdquo;, not map points),
-                your points, badges and rewards, and your phone&apos;s location when you allow it,
-                rounded to about 100 meters. It saves a place or changes a setting only after you
+                your points, badges and rewards, your challenges and groups (your own count and
+                place, never other people&apos;s names), the commute benefits your employer set up in
+                Shift, if it offers Shift&apos;s commute program, and your phone&apos;s location when
+                you allow it, rounded to about 100 meters. It saves a place or changes a setting only after you
                 tap Approve.
               </P>
               <P>
