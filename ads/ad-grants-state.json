@@ -75,6 +75,11 @@
   ],
   "open_items": [
     {
+      "id": "bike-lessons-test",
+      "status": "GO from Keith 2026-10-28 ('let the Google Ad Grants agent know that they can start the learn to ride experiment'). The landing page https://www.gogreenstreets.org/bike-lessons is live and indexable; the free-lesson form works end to end (requests go to the Bicycle Riding School instructors, copying the owner, with a hidden copy to info@; out-of-area and sold-out requests go to info@ only). 10 free codes, 0 used. NEXT: add the two ad groups exactly as drafted in ads/drafts/bike-lessons-ad-groups-2026-10-27.md (How-to Guides campaign 24306480410: 'Bike lessons' -> /bike-lessons, 'Riding in traffic' -> /bike-lessons#street-lesson, with the negatives), then star free_lesson_code_requested in GA4 (property 551486918) and import it as a Primary conversion; lesson_alert_signup as Engagement. Ads UI changes run from an interactive chat (Claude in Chrome, Keith's Ecosia), same path as the 10-14 keyword adds: Keith says 'do ad grants: bike lessons'. The GA4 events appear only after the first real submission, so import may wait a day or two. Judge in April: pause an ad group under 5% CTR after 300 impressions.",
+      "what": "Ad Grants 'learn to ride' test: two ad groups in How-to Guides landing on /bike-lessons, judged on free_lesson_code_requested."
+    },
+    {
       "id": "brand-campaign",
       "status": "DONE 2026-09-30 (Claude uploaded after Keith's approval in chat); all 6 campaigns enabled. Judge from Oct 14 (14-day rule). 10-07: Brand 4 impr / 1 click MTD, 'Limited by search volume'; GSC brand week Sep 26-Oct 2 = 28 searches, 13 organic clicks. Expect Brand to stay small; How-to Guides is what carries CTR. JUDGED 10-14: Brand 8 impr / 1 click MTD, still 'Limited by search volume'; GSC Oct 3-9 brand searches 27 (green streets initiative 16/11 clicks, green streets 11/1). Organic already takes the brand clicks; keep Brand as a cheap presence, no changes.",
       "what": "GSI — Brand campaign, 2 ad groups, $30/day"
