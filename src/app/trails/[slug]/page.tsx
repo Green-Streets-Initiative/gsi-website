@@ -485,7 +485,7 @@ export default async function TrailPage({ params }: { params: Promise<{ slug: st
             <div className="mx-auto max-w-[1120px]">
               <h2 id="keep-going-h" className="font-serif text-[clamp(1.75rem,3.2vw,2.25rem)] font-normal leading-[1.1] text-navy">Keep going</h2>
               <p className="mt-2 max-w-[62ch] text-[1rem] leading-relaxed text-ink-soft">
-                The {t.name} joins other paths and protected bike lanes. Pick a direction to see it on the map.
+                The {t.name} {/s$/.test(t.name) ? 'join' : 'joins'} other paths and protected bike lanes. Pick a direction to see it on the map.
               </p>
               <RoamKeepGoing roamId={t.id} roamName={t.name} subject="trail" quiet places={places} route={null} routeLines={lines} rows={keepGoing} closed={closedLines} />
             </div>
