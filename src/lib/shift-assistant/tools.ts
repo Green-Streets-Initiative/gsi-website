@@ -631,6 +631,11 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
           const s = xs?.[0]
           return s ? { name: s.name, bikes: s.bikes_available ?? null, docks: s.docks_available ?? null, miles_away: round1(s.distance_miles) } : null
         }
+        // Transit their employer pays for outright comes off the transit cost on
+        // their commute (a pre-tax benefit only saves taxes, so it stays as is).
+        const b = office && workplace ? workplace.benefits : null
+        const paid = b && b.transit_subsidy_type !== 'pre_tax' ? Number(b.transit_subsidy_monthly) || 0 : 0
+        const netCost = (m: { mode: string; monthly_cost: number }) => (paid && m.mode === 'transit' ? Math.max(0, m.monthly_cost - paid) : m.monthly_cost)
         const ways = (e.modes ?? []).filter((m) => m.viable)
         const twoPart = (e.combos ?? []).filter((c) => c.qualifies !== false)
         const recommended = e.recommended_with_combos || e.recommended_mode || null
@@ -644,19 +649,22 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
             miles: e.distance_miles != null ? round1(e.distance_miles) : null,
             recommended,
             ways: [
-              ...ways.map((m) => ({ way: m.mode, minutes: m.time_minutes, minutes_up_to: m.time_minutes_max ?? null, monthly_cost: Math.round(m.monthly_cost) })),
+              ...ways.map((m) => ({ way: m.mode, minutes: m.time_minutes, minutes_up_to: m.time_minutes_max ?? null, monthly_cost: Math.round(netCost(m)) })),
               ...twoPart.map((c) => ({ way: c.kind, minutes: c.minutes_total, minutes_up_to: null, monthly_cost: Math.round(c.cost_per_day * 20) })),
             ],
           },
         } : undefined
         const result = ok({
-          ...(office && workplace ? { their_workplace: { ...workplaceFacts(workplace), this_office: office.address, note: "This trip is their commute. The monthly costs above don't include these benefits: say what they change (transit help lowers the transit cost, a bike share membership makes bike share free or cheaper) in one short sentence. Driving's cost already includes what parking costs them there." } } : {}),
+          ...(office && workplace ? { their_workplace: { ...workplaceFacts(workplace), this_office: office.address, note: paid
+            ? "This trip is their commute. Transit's monthly cost is already after what their employer pays toward it, and driving's includes what parking costs them there. A bike share membership from work makes bike share free or cheaper; say so in one short sentence when it matters."
+            : "This trip is their commute. The monthly costs above don't include these benefits: say what they change (a pre-tax transit benefit saves the taxes on the pass, a bike share membership makes bike share free or cheaper) in one short sentence. Driving's cost already includes what parking costs them there." } } : {}),
+          ...(paid ? { transit_before_employer_help: (e.modes ?? []).find((m) => m.mode === 'transit')?.monthly_cost ?? null } : {}),
           ...(vehicle ? { drive_priced_for: vehicle === 'ev' ? 'their electric car' : 'their hybrid' } : {}),
           ...(card ? { card: 'A comparison card shows under your reply: each way with its minutes and monthly cost side by side, the recommended one marked, and buttons for directions and the full trip. Write at most two short sentences with no minutes or dollar amounts (the card shows them): which way you would suggest for them and the one thing that tips it.' } : {}),
           miles: e.distance_miles != null ? round1(e.distance_miles) : null,
           recommended,
           ways: (e.modes ?? []).filter((m) => m.viable).map((m) => ({
-            way: m.mode, minutes: m.time_minutes, minutes_up_to: m.time_minutes_max ?? null, monthly_cost: m.monthly_cost, leave_by: m.leave_by ?? null, detail: m.detail,
+            way: m.mode, minutes: m.time_minutes, minutes_up_to: m.time_minutes_max ?? null, monthly_cost: netCost(m), leave_by: m.leave_by ?? null, detail: m.detail,
           })),
           two_part_trips: (e.combos ?? []).filter((c) => c.qualifies !== false).map((c) => ({
             way: c.kind, minutes: c.minutes_total, cost_per_day: c.cost_per_day, leave_by: c.leave_by, station: c.station?.name ?? null, how: c.summary,
