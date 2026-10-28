@@ -30,17 +30,25 @@ import {
   IMPACT_RANGE_LABEL,
   isImpactRangeKey,
   impactWindow,
+  customWindow,
+  isCustomDates,
+  easternDay,
+  rangeInSentence,
   dashboardRpcParams,
   formatCo2,
   formatPtsChange,
+  windowDays,
   windowLabelLong,
-  type ImpactRangeKey,
+  CUSTOM_RANGE_MIN,
+  type CustomDates,
+  type ImpactRangeChoice,
 } from '@/lib/impact-range'
 import { trendValues } from '@/lib/impact-sparkline'
 import ShiftRateChart from '@/components/employer/ShiftRateChart'
 
 const PORTAL = '/shift/employers/portal'
 const RANGE_KEY = 'portal.impact.range'
+const CUSTOM_KEY = 'portal.impact.custom'
 
 /** Below the headline numbers, one tab at a time (page charters, Keith
  *  2026-10-22: the first screen does the job; the rest sits a tab away). */
@@ -71,14 +79,28 @@ const MODE_ICON: Record<string, React.ElementType> = {
 /** Wall clock, kept out of render so the purity lint stays quiet. */
 const now = () => Date.now()
 
-function readSavedRange(): ImpactRangeKey {
+function readSavedRange(): ImpactRangeChoice {
   try {
     const v = typeof window !== 'undefined' ? window.sessionStorage.getItem(RANGE_KEY) : null
-    return isImpactRangeKey(v) ? v : 'last_30'
+    return isImpactRangeKey(v) || v === 'custom' ? v : 'last_30'
   } catch {
     return 'last_30'
   }
 }
+
+function readSavedCustom(): CustomDates | null {
+  try {
+    const raw = typeof window !== 'undefined' ? window.sessionStorage.getItem(CUSTOM_KEY) : null
+    const v: unknown = raw ? JSON.parse(raw) : null
+    return isCustomDates(v, now()) ? v : null
+  } catch {
+    return null
+  }
+}
+
+const dateInput =
+  'w-full rounded-[10px] border border-line bg-surface px-3.5 py-2.5 text-[15px] text-ink outline-none focus:border-accent'
+const dateLabel = 'mb-1.5 block text-[13px] font-semibold text-ink-muted'
 
 type Readout = { label: string; value: string; hint: string; sub?: ReactNode }
 
@@ -114,7 +136,7 @@ function formatGoalDate(iso: string): string {
 }
 
 export default function ImpactPage() {
-  const { group, memberCount, loading, isGsiAdmin } = usePortal()
+  const { group, memberCount, loading, isGsiAdmin, tierAtLeast } = usePortal()
   const searchParams = useSearchParams()
   const [tab, setTab] = useState<ImpactTab>(() => {
     const t = searchParams.get('tab')
@@ -130,7 +152,14 @@ export default function ImpactPage() {
 
   // This page owns its numbers. Home keeps the shared 30-day figures in the
   // context; nothing here writes to them (Keith 2026-09-30).
-  const [range, setRange] = useState<ImpactRangeKey>(readSavedRange)
+  const [savedRange, setRange] = useState<ImpactRangeChoice>(readSavedRange)
+  // Custom dates come with Basic and up (plans.ts). `custom` is the last
+  // valid pair and drives the numbers; `draft` is what the two fields show
+  // while someone is part-way through typing a date.
+  const canCustom = tierAtLeast('basic') || isGsiAdmin
+  const [custom, setCustom] = useState<CustomDates | null>(readSavedCustom)
+  const [draft, setDraft] = useState<CustomDates | null>(custom)
+  const range: ImpactRangeChoice = savedRange === 'custom' && (!canCustom || !custom) ? 'last_30' : savedRange
   const [dashboard, setDashboard] = useState<DashboardData | null>(null)
   const [dashboardError, setDashboardError] = useState<string | null>(null)
   const [fetching, setFetching] = useState(false)
@@ -138,7 +167,10 @@ export default function ImpactPage() {
   const [openingReport, setOpeningReport] = useState(false)
   const [reportError, setReportError] = useState<string | null>(null)
 
-  const win = useMemo(() => impactWindow(range, now()), [range])
+  const win = useMemo(
+    () => (range === 'custom' && custom ? customWindow(custom, now()) : impactWindow(range === 'custom' ? 'last_30' : range, now())),
+    [range, custom],
+  )
   const groupId = group?.id
 
   useEffect(() => {
@@ -150,7 +182,7 @@ export default function ImpactPage() {
     // off the page.
     Promise.all([
       supabase.rpc('get_employer_dashboard_data', dashboardRpcParams(groupId, win)),
-      supabase.rpc('get_employer_peer_benchmark', { p_group_id: groupId, p_days: win.days }),
+      supabase.rpc('get_employer_peer_benchmark', dashboardRpcParams(groupId, win)),
     ]).then(([dash, peers]) => {
       if (cancelled) return
       const data = dash.data as (DashboardData & { error?: string }) | null
@@ -174,12 +206,50 @@ export default function ImpactPage() {
     }
   }, [groupId, win])
 
-  function changeRange(next: ImpactRangeKey) {
+  function changeRange(next: ImpactRangeChoice) {
+    if (next === 'custom' && !custom) {
+      // Start from the dates already on screen, so the first view doesn't jump.
+      const { first } = windowDays(win.start, win.end)
+      const seed = { from: easternDay(Math.max(first.getTime(), Date.parse(`${CUSTOM_RANGE_MIN}T12:00:00Z`))), to: easternDay(now()) }
+      setCustom(seed)
+      setDraft(seed)
+      saveCustom(seed)
+    }
     setRange(next)
     try {
       window.sessionStorage.setItem(RANGE_KEY, next)
     } catch {}
   }
+
+  function saveCustom(c: CustomDates) {
+    try {
+      window.sessionStorage.setItem(CUSTOM_KEY, JSON.stringify(c))
+    } catch {}
+  }
+
+  /** A field changed: the numbers follow as soon as both dates make a real range. */
+  function changeDraft(next: CustomDates) {
+    setDraft(next)
+    if (isCustomDates(next, now())) {
+      setCustom(next)
+      saveCustom(next)
+    }
+  }
+  const today = easternDay(now())
+  const draftFrom = draft?.from ?? ''
+  const draftTo = draft?.to ?? ''
+  const draftError =
+    range !== 'custom' || isCustomDates({ from: draftFrom, to: draftTo }, now())
+      ? null
+      : !draftFrom || !draftTo
+        ? 'Pick both dates.'
+        : draftFrom > draftTo
+          ? 'The start date comes after the end date.'
+          : draftTo > today
+            ? "The end date can't be after today."
+            : draftFrom < CUSTOM_RANGE_MIN
+              ? 'Shift has workplace numbers from January 2025.'
+              : 'Pick two dates.'
 
   const modes = useMemo(() => {
     if (!dashboard?.mode_breakdown) return []
@@ -345,7 +415,7 @@ export default function ImpactPage() {
       const res = await fetch('/api/employer/report-link', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
-        body: JSON.stringify({ groupId: group.id, range }),
+        body: JSON.stringify({ groupId: group.id, range, ...(range === 'custom' && custom ? custom : {}) }),
       })
       const json = (await res.json().catch(() => null)) as { url?: string; error?: string } | null
       if (!res.ok || !json?.url) throw new Error(json?.error ?? `HTTP ${res.status}`)
@@ -389,7 +459,7 @@ export default function ImpactPage() {
               <Button
                 variant="secondary"
                 icon={MessageSquareText}
-                onClick={() => openAssistant(`Explain our results for ${rangeLabel.toLowerCase()}: what stands out, and what should we do about it?`)}
+                onClick={() => openAssistant(`Explain our results for ${rangeInSentence(win)}: what stands out, and what should we do about it?`)}
               >
                 Ask about these numbers
               </Button>
@@ -410,7 +480,10 @@ export default function ImpactPage() {
       <div className="flex flex-wrap items-center gap-3">
         <div inert={busy} className={busy ? 'opacity-60' : ''}>
           <SegmentedControl
-            options={IMPACT_RANGE_KEYS.map((k) => ({ value: k, label: IMPACT_RANGE_LABEL[k] }))}
+            options={[
+              ...IMPACT_RANGE_KEYS.map((k): { value: ImpactRangeChoice; label: string } => ({ value: k, label: IMPACT_RANGE_LABEL[k] })),
+              ...(canCustom ? [{ value: 'custom' as const, label: 'Custom dates' }] : []),
+            ]}
             value={range}
             onChange={changeRange}
             className="flex-wrap"
@@ -423,6 +496,42 @@ export default function ImpactPage() {
         )}
       </div>
 
+      {range === 'custom' && draft && (
+        <div>
+          <div className="grid max-w-[420px] grid-cols-2 gap-3.5">
+            <div>
+              <label className={dateLabel} htmlFor="impact-from">From</label>
+              <input
+                id="impact-from"
+                type="date"
+                className={dateInput}
+                min={CUSTOM_RANGE_MIN}
+                max={draft.to || today}
+                value={draft.from}
+                onChange={(e) => changeDraft({ ...draft, from: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className={dateLabel} htmlFor="impact-to">To</label>
+              <input
+                id="impact-to"
+                type="date"
+                className={dateInput}
+                min={draft.from || CUSTOM_RANGE_MIN}
+                max={today}
+                value={draft.to}
+                onChange={(e) => changeDraft({ ...draft, to: e.target.value })}
+              />
+            </div>
+          </div>
+          {draftError && (
+            <p role="alert" className="mt-2 text-[14px] font-semibold text-ep-danger">
+              {draftError}
+            </p>
+          )}
+        </div>
+      )}
+
       {/* The four numbers an employer reports on, on the sign. The readouts
           go through the panel's actions slot so this page owns their grid. */}
       <div className={busy ? 'opacity-70 transition-opacity' : 'transition-opacity'} aria-busy={busy || undefined}>
@@ -430,7 +539,8 @@ export default function ImpactPage() {
           title={rangeLabel}
           lede={
             <>
-              <p>{windowLabelLong(win.start, win.end)}.</p>
+              {/* Custom dates already put the dates in the title. */}
+              {range !== 'custom' && <p>{windowLabelLong(win.start, win.end)}.</p>}
               {co2Line && (
                 <p className="mt-1">
                   {co2Line.text.replace(/\s(\S+)$/, ' ')}
@@ -524,11 +634,11 @@ export default function ImpactPage() {
         <Card>
           <CardHead
             title="Shift Rate, week by week"
-            sub="The last 12 weeks"
+            sub={range === 'custom' ? `The 12 weeks to ${win.label.split(' – ').pop()}` : 'The last 12 weeks'}
             action={
               shiftRate != null ? (
                 <Badge tone="success">
-                  {shiftRate}% for {rangeLabel.charAt(0).toLowerCase() + rangeLabel.slice(1)}
+                  {shiftRate}% for {rangeInSentence(win)}
                 </Badge>
               ) : undefined
             }
@@ -589,16 +699,22 @@ export default function ImpactPage() {
         </Card>
       </div>
 
-      <StepsEquivalentCard groupId={group.id} days={win.days} />
+      <StepsEquivalentCard groupId={group.id} days={win.days} startsAt={win.explicit ? win.start.toISOString() : undefined} endsAt={win.explicit ? win.end.toISOString() : undefined} />
       </div>
 
       <div {...tabPanelProps('impact', 'compared')} hidden={tab !== 'compared'} className="grid gap-6 outline-none">
-        <ChangeStrip current={dashboard} rangeLabel={rangeLabel} nowMs={win.end.getTime()} dim={busy} />
+        <ChangeStrip current={dashboard} rangeLabel={range === 'custom' ? 'Your dates' : rangeLabel} nowMs={win.end.getTime()} dim={busy} />
         <PeerBenchmarkCard benchmark={benchmark} rangeLabel={rangeLabel} dim={busy} />
       </div>
 
       <div {...tabPanelProps('impact', 'locations')} hidden={tab !== 'locations'} className="outline-none">
-        <LocationBreakdownCard groupId={group.id} days={win.days} rangeLabel={rangeLabel} />
+        <LocationBreakdownCard
+          groupId={group.id}
+          days={win.days}
+          startsAt={win.explicit ? win.start.toISOString() : undefined}
+          endsAt={win.explicit ? win.end.toISOString() : undefined}
+          rangeLabel={rangeLabel}
+        />
       </div>
 
       <div {...tabPanelProps('impact', 'how')} hidden={tab !== 'how'} className="outline-none">

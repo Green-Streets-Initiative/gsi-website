@@ -21,7 +21,18 @@ const STEPS_PER_BIKE_MILE = 800
 
 type Miles = { walk_miles: number; bike_miles: number }
 
-export default function StepsEquivalentCard({ groupId, days }: { groupId: string; days: number }) {
+export default function StepsEquivalentCard({
+  groupId,
+  days,
+  startsAt,
+  endsAt,
+}: {
+  groupId: string
+  days: number
+  /** A fixed window (quarter, year to date, custom dates); otherwise the `days` ending now. */
+  startsAt?: string
+  endsAt?: string
+}) {
   const [state, setState] = useState<{ status: 'loading' } | { status: 'error' } | { status: 'ok'; miles: Miles }>({
     status: 'loading',
   })
@@ -31,7 +42,8 @@ export default function StepsEquivalentCard({ groupId, days }: { groupId: string
     supabase
       .rpc('get_employer_walk_bike_miles', {
         p_group_id: groupId,
-        p_start: new Date(Date.now() - days * 86_400_000).toISOString(),
+        p_start: startsAt ?? new Date(Date.now() - days * 86_400_000).toISOString(),
+        ...(endsAt ? { p_end: endsAt } : {}),
       })
       .then(({ data, error }) => {
         if (cancelled) return
@@ -44,7 +56,7 @@ export default function StepsEquivalentCard({ groupId, days }: { groupId: string
     return () => {
       cancelled = true
     }
-  }, [groupId, days])
+  }, [groupId, days, startsAt, endsAt])
 
   if (state.status === 'loading') return null
 

@@ -22,11 +22,16 @@ type Breakdown = {
 export default function LocationBreakdownCard({
   groupId,
   days,
+  startsAt,
+  endsAt,
   rangeLabel,
   hideWhenEmpty = false,
 }: {
   groupId: string
   days: number
+  /** A fixed window (quarter, year to date, custom dates); otherwise the `days` ending now. */
+  startsAt?: string
+  endsAt?: string
   /** Home: no card at all until a location has numbers. */
   hideWhenEmpty?: boolean
   /** How the page names the period ("Q3 2026"); falls back to "Last {days} days". */
@@ -41,7 +46,12 @@ export default function LocationBreakdownCard({
     if (!multiSite) return
     let cancelled = false
     supabase
-      .rpc('get_employer_location_breakdown', { p_group_id: groupId, p_days: days })
+      .rpc(
+        'get_employer_location_breakdown',
+        startsAt && endsAt
+          ? { p_group_id: groupId, p_days: days, p_starts_at: startsAt, p_ends_at: endsAt }
+          : { p_group_id: groupId, p_days: days },
+      )
       .then(({ data: d, error }) => {
         if (cancelled) return
         if (error || !d || 'error' in d) {
@@ -54,7 +64,7 @@ export default function LocationBreakdownCard({
     return () => {
       cancelled = true
     }
-  }, [groupId, days, multiSite])
+  }, [groupId, days, startsAt, endsAt, multiSite])
 
   if (!multiSite) return null
   // Home hides the card until a location has numbers; Impact explains why.
