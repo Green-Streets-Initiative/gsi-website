@@ -413,10 +413,10 @@ export default async function RoamDetailPage({ params }: { params: Promise<{ id:
                 <p className="mt-3 flex flex-wrap items-center gap-2 text-[0.875rem]">
                   <span className="text-ink-soft">On this route:</span>
                   {trailsUsed.map((x) => (
-                    <span key={x.id} className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 font-semibold ${x.closed ? 'bg-[#FFF4EC] text-[#9A3412]' : 'bg-forest/[0.08] text-forest'}`}>
+                    <Link key={x.id} href={`/trails/${x.id}`} className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 font-semibold underline-offset-4 hover:underline ${x.closed ? 'bg-[#FFF4EC] text-[#9A3412]' : 'bg-forest/[0.08] text-forest'}`}>
                       {x.name}
                       {x.miles != null ? <span className="font-medium opacity-80">· {miles(Number(x.miles))} mi</span> : null}
-                    </span>
+                    </Link>
                   ))}
                 </p>
               )}
@@ -473,10 +473,10 @@ export default async function RoamDetailPage({ params }: { params: Promise<{ id:
                     <p className="mt-4 flex flex-wrap items-center gap-2 text-[0.875rem]">
                       <span className="text-ink-soft">Connects to:</span>
                       {trailsConnect.map((x) => (
-                        <span key={x.id} className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 font-semibold ${x.closed ? 'bg-[#FFF4EC] text-[#9A3412]' : 'bg-forest/[0.08] text-forest'}`}>
+                        <Link key={x.id} href={`/trails/${x.id}`} className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 font-semibold underline-offset-4 hover:underline ${x.closed ? 'bg-[#FFF4EC] text-[#9A3412]' : 'bg-forest/[0.08] text-forest'}`}>
                           {x.name}
                           {x.closed ? <span className="font-medium">· closed</span> : null}
-                        </span>
+                        </Link>
                       ))}
                     </p>
                   )}
