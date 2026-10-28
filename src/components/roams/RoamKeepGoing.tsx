@@ -6,6 +6,7 @@ import { ChevronDown } from 'lucide-react'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { gaEvent } from '@/lib/ga'
 import type { KeepGoingRow } from '@/lib/roams/queries'
+import { QUIET_STYLE, LABEL_FONT_BOLD, quietBasemap } from '@/lib/maps/quietBasemap'
 
 /**
  * "Keep going" (Keith 2026-10-20): from either end of this roam, where you can
@@ -45,13 +46,24 @@ function Bar({ row }: { row: KeepGoingRow }) {
 export default function RoamKeepGoing({
   roamId,
   roamName,
+  subject = 'roam',
   route,
+  routeLines,
+  quiet = false,
+  places = [],
   rows,
   closed,
 }: {
   roamId: string
   roamName: string
+  /** 'trail' on the /trails pages: the legend says "This trail". */
+  subject?: 'roam' | 'trail'
   route: LngLat[] | null
+  /** Trail pages: the whole trail as several lines, drawn in place of `route`. */
+  routeLines?: LngLat[][]
+  /** Trail pages: the quiet basemap used on /trails, with place names. */
+  quiet?: boolean
+  places?: Array<{ label: string; lat: number; lng: number }>
   rows: KeepGoingRow[]
   /** closed stretches near this roam ([lng, lat][] each) */
   closed: LngLat[][]
@@ -61,7 +73,8 @@ export default function RoamKeepGoing({
   const [open, setOpen] = useState<string | null>(null)
   const [ready, setReady] = useState(false)
 
-  const allLines = [...(route && route.length > 1 ? [route] : []), ...rows.flatMap((r) => r.lines ?? [])]
+  const own: LngLat[][] = routeLines && routeLines.length > 0 ? routeLines : route && route.length > 1 ? [route] : []
+  const allLines = [...own, ...rows.flatMap((r) => r.lines ?? [])]
 
   useEffect(() => {
     if (!mapEl.current) return
@@ -72,7 +85,7 @@ export default function RoamKeepGoing({
       const b = bounds(allLines)
       const map = new maplibregl.Map({
         container: mapEl.current,
-        style: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
+        style: quiet ? QUIET_STYLE : 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
         bounds: b ?? undefined,
         fitBoundsOptions: { padding: 36 },
         attributionControl: false,
@@ -82,6 +95,7 @@ export default function RoamKeepGoing({
       map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right')
       mapRef.current = map
       map.on('load', async () => {
+        if (quiet) quietBasemap(map)
         if (b) map.fitBounds(b, { padding: 36, animate: false })
         try {
           const net = await fetch('/data/bike-network-greater-boston.json').then((r) => r.json())
@@ -100,7 +114,10 @@ export default function RoamKeepGoing({
           map.addSource('kg-closed', { type: 'geojson', data: { type: 'Feature', properties: {}, geometry: { type: 'MultiLineString', coordinates: closed } } })
           map.addLayer({ id: 'kg-closed', type: 'line', source: 'kg-closed', paint: { 'line-color': '#C2410C', 'line-width': 3, 'line-dasharray': [1.5, 1.2] } })
         }
-        if (route && route.length > 1) {
+        if (routeLines && routeLines.length > 0) {
+          map.addSource('kg-roam', { type: 'geojson', data: { type: 'Feature', properties: {}, geometry: { type: 'MultiLineString', coordinates: routeLines } } })
+          map.addLayer({ id: 'kg-roam', type: 'line', source: 'kg-roam', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#2966E5', 'line-width': 4.5 } })
+        } else if (route && route.length > 1) {
           map.addSource('kg-roam', { type: 'geojson', data: { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: route } } })
           map.addLayer({ id: 'kg-roam', type: 'line', source: 'kg-roam', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#2966E5', 'line-width': 4.5 } })
           for (const p of [route[0], route[route.length - 1]]) {
@@ -108,6 +125,20 @@ export default function RoamKeepGoing({
             el.style.cssText = 'width:13px;height:13px;border-radius:50%;background:#2966E5;border:2.5px solid #fff;box-shadow:0 1px 3px rgba(25,26,46,.35)'
             new maplibregl.Marker({ element: el }).setLngLat(p).addTo(map)
           }
+        }
+        if (quiet && places.length > 0) {
+          map.addSource('kg-places', {
+            type: 'geojson',
+            data: { type: 'FeatureCollection', features: places.map((p) => ({ type: 'Feature', properties: { label: p.label }, geometry: { type: 'Point', coordinates: [p.lng, p.lat] } })) },
+          })
+          map.addLayer({ id: 'kg-places-ring', type: 'circle', source: 'kg-places', paint: { 'circle-radius': 4.5, 'circle-color': '#FFFFFF', 'circle-stroke-color': '#191A2E', 'circle-stroke-width': 2 } })
+          map.addLayer({
+            id: 'kg-places',
+            type: 'symbol',
+            source: 'kg-places',
+            layout: { 'text-field': ['get', 'label'], 'text-font': LABEL_FONT_BOLD, 'text-size': 12, 'text-variable-anchor': ['left', 'right', 'top', 'bottom'], 'text-radial-offset': 0.8, 'text-padding': 4 },
+            paint: { 'text-color': '#191A2E', 'text-halo-color': '#FAFAF6', 'text-halo-width': 2 },
+          })
         }
         setReady(true)
       })
@@ -128,7 +159,10 @@ export default function RoamKeepGoing({
     map.setFilter('kg-halo', ['==', ['get', 'key'], open ?? '__none__'])
     const row = rows.find((r) => r.key === open)
     // The open route together with this roam, so the link between them shows.
-    const b = bounds(row?.lines?.length ? [...row.lines, ...(route && route.length > 1 ? [route] : [])] : allLines)
+    // On a long trail, only the part of it near where the row starts.
+    const start = row?.lines?.[0]?.[0]
+    const near = routeLines && start ? own.filter((l) => l.some(([x, y]) => Math.abs(x - start[0]) < 0.03 && Math.abs(y - start[1]) < 0.02)) : own
+    const b = bounds(row?.lines?.length ? [...row.lines, ...near] : allLines)
     if (b) map.fitBounds(b, { padding: 44, maxZoom: 15, duration: 600 })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, ready])
@@ -138,7 +172,7 @@ export default function RoamKeepGoing({
       <div className="overflow-hidden rounded-[18px] bg-white shadow-[0_1px_2px_rgba(25,26,46,0.05),0_0_0_1px_rgba(25,26,46,0.06)] lg:sticky lg:top-[124px]">
         <div ref={mapEl} className="h-[300px] w-full sm:h-[380px] lg:h-[460px]" role="img" aria-label={`Map of bike paths around the ${roamName}, with the routes you can take from its ends`} />
         <p className="flex flex-wrap gap-x-4 gap-y-1 border-t border-navy/[0.07] px-4 py-2.5 text-[0.8125rem] text-ink-soft">
-          <span className="inline-flex items-center gap-1.5"><i className="inline-block h-1 w-4 rounded bg-[#2966E5]" aria-hidden /> This roam</span>
+          <span className="inline-flex items-center gap-1.5"><i className="inline-block h-1 w-4 rounded bg-[#2966E5]" aria-hidden /> {subject === 'trail' ? 'This trail' : 'This roam'}</span>
           <span className="inline-flex items-center gap-1.5"><i className="inline-block h-1 w-4 rounded bg-[#2D6A4F]" aria-hidden /> Where you can keep going</span>
           {closed.length > 0 && <span className="inline-flex items-center gap-1.5"><i className="inline-block h-1 w-4 rounded bg-[#C2410C]" aria-hidden /> Closed</span>}
           <span className="inline-flex items-center gap-1.5"><i className="inline-block h-1 w-4 rounded bg-[#5E8466]/60" aria-hidden /> Other bike paths</span>
@@ -199,7 +233,27 @@ export default function RoamKeepGoing({
                         </li>
                       ))}
                     </ol>
-                    {r.linked_roam_id && r.link_label && (
+                    {r.linked_trail_id && (
+                      <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+                        <Link
+                          href={`/trails/${r.linked_trail_id}`}
+                          onClick={() => gaEvent('trail_keep_going_trail_link', { from: roamId, to: r.linked_trail_id })}
+                          className="inline-flex min-h-[44px] items-center rounded-full bg-navy px-5 text-[0.9375rem] font-semibold text-white hover:bg-navy/90"
+                        >
+                          {r.link_label ?? 'See the trail'} →
+                        </Link>
+                        {r.linked_roam_id && (
+                          <Link
+                            href={`/shift/roams/${r.linked_roam_id}`}
+                            onClick={() => gaEvent('roam_keep_going_roam_link', { roam_id: roamId, to: r.linked_roam_id })}
+                            className="inline-flex min-h-[44px] items-center text-[0.9375rem] font-semibold text-forest underline-offset-4 hover:underline"
+                          >
+                            or ride it as a roam
+                          </Link>
+                        )}
+                      </div>
+                    )}
+                    {!r.linked_trail_id && r.linked_roam_id && r.link_label && (
                       <Link
                         href={`/shift/roams/${r.linked_roam_id}`}
                         onClick={() => gaEvent('roam_keep_going_roam_link', { roam_id: roamId, to: r.linked_roam_id })}
@@ -208,7 +262,7 @@ export default function RoamKeepGoing({
                         {r.link_label} →
                       </Link>
                     )}
-                    {!r.linked_roam_id && r.action_url && r.action_label && (
+                    {!r.linked_trail_id && !r.linked_roam_id && r.action_url && r.action_label && (
                       <a
                         href={r.action_url}
                         target="_blank"

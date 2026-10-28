@@ -23,19 +23,19 @@ function day(d: string): string {
  * summary, the detour by direction and the source with the date it was
  * last checked. An "access" closure says the route itself is open.
  */
-function Notice({ d }: { d: RoamDisruption }) {
+function Notice({ d, subject }: { d: RoamDisruption; subject: 'route' | 'trail' }) {
   const [open, setOpen] = useState(false)
   const hasDetour = !!(d.detours && d.detours.length > 0)
   return (
     <section
-      aria-label={d.affects === 'route' ? 'Closure on this route' : 'Closure on the way to this route'}
+      aria-label={d.affects === 'route' ? `Closure on this ${subject}` : 'Closure on the way to this route'}
       className="rounded-[14px] border border-[#C2410C]/25 bg-[#FFF6F0] px-4 py-3 sm:px-5"
     >
       <div className="flex gap-3">
         <TriangleAlert size={18} className="mt-[3px] shrink-0 text-[#B4410C]" aria-hidden />
         <div className="min-w-0 flex-1">
           <p className="text-[0.875rem] font-semibold text-[#9A3412]">
-            {d.affects === 'route' ? 'Closed on this route' : 'Closed on the way here'}
+            {d.affects === 'route' ? (subject === 'trail' ? 'Closed on this trail' : 'Closed on this route') : 'Closed on the way here'}
           </p>
           <h2 className="text-[1rem] font-semibold leading-snug text-navy">{d.title}</h2>
           <button
@@ -73,12 +73,13 @@ function Notice({ d }: { d: RoamDisruption }) {
   )
 }
 
-export default function RoamDisruptions({ items }: { items: RoamDisruption[] }) {
+/** subject: 'trail' on the /trails pages; roam pages keep 'route'. */
+export default function RoamDisruptions({ items, subject = 'route' }: { items: RoamDisruption[]; subject?: 'route' | 'trail' }) {
   if (items.length === 0) return null
   return (
     <div className="space-y-3">
       {items.map((d) => (
-        <Notice key={d.id} d={d} />
+        <Notice key={d.id} d={d} subject={subject} />
       ))}
     </div>
   )
