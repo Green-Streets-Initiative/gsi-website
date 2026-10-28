@@ -2,13 +2,13 @@
 
 import Link from 'next/link'
 import { useCallback, useEffect, useState } from 'react'
-import { Briefcase, Car, Clock, GraduationCap, House, Mail, Medal, Route, Sprout } from 'lucide-react'
+import { Briefcase, Car, Clock, GraduationCap, House, Languages, Mail, Medal, Route, Sprout } from 'lucide-react'
 import NextSteps from '@/components/together/NextSteps'
 import { Avatar, Chip, ChipRow, FitMeter, WAY_ICON } from '@/components/together/bits'
 import { Journey } from '@/components/together/TogetherShell'
 import { Button, Card, Notice, Spinner, Textarea, cx } from '@/components/organizers/ui'
 import {
-  TIMES, WAYS, answerMatch, answerWent, arriveGap, clock, endMatch, experienceFit, isWay, myMatches, myRequests,
+  LANGUAGES, TIMES, WAYS, answerMatch, answerWent, arriveGap, clock, endMatch, experienceFit, isWay, myMatches, myRequests,
   overallFit, rateMatch, reportMatch, routeFit, timingDaysKnown, timingFit, track,
   type Match, type PartnerRequest, type Rating, type ReportReason,
 } from '@/lib/together'
@@ -187,6 +187,13 @@ function MatchCard({ m, busy, myArrive, onAnswer, onWent, onRate, onEnd, onRepor
     ? [{ name: m.other.group_name, type: 'workplace' as const }, ...m.other.shared_groups]
     : m.other.shared_groups
   const Primary = m.other.primary_mode ? WAY_ICON[m.other.primary_mode] : null
+  // What they speak, the ones you share first (01476): context, not a rule.
+  // Left off when you both speak only English, where it says nothing new.
+  const shared = m.other.shared_languages ?? []
+  const theirs = m.other.languages ?? []
+  const onlyEnglish = theirs.length === 1 && theirs[0] === 'en' && shared.includes('en')
+  const speaks = onlyEnglish ? '' : [...shared, ...theirs.filter((l) => !shared.includes(l))]
+    .map((l) => LANGUAGES.find((x) => x.id === l)?.english ?? l).join(', ')
   const timingValue = gap != null
     ? (gap === 0 ? 'Same time' : `${gap} min apart`)
     : timing != null && timing > 1 && !timingDaysKnown(m) && m.other.shared_times.length
@@ -220,6 +227,11 @@ function MatchCard({ m, busy, myArrive, onAnswer, onWent, onRate, onEnd, onRepor
             </p>
           ) : null}
           {since ? <p className="text-[15px] text-(--ev-ink-80)">Member since {since}</p> : null}
+          {speaks ? (
+            <p className="mt-0.5 flex items-center gap-1.5 text-[15px] text-(--ev-ink-85)">
+              <Languages className="h-4 w-4" aria-hidden /> Speaks {speaks}
+            </p>
+          ) : null}
         </div>
       </div>
 

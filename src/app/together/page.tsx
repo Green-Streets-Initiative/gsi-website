@@ -9,9 +9,9 @@ import { Chip, WAY_ICON } from '@/components/together/bits'
 import { Journey, useTogether } from '@/components/together/TogetherShell'
 import { Badge, Button, Card, Field, Input, Notice, Spinner, Textarea, cx } from '@/components/organizers/ui'
 import {
-  DAYS, TERMS_TEXT, TIMES, WAYS, acceptTerms, clock, hasAcceptedTerms, isWay, myPlaces, myRequests,
+  DAYS, LANGUAGES, TERMS_TEXT, TIMES, WAYS, acceptTerms, clock, hasAcceptedTerms, isWay, myPlaces, myRequests,
   savePlace, saveSignUp, stopSignUp, track, waysText,
-  type CarpoolRole, type PartnerDay, type PartnerKind, type PartnerRequest, type PartnerTime, type PartnerWay,
+  type CarpoolRole, type PartnerDay, type PartnerKind, type PartnerLanguage, type PartnerRequest, type PartnerTime, type PartnerWay,
 } from '@/lib/together'
 
 /**
@@ -92,6 +92,7 @@ export default function TogetherPage() {
   const [arriveBy, setArriveBy] = useState('')
   const [leaveAt, setLeaveAt] = useState('')
   const [note, setNote] = useState('')
+  const [languages, setLanguages] = useState<PartnerLanguage[]>(['en'])
   const [agreed, setAgreed] = useState(false)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
@@ -143,6 +144,7 @@ export default function TogetherPage() {
     setArriveBy(r.arrive_by?.slice(0, 5) ?? '')
     setLeaveAt(r.leave_at?.slice(0, 5) ?? '')
     setNote(r.note ?? '')
+    if (r.languages?.length) setLanguages(r.languages)
   }
 
   const startEdit = (r?: PartnerRequest) => {
@@ -179,13 +181,14 @@ export default function TogetherPage() {
         arriveBy: kind === 'carpool' ? arriveBy || null : null,
         leaveAt: kind === 'carpool' ? leaveAt || null : null,
         note: note.trim() || null,
+        languages,
       })
       if (!r.ok) {
         setErr('That didn’t save. Please try again.')
         track('together_signup_failed', { kind, reason: r.reason })
         return
       }
-      track('together_signup_saved', { kind, ways, matches: r.matches, from_expo: fromExpo })
+      track('together_signup_saved', { kind, ways, languages, matches: r.matches, from_expo: fromExpo })
       setSaved({ kind, ways: kind === 'carpool' ? [] : ways, matches: r.matches })
       setEditing(false)
       setFromExpo(false)
@@ -386,6 +389,16 @@ export default function TogetherPage() {
                   </Field>
                 </div>
               ) : null}
+
+              <Field label="Which languages do you speak?" hint="Someone who speaks one of these comes first. Your match sees them.">
+                <div className="flex flex-wrap gap-2">
+                  {LANGUAGES.map((l) => (
+                    <Chip key={l.id} on={languages.includes(l.id)} onClick={() => setLanguages((v) => (v.includes(l.id) ? v.filter((x) => x !== l.id) : [...v, l.id]))}>
+                      <span lang={l.id}>{l.label}</span>
+                    </Chip>
+                  ))}
+                </div>
+              </Field>
 
               <Field label="Anything else we should know?" optional htmlFor="together-note">
                 <Textarea id="together-note" rows={2} maxLength={500} value={note} onChange={(e) => setNote(e.target.value)} placeholder={copy.note} />
