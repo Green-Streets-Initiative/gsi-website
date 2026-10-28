@@ -241,7 +241,7 @@ const TEMPLATES: Template[] = [
       name: canPrize ? `${monthName(firstOfNextMonth())} Drawing` : `${monthName(firstOfNextMonth())} Challenge`,
       rules: null,
       prizes: canPrize
-        ? [{ ...EMPTY_PRIZE_FORM, name: 'Monthly drawing', award_mode: 'drawing', metric: 'trips', min_threshold: '8', winner_count: '3', funded_from_pool: true, amount_dollars: '25' }]
+        ? [{ ...EMPTY_PRIZE_FORM, name: 'Monthly drawing', award_mode: 'drawing', metric: 'trips', min_threshold: '4', winner_count: '3', funded_from_pool: true, amount_dollars: '25' }]
         : [],
     }),
   },
@@ -484,7 +484,7 @@ export default function ChallengeWizard({
     k === 'goal'
       ? { ...EMPTY_GUARANTEED_PRIZE_FORM, name: 'First to the goal', winner_count: '25', requires_work_email: domains.length > 0 }
       : k === 'drawing'
-        ? { ...EMPTY_PRIZE_FORM, name: 'Drawing', award_mode: 'drawing', metric: 'trips', min_threshold: '8', winner_count: '3', funded_from_pool: true }
+        ? { ...EMPTY_PRIZE_FORM, name: 'Drawing', award_mode: 'drawing', metric: 'trips', min_threshold: '4', winner_count: '3', funded_from_pool: true }
         : { ...EMPTY_PRIZE_FORM, name: 'Top commuters', award_mode: 'merit', metric: 'trips', min_threshold: '1', winner_count: '3', funded_from_pool: true }
   const addPrize = (k: Exclude<PrizeKind, 'none'>) => setPrizeForms([...prizeForms, blankPrize(k)])
   // Try something new stays Try something new between a drawing and a
@@ -1280,11 +1280,22 @@ function PrizeSentence({
     )
   }
   if (kind === 'drawing') {
+    // Most employees drive (driver plan, 2026-10-28): a low bar to enter is
+    // what puts them in the challenge. The app shows each person how close
+    // they are ("2 of 4 trips to enter the drawing").
+    const high = p.metric === 'trips' && parseInt(p.min_threshold, 10) > 4
     return (
-      <div className={row}>
-        Everyone with <Num id="cw-min" label="Minimum to enter the drawing" value={p.min_threshold} onChange={(v) => onChange({ min_threshold: v })} /> {drawUnit(p.metric)} is entered. We draw
-        <Num id="cw-winners" label="Number of winners" value={p.winner_count} onChange={(v) => onChange({ winner_count: v })} /> winners at the end.
-      </div>
+      <>
+        <div className={row}>
+          Everyone with <Num id="cw-min" label="Minimum to enter the drawing" value={p.min_threshold} onChange={(v) => onChange({ min_threshold: v })} /> {drawUnit(p.metric)} is entered. We draw
+          <Num id="cw-winners" label="Number of winners" value={p.winner_count} onChange={(v) => onChange({ winner_count: v })} /> winners at the end.
+        </div>
+        {high && (
+          <p className="mt-1 text-[14px] text-ink-muted">
+            Most people who drive to work can reach 4 trips, about one a week. A higher number leaves them out.
+          </p>
+        )}
+      </>
     )
   }
   return (

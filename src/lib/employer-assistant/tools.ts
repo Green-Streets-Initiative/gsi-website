@@ -85,7 +85,7 @@ const challengeSchema = {
           name: { type: 'string', description: 'Short, e.g. "First to 12 trips", "Monthly drawing", "Top commuters".' },
           award_mode: { type: 'string', enum: ['guaranteed', 'drawing', 'merit'], description: 'guaranteed = first N to reach the goal; drawing = random among those who reach a minimum; merit = top of the leaderboard.' },
           metric: { type: 'string', enum: ['trips', 'active_days', 'miles', 'pct_non_car', 'tried_new'], description: 'Use "trips" unless asked otherwise. guaranteed is trips, or tried_new. tried_new (drawing or guaranteed, min_threshold 1) = Try something new: a trip by a way the person hadn\'t been using before the challenge. As a drawing, everyone who does is entered; as guaranteed, the first N who do each win (e.g. the first 25 get a $10 gift card).' },
-          min_threshold: { type: ['number', 'null'], description: 'The trip goal (guaranteed, drawing). Whole number.' },
+          min_threshold: { type: ['number', 'null'], description: 'The trip goal (guaranteed, drawing). Whole number. For a drawing, suggest 4 trips a month (about one a week) unless asked otherwise: most employees drive, and a low bar is what lets them enter.' },
           winner_count: { type: 'integer', description: 'Spots or winners, 1 to 1000.' },
           funded_from_pool: { type: 'boolean', description: 'true = gift card paid from the rewards balance; false = the employer hands out its own prize.' },
           amount_cents: { type: ['integer', 'null'], description: 'Gift card value in cents, at least 500.' },
