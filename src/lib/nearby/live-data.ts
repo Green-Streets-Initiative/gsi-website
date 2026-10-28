@@ -35,7 +35,7 @@ export interface StopTopology {
   /** Set on non-MBTA shuttle stops — the operator, for labels and colors
    *  (read by the Shift app's edge function too, so it needs no copy of
    *  the operator table). */
-  agency?: { prefix: string; label: string; color: string; name?: string; access?: 'public' | 'public-fare' | 'id' | 'unstated' }
+  agency?: { prefix: string; label: string; color: string; name?: string; access?: 'public' | 'public-fare' | 'id' | 'unstated'; idName?: string; url?: string; runBy?: string }
   /** Shuttle stops only: the operator's published timetable for this stop.
    *
    *  A timetable, not a countdown — `secs` is seconds since local midnight

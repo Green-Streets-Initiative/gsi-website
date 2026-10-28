@@ -1081,6 +1081,10 @@ export async function nearbyShuttleStops(
           color: SHUTTLE_COLOR,
           name: agency.name,
           access: agency.access,
+          // The commute planners credit the operator and link its schedule.
+          idName: agency.idName,
+          url: agency.url,
+          ...(agency.runBy ? { runBy: agency.runBy } : {}),
         },
       })
     }

@@ -650,6 +650,11 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
           distance_miles?: number; recommended_mode?: string; recommended_with_combos?: string | null
           modes?: { mode: string; time_minutes: number | null; time_minutes_max?: number | null; monthly_cost: number; detail: string; viable: boolean; leave_by?: string | null }[]
           combos?: { kind: string; minutes_total: number; leave_by: string; cost_per_day: number; summary: string; station?: { name?: string }; qualifies?: boolean }[] | null
+          shuttle_options?: {
+            minutes_total: number; leave_by: string; fare_per_trip: number; summary: string; eligible: boolean
+            eligible_because: string | null; qualifies?: boolean; board_stop: { name: string }; timetable: boolean
+            operator: { name: string; run_by: string | null; access: string; id_name: string | null }
+          }[]
           transit_route_summary?: string | null; bike_comfort_rating?: string | null
           bluebikes_origin?: { name: string; bikes_available?: number; docks_available?: number; distance_miles: number }[]
           bluebikes_dest?: { name: string; bikes_available?: number; docks_available?: number; distance_miles: number }[]
@@ -665,6 +670,12 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
         const netCost = (m: { mode: string; monthly_cost: number }) => (paid && m.mode === 'transit' ? Math.max(0, m.monthly_cost - paid) : m.monthly_cost)
         const ways = (e.modes ?? []).filter((m) => m.viable)
         const twoPart = (e.combos ?? []).filter((c) => c.qualifies !== false)
+        // Shuttles Google leaves out (TMA, campus, employer). The engine
+        // only returns ones faster than the T; `eligible` says whether this
+        // person can ride it (a public route, or a school or employer Shift
+        // knows they belong to).
+        const shuttles = e.shuttle_options ?? []
+        const rideable = shuttles.find((s) => s.eligible)
         const recommended = e.recommended_with_combos || e.recommended_mode || null
         // The card: one row per way, two-part trips priced by the month the
         // way the app's commute screen does (cost_per_day × 20 workdays).
@@ -678,6 +689,7 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
             ways: [
               ...ways.map((m) => ({ way: m.mode, minutes: m.time_minutes, minutes_up_to: m.time_minutes_max ?? null, monthly_cost: Math.round(netCost(m)) })),
               ...twoPart.map((c) => ({ way: c.kind, minutes: c.minutes_total, minutes_up_to: null, monthly_cost: Math.round(c.cost_per_day * 20) })),
+              ...(rideable ? [{ way: 'shuttle', minutes: rideable.minutes_total, minutes_up_to: null, monthly_cost: Math.round(rideable.fare_per_trip * 40) }] : []),
             ],
           },
         } : undefined
@@ -696,6 +708,21 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
           two_part_trips: (e.combos ?? []).filter((c) => c.qualifies !== false).map((c) => ({
             way: c.kind, minutes: c.minutes_total, cost_per_day: c.cost_per_day, leave_by: c.leave_by, station: c.station?.name ?? null, how: c.summary,
           })),
+          ...(shuttles.length ? {
+            shuttles: shuttles.map((s) => ({
+              minutes: s.minutes_total, leave_by: s.leave_by, how: s.summary, board_at: s.board_stop.name,
+              run_by: s.operator.run_by || s.operator.name,
+              who_can_ride: s.eligible_because === 'public' ? 'anyone, free'
+                : s.eligible_because === 'public_fare' ? 'anyone; a fare, free at member employers'
+                : s.eligible_because === 'school' ? `them, with their ${s.operator.id_name ?? s.operator.name} ID`
+                : s.eligible_because === 'employer' ? 'them: their employer lists this shuttle'
+                : s.operator.access === 'unstated' ? `may need a ${s.operator.id_name ?? s.operator.name} ID`
+                : `${s.operator.id_name ?? s.operator.name} ID holders only`,
+              they_can_ride: s.eligible,
+              ...(s.timetable ? {} : { ride_time_estimated: true }),
+            })),
+            shuttle_note: 'Shuttles maps apps leave out. Name who runs it, and say who can ride it as given. Never suggest one they cannot ride as their way; mention it only as "if you have a ... ID".',
+          } : {}),
           transit_route: e.transit_route_summary ?? null,
           bike_route_calm: e.bike_comfort_rating ?? null,
           bluebikes: { near_start: near(e.bluebikes_origin), near_end: near(e.bluebikes_dest) },

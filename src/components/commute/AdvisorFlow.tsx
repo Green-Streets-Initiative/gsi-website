@@ -9,7 +9,7 @@ import ArriveBy from '@/components/commute/ArriveBy'
 import MotivationChips from '@/components/commute/MotivationChips'
 import AdjustCosts from '@/components/commute/AdjustCosts'
 import PlanGrid, { PlanGridSkeleton, type PlanGridRow } from '@/components/commute/PlanGrid'
-import { BikeDrawer, ComboDrawer, DriveDrawer, EmployerShuttleDrawer, ShuttleDrawer, TransitDrawer, WalkDrawer } from '@/components/commute/PlanDrawer'
+import { BikeDrawer, ComboDrawer, DriveDrawer, EmployerShuttleDrawer, ShuttleDrawer, ShuttleTransferDrawer, TransitDrawer, WalkDrawer } from '@/components/commute/PlanDrawer'
 import AdvisorMap, { asLiveDock, corridorForRow } from '@/components/commute/AdvisorMap'
 import NearbySheet from '@/components/nearby/NearbySheet'
 import { DetailContent } from '@/components/nearby/DetailPanel'
@@ -815,6 +815,27 @@ export default function AdvisorFlow({
         weather: chipFor(shuttleWeather, 'shuttle'),
         stages: stagesFor('shuttle', plan, benefits, { shuttle: { stopName: s.stopName, distanceMiles: s.distanceMiles }, weather: shuttleWeather }),
         drawer: <ShuttleDrawer line={s} officeName={officeLabel} highlightedLeg={highlightedLeg} onLegTap={(leg) => tapLeg(s.key, leg)} />,
+      })
+    }
+    // The T plus a shuttle Google leaves out, when faster than the T alone
+    // and open to this reader (the engine's call: Shift advisor-shuttle.ts).
+    for (const s of plan.shuttle_transfers ?? []) {
+      const w = weatherAt(s.leave_by)
+      out.push({
+        key: `shuttle-transfer-${s.route_id}-${s.shape}`,
+        mode: 'shuttle',
+        // The shuttle is the name ("The Grid A5"); the T part is the line under it.
+        name: (s.legs.find((l) => l.operator)?.line ?? s.route_name).replace(/:.*$/, ''),
+        sub: s.shape === 'transit_then_shuttle'
+          ? `${s.legs[0]?.route_name ?? 'The T'} to ${s.board_stop.name} first`
+          : `Then the ${s.legs[s.legs.length - 1]?.route_name ?? 'T'} from ${s.alight_stop.name}`,
+        leaveBy: s.leave_by ? formatClock(s.leave_by) : null,
+        minutes: s.minutes_total,
+        costPerDay: Math.round(s.fare_per_trip * 2 * 100) / 100,
+        emissionsPct: null,
+        weather: chipFor(w, 'shuttle'),
+        stages: stagesFor('shuttle', plan, benefits, { shuttle: { stopName: s.board_stop.name, distanceMiles: 0 }, weather: w }),
+        drawer: <ShuttleTransferDrawer s={s} plan={plan} officeName={officeLabel} companyName={companyName} />,
       })
     }
     return out

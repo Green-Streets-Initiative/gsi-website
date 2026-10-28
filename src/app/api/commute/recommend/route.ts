@@ -32,6 +32,7 @@ import type {
   TransitLeg,
   AdvisorMode,
   AdvisorResult,
+  AdvisorShuttleTransfer,
   BikeParkingSpot,
   ShuttleRoute,
   EmployerBenefits,
@@ -607,6 +608,11 @@ export async function GET(req: NextRequest) {
   // them only for a caller holding the server key (sent from here, never
   // the browser), counted against the visitor's IP. A failure there is
   // simply no combo rows.
+  // The employer's own shuttles go to the engine, so it may put this
+  // reader on one Google doesn't know (a member-only route the employer lists).
+  const employerPromise = groupSlug ? fetchEmployer(groupSlug, locationParam) : Promise.resolve(null)
+  const employerShuttles = ((await employerPromise)?.benefits.shuttle_routes ?? [])
+    .map((r) => (r.name ?? '').trim()).filter(Boolean).map((name) => ({ name }))
   let edgeRes: Response
   try {
     const edgeFnUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/commute-advisor-compare`
@@ -625,6 +631,7 @@ export async function GET(req: NextRequest) {
         ...(arriveBy ? { arrive_by: arriveBy } : {}),
         vehicle,
         include_combos: true,
+        ...(employerShuttles.length ? { employer_shuttles: employerShuttles } : {}),
       }),
       signal: AbortSignal.timeout(15000),
     })
@@ -684,7 +691,7 @@ export async function GET(req: NextRequest) {
       fetchGuide(primaryModeStr, barrier),
       fetchGuides(),
       tryItFor(eventMode, dest),
-      groupSlug ? fetchEmployer(groupSlug, locationParam) : Promise.resolve(null),
+      employerPromise,
       modes.drive && !modes.drive.polyline ? fetchRoutePolyline(origin, dest, 'DRIVE') : Promise.resolve(null),
       modes.walk && !modes.walk.polyline ? fetchRoutePolyline(origin, dest, 'WALK') : Promise.resolve(null),
     ])
@@ -743,6 +750,8 @@ export async function GET(req: NextRequest) {
       walk_ride_day: tryIt.walk_ride_day,
       nearby_url: nearbyUrl,
       engine: edge,
+      shuttle_transfers: (Array.isArray(edge.shuttle_options) ? edge.shuttle_options as (AdvisorShuttleTransfer & { eligible?: boolean })[] : [])
+        .filter((s) => s && s.eligible && (s.shape === 'transit_then_shuttle' || s.shape === 'shuttle_then_transit')),
     }
 
     if (groupSlug) {
