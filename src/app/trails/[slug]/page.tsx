@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { Ruler, Route, MapPin, Flag, Navigation, Bike, TrainFront, ParkingCircle, ExternalLink, ArrowRight, CircleCheck, Info, Clock } from 'lucide-react'
+import { Ruler, Route, MapPin, Flag, Navigation, Bike, TrainFront, ParkingCircle, ExternalLink, ArrowRight, CircleCheck, Info, Clock, Snowflake } from 'lucide-react'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
 import StoreButtons from '@/components/StoreButtons'
@@ -16,6 +16,7 @@ import { getTrail, isLoopLike, type TrailNotice } from '@/lib/trails/queries'
 import { getTrailLines } from '@/lib/trails/geometry'
 import { MAP_PLACES } from '@/lib/trails/places'
 import { RAIL_HOME } from '@/lib/trails/railHome'
+import { WINTER } from '@/lib/trails/winter'
 import { getBluebikesDocks } from '@/lib/server/bluebikes'
 import { withUtm } from '@/lib/utm'
 
@@ -211,6 +212,12 @@ export default async function TrailPage({ params }: { params: Promise<{ slug: st
       : `${miles(rail.meters / 1609)} miles from ${railFrom}`
     : null
 
+  // Who clears snow: in About all year, and in the overview from November to March.
+  const winter = WINTER[t.id] ?? null
+  const month = Number(new Date().toLocaleDateString('en-US', { month: 'numeric', timeZone: 'America/New_York' }))
+  const winterSeason = month >= 11 || month <= 3
+  const winterShort = winter ? { yes: 'Plowed in winter', partly: 'Partly plowed in winter', no: 'Not plowed in winter' }[winter.cleared] : null
+
   // One column per card, so a trail with no bike share has no empty third cell.
   const getThereCols = [t.transit_note, t.bike_share_note || dockGroups.length > 0, t.parking_note].filter(Boolean).length
   const hasGetThere = !!(t.transit_note || t.bike_share_note || t.parking_note || dockGroups.length > 0 || railReach)
@@ -329,6 +336,16 @@ export default async function TrailPage({ params }: { params: Promise<{ slug: st
                   <span>
                     Train back from {rail.station} station{' · '}
                     <a href="#train-home" className="font-semibold text-forest underline-offset-4 hover:underline">Next trains</a>
+                  </span>
+                </p>
+              )}
+
+              {winter && winterSeason && (
+                <p className="mt-2 flex items-start gap-2 text-[0.9375rem] leading-snug text-navy">
+                  <Snowflake size={15} className="mt-[3px] shrink-0 text-ink-soft" aria-hidden />
+                  <span>
+                    {winterShort}{' · '}
+                    <a href="#winter" className="font-semibold text-forest underline-offset-4 hover:underline">Who clears it</a>
                   </span>
                 </p>
               )}
@@ -568,6 +585,17 @@ export default async function TrailPage({ params }: { params: Promise<{ slug: st
               <dl className="min-w-0 divide-y divide-navy/[0.07] self-start rounded-[16px] bg-white shadow-[0_1px_2px_rgba(25,26,46,0.05),0_0_0_1px_rgba(25,26,46,0.06)]">
                 {t.surface && <AboutRow label="Surface" body={t.surface} />}
                 {t.rules_note && <AboutRow label="Rules" body={t.rules_note} />}
+                {winter && (
+                  <div id="winter" className="scroll-mt-28 px-5 py-4">
+                    <dt className="text-[0.9375rem] font-semibold text-navy">In winter</dt>
+                    <dd className="m-0 mt-1 text-[0.9375rem] leading-relaxed text-ink-soft">
+                      {winter.note}{' '}
+                      <a href={winter.source} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 whitespace-nowrap font-semibold text-forest underline-offset-4 hover:underline">
+                        Source{winter.as_of ? `, ${winter.as_of}` : ''} <ExternalLink size={11} aria-hidden />
+                      </a>
+                    </dd>
+                  </div>
+                )}
                 {amenities.map((a) => <AboutRow key={a.label} label={a.label} body={a.body} />)}
                 {t.agency && <AboutRow label="Who looks after it" body={t.agency} />}
                 {t.aka.length > 0 && <AboutRow label="Also called" body={t.aka.join(', ')} />}
