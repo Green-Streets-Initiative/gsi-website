@@ -40,6 +40,16 @@ export const TIMES: { id: PartnerTime; label: string }[] = [
   { id: 'morning', label: 'Morning' }, { id: 'midday', label: 'Midday' }, { id: 'evening', label: 'Evening' },
 ]
 
+/** Languages someone is comfortable riding in (01476; the app's PARTNER_LANGUAGES). A shared one ranks a match first; nobody is left out over it. */
+export type PartnerLanguage = 'en' | 'es' | 'pt' | 'zh' | 'ht' | 'vi' | 'ar' | 'fr'
+/** Each in its own words, so people find theirs (the app's LANGUAGE_OWN_NAMES). */
+export const LANGUAGES: { id: PartnerLanguage; label: string; english: string }[] = [
+  { id: 'en', label: 'English', english: 'English' }, { id: 'es', label: 'Español', english: 'Spanish' },
+  { id: 'pt', label: 'Português', english: 'Portuguese' }, { id: 'zh', label: '中文', english: 'Chinese' },
+  { id: 'ht', label: 'Kreyòl ayisyen', english: 'Haitian Creole' }, { id: 'vi', label: 'Tiếng Việt', english: 'Vietnamese' },
+  { id: 'ar', label: 'العربية', english: 'Arabic' }, { id: 'fr', label: 'Français', english: 'French' },
+]
+
 /** The app's PARTNER_TERMS_VERSION and its words (partners.terms_check). */
 export const TERMS_VERSION = 'ST-2026-10-21'
 export const TERMS_TEXT =
@@ -86,6 +96,7 @@ export type PartnerRequest = {
   status: 'open' | 'matched' | 'paused' | 'closed'
   source: 'app' | 'event_signup' | 'admin'
   note: string | null
+  languages?: PartnerLanguage[]
 }
 
 export async function myRequests(): Promise<PartnerRequest[]> {
@@ -145,11 +156,12 @@ export type SignUp = {
   arriveBy: string | null
   leaveAt: string | null
   note: string | null
+  languages: PartnerLanguage[]
 }
 
 /** The app's savePartnerRequest: the sign-up, then matching runs; returns how many matched. */
 export async function saveSignUp(s: SignUp): Promise<{ ok: true; matches: number } | { ok: false; reason: string }> {
-  const { data, error } = await supabase.rpc('set_partner_request', {
+  const older = {
     p_kind: s.kind,
     p_modes: s.kind === 'carpool' ? [] : s.modes,
     p_origin_location_id: s.homeId,
@@ -161,7 +173,10 @@ export async function saveSignUp(s: SignUp): Promise<{ ok: true; matches: number
     p_leave_at: s.kind === 'carpool' ? s.leaveAt : null,
     p_note: s.note,
     p_carpool_scope: s.kind === 'carpool' ? 'nearby' : null,
-  })
+  }
+  let { data, error } = await supabase.rpc('set_partner_request', { ...older, p_languages: s.languages })
+  // Before 01476 the database has no p_languages: save without it rather than fail.
+  if (error?.code === 'PGRST202') ({ data, error } = await supabase.rpc('set_partner_request', older))
   if (error) return { ok: false, reason: 'network' }
   const r = (data ?? null) as { ok?: boolean; reason?: string; matches?: number } | null
   return r?.ok ? { ok: true, matches: r.matches ?? 0 } : { ok: false, reason: r?.reason ?? 'failed' }
@@ -208,6 +223,8 @@ export type Match = {
     my_times: PartnerTime[]
     email: string | null
     last_initial: string | null
+    languages?: PartnerLanguage[]
+    shared_languages?: PartnerLanguage[]
   }
 }
 
