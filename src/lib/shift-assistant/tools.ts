@@ -671,11 +671,12 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
         const ways = (e.modes ?? []).filter((m) => m.viable)
         const twoPart = (e.combos ?? []).filter((c) => c.qualifies !== false)
         // Shuttles Google leaves out (TMA, campus, employer). The engine
-        // only returns ones faster than the T; `eligible` says whether this
-        // person can ride it (a public route, or a school or employer Shift
-        // knows they belong to).
+        // returns ones within 5 minutes of the T; `eligible` says whether
+        // this person can ride it (a public route, a school or employer Shift
+        // knows they belong to, or one they said they can ride), and
+        // `qualifies` marks the one that earns a row on the plan.
         const shuttles = e.shuttle_options ?? []
-        const rideable = shuttles.find((s) => s.eligible)
+        const rideable = shuttles.find((s) => s.qualifies) ?? shuttles.find((s) => s.eligible && s.timetable)
         const recommended = e.recommended_with_combos || e.recommended_mode || null
         // The card: one row per way, two-part trips priced by the month the
         // way the app's commute screen does (cost_per_day × 20 workdays).
@@ -723,12 +724,13 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
                 : s.eligible_because === 'public_fare' ? 'anyone; a fare, free at member employers'
                 : s.eligible_because === 'school' ? `them, with their ${s.operator.id_name ?? s.operator.name} ID`
                 : s.eligible_because === 'employer' ? 'them: their employer lists this shuttle'
+                : s.eligible_because === 'self_reported' ? 'them: they told Shift they can ride it'
                 : s.operator.access === 'unstated' ? `may need a ${s.operator.id_name ?? s.operator.name} ID`
                 : `${s.operator.id_name ?? s.operator.name} ID holders only`,
               they_can_ride: s.eligible,
               ...(s.timetable ? {} : { ride_time_estimated: true }),
             })),
-            shuttle_note: 'Shuttles maps apps leave out. Name who runs it, and say who can ride it as given. Never suggest one they cannot ride as their way; mention it only as "if you have a ... ID".',
+            shuttle_note: 'Shuttles maps apps leave out. Name who runs it, and say who can ride it as given. One a few minutes slower than the bike or the T is still worth naming for someone who would rather sit than ride or would rather not wait outside. Never suggest one they cannot ride as their way; mention it only as "if you have a ... ID".',
           } : {}),
           transit_route: e.transit_route_summary ?? null,
           bike_route_calm: e.bike_comfort_rating ?? null,

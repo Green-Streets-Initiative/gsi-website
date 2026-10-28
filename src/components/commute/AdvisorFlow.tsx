@@ -817,11 +817,14 @@ export default function AdvisorFlow({
         drawer: <ShuttleDrawer line={s} officeName={officeLabel} highlightedLeg={highlightedLeg} onLegTap={(leg) => tapLeg(s.key, leg)} />,
       })
     }
-    // The T plus a shuttle Google leaves out, when faster than the T alone
-    // and open to this reader (the engine's call: Shift advisor-shuttle.ts).
+    // The T plus a shuttle Google leaves out, when about as quick as the T
+    // alone (within 5 minutes) and open to this reader (the engine's call:
+    // Shift advisor-shuttle.ts). Placed by minutes after the pick, so a
+    // slower seat sits under the faster ways, never above them.
     for (const s of plan.shuttle_transfers ?? []) {
       const w = weatherAt(s.leave_by)
-      out.push({
+      const at = out.findIndex((r, i) => i > 0 && r.minutes != null && r.minutes > s.minutes_total)
+      out.splice(at < 0 ? out.length : at, 0, {
         key: `shuttle-transfer-${s.route_id}-${s.shape}`,
         mode: 'shuttle',
         // The shuttle is the name ("The Grid A5"); the T part is the line under it.

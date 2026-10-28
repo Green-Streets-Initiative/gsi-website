@@ -573,7 +573,11 @@ export function ShuttleTransferDrawer({ s, plan, officeName, companyName }: {
     ? 'Open to everyone, free.'
     : s.eligible_because === 'public_fare'
       ? 'Open to everyone; there is a fare, free at member employers.'
-      : `${companyName ?? 'Your employer'} lists this shuttle among its benefits.`
+      : s.eligible_because === 'school'
+        ? `Free with your ${s.operator.id_name ?? s.operator.label} ID.`
+        : s.eligible_because === 'self_reported'
+          ? 'You said you can ride it.'
+          : `${companyName ?? 'Your employer'} lists this shuttle among its benefits.`
   const runBy = s.operator.run_by || s.operator.name
   return (
     <>
