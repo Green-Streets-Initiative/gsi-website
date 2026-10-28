@@ -3,6 +3,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { mbtaGet } from '@/lib/shift-assistant/more-data'
 import { runningCostPerMile, type VehicleType } from '@/lib/shift-assistant/car-cost'
 import { PRICES } from '@/lib/facts/prices'
+import { myWorkplace, workplaceFacts } from '@/lib/shift-assistant/my-challenges'
 
 // The gaps from the assistant audit (Keith 2026-10-28, "close out the gaps
 // from the earlier audit"):
@@ -193,10 +194,11 @@ const FARE: Record<string, number> = {
  *  e-bike, what those trips cost now, and what an e-bike would. */
 export async function ebikeMath(ctx: Ctx) {
   const since = new Date(Date.now() - 30 * 864e5).toISOString()
-  const [tripsQ, userQ] = await Promise.all([
+  const [tripsQ, userQ, workplace] = await Promise.all([
     ctx.user.from('trips').select('mode, distance_miles').eq('user_id', ctx.userId).gte('started_at', since)
       .in('mode', ['drive', 'transit_bus', 'transit_train']).lte('distance_miles', EBIKE_RANGE_MILES).gt('distance_miles', 0.5).limit(500),
     ctx.user.from('users').select('vehicle_type').eq('id', ctx.userId).single(),
+    myWorkplace(ctx),
   ])
   const trips = (tripsQ.data ?? []) as { mode: string; distance_miles: number }[]
   const vt = (userQ.data as { vehicle_type?: string } | null)?.vehicle_type
@@ -233,7 +235,17 @@ export async function ebikeMath(ctx: Ctx) {
       ...(trips.length ? { bluebikes_ebikes_for_those_trips: money(bluebikes) } : {}),
       how: `Typical figures, not quotes: a commuter e-bike ${range(EBIKE.commuter_price[0], EBIKE.commuter_price[1])} and a cargo e-bike ${range(EBIKE.cargo_price[0], EBIKE.cargo_price[1])} new, spread over ${EBIKE.years} years, plus upkeep ${range(EBIKE.upkeep_a_year[0], EBIKE.upkeep_a_year[1])} a year, a battery about every 4 years, and charging under 1 cent a mile. Bluebikes: annual membership (${money(PRICES.bluebikes.annualPerMonth)} a month) plus ${money(PRICES.bluebikes.ebikePerMinMember)} a minute on e-bikes at about ${PRICES.effort.ebikeMph} mph.`,
     },
-    help_paying: 'The state e-bike vouchers are closed and not expected to reopen in 2026 (goclean.masscec.com, checked 2026-10-28). Some employers help with bike costs: get_my_workplace. Try one first: find_bikes_to_try.',
+    // Workplace help only for someone whose employer runs Shift's commute
+    // program; anyone else was offered "Check my workplace benefits" for
+    // nothing (polish 2026-10-28).
+    help_paying: {
+      state_vouchers: 'Closed, and not expected to reopen in 2026 (goclean.masscec.com, checked 2026-10-28).',
+      ...(workplace ? (() => {
+        const f = workplaceFacts(workplace)
+        return { their_workplace: { employer: f.employer, bike_share: f.bike_share, bike_parking: f.bike_parking, showers: f.showers, other: f.other } }
+      })() : { their_workplace: null }),
+      try_one_first: 'find_bikes_to_try',
+    },
     note: trips.length
       ? 'Lay out the numbers side by side: what those trips cost now, and an e-bike or Bluebikes e-bikes for them. Owning a car costs the same whether or not one trip changes, so compare only the trip costs. If they pay a monthly pass, the fares already come out of it; say so. Offer a test ride first.'
       : 'Shift has none of their drives or transit trips under 8 miles from the last 30 days. Your first words are the typical monthly costs ("A commuter e-bike runs about …"); the missing trips get one line near the end: once Shift sees a few of their drives or bus or train trips, you can compare with their own. Offer a test ride.',
