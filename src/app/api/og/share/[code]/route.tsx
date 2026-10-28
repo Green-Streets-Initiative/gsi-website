@@ -10,6 +10,9 @@
  * Shift" — with the neighborhood's ranking in its town, the active
  * competition (if any), the referral code, and who invited them.
  *
+ * Type sizes: nothing on any card is under 28px, so the text still reads
+ * when a messaging app shrinks the image to a thumbnail.
+ *
  * Cache: 5 min user-side, 1 hour CDN.
  */
 
@@ -162,7 +165,7 @@ function Wordmark({ size = 'large' }: { size?: 'large' | 'small' }) {
   const s = size === 'large'
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: s ? 12 : 10 }}>
-      <span style={{ color: '#fff', fontSize: s ? 96 : 38, fontWeight: 800, letterSpacing: s ? -2 : -1 }}>
+      <span style={{ color: '#fff', fontSize: s ? 96 : 40, fontWeight: 800, letterSpacing: s ? -2 : -1 }}>
         Shift
       </span>
       <svg width={s ? 96 : 50} height={s ? 64 : 32} viewBox="0 0 40 26">
@@ -179,15 +182,26 @@ function GsiWordmark() {
       style={{
         display: 'flex',
         alignItems: 'baseline',
-        gap: 6,
+        gap: 8,
         color: '#fff',
         fontFamily: 'Trebuchet MS',
-        fontSize: 18,
+        fontSize: 28,
         letterSpacing: 0.4,
       }}
     >
       <span style={{ fontWeight: 700 }}>Green Streets</span>
       <span style={{ fontWeight: 400 }}>Initiative</span>
+    </div>
+  )
+}
+
+/** "Use code ABCD1234 to join", sized to read in a link preview. */
+function CodeFooter({ code }: { code: string }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
+      <span style={{ display: 'flex', color: 'rgba(255,255,255,0.85)', fontSize: 32, fontWeight: 500 }}>Use code</span>
+      <span style={{ display: 'flex', fontFamily: 'monospace', fontSize: 44, fontWeight: 800, letterSpacing: 4, color: LIME }}>{code}</span>
+      <span style={{ display: 'flex', color: 'rgba(255,255,255,0.85)', fontSize: 32, fontWeight: 500 }}>to join</span>
     </div>
   )
 }
@@ -210,7 +224,7 @@ function FallbackCard() {
       <div style={{ display: 'flex', color: 'rgba(255,255,255,0.85)', fontSize: 36, fontWeight: 400, marginTop: 24 }}>
         A free app that rewards walking, biking and taking transit.
       </div>
-      <div style={{ display: 'flex', color: 'rgba(255,255,255,0.75)', fontSize: 24, marginTop: 24 }}>
+      <div style={{ display: 'flex', color: 'rgba(255,255,255,0.75)', fontSize: 28, marginTop: 24 }}>
         shift.gogreenstreets.org
       </div>
     </div>
@@ -239,7 +253,7 @@ function InviteCard({ firstName, referralCode }: { firstName: string; referralCo
         <span style={{ display: 'flex', color: '#fff', fontSize: 56, fontWeight: 800, letterSpacing: -1.5, lineHeight: 1.1 }}>
           Join me on Shift!
         </span>
-        <span style={{ display: 'flex', color: 'rgba(255,255,255,0.85)', fontSize: 24, fontWeight: 400, marginTop: 20, textAlign: 'center', maxWidth: 700 }}>
+        <span style={{ display: 'flex', color: 'rgba(255,255,255,0.85)', fontSize: 30, fontWeight: 400, marginTop: 20, textAlign: 'center', justifyContent: 'center', maxWidth: 1072 }}>
           Track your walks, bike rides, and transit trips — and get rewarded for it.
         </span>
 
@@ -255,20 +269,16 @@ function InviteCard({ firstName, referralCode }: { firstName: string; referralCo
             gap: 12,
           }}
         >
-          <span style={{ display: 'flex', color: '#fff', fontSize: 28, fontWeight: 800 }}>
+          <span style={{ display: 'flex', color: '#fff', fontSize: 40, fontWeight: 800 }}>
             {firstName}
           </span>
-          <span style={{ display: 'flex', color: 'rgba(255,255,255,0.75)', fontSize: 18, fontWeight: 500 }}>
+          <span style={{ display: 'flex', color: 'rgba(255,255,255,0.85)', fontSize: 32, fontWeight: 500 }}>
             invited you
           </span>
         </div>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
-        <span style={{ display: 'flex', color: 'rgba(255,255,255,0.75)', fontSize: 20, fontWeight: 500 }}>Use code</span>
-        <span style={{ display: 'flex', fontFamily: 'monospace', fontSize: 24, fontWeight: 800, letterSpacing: 4, color: LIME }}>{referralCode}</span>
-        <span style={{ display: 'flex', color: 'rgba(255,255,255,0.75)', fontSize: 20, fontWeight: 500 }}>to join</span>
-      </div>
+      <CodeFooter code={referralCode} />
     </div>
   )
 }
@@ -305,11 +315,11 @@ function CampaignCard({
         <span style={{ display: 'flex', color: '#fff', fontSize: 52, fontWeight: 800, letterSpacing: -1.5, lineHeight: 1.1, textAlign: 'center' }}>
           Join {competitionName}
         </span>
-        <span style={{ display: 'flex', color: 'rgba(255,255,255,0.85)', fontSize: 24, fontWeight: 400, marginTop: 16, textAlign: 'center', maxWidth: 700 }}>
+        <span style={{ display: 'flex', color: 'rgba(255,255,255,0.85)', fontSize: 32, fontWeight: 400, marginTop: 16, textAlign: 'center', justifyContent: 'center', maxWidth: 1000 }}>
           Every walk, bike ride, and transit trip is an entry to win prizes.
         </span>
         {competitionDates && (
-          <span style={{ display: 'flex', color: LIME, fontSize: 20, fontWeight: 700, marginTop: 12 }}>
+          <span style={{ display: 'flex', color: LIME, fontSize: 30, fontWeight: 700, marginTop: 12 }}>
             {competitionDates}
           </span>
         )}
@@ -326,20 +336,16 @@ function CampaignCard({
             gap: 12,
           }}
         >
-          <span style={{ display: 'flex', color: '#fff', fontSize: 28, fontWeight: 800 }}>
+          <span style={{ display: 'flex', color: '#fff', fontSize: 40, fontWeight: 800 }}>
             {firstName}
           </span>
-          <span style={{ display: 'flex', color: 'rgba(255,255,255,0.75)', fontSize: 18, fontWeight: 500 }}>
+          <span style={{ display: 'flex', color: 'rgba(255,255,255,0.85)', fontSize: 32, fontWeight: 500 }}>
             invited you
           </span>
         </div>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
-        <span style={{ display: 'flex', color: 'rgba(255,255,255,0.75)', fontSize: 20, fontWeight: 500 }}>Use code</span>
-        <span style={{ display: 'flex', fontFamily: 'monospace', fontSize: 24, fontWeight: 800, letterSpacing: 4, color: LIME }}>{referralCode}</span>
-        <span style={{ display: 'flex', color: 'rgba(255,255,255,0.75)', fontSize: 20, fontWeight: 500 }}>to join</span>
-      </div>
+      <CodeFooter code={referralCode} />
     </div>
   )
 }
@@ -428,29 +434,8 @@ export async function GET(
       >
         {/* Top bar — Shift wordmark + GSI wordmark */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span style={{ color: '#fff', fontSize: 38, fontWeight: 800, letterSpacing: -1 }}>
-              Shift
-            </span>
-            <svg width={50} height={32} viewBox="0 0 40 26">
-              <path d="M0,0 L16,13 L0,26 L0,19 L10,13 L0,7Z" fill={LIME} />
-              <path d="M20,0 L36,13 L20,26 L20,19 L30,13 L20,7Z" fill={BLUE} />
-            </svg>
-          </div>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'baseline',
-              gap: 6,
-              color: '#fff',
-              fontFamily: 'Trebuchet MS',
-              fontSize: 18,
-              letterSpacing: 0.4,
-            }}
-          >
-            <span style={{ fontWeight: 700 }}>Green Streets</span>
-            <span style={{ fontWeight: 400 }}>Initiative</span>
-          </div>
+          <Wordmark size="small" />
+          <GsiWordmark />
         </div>
 
         {/* Center content */}
@@ -460,7 +445,7 @@ export async function GET(
             style={{
               display: 'flex',
               color: '#fff',
-              fontSize: 60,
+              fontSize: 64,
               fontWeight: 800,
               letterSpacing: -1.5,
               lineHeight: 1.1,
@@ -476,11 +461,12 @@ export async function GET(
               style={{
                 display: 'flex',
                 color: 'rgba(255,255,255,0.85)',
-                fontSize: 22,
+                fontSize: 32,
                 fontWeight: 400,
-                marginTop: 16,
+                marginTop: 14,
                 textAlign: 'center',
-                maxWidth: 700,
+                justifyContent: 'center',
+                maxWidth: 1072,
               }}
             >
               Every walk, bike ride, and transit trip is an entry to win prizes.
@@ -490,27 +476,40 @@ export async function GET(
               style={{
                 display: 'flex',
                 color: 'rgba(255,255,255,0.85)',
-                fontSize: 22,
+                fontSize: 32,
                 fontWeight: 400,
-                marginTop: 16,
+                marginTop: 14,
               }}
             >
               A free app that rewards walking, biking and taking transit.
             </span>
           )}
 
-          {/* Competition badge */}
+          {/* Competition badge: name and dates, then where the rules are */}
           {hasCompetition && (
             <span
               style={{
                 display: 'flex',
                 color: LIME,
-                fontSize: 18,
+                fontSize: 30,
                 fontWeight: 700,
                 marginTop: 10,
               }}
             >
-              {data.competitionName} · {data.competitionDates} · Official rules at gogreenstreets.org
+              {data.competitionName} · {data.competitionDates}
+            </span>
+          )}
+          {hasCompetition && (
+            <span
+              style={{
+                display: 'flex',
+                color: 'rgba(255,255,255,0.75)',
+                fontSize: 28,
+                fontWeight: 500,
+                marginTop: 4,
+              }}
+            >
+              Official rules at gogreenstreets.org
             </span>
           )}
 
@@ -526,11 +525,11 @@ export async function GET(
             }}
           >
             {/* Members */}
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '14px 36px' }}>
-              <span style={{ display: 'flex', color: '#fff', fontSize: 28, fontWeight: 800 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '14px 32px' }}>
+              <span style={{ display: 'flex', color: '#fff', fontSize: 48, fontWeight: 800, lineHeight: 1.05 }}>
                 {data.memberCount.toLocaleString()}
               </span>
-              <span style={{ display: 'flex', color: 'rgba(255,255,255,0.75)', fontSize: 14, fontWeight: 500, marginTop: 2 }}>
+              <span style={{ display: 'flex', color: 'rgba(255,255,255,0.75)', fontSize: 28, fontWeight: 500, marginTop: 2 }}>
                 {data.memberCount === 1 ? 'member' : 'members'} in {data.neighborhood}
               </span>
             </div>
@@ -538,12 +537,12 @@ export async function GET(
             {/* Ranking */}
             {data.rank != null && data.totalGroups != null && data.town && (
               <>
-                <div style={{ display: 'flex', alignSelf: 'center', width: 1, height: 36, backgroundColor: 'rgba(255,255,255,0.12)' }} />
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '14px 36px' }}>
-                  <span style={{ display: 'flex', color: LIME, fontSize: 28, fontWeight: 800 }}>
+                <div style={{ display: 'flex', alignSelf: 'center', width: 1, height: 64, backgroundColor: 'rgba(255,255,255,0.12)' }} />
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '14px 32px' }}>
+                  <span style={{ display: 'flex', color: LIME, fontSize: 48, fontWeight: 800, lineHeight: 1.05 }}>
                     #{data.rank}
                   </span>
-                  <span style={{ display: 'flex', color: 'rgba(255,255,255,0.75)', fontSize: 14, fontWeight: 500, marginTop: 2 }}>
+                  <span style={{ display: 'flex', color: 'rgba(255,255,255,0.75)', fontSize: 28, fontWeight: 500, marginTop: 2 }}>
                     of {data.totalGroups} in {data.town}
                   </span>
                 </div>
@@ -554,26 +553,7 @@ export async function GET(
         </div>
 
         {/* Footer — referral code */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
-          <span style={{ display: 'flex', color: 'rgba(255,255,255,0.75)', fontSize: 20, fontWeight: 500 }}>
-            Use code
-          </span>
-          <span
-            style={{
-              display: 'flex',
-              fontFamily: 'monospace',
-              fontSize: 24,
-              fontWeight: 800,
-              letterSpacing: 4,
-              color: LIME,
-            }}
-          >
-            {data.referralCode}
-          </span>
-          <span style={{ display: 'flex', color: 'rgba(255,255,255,0.75)', fontSize: 20, fontWeight: 500 }}>
-            to join
-          </span>
-        </div>
+        <CodeFooter code={data.referralCode} />
       </div>
     ),
     imgOpts,
