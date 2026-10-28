@@ -22,6 +22,7 @@ export const PLANS: Plan[] = [
     features: [
       'Private invite code & team leaderboard',
       'Team name + logo on public leaderboard',
+      'Your company logo in the Shift app',
       'Aggregate dashboard (trips, miles, CO₂, mode mix, Shift Rate)',
       'Downloadable impact report',
       'Weekly email report on your team',
@@ -37,8 +38,7 @@ export const PLANS: Plan[] = [
     tagline: 'Everything you need to launch a workplace challenge.',
     features: [
       'Everything in Starter',
-      'Your company logo in the Shift app',
-      'Downloadable impact reports for any date range',
+      'Impact reports for any dates you choose',
       'Opt-in to regional public leaderboards',
     ],
   },
@@ -51,15 +51,18 @@ export const PLANS: Plan[] = [
       'Everything in Basic',
       'Create your own branded team challenges',
       'Join flagship events like Shift Your Summer',
-      'Company-funded rewards pool — gift cards for challenge winners',
+      'Company-funded rewards pool: gift cards for challenge winners',
     ],
   },
   {
     id: 'premium',
     name: 'Premium',
     annualPrice: 5000,
-    tagline: 'Put your company name on the rewards you fund.',
-    features: ['Everything in Standard', '"Sponsored by [Company]" attribution on the rewards you fund'],
+    tagline: 'For employers who file a commute report with the state or their city.',
+    features: [
+      'Everything in Standard',
+      'Workforce commute survey, ready to file with MassDEP, Cambridge or Boston',
+    ],
   },
 ]
 

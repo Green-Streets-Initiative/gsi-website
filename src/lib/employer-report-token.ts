@@ -1,6 +1,6 @@
 import 'server-only'
 import { createHmac, timingSafeEqual } from 'node:crypto'
-import { isImpactRangeKey, type ImpactRangeKey } from '@/lib/impact-range'
+import { isImpactRangeKey, isCustomDates, type CustomDates, type ImpactRangeChoice } from '@/lib/impact-range'
 
 /**
  * Employer impact report — signed, short-lived links (sign + verify).
@@ -18,7 +18,10 @@ export const EMPLOYER_REPORT_TOKEN_TTL_SECONDS = 60 * 60
 
 export interface EmployerReportTokenPayload {
   group_id: string
-  range: ImpactRangeKey
+  range: ImpactRangeChoice
+  /** Only for range 'custom': the Eastern calendar days, both included. */
+  from?: string
+  to?: string
   /** Who asked for the link; printed in the report footer. */
   email: string
   scope: typeof SCOPE
@@ -34,13 +37,14 @@ function base64UrlEncode(buf: Buffer): string {
   return buf.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
 }
 
-export function signEmployerReportToken(groupId: string, range: ImpactRangeKey, email: string): string {
+export function signEmployerReportToken(groupId: string, range: ImpactRangeChoice, email: string, custom?: CustomDates): string {
   const secret = process.env.EMPLOYER_REPORT_TOKEN_SECRET
   if (!secret) throw new Error('EMPLOYER_REPORT_TOKEN_SECRET not set')
   const iat = Math.floor(Date.now() / 1000)
   const payload: EmployerReportTokenPayload = {
     group_id: groupId,
     range,
+    ...(range === 'custom' && custom ? { from: custom.from, to: custom.to } : {}),
     email,
     scope: SCOPE,
     iat,
@@ -79,7 +83,9 @@ export function verifyEmployerReportToken(token: string, groupId: string): Emplo
   }
 
   if (payload.scope !== SCOPE) return { ok: false, error: 'scope' }
-  if (!payload.group_id || !isImpactRangeKey(payload.range) || typeof payload.exp !== 'number') {
+  const rangeOk =
+    isImpactRangeKey(payload.range) || (payload.range === 'custom' && isCustomDates({ from: payload.from, to: payload.to }, Date.now()))
+  if (!payload.group_id || !rangeOk || typeof payload.exp !== 'number') {
     return { ok: false, error: 'malformed' }
   }
   if (payload.group_id !== groupId) return { ok: false, error: 'group' }

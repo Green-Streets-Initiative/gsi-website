@@ -6,6 +6,8 @@ import { verifyEmployerReportToken } from '@/lib/employer-report-token'
 import {
   isImpactRangeKey,
   impactWindow,
+  customWindow,
+  rangeInSentence,
   dashboardRpcParams,
   formatCo2,
   formatPtsChange,
@@ -80,8 +82,10 @@ export default async function EmployerReportPage({
   const groupId = param(params.group)
   const rangeRaw = param(params.range)
   const token = param(params.t)
+  const from = param(params.from)
+  const to = param(params.to)
 
-  if (!groupId || !isImpactRangeKey(rangeRaw) || !token) {
+  if (!groupId || !(isImpactRangeKey(rangeRaw) || rangeRaw === 'custom') || !token) {
     return (
       <Notice
         title="This report link isn't complete"
@@ -100,7 +104,7 @@ export default async function EmployerReportPage({
       />
     )
   }
-  if (verified.payload.range !== range) {
+  if (verified.payload.range !== range || (range === 'custom' && (verified.payload.from !== from || verified.payload.to !== to))) {
     return (
       <Notice
         title="This report link isn't valid"
@@ -110,13 +114,15 @@ export default async function EmployerReportPage({
   }
 
   const nowMs = requestTime()
-  const win = impactWindow(range, nowMs)
+  // The token already checked custom dates; from/to match it.
+  const win =
+    range === 'custom' ? customWindow({ from: from!, to: to! }, nowMs) : impactWindow(range, nowMs)
   const supabase = createServerSupabaseClient()
 
   const [groupRes, dashRes, peerRes] = await Promise.all([
     supabase.from('groups').select('id, name, logo_url, onboarding').eq('id', groupId).maybeSingle(),
     supabase.rpc('get_employer_dashboard_data', dashboardRpcParams(groupId, win)),
-    supabase.rpc('get_employer_peer_benchmark', { p_group_id: groupId, p_days: win.days }),
+    supabase.rpc('get_employer_peer_benchmark', dashboardRpcParams(groupId, win)),
   ])
 
   const group = (groupRes.data ?? null) as GroupRow | null
@@ -185,7 +191,7 @@ export default async function EmployerReportPage({
     : "The emissions of driving alone over the same miles, minus the emissions of the way people actually went. Walking and biking count as zero; for a bus or train trip we subtract that vehicle's emissions per rider."
 
   const rows = prior ? changeRows(dashboard, prior) : null
-  const periods = prior ? comparisonPeriods(dashboard, prior, win.label, nowMs) : null
+  const periods = prior ? comparisonPeriods(dashboard, prior, win.key === 'custom' ? 'Your dates' : win.label, nowMs) : null
 
   const weeks = dashboard.weekly_shift_rates
   const hasTrend = trendValues(weeks) != null
@@ -284,7 +290,7 @@ export default async function EmployerReportPage({
           <section className="report-section rounded-[20px] bg-forest px-6 pb-7 pt-6 text-white sm:px-8">
             <p className="flex flex-wrap items-baseline gap-x-4 gap-y-1 text-[17px] leading-snug">
               <span className="font-bold">{windowLabelLong(win.start, win.end)}</span>
-              <span>{win.label}</span>
+              {win.key !== 'custom' && <span>{win.label}</span>}
             </p>
             <h1 className="mt-3 font-headline text-[38px] font-extrabold leading-[1.02] tracking-[-0.01em] text-white sm:text-[44px]">
               {group.name} on Shift
@@ -348,11 +354,11 @@ export default async function EmployerReportPage({
             <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
               <h2 className="font-headline text-[24px] font-extrabold leading-tight">Shift Rate, week by week</h2>
               <span className="font-headline text-[18px] font-extrabold text-forest">
-                {shiftRate}% for {win.label.charAt(0).toLowerCase() + win.label.slice(1)}
+                {shiftRate}% for {rangeInSentence(win)}
               </span>
             </div>
             <p className="mt-1 text-[14px] text-ink-soft">
-              Each week&rsquo;s share of trips made by walking, biking, scooter or transit, over the last 12 weeks. A dash
+              Each week&rsquo;s share of trips made by walking, biking, scooter or transit, over {win.key === 'custom' ? `the 12 weeks to ${win.label.split(' – ').pop()}` : 'the last 12 weeks'}. A dash
               marks a week with no recorded trips.
             </p>
             {hasTrend && weeks ? (
