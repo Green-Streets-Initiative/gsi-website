@@ -1466,9 +1466,9 @@ Before you sign a lease, [put the address into our trip planner](https://www.gog
 
 ```yaml
 id: mg_show_someone_the_way
-reviewed: 2026-10-22
-title: "Showing someone the way"
-summary: "How to make a first trip together go well, whether you're showing a neighbor the way or you're the one trying it."
+reviewed: 2026-10-28
+title: "How to show someone a new way to get where they're going"
+summary: "How to plan a first trip together and make it go well, for the person leading and the person going for the first time."
 slug: showing-someone-the-way
 mode: multimodal
 barrier: safety
@@ -1479,34 +1479,49 @@ topics: [getting-started, safety, planning]
 related: [mg_low_stress_routes, mg_first_bike_lane, mg_pay_for_t]
 ```
 
-### Plan it together
+### Plan the trip together
 
-- Agree on a day, a time and a meeting spot by email.
-- Plan the route in Shift and send it to each other. On a bike, pick the calmest route, not the fastest.
-- Agree on what you'll do if it rains.
+- Pick a day, a time and a place to meet.
+- Plan the route in Shift and send it to each other. By bike, pick the calmest route, not the fastest.
+- Decide what you'll do if it rains.
 
-### Stay safe
+### Meet safely
 
 - Meet somewhere public the first time, like a T station entrance or a coffee shop.
 - Tell a friend where you're going. Either of you can end the trip at any time.
-- If something feels off, open Your matches in Shift and tap "Something wrong?". If you're in danger, call 911.
+- If something feels wrong, open Your matches in Shift and tap "Something wrong?". If you're in danger, call 911.
 
-### If you're showing the way
+### If you're leading the trip
 
-- You only need to know this trip. Go at their pace and point out the tricky crossings.
-- By bike: check both bikes before you start, and ride one behind the other on busy streets.
+- You only need to plan and lead this one trip.
+- Go at their pace. Point out hard crossings before you reach them.
 - By bus or train: show how to pay with a [CharlieCard](https://www.mbta.com/fares/charliecard) or a phone, and where to wait.
-- Keep it to the trip: don't lend a bike, carry anyone on yours, or offer a ride in your car.
+- Don't lend a bike, carry anyone on your bike, or give a ride in your car.
 
-### If you're the one trying it
+### If it's your first time
 
-- Bring a charged phone, a way to pay for transit, and a helmet and lights if you're biking.
-- Ask anything. That's the point of going together.
-- Want more practice? Boston Bikes runs [free learn-to-bike classes for adults](https://www.boston.gov/departments/boston-bikes/adults-learn-to-bike).
+- Bring a charged phone and a way to pay for transit. By bike, bring a helmet, and lights if you'll be out after dark.
+- Ask questions along the way.
+- Want more practice on a bike? Boston Bikes runs [free learn-to-bike classes for adults](https://www.boston.gov/departments/boston-bikes/adults-learn-to-bike).
+
+### By bike: before you go
+
+- Check both bikes. Squeeze the tires, squeeze the brakes, and spin the pedals to check the chain.
+- Wear a helmet that fits snugly.
+- After dark, use a white light in front and a red light in back. Massachusetts law requires them.
+
+### By bike: on the street
+
+- Stop at every stop sign and red light, even when it looks clear.
+- Ride at least 4 feet from parked cars, even in a bike lane. A door can open without warning.
+- Before you turn or change lanes, look over your shoulder, then point where you're going.
+- To turn left, either move into the left lane when it's clear and turn, or ride straight across, wait at the far corner, and go on the next green.
+- At corners, stay behind trucks and buses, not beside them.
+- On busy streets, ride one behind the other, with the leader in front.
 
 ### After the trip
 
-Shift will ask how it went, and only the Green Streets team sees your answer. Then try the same trip on your own within a week, while the route is fresh.
+Shift will ask how it went. Only the Green Streets team sees your answer. Then take the same trip on your own within a week, while you still remember the route.
 
 ---
 
