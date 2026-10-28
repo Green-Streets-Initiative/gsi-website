@@ -1290,7 +1290,7 @@ export async function approvalCard(ctx: ToolCtx, name: string, input: Record<str
     return {
       card: {
         title: status === 'going' ? `Going to ${d.title}` : status === 'maybe' ? `Maybe for ${d.title}` : `Can't make ${d.title}`,
-        lines: [[d.day, d.time].filter(Boolean).join(', '), ...(d.meetup ? [`Meet at ${d.meetup}`] : []), d.joined ? 'The organizer sees your answer' : 'Joins the ride; the organizer sees your name'],
+        lines: [[d.day, d.time].filter(Boolean).join(', '), ...(d.meetup ? [`Meet at ${d.meetup}`] : []), d.joined ? 'The organizer sees your answer' : 'You join the ride, and the organizer sees your name'],
         cta: status === 'going' ? "I'm going" : status === 'maybe' ? 'Maybe' : "Can't make it", tone: 'primary',
       },
       input: { occurrence_id: id, status },

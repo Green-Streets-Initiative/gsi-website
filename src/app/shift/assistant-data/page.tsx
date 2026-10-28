@@ -17,12 +17,19 @@ export const metadata = {
   description: 'What the assistant in the Shift app sees, who processes it, what Green Streets keeps, and how to delete it.',
 }
 
-const SECTIONS: { heading: string; body: string[] }[] = [
+const SECTIONS: { heading: string; body: string[]; list?: string[] }[] = [
   {
     heading: 'What it is',
     body: [
-      'The assistant is an optional part of the Shift app. You ask about getting around in your own words, and it answers with what Shift knows: trip comparisons, group rides and walks, fares, weather, service changes, shuttles, live MBTA times, station parking, bikes on the T, step-free stations and The RIDE, what an e-bike would cost for your trips, the streets Shift members bike, Rewards Partners nearby, your closure plans, your challenges, your workplace’s commute benefits, what your drives cost, and your own activity and progress.',
+      'The assistant is an optional part of the Shift app. You ask about getting around in your own words, and it answers with what Shift knows.',
       'It saves a place, changes a setting, sets a trip reminder, signs you up for a Shift group ride or remembers something about you only after you tap the button on its card.',
+    ],
+    list: [
+      'Trip comparisons', 'Group rides and walks', 'Fares', 'Weather', 'Service changes', 'Shuttles',
+      'Live MBTA times', 'Station parking', 'Bikes on the T', 'Step-free stations and The RIDE',
+      'What an e-bike would cost you', 'Streets Shift members bike', 'Rewards Partners nearby',
+      'Your closure plans', 'Your challenges', 'Your workplace’s commute benefits', 'What your drives cost',
+      'Your activity and progress',
     ],
   },
   {
@@ -77,7 +84,17 @@ export default function ShiftAssistantDataPage() {
               <section key={s.heading}>
                 <h2 className="mb-4 font-serif text-[1.75rem] font-normal leading-[1.1] text-navy">{s.heading}</h2>
                 <div className="space-y-4">
-                  {s.body.map((p) => (
+                  {s.body.slice(0, 1).map((p) => (
+                    <p key={p.slice(0, 40)} className="text-[1.0625rem] leading-[1.7] text-navy">{p}</p>
+                  ))}
+                  {s.list && (
+                    <ul className="flex flex-wrap gap-2" aria-label="What it can help with">
+                      {s.list.map((item) => (
+                        <li key={item} className="rounded-full border border-navy/15 bg-white px-3 py-1.5 text-[15px] text-navy">{item}</li>
+                      ))}
+                    </ul>
+                  )}
+                  {s.body.slice(1).map((p) => (
                     <p key={p.slice(0, 40)} className="text-[1.0625rem] leading-[1.7] text-navy">{p}</p>
                   ))}
                 </div>

@@ -87,7 +87,7 @@ export async function accessibleNear(at: Point) {
     // always starts with the station's name.
     const out = live.filter((a) => a.attributes.informed_entity?.some((e) => e.stop === s.id) || a.attributes.header.startsWith(`${s.attributes.name} `))
     return {
-      station: s.attributes.name, miles_away: round1(d),
+      station: s.attributes.name, miles_away: d < 0.1 ? 'right there' : round1(d),
       step_free: STEP_FREE[s.attributes.wheelchair_boarding] ?? 'not known',
       lines, ...(buses.length ? { buses: buses.slice(0, 8) } : {}),
       out_now: out.map((a) => a.attributes.header.replace(/\s+/g, ' ').trim()).slice(0, 4),
@@ -96,7 +96,6 @@ export async function accessibleNear(at: Point) {
   return {
     stations,
     ...(stations.length ? {} : { note: 'No T station within about half a mile. Buses are all accessible; offer get_departures for the nearest stops.' }),
-    elevators_out_anywhere_now: live.filter((a) => a.attributes.effect === 'ELEVATOR_CLOSURE').length,
     ...ACCESS_FACTS,
     links: Object.keys(ACCESS_LINKS),
   }
@@ -237,6 +236,6 @@ export async function ebikeMath(ctx: Ctx) {
     help_paying: 'The state e-bike vouchers are closed and not expected to reopen in 2026 (goclean.masscec.com, checked 2026-10-28). Some employers help with bike costs: get_my_workplace. Try one first: find_bikes_to_try.',
     note: trips.length
       ? 'Lay out the numbers side by side: what those trips cost now, and an e-bike or Bluebikes e-bikes for them. Owning a car costs the same whether or not one trip changes, so compare only the trip costs. If they pay a monthly pass, the fares already come out of it; say so. Offer a test ride first.'
-      : 'No drives or transit trips under 8 miles in the last 30 days. Give the typical monthly costs and offer a test ride.',
+      : 'Shift has none of their drives or transit trips under 8 miles from the last 30 days. Your first words are the typical monthly costs ("A commuter e-bike runs about …"); the missing trips get one line near the end: once Shift sees a few of their drives or bus or train trips, you can compare with their own. Offer a test ride.',
   }
 }
