@@ -33,6 +33,8 @@ export interface ParkAndRideLot {
   spaces: number | null
   weekdayUsePct: number | null
   lines: string[]
+  /** With a destination: extra miles of driving to go by this station (miles on a straight line). */
+  outOfWayMiles?: number
 }
 
 function prop(f: Facility, name: string): string | number | null {
@@ -69,8 +71,14 @@ async function lines(stationId: string): Promise<string[]> {
   return [...new Set(data.data.filter((r) => [0, 1, 2, 4].includes(r.attributes.type)).map((r) => r.attributes.long_name))]
 }
 
-/** The nearest stations with parking within 25 miles (five unless asked), or null when the MBTA doesn't answer. */
-export async function parkAndRideNear(lat: number, lng: number, limit = 5): Promise<ParkAndRideLot[] | null> {
+/**
+ * The nearest stations with parking within 25 miles (five unless asked), or
+ * null when the MBTA doesn't answer. With `toward` (where they're headed),
+ * the stations on the way come first: from Lexington to Kendall,
+ * Alewife is 10th nearest but on the way (the assistant left it out,
+ * 2026-10-28).
+ */
+export async function parkAndRideNear(lat: number, lng: number, limit = 5, toward?: { lat: number; lng: number }): Promise<ParkAndRideLot[] | null> {
   const res = await fetch(`${MBTA_BASE}/facilities?filter[type]=PARKING_AREA&include=stop&page[limit]=500`, {
     headers,
     next: { revalidate: 86400 },
@@ -140,7 +148,18 @@ export async function parkAndRideNear(lat: number, lng: number, limit = 5): Prom
     const lot = byStation.get(key)
     if (lot) lot.weekdayUsePct = Math.min(100, Math.round((100 * u.cars) / u.spaces))
   }
-  const near: ParkAndRideLot[] = [...byStation.values()].slice(0, limit)
+  let ranked = [...byStation.values()]
+  if (toward) {
+    const direct = miles(lat, lng, toward.lat, toward.lng)
+    for (const l of ranked) l.outOfWayMiles = Math.max(0, Math.round((l.miles + miles(l.lat, l.lng, toward.lat, toward.lng) - direct) * 10) / 10)
+    // Lots within 2 miles of the way, nearest first (a park and ride is a
+    // short drive: Framingham's own lot, just behind the start, before
+    // Wellesley's), then the rest by how far out of the way.
+    const onTheWay = (l: ParkAndRideLot) => l.outOfWayMiles! <= 2
+    ranked = ranked.sort((a, b) => Number(onTheWay(b)) - Number(onTheWay(a))
+      || (onTheWay(a) ? a.miles - b.miles : a.outOfWayMiles! - b.outOfWayMiles!))
+  }
+  const near: ParkAndRideLot[] = ranked.slice(0, limit)
 
   await Promise.all(near.map(async (l) => (l.lines = l.stationId ? await lines(l.stationId) : [])))
 

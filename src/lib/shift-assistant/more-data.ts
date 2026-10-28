@@ -491,16 +491,18 @@ export async function departuresNear(at: Point, line: string | null, when: Date 
 
 // ── Park and ride ──────────────────────────────────────────────────────
 
-export async function parkAndRide(at: Point) {
-  const lots = await parkAndRideNear(at.lat, at.lng, 8)
+export async function parkAndRide(at: Point, toward?: Point | null) {
+  const lots = await parkAndRideNear(at.lat, at.lng, 8, toward ?? undefined)
   if (!lots) return { error: 'The MBTA parking list is not answering right now.' }
   if (!lots.length) return { none: 'No MBTA station parking within 25 miles.' }
   return {
     lots: lots.map((l) => ({
-      station: l.station, miles: l.miles, lines: l.lines,
+      station: l.station, miles: l.miles, ...(l.outOfWayMiles != null ? { out_of_the_way_miles: l.outOfWayMiles } : {}), lines: l.lines,
       daily: l.dailyFee, monthly: l.monthlyFee, spaces: l.spaces,
       usually_full: l.weekdayUsePct != null ? `${l.weekdayUsePct}% full on a typical weekday` : null,
     })),
-    note: 'MBTA station parking, nearest first, with its posted fees; how full is a typical weekday. Lot rules and how to pay are on mbta.com.',
+    note: toward
+      ? 'MBTA station parking, the nearest ones on the way to where they are going first, with its posted fees; how full is a typical weekday. Lot rules and how to pay are on mbta.com.'
+      : 'MBTA station parking, nearest first, with its posted fees; how full is a typical weekday. Lot rules and how to pay are on mbta.com.',
   }
 }

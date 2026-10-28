@@ -345,7 +345,7 @@ export const TOOLS: Anthropic.Tool[] = [
   {
     name: 'find_park_and_ride',
     description: "MBTA station parking near a place: the stations with parking, how far, the lines there, the daily and monthly fee, spaces, and how full it is on a typical weekday. Use when someone drives part of the way, lives beyond the T, or asks where to park and take the train.",
-    input_schema: { type: 'object', properties: { near: placeSchema }, required: ['near'] },
+    input_schema: { type: 'object', properties: { near: placeSchema, toward: { ...placeSchema, description: 'Where they are going, when known: puts the stations on the way first.' } }, required: ['near'] },
   },
   {
     name: 'get_bike_rules',
@@ -698,15 +698,22 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
             ? "This trip is their commute. Transit's monthly cost is already after what their employer pays toward it, and driving's includes what parking costs them there. A bike share membership from work makes bike share free or cheaper; say so in one short sentence when it matters."
             : "This trip is their commute. The monthly costs above don't include these benefits: say what they change (a pre-tax transit benefit saves the taxes on the pass, a bike share membership makes bike share free or cheaper) in one short sentence. Driving's cost already includes what parking costs them there." } } : {}),
           ...(paid ? { transit_before_employer_help: (e.modes ?? []).find((m) => m.mode === 'transit')?.monthly_cost ?? null } : {}),
+          // Driving is gas and wear unless it's their office with a parking
+          // cost; next to park and ride (which counts the lot) it looked far
+          // cheaper (Lexington to Kendall: $127 against $358, 2026-10-28).
+          ...(!parking && !(office && workplace?.benefits.free_parking) && ways.some((m) => m.mode === 'drive')
+            ? { drive_cost_leaves_out: "Parking where they're going: driving's monthly cost is gas and wear only. Say so in a few words whenever you set it against park and ride or transit, which include their parking and fares." } : {}),
           ...(vehicle ? { drive_priced_for: vehicle === 'ev' ? 'their electric car' : 'their hybrid' } : {}),
           ...(card ? { card: 'A comparison card shows under your reply: each way with its minutes and monthly cost side by side, the recommended one marked, and buttons for directions and the full trip. Write at most two short sentences with no minutes or dollar amounts (the card shows them): which way you would suggest for them and the one thing that tips it.' } : {}),
           miles: e.distance_miles != null ? round1(e.distance_miles) : null,
           recommended,
           ways: (e.modes ?? []).filter((m) => m.viable).map((m) => ({
-            way: m.mode, minutes: m.time_minutes, minutes_up_to: m.time_minutes_max ?? null, monthly_cost: netCost(m), leave_by: m.leave_by ?? null, detail: m.detail,
+            way: m.mode, minutes: m.time_minutes, minutes_up_to: m.time_minutes_max ?? null, monthly_cost: Math.round(netCost(m)), leave_by: m.leave_by ?? null, detail: m.detail,
           })),
+          // Monthly like the ways above, as the card does (a day's cost × 20
+          // workdays): "$17.60 a day" next to "$128.73 a month" didn't compare.
           two_part_trips: (e.combos ?? []).filter((c) => c.qualifies !== false).map((c) => ({
-            way: c.kind, minutes: c.minutes_total, cost_per_day: c.cost_per_day, leave_by: c.leave_by, station: c.station?.name ?? null, how: c.summary,
+            way: c.kind, minutes: c.minutes_total, monthly_cost: Math.round(c.cost_per_day * 20), leave_by: c.leave_by, station: c.station?.name ?? null, how: c.summary,
           })),
           ...(shuttles.length ? {
             shuttles: shuttles.map((s) => ({
@@ -1030,7 +1037,7 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
       case 'find_park_and_ride': {
         const near = asPlace(input.near)
         if (!near) return fail('The place needs coordinates. Look it up with find_place first.')
-        return ok(await parkAndRide(near))
+        return ok(await parkAndRide(near, asPlace(input.toward)))
       }
       case 'get_accessibility': {
         const near = asPlace(input.near)
