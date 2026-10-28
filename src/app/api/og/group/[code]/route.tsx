@@ -115,7 +115,7 @@ function FallbackCard() {
     >
       <Wordmark />
       <div style={{ display: 'flex', color: 'rgba(255,255,255,0.85)', fontSize: 36, fontWeight: 400, marginTop: 24 }}>
-        A free app that rewards walking, biking and taking transit.
+        A free app that shows your options for getting around.
       </div>
       <div style={{ display: 'flex', color: 'rgba(255,255,255,0.75)', fontSize: 28, marginTop: 24 }}>
         shift.gogreenstreets.org
