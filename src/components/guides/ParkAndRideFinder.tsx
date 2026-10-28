@@ -4,7 +4,7 @@ import { useState } from 'react'
 import posthog from 'posthog-js'
 import AddressAutocomplete from '@/components/AddressAutocomplete'
 import { gaEvent } from '@/lib/ga'
-import type { ParkAndRideLot } from '@/app/api/park-and-ride/route'
+import type { ParkAndRideLot } from '@/lib/server/park-and-ride'
 import { gt, lineLabel, type GuideLocale } from '@/lib/guides/i18n'
 
 /*

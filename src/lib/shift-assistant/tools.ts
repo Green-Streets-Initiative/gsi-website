@@ -14,6 +14,7 @@ import { fetchRideWithGps } from '@/lib/organizers/rwgps'
 import { bikeParkingNear, summarizeRoute } from '@/lib/organizer-assistant/route-designer'
 import { myChallenges, myWorkplace, officeAt, workplaceFacts } from '@/lib/shift-assistant/my-challenges'
 import { myClosurePlans, myDrives, shuttlesFor } from '@/lib/shift-assistant/trip-data'
+import { BIKE_RULES, bikeOk, departuresNear, myProgress, parkAndRide, popularStreets, rewardsPartnersNear } from '@/lib/shift-assistant/more-data'
 import { signedUrls } from '@/lib/shift-assistant/uploads'
 import { ALWAYS as FARES_FOR_EVERYONE, fareProgram, farePrograms } from '@/lib/facts/fare-programs'
 import { PRICES, usd } from '@/lib/facts/prices'
@@ -154,6 +155,12 @@ export const ACTIVITY: Record<string, string> = {
   get_my_closure_plan: 'Opening your closure plan',
   get_my_drives: 'Looking at your drives',
   find_shuttles: 'Checking shuttles',
+  get_popular_streets: 'Finding the streets people use',
+  find_rewards_partners: 'Looking for Rewards Partners',
+  get_my_progress: 'Checking your progress',
+  get_departures: 'Checking live departures',
+  find_park_and_ride: 'Finding station parking',
+  get_bike_rules: 'Checking bikes on the T',
   get_my_settings: 'Reading your settings',
   get_town_info: 'Looking up your town',
   check_route_link: 'Reading the route',
@@ -293,6 +300,52 @@ export const TOOLS: Anthropic.Tool[] = [
       properties: { from: placeSchema, to: { ...placeSchema, description: 'Where they are going, when there is a trip. Leave out to list shuttles near one place.' } },
       required: ['from'],
     },
+  },
+  {
+    name: 'get_popular_streets',
+    description: "The streets and paths Shift members actually bike (or walk) near a place, or along a trip between two places, from Shift's own trips over the last 90 days: how busy each is with Shift people, and which ones people new to Shift use. Nobody else has this. Use for \"which way do people bike to Kendall\", \"what's the usual route\", \"where do people ride around here\", or alongside check_trip when someone is nervous about a route.",
+    input_schema: {
+      type: 'object',
+      properties: {
+        from: placeSchema,
+        to: { ...placeSchema, description: 'The other end of the trip. Leave out for streets near one place.' },
+        way: nullable('string', 'bike or walk. Empty for bike.'),
+      },
+      required: ['from'],
+    },
+  },
+  {
+    name: 'find_rewards_partners',
+    description: "Rewards Partners near a place: local shops in Shift's rewards catalog (where a gift card they win can be spent), with the nearest stop and Bluebikes dock, and Rewards Partner offers (what each gives, the Shift level that unlocks it, and whether they have that level). Use for \"where can I use my reward\", \"any partners near work\", \"what does Shift get me around here\". Near their location unless you pass a place.",
+    input_schema: { type: 'object', properties: { near: { ...placeSchema, description: 'Where to look. Leave out for their location, else their Home.' } } },
+  },
+  {
+    name: 'get_my_progress',
+    description: "Their progress over time: the switch plan they said yes to (the trip, the new way, the first try, days so far of the 5 that make it a switch, the reward), their daily and weekly streaks, personal bests (longest walk, longest bike ride, most trips in a week and in a month), the last 12 months in trips and miles, and their Shift level with what the next one takes. Use for \"how's my switch going\", \"what's my streak\", \"what's my longest ride\", \"how do I get to the next level\".",
+    input_schema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'get_departures',
+    description: "Live MBTA departures from the stops near a place: subway, Commuter Rail and ferry within about a 10-minute walk and buses within about 5, the next three times each way, and whether a full-size bike can ride that train now. For another day or time, the timetable, with which Commuter Rail trains take bikes. Use for \"when's the next train\", \"how long for the 87\", \"should I leave now\", \"which trains tomorrow morning take bikes\", or before telling someone to catch something soon. Near their location unless you pass a place.",
+    input_schema: {
+      type: 'object',
+      properties: {
+        place: { ...placeSchema, description: 'The stop or place. Leave out for their location.' },
+        line: nullable('string', 'Only this line or bus ("Red", "87", "Fitchburg"): its nearest stop, however far. Empty for everything near.'),
+        leave_date: nullable('string', 'YYYY-MM-DD, for another day ("tomorrow"): the timetable instead of live times. Empty for now.'),
+        leave_time: nullable('string', 'HH:MM, 24-hour, Eastern time, for a later time. Empty for now.'),
+      },
+    },
+  },
+  {
+    name: 'find_park_and_ride',
+    description: "MBTA station parking near a place: the stations with parking, how far, the lines there, the daily and monthly fee, spaces, and how full it is on a typical weekday. Use when someone drives part of the way, lives beyond the T, or asks where to park and take the train.",
+    input_schema: { type: 'object', properties: { near: placeSchema }, required: ['near'] },
+  },
+  {
+    name: 'get_bike_rules',
+    description: "Which MBTA trains, buses and boats take a bike and when, from mbta.com: full-size and folding bikes, rush-hour times by line, Commuter Rail bike trains, and the stations where bikes aren't allowed; with whether each line takes a full-size bike right now. Use for \"can I bring my bike on the Red Line\", \"bike on the Commuter Rail\", or a bike-and-train trip.",
+    input_schema: { type: 'object', properties: {} },
   },
   {
     name: 'save_place',
@@ -878,6 +931,40 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
         const from = asPlace(input.from)
         if (!from) return fail('The place needs coordinates. Look it up with find_place first.')
         return ok(await shuttlesFor(from, asPlace(input.to)))
+      }
+      case 'get_popular_streets': {
+        const from = asPlace(input.from)
+        if (!from) return fail('The place needs coordinates. Look it up with find_place first.')
+        return ok(await popularStreets(ctx, from, asPlace(input.to), input.way === 'walk' ? 'walk' : 'bike'))
+      }
+      case 'find_rewards_partners': {
+        let near = asPlace(input.near) ?? ctx.here ?? null
+        if (!near) {
+          const { data: h } = await ctx.user.from('saved_locations').select('lat, lng').eq('user_id', ctx.userId).ilike('label', 'home').limit(1)
+          const at = ((h ?? [])[0] as { lat: number | null; lng: number | null } | undefined)
+          near = at?.lat != null && at?.lng != null ? { lat: at.lat, lng: at.lng } : null
+        }
+        if (!near) return fail('Their location is unknown. Ask where to look, then find_place.')
+        return ok(await rewardsPartnersNear(ctx, near))
+      }
+      case 'get_my_progress':
+        return ok(await myProgress(ctx))
+      case 'get_departures': {
+        const at = asPlace(input.place) ?? ctx.here ?? null
+        if (!at) return fail('Their location is unknown. Ask which stop, then find_place.')
+        const date = typeof input.leave_date === 'string' && input.leave_date ? input.leave_date : null
+        const time = typeof input.leave_time === 'string' && input.leave_time ? input.leave_time : null
+        const iso = date || time ? bostonIso(date ?? todayKey(), time ?? '08:00') : null
+        return ok(await departuresNear(at, typeof input.line === 'string' && input.line ? input.line : null, iso ? new Date(iso) : null))
+      }
+      case 'find_park_and_ride': {
+        const near = asPlace(input.near)
+        if (!near) return fail('The place needs coordinates. Look it up with find_place first.')
+        return ok(await parkAndRide(near))
+      }
+      case 'get_bike_rules': {
+        const lines: [string, string, number, number | null][] = [['Red Line', 'Red', 1, null], ['Orange Line', 'Orange', 1, null], ['Blue Line inbound', 'Blue', 1, 0], ['Blue Line outbound', 'Blue', 1, 1], ['Green Line', 'Green-B', 0, null], ['Buses and Silver Line', '1', 3, null], ['Ferry', 'Boat-F1', 4, null]]
+        return ok({ ...BIKE_RULES, full_size_bike_right_now: Object.fromEntries(lines.map(([label, id, type, dir]) => [label, bikeOk(id, type, dir).ok ? 'yes' : 'no'])) })
       }
       case 'get_town_info': {
         const asked = typeof input.town === 'string' ? input.town.trim().toLowerCase() : ''
