@@ -27,6 +27,19 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'valid lat and lng required' }, { status: 400 })
   }
 
+  // ?parts=shuttles skips MBTA entirely. The app's trip classifier asks
+  // about every drive-length trip only to spot a shuttle ride; paying ~13
+  // MBTA calls each for rail and bus it never reads ran our key into the
+  // rate limit at morning commute (2026-10-28) and 500'd the whole route.
+  if (searchParams.get('parts') === 'shuttles') {
+    const shuttles = await nearbyShuttleStops(lat, lng).catch(() => [])
+    const shuttleRoutes = await shuttleRouteStops(shuttles).catch(() => [])
+    return NextResponse.json(
+      { shuttles, shuttleRoutes },
+      { headers: { 'Cache-Control': 'public, max-age=3600, s-maxage=3600' } },
+    )
+  }
+
   const [rail, bus, shuttles] = await Promise.all([
     getStopTopology(lat, lng, {
       routeTypes: SNAPSHOT_RAIL_TYPES,

@@ -26,6 +26,16 @@ function mbtaUrl(path: string, params: URLSearchParams): string {
   return `${MBTA_BASE}${path}?${params}`
 }
 
+/** One retry after a short pause when MBTA rate-limits us (429): a burst
+ *  of cold lookups trips the per-minute budget briefly, and a single
+ *  throttled call used to fail the whole topology request. */
+async function fetchMbta(url: string): Promise<Response> {
+  const res = await fetch(url, { signal: AbortSignal.timeout(8000) })
+  if (res.status !== 429) return res
+  await new Promise(r => setTimeout(r, 1000 + Math.random() * 1000))
+  return fetch(url, { signal: AbortSignal.timeout(8000) })
+}
+
 export interface ServerTopologyOptions {
   /** MBTA route_type filter csv: 3 = bus, 0,1 = subway/light rail, 2 = commuter rail */
   routeTypes: string
@@ -67,14 +77,13 @@ const durableTopology = unstable_cache(computeTopology, ['nearby-topology-v3'], 
 })
 
 async function computeTopology(lat3: number, lng3: number, opts: ServerTopologyOptions): Promise<StopTopology[]> {
-  const stopsRes = await fetch(
+  const stopsRes = await fetchMbta(
     mbtaUrl('/stops', new URLSearchParams({
       'filter[latitude]': String(lat3),
       'filter[longitude]': String(lng3),
       'filter[radius]': String(opts.radiusDeg),
       'filter[route_type]': opts.routeTypes,
     })),
-    { signal: AbortSignal.timeout(8000) }
   )
   const stopsData = await stopsRes.json()
   if (!stopsRes.ok || stopsData.errors) throw new Error(`stops ${stopsRes.status}`)
@@ -118,9 +127,8 @@ async function computeTopology(lat3: number, lng3: number, opts: ServerTopologyO
 
   const routeResults = await Promise.all(
     routeQueries.map(async (q) => {
-      const res = await fetch(
+      const res = await fetchMbta(
         mbtaUrl('/routes', new URLSearchParams({ 'filter[stop]': q.stopIds, 'filter[type]': opts.routeTypes })),
-        { signal: AbortSignal.timeout(8000) }
       )
       const data = await res.json()
       if (!res.ok || data.errors) throw new Error(`routes ${res.status}`)
