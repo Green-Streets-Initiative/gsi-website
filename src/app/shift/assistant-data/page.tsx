@@ -7,7 +7,7 @@ import Footer from '@/components/Footer'
 // portal). The organizer and employer versions are /organizers/assistant-data
 // and /shift/employers/assistant-data. Keep it in step with the code: the
 // model (api/shift/assistant/route.ts), what the tools read
-// (lib/shift-assistant/tools.ts, my-challenges.ts, trip-data.ts, more-data.ts), pictures (Shift 01441), reminders (Shift
+// (lib/shift-assistant/tools.ts, my-challenges.ts, trip-data.ts, more-data.ts, audit-data.ts), pictures (Shift 01441), reminders (Shift
 // 01465), and the privacy policy's Shift Assistant section. Anthropic's terms
 // as in the employer note (lib/employer-assistant/data-note.ts), checked
 // 2026-10-22.
@@ -21,21 +21,22 @@ const SECTIONS: { heading: string; body: string[] }[] = [
   {
     heading: 'What it is',
     body: [
-      'The assistant is an optional part of the Shift app. You ask about getting around in your own words, and it answers with what Shift knows: trip comparisons, group rides and walks, fares, weather, service changes, shuttles, live MBTA times, station parking, bikes on the T, the streets Shift members bike, Rewards Partners nearby, your closure plans, your challenges, your workplace’s commute benefits, what your drives cost, and your own activity and progress.',
-      'It saves a place, changes a setting, sets a trip reminder or remembers something about you only after you tap the button on its card.',
+      'The assistant is an optional part of the Shift app. You ask about getting around in your own words, and it answers with what Shift knows: trip comparisons, group rides and walks, fares, weather, service changes, shuttles, live MBTA times, station parking, bikes on the T, step-free stations and The RIDE, what an e-bike would cost for your trips, the streets Shift members bike, Rewards Partners nearby, your closure plans, your challenges, your workplace’s commute benefits, what your drives cost, and your own activity and progress.',
+      'It saves a place, changes a setting, sets a trip reminder, signs you up for a Shift group ride or remembers something about you only after you tap the button on its card.',
     ],
   },
   {
     heading: 'What it sees',
     body: [
-      'The conversation, your saved places, your recent trips (times, how you traveled, and “Home” or “Work”, not map points), your points, badges and rewards, and your phone’s location when you allow it, rounded to about 100 meters.',
+      'The conversation, your saved places, your recent trips (times, how far and how you traveled, and “Home” or “Work”, not map points), your points, badges and rewards, and your phone’s location when you allow it, rounded to about 100 meters.',
       'Your challenges and groups: your own trip count, prizes and place on each leaderboard, and where your town, neighborhood or team stands. Other people show up only as numbers, never by name. If your employer offers Shift’s commute program, the commute benefits it set up there, such as help paying for transit, bike parking and its offices.',
       'The plans Shift made for MBTA closures on your trips, and the way you picked. The drives Shift found you make often, with the walk, bike or transit trips it found to compare, and the answers you gave in the app about your car (such as what insurance costs you), to estimate what the car costs a month. Your switch plan, streaks, personal bests and Shift level, from your own trips.',
       'A picture you attach. It is stored privately with that conversation and deleted with it. If you report a problem, the Green Streets team sees the picture with your report.',
       'Notes you asked it to remember, such as “I have an e-bike” or “I’d rather avoid busy streets”. Every new conversation starts with them, so you don’t have to say them again.',
+      'When it signs you up for a Shift group ride or walk, you join that ride and your answer for the date is saved, as when you tap Going in the app. The ride’s organizer sees your name and your answer.',
       'A trip reminder you set keeps that trip’s start, destination and time. After the trip, Shift looks at your trips from around then for one that starts or ends near those places, to tell you it counted.',
       'The streets Shift members bike and walk come from Shift’s town maps, which combine many people’s trips and show a street only where 3 or more different people went; nobody’s own trips can be picked out.',
-      'To answer, it looks up places and directions with Google Maps, the forecast with the National Weather Service, service changes, live times and station parking with the MBTA, and a Ride with GPS route when you share its link. These receive the places involved, not your name or email.',
+      'To answer, it looks up places and directions with Google Maps, the forecast with the National Weather Service, service changes, live times, station parking and step-free access with the MBTA, and a Ride with GPS route when you share its link. These receive the places involved, not your name or email.',
     ],
   },
   {
@@ -50,7 +51,7 @@ const SECTIONS: { heading: string; body: string[] }[] = [
     heading: 'What Green Streets keeps',
     body: [
       'Green Streets staff may read conversations to fix problems and improve the assistant. Conversations are deleted 12 months after your last message, and when you delete your account. You can delete a conversation, or all of them, with the trash button in the assistant; its pictures and reminders go with it.',
-      'Notes you asked it to remember stay until you ask it to forget them (one, or everything), and are deleted with your account or 12 months after you last used the assistant. Deleting a conversation leaves them.',
+      'Notes you asked it to remember stay until you delete them on the assistant’s What I remember screen (in the latest version of the app) or ask it to forget them (one, or everything), and are deleted with your account or 12 months after you last used the assistant. Deleting a conversation leaves them.',
       'When you ask for something Shift doesn’t do yet, or share feedback, the assistant passes a short note to Green Streets. We keep these notes, apart from the conversation, to decide what to build next.',
     ],
   },

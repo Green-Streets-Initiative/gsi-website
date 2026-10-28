@@ -327,7 +327,7 @@ export function bikeOk(routeId: string, routeType: number, directionId: number |
 
 // ── Live departures ────────────────────────────────────────────────────
 
-async function mbtaGet(path: string, params: Record<string, string>) {
+export async function mbtaGet(path: string, params: Record<string, string>) {
   const qs = new URLSearchParams(params)
   const res = await fetch(`${MBTA}${path}?${qs}`, { headers: MBTA_KEY ? { 'x-api-key': MBTA_KEY } : {}, cache: 'no-store', signal: AbortSignal.timeout(8000) })
   if (!res.ok) throw new Error(`mbta ${res.status}`)

@@ -200,8 +200,15 @@ function resultBlock(id: string, r: ToolResult, extra?: Record<string, unknown>)
 export async function GET(request: Request) {
   const url = new URL(request.url)
   const listing = url.searchParams.get('list') === '1'
-  const auth = await authorize(request, { ownDataOnly: listing })
+  const memories = url.searchParams.get('memories') === '1'
+  const auth = await authorize(request, { ownDataOnly: listing || memories })
   if ('error' in auth) return auth.error
+  // What I remember (the app's screen): their notes, oldest first.
+  if (memories) {
+    const { data } = await auth.admin.from('member_assistant_memories').select('id, note, created_at')
+      .eq('user_id', auth.user.id).order('created_at').limit(50)
+    return Response.json({ memories: data ?? [] })
+  }
   if (listing) {
     const { data } = await auth.admin.from('member_assistant_threads').select('id, title, updated_at, pending')
       .eq('user_id', auth.user.id).is('archived_at', null).order('updated_at', { ascending: false }).limit(50)
@@ -231,6 +238,16 @@ export async function DELETE(request: Request) {
   const url = new URL(request.url)
   const auth = await authorize(request, { ownDataOnly: true })
   if ('error' in auth) return auth.error
+  // Forget one note, or every note, from the What I remember screen.
+  const memory = url.searchParams.get('memory_id')
+  if (memory || url.searchParams.get('memories') === 'all') {
+    if (memory && !UUID.test(memory)) return Response.json({ error: 'memory_id required' }, { status: 400 })
+    let m = auth.admin.from('member_assistant_memories').delete().eq('user_id', auth.user.id)
+    if (memory) m = m.eq('id', memory)
+    const { error } = await m
+    if (error) return Response.json({ error: 'Could not delete it.' }, { status: 500 })
+    return Response.json({ ok: true })
+  }
   const id = url.searchParams.get('thread_id')
   const all = url.searchParams.get('all') === '1'
   if (!id && !all) return Response.json({ error: 'thread_id required' }, { status: 400 })

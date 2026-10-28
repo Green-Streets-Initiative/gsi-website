@@ -231,15 +231,20 @@ export default function PrivacyPage() {
               </P>
               <P>
                 To answer, it reads your question, your saved places, your recent trips (times,
-                how you traveled, and &ldquo;Home&rdquo; or &ldquo;Work&rdquo;, not map points),
+                how far and how you traveled, and &ldquo;Home&rdquo; or &ldquo;Work&rdquo;, not map points),
                 your points, badges and rewards, your challenges and groups (your own count and
                 place, never other people&apos;s names), the commute benefits your employer set up in
                 Shift, if it offers Shift&apos;s commute program, the plans Shift made for MBTA
                 closures on your trips, the drives Shift found you make often with the ways it found
                 to compare, the answers you gave in the app about your car&apos;s costs, your switch plan,
                 streaks, personal bests and Shift level, and your phone&apos;s location when
-                you allow it, rounded to about 100 meters. It saves a place or changes a setting only after you
-                tap Approve.
+                you allow it, rounded to about 100 meters. It saves a place, changes a setting or signs you up for
+                a ride only after you tap the button on its card.
+              </P>
+              <P>
+                If you ask it to sign you up for a Shift group ride or walk and tap the button, it
+                joins you to that ride and marks your answer for that date, as tapping Going in the
+                app does. The ride&apos;s organizer sees your name and your answer.
               </P>
               <P>
                 If you tap Remind me for a trip, we keep its start, destination and time with that
@@ -249,9 +254,11 @@ export default function PrivacyPage() {
               </P>
               <P>
                 If you tap Remember on a note the assistant offers, such as &ldquo;I have an
-                e-bike&rdquo;, it keeps that note for your later conversations. It is deleted
-                when you ask the assistant to forget it, when you delete your account, or 12
-                months after you last used the assistant.
+                e-bike&rdquo;, it keeps that note for your later conversations. You can see
+                and delete your notes on the assistant&apos;s What I remember screen (in the latest
+                version of the app). A note is deleted when you delete it there or ask the assistant
+                to forget it, when you delete your account, or 12 months after you last used the
+                assistant.
               </P>
               <P>
                 If you attach a picture, such as a screenshot, the assistant looks at it to answer

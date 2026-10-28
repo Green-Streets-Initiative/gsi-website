@@ -21,6 +21,7 @@ import { PRICES, usd } from '@/lib/facts/prices'
 import { BORROW_RENT_BLURB, nearbyBorrowRent } from '@/lib/nearby/borrow-rent'
 import { getBikeShareDocks } from '@/lib/server/bluebikes'
 import { getActiveRoams, getNextRoamEvent, getRoamDetail, getRoamTrailInfo } from '@/lib/roams/queries'
+import { ACCESS_LINKS, accessibleNear, ebikeMath, rsvpRide, shiftRideDates } from '@/lib/shift-assistant/audit-data'
 import { RIDE_PLAN_ACTIVITY, RIDE_PLAN_NEEDS_APPROVAL, RIDE_PLAN_TOOLS, ridePlanCard, runApprovedRidePlan, runRidePlanTool, type RidePlanCard } from '@/lib/shift-assistant/ride-plan-tools'
 
 // The Shift assistant's tools, for everyone in the app (Keith 2026-10-24).
@@ -98,15 +99,16 @@ export type TripCard = {
 const CARD_WAYS = 'card_ways'
 
 /** Screens added after the first release: offered only to builds that list them. */
-const NEWER_SCREENS = new Set(['trip', 'trip_history', 'my_rewards', 'notifications', 'vacation', 'partner_request', 'partner_matches', 'bike_confidence', 'roam', 'closure_plan'])
+const NEWER_SCREENS = new Set(['trip', 'trip_history', 'my_rewards', 'notifications', 'vacation', 'partner_request', 'partner_matches', 'bike_confidence', 'roam', 'closure_plan', 'memories'])
 const canOpen = (ctx: ToolCtx, screen: string) => !NEWER_SCREENS.has(screen) || !!ctx.screens?.has(screen)
 
-const SCREENS = ['commute', 'commute_setup', 'around_you', 'rides', 'event', 'ride', 'rewards', 'log_trip', 'ride_plan', 'trip', 'trip_history', 'my_rewards', 'notifications', 'vacation', 'partner_request', 'partner_matches', 'bike_confidence', 'roam', 'closure_plan'] as const
+const SCREENS = ['commute', 'commute_setup', 'around_you', 'rides', 'event', 'ride', 'rewards', 'log_trip', 'ride_plan', 'trip', 'trip_history', 'my_rewards', 'notifications', 'vacation', 'partner_request', 'partner_matches', 'bike_confidence', 'roam', 'closure_plan', 'memories'] as const
 type Screen = (typeof SCREENS)[number]
 
 const FUNCTIONS = `${(process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').replace(/\/$/, '')}/functions/v1`
 
 const ok = (content: Record<string, unknown>, link?: ScreenLink): ToolResult => ({ content, link })
+const LINK_NEXT = 'The button shows under your reply. Now write your whole answer to what they asked, with everything you found, not only what the button is for. Do not mention the button.'
 
 /** Sign-up pages for find_bikes_to_try's programs (borrow-rent.ts holds their spots). */
 const TRY_URLS: Record<string, string> = { cargob: 'https://www.ridecargob.com/', pedal_power: 'https://communitypedalpower.org/' }
@@ -161,6 +163,8 @@ export const ACTIVITY: Record<string, string> = {
   get_departures: 'Checking live departures',
   find_park_and_ride: 'Finding station parking',
   get_bike_rules: 'Checking bikes on the T',
+  get_accessibility: 'Checking step-free access',
+  get_ebike_math: 'Working out e-bike costs',
   get_my_settings: 'Reading your settings',
   get_town_info: 'Looking up your town',
   check_route_link: 'Reading the route',
@@ -173,11 +177,12 @@ export const ACTIVITY: Record<string, string> = {
   change_settings: 'Saving your settings',
   set_reminder: 'Setting your reminder',
   remember: 'Remembering that',
+  rsvp_ride: 'Signing you up',
   ...RIDE_PLAN_ACTIVITY,
 }
 
 /** Tools that save something: the turn pauses on a card until the person approves. */
-export const NEEDS_APPROVAL = new Set([...RIDE_PLAN_NEEDS_APPROVAL, 'save_place', 'change_settings', 'set_reminder', 'remember'])
+export const NEEDS_APPROVAL = new Set([...RIDE_PLAN_NEEDS_APPROVAL, 'save_place', 'change_settings', 'set_reminder', 'remember', 'rsvp_ride'])
 
 export type ApprovalCard = RidePlanCard & { confirmText?: string }
 
@@ -348,6 +353,28 @@ export const TOOLS: Anthropic.Tool[] = [
     input_schema: { type: 'object', properties: {} },
   },
   {
+    name: 'get_accessibility',
+    description: "Step-free access near a place: the T stations within about half a mile, whether each is step-free, the lines there, and elevators out there right now; plus The RIDE (the MBTA's door-to-door paratransit: who it's for, where, booking, fares, RIDE Flex), free travel training, and the elevator hotline. Use for wheelchairs, walkers, strollers, \"no stairs\", or anyone asking about The RIDE.",
+    input_schema: { type: 'object', properties: { near: placeSchema }, required: ['near'] },
+  },
+  {
+    name: 'get_ebike_math',
+    description: "Whether an e-bike adds up for this person: their drives and transit trips under 8 miles in the last 30 days, what those trips cost now, and what owning a commuter or cargo e-bike, or using Bluebikes e-bikes, would cost a month for them. Also where help paying stands.",
+    input_schema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'rsvp_ride',
+    description: "Sign the person up for a date of a Shift group ride or walk (the shift_ride entries from find_rides_and_events, by occurrence_id): joins the ride if they haven't, then says going, maybe or can't make it. The organizer sees their name. The person approves on a card first.",
+    input_schema: {
+      type: 'object',
+      properties: {
+        occurrence_id: { type: 'string' },
+        status: { type: 'string', enum: ['going', 'maybe', 'not_going'] },
+      },
+      required: ['occurrence_id', 'status'],
+    },
+  },
+  {
     name: 'save_place',
     description: "Save one of the person's places (Work, School, Gym, a friend's, any name they give) so trips and the commute can use it. Saving a name they already have moves that place. Not for Home: a new home changes their town and neighborhood groups, so send them to commute_setup for that. The person approves on a card first.",
     input_schema: {
@@ -407,11 +434,11 @@ export const TOOLS: Anthropic.Tool[] = [
   },
   {
     name: 'open_link',
-    description: "A button to a web page: one item from get_town_info (a resource or a hearing, by its id), the town's page (kind town_page, id = the town name), a fare program (kind fare, its id from get_fare_help), or a bike-to-try program (kind bike_to_try, id cargob or pedal_power). The address comes from our records; never write a web address yourself.",
+    description: "A button to a web page: one item from get_town_info (a resource or a hearing, by its id), the town's page (kind town_page, id = the town name), a fare program (kind fare, its id from get_fare_help), a bike-to-try program (kind bike_to_try, id cargob or pedal_power), an event's sign-up or web page (kind event_signup, the event id from find_rides_and_events), or an MBTA accessibility page (kind accessibility, an id from get_accessibility's links). The address comes from our records; never write a web address yourself.",
     input_schema: {
       type: 'object',
       properties: {
-        kind: { type: 'string', enum: ['resource', 'hearing', 'town_page', 'fare', 'bike_to_try'] },
+        kind: { type: 'string', enum: ['resource', 'hearing', 'town_page', 'fare', 'bike_to_try', 'event_signup', 'accessibility'] },
         id: { type: 'string' },
         label: { type: 'string', description: 'The button text, a few words with a verb ("Report it to Somerville").' },
       },
@@ -437,7 +464,7 @@ export const TOOLS: Anthropic.Tool[] = [
   ...RIDE_PLAN_TOOLS,
   {
     name: 'open_screen',
-    description: "A button to a screen of the Shift app, for things done there: commute (their saved commute), commute_setup (set home and work), around_you (the map of what's near them), rides (group rides and events), event or ride (one of them, by id; event also opens a challenge by its id from get_my_challenges), rewards (rewards they've won), log_trip (log a trip by hand), ride_plan (a Shift Together first ride plan, by its match_id), trip (one recorded trip, by its id from get_my_activity, where they can change how they traveled), trip_history (all their trips), my_rewards (rewards they've won), notifications (notification settings), vacation (pause tracking while away), partner_request (Shift Together sign-up: kind newcomer = go with someone who knows the way, guide = show someone the way, carpool = share the drive to work; mode bike, walk or transit, not for carpool), partner_matches (their Shift Together matches, where they also end a match or report a problem), closure_plan (their plan for an MBTA closure, by its plan_id from get_my_closure_plan). Also bike_confidence: \"How do you feel about biking there?\", which sends them to the first step that fits (go, a guide, a free road riding lesson near Somerville, or learn-to-ride classes).",
+    description: "A button to a screen of the Shift app, for things done there: commute (their saved commute), commute_setup (set home and work), around_you (the map of what's near them), rides (group rides and events), event or ride (one of them, by id; event also opens a challenge by its id from get_my_challenges), rewards (rewards they've won), log_trip (log a trip by hand), ride_plan (a Shift Together first ride plan, by its match_id), trip (one recorded trip, by its id from get_my_activity, where they can change how they traveled), trip_history (all their trips), my_rewards (rewards they've won), notifications (notification settings), vacation (pause tracking while away), partner_request (Shift Together sign-up: kind newcomer = go with someone who knows the way, guide = show someone the way, carpool = share the drive to work; mode bike, walk or transit, not for carpool), partner_matches (their Shift Together matches, where they also end a match or report a problem), closure_plan (their plan for an MBTA closure, by its plan_id from get_my_closure_plan), memories (what you remember about them, where they can delete any of it). Also bike_confidence: \"How do you feel about biking there?\", which sends them to the first step that fits (go, a guide, a free road riding lesson near Somerville, or learn-to-ride classes).",
     input_schema: {
       type: 'object',
       properties: {
@@ -809,11 +836,11 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
         const today = todayKey()
         const until = new Date(Date.now() + days * 864e5).toLocaleDateString('en-CA', { timeZone: 'America/New_York' })
         const { data, error } = await ctx.user.from('event_details')
-          .select('content_id, event_date, event_time, location_name, location_lat, location_lng, event_type, organizer_name, pace, no_drop, content_items!inner(title, summary, primary_mode, status)')
+          .select('content_id, event_date, event_time, location_name, location_lat, location_lng, event_type, organizer_name, pace, no_drop, registration_url, registration_notes, event_url, content_items!inner(title, summary, primary_mode, status)')
           .eq('content_items.status', 'approved').gte('event_date', today).lte('event_date', until)
           .order('event_date', { ascending: true }).limit(300)
         if (error) throw new Error(error.message)
-        type Row = { content_id: string; event_date: string; event_time: string | null; location_name: string | null; location_lat: number | null; location_lng: number | null; event_type: string | null; organizer_name: string | null; pace: string | null; no_drop: boolean | null; content_items: { title: string; summary: string | null; primary_mode: string | null } }
+        type Row = { content_id: string; event_date: string; event_time: string | null; location_name: string | null; location_lat: number | null; location_lng: number | null; event_type: string | null; organizer_name: string | null; pace: string | null; no_drop: boolean | null; registration_url: string | null; registration_notes: string | null; event_url: string | null; content_items: { title: string; summary: string | null; primary_mode: string | null } }
         // Today's rides that already started are over for this person: a ride
         // at 11 AM offered at 4 PM sent them to an empty meeting spot.
         const nowHm = new Date().toLocaleTimeString('en-GB', { timeZone: 'America/New_York', hour: '2-digit', minute: '2-digit' })
@@ -828,8 +855,16 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
             id: r.content_id, title: r.content_items.title, date: r.event_date, time: r.event_time?.slice(0, 5) ?? null,
             where: r.location_name, miles_away: round1(d), kind: r.event_type, for: kind, organizer: r.organizer_name,
             pace: r.pace, no_drop: r.no_drop, about: excerptOf(r.content_items.summary, 140),
+            sign_up: r.registration_url ? 'on their page (open_link event_signup)' : 'just show up',
+            ...(r.registration_notes ? { sign_up_notes: excerptOf(r.registration_notes, 140) } : {}),
           }]
         }).slice(0, 8)
+        // A Shift ride behind an event signs up right here (rsvp_ride).
+        const rides = new Map((await shiftRideDates(ctx, { eventIds: found.map((f) => f.id) })).map((d) => [d.event_id, d]))
+        for (const f of found as Record<string, unknown>[]) {
+          const d = rides.get(f.id as string)
+          if (d) Object.assign(f, { sign_up: 'here (rsvp_ride)', shift_ride: { occurrence_id: d.occurrence_id, meetup: d.meetup, your_rsvp: d.your_rsvp } })
+        }
         return ok({ within_miles: miles, days_ahead: days, events: found, ...(found.length ? {} : { note: 'Nothing that close in that window. Offer a wider radius or more days.' }) },
           found.length ? { screen: 'rides', label: 'See all rides and events' } : undefined)
       }
@@ -970,6 +1005,13 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
         if (!near) return fail('The place needs coordinates. Look it up with find_place first.')
         return ok(await parkAndRide(near))
       }
+      case 'get_accessibility': {
+        const near = asPlace(input.near)
+        if (!near) return fail('The place needs coordinates. Look it up with find_place first.')
+        return ok(await accessibleNear(near))
+      }
+      case 'get_ebike_math':
+        return ok(await ebikeMath(ctx))
       case 'get_bike_rules': {
         const lines: [string, string, number, number | null][] = [['Red Line', 'Red', 1, null], ['Orange Line', 'Orange', 1, null], ['Blue Line inbound', 'Blue', 1, 0], ['Blue Line outbound', 'Blue', 1, 1], ['Green Line', 'Green-B', 0, null], ['Buses and Silver Line', '1', 3, null], ['Ferry', 'Boat-F1', 4, null]]
         return ok({ ...BIKE_RULES, full_size_bike_right_now: Object.fromEntries(lines.map(([label, id, type, dir]) => [label, bikeOk(id, type, dir).ok ? 'yes' : 'no'])) })
@@ -1025,9 +1067,16 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
           const t = (await getTownDirectory()).find((x) => x.town_name.toLowerCase() === id.trim().toLowerCase())
           return t ? ok({ shown: true }, { href: `/shift/towns/${townSlug(t.town_name, t.state)}`, label }) : fail('No town page by that name.')
         }
-        if (input.kind === 'fare' || input.kind === 'bike_to_try') {
-          const url = input.kind === 'fare' ? fareProgram(id, todayKey())?.url : TRY_URLS[id]
-          return url ? ok({ shown: true, next: 'The button shows under your reply. Write the reply itself; do not mention the button.' }, { href: url, label, external: true }) : fail('Use an id from get_fare_help or find_bikes_to_try.')
+        if (input.kind === 'event_signup') {
+          const { data } = await ctx.user.from('event_details').select('registration_url, event_url, content_items!inner(status)')
+            .eq('content_id', id).eq('content_items.status', 'approved').maybeSingle()
+          const r = data as { registration_url: string | null; event_url: string | null } | null
+          const url = [r?.registration_url, r?.event_url].find((u) => u && /^https?:\/\//.test(u))
+          return url ? ok({ shown: true, next: LINK_NEXT }, { href: url, label, external: true }) : fail('That event has no sign-up page. Most are just show up; offer a reminder or the event screen.')
+        }
+        if (input.kind === 'fare' || input.kind === 'bike_to_try' || input.kind === 'accessibility') {
+          const url = input.kind === 'fare' ? fareProgram(id, todayKey())?.url : input.kind === 'accessibility' ? ACCESS_LINKS[id] : TRY_URLS[id]
+          return url ? ok({ shown: true, next: LINK_NEXT }, { href: url, label, external: true }) : fail('Use an id from get_fare_help, find_bikes_to_try or get_accessibility.')
         }
         if (!/^[0-9a-f-]{36}$/i.test(id)) return fail('Use an id from get_town_info.')
         const { data } = input.kind === 'hearing'
@@ -1035,7 +1084,7 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
           : await ctx.admin.from('town_resources').select('url').eq('id', id).eq('status', 'approved').maybeSingle()
         const url = (data as { url?: string | null } | null)?.url
         if (!url || !/^https?:\/\//.test(url)) return fail('That one has no web page. Give the phone or email instead.')
-        return ok({ shown: true, next: 'The button shows under your reply. Write the reply itself; do not mention the button.' }, { href: url, label, external: true })
+        return ok({ shown: true, next: LINK_NEXT }, { href: url, label, external: true })
       }
       case 'get_my_settings': {
         const [u, e] = await Promise.all([
@@ -1204,6 +1253,22 @@ export async function approvalCard(ctx: ToolCtx, name: string, input: Record<str
       input: { way, from_name: fromName, from_lat: from.lat, from_lng: from.lng, to_name: toName, to_lat: to.lat, to_lng: to.lng, leave_at: leave, remind_at: remind },
     }
   }
+  if (name === 'rsvp_ride') {
+    const status = input.status === 'maybe' || input.status === 'not_going' ? input.status : 'going'
+    const id = String(input.occurrence_id ?? '')
+    if (!/^[0-9a-f-]{36}$/i.test(id)) return { result: fail('Use an occurrence_id from a shift_ride in find_rides_and_events.') }
+    const [d] = await shiftRideDates(ctx, { occurrenceId: id })
+    if (!d) return { result: fail('That ride date is no longer open for sign-up.') }
+    if ((d.your_rsvp ?? null) === status.replace('_', ' ')) return { result: fail(`They're already down as ${d.your_rsvp}.`) }
+    return {
+      card: {
+        title: status === 'going' ? `Going to ${d.title}` : status === 'maybe' ? `Maybe for ${d.title}` : `Can't make ${d.title}`,
+        lines: [[d.day, d.time].filter(Boolean).join(', '), ...(d.meetup ? [`Meet at ${d.meetup}`] : []), d.joined ? 'The organizer sees your answer' : 'Joins the ride; the organizer sees your name'],
+        cta: status === 'going' ? "I'm going" : status === 'maybe' ? 'Maybe' : "Can't make it", tone: 'primary',
+      },
+      input: { occurrence_id: id, status },
+    }
+  }
   if (name === 'remember') {
     const note = String(input.note ?? '').replace(/\s+/g, ' ').trim()
     if (!note) return { result: fail('A note needs a sentence.') }
@@ -1262,6 +1327,11 @@ export async function runApproved(ctx: ToolCtx, name: string, input: Record<stri
       const { error } = await ctx.admin.from('member_assistant_plans').insert({ ...input, user_id: ctx.userId, thread_id: ctx.threadId })
       if (error) return fail("That reminder didn't save. Try again in a moment.")
       return ok({ saved: true, note: 'Set. Say in a sentence when the reminder comes and that you will check in after. They can ask you to cancel it.' })
+    }
+    if (name === 'rsvp_ride') {
+      const r = await rsvpRide(ctx, String(input.occurrence_id), input.status as 'going' | 'maybe' | 'not_going')
+      if ('error' in r) return fail(`That didn't save: ${r.error}`)
+      return ok({ saved: true, ride: r.date.title, day: r.date.day, time: r.date.time, meetup: r.date.meetup, event_id: r.date.event_id, note: 'Done. Say so in a sentence with the day, time and meeting spot. Offer a reminder (set_reminder) for getting there, or open_screen event with event_id for the details.' })
     }
     if (name === 'remember') {
       const { error } = await ctx.admin.from('member_assistant_memories').insert({ user_id: ctx.userId, note: String(input.note) })

@@ -41,6 +41,12 @@ function fuelPerMile(v: VehicleType): number {
   return GAS_PRICE / 27.5
 }
 
+/** Gas (or charging) and wear for one more mile: what a trip costs to drive, apart from owning the car. */
+export function runningCostPerMile(v: VehicleType | null): number {
+  const vt = v ?? 'gas'
+  return fuelPerMile(vt) + (vt === 'ev' ? EV_MAINTENANCE_PER_MILE : 0.13)
+}
+
 function carAccessRange(access: CarAccess | null): Range {
   if (access === 'none') return flat(0)
   if (access === 'weekly') return r(200, 300)
