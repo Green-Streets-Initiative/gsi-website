@@ -18,10 +18,20 @@
 // purposes; GSI does not withhold, report or advise; annual statement in the
 // portal) and listed it among the surviving sections.
 //
+// v2026-11-EMP-4 (2026-10-28, Keith approved): added "The setup assistant"
+// (optional, admin off switch, approval before actions, what it sees, service
+// providers incl. Anthropic's commercial terms as checked 2026-10-22, owner-only
+// conversations, 12-month deletion, answers can be wrong / no advice, warranty
+// not on answer content) and "Employees and the Shift assistant" (employers
+// never see employees' conversations or use; employer-entered benefits may be
+// used to answer employees). Service list names the setup assistant;
+// Employee participation adds conversations. Keep in step with
+// lib/employer-assistant/data-note.ts.
+//
 // ATTORNEY REVIEW STILL PENDING — planned as fixed-fee review before
 // customer #2-3; "Nature of payment" UBIT question flagged for counsel.
 
-export const AGREEMENT_VERSION = '2026-10-EMP-3'
+export const AGREEMENT_VERSION = '2026-11-EMP-4'
 
 export const AGREEMENT_TITLE = 'Shift Employer Platform Agreement'
 
@@ -31,7 +41,7 @@ export const AGREEMENT_PREAMBLE =
 export const AGREEMENT_SECTIONS: Array<{ heading: string; body: string }> = [
   {
     heading: 'The service and the Order',
-    body: 'GSI provides the Shift Employer Platform: an employer portal with a commute dashboard and impact reporting for Customer\'s workplace group in the Shift app, employee joining via an invite code, commute challenges, a weekly email report, and the other features included in Customer\'s subscription tier. The subscription tier, annual fee, and access start date are as stated on GSI\'s invoice or checkout receipt for the subscription (the "Order"); if the Order is silent on the access start date, the term starts when Customer\'s portal access is activated. Each tier\'s features are as described at gogreenstreets.org/shift/employers at the time of the Order. GSI may improve or modify platform features over time, provided the changes do not materially reduce the core service described in this section during a paid term.',
+    body: 'GSI provides the Shift Employer Platform: an employer portal with a commute dashboard and impact reporting for Customer\'s workplace group in the Shift app, employee joining via an invite code, commute challenges, a weekly email report, where GSI makes it available, the setup assistant, and the other features included in Customer\'s subscription tier. The subscription tier, annual fee, and access start date are as stated on GSI\'s invoice or checkout receipt for the subscription (the "Order"); if the Order is silent on the access start date, the term starts when Customer\'s portal access is activated. Each tier\'s features are as described at gogreenstreets.org/shift/employers at the time of the Order. GSI may improve or modify platform features over time, provided the changes do not materially reduce the core service described in this section during a paid term.',
   },
   {
     heading: 'License and intellectual property',
@@ -47,11 +57,19 @@ export const AGREEMENT_SECTIONS: Array<{ heading: string; body: string }> = [
   },
   {
     heading: 'Employee participation',
-    body: 'Customer\'s employees join the Shift app individually and voluntarily. Each employee\'s use of the app is governed by GSI\'s own terms of service and privacy policy, and each employee\'s account relationship is with GSI, not Customer. Customer will not require participation as a condition of employment, use the platform to penalize non-participants, or represent to employees that Customer can access their individual commute records.',
+    body: 'Customer\'s employees join the Shift app individually and voluntarily. Each employee\'s use of the app is governed by GSI\'s own terms of service and privacy policy, and each employee\'s account relationship is with GSI, not Customer. Customer will not require participation as a condition of employment, use the platform to penalize non-participants, or represent to employees that Customer can access their individual commute records or their conversations with the Shift assistant.',
   },
   {
     heading: 'Data and reporting',
     body: 'Reporting provided to Customer consists of (a) aggregate participation, trip, mileage, and impact metrics for Customer\'s workplace group, and (b) limited per-member activity shown in the portal: a member\'s display name, join date, and summary activity totals. GSI will not provide Customer with individual trip records, routes, locations, or timestamps. Customer may not attempt to infer, re-identify, track, or profile any individual\'s commute patterns from platform reports, and may not combine platform data with other data for that purpose. Customer may use reports only for internal program evaluation and its own sustainability, wellness, or ESG reporting. Platform metrics, including mileage and emissions figures, are good-faith estimates derived from self-reported and automatically detected activity; they are not audited or independently verified, and Customer is solely responsible for its own public and regulatory disclosures.',
+  },
+  {
+    heading: 'The setup assistant',
+    body: "The platform may include an optional setup assistant: an AI tool in the employer portal that helps Customer's portal team set up and run the program by conversation. It is available only where GSI has turned it on. Any Customer administrator may turn it off for Customer's workplace at any time in the portal's Settings; while it is off, no one can use it for Customer's workplace, including GSI staff. The assistant acts with the permissions of the person using it and can do only what that person could do in the portal. Before it sends invitations, changes settings, publishes anything employees will see, or sets aside Customer funds, the person must approve the action in the portal. It never takes payments. The portal lists every approved action, with who approved it and when. Customer is responsible for actions its portal team approves. To answer, the assistant processes the conversation, the information the portal already shows that person (such as challenges, rewards and balance, plan, portal team, employee names with their trip totals, invitation addresses, commute survey totals, offices and listed commute benefits), and files the person attaches. When someone attaches a staff list, GSI stores it and the AI model receives only a summary and a few sample rows. The assistant does not receive any employee's individual trip records or individual survey answers. GSI uses these service providers for the assistant: Anthropic, which provides the AI models through its commercial service; Supabase, which stores conversations and attached files in the United States; Vercel, which runs the website; Google Maps, which looks up office addresses; and Resend, which sends emails that follow an approved action. Under Anthropic's commercial terms as of October 22, 2026, Anthropic does not use this data to train its models and deletes it within 30 days, except content its safety systems flag (kept up to 2 years) or as the law requires. GSI keeps a current description at gogreenstreets.org/shift/employers/assistant-data and will update it before adding or replacing a provider. Each provider is a service provider under the Confidentiality section. Each conversation is visible only to the person who had it and to GSI staff, who may review it for support and to improve the assistant. Each person may delete their own conversations at any time. GSI deletes conversations automatically 12 months after their last message, together with any attached staff list. Notes the assistant passes to GSI about requests and feedback are kept separately, to answer them and plan the product. The assistant's answers are written by an AI model and may be incomplete, out of date, or wrong. Customer should check drafts, figures, and recommendations before relying on or sharing them. The assistant does not give legal, tax, accounting, employment, or benefits advice, including on the tax treatment of rewards. The warranty in the Warranty and disclaimer section covers the assistant's availability as part of the platform, not the content of its answers.",
+  },
+  {
+    heading: 'Employees and the Shift assistant',
+    body: "The Shift app includes an optional assistant for each employee. An employee's conversations with it are between that employee and GSI, under GSI's terms of service and privacy policy. Customer cannot see those conversations, the questions asked, or whether an employee uses the assistant; Customer's reporting stays as described in the Data and reporting section. If Customer lists commute benefits or offices in the portal, the employee assistant may use them to answer Customer's employees. Customer is responsible for keeping that information accurate.",
   },
   {
     heading: 'Confidentiality',
