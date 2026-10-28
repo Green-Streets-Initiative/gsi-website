@@ -17,7 +17,8 @@ interface Props {
   /** The trail, [lng, lat] lines */
   lines: LngLat[][]
   /** Ways onto the trail, numbered on the map in this order */
-  points: Array<{ name: string; lat: number; lng: number }>
+  /** `parking`: a lot or street parking here; the pin gets a small P. */
+  points: Array<{ name: string; lat: number; lng: number; parking?: boolean }>
   /** Closed stretches, [lng, lat] lines */
   closed?: LngLat[][]
   /** Place names for orientation (lib/trails/places.ts) */
@@ -135,9 +136,16 @@ export default function TrailMap({ name, lines, points, closed = [], places = []
       points.forEach((p, i) => {
         const el = document.createElement('div')
         el.style.cssText =
-          'width:26px;height:26px;border-radius:50%;background:#191A2E;border:2px solid #FFFFFF;display:flex;align-items:center;justify-content:center;font:700 12px system-ui;color:#FFFFFF;box-shadow:0 1px 4px rgba(25,26,46,0.35);cursor:pointer'
+          'position:relative;width:26px;height:26px;border-radius:50%;background:#191A2E;border:2px solid #FFFFFF;display:flex;align-items:center;justify-content:center;font:700 12px system-ui;color:#FFFFFF;box-shadow:0 1px 4px rgba(25,26,46,0.35);cursor:pointer'
         el.textContent = String(i + 1)
-        el.setAttribute('aria-label', `${i + 1}. ${p.name}`)
+        el.setAttribute('aria-label', `${i + 1}. ${p.name}${p.parking ? ', parking' : ''}`)
+        if (p.parking) {
+          const badge = document.createElement('span')
+          badge.style.cssText =
+            'position:absolute;top:-8px;right:-10px;width:17px;height:17px;border-radius:5px;background:#FFFFFF;border:1.5px solid #191A2E;font:800 10px/14px system-ui;color:#191A2E;text-align:center'
+          badge.textContent = 'P'
+          el.appendChild(badge)
+        }
         new maplibregl.Marker({ element: el })
           .setLngLat([p.lng, p.lat])
           .setPopup(

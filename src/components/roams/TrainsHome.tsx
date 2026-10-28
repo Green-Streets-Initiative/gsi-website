@@ -35,7 +35,8 @@ function weekday(date: string): string {
   })
 }
 
-export default function TrainsHome({ stopId, routeId, directionId }: { stopId: string; routeId: string; directionId: 0 | 1 }) {
+/** `headed={false}` drops the small title, for a page that gives the box its own heading (trail pages). */
+export default function TrainsHome({ stopId, routeId, directionId, headed = true }: { stopId: string; routeId: string; directionId: 0 | 1; headed?: boolean }) {
   const [answer, setAnswer] = useState<Answer | null>(null)
 
   useEffect(() => {
@@ -67,11 +68,13 @@ export default function TrainsHome({ stopId, routeId, directionId }: { stopId: s
       : null
 
   return (
-    <section aria-labelledby="trains-home" className="mb-5 rounded-[14px] border border-navy/10 bg-white px-5 py-4">
-      <h2 id="trains-home" className="text-[0.75rem] font-semibold uppercase tracking-[0.1em] text-forest">
-        Trains home that take bikes
-      </h2>
-      <p className="mt-2 text-[0.9375rem] leading-relaxed text-navy">{lead}</p>
+    <section aria-labelledby={headed ? 'trains-home' : undefined} aria-label={headed ? undefined : 'Trains home that take bikes'} className={`${headed ? 'mb-5' : ''} rounded-[14px] border border-navy/10 bg-white px-5 py-4`}>
+      {headed && (
+        <h2 id="trains-home" className="text-[0.75rem] font-semibold uppercase tracking-[0.1em] text-forest">
+          Trains home that take bikes
+        </h2>
+      )}
+      <p className={`${headed ? 'mt-2' : ''} text-[0.9375rem] leading-relaxed text-navy`}>{lead}</p>
       {dateLine && <p className="mt-2 text-[0.875rem] font-semibold text-ink-soft">{dateLine}</p>}
       {answer.trains.length > 0 && (
         <ul className="mt-1 divide-y divide-navy/10">

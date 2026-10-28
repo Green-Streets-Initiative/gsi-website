@@ -7,12 +7,15 @@ import Footer from '@/components/Footer'
 import StoreButtons from '@/components/StoreButtons'
 import PhotoCredit from '@/components/PhotoCredit'
 import TrailMap from '@/components/trails/TrailMap'
+import GpxLink from '@/components/trails/GpxLink'
+import TrainsHome from '@/components/roams/TrainsHome'
 import RoamDisruptions from '@/components/roams/RoamDisruptions'
 import RoamSectionNav from '@/components/roams/RoamSectionNav'
 import RoamKeepGoing from '@/components/roams/RoamKeepGoing'
 import { getTrail, isLoopLike, type TrailNotice } from '@/lib/trails/queries'
 import { getTrailLines } from '@/lib/trails/geometry'
 import { MAP_PLACES } from '@/lib/trails/places'
+import { RAIL_HOME } from '@/lib/trails/railHome'
 import { getBluebikesDocks } from '@/lib/server/bluebikes'
 import { withUtm } from '@/lib/utm'
 
@@ -48,9 +51,11 @@ function duration(min: number): string {
   return rest ? `${h} hr ${rest} min` : `${h} hr`
 }
 
-/** "Alewife Station, Cambridge" -> "Alewife Station" */
+/** "Alewife Station, Cambridge" -> "Alewife Station"; "North end, Old Colony Road, downtown Mansfield" -> "downtown Mansfield" */
 function place(name: string): string {
-  return name.split(' (')[0].split(', ')[0].trim()
+  const parts = name.split(' (')[0].split(', ').map((x) => x.trim())
+  if (parts.length > 1 && /^(north|south|east|west)(ern)? end$/i.test(parts[0])) return parts[parts.length - 1]
+  return parts[0]
 }
 
 /** The surface as one or two words for the summary tile; the full sentence is in About. */
@@ -194,7 +199,21 @@ export default async function TrailPage({ params }: { params: Promise<{ slug: st
     amen.food ? { label: 'Food', body: amen.food } : null,
   ].filter((x): x is { label: string; body: string } => !!x)
 
-  const hasGetThere = !!(t.transit_note || t.bike_share_note || t.parking_note || dockGroups.length > 0)
+  // Drivers' first question: can I park where I get on?
+  const parkingCount = pts.filter((p) => p.parking).length
+  // Ride out, train home: a Commuter Rail station at one of the places to get on.
+  const rail = RAIL_HOME[t.id] ?? null
+  const railPoint = rail ? pts.find((p) => p.name.includes(rail.match)) ?? null : null
+  const railFrom = rail && railPoint ? rail.from ?? place(railPoint.name) : null
+  const railReach = rail && railFrom
+    ? rail.meters <= 400
+      ? railFrom.includes(rail.station) ? 'right on the trail' : `right on the trail at ${railFrom}`
+      : `${miles(rail.meters / 1609)} miles from ${railFrom}`
+    : null
+
+  // One column per card, so a trail with no bike share has no empty third cell.
+  const getThereCols = [t.transit_note, t.bike_share_note || dockGroups.length > 0, t.parking_note].filter(Boolean).length
+  const hasGetThere = !!(t.transit_note || t.bike_share_note || t.parking_note || dockGroups.length > 0 || railReach)
   const sections = [
     { id: 'map', label: 'Map' },
     hasGetThere ? { id: 'get-there', label: 'Get there' } : null,
@@ -288,6 +307,31 @@ export default async function TrailPage({ params }: { params: Promise<{ slug: st
                   <Flag size={15} className="mt-[3px] shrink-0 text-ink-soft" aria-hidden /> {spanLine}
                 </p>
               )}
+              {(parkingCount > 0 || t.parking_note) && (
+                <p className="mt-2 flex items-start gap-2 text-[0.9375rem] leading-snug text-navy">
+                  <ParkingCircle size={15} className="mt-[3px] shrink-0 text-ink-soft" aria-hidden />
+                  <span>
+                    {parkingCount === 0
+                      ? 'Parking nearby'
+                      : parkingCount === pts.length
+                        ? 'Parking at every place to get on'
+                        : `Parking at ${parkingCount} of the ${pts.length} places to get on`}
+                    {' · '}
+                    <a href={parkingCount > 0 ? '#map' : '#get-there'} className="font-semibold text-forest underline-offset-4 hover:underline">
+                      {parkingCount > 0 ? 'See where' : 'Where to park'}
+                    </a>
+                  </span>
+                </p>
+              )}
+              {railReach && rail && (
+                <p className="mt-2 flex items-start gap-2 text-[0.9375rem] leading-snug text-navy">
+                  <TrainFront size={15} className="mt-[3px] shrink-0 text-ink-soft" aria-hidden />
+                  <span>
+                    Train back from {rail.station} station{' · '}
+                    <a href="#train-home" className="font-semibold text-forest underline-offset-4 hover:underline">Next trains</a>
+                  </span>
+                </p>
+              )}
 
               <div className="mt-4 space-y-2.5">
                 <RoamDisruptions items={disruptions} subject="trail" />
@@ -327,11 +371,22 @@ export default async function TrailPage({ params }: { params: Promise<{ slug: st
             <div className="mt-5 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-start">
               <div className="lg:sticky lg:top-[124px]">
                 <div className="h-[320px] overflow-hidden rounded-[18px] border border-navy/10 sm:h-[400px] lg:h-[min(560px,calc(100vh-240px))]">
-                  <TrailMap name={t.name} lines={lines} points={pts.map((p) => ({ name: p.name, lat: p.lat, lng: p.lng }))} closed={closedLines} places={places} />
+                  <TrailMap name={t.name} lines={lines} points={pts.map((p) => ({ name: p.name, lat: p.lat, lng: p.lng, parking: !!p.parking }))} closed={closedLines} places={places} />
                 </div>
-                <p className="mt-2 text-[0.8125rem] text-ink-soft">
-                  Numbers match the list{closedLines.length > 0 ? '. The orange dashes are closed.' : '.'}
-                </p>
+                <div className="mt-2 flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+                  <p className="text-[0.875rem] text-ink-soft">
+                    Numbers match the list{parkingCount > 0 ? '; P has parking' : ''}{closedLines.length > 0 ? '. The orange dashes are closed.' : '.'}
+                  </p>
+                  {lines.length > 0 && (
+                    <GpxLink
+                      trailId={t.id}
+                      className="inline-flex min-h-[40px] items-center gap-1.5 text-[0.9375rem] font-semibold text-forest underline-offset-4 hover:underline"
+                    />
+                  )}
+                </div>
+                {lines.length > 0 && (
+                  <p className="text-[0.875rem] text-ink-soft">For Ride with GPS, Strava, Komoot or a bike computer.</p>
+                )}
               </div>
               <ol className="divide-y divide-navy/[0.07] rounded-[16px] bg-white shadow-[0_1px_2px_rgba(25,26,46,0.05),0_0_0_1px_rgba(25,26,46,0.06)]">
                 {pts.map((p, i) => (
@@ -345,13 +400,13 @@ export default async function TrailPage({ params }: { params: Promise<{ slug: st
                           {p.transit && (
                             <div className="flex gap-2">
                               <dt className="shrink-0"><TrainFront size={14} className="mt-[2px] text-forest" aria-label="Transit" /></dt>
-                              <dd className="m-0 text-ink-soft">{p.transit}</dd>
+                              <dd className="m-0 text-navy">{p.transit}</dd>
                             </div>
                           )}
                           {p.parking && (
                             <div className="flex gap-2">
                               <dt className="shrink-0"><ParkingCircle size={14} className="mt-[2px] text-forest" aria-label="Parking" /></dt>
-                              <dd className="m-0 text-ink-soft">{p.parking}</dd>
+                              <dd className="m-0 text-navy">{p.parking}</dd>
                             </div>
                           )}
                         </dl>
@@ -377,7 +432,8 @@ export default async function TrailPage({ params }: { params: Promise<{ slug: st
           <section id="get-there" aria-labelledby="get-there-h" className="scroll-mt-28 px-6 pt-12 lg:px-8">
             <div className="mx-auto max-w-[1120px]">
               <h2 id="get-there-h" className="font-serif text-[clamp(1.75rem,3.2vw,2.25rem)] font-normal leading-[1.1] text-navy">Getting there</h2>
-              <dl className="mt-5 grid gap-px overflow-hidden rounded-[16px] bg-navy/[0.07] shadow-[0_1px_2px_rgba(25,26,46,0.05),0_0_0_1px_rgba(25,26,46,0.06)] lg:grid-cols-3">
+              {getThereCols > 0 && (
+              <dl className={`mt-5 grid gap-px overflow-hidden rounded-[16px] bg-navy/[0.07] shadow-[0_1px_2px_rgba(25,26,46,0.05),0_0_0_1px_rgba(25,26,46,0.06)] ${getThereCols === 3 ? 'lg:grid-cols-3' : getThereCols === 2 ? 'lg:grid-cols-2' : ''}`}>
                 {t.transit_note && (
                   <div className="bg-white px-5 py-4">
                     <dt className="flex items-center gap-2 text-[0.9375rem] font-semibold text-navy"><TrainFront size={15} className="text-forest" aria-hidden /> By transit</dt>
@@ -417,6 +473,18 @@ export default async function TrailPage({ params }: { params: Promise<{ slug: st
                   </div>
                 )}
               </dl>
+              )}
+              {rail && railReach && (
+                <div id="train-home" className="mt-8 grid scroll-mt-28 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-start lg:gap-12">
+                  <div>
+                    <h3 className="text-[1.25rem] font-semibold text-navy">Ride out, train home</h3>
+                    <p className="mt-1.5 max-w-[52ch] text-[1rem] leading-relaxed text-ink-soft">
+                      Ride the trail one way and take the Commuter Rail back. {rail.station} station is {railReach}.
+                    </p>
+                  </div>
+                  <TrainsHome stopId={rail.stop_id} routeId={rail.route_id} directionId={rail.direction_id} headed={false} />
+                </div>
+              )}
             </div>
           </section>
         )}
