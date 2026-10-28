@@ -1083,7 +1083,9 @@ export async function nearbyShuttleStops(
           access: agency.access,
           // The commute planners credit the operator and link its schedule.
           idName: agency.idName,
-          url: agency.url,
+          // The schedule page from the operator table: a gtfs-url feed's own
+          // `url` is its data file, not something to send a rider to.
+          url: SHUTTLE_AGENCY_META.find((m) => m.prefix === agency.prefix)?.url,
           ...(agency.runBy ? { runBy: agency.runBy } : {}),
         },
       })
