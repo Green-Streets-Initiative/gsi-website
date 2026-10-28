@@ -298,22 +298,23 @@ export function clock(hhmm: string | null | undefined): string | null {
   return new Date(2026, 0, 5, h, m).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
 }
 
-/** The free road lesson (Shift 01454/01455), measured from their saved Home. */
+/** The free road lesson (Shift 01454/01455/01475), measured from their saved Home. */
 export type LessonOffer =
-  | { state: 'has_code'; code: string; school: string; contacts: { name: string; email?: string; phone?: string }[] }
+  | { state: 'has_code'; code: string; school: string; requested: boolean }
   | { state: 'offer'; school: string; minutes: number | null; left: number | null; max: number | null }
   | { state: 'full' | 'far' | 'no_location' }
 
 type RawLesson = {
   state?: string
   code?: string
-  program?: { school: string; minutes?: number | null; left?: number | null; max?: number | null; contacts?: { name: string; email?: string; phone?: string }[] }
+  requested?: boolean
+  program?: { school: string; minutes?: number | null; left?: number | null; max?: number | null }
 }
 
 function parseLesson(raw: unknown): LessonOffer | null {
   const r = raw as RawLesson | null
   if (!r) return null
-  if (r.state === 'has_code' && r.code && r.program) return { state: 'has_code', code: r.code, school: r.program.school, contacts: r.program.contacts ?? [] }
+  if (r.state === 'has_code' && r.code && r.program) return { state: 'has_code', code: r.code, school: r.program.school, requested: r.requested === true }
   if (r.state === 'offer' && r.program) {
     return { state: 'offer', school: r.program.school, minutes: r.program.minutes ?? null, left: r.program.left ?? null, max: r.program.max ?? null }
   }
@@ -326,7 +327,3 @@ export async function lessonOffer(): Promise<LessonOffer | null> {
   return error ? null : parseLesson(data)
 }
 
-export async function claimLesson(): Promise<LessonOffer | null> {
-  const { data, error } = await supabase.rpc('claim_free_lesson_code', { p_lat: null, p_lng: null })
-  return error ? null : parseLesson(data)
-}

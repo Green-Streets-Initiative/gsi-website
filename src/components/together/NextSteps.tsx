@@ -2,9 +2,9 @@
 
 import Link from 'next/link'
 import { useEffect, useState, type ReactNode } from 'react'
-import { Check, Link2, Mail, MapPinned, Smartphone, type LucideIcon } from 'lucide-react'
-import { Badge, Button, Card } from '@/components/organizers/ui'
-import { claimLesson, lessonOffer, track, waysText, type LessonOffer, type PartnerKind, type PartnerWay } from '@/lib/together'
+import { Check, Link2, MapPinned, Smartphone, type LucideIcon } from 'lucide-react'
+import { Badge, Card } from '@/components/organizers/ui'
+import { lessonOffer, track, waysText, type LessonOffer, type PartnerKind, type PartnerWay } from '@/lib/together'
 
 /**
  * What to do while Shift looks for a match, so "we'll email you" is never the
@@ -88,36 +88,38 @@ function Tile({ Icon, title, sub, href, onClick }: { Icon: LucideIcon; title: st
   return <button type="button" onClick={onClick} className={cls}>{body}</button>
 }
 
-/** The free 1:1 road lesson, for newcomers by bike near the school (Shift 01454). */
+/**
+ * The free 1:1 road lesson, for newcomers by bike near the school (Shift 01454).
+ * They ask on /bike-lessons, which sends when they're free to the instructors
+ * (Keith 2026-10-28): the instructors' addresses are never shown (Shift 01475).
+ */
+const LESSON_FORM = '/bike-lessons#street-lesson'
+const LESSON_LINK = 'inline-flex min-h-[44px] items-center justify-center rounded-[10px] bg-(--ev-accent-fill) px-4 text-[15px] font-semibold text-(--ev-on-accent-fill) hover:opacity-90'
+
 export function LessonCard() {
   const [offer, setOffer] = useState<LessonOffer | null>(null)
-  const [busy, setBusy] = useState(false)
   useEffect(() => { void lessonOffer().then(setOffer) }, [])
   if (!offer || (offer.state !== 'offer' && offer.state !== 'has_code')) return null
 
   if (offer.state === 'has_code') {
     return (
       <Card>
-        <h3 className="font-display text-[22px] font-extrabold">Your free lesson code</h3>
+        <h3 className="font-display text-[22px] font-extrabold">{offer.requested ? 'Your lesson request is in' : 'Your free lesson code'}</h3>
         <p className="mt-3 inline-block rounded-xl border-2 border-(--ev-accent) px-4 py-2 font-display text-[26px] font-extrabold tracking-[0.12em]">{offer.code}</p>
-        <p className="mt-3 text-[16px] leading-relaxed text-(--ev-ink-85)">
-          Email an instructor from the {offer.school} to pick a time, and give them this code. Green Streets pays for the lesson.
-        </p>
-        <ul className="mt-3 grid gap-2">
-          {offer.contacts.map((c) => (
-            <li key={c.name}>
-              <a
-                href={c.email ? `mailto:${c.email}?subject=${encodeURIComponent(`Free road riding lesson (Green Streets code ${offer.code})`)}` : `tel:${c.phone}`}
-                onClick={() => track('together_lesson_contact')}
-                className="flex min-h-[48px] flex-wrap items-center gap-x-3 gap-y-1 rounded-xl bg-(--ev-panel) px-4 py-2"
-              >
-                <Mail className="h-5 w-5 text-(--ev-accent)" aria-hidden />
-                <strong>{c.name}</strong>
-                <span className="break-all text-(--ev-ink-80)">{c.email ?? c.phone}</span>
-              </a>
-            </li>
-          ))}
-        </ul>
+        {offer.requested ? (
+          <p className="mt-3 text-[16px] leading-relaxed text-(--ev-ink-85)">
+            An instructor from the {offer.school} will email you to pick a time. Keep the code. The instructor will ask for it.
+          </p>
+        ) : (
+          <>
+            <p className="mt-3 text-[16px] leading-relaxed text-(--ev-ink-85)">
+              Tell the {offer.school} when you’re usually free, and an instructor will email you to pick a time. Green Streets pays for the lesson.
+            </p>
+            <Link href={LESSON_FORM} onClick={() => track('together_lesson_request_link', { state: 'has_code' })} className={`${LESSON_LINK} mt-3`}>
+              Send my request
+            </Link>
+          </>
+        )}
       </Card>
     )
   }
@@ -130,19 +132,9 @@ export function LessonCard() {
         </div>
         <p className="mt-1 text-[16px] text-(--ev-ink-85)">Ride in traffic with an instructor from the {offer.school}. Green Streets pays.</p>
       </div>
-      <Button
-        variant="primary"
-        busy={busy}
-        onClick={async () => {
-          setBusy(true)
-          const o = await claimLesson()
-          setBusy(false)
-          if (o) setOffer(o)
-          track('together_lesson_claimed', { state: o?.state ?? 'error' })
-        }}
-      >
-        Get my free lesson code
-      </Button>
+      <Link href={LESSON_FORM} onClick={() => track('together_lesson_request_link', { state: 'offer' })} className={LESSON_LINK}>
+        Ask for your free lesson
+      </Link>
     </Card>
   )
 }
