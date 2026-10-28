@@ -408,6 +408,31 @@ export interface AdvisorResult {
   nearby_url: string | null
   /** The engine's answer, untouched, so nothing it adds is lost on the way through. */
   engine: Record<string, unknown>
+  /** T plus a shuttle Google leaves out (the Grid from Alewife, the LINK to
+   *  Sullivan): ones this reader may ride and faster than the T alone. The
+   *  page times shuttle-only rows itself (fetchShuttleLines). */
+  shuttle_transfers?: AdvisorShuttleTransfer[]
+}
+
+/** A T-plus-shuttle way in, as commute-advisor-compare returns it (Shift _shared/advisor-shuttle.ts). */
+export interface AdvisorShuttleTransfer {
+  shape: 'transit_then_shuttle' | 'shuttle_then_transit'
+  route_id: string
+  route_name: string
+  operator: { prefix: string; label: string; name: string; run_by: string | null; url: string | null; access: string; id_name: string | null }
+  eligible_because: string | null
+  board_stop: { name: string; lat: number; lng: number }
+  alight_stop: { name: string; lat: number; lng: number }
+  shuttle_depart_at: string | null
+  ride_minutes: number
+  ride_estimated: boolean
+  walk_to_minutes: number
+  walk_from_minutes: number
+  legs: { line: string; route_name: string; route_type: number | null; departure_stop_name: string; arrival_stop_name: string; minutes: number | null; walk_before_minutes?: number | null; operator?: unknown }[]
+  minutes_total: number
+  leave_by: string | null
+  fare_per_trip: number
+  summary: string
 }
 
 /* ── Deprecated (v1 shape). Kept until EmployerCommuteAdvisor.tsx and

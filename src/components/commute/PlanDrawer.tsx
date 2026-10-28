@@ -20,7 +20,7 @@ import {
   type ShuttleLine,
 } from './plan-data'
 import { BIKE_LOCK_MINUTES, formatClock } from '@/lib/employer/commute-costs'
-import type { AdvisorCombo, AdvisorResult, BikeParkingSpot, EmployerBenefits, ShuttleRoute } from '@/lib/types/commute'
+import type { AdvisorCombo, AdvisorResult, AdvisorShuttleTransfer, BikeParkingSpot, EmployerBenefits, ShuttleRoute, TransitLeg } from '@/lib/types/commute'
 
 /*
  * The one drawer that opens under a plan row. Each way in has its own
@@ -531,6 +531,60 @@ export function ShuttleDrawer({ line, officeName, highlightedLeg, onLegTap }: {
       </P>
       {line.url && (
         <DrawerActions><ActionLink href={line.url}>{line.agencyName} schedule</ActionLink></DrawerActions>
+      )}
+    </>
+  )
+}
+
+/**
+ * The T plus a shuttle Google leaves out (commute-advisor-compare): each
+ * walk and ride, when to leave, who may ride, and credit to the TMA or
+ * campus that runs it, with its schedule.
+ */
+export function ShuttleTransferDrawer({ s, plan, officeName, companyName }: {
+  s: AdvisorShuttleTransfer
+  plan: AdvisorResult
+  officeName: string
+  companyName: string | null
+}) {
+  const office = officeName === 'Work' || /^\d/.test(officeName) ? 'the office' : officeName
+  // The engine's legs carry route_type as a number; colors and names need only the line.
+  const asLeg = (leg: AdvisorShuttleTransfer['legs'][number]): TransitLeg => ({
+    route_id: null, route_name: leg.route_name, route_type: null, headsign: null,
+    departure_stop_id: null, departure_stop_name: leg.departure_stop_name, arrival_stop_id: null, arrival_stop_name: leg.arrival_stop_name, minutes: leg.minutes,
+  })
+  const steps: StepRow[] = s.legs.flatMap((leg, i): StepRow[] => [
+    ...(leg.walk_before_minutes != null && leg.walk_before_minutes > 0
+      ? [{ id: `w${i}`, mapKey: null, color: WALK_COLOR, dashed: true, minutes: leg.walk_before_minutes, what: 'Walk', to: leg.departure_stop_name }]
+      : []),
+    {
+      id: `r${i}`,
+      // The map doesn't draw these legs.
+      mapKey: null,
+      color: leg.operator ? SHUTTLE_COLOR : lineColorFor(asLeg(leg), plan.nearby.stops),
+      minutes: leg.minutes,
+      about: !!leg.operator && s.ride_estimated,
+      what: leg.operator ? leg.line : legRideName(asLeg(leg)).replace(/^the /, ''),
+      to: leg.arrival_stop_name,
+    },
+  ])
+  if (s.walk_from_minutes > 0) steps.push({ id: 'wend', mapKey: null, color: WALK_COLOR, dashed: true, minutes: s.walk_from_minutes, what: 'Walk', to: office })
+  const who = s.eligible_because === 'public'
+    ? 'Open to everyone, free.'
+    : s.eligible_because === 'public_fare'
+      ? 'Open to everyone; there is a fare, free at member employers.'
+      : `${companyName ?? 'Your employer'} lists this shuttle among its benefits.`
+  const runBy = s.operator.run_by || s.operator.name
+  return (
+    <>
+      <Itinerary steps={steps} highlightedLeg={null} onLegTap={() => {}} />
+      <P>
+        {s.leave_by && <>Leave home by <b>{formatClock(s.leave_by)}</b>. </>}
+        {s.shuttle_depart_at && <>The shuttle leaves {s.board_stop.name} at <b>{formatClock(s.shuttle_depart_at)}</b>. </>}
+        {who} Maps apps don&rsquo;t show this shuttle; it&rsquo;s run by {runBy}.
+      </P>
+      {s.operator.url && (
+        <DrawerActions><ActionLink href={s.operator.url}>{runBy} schedule</ActionLink></DrawerActions>
       )}
     </>
   )
