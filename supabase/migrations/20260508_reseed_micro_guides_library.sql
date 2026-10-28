@@ -2166,12 +2166,15 @@ Before you sign a lease, [put the address into our trip planner](https://www.gog
 - Wear a helmet that fits snugly.
 - After dark, use a white light in front and a red light in back. Massachusetts law requires them.
 
-### By bike: on the street
+### By bike: stops and turns
 
 - Stop at every stop sign and red light, even when it looks clear.
-- Ride at least 4 feet from parked cars, even in a bike lane. A door can open without warning.
 - Before you turn or change lanes, look over your shoulder, then point where you're going.
 - To turn left, either move into the left lane when it's clear and turn, or ride straight across, wait at the far corner, and go on the next green.
+
+### By bike: where to ride
+
+- Ride at least 4 feet from parked cars, even in a bike lane. A door can open without warning.
 - At corners, stay behind trucks and buses, not beside them.
 - On busy streets, ride one behind the other, with the leader in front.
 
@@ -2209,12 +2212,15 @@ Shift will ask how it went. Only the Green Streets team sees your answer. Then t
 - Wear a helmet that fits snugly.
 - After dark, use a white light in front and a red light in back. Massachusetts law requires them.
 
-### By bike: on the street
+### By bike: stops and turns
 
 - Stop at every stop sign and red light, even when it looks clear.
-- Ride at least 4 feet from parked cars, even in a bike lane. A door can open without warning.
 - Before you turn or change lanes, look over your shoulder, then point where you're going.
 - To turn left, either move into the left lane when it's clear and turn, or ride straight across, wait at the far corner, and go on the next green.
+
+### By bike: where to ride
+
+- Ride at least 4 feet from parked cars, even in a bike lane. A door can open without warning.
 - At corners, stay behind trucks and buses, not beside them.
 - On busy streets, ride one behind the other, with the leader in front.
 
