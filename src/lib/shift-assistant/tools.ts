@@ -464,11 +464,11 @@ export const TOOLS: Anthropic.Tool[] = [
   },
   {
     name: 'find_trails',
-    description: "Rail trails and paths across Massachusetts from Shift's trail records, including ones with no Roam (the Bruce Freeman, the Assabet River, the Nashua River, the Cape Cod Rail Trail): the towns, length, surface, what it's like, how to get there by train or bus, parking, where it meets other trails, and any Roams on it. Find by name or town words, or nearest to a place.",
+    description: "Rail trails and paths across Massachusetts from Shift's trail records, including ones with no Roam (the Bruce Freeman, the Assabet River, the Nashua River, the Cape Cod Rail Trail): the towns, length, surface, what it's like, how to get there by train or bus, parking, where it meets other trails, and any Roams on it. Find by name or town words, a part of the state (\"central mass\", \"north shore\", \"metrowest\"), or nearest to a place.",
     input_schema: {
       type: 'object',
       properties: {
-        query: nullable('string', 'Words from the name or a town ("bruce freeman", "sudbury", "cape cod"). Leave empty to list the nearest.'),
+        query: nullable('string', 'Words from the name, a town or a part of the state ("bruce freeman", "sudbury", "central mass"). Leave empty to list the nearest.'),
         near: { ...placeSchema, type: ['object', 'null'] },
       },
     },
@@ -614,6 +614,26 @@ function clip(text: string | null | undefined, max: number): string | null {
   const cut = t.slice(0, max)
   const end = cut.search(/[.!?][^.!?]*$/)
   return end > max / 3 ? cut.slice(0, end + 1) : `${cut.replace(/\s+\S*$/, '')}…`
+}
+
+/** A part of the state in a trail search ("rail trails in Central Mass"):
+ *  trail records list towns, not regions, so the words matched nothing
+ *  (2026-10-28). The region becomes a place to sort by, and the rest of the
+ *  query still has to match. */
+const REGIONS: { re: RegExp; lat: number; lng: number }[] = [
+  { re: /\bcentral\s+(mass(achusetts)?|ma)\b|\bworcester\s+(county|area)\b|\bworcester\b/, lat: 42.2626, lng: -71.8023 },
+  { re: /\bwestern\s+(mass(achusetts)?|ma)\b|\bpioneer\s+valley\b/, lat: 42.325, lng: -72.641 },
+  { re: /\bberkshires?\b/, lat: 42.45, lng: -73.25 },
+  { re: /\bnorth\s+shore\b/, lat: 42.519, lng: -70.896 },
+  { re: /\bsouth\s+shore\b/, lat: 42.155, lng: -70.85 },
+  { re: /\bmetro\s*west\b/, lat: 42.279, lng: -71.416 },
+  { re: /\bmerrimack\s+valley\b/, lat: 42.633, lng: -71.316 },
+]
+function regionIn(query: unknown): { at: { lat: number; lng: number }; rest: string } | null {
+  const q = typeof query === 'string' ? query.toLowerCase() : ''
+  const hit = REGIONS.find((r) => r.re.test(q))
+  if (!hit) return null
+  return { at: { lat: hit.lat, lng: hit.lng }, rest: q.replace(hit.re, ' ').replace(/\b(mass(achusetts)?|ma|county|area|region)\b/g, ' ') }
 }
 
 /** A Roam's name for its button: "Wachusett Greenways", not the trail it's
@@ -1296,14 +1316,18 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
       }
       case 'find_roams': {
         const all = await getActiveRoams()
-        const words = typeof input.query === 'string' ? input.query.toLowerCase().split(/[^a-z0-9]+/).filter((w) => w.length > 2 && !['the', 'loop', 'path', 'trail', 'route'].includes(w)) : []
-        const near = asPlace(input.near) ?? ctx.here ?? null
+        const region = regionIn(input.query)
+        const query = region ? region.rest : input.query
+        const words = typeof query === 'string' ? query.toLowerCase().split(/[^a-z0-9]+/).filter((w) => w.length > 2 && !['the', 'loop', 'path', 'trail', 'trails', 'route', 'rail', 'rails', 'easy', 'flat', 'beginner'].includes(w)) : []
+        const from = asPlace(input.near) ?? ctx.here ?? null
+        const near = region?.at ?? from
         const mode = ['walk', 'bike', 'transit', 'multi'].includes(String(input.mode)) ? String(input.mode) : null
         const found = all
           .filter((r) => !mode || r.mode === mode)
           .filter((r) => !words.length || words.every((w) => `${r.name} ${r.region ?? ''}`.toLowerCase().includes(w)))
-          .map((r) => ({ r, d: near && r.start_lat != null && r.start_lng != null ? haversineMiles(near.lat, near.lng, r.start_lat, r.start_lng) : null }))
-          .sort((a, b) => (words.length ? 0 : (a.d ?? 1e9) - (b.d ?? 1e9)))
+          .map((r) => ({ r, sortBy: near && r.start_lat != null && r.start_lng != null ? haversineMiles(near.lat, near.lng, r.start_lat, r.start_lng) : null, d: from && r.start_lat != null && r.start_lng != null ? haversineMiles(from.lat, from.lng, r.start_lat, r.start_lng) : null }))
+          .filter((x) => !region || (x.sortBy != null && x.sortBy <= 30))
+          .sort((a, b) => (words.length ? 0 : (a.sortBy ?? 1e9) - (b.sortBy ?? 1e9)))
           .slice(0, 6)
         const hills = await roamHills(ctx, found.map(({ r }) => r.id))
         const roams = found.map(({ r, d }) => ({ id: r.id, name: r.name, kind: r.mode, miles: r.distance_miles != null ? round1(r.distance_miles) : null, minutes: r.estimated_minutes, about: r.hook ?? r.tagline, area: r.region, hills: hills.get(r.id)?.feel ?? null, start_miles_away: d != null ? round1(d) : null }))
@@ -1365,8 +1389,11 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
         return card ? { ...result, trail: card } : result
       }
       case 'find_trails': {
-        const words = typeof input.query === 'string' ? input.query.toLowerCase().split(/[^a-z0-9]+/).filter((w) => w.length > 2 && !['the', 'rail', 'trail', 'path', 'paths', 'bikeway', 'greenway'].includes(w)) : []
-        const near = asPlace(input.near) ?? ctx.here ?? null
+        const region = regionIn(input.query)
+        const query = region ? region.rest : input.query
+        const words = typeof query === 'string' ? query.toLowerCase().split(/[^a-z0-9]+/).filter((w) => w.length > 2 && !['the', 'rail', 'rails', 'trail', 'trails', 'path', 'paths', 'bikeway', 'greenway', 'easy', 'flat', 'beginner'].includes(w)) : []
+        const from = asPlace(input.near) ?? ctx.here ?? null
+        const near = region?.at ?? from
         const [{ data }, { data: links }, roams] = await Promise.all([
           ctx.admin.from('trails').select('id, name, aka, towns, full_miles, surface, summary, transit_note, parking_note, access_points')
             .eq('status', 'approved').eq('active', true).limit(200),
@@ -1380,10 +1407,12 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
           .filter((t) => !words.length || words.every((w) => `${t.name} ${(t.aka ?? []).join(' ')} ${(t.towns ?? []).join(' ')}`.toLowerCase().includes(w)))
           .map((t) => {
             const pts = (t.access_points ?? []).filter((a) => typeof a.lat === 'number' && typeof a.lng === 'number')
-            const d = near && pts.length ? Math.min(...pts.map((a) => haversineMiles(near.lat, near.lng, a.lat, a.lng))) : null
-            return { t, pts, d }
+            const sortBy = near && pts.length ? Math.min(...pts.map((a) => haversineMiles(near.lat, near.lng, a.lat, a.lng))) : null
+            const d = from && pts.length ? Math.min(...pts.map((a) => haversineMiles(from.lat, from.lng, a.lat, a.lng))) : null
+            return { t, pts, sortBy, d }
           })
-          .sort((a, b) => (words.length ? 0 : (a.d ?? 1e9) - (b.d ?? 1e9)))
+          .filter((x) => !region || (x.sortBy != null && x.sortBy <= 30))
+          .sort((a, b) => (words.length ? 0 : (a.sortBy ?? 1e9) - (b.sortBy ?? 1e9)))
           .slice(0, 5)
         const trails = found.map(({ t, pts, d }) => ({
           id: t.id, name: t.name, towns: (t.towns ?? []).slice(0, 12), miles: t.full_miles,
