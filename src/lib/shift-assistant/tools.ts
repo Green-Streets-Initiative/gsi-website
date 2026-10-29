@@ -86,6 +86,8 @@ export type TrailCard = {
   closure: string | null
   /** false: the closure is on a path it connects to, not on the route. */
   closure_on_route: boolean
+  /** Where the connecting path with the closure comes from ("Davis Square"). */
+  closure_from: string | null
   open_label: string
 }
 
@@ -1402,7 +1404,7 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
           profile: prof.filter((_, i) => i % step === 0 || i === prof.length - 1),
           start: first?.label ?? null, end: loop ? null : last?.label ?? null,
           getting_there: r.surface ? wayIn(r.access_note, r.parking_note) : wayIn(r.access_note ?? whole?.transit_note, r.parking_note ?? whole?.parking_note),
-          closure: closedNow ? clip(closedNow.title, 90) : null, closure_on_route: closedNow?.affects === 'route',
+          closure: closedNow ? clip(closedNow.title, 90) : null, closure_on_route: closedNow?.affects === 'route', closure_from: closedNow?.affects === 'access' ? closedNow.from_label ?? null : null,
           open_label: link.label,
         } : undefined
         const result = ok({
@@ -1416,7 +1418,7 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
           start: first ? { lat: first.lat, lng: first.lng, name: first.label } : null,
           ...(loop ? { loop: true } : last && last !== first ? { end: { lat: last.lat, lng: last.lng, name: last.label } } : {}),
           stops: stops.map((c) => c.label).slice(0, 10),
-          closures_now: trail.disruptions.map((d) => ({ trail: d.trail_name, on_this_route: d.affects === 'route', what: d.title, about: excerptOf(d.summary, 200), until: d.ends_on ?? d.ends_note, detour: d.detours?.[0]?.steps?.slice(0, 4) ?? null })),
+          closures_now: trail.disruptions.map((d) => ({ trail: d.trail_name, on_this_route: d.affects === 'route', coming_from: d.affects === 'access' ? d.from_label ?? null : null, what: d.title, about: excerptOf(d.summary, 200), until: d.ends_on ?? d.ends_note, detour: d.detours?.[0]?.steps?.slice(0, 4) ?? null })),
           next_group_outing: event ? { title: event.title, date: event.event_date, time: event.event_time?.slice(0, 5) ?? null, where: event.location_name, organizer: event.organizer_name } : null,
           next: 'Answer what they asked (how long, where it starts, how to get there) in a sentence or two; any closure first. Hills: say the feel and, when it is not a loop, which way climbs. Getting there: getting_in, or whole_trail.getting_there; pass start to check_trip only when they could walk, bike or take transit there.',
           ...(card ? { card: 'A card shows under your reply with its length, minutes, surface, hills (as a chart, with the climb each way), how to get there, any closure, and a button to the Roam. Leave those numbers to the card: say why it suits them and the one thing worth knowing.' } : {}),
