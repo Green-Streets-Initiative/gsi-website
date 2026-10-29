@@ -2,7 +2,7 @@ import 'server-only'
 import { Resend } from 'resend'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { AGREEMENT_VERSION, GSI_SIGNER, agreementPlainText } from '@/lib/employer-agreement'
-import { buildAgreementPdf, type OrderTerms, type Signer } from '@/lib/employer-agreement-pdf'
+import { buildAgreementPdf, loadAgreementLogo, type OrderTerms, type Signer } from '@/lib/employer-agreement-pdf'
 import { PLANS } from '@/lib/employer/plans'
 import { createDocument, deleteDocument, getCompletedPdf, getDocument, type SignWellDocument } from '@/lib/signwell'
 
@@ -192,7 +192,7 @@ export async function sendAgreement(opts: {
   }
 
   try {
-    const pdf = buildAgreementPdf(order, opts.signer)
+    const pdf = buildAgreementPdf(order, opts.signer, await loadAgreementLogo())
     const doc = await createDocument({
       test_mode: testMode,
       name: `Shift order form: ${group.name}`,

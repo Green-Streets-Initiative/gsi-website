@@ -32,7 +32,9 @@
 // one-page order form (ORDER_FORM_* below, rendered by
 // employer-agreement-pdf.ts and sent through SignWell) or in the portal.
 // "The service and the Order" counts the signed order form as an Order;
-// "Electronic acceptance" covers both ways.
+// "Electronic acceptance" covers both ways. The order form is not part of
+// the agreement text, so its wording and the PDF layout change without a
+// new version.
 //
 // ATTORNEY REVIEW STILL PENDING — planned as fixed-fee review before
 // customer #2-3; "Nature of payment" UBIT question flagged for counsel.
@@ -162,6 +164,23 @@ export const ORDER_FORM_KEY_POINTS = [
 
 export const ORDER_FORM_CLOSING =
   "These points summarize the agreement; the agreement's own wording controls. By signing, Customer accepts this Order Form and the agreement. Where this Order Form sets the plan, fee, or dates, it controls."
+
+// GSI as a party: the order form's opening paragraph and notice block.
+// Notice emails match the agreement's "Notices and governing law" section.
+export const GSI_PARTY = {
+  legalName: 'Green Streets Initiative',
+  address: '519 Somerville Ave, Ste 2, Box 103, Somerville, MA 02143',
+  noticeEmails: ['info@gogreenstreets.org', 'keith@gogreenstreets.org'],
+}
+
+// Opening paragraph of the order form (Keith 2026-10-29: laid out like a
+// standard signed agreement, parties named and defined up front).
+export function orderFormIntro(company: string): string {
+  return `This Order Form is between ${GSI_PARTY.legalName}, a Massachusetts 501(c)(3) nonprofit located at ${GSI_PARTY.address} ("GSI"), and ${company} ("Customer"). It takes effect on the date of the later signature below (the "Effective Date") and is governed by the ${AGREEMENT_TITLE}, version ${AGREEMENT_VERSION}, attached to this Order Form and published at gogreenstreets.org/shift/employers/agreement (the "Agreement").`
+}
+
+export const ORDER_FORM_WITNESS =
+  'IN WITNESS WHEREOF, the parties have signed this Order Form as of the Effective Date.'
 
 // GSI's countersigner on every order form.
 export const GSI_SIGNER = {
