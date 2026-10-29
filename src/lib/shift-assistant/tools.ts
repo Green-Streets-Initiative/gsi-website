@@ -131,11 +131,14 @@ const CARD_TRAIL = 'trail_card'
 /** Builds whose route card has "Save this trip" (Shift 01491, Keith 2026-10-29). */
 const CARD_SAVE = 'save_trip'
 
+/** When someone is free for a practice ride (Shift 01503). */
+const PRACTICE_SLOTS = ['weekend_morning', 'weekend_afternoon', 'weekday_evening']
+
 /** Screens added after the first release: offered only to builds that list them. */
-const NEWER_SCREENS = new Set(['trip', 'trip_history', 'my_rewards', 'notifications', 'vacation', 'partner_request', 'partner_matches', 'bike_confidence', 'roam', 'closure_plan', 'memories'])
+const NEWER_SCREENS = new Set(['trip', 'trip_history', 'my_rewards', 'notifications', 'vacation', 'partner_request', 'partner_matches', 'bike_confidence', 'roam', 'closure_plan', 'memories', 'partner_practice'])
 const canOpen = (ctx: ToolCtx, screen: string) => !NEWER_SCREENS.has(screen) || !!ctx.screens?.has(screen)
 
-const SCREENS = ['commute', 'commute_setup', 'around_you', 'rides', 'event', 'ride', 'rewards', 'log_trip', 'ride_plan', 'trip', 'trip_history', 'my_rewards', 'notifications', 'vacation', 'partner_request', 'partner_matches', 'bike_confidence', 'roam', 'closure_plan', 'memories'] as const
+const SCREENS = ['commute', 'commute_setup', 'around_you', 'rides', 'event', 'ride', 'rewards', 'log_trip', 'ride_plan', 'trip', 'trip_history', 'my_rewards', 'notifications', 'vacation', 'partner_request', 'partner_matches', 'bike_confidence', 'roam', 'closure_plan', 'memories', 'partner_practice'] as const
 type Screen = (typeof SCREENS)[number]
 
 const FUNCTIONS = `${(process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').replace(/\/$/, '')}/functions/v1`
@@ -224,6 +227,7 @@ export const ACTIVITY: Record<string, string> = {
   get_lesson_offer: 'Checking the free lesson',
   // Shown once they approve the card.
   join_shift_together: 'Signing you up',
+  join_practice_ride: 'Signing you up',
   save_place: 'Saving the place',
   change_settings: 'Saving your settings',
   set_reminder: 'Setting your reminder',
@@ -233,7 +237,7 @@ export const ACTIVITY: Record<string, string> = {
 }
 
 /** Tools that save something: the turn pauses on a card until the person approves. */
-export const NEEDS_APPROVAL = new Set([...RIDE_PLAN_NEEDS_APPROVAL, 'save_place', 'change_settings', 'set_reminder', 'remember', 'rsvp_ride', 'join_shift_together'])
+export const NEEDS_APPROVAL = new Set([...RIDE_PLAN_NEEDS_APPROVAL, 'save_place', 'change_settings', 'set_reminder', 'remember', 'rsvp_ride', 'join_shift_together', 'join_practice_ride'])
 
 export type ApprovalCard = RidePlanCard & { confirmText?: string }
 
@@ -471,8 +475,22 @@ export const TOOLS: Anthropic.Tool[] = [
         leave_at: nullable('string', 'carpool only: HH:MM, 24-hour, when they head home.'),
         note: nullable('string', "A short note their match sees, in their words (\"Back on a bike after years, I'd like a calm route\")."),
         contact_email: nullable('string', "Only when the result told you their sign-in email is Apple's Hide My Email: an email they gave you that their match can write to."),
+        practice_slots: { type: ['array', 'null'], items: { type: 'string', enum: PRACTICE_SLOTS }, description: "guide by bike only, and only when they said yes to it: the times they'd also go on an easy practice ride near their home with someone out of practice." },
       },
       required: ['kind'],
+    },
+  },
+  {
+    name: 'join_practice_ride',
+    description: "Sign the person up for a practice ride: an easy bike ride near their home, on a quiet path or the streets around it, with a Shift Together guide who lives nearby. For someone who can ride but is out of practice or nervous, and wants to get comfortable before riding a real trip. No saved Work needed. Shift picks the nearest path entrance to their Home unless they name a path or want the quiet streets near home. Shift then suggests a guide; both say yes before either sees the other's email. The card shows the place, the times and the agreement, and they approve it there.",
+    input_schema: {
+      type: 'object',
+      properties: {
+        path: nullable('string', 'Words from the name of a path they want ("Minuteman", "Charles River"). Leave empty for the nearest.'),
+        near_home: { type: ['boolean', 'null'], description: 'True for the quiet streets near their home instead of a path.' },
+        slots: { type: ['array', 'null'], items: { type: 'string', enum: PRACTICE_SLOTS }, description: 'When they are free. Empty means weekend mornings.' },
+        contact_email: nullable('string', "Only when the result told you their sign-in email is Apple's Hide My Email: an email they gave you that their guide can write to."),
+      },
     },
   },
   {
@@ -563,7 +581,7 @@ export const TOOLS: Anthropic.Tool[] = [
   ...RIDE_PLAN_TOOLS,
   {
     name: 'open_screen',
-    description: "A button to a screen of the Shift app, for things done there: commute (their saved commute), commute_setup (set home and work), around_you (the map of what's near them), rides (group rides and events), event or ride (one of them, by id; event also opens a challenge by its id from get_my_challenges), rewards (rewards they've won), log_trip (log a trip by hand), ride_plan (a Shift Together first ride plan, by its match_id), trip (one recorded trip, by its id from get_my_activity, where they can change how they traveled), trip_history (all their trips), my_rewards (rewards they've won), notifications (notification settings), vacation (pause tracking while away), partner_request (Shift Together sign-up: kind newcomer = go with someone who knows the way, guide = show someone the way, carpool = share the drive to work; mode bike, walk or transit, not for carpool), partner_matches (their Shift Together matches, where they also end a match or report a problem), closure_plan (their plan for an MBTA closure, by its plan_id from get_my_closure_plan), memories (what you remember about them, where they can delete any of it). Also bike_confidence: \"How do you feel about biking there?\", which sends them to the first step that fits (go, a guide, a free road riding lesson near Somerville, or learn-to-ride classes).",
+    description: "A button to a screen of the Shift app, for things done there: commute (their saved commute), commute_setup (set home and work), around_you (the map of what's near them), rides (group rides and events), event or ride (one of them, by id; event also opens a challenge by its id from get_my_challenges), rewards (rewards they've won), log_trip (log a trip by hand), ride_plan (a Shift Together first ride plan, by its match_id), trip (one recorded trip, by its id from get_my_activity, where they can change how they traveled), trip_history (all their trips), my_rewards (rewards they've won), notifications (notification settings), vacation (pause tracking while away), partner_request (Shift Together sign-up: kind newcomer = go with someone who knows the way, guide = show someone the way, carpool = share the drive to work; mode bike, walk or transit, not for carpool), partner_matches (their Shift Together matches, where they also end a match or report a problem), partner_practice (the practice ride sign-up: an easy bike ride near home with a guide, off the commute), closure_plan (their plan for an MBTA closure, by its plan_id from get_my_closure_plan), memories (what you remember about them, where they can delete any of it). Also bike_confidence: \"How do you feel about biking there?\", which sends them to the first step that fits (go, a guide, a free road riding lesson near Somerville, or learn-to-ride classes).",
     input_schema: {
       type: 'object',
       properties: {
@@ -1601,6 +1619,7 @@ export async function approvalCard(ctx: ToolCtx, name: string, input: Record<str
   Promise<{ card: ApprovalCard; input: Record<string, unknown> } | { result: ToolResult }> {
   if (RIDE_PLAN_NEEDS_APPROVAL.has(name)) return ridePlanCard(ctx, name, input)
   if (name === 'join_shift_together') return shiftTogetherCard(ctx, input)
+  if (name === 'join_practice_ride') return practiceRideCard(ctx, input)
   if (name === 'set_reminder') {
     const from = asPlace(input.from)
     const to = asPlace(input.to)
@@ -1699,6 +1718,7 @@ export async function approvalCard(ctx: ToolCtx, name: string, input: Record<str
 const TOGETHER_TERMS = "I'm 18 or older. Green Streets introduces people but doesn't check or supervise them. If we meet, it's because we both agree to, in a public place, with bikes, cars and gear we get on our own. Getting around always carries some risk, and I'm responsible for my own safety."
 const TOGETHER_WAYS: Record<string, string> = { walk: 'walking', bike: 'biking', transit: 'the bus or train', micro: 'a scooter' }
 const DAY_WORDS: Record<string, string> = { mon: 'Mon', tue: 'Tue', wed: 'Wed', thu: 'Thu', fri: 'Fri', sat: 'Sat', sun: 'Sun' }
+const SLOT_WORDS: Record<string, string> = { weekend_morning: 'weekend mornings', weekend_afternoon: 'weekend afternoons', weekday_evening: 'weekday evenings' }
 
 /** Shift Together sign-up (Keith 2026-10-29: the assistant should set it up, not
  *  only link the form). The same RPCs the app's form uses, as the person. */
@@ -1783,6 +1803,8 @@ async function shiftTogetherCard(ctx: ToolCtx, input: Record<string, unknown>):
   const when = [days.length ? (weekdays ? 'Weekdays' : days.map((d) => DAY_WORDS[d]).join(', ')) : 'Any day',
     kind === 'carpool' ? `arrive by ${ampm(arrive!)}${leave ? `, leave at ${ampm(leave)}` : ''}` : times.length ? times.join(', ') : 'any time'].join(', ')
   const note = typeof input.note === 'string' && input.note.trim() ? input.note.replace(/\s+/g, ' ').trim().slice(0, 300) : null
+  // A bike guide can also offer practice rides near home (01503), on builds that show them.
+  const practice = kind === 'guide' && modes.includes('bike') && canOpen(ctx, 'partner_practice') ? list(input.practice_slots, PRACTICE_SLOTS) : []
   return {
     card: {
       title: existing ? 'Update your Shift Together sign-up' : 'Sign up for Shift Together',
@@ -1791,6 +1813,7 @@ async function shiftTogetherCard(ctx: ToolCtx, input: Record<string, unknown>):
         `${from.label} to ${to.label}`,
         fromTrips ? `${when} (from your trips)` : when,
         ...(note ? [`Your note: "${note}"`] : []),
+        ...(practice.length ? [`Also an easy practice ride near your home: ${practice.map((x) => SLOT_WORDS[x]).join(' or ')}`] : []),
         ...(given ? [`Your match can write to ${given} once you both say yes`] : []),
         "Shift suggests someone nearby. You both say yes before either of you sees the other's email",
         ...(accepted ? [] : [`By signing up you agree: ${TOGETHER_TERMS}`]),
@@ -1798,7 +1821,7 @@ async function shiftTogetherCard(ctx: ToolCtx, input: Record<string, unknown>):
       cta: existing ? 'Save' : 'Sign me up', tone: 'primary',
     },
     input: { kind, modes, from_id: from.id, to_id: to.id, days, times, carpool_role: role, arrive_by: arrive, leave_at: leave, note,
-      contact_email: given || null, accept_version: accepted ? null : version },
+      contact_email: given || null, accept_version: accepted ? null : version, practice_slots: practice.length ? practice : null },
   }
 }
 
@@ -1825,6 +1848,11 @@ async function runApprovedShiftTogether(ctx: ToolCtx, input: Record<string, unkn
     if (r.reason === 'under_18') return fail('Shift Together is for people 18 and older, and the birth date on their account says they are under 18. Tell them kindly; if the date is wrong, they can email info@gogreenstreets.org.')
     return fail(sorry)
   }
+  // The practice offer rides on the guide sign-up just saved; a miss leaves the sign-up standing.
+  if (Array.isArray(input.practice_slots) && input.practice_slots.length) {
+    const { data: g } = await ctx.user.rpc('set_guide_practice', { p_slots: input.practice_slots })
+    r.matches = (r.matches ?? 0) + ((g as { matches?: number } | null)?.matches ?? 0)
+  }
   const found = (r.matches ?? 0) > 0
   return {
     ...ok({
@@ -1837,11 +1865,97 @@ async function runApprovedShiftTogether(ctx: ToolCtx, input: Record<string, unkn
   }
 }
 
+/** A practice ride (01503, Keith 2026-10-29): an easy bike ride near home with
+ *  a guide, off the commute. The same RPCs the app's partner-practice screen uses. */
+async function practiceRideCard(ctx: ToolCtx, input: Record<string, unknown>):
+  Promise<{ card: ApprovalCard; input: Record<string, unknown> } | { result: ToolResult }> {
+  if (!canOpen(ctx, 'partner_practice')) return { result: fail("Their version of the app doesn't have practice rides yet. Tell them an app update brings them; meanwhile a beginner-friendly group ride (find_rides_and_events) or the free lesson (get_lesson_offer) is a good start.") }
+  const slots = Array.isArray(input.slots) ? [...new Set(input.slots.map(String).filter((x) => PRACTICE_SLOTS.includes(x)))] : []
+  if (!slots.length) slots.push('weekend_morning')
+  const [nearQ, contactQ, reqsQ, ackQ, versionQ] = await Promise.all([
+    ctx.user.rpc('practice_places_near', {}),
+    ctx.user.rpc('get_my_partner_contact'),
+    ctx.user.rpc('get_my_partner_requests'),
+    ctx.user.from('commute_partner_acks').select('version').eq('user_id', ctx.userId),
+    ctx.user.rpc('partner_terms_version'),
+  ])
+  const near = (nearQ.data ?? null) as { home?: boolean; places?: { trail_id: string; trail: string; point: string; miles: number }[] | null } | null
+  if (!near?.home) return { result: fail('They have no Home saved, and a practice ride starts near home. Offer open_screen commute_setup to set it, then try again.') }
+  const places = near.places ?? []
+  const words = typeof input.path === 'string' ? input.path.toLowerCase().split(/\s+/).filter((w) => w.length > 2) : []
+  const path = input.near_home === true ? null
+    : words.length ? places.find((p) => words.every((w) => p.trail.toLowerCase().includes(w))) ?? null
+    : places[0] ?? null
+  if (words.length && !path && input.near_home !== true) {
+    return { result: fail(places.length
+      ? `No path called "${input.path}" within 4 miles of their home. The nearby ones: ${places.map((p) => `${p.trail} (${p.miles} mi)`).join(', ')}. Ask which, or offer the quiet streets near home.`
+      : 'There are no paths within 4 miles of their home. Offer the quiet streets near home (near_home true).') }
+  }
+  const contact = (contactQ.data ?? null) as { hidden?: boolean; contact_email?: string | null } | null
+  const given = typeof input.contact_email === 'string' ? input.contact_email.trim().toLowerCase() : ''
+  if (given && (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(given) || /@privaterelay\.appleid\.com$/.test(given))) {
+    return { result: fail("That email won't work: it needs to be one their guide can write to, not another hidden address.") }
+  }
+  if (contact?.hidden && !contact.contact_email && !given) {
+    return { result: fail("They signed in with Apple's Hide My Email, so a guide's email can't reach them. Ask for an email their guide can write to (they see it only after both say yes), then call again with contact_email.") }
+  }
+  const version = typeof versionQ.data === 'string' ? versionQ.data : null
+  const accepted = !!version && ((ackQ.data ?? []) as { version: string }[]).some((a) => a.version === version)
+  const existing = ((reqsQ.data ?? []) as { kind: string; status: string }[]).find((r) => r.kind === 'practice' && r.status !== 'closed')
+  return {
+    card: {
+      title: existing ? 'Update your practice ride' : 'Find a practice ride',
+      lines: [
+        'An easy bike ride with a Shift Together guide who lives nearby',
+        path ? `${path.trail}, from the ${path.point} entrance (${path.miles} mi from home)` : 'The quiet streets near your home',
+        `When: ${slots.map((x) => SLOT_WORDS[x]).join(' or ')}`,
+        ...(given ? [`Your guide can write to ${given} once you both say yes`] : []),
+        "You both say yes before either of you sees the other's email",
+        ...(accepted ? [] : [`By signing up you agree: ${TOGETHER_TERMS}`]),
+      ],
+      cta: existing ? 'Save' : 'Sign me up', tone: 'primary',
+    },
+    input: { trail_id: path?.trail_id ?? null, point: path?.point ?? null, slots, contact_email: given || null, accept_version: accepted ? null : version },
+  }
+}
+
+async function runApprovedPracticeRide(ctx: ToolCtx, input: Record<string, unknown>): Promise<ToolResult> {
+  const sorry = "That didn't save. Try again in a moment, or use the practice ride screen."
+  if (input.accept_version) {
+    const { data, error } = await ctx.user.rpc('accept_partner_terms', { p_version: String(input.accept_version) })
+    if (error || !(data as { ok?: boolean } | null)?.ok) return fail(sorry)
+  }
+  if (input.contact_email) {
+    const { data, error } = await ctx.user.rpc('set_partner_contact_email', { p_email: String(input.contact_email) })
+    if (error || !(data as { ok?: boolean } | null)?.ok) return fail("The contact email didn't save, so nothing was signed up. Check it with them and try again.")
+  }
+  const { data, error } = await ctx.user.rpc('set_practice_request', {
+    p_trail_id: input.trail_id ?? null, p_point: input.point ?? null, p_slots: input.slots, p_note: null, p_languages: null,
+  })
+  const r = (data ?? null) as { ok?: boolean; reason?: string; matches?: number } | null
+  if (error || !r) return fail(sorry)
+  if (!r.ok) {
+    if (r.reason === 'under_18') return fail('Shift Together is for people 18 and older, and the birth date on their account says they are under 18. Tell them kindly; if the date is wrong, they can email info@gogreenstreets.org.')
+    return fail(sorry)
+  }
+  const found = (r.matches ?? 0) > 0
+  return {
+    ...ok({
+      saved: true, matches_now: r.matches ?? 0,
+      note: found
+        ? 'Signed up, and Shift already found a guide. Say so in a sentence, and give a partner_matches button so they can see who and say yes or no.'
+        : "Signed up. Say in a sentence that Shift will let them know when a guide near them is free then; there's nobody yet. A beginner-friendly group ride (find_rides_and_events) or the free lesson (get_lesson_offer) is a good thing to try meanwhile.",
+    }),
+    ...(found && canOpen(ctx, 'partner_matches') ? { link: { screen: 'partner_matches' as const, label: 'See who' } } : {}),
+  }
+}
+
 /** Run a saving tool once the person approved its card. */
 export async function runApproved(ctx: ToolCtx, name: string, input: Record<string, unknown>): Promise<ToolResult> {
   try {
     if (RIDE_PLAN_NEEDS_APPROVAL.has(name)) return await runApprovedRidePlan(ctx, name, input)
     if (name === 'join_shift_together') return await runApprovedShiftTogether(ctx, input)
+    if (name === 'join_practice_ride') return await runApprovedPracticeRide(ctx, input)
     if (name === 'set_reminder') {
       if (!ctx.threadId) return fail("That reminder didn't save. Try again in a moment.")
       const { error } = await ctx.admin.from('member_assistant_plans').insert({ ...input, user_id: ctx.userId, thread_id: ctx.threadId })

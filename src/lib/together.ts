@@ -102,7 +102,8 @@ export type PartnerRequest = {
 export async function myRequests(): Promise<PartnerRequest[]> {
   const { data, error } = await supabase.rpc('get_my_partner_requests')
   if (error) throw new Error(error.message)
-  return (data ?? []) as PartnerRequest[]
+  // Practice-ride sign-ups (Shift 01503) are made in the app; the web forms are for trips.
+  return ((data ?? []) as { kind: string }[]).filter((r) => r.kind !== 'practice') as PartnerRequest[]
 }
 
 export type Place = { label: 'Home' | 'Work'; address: string; lat: number; lng: number; placeId?: string | null }
@@ -190,9 +191,10 @@ export async function stopSignUp(kind: PartnerKind): Promise<boolean> {
 /** A match as the person sees it (get_my_partner_matches; Shift lib/commute-partners.ts PartnerMatch). */
 export type Match = {
   id: string
-  kind: 'guide' | 'carpool'
+  kind: 'guide' | 'carpool' | 'practice'
   status: 'proposed' | 'connected' | 'went_together'
-  my_kind: PartnerKind
+  /** 'practice': they asked for a practice ride (Shift 01503). */
+  my_kind: PartnerKind | 'practice'
   my_answer: 'yes' | 'no' | null
   their_answer: 'yes' | 'waiting' | null
   my_rating: Rating | null
@@ -202,6 +204,8 @@ export type Match = {
   dest_miles: number | null
   detour_minutes?: number | null
   i_drive?: boolean | null
+  /** A practice ride (Shift 01503): where it starts and the times you're both free. */
+  practice?: { trail: string | null; point: string | null; near_home: boolean; slots: string[] } | null
   created_at: string
   connected_at: string | null
   other: {
