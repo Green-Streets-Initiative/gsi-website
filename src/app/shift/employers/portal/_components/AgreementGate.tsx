@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useId, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useId, useState, type ReactNode } from 'react'
 import { supabase } from '@/lib/supabase'
 import { usePortal } from '../_lib/portal-context'
 import { Card } from '@/components/employer/Card'
@@ -11,12 +11,16 @@ import {
   AGREEMENT_SECTIONS,
   AGREEMENT_VERSION,
 } from '@/lib/employer-agreement'
+import { EsignForm, EsignSteps, statusLine, useAgreementEsign } from './AgreementEsign'
 
 // Click-wrap gate: paid accounts (agreement_required) can't use the portal
 // until an admin accepts the Employer Platform Agreement. Acceptance is
 // stamped server-side (api/employer/agreement/accept), which also emails a
 // confirmation copy to the accepter and GSI. Viewers see a waiting notice;
-// GSI admins bypass entirely.
+// GSI admins bypass entirely. Since 2026-10-29 an admin's first choice is
+// to e-sign a one-page order form (AgreementEsign, through SignWell), sent
+// to themselves or to whoever signs for the company; the portal opens when
+// that person signs. The click-through stays as the other way.
 export default function AgreementGate({ children }: { children: ReactNode }) {
   const { group, setGroup, isAdmin, sessionEmail, admins, agreementGated } = usePortal()
 
@@ -59,6 +63,21 @@ export default function AgreementGate({ children }: { children: ReactNode }) {
   }, [])
 
   const fid = useId()
+  const [mode, setMode] = useState<'esign' | 'click'>('esign')
+  const [resending, setResending] = useState(false)
+  const esign = useAgreementEsign(agreementGated && isAdmin ? group?.id : undefined, true)
+  const env = esign.state?.envelope ?? null
+
+  // Signed by e-signature (seen by polling): the portal opens.
+  useEffect(() => {
+    if (!group || !env?.customer_signed_at || group.agreement_accepted_at) return
+    setGroup({
+      ...group,
+      agreement_version: env.version,
+      agreement_accepted_at: env.customer_signed_at,
+      agreement_accepted_by_email: env.signer_email,
+    })
+  }, [env, group, setGroup])
 
   if (!agreementGated) return <>{children}</>
 
@@ -124,6 +143,67 @@ export default function AgreementGate({ children }: { children: ReactNode }) {
     } finally {
       setSubmitting(false)
     }
+  }
+
+  if (mode === 'esign') {
+    const waiting = env && (env.status === 'sent' || env.status === 'viewed') && !resending
+    return (
+      <div className="mx-auto max-w-[760px]">
+        <Card className="overflow-hidden">
+          <div className="border-b border-line px-5 py-5 sm:px-7">
+            <h1 className="text-[20px] font-bold text-ink">{AGREEMENT_TITLE}</h1>
+            <p className="mt-1 text-[15px] text-ink-muted">
+              {group!.name}&apos;s portal opens as soon as the order form is signed.
+            </p>
+          </div>
+          <div className="grid gap-5 px-5 py-5 sm:px-7">
+            {waiting ? (
+              <>
+                <EsignSteps env={env} />
+                <p className="text-[15px] leading-relaxed text-ink">
+                  Sent to {env.signer_name} ({env.signer_email}). {statusLine(env)}
+                </p>
+                <div className="flex flex-wrap gap-3">
+                  <Button variant="secondary" onClick={() => setResending(true)}>
+                    Send again or to someone else
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <>
+                {env && ['declined', 'expired', 'error'].includes(env.status) && (
+                  <p className="rounded-[10px] bg-surface-2 px-4 py-3 text-[15px] text-ink">{statusLine(env)}</p>
+                )}
+                <p className="text-[15px] leading-relaxed text-ink-muted">
+                  Sign a one-page order form by e-signature. The{' '}
+                  <a href="/shift/employers/agreement" target="_blank" rel="noopener" className="font-semibold text-accent underline-offset-4 hover:underline">
+                    full agreement
+                  </a>{' '}
+                  comes with it.
+                </p>
+                <EsignForm
+                  groupId={group!.id}
+                  companyName={group!.name}
+                  defaults={esign.state?.defaults ?? null}
+                  sessionEmail={sessionEmail}
+                  onSent={(e) => {
+                    esign.setState((s) => (s ? { ...s, envelope: e } : s))
+                    setResending(false)
+                  }}
+                  onCancel={resending ? () => setResending(false) : undefined}
+                />
+              </>
+            )}
+            {esign.error && <p className="text-[14px] text-ep-danger">{esign.error}</p>}
+          </div>
+          <div className="border-t border-line bg-surface-2 px-5 py-4 sm:px-7">
+            <button type="button" onClick={() => setMode('click')} className="text-[15px] font-semibold text-accent underline-offset-4 hover:underline">
+              Or read and accept it here
+            </button>
+          </div>
+        </Card>
+      </div>
+    )
   }
 
   return (
@@ -219,6 +299,9 @@ export default function AgreementGate({ children }: { children: ReactNode }) {
             )}
             {error && <span className="text-[14px] text-ep-danger">{error}</span>}
           </div>
+          <button type="button" onClick={() => setMode('esign')} className="mt-4 text-[15px] font-semibold text-accent underline-offset-4 hover:underline">
+            E-sign a PDF instead
+          </button>
         </div>
       </Card>
     </div>

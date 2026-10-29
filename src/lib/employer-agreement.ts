@@ -28,10 +28,16 @@
 // Employee participation adds conversations. Keep in step with
 // lib/employer-assistant/data-note.ts.
 //
+// v2026-11-EMP-5 (2026-10-29, Keith approved): accepted by e-signing a
+// one-page order form (ORDER_FORM_* below, rendered by
+// employer-agreement-pdf.ts and sent through SignWell) or in the portal.
+// "The service and the Order" counts the signed order form as an Order;
+// "Electronic acceptance" covers both ways.
+//
 // ATTORNEY REVIEW STILL PENDING — planned as fixed-fee review before
 // customer #2-3; "Nature of payment" UBIT question flagged for counsel.
 
-export const AGREEMENT_VERSION = '2026-11-EMP-4'
+export const AGREEMENT_VERSION = '2026-11-EMP-5'
 
 export const AGREEMENT_TITLE = 'Shift Employer Platform Agreement'
 
@@ -41,7 +47,7 @@ export const AGREEMENT_PREAMBLE =
 export const AGREEMENT_SECTIONS: Array<{ heading: string; body: string }> = [
   {
     heading: 'The service and the Order',
-    body: 'GSI provides the Shift Employer Platform: an employer portal with a commute dashboard and impact reporting for Customer\'s workplace group in the Shift app, employee joining via an invite code, commute challenges, a weekly email report, where GSI makes it available, the setup assistant, and the other features included in Customer\'s subscription tier. The subscription tier, annual fee, and access start date are as stated on GSI\'s invoice or checkout receipt for the subscription (the "Order"); if the Order is silent on the access start date, the term starts when Customer\'s portal access is activated. Each tier\'s features are as described at gogreenstreets.org/shift/employers at the time of the Order. GSI may improve or modify platform features over time, provided the changes do not materially reduce the core service described in this section during a paid term.',
+    body: 'GSI provides the Shift Employer Platform: an employer portal with a commute dashboard and impact reporting for Customer\'s workplace group in the Shift app, employee joining via an invite code, commute challenges, a weekly email report, where GSI makes it available, the setup assistant, and the other features included in Customer\'s subscription tier. The subscription tier, annual fee, and access start date are as stated on the order form Customer signs, or on GSI\'s invoice or checkout receipt for the subscription (the "Order"); if the Order is silent on the access start date, the term starts when Customer\'s portal access is activated. Each tier\'s features are as described at gogreenstreets.org/shift/employers at the time of the Order. GSI may improve or modify platform features over time, provided the changes do not materially reduce the core service described in this section during a paid term.',
   },
   {
     heading: 'License and intellectual property',
@@ -125,7 +131,7 @@ export const AGREEMENT_SECTIONS: Array<{ heading: string; body: string }> = [
   },
   {
     heading: 'Electronic acceptance',
-    body: 'This Agreement is accepted electronically in the Shift employer portal by a Customer representative who confirms they are authorized to bind Customer. The recorded name, title, email, agreement version, and timestamp of acceptance constitute Customer\'s signature, and the parties agree such acceptance satisfies any signature requirement under applicable law, including the federal E-SIGN Act and the Massachusetts Uniform Electronic Transactions Act.',
+    body: 'This Agreement is accepted either by signing an order form electronically through GSI\'s e-signature provider, or in the Shift employer portal, in each case by a Customer representative who confirms they are authorized to bind Customer. The signed order form, or the recorded name, title, email, agreement version, and timestamp of acceptance in the portal, constitutes Customer\'s signature, and the parties agree such acceptance satisfies any signature requirement under applicable law, including the federal E-SIGN Act and the Massachusetts Uniform Electronic Transactions Act.',
   },
 ]
 
@@ -140,4 +146,26 @@ export function agreementPlainText(): string {
     '',
     ...AGREEMENT_SECTIONS.flatMap((s) => [s.heading.toUpperCase(), s.body, '']),
   ].join('\n')
+}
+
+// The one-page order form customers e-sign (Keith approved the wording
+// 2026-10-29). The full agreement follows it in the same PDF.
+export const ORDER_FORM_TITLE = 'Shift Employer Platform: Order Form'
+
+export const ORDER_FORM_KEY_POINTS = [
+  "Your employees join on their own, by choice. You see totals, and names with summary activity. You never see anyone's individual trips or conversations.",
+  'The setup assistant is optional. Any of your admins can turn it off at any time.',
+  "You can decline renewal at any time before the renewal date, by email or on the portal's billing page.",
+  'If the agreement ends for any reason other than your breach, GSI refunds the unused part of the fee.',
+  'Rewards you fund for employees count as your compensation to them for tax purposes. GSI gives you a yearly statement.',
+]
+
+export const ORDER_FORM_CLOSING =
+  "These points summarize the agreement; the agreement's own wording controls. By signing, Customer accepts this Order Form and the agreement. Where this Order Form sets the plan, fee, or dates, it controls."
+
+// GSI's countersigner on every order form.
+export const GSI_SIGNER = {
+  name: 'Keith Anderson',
+  title: 'Executive Director',
+  email: 'keith@gogreenstreets.org',
 }

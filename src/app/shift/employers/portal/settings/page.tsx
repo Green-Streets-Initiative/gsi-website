@@ -23,6 +23,7 @@ import PublicListingCard from './PublicListingCard'
 import TeamCard from './TeamCard'
 import AssistantActivityCard from './AssistantActivityCard'
 import AssistantSettingsCard from './AssistantSettingsCard'
+import AgreementCard from './AgreementCard'
 
 // One view at a time (page charters, Keith 2026-10-22): each fits a screen.
 // Old links name a section (#team, #email-domains); VIEW_OF maps them.
@@ -40,6 +41,7 @@ const VIEW_OF: Record<string, SettingsView> = {
   setup: 'company',
   'public-listing': 'joining',
   plan: 'company',
+  agreement: 'company',
   team: 'team',
   joining: 'joining',
   'email-domains': 'joining',
@@ -590,6 +592,9 @@ export default function SettingsPage() {
                 </Button>
               </div>
             </Card>
+
+            {/* The agreement and its e-signature: Green Streets staff only */}
+            {isGsiAdmin && <AgreementCard />}
 
             {/* Plan, for people who can't open Billing & rewards */}
             {!canSeeBilling && (
