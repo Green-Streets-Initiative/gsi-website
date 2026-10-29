@@ -915,6 +915,41 @@
       "month_end_math": "CTR 8.57% on 3,268 impr with 4 days left; October's 5% is secured. 27 conversions vs the 1 required.",
       "alerts": [],
       "emailed": false
+    },
+    {
+      "date": "2026-10-29",
+      "source": "scheduled quick check (ad-grants-pulse), live account, This month = Oct 1-29 (authuser=9 redirected to 5)",
+      "mtd": {
+        "window": "2026-10-01..2026-10-29",
+        "impressions": 3534,
+        "clicks": 311,
+        "ctr_pct": 8.8,
+        "cost": 1475.12,
+        "conversions": 34
+      },
+      "by_campaign": {
+        "How-to Guides": { "impressions": 3196, "clicks": 296, "conversions": 34 },
+        "Town Walking & Biking": { "impressions": 298, "clicks": 13 },
+        "GSI — Brand": { "impressions": 14, "clicks": 2 },
+        "New Routes — Movers": { "impressions": 30, "clicks": 0 },
+        "Shift App — Massachusetts": { "impressions": 9, "clicks": 0 },
+        "Shift Your Semester — Students": { "impressions": 1, "clicks": 0 }
+      },
+      "campaign_status": "How-to Guides and Brand Eligible (Limited) Limited by search volume; others Eligible. Budgets unchanged ($449.50/day).",
+      "banners": [
+        "Recommendation card: Add broad match keywords (not applied)"
+      ],
+      "ads": {
+        "rows_read": "all (table total 3,548 impr / 311 clicks)",
+        "disapproved_seen": 0,
+        "limited_by_policy": 0,
+        "not_eligible": 0,
+        "poor": "2, both already known (How to Pay for the T RSA; Walking School Bus Ideas)"
+      },
+      "search_terms": "Named rows 193 clicks / 1,782 impr, 23 conv. Top ~45 by impressions all How-to Guides / Paying for the T transit and fare lookups (boston public transportation 9/87, boston t 2/27, how to take the t in boston 1/25, boston transit 3/21, what is the t in boston 0/21). 'www paybyplatema com' now 0/7 (was 6 at 10-20; the broad negative went in 10-20, so likely one impression that day; watch, not alerted). No new negatives proposed.",
+      "month_end_math": "8.8% on 3,534 impr with 2 days left; October's 5% and 1-conversion rules both met.",
+      "alerts": [],
+      "emailed": false
     }
   ],
   "snapshots": [
