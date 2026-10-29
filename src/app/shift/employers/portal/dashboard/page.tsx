@@ -119,7 +119,8 @@ export default function DashboardPage() {
         <ProgramHealthCard group={group} memberCount={memberCount} members={members} dashboard={dashboard30} />
       </div>
 
-      {otherWorkplaces > 0 && (
+      {/* Staff switch workplaces from the staff bar instead. */}
+      {otherWorkplaces > 0 && !isGsiAdmin && (
         <p className="text-[14px] text-ink-muted">
           You&apos;re an admin on {otherWorkplaces} other workplace{otherWorkplaces === 1 ? '' : 's'} too. To work on one of those, email
           info@gogreenstreets.org.
