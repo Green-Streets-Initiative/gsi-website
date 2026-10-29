@@ -112,13 +112,13 @@ export async function openSignedPdf(groupId: string): Promise<string | null> {
 
 const short = (iso: string | null) => (iso ? formatDateUTC(iso).replace(/, \d{4}$/, '') : null)
 
-/** Sent, opened, signed, countersigned: a four-step meter with dates. */
+/** Sent, opened, signed, both signed: a four-step meter with dates. */
 export function EsignSteps({ env }: { env: EnvelopeView }) {
   const steps = [
     { label: 'Sent', at: env.sent_at },
     { label: 'Opened', at: env.viewed_at ?? env.customer_signed_at },
     { label: 'Signed', at: env.customer_signed_at },
-    { label: 'Countersigned', at: env.completed_at },
+    { label: 'Both signed', at: env.completed_at },
   ]
   const done = steps.filter((s) => s.at).length
   return (
