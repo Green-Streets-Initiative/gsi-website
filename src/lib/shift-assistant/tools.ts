@@ -20,7 +20,7 @@ import { ALWAYS as FARES_FOR_EVERYONE, fareProgram, farePrograms } from '@/lib/f
 import { PRICES, usd } from '@/lib/facts/prices'
 import { BORROW_RENT_BLURB, nearbyBorrowRent } from '@/lib/nearby/borrow-rent'
 import { getBikeShareDocks } from '@/lib/server/bluebikes'
-import { getActiveRoams, getNextRoamEvent, getRoamDetail, getRoamTrailInfo } from '@/lib/roams/queries'
+import { getActiveRoams, getNextRoamEvent, getRoamDetail, getRoamKeepGoing, getRoamTrailInfo } from '@/lib/roams/queries'
 import { ACCESS_LINKS, accessibleNear, ebikeMath, rsvpRide, shiftRideDates } from '@/lib/shift-assistant/audit-data'
 import { RIDE_PLAN_ACTIVITY, RIDE_PLAN_NEEDS_APPROVAL, RIDE_PLAN_TOOLS, ridePlanCard, runApprovedRidePlan, runRidePlanTool, type RidePlanCard } from '@/lib/shift-assistant/ride-plan-tools'
 
@@ -172,6 +172,7 @@ export const ACTIVITY: Record<string, string> = {
   find_bikes_to_try: 'Looking for bikes to try',
   find_roams: 'Looking for routes to explore',
   get_roam: 'Reading the route',
+  find_trails: 'Looking up trails',
   // Shown once they approve the card.
   save_place: 'Saving the place',
   change_settings: 'Saving your settings',
@@ -417,7 +418,7 @@ export const TOOLS: Anthropic.Tool[] = [
   },
   {
     name: 'find_roams',
-    description: "Roams: Shift's guided routes to explore on foot, by bike, or with transit (named trails and loops such as Fresh Pond, the Minuteman, the Charles River, the Emerald Necklace, and themed tours). Each with its length, time, kind and how far its start is. Find by name words, or nearest to a place.",
+    description: "Roams: Shift's self-guided routes to explore on foot, by bike, or with transit (named trails and loops such as Fresh Pond, the Minuteman, the Charles River, the Emerald Necklace, and themed tours). Each with its length, time, kind and how far its start is. Find by name words, or nearest to a place.",
     input_schema: {
       type: 'object',
       properties: {
@@ -429,8 +430,19 @@ export const TOOLS: Anthropic.Tool[] = [
   },
   {
     name: 'get_roam',
-    description: 'One Roam in full, by its id from find_roams (it adds the button to the Roam itself, so no open_screen): the full trail length and surface, where it starts and ends (or that it loops), how to get in, parking, trail closures and detours now, the stops along it, and its next group outing. To get them to the start, pass start to check_trip. Adds a button to the Roam.',
+    description: 'One Roam in full, by its id from find_roams (it adds the button to the Roam itself, so no open_screen): the town, the full trail length and surface, the hills (flat, a gentle grade, rolling or hilly, with the feet of climbing each way), where it starts and ends (or that it loops), how to get in, parking, the trails it rides or connects to and where you can keep riding from its ends, trail closures and detours now, the stops along it, and its next group outing. Adds a button to the Roam.',
     input_schema: { type: 'object', properties: { id: { type: 'string' } }, required: ['id'] },
+  },
+  {
+    name: 'find_trails',
+    description: "Rail trails and paths across Massachusetts from Shift's trail records, including ones with no Roam (the Bruce Freeman, the Assabet River, the Nashua River, the Cape Cod Rail Trail): the towns, length, surface, what it's like, how to get there by train or bus, parking, where it meets other trails, and any Roams on it. Find by name or town words, or nearest to a place.",
+    input_schema: {
+      type: 'object',
+      properties: {
+        query: nullable('string', 'Words from the name or a town ("bruce freeman", "sudbury", "cape cod"). Leave empty to list the nearest.'),
+        near: { ...placeSchema, type: ['object', 'null'] },
+      },
+    },
   },
   {
     name: 'open_link',
@@ -542,7 +554,49 @@ function asPlace(v: unknown): Place | null {
 
 const round1 = (n: number) => Math.round(n * 10) / 10
 
-const SUBWAY = ['Red', 'Orange', 'Blue', 'Mattapan', 'Green-B', 'Green-C', 'Green-D', 'Green-E']
+type Hills = { feel: 'flat' | 'a gentle grade' | 'rolling' | 'hilly'; climb_ft: number; climb_ft_coming_back?: number; steepest_grade_pct: number }
+
+/** Hills on each Roam from roams.elevation (Shift 01485), in the app's words:
+ *  feet of climbing per mile, as Shift lib/elevation.ts counts them. A steady
+ *  rail-trail rise is "a gentle grade", not "rolling". */
+async function roamHills(ctx: ToolCtx, ids: string[], loops: Set<string> = new Set()): Promise<Map<string, Hills>> {
+  const out = new Map<string, Hills>()
+  if (!ids.length) return out
+  const { data } = await ctx.admin.from('roams')
+    .select('id, up:elevation->ascent_ft, down:elevation->descent_ft, grade:elevation->max_grade_pct, mi:elevation->route_miles')
+    .in('id', ids).not('elevation', 'is', null)
+  for (const r of (data ?? []) as { id: string; up: number; down: number; grade: number; mi: number }[]) {
+    if (!(r.mi > 0)) continue
+    const perMile = Math.max(r.up, r.down) / r.mi
+    const feel = perMile < 30 ? 'flat' : perMile < 80 ? (r.grade < 4 ? 'a gentle grade' : 'rolling') : 'hilly'
+    const loop = loops.has(r.id)
+    out.set(r.id, { feel, climb_ft: Math.round(r.up), ...(loop ? {} : { climb_ft_coming_back: Math.round(r.down) }), steepest_grade_pct: r.grade })
+  }
+  return out
+}
+
+/** Trail records are written for this: whole sentences up to `max`, not
+ *  only the first (excerptOf stops at one, and "It meets the Mass Central
+ *  Rail Trail here" is the second). */
+function clip(text: string | null | undefined, max: number): string | null {
+  const t = (text ?? '').replace(/\s+/g, ' ').trim()
+  if (!t) return null
+  if (t.length <= max) return t
+  const cut = t.slice(0, max)
+  const end = cut.search(/[.!?][^.!?]*$/)
+  return end > max / 3 ? cut.slice(0, end + 1) : `${cut.replace(/\s+\S*$/, '')}…`
+}
+
+/** A Roam's name for its button: "Wachusett Greenways", not the trail it's
+ *  on in brackets; "Sudbury to Hudson" when the trail name makes it long. */
+function roamButtonName(name: string): string {
+  const bare = name.replace(/\s*\([^)]*\)\s*/g, ' ').trim()
+  if (bare.length <= 28) return bare
+  const after = bare.split(':').pop()?.trim() ?? bare
+  return after.length <= 28 ? after : bare.slice(0, 28).replace(/\s+\S*$/, '')
+}
+
+const SUBWAY =['Red', 'Orange', 'Blue', 'Mattapan', 'Green-B', 'Green-C', 'Green-D', 'Green-E']
 
 /** Phone notices, by the names the Notifications screen shows. */
 const NOTICES: Record<string, string> = {
@@ -1193,32 +1247,81 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
           .map((r) => ({ r, d: near && r.start_lat != null && r.start_lng != null ? haversineMiles(near.lat, near.lng, r.start_lat, r.start_lng) : null }))
           .sort((a, b) => (words.length ? 0 : (a.d ?? 1e9) - (b.d ?? 1e9)))
           .slice(0, 6)
-          .map(({ r, d }) => ({ id: r.id, name: r.name, kind: r.mode, miles: r.distance_miles != null ? round1(r.distance_miles) : null, minutes: r.estimated_minutes, about: r.hook ?? r.tagline, area: r.region, start_miles_away: d != null ? round1(d) : null }))
-        return ok({ roams: found, ...(found.length ? { next: 'For one they pick (or the one they named), call get_roam with its id.' } : { note: 'No Roam by that name. List the nearest instead, or read a route link they have with check_route_link.' }) })
+        const hills = await roamHills(ctx, found.map(({ r }) => r.id))
+        const roams = found.map(({ r, d }) => ({ id: r.id, name: r.name, kind: r.mode, miles: r.distance_miles != null ? round1(r.distance_miles) : null, minutes: r.estimated_minutes, about: r.hook ?? r.tagline, area: r.region, hills: hills.get(r.id)?.feel ?? null, start_miles_away: d != null ? round1(d) : null }))
+        return ok({ roams, ...(roams.length ? { next: 'For one they pick (or the one they named), call get_roam with its id. For "which trail" questions, find_trails has rail trails with no Roam.' } : { note: 'No Roam by that name. Try find_trails, list the nearest Roams instead, or read a route link they have with check_route_link.' }) })
       }
       case 'get_roam': {
         const id = String(input.id ?? '')
         const r = /^[A-Za-z0-9_-]{1,100}$/.test(id) ? await getRoamDetail(id) : null
         if (!r) return fail('No Roam with that id. Use one from find_roams.')
-        const [event, trail] = await Promise.all([getNextRoamEvent(r.id), getRoamTrailInfo(r.id)])
         const stops = [...r.checkpoints].sort((a, b) => a.sequence_order - b.sequence_order)
         const first = stops[0]
         const last = stops[stops.length - 1]
         const loop = !!first && !!last && haversineMiles(first.lat, first.lng, last.lat, last.lng) < 0.3
+        const [event, trail, hills, onward] = await Promise.all([getNextRoamEvent(r.id), getRoamTrailInfo(r.id), roamHills(ctx, [r.id], new Set(loop ? [r.id] : [])), getRoamKeepGoing(r.id)])
+        // A Roam with no facts of its own borrows its trail's, marked as the
+        // whole trail's: a long trail's other sections can differ.
+        const uses = trail.trails.filter((t) => t.relation === 'uses').map((t) => t.id)
+        const whole = !r.surface && uses.length === 1
+          ? (await ctx.admin.from('trails').select('name, surface, transit_note, parking_note').eq('id', uses[0]).maybeSingle()).data as { name: string; surface: string | null; transit_note: string | null; parking_note: string | null } | null
+          : null
         const link: ScreenLink = canOpen(ctx, 'roam')
-          ? { screen: 'roam', params: { roamId: r.id }, label: 'Open the Roam' }
-          : { href: `/shift/roams/${encodeURIComponent(r.id)}`, label: 'See the Roam' }
+          ? { screen: 'roam', params: { roamId: r.id }, label: `Open ${roamButtonName(r.name)}` }
+          : { href: `/shift/roams/${encodeURIComponent(r.id)}`, label: `See ${roamButtonName(r.name)}` }
         return ok({
-          name: r.name, kind: r.mode, about: r.hook ?? r.tagline ?? excerptOf(r.description, 200),
+          name: r.name, kind: r.mode, area: r.region, about: r.hook ?? r.tagline ?? excerptOf(r.description, 200),
           route_miles: r.distance_miles != null ? round1(r.distance_miles) : null, minutes: r.estimated_minutes,
           full_trail_miles: r.full_trail_miles, surface: r.surface, getting_in: r.access_note, parking: r.parking_note,
+          hills: hills.get(r.id) ?? null,
+          ...(whole ? { whole_trail: { name: whole.name, surface: clip(whole.surface, 220), getting_there: clip(whole.transit_note, 260), parking: clip(whole.parking_note, 220), note: 'These describe the whole trail, not only this stretch.' } } : {}),
+          on_trails: trail.trails.map((t) => ({ name: t.name, this_roam: t.relation === 'uses' ? 'rides it' : 'connects to it' })),
+          keep_going: onward.slice(0, 4).map((k) => ({ to: k.title, from: k.start_label, length: k.length_label })),
           start: first ? { lat: first.lat, lng: first.lng, name: first.label } : null,
           ...(loop ? { loop: true } : last && last !== first ? { end: { lat: last.lat, lng: last.lng, name: last.label } } : {}),
           stops: stops.map((c) => c.label).slice(0, 10),
           closures_now: trail.disruptions.map((d) => ({ trail: d.trail_name, on_this_route: d.affects === 'route', what: d.title, about: excerptOf(d.summary, 200), until: d.ends_on ?? d.ends_note, detour: d.detours?.[0]?.steps?.slice(0, 4) ?? null })),
           next_group_outing: event ? { title: event.title, date: event.event_date, time: event.event_time?.slice(0, 5) ?? null, where: event.location_name, organizer: event.organizer_name } : null,
-          next: 'Answer what they asked (how long, where it starts, how to get there) in a sentence or two; any closure first. To get them to the start, pass start to check_trip.',
+          next: 'Answer what they asked (how long, where it starts, how to get there) in a sentence or two; any closure first. Hills: say the feel and, when it is not a loop, which way climbs. Getting there: getting_in, or whole_trail.getting_there; pass start to check_trip only when they could walk, bike or take transit there.',
         }, link)
+      }
+      case 'find_trails': {
+        const words = typeof input.query === 'string' ? input.query.toLowerCase().split(/[^a-z0-9]+/).filter((w) => w.length > 2 && !['the', 'rail', 'trail', 'path', 'paths', 'bikeway', 'greenway'].includes(w)) : []
+        const near = asPlace(input.near) ?? ctx.here ?? null
+        const [{ data }, { data: links }, roams] = await Promise.all([
+          ctx.admin.from('trails').select('id, name, aka, towns, full_miles, surface, summary, transit_note, parking_note, access_points')
+            .eq('status', 'approved').eq('active', true).limit(200),
+          ctx.admin.from('roam_trails').select('trail_id, roam_id, relation').limit(500),
+          getActiveRoams(),
+        ])
+        type AccessPoint = { lat: number; lng: number; name: string; notes: string | null }
+        type TrailRow = { id: string; name: string; aka: string[] | null; towns: string[] | null; full_miles: number | null; surface: string | null; summary: string | null; transit_note: string | null; parking_note: string | null; access_points: AccessPoint[] | null }
+        const roamName = new Map(roams.map((r) => [r.id, r.name]))
+        const found = ((data ?? []) as TrailRow[])
+          .filter((t) => !words.length || words.every((w) => `${t.name} ${(t.aka ?? []).join(' ')} ${(t.towns ?? []).join(' ')}`.toLowerCase().includes(w)))
+          .map((t) => {
+            const pts = (t.access_points ?? []).filter((a) => typeof a.lat === 'number' && typeof a.lng === 'number')
+            const d = near && pts.length ? Math.min(...pts.map((a) => haversineMiles(near.lat, near.lng, a.lat, a.lng))) : null
+            return { t, pts, d }
+          })
+          .sort((a, b) => (words.length ? 0 : (a.d ?? 1e9) - (b.d ?? 1e9)))
+          .slice(0, 5)
+        const trails = found.map(({ t, pts, d }) => ({
+          id: t.id, name: t.name, towns: (t.towns ?? []).slice(0, 12), miles: t.full_miles,
+          surface: clip(t.surface, 340), about: clip(t.summary, 260),
+          getting_there: clip(t.transit_note, 240), parking: clip(t.parking_note, 200),
+          // "It meets the Mass Central Rail Trail here at the Diamond Crossing."
+          meets: pts.filter((a) => /\b(meets|connects|links|joins)\b/i.test(a.notes ?? '')).slice(0, 3).map((a) => ({ at: a.name, what: clip(a.notes, 160) })),
+          roams: ((links ?? []) as { trail_id: string; roam_id: string; relation: string }[])
+            .filter((l) => l.trail_id === t.id && roamName.has(l.roam_id)).map((l) => ({ id: l.roam_id, name: roamName.get(l.roam_id), this_roam: l.relation === 'uses' ? 'rides it' : 'connects to it' })),
+          nearest_access_miles_away: d != null ? round1(d) : null,
+        }))
+        return ok({
+          trails,
+          ...(trails.length
+            ? { next: 'A trail with a Roam: get_roam for its hills and stops, and its button. Hills on a trail with no Roam are not in these records; say a rail trail is usually a gentle grade, not that it is flat.' }
+            : { note: 'No trail by that name in our records. Try find_roams, or list the nearest trails with no query.' }),
+        })
       }
       case 'cancel_reminder': {
         const id = String(input.id ?? '')

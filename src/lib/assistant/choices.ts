@@ -46,3 +46,15 @@ export function choicesFilter(send: (delta: string) => void) {
     },
   }
 }
+
+/** Answers to tap beside a turn's buttons: a choice that opens something
+ *  ("Open the Wachusett Roam") repeats a button, and two buttons plus five
+ *  answers is a wall of buttons (2026-10-28). */
+export function choicesBesideButtons(options: string[], buttons: string[]): string[] {
+  if (!buttons.length) return options
+  const norm = (x: string) => x.toLowerCase().replace(/[^a-z0-9 ]/g, '').trim()
+  const labels = buttons.map(norm)
+  return options
+    .filter((o) => !/^(open|see|view|show|go to)\b/i.test(o.trim()) && !labels.includes(norm(o)))
+    .slice(0, 2)
+}

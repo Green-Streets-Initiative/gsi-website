@@ -30,7 +30,7 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
-import { choicesFilter, splitChoices } from '@/lib/assistant/choices'
+import { choicesBesideButtons, choicesFilter, splitChoices } from '@/lib/assistant/choices'
 import { SYSTEM_PROMPT, contextBlock, screenLabel } from '@/lib/shift-assistant/prompt'
 import { ACTIVITY, NEEDS_APPROVAL, approvalCard, toolsFor, runApproved, runTool, type ApprovalCard, type ToolCtx, type ToolResult, type TripCard } from '@/lib/shift-assistant/tools'
 import { inServiceArea } from '@/lib/server/trip'
@@ -182,6 +182,18 @@ function transcript(messages: { id?: number; role: string; content: unknown }[],
   const waiting = new Set((pending?.cards ?? []).filter((c) => !c.decided).map((c) => c.tool_use_id))
   const lastUser = Math.max(items.map((i) => i.kind).lastIndexOf('user'), items.map((i) => i.kind).lastIndexOf('user_image'))
   const cleaned = items.filter((i, idx) => i.kind !== 'choices' || idx > lastUser)
+  // The live stream's rules, so a reopened conversation looks the same: one
+  // step line per label in a turn, and no tap answer that repeats a button.
+  let steps = new Set<string>()
+  let buttons: string[] = []
+  for (const i of cleaned) {
+    if (i.kind === 'user' || i.kind === 'user_image') { steps = new Set(); buttons = [] }
+    else if (i.kind === 'tool') {
+      if (i.label && steps.has(i.label)) i.label = ''
+      else if (i.label) steps.add(i.label)
+      if (i.link) buttons.push(i.link.label)
+    } else if (i.kind === 'choices') i.options = choicesBesideButtons(i.options, buttons)
+  }
   for (const c of pending?.cards ?? []) if (!c.decided) cleaned.push({ kind: 'approval', tool_use_id: c.tool_use_id, card: c.card })
   return cleaned.filter((i) => i.kind !== 'tool' || ((i.label || i.link || i.trip || i.card) && !waiting.has(i.id)))
 }
@@ -381,13 +393,24 @@ export async function POST(request: Request) {
       // button whatever its params: a trip's card already opens it, and a
       // bare open_screen beside it was a second "See it on the map".
       const shown = new Set<string>()
+      const buttons: string[] = []
       const once = (r: ToolResult): ToolResult => {
         if (!r.link) return r
         const l = r.link
         const key = 'href' in l ? l.href : l.screen === 'around_you' ? 'around_you' : JSON.stringify([l.screen, l.params ?? null])
         if (shown.has(key)) return { ...r, link: undefined }
         shown.add(key)
+        buttons.push(l.label)
         return r
+      }
+      // One step line per label in a turn: two Roams read side by side were
+      // two "Reading the route" lines. The app hides a step with no label.
+      const stepsShown = new Set<string>()
+      const stepLabel = (name: string) => {
+        const l = ACTIVITY[name] ?? ''
+        if (!l || stepsShown.has(l)) return ''
+        stepsShown.add(l)
+        return l
       }
       let picture: string | null = null
       const userBlocks = (): unknown[] => [
@@ -500,7 +523,7 @@ export async function POST(request: Request) {
           visible.flush()
           if (stepStarted) wroteBefore = true
           await logUsage(admin, 'chat', msg.model, msg.usage)
-          const options = splitChoices(msg.content.filter((b): b is Anthropic.Beta.BetaTextBlock => b.type === 'text').map((b) => b.text).join('')).options
+          const options = choicesBesideButtons(splitChoices(msg.content.filter((b): b is Anthropic.Beta.BetaTextBlock => b.type === 'text').map((b) => b.text).join('')).options, buttons)
           if (options.length) emit({ type: 'choices', options })
           if (msg.content.length === 0) break
           // A last step can come back with only its thinking and no words
@@ -538,7 +561,7 @@ export async function POST(request: Request) {
               else results[u.id] = resultBlock(u.id, a.result)
               return
             }
-            if (ACTIVITY[u.name]) emit({ type: 'tool', id: u.id, label: ACTIVITY[u.name] })
+            if (ACTIVITY[u.name]) emit({ type: 'tool', id: u.id, label: stepLabel(u.name) })
             const r = once(await runTool(ctx, u.name, input))
             emit({ type: 'tool_done', id: u.id, ok: !r.isError, link: r.link, trip: r.trip })
             results[u.id] = resultBlock(u.id, r)
