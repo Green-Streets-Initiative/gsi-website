@@ -29,6 +29,10 @@
       "schedule": "40 8 * * *"
     },
     {
+      "path": "/api/cron/assistant-spend",
+      "schedule": "50 12 * * *"
+    },
+    {
       "path": "/api/cron/agreement-followups",
       "schedule": "30 14 * * *"
     }

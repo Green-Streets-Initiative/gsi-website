@@ -11,7 +11,7 @@
 //      streams newline-delimited JSON events while the assistant works:
 //      {type:'thread', id} {type:'text', delta} {type:'tool', id, label}
 //      {type:'tool_done', id, ok, link?} {type:'choices', options}
-//      {type:'approval', tool_use_id, card} {type:'long'} {type:'error', message, code} {type:'done'}
+//      {type:'approval', tool_use_id, card} {type:'long'} {type:'error', message, code} {type:'ping'} {type:'done'}
 //      match_id: opened from a Shift Together ride plan; checked as the person.
 //      here: where the phone is, sent with each question when the person has
 //      allowed location (Keith 2026-10-25). Used for that answer: it reaches the
@@ -32,6 +32,7 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { choicesBesideButtons, choicesFilter, splitChoices } from '@/lib/assistant/choices'
 import { SYSTEM_PROMPT, contextBlock, screenLabel } from '@/lib/shift-assistant/prompt'
+import { DAILY_PERSON_CAP, MONTHLY_CAP } from '@/lib/shift-assistant/caps'
 import { ACTIVITY, NEEDS_APPROVAL, approvalCard, roamsNamedIn, roamsOffered, toolsFor, runApproved, runTool, type ApprovalCard, type ToolCtx, type ToolResult, type TrailCard, type TripCard } from '@/lib/shift-assistant/tools'
 import { inServiceArea } from '@/lib/server/trip'
 import { claimUpload, foldersIn, imageMark, inboxPath, lastImage, markedPath, removeFolders, signedUrls, withImages } from '@/lib/shift-assistant/uploads'
@@ -43,13 +44,11 @@ export const maxDuration = 300
 const MODEL = process.env.SHIFT_ASSISTANT_MODEL || 'claude-sonnet-5-5'
 const SUMMARY_MODEL = 'claude-haiku-5-5'
 const MAX_STEPS = 8
-/** Questions per person per Boston day, and for everyone per calendar
- *  month, so a loop or a runaway can't run costs up. Counted in
- *  member_assistant_usage (Shift 01440), which deleting a conversation
- *  doesn't touch; a question costs about 1.5 cents. */
-// A local server can raise it for the stress test (scripts/member-assistant-eval).
-const DAILY_PERSON_CAP = Number(process.env.SHIFT_ASSISTANT_DAILY_CAP) || 30
-const MONTHLY_CAP = Number(process.env.SHIFT_ASSISTANT_MONTHLY_CAP) || 3000
+/** A step whose answer hasn't started within a minute is retried once, then
+ *  the turn fails with its error, instead of holding the conversation (and
+ *  the function) until the platform's 300 s limit. (The SDK's timeout covers
+ *  the wait for the answer to start, not the stream after it.) */
+const anthropic = () => new Anthropic({ timeout: 60_000, maxRetries: 1 })
 const SOFT_CONTEXT = 50_000
 /** A step that goes on to look something up can open with a working note
  *  ("Let me try some specific trail names."), though the prompt says not to.
@@ -117,7 +116,7 @@ async function summarizeThread(admin: SupabaseClient, threadId: string): Promise
   const text = lines.join('\n\n').slice(-40_000)
   if (!text) return null
   try {
-    const msg = await new Anthropic().messages.create({
+    const msg = await anthropic().messages.create({
       model: SUMMARY_MODEL,
       max_tokens: 2000,
       messages: [{
@@ -138,7 +137,7 @@ async function summarizeThread(admin: SupabaseClient, threadId: string): Promise
  *  failure, none. */
 async function suggestedRoams(admin: SupabaseClient, reply: string, named: { id: string; name: string }[]): Promise<string[]> {
   try {
-    const msg = await new Anthropic().messages.create({
+    const msg = await anthropic().messages.create({
       model: SUMMARY_MODEL,
       max_tokens: 1000,
       messages: [{
@@ -423,6 +422,10 @@ export async function POST(request: Request) {
         if (!open) return
         try { controller.enqueue(encoder.encode(JSON.stringify(e) + '\n')) } catch { open = false }
       }
+      // A line every 15 s while the turn runs, so the app (which gives up
+      // after a silent minute) can tell thinking from a dropped connection.
+      // Apps ignore event types they don't know.
+      const ping = setInterval(() => emit({ type: 'ping' }), 15_000)
       const append = async (r: 'user' | 'assistant', content: unknown, extra?: Record<string, unknown>) => {
         await admin.from('member_assistant_messages').insert({ thread_id: threadId, role: r, content, ...(extra ?? {}) })
         await admin.from('member_assistant_threads').update({ updated_at: new Date().toISOString() }).eq('id', threadId)
@@ -515,7 +518,7 @@ export async function POST(request: Request) {
           await append('user', userBlocks())
         }
 
-        const client = new Anthropic()
+        const client = anthropic()
         // With the time, so "today at 11 AM" can be seen to be over at 4 PM.
         const today = new Date().toLocaleString('en-US', { timeZone: 'America/New_York', weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })
         const offered = toolsFor(ctx)
@@ -669,6 +672,7 @@ export async function POST(request: Request) {
             : 'Something went wrong. Try again in a moment.'
         emit({ type: 'error', code, message })
       } finally {
+        clearInterval(ping)
         await admin.from('member_assistant_threads').update({ busy_until: null }).eq('id', threadId)
         try { controller.close() } catch { /* already closed */ }
       }
