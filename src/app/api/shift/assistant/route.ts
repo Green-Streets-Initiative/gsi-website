@@ -11,7 +11,7 @@
 //      streams newline-delimited JSON events while the assistant works:
 //      {type:'thread', id} {type:'text', delta} {type:'tool', id, label}
 //      {type:'tool_done', id, ok, link?} {type:'choices', options}
-//      {type:'approval', tool_use_id, card} {type:'long'} {type:'error', message} {type:'done'}
+//      {type:'approval', tool_use_id, card} {type:'long'} {type:'error', message, code} {type:'done'}
 //      match_id: opened from a Shift Together ride plan; checked as the person.
 //      here: where the phone is, sent with each question when the person has
 //      allowed location (Keith 2026-10-25). Used for that answer: it reaches the
@@ -71,18 +71,18 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 async function authorize(request: Request, opts: { ownDataOnly?: boolean } = {}) {
   const token = request.headers.get('authorization')?.replace(/^Bearer\s+/i, '')
-  if (!token) return { error: Response.json({ error: 'Sign in again to continue.' }, { status: 401 }) }
+  if (!token) return { error: Response.json({ error: 'Sign in again to continue.', code: 'signed_out' }, { status: 401 }) }
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL!
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   const { data: { user } } = await createClient(url, anonKey, { auth: { persistSession: false } }).auth.getUser(token)
-  if (!user) return { error: Response.json({ error: 'Sign in again to continue.' }, { status: 401 }) }
+  if (!user) return { error: Response.json({ error: 'Sign in again to continue.', code: 'signed_out' }, { status: 401 }) }
   const userClient = createClient(url, anonKey, {
     global: { headers: { Authorization: `Bearer ${token}` } },
     auth: { persistSession: false, autoRefreshToken: false },
   })
   if (!opts.ownDataOnly) {
     const { data: available } = await userClient.rpc('shift_assistant_available')
-    if (available !== true) return { error: Response.json({ error: 'The assistant is not on for your account yet.' }, { status: 403 }) }
+    if (available !== true) return { error: Response.json({ error: 'The assistant is not on for your account yet.', code: 'not_on' }, { status: 403 }) }
   }
   return { token, user, userClient, admin: createServerSupabaseClient() }
 }
@@ -360,7 +360,7 @@ export async function POST(request: Request) {
 
   const text = (body?.message ?? '').trim().slice(0, 2000)
   const upload = Array.isArray(body?.attachments) ? inboxPath(user.id, body.attachments[0]?.path) : null
-  if (!text && !upload && !body?.decision) return Response.json({ error: 'Say something first.' }, { status: 400 })
+  if (!text && !upload && !body?.decision) return Response.json({ error: 'Say something first.', code: 'empty' }, { status: 400 })
 
   // Opened from a Shift Together ride plan: only the id travels, checked as
   // the person (get_ride_plan returns nothing for a match that isn't theirs).
@@ -374,14 +374,14 @@ export async function POST(request: Request) {
   const lockUntil = new Date(Date.now() + 3 * 60_000).toISOString()
   let thread = body?.new_thread ? null : await loadThread(admin, user.id, body?.thread_id)
   if (thread && !body?.decision && (await contextSize(admin, thread.id)) > HARD_CONTEXT) {
-    return Response.json({ error: 'This conversation has got too long to continue. Start a fresh one; the assistant brings a summary.', long: true }, { status: 409 })
+    return Response.json({ error: 'This conversation has got too long to continue. Start a fresh one; the assistant brings a summary.', code: 'too_long', long: true }, { status: 409 })
   }
   // A new question takes one from the caps; approving a card answers one already asked.
   if (!body?.decision) {
     const { data: took, error: capError } = await admin.rpc('take_member_assistant_question', { p_user_id: user.id, p_daily: DAILY_PERSON_CAP, p_monthly: MONTHLY_CAP })
-    if (capError) return Response.json({ error: 'The assistant is unavailable right now. Every screen of the app works as usual.' }, { status: 503 })
-    if (took === 'monthly') return Response.json({ error: "The assistant has reached this month's limit. Every screen of the app works as usual." }, { status: 429 })
-    if (took === 'daily') return Response.json({ error: "You've used the assistant a lot today. It'll be ready again tomorrow; every screen works as usual." }, { status: 429 })
+    if (capError) return Response.json({ error: 'The assistant is unavailable right now. Every screen of the app works as usual.', code: 'unavailable' }, { status: 503 })
+    if (took === 'monthly') return Response.json({ error: "The assistant has reached this month's limit. Every screen of the app works as usual.", code: 'monthly_cap' }, { status: 429 })
+    if (took === 'daily') return Response.json({ error: "You've used the assistant a lot today. It'll be ready again tomorrow; every screen works as usual.", code: 'daily_cap' }, { status: 429 })
   }
   let carryNote: string | null = null
   if (!thread && body?.carry_from) {
@@ -392,12 +392,12 @@ export async function POST(request: Request) {
   if (thread) {
     const { data: claimed } = await admin.from('member_assistant_threads').update({ busy_until: lockUntil }).eq('id', thread.id)
       .or(`busy_until.is.null,busy_until.lt."${new Date().toISOString()}"`).select('id, pending').maybeSingle()
-    if (!claimed) return Response.json({ error: "I'm still working on your last question. Give it a moment." }, { status: 409 })
+    if (!claimed) return Response.json({ error: "I'm still working on your last question. Give it a moment.", code: 'busy' }, { status: 409 })
     thread = claimed as Thread
   } else {
     const { data, error } = await admin.from('member_assistant_threads')
       .insert({ user_id: user.id, title: text.slice(0, 80) || (upload ? 'Picture' : 'Conversation'), busy_until: lockUntil }).select('id, pending').single()
-    if (error || !data) return Response.json({ error: 'Could not start a conversation.' }, { status: 500 })
+    if (error || !data) return Response.json({ error: 'Could not start a conversation.', code: 'start_failed' }, { status: 500 })
     thread = data as Thread
   }
   const threadId = thread.id
@@ -464,7 +464,7 @@ export async function POST(request: Request) {
         if (upload) {
           picture = await claimUpload(admin, user.id, threadId, upload)
           if (!picture) {
-            emit({ type: 'error', message: "That picture didn't come through. Try attaching it again." })
+            emit({ type: 'error', code: 'picture', message: "That picture didn't come through. Try attaching it again." })
             emit({ type: 'done' })
             return
           }
@@ -476,7 +476,7 @@ export async function POST(request: Request) {
           if (body?.decision) {
             const c = pending.cards.find((x) => x.tool_use_id === body.decision!.tool_use_id && !x.decided)
             if (c && body.decision.approve && c.card.confirmText && !sameText(body.decision.confirm_text, c.card.confirmText)) {
-              emit({ type: 'error', message: `Type "${c.card.confirmText}" to confirm.` })
+              emit({ type: 'error', code: 'confirm', confirm: c.card.confirmText, message: `Type "${c.card.confirmText}" to confirm.` })
               emit({ type: 'done' })
               return
             }
@@ -591,14 +591,14 @@ export async function POST(request: Request) {
           }
           await append('assistant', msg.content, { model: msg.model, usage: msg.usage })
           if (msg.stop_reason === 'refusal') {
-            emit({ type: 'error', message: "I can't help with that one. Try asking another way." })
+            emit({ type: 'error', code: 'refused', message: "I can't help with that one. Try asking another way." })
             break
           }
           if (msg.stop_reason === 'pause_turn') continue
           const uses = msg.content.filter((b): b is Anthropic.Beta.BetaToolUseBlock => b.type === 'tool_use')
           if (uses.length === 0) { finished = true; break }
           if (msg.stop_reason === 'max_tokens') {
-            emit({ type: 'error', message: 'That got too long. Ask again in a smaller piece.' })
+            emit({ type: 'error', code: 'reply_too_long', message: 'That got too long. Ask again in a smaller piece.' })
             break
           }
           // A reply written before its tools is already on screen (see the
@@ -661,12 +661,13 @@ export async function POST(request: Request) {
         emit({ type: 'done' })
       } catch (e) {
         console.error('[shift-assistant] turn failed', e)
-        const message = e instanceof Anthropic.RateLimitError
+        const code = e instanceof Anthropic.RateLimitError ? 'model_busy' : e instanceof Anthropic.APIError ? 'model_error' : 'failed'
+        const message = code === 'model_busy'
           ? 'The assistant is busy right now. Try again in a minute.'
-          : e instanceof Anthropic.APIError
+          : code === 'model_error'
             ? 'The assistant had a problem answering. Try again in a moment.'
             : 'Something went wrong. Try again in a moment.'
-        emit({ type: 'error', message })
+        emit({ type: 'error', code, message })
       } finally {
         await admin.from('member_assistant_threads').update({ busy_until: null }).eq('id', threadId)
         try { controller.close() } catch { /* already closed */ }

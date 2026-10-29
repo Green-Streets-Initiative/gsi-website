@@ -98,6 +98,9 @@ export type TrailCard = {
  *  points, small enough to keep in the conversation the model reads. */
 export type TripCard = {
   from: { name: string; lat: number; lng: number }
+  /** The trip starts where the phone is, so the app can say so in its own
+   *  language instead of matching the English "Your location". */
+  from_here?: boolean
   to: { name: string; lat: number; lng: number }
   bike_minutes: number | null
   bike_miles: number | null
@@ -189,6 +192,12 @@ const placeSchema = {
   properties: { name: { type: 'string' }, lat: { type: 'number' }, lng: { type: 'number' } },
   required: ['lat', 'lng'],
 } as const
+
+/** Whether a place is where the phone is (within about 50 m), or the model named it so. */
+function isHere(ctx: ToolCtx, p: { name?: string | null; lat: number; lng: number }): boolean {
+  if ((p.name ?? '').trim() === 'Your location') return true
+  return !!ctx.here && Math.abs(ctx.here.lat - p.lat) < 0.0005 && Math.abs(ctx.here.lng - p.lng) < 0.0006
+}
 
 /** Label shown while a tool runs. Tools missing here run without a line. */
 export const ACTIVITY: Record<string, string> = {
@@ -926,6 +935,7 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
         // way the app's commute screen does (cost_per_day × 20 workdays).
         const card: TripCard | undefined = ctx.screens?.has(CARD_WAYS) && ways.length >= 2 ? {
           from: { name: ((from.name ?? '').trim() || 'Start').slice(0, 80), lat: from.lat, lng: from.lng },
+          from_here: isHere(ctx, from),
           to: { name: ((to.name ?? '').trim() || 'Destination').slice(0, 80), lat: to.lat, lng: to.lng },
           bike_minutes: null, bike_miles: null, comfort: [], polyline: null, transit_minutes: null,
           compare: {
@@ -1025,6 +1035,7 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
         const newCards = !!ctx.screens?.has(CARD_WAYS)
         const trip: TripCard = {
           from: { name: fromName.slice(0, 80), lat: from.lat, lng: from.lng },
+          from_here: isHere(ctx, from),
           to: { name: toName.slice(0, 80), lat: to.lat, lng: to.lng },
           bike_minutes: r.bike_minutes ?? null,
           bike_miles: bikeMiles,
