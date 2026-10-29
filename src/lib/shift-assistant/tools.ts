@@ -128,6 +128,8 @@ export type TripCard = {
  *  only the bike card, so they get no card when it would lead with another way. */
 const CARD_WAYS = 'card_ways'
 const CARD_TRAIL = 'trail_card'
+/** Builds whose route card has "Save this trip" (Shift 01491, Keith 2026-10-29). */
+const CARD_SAVE = 'save_trip'
 
 /** Screens added after the first release: offered only to builds that list them. */
 const NEWER_SCREENS = new Set(['trip', 'trip_history', 'my_rewards', 'notifications', 'vacation', 'partner_request', 'partner_matches', 'bike_confidence', 'roam', 'closure_plan', 'memories'])
@@ -1004,6 +1006,7 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
         return {
           content: {
             ...(showCard ? { card: CARD_NOTE } : {}),
+            ...(showCard && ctx.screens?.has(CARD_SAVE) ? { saving: 'The card has Save this trip: it keeps where from, where to and which way in Your trips under Plan a route on Home and in Around You, and opens it again with live times. You cannot save it yourself. Mention it only when they ask to save or keep a plan, or say they will make this trip again.' } : {}),
             miles: round1(r.distance_miles),
             walk: walk ? { minutes: walk.minutes, miles: walk.miles } : null,
             transit: r.transit_minutes == null ? { none: `No transit found leaving ${bostonWhen(departAt)}.` } : {
