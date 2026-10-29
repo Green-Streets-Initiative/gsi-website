@@ -32,7 +32,7 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { choicesBesideButtons, choicesFilter, splitChoices } from '@/lib/assistant/choices'
 import { SYSTEM_PROMPT, contextBlock, screenLabel } from '@/lib/shift-assistant/prompt'
-import { ACTIVITY, NEEDS_APPROVAL, approvalCard, toolsFor, runApproved, runTool, type ApprovalCard, type ToolCtx, type ToolResult, type TrailCard, type TripCard } from '@/lib/shift-assistant/tools'
+import { ACTIVITY, NEEDS_APPROVAL, approvalCard, roamsNamedIn, roamsOffered, toolsFor, runApproved, runTool, type ApprovalCard, type ToolCtx, type ToolResult, type TrailCard, type TripCard } from '@/lib/shift-assistant/tools'
 import { inServiceArea } from '@/lib/server/trip'
 import { claimUpload, foldersIn, imageMark, inboxPath, lastImage, markedPath, removeFolders, signedUrls, withImages } from '@/lib/shift-assistant/uploads'
 
@@ -51,6 +51,14 @@ const MAX_STEPS = 8
 const DAILY_PERSON_CAP = Number(process.env.SHIFT_ASSISTANT_DAILY_CAP) || 30
 const MONTHLY_CAP = Number(process.env.SHIFT_ASSISTANT_MONTHLY_CAP) || 3000
 const SOFT_CONTEXT = 50_000
+/** A step that goes on to look something up can open with a working note
+ *  ("Let me try some specific trail names."), though the prompt says not to.
+ *  Words up to this long before a lookup are kept from the screen. */
+const NOTE_MAX = 280
+/** Tools that only add a button or a note: words before them are the reply. */
+const BUTTON_TOOLS = new Set(['open_screen', 'note_feedback'])
+const isNote = (text: string, blocks: Record<string, unknown>[]) =>
+  text.trim().length <= NOTE_MAX && blocks.some((b) => b.type === 'tool_use' && !BUTTON_TOOLS.has(String(b.name)))
 const HARD_CONTEXT = 120_000
 
 type PendingCard = { tool_use_id: string; name: string; input: Record<string, unknown>; card: ApprovalCard; decided?: boolean }
@@ -125,6 +133,29 @@ async function summarizeThread(admin: SupabaseClient, threadId: string): Promise
   }
 }
 
+/** Of the Roams a reply names, the ones it suggests going to: one named only
+ *  to rule it out ("Wachusett has no train or bus") gets no card. On any
+ *  failure, none. */
+async function suggestedRoams(admin: SupabaseClient, reply: string, named: { id: string; name: string }[]): Promise<string[]> {
+  try {
+    const msg = await new Anthropic().messages.create({
+      model: SUMMARY_MODEL,
+      max_tokens: 1000,
+      messages: [{
+        role: 'user',
+        content: `A trail assistant wrote this reply:\n<reply>\n${reply}\n</reply>\n\nWhich of these does the reply suggest the person go to, as a pick or another choice? Leave out any it names only to rule out or warn off.\n${named.map((n) => `${n.id}: ${n.name}`).join('\n')}\n\nAnswer with only the ids, comma-separated, or "none".`,
+      }],
+    })
+    await logUsage(admin, 'cards', msg.model, msg.usage)
+    const said = msg.content.filter((b): b is Anthropic.TextBlock => b.type === 'text').map((b) => b.text).join('')
+    const ids = new Set(said.split(/[^A-Za-z0-9_-]+/))
+    return named.map((n) => n.id).filter((id) => ids.has(id))
+  } catch (e) {
+    console.error('[shift-assistant] card check failed', e)
+    return []
+  }
+}
+
 /** One row per model call in ai_usage_log, so spend shows by feature the same day. */
 async function logUsage(admin: SupabaseClient, feature: string, model: string, u: Anthropic.Usage | Anthropic.Beta.BetaUsage) {
   await admin.from('ai_usage_log').insert({
@@ -150,8 +181,11 @@ function transcript(messages: { id?: number; role: string; content: unknown }[],
   const byId = new Map<string, Extract<Item, { kind: 'tool' }>>()
   for (const m of messages) {
     const blocks = (Array.isArray(m.content) ? m.content : [{ type: 'text', text: String(m.content) }]) as Record<string, unknown>[]
+    const said = blocks.filter((b) => b.type === 'text').map((b) => String(b.text ?? '')).join('')
+    const note = m.role === 'assistant' && isNote(said, blocks)
     for (const b of blocks) {
       if (b.type === 'text' && typeof b.text === 'string' && b.text.trim()) {
+        if (note) continue
         if (m.role === 'user' && b.text.startsWith('[Carried over')) { items.push({ kind: 'carried' }); continue }
         const pic = m.role === 'user' ? markedPath(b.text) : null
         if (pic) { items.push({ kind: 'user_image', url: images.get(pic) ?? '' }); continue }
@@ -164,7 +198,8 @@ function transcript(messages: { id?: number; role: string; content: unknown }[],
         if (sp.options.length) items.push({ kind: 'choices', options: sp.options })
       } else if (b.type === 'tool_use') {
         const name = String(b.name)
-        const it: Extract<Item, { kind: 'tool' }> = { kind: 'tool', id: String(b.id), label: ACTIVITY[name] ?? '' }
+        // A card added after the reply (toolu_card_) shows no step line.
+        const it: Extract<Item, { kind: 'tool' }> = { kind: 'tool', id: String(b.id), label: String(b.id).startsWith('toolu_card_') ? '' : ACTIVITY[name] ?? '' }
         byId.set(String(b.id), it)
         items.push(it)
       } else if (b.type === 'tool_result') {
@@ -196,6 +231,9 @@ function transcript(messages: { id?: number; role: string; content: unknown }[],
       if (i.trail) buttons.push(i.trail.open_label)
     } else if (i.kind === 'choices') i.options = choicesBesideButtons(i.options, buttons)
   }
+  // Tap answers go last, under any cards, as they arrive live.
+  const tail = cleaned.findIndex((i, idx) => i.kind === 'choices' && idx > lastUser)
+  if (tail >= 0) cleaned.push(...cleaned.splice(tail, 1))
   for (const c of pending?.cards ?? []) if (!c.decided) cleaned.push({ kind: 'approval', tool_use_id: c.tool_use_id, card: c.card })
   return cleaned.filter((i) => i.kind !== 'tool' || ((i.label || i.link || i.trip || i.trail || i.card) && !waiting.has(i.id)))
 }
@@ -494,6 +532,13 @@ export async function POST(request: Request) {
         // Text from a later step starts a new paragraph, not the end of the last sentence.
         let wroteBefore = false
         let retriedEmpty = false
+        // Roams the lookups offered and the ones already carded, so a Roam the
+        // reply names without get_roam still gets its card (2026-10-29).
+        const roamsSeen: { id: string; names: string[] }[] = []
+        const carded = new Set<string>()
+        let said = ''
+        let finished = false
+        let choices: string[] = []
         const pictures = new Map<string, { media_type: string; data: string } | null>()
         for (let step = 0; step < MAX_STEPS; step++) {
           const stored = await loadMessages(admin, threadId)
@@ -520,13 +565,22 @@ export async function POST(request: Request) {
             if (delta.trim()) stepStarted = true
             emit({ type: 'text', delta })
           })
-          s.on('text', (delta) => visible.push(delta))
+          // A step's first words wait until it is clear whether a lookup follows.
+          let opener = ''
+          let released = false
+          s.on('text', (delta) => {
+            if (released) return visible.push(delta)
+            opener += delta
+            if (opener.length > NOTE_MAX) { released = true; visible.push(opener) }
+          })
           const msg = await s.finalMessage()
+          if (!released && opener && !isNote(opener, msg.content as unknown as Record<string, unknown>[])) visible.push(opener)
           visible.flush()
+          said += msg.content.filter((b): b is Anthropic.Beta.BetaTextBlock => b.type === 'text').map((b) => b.text).join('\n')
           if (stepStarted) wroteBefore = true
           await logUsage(admin, 'chat', msg.model, msg.usage)
           const options = choicesBesideButtons(splitChoices(msg.content.filter((b): b is Anthropic.Beta.BetaTextBlock => b.type === 'text').map((b) => b.text).join('')).options, buttons)
-          if (options.length) emit({ type: 'choices', options })
+          if (options.length) choices = options
           if (msg.content.length === 0) break
           // A last step can come back with only its thinking and no words
           // (2026-10-27: a reply that was just "Weekend is Oct 31 to Nov 1.").
@@ -542,7 +596,7 @@ export async function POST(request: Request) {
           }
           if (msg.stop_reason === 'pause_turn') continue
           const uses = msg.content.filter((b): b is Anthropic.Beta.BetaToolUseBlock => b.type === 'tool_use')
-          if (uses.length === 0) break
+          if (uses.length === 0) { finished = true; break }
           if (msg.stop_reason === 'max_tokens') {
             emit({ type: 'error', message: 'That got too long. Ask again in a smaller piece.' })
             break
@@ -565,7 +619,8 @@ export async function POST(request: Request) {
             }
             if (ACTIVITY[u.name]) emit({ type: 'tool', id: u.id, label: stepLabel(u.name) })
             const r = once(await runTool(ctx, u.name, input))
-            if (r.trail) buttons.push(r.trail.open_label)
+            if (r.trail) { buttons.push(r.trail.open_label); carded.add(r.trail.roam_id) }
+            if (!r.isError) roamsSeen.push(...roamsOffered(u.name, r.content))
             emit({ type: 'tool_done', id: u.id, ok: !r.isError, link: r.link, trip: r.trip, trail: r.trail })
             results[u.id] = resultBlock(u.id, r)
           }))
@@ -580,8 +635,28 @@ export async function POST(request: Request) {
           // model again (it repeated itself even when told not to). The
           // next question's user turn follows these results; the API
           // combines the two.
-          if (wrote && uses.every((u) => u.name === 'open_screen' || u.name === 'note_feedback')) break
+          if (wrote && uses.every((u) => BUTTON_TOOLS.has(u.name))) { finished = true; break }
         }
+        // Cards for Roams the reply names but didn't open, stored as a lookup
+        // after the reply so a reopened conversation shows them too.
+        const named = finished && ctx.screens?.has('trail_card') ? roamsNamedIn(said, roamsSeen, carded) : []
+        const unopened = named.length
+          ? await suggestedRoams(admin, said, named.map((id) => ({ id, name: roamsSeen.find((r) => r.id === id)?.names[0] ?? id })))
+          : []
+        if (unopened.length) {
+          const uses = unopened.map((id) => ({ type: 'tool_use' as const, id: `toolu_card_${crypto.randomUUID().replace(/-/g, '').slice(0, 20)}`, name: 'get_roam', input: { id } }))
+          const read = await Promise.all(uses.map((u) => runTool(ctx, 'get_roam', u.input)))
+          read.forEach((r, i) => {
+            if (!r.trail) return
+            buttons.push(r.trail.open_label)
+            emit({ type: 'tool', id: uses[i].id, label: '' })
+            emit({ type: 'tool_done', id: uses[i].id, ok: true, trail: r.trail })
+          })
+          await append('assistant', uses)
+          await append('user', read.map((r, i) => resultBlock(uses[i].id, once(r))))
+        }
+        choices = choicesBesideButtons(choices, buttons)
+        if (choices.length) emit({ type: 'choices', options: choices })
         if ((await contextSize(admin, threadId)) > SOFT_CONTEXT) emit({ type: 'long' })
         emit({ type: 'done' })
       } catch (e) {

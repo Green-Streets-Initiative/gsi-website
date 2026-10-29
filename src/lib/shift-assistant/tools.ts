@@ -645,6 +645,37 @@ function roamButtonName(name: string): string {
   return after.length <= 28 ? after : bare.slice(0, 28).replace(/\s+\S*$/, '')
 }
 
+/** The Roams a find_roams or find_trails result offered, with the names a
+ *  reply might call each by: its own, its button name ("Sudbury to Hudson"),
+ *  and its trail's when it is that trail's only Roam. */
+export function roamsOffered(tool: string, content: Record<string, unknown>): { id: string; names: string[] }[] {
+  type Offered = { id?: unknown; name?: unknown; this_roam?: unknown }
+  const named = (r: Offered, extra: string[] = []) => {
+    const name = typeof r.name === 'string' ? r.name : ''
+    return { id: String(r.id ?? ''), names: [name, roamButtonName(name), ...extra].filter((n) => n.length >= 6) }
+  }
+  if (tool === 'find_roams') return ((content.roams ?? []) as Offered[]).filter((r) => r.id).map((r) => named(r))
+  if (tool !== 'find_trails') return []
+  return ((content.trails ?? []) as { name?: unknown; roams?: Offered[] }[]).flatMap((t) => {
+    const rides = (t.roams ?? []).filter((r) => r.id && r.this_roam === 'rides it')
+    return rides.map((r) => named(r, rides.length === 1 && typeof t.name === 'string' ? [t.name] : []))
+  })
+}
+
+/** Roams the reply names, in the order it names them (2026-10-29: a reply
+ *  recommended Roams from find_trails without get_roam, so no cards drew). */
+export function roamsNamedIn(text: string, offered: { id: string; names: string[] }[], skip: Set<string>, max = 3): string[] {
+  const norm = (s: string) => s.toLowerCase().replace(/[’']/g, "'").replace(/\s+/g, ' ')
+  const t = norm(text)
+  const at = new Map<string, number>()
+  for (const o of offered) {
+    if (skip.has(o.id)) continue
+    const hits = o.names.map((n) => t.indexOf(norm(n))).filter((i) => i >= 0)
+    if (hits.length) at.set(o.id, Math.min(at.get(o.id) ?? Infinity, ...hits))
+  }
+  return [...at.entries()].sort((a, b) => a[1] - b[1]).slice(0, max).map(([id]) => id)
+}
+
 /** One word for the card from a surface note ("Stone dust (packed fine
  *  gravel), with a few road crossings." is stone dust). */
 function surfaceKind(note: string | null | undefined): TrailCard['surface'] {
