@@ -59,6 +59,34 @@ export type ToolResult = {
   isError?: boolean
   link?: ScreenLink
   trip?: TripCard
+  trail?: TrailCard
+}
+
+/** A Roam at a glance, drawn by the app under the reply (Keith 2026-10-28:
+ *  "convert some of the trail basics into a visual card"): length, time,
+ *  surface and hills as chips, the hills as bars, and how to get there. The
+ *  card carries its own Open button, so get_roam sends no separate link. */
+export type TrailCard = {
+  roam_id: string
+  name: string
+  area: string | null
+  kind: string
+  miles: number | null
+  minutes: number | null
+  surface: 'paved' | 'stone_dust' | 'dirt' | 'mixed' | null
+  hills: 'flat' | 'gentle' | 'rolling' | 'hilly' | null
+  climb_ft: number | null
+  climb_ft_back: number | null
+  loop: boolean
+  /** [miles, feet], thinned to about 40 points. */
+  profile: [number, number][]
+  start: string | null
+  end: string | null
+  getting_there: { mode: 'train' | 'bus' | 'bikeshare' | 'drive'; text: string } | null
+  closure: string | null
+  /** false: the closure is on a path it connects to, not on the route. */
+  closure_on_route: boolean
+  open_label: string
 }
 
 /** A planned trip, drawn by the app as a card under the reply: a small map,
@@ -97,6 +125,7 @@ export type TripCard = {
  *  list this with their screens (Shift lib/assistant.ts). Older builds draw
  *  only the bike card, so they get no card when it would lead with another way. */
 const CARD_WAYS = 'card_ways'
+const CARD_TRAIL = 'trail_card'
 
 /** Screens added after the first release: offered only to builds that list them. */
 const NEWER_SCREENS = new Set(['trip', 'trip_history', 'my_rewards', 'notifications', 'vacation', 'partner_request', 'partner_matches', 'bike_confidence', 'roam', 'closure_plan', 'memories'])
@@ -596,7 +625,36 @@ function roamButtonName(name: string): string {
   return after.length <= 28 ? after : bare.slice(0, 28).replace(/\s+\S*$/, '')
 }
 
-const SUBWAY =['Red', 'Orange', 'Blue', 'Mattapan', 'Green-B', 'Green-C', 'Green-D', 'Green-E']
+/** One word for the card from a surface note ("Stone dust (packed fine
+ *  gravel), with a few road crossings." is stone dust). */
+function surfaceKind(note: string | null | undefined): TrailCard['surface'] {
+  const n = (note ?? '').toLowerCase()
+  if (!n) return null
+  if (n.startsWith('mixed')) return 'mixed'
+  if (/^(paved|asphalt)/.test(n)) return 'paved'
+  if (/^mostly .*(dirt|stone dust|gravel)/.test(n)) return 'mixed'
+  if (/stone dust|gravel|crushed stone/.test(n)) return 'stone_dust'
+  if (/dirt|packed sand|clay/.test(n)) return 'dirt'
+  return /paved|asphalt/.test(n) ? 'paved' : null
+}
+
+/** The way in, as an icon and its first sentence: a train when the note names
+ *  one, else the drive and where to park. */
+function wayIn(access: string | null | undefined, parking: string | null | undefined): TrailCard['getting_there'] {
+  const firstOf = (x: string | null | undefined) => {
+    const t = (x ?? '').replace(/\s+/g, ' ').trim()
+    return t ? (t.match(/^.*?[.!?](\s|$)/)?.[0] ?? t).trim() : null
+  }
+  const a = firstOf(access)
+  if (a && !/^no (train|bus)/i.test(a)) {
+    const mode = /commuter rail|\bline\b|\btrain\b|station/i.test(a) ? 'train' : /\bbus/i.test(a) ? 'bus' : /bluebikes|bike share/i.test(a) ? 'bikeshare' : 'drive'
+    return { mode, text: clip(a, 170)! }
+  }
+  const p = firstOf(parking)
+  return p ? { mode: 'drive', text: clip(p, 170)! } : null
+}
+
+const SUBWAY = ['Red', 'Orange', 'Blue', 'Mattapan', 'Green-B', 'Green-C', 'Green-D', 'Green-E']
 
 /** Phone notices, by the names the Notifications screen shows. */
 const NOTICES: Record<string, string> = {
@@ -1259,7 +1317,10 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
         const first = stops[0]
         const last = stops[stops.length - 1]
         const loop = !!first && !!last && haversineMiles(first.lat, first.lng, last.lat, last.lng) < 0.3
-        const [event, trail, hills, onward] = await Promise.all([getNextRoamEvent(r.id), getRoamTrailInfo(r.id), roamHills(ctx, [r.id], new Set(loop ? [r.id] : [])), getRoamKeepGoing(r.id)])
+        const [event, trail, hills, onward, elev] = await Promise.all([
+          getNextRoamEvent(r.id), getRoamTrailInfo(r.id), roamHills(ctx, [r.id], new Set(loop ? [r.id] : [])), getRoamKeepGoing(r.id),
+          ctx.screens?.has(CARD_TRAIL) ? ctx.admin.from('roams').select('profile:elevation->profile').eq('id', r.id).maybeSingle() : null,
+        ])
         // A Roam with no facts of its own borrows its trail's, marked as the
         // whole trail's: a long trail's other sections can differ.
         const uses = trail.trails.filter((t) => t.relation === 'uses').map((t) => t.id)
@@ -1269,7 +1330,23 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
         const link: ScreenLink = canOpen(ctx, 'roam')
           ? { screen: 'roam', params: { roamId: r.id }, label: `Open ${roamButtonName(r.name)}` }
           : { href: `/shift/roams/${encodeURIComponent(r.id)}`, label: `See ${roamButtonName(r.name)}` }
-        return ok({
+        const h = hills.get(r.id) ?? null
+        const prof = ((elev?.data as { profile?: [number, number][] } | null)?.profile ?? []).filter((p) => Array.isArray(p))
+        const step = Math.max(1, Math.ceil(prof.length / 40))
+        const closedNow = trail.disruptions.find((d) => d.affects === 'route') ?? trail.disruptions[0]
+        const card: TrailCard | undefined = ctx.screens?.has(CARD_TRAIL) ? {
+          roam_id: r.id, name: roamButtonName(r.name), area: r.region, kind: r.mode,
+          miles: r.distance_miles != null ? round1(r.distance_miles) : null, minutes: r.estimated_minutes,
+          surface: surfaceKind(r.surface ?? whole?.surface),
+          hills: h ? (h.feel === 'a gentle grade' ? 'gentle' : h.feel) : null,
+          climb_ft: h?.climb_ft ?? null, climb_ft_back: h?.climb_ft_coming_back ?? null, loop,
+          profile: prof.filter((_, i) => i % step === 0 || i === prof.length - 1),
+          start: first?.label ?? null, end: loop ? null : last?.label ?? null,
+          getting_there: r.surface ? wayIn(r.access_note, r.parking_note) : wayIn(r.access_note ?? whole?.transit_note, r.parking_note ?? whole?.parking_note),
+          closure: closedNow ? clip(closedNow.title, 90) : null, closure_on_route: closedNow?.affects === 'route',
+          open_label: link.label,
+        } : undefined
+        const result = ok({
           name: r.name, kind: r.mode, area: r.region, about: r.hook ?? r.tagline ?? excerptOf(r.description, 200),
           route_miles: r.distance_miles != null ? round1(r.distance_miles) : null, minutes: r.estimated_minutes,
           full_trail_miles: r.full_trail_miles, surface: r.surface, getting_in: r.access_note, parking: r.parking_note,
@@ -1283,7 +1360,9 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
           closures_now: trail.disruptions.map((d) => ({ trail: d.trail_name, on_this_route: d.affects === 'route', what: d.title, about: excerptOf(d.summary, 200), until: d.ends_on ?? d.ends_note, detour: d.detours?.[0]?.steps?.slice(0, 4) ?? null })),
           next_group_outing: event ? { title: event.title, date: event.event_date, time: event.event_time?.slice(0, 5) ?? null, where: event.location_name, organizer: event.organizer_name } : null,
           next: 'Answer what they asked (how long, where it starts, how to get there) in a sentence or two; any closure first. Hills: say the feel and, when it is not a loop, which way climbs. Getting there: getting_in, or whole_trail.getting_there; pass start to check_trip only when they could walk, bike or take transit there.',
-        }, link)
+          ...(card ? { card: 'A card shows under your reply with its length, minutes, surface, hills (as a chart, with the climb each way), how to get there, any closure, and a button to the Roam. Leave those numbers to the card: say why it suits them and the one thing worth knowing.' } : {}),
+        }, card ? undefined : link)
+        return card ? { ...result, trail: card } : result
       }
       case 'find_trails': {
         const words = typeof input.query === 'string' ? input.query.toLowerCase().split(/[^a-z0-9]+/).filter((w) => w.length > 2 && !['the', 'rail', 'trail', 'path', 'paths', 'bikeway', 'greenway'].includes(w)) : []

@@ -32,7 +32,7 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { choicesBesideButtons, choicesFilter, splitChoices } from '@/lib/assistant/choices'
 import { SYSTEM_PROMPT, contextBlock, screenLabel } from '@/lib/shift-assistant/prompt'
-import { ACTIVITY, NEEDS_APPROVAL, approvalCard, toolsFor, runApproved, runTool, type ApprovalCard, type ToolCtx, type ToolResult, type TripCard } from '@/lib/shift-assistant/tools'
+import { ACTIVITY, NEEDS_APPROVAL, approvalCard, toolsFor, runApproved, runTool, type ApprovalCard, type ToolCtx, type ToolResult, type TrailCard, type TripCard } from '@/lib/shift-assistant/tools'
 import { inServiceArea } from '@/lib/server/trip'
 import { claimUpload, foldersIn, imageMark, inboxPath, lastImage, markedPath, removeFolders, signedUrls, withImages } from '@/lib/shift-assistant/uploads'
 
@@ -141,7 +141,7 @@ type Item =
   | { kind: 'user_image'; url: string }
   | { kind: 'carried' }
   | { kind: 'assistant'; text: string; msgId?: number; rated?: 'up' | 'down' }
-  | { kind: 'tool'; id: string; label: string; ok?: boolean; link?: ToolResult['link']; trip?: TripCard; card?: { title: string; decision: 'approved' | 'declined' } }
+  | { kind: 'tool'; id: string; label: string; ok?: boolean; link?: ToolResult['link']; trip?: TripCard; trail?: TrailCard; card?: { title: string; decision: 'approved' | 'declined' } }
   | { kind: 'choices'; options: string[] }
   | { kind: 'approval'; tool_use_id: string; card: ApprovalCard }
 
@@ -175,6 +175,7 @@ function transcript(messages: { id?: number; role: string; content: unknown }[],
         it.ok = !b.is_error
         if (parsed._link) it.link = parsed._link as ToolResult['link']
         if (parsed._trip) it.trip = parsed._trip as TripCard
+        if (parsed._trail) it.trail = parsed._trail as TrailCard
         if (parsed._card) it.card = parsed._card as { title: string; decision: 'approved' | 'declined' }
       }
     }
@@ -192,17 +193,18 @@ function transcript(messages: { id?: number; role: string; content: unknown }[],
       if (i.label && steps.has(i.label)) i.label = ''
       else if (i.label) steps.add(i.label)
       if (i.link) buttons.push(i.link.label)
+      if (i.trail) buttons.push(i.trail.open_label)
     } else if (i.kind === 'choices') i.options = choicesBesideButtons(i.options, buttons)
   }
   for (const c of pending?.cards ?? []) if (!c.decided) cleaned.push({ kind: 'approval', tool_use_id: c.tool_use_id, card: c.card })
-  return cleaned.filter((i) => i.kind !== 'tool' || ((i.label || i.link || i.trip || i.card) && !waiting.has(i.id)))
+  return cleaned.filter((i) => i.kind !== 'tool' || ((i.label || i.link || i.trip || i.trail || i.card) && !waiting.has(i.id)))
 }
 
 function resultBlock(id: string, r: ToolResult, extra?: Record<string, unknown>): Anthropic.Beta.BetaToolResultBlockParam {
   return {
     type: 'tool_result',
     tool_use_id: id,
-    content: JSON.stringify({ ...r.content, ...(r.link ? { _link: r.link } : {}), ...(r.trip ? { _trip: r.trip } : {}), ...(extra ?? {}) }),
+    content: JSON.stringify({ ...r.content, ...(r.link ? { _link: r.link } : {}), ...(r.trip ? { _trip: r.trip } : {}), ...(r.trail ? { _trail: r.trail } : {}), ...(extra ?? {}) }),
     ...(r.isError ? { is_error: true } : {}),
   }
 }
@@ -446,7 +448,7 @@ export async function POST(request: Request) {
               if (body.decision.approve) {
                 emit({ type: 'tool', id: c.tool_use_id, label: ACTIVITY[c.name] ?? c.name })
                 r = once(await runApproved(ctx, c.name, c.input))
-                emit({ type: 'tool_done', id: c.tool_use_id, ok: !r.isError, link: r.link, trip: r.trip })
+                emit({ type: 'tool_done', id: c.tool_use_id, ok: !r.isError, link: r.link, trip: r.trip, trail: r.trail })
               } else {
                 r = { content: { declined: true, note: 'They chose not to do this. Ask what they would like instead.' } }
               }
@@ -563,7 +565,8 @@ export async function POST(request: Request) {
             }
             if (ACTIVITY[u.name]) emit({ type: 'tool', id: u.id, label: stepLabel(u.name) })
             const r = once(await runTool(ctx, u.name, input))
-            emit({ type: 'tool_done', id: u.id, ok: !r.isError, link: r.link, trip: r.trip })
+            if (r.trail) buttons.push(r.trail.open_label)
+            emit({ type: 'tool_done', id: u.id, ok: !r.isError, link: r.link, trip: r.trip, trail: r.trail })
             results[u.id] = resultBlock(u.id, r)
           }))
           if (cards.length) {
