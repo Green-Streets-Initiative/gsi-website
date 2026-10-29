@@ -18,6 +18,7 @@ import RoamSectionNav from '@/components/roams/RoamSectionNav'
 import RoamStopList from '@/components/roams/RoamStopList'
 import RoamGroupEventCard from '@/components/roams/RoamGroupEventCard'
 import RoamLede from '@/components/roams/RoamLede'
+import RoamHills from '@/components/roams/RoamHills'
 
 export const revalidate = 3600
 
@@ -74,11 +75,11 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   // A trail page answers the search: length, where it starts, how to get there.
   const title = roam.full_trail_miles
     ? `${roam.name}: ${miles(roam.full_trail_miles)} miles, where to start, how to get there by T | Shift Roams`
-    : `${roam.name} — a ${dist ? `${dist} ` : ''}guided ${roam.mode === 'multi' ? '' : `${roam.mode} `}route${roam.region ? ` in ${roam.region}` : ''} | Shift Roams`
+    : `${roam.name} — a ${dist ? `${dist} ` : ''}self-guided ${roam.mode === 'multi' ? '' : `${roam.mode} `}route${roam.region ? ` in ${roam.region}` : ''} | Shift Roams`
   const editorial =
     roam.hook ??
     (roam.description ? truncateAtSentence(roam.description, 160) : null) ??
-    `A guided ${roam.mode === 'multi' ? '' : `${roam.mode} `}route with ${roam.checkpoints.filter((c) => c.required).length} stops.`
+    `A self-guided ${roam.mode === 'multi' ? '' : `${roam.mode} `}route with ${roam.checkpoints.filter((c) => c.required).length} stops.`
   // Lead the snippet with the facts the query asked for, then the editorial hook.
   const facts = [
     dist ? dist.replace('-mile', ' miles') : null,
@@ -367,6 +368,10 @@ export default async function RoamDetailPage({ params }: { params: Promise<{ id:
                     )}
                   </span>
                 </p>
+              )}
+
+              {roam.elevation && (
+                <RoamHills elevation={roam.elevation} isLoop={isLoop} />
               )}
 
               {roam.badge_name && (

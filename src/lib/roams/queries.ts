@@ -129,8 +129,20 @@ export interface RoamDetail extends RoamSummary {
   collection: RoamCollection | null
   /** GeoJSON-order coordinates for the full route, or null if unusable */
   route_coordinates: [number, number][] | null
+  /** Hills along the route (Google Elevation, Shift 01485 and the hourly
+   *  trail-elevation job, 01487); null for transit Roams and until measured. */
+  elevation: RoamElevation | null
   checkpoints: RoamCheckpoint[]
   legs: RoamLeg[]
+}
+
+export interface RoamElevation {
+  ascent_ft: number
+  descent_ft: number
+  max_grade_pct: number
+  route_miles: number
+  /** [miles from start, feet above sea level], up to 120 points. */
+  profile: [number, number][]
 }
 
 /** Fold both stored route_geometry shapes into GeoJSON [lng, lat][]. */
@@ -201,7 +213,7 @@ export async function getRoamDetail(id: string): Promise<RoamDetail | null> {
     supabase
       .from('roams')
       .select(
-        'id, name, mode, distance_miles, estimated_minutes, hook, hero_image_url, region, featured, description, tagline, badge_name, xp_bonus, hero_image_attribution, hero_image_attribution_url, route_url, route_geometry, completion_count, vibe_tags, collection_id, completion_threshold, full_trail_miles, surface, access_note, parking_note, hero_video_url, hero_video_credit, hero_video_credit_url, credit_role, credit_name, rail_home_stop_id, rail_home_route_id, rail_home_direction_id',
+        'id, name, mode, distance_miles, estimated_minutes, hook, hero_image_url, region, featured, description, tagline, badge_name, xp_bonus, hero_image_attribution, hero_image_attribution_url, route_url, route_geometry, completion_count, vibe_tags, collection_id, completion_threshold, full_trail_miles, surface, access_note, parking_note, hero_video_url, hero_video_credit, hero_video_credit_url, credit_role, credit_name, rail_home_stop_id, rail_home_route_id, rail_home_direction_id, elevation',
       )
       .eq('id', id)
       .eq('active', true)
@@ -353,8 +365,21 @@ export async function getRoamDetail(id: string): Promise<RoamDetail | null> {
     completion_threshold: (roam.completion_threshold as number) ?? 1.0,
     collection,
     route_coordinates: normalizeRouteGeometry(roam.route_geometry),
+    elevation: elevationOf(roam.elevation),
     checkpoints,
     legs,
+  }
+}
+
+function elevationOf(raw: unknown): RoamElevation | null {
+  const e = raw as Partial<RoamElevation> | null
+  if (!e || typeof e.ascent_ft !== 'number' || typeof e.descent_ft !== 'number' || !(Number(e.route_miles) > 0)) return null
+  return {
+    ascent_ft: e.ascent_ft,
+    descent_ft: e.descent_ft,
+    max_grade_pct: Number(e.max_grade_pct ?? 0),
+    route_miles: Number(e.route_miles),
+    profile: Array.isArray(e.profile) ? e.profile.filter((p) => Array.isArray(p) && p.length >= 2) : [],
   }
 }
 

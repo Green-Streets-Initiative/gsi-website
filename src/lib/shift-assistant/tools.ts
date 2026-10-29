@@ -588,6 +588,11 @@ type Hills = { feel: 'flat' | 'a gentle grade' | 'rolling' | 'hilly'; climb_ft: 
 /** Hills on each Roam from roams.elevation (Shift 01485), in the app's words:
  *  feet of climbing per mile, as Shift lib/elevation.ts counts them. A steady
  *  rail-trail rise is "a gentle grade", not "rolling". */
+/** Feet climbed per mile and the steepest stretch, in a word. */
+function hillsFeel(perMile: number, grade: number): Hills['feel'] {
+  return perMile < 30 ? 'flat' : perMile < 80 ? (grade < 4 ? 'a gentle grade' : 'rolling') : 'hilly'
+}
+
 async function roamHills(ctx: ToolCtx, ids: string[], loops: Set<string> = new Set()): Promise<Map<string, Hills>> {
   const out = new Map<string, Hills>()
   if (!ids.length) return out
@@ -596,8 +601,7 @@ async function roamHills(ctx: ToolCtx, ids: string[], loops: Set<string> = new S
     .in('id', ids).not('elevation', 'is', null)
   for (const r of (data ?? []) as { id: string; up: number; down: number; grade: number; mi: number }[]) {
     if (!(r.mi > 0)) continue
-    const perMile = Math.max(r.up, r.down) / r.mi
-    const feel = perMile < 30 ? 'flat' : perMile < 80 ? (r.grade < 4 ? 'a gentle grade' : 'rolling') : 'hilly'
+    const feel = hillsFeel(Math.max(r.up, r.down) / r.mi, r.grade)
     const loop = loops.has(r.id)
     out.set(r.id, { feel, climb_ft: Math.round(r.up), ...(loop ? {} : { climb_ft_coming_back: Math.round(r.down) }), steepest_grade_pct: r.grade })
   }
@@ -1426,13 +1430,13 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
         const from = asPlace(input.near) ?? ctx.here ?? null
         const near = region?.at ?? from
         const [{ data }, { data: links }, roams] = await Promise.all([
-          ctx.admin.from('trails').select('id, name, aka, towns, full_miles, surface, summary, transit_note, parking_note, access_points')
+          ctx.admin.from('trails').select('id, name, aka, towns, full_miles, surface, summary, transit_note, parking_note, access_points, elevation')
             .eq('status', 'approved').eq('active', true).limit(200),
           ctx.admin.from('roam_trails').select('trail_id, roam_id, relation').limit(500),
           getActiveRoams(),
         ])
         type AccessPoint = { lat: number; lng: number; name: string; notes: string | null }
-        type TrailRow = { id: string; name: string; aka: string[] | null; towns: string[] | null; full_miles: number | null; surface: string | null; summary: string | null; transit_note: string | null; parking_note: string | null; access_points: AccessPoint[] | null }
+        type TrailRow = { id: string; name: string; aka: string[] | null; towns: string[] | null; full_miles: number | null; surface: string | null; summary: string | null; transit_note: string | null; parking_note: string | null; access_points: AccessPoint[] | null; elevation: { climb_ft?: number; miles?: number; max_grade_pct?: number } | null }
         const roamName = new Map(roams.map((r) => [r.id, r.name]))
         const found = ((data ?? []) as TrailRow[])
           .filter((t) => !words.length || words.every((w) => `${t.name} ${(t.aka ?? []).join(' ')} ${(t.towns ?? []).join(' ')}`.toLowerCase().includes(w)))
@@ -1459,6 +1463,10 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
         const trails = found.map(({ t, pts, d }) => ({
           id: t.id, name: t.name, towns: (t.towns ?? []).slice(0, 12), miles: t.full_miles,
           surface: clip(t.surface, 340), about: clip(t.summary, 260),
+          // Measured along its MAPC TrailMap line (trail-elevation, Shift 01487).
+          hills: t.elevation?.climb_ft != null && Number(t.elevation.miles) > 0
+            ? { feel: hillsFeel(t.elevation.climb_ft / Number(t.elevation.miles), Number(t.elevation.max_grade_pct ?? 0)), steepest_grade_pct: t.elevation.max_grade_pct }
+            : null,
           getting_there: clip(t.transit_note, 240), parking: clip(t.parking_note, 200),
           // "It meets the Mass Central Rail Trail here at the Diamond Crossing."
           meets: pts.filter((a) => /\b(meets|connects|links|joins)\b/i.test(a.notes ?? '')).slice(0, 3).map((a) => ({ at: a.name, what: clip(a.notes, 160) })),
@@ -1475,7 +1483,7 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
         return ok({
           trails,
           ...(trails.length
-            ? { next: "A Roam's surface, hills and getting_in are for its own stretch and can differ from the whole trail's: describe a Roam by its own. For a Roam that fits, call get_roam (its hills, stops and button). Hills on a trail with no Roam are not in these records; say a rail trail is usually a gentle grade, not that it is flat." }
+            ? { next: "A Roam's surface, hills and getting_in are for its own stretch and can differ from the whole trail's: describe a Roam by its own. For a Roam that fits, call get_roam (its hills, stops and button). A trail's hills are for the whole trail; with none, say a rail trail is usually a gentle grade, not that it is flat." }
             : { note: 'No trail by that name in our records. Try find_roams, or list the nearest trails with no query.' }),
         })
       }
