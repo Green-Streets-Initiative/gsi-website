@@ -50,7 +50,10 @@ function topModeLabel(
   modeSplit: Array<{ mode_group: string; trips: number }> | undefined,
 ): string | null {
   if (!modeSplit || modeSplit.length === 0) return null
-  const top = [...modeSplit].sort((a, b) => b.trips - a.trips)[0]
+  // The card names the town's top active mode; carpool and drive (01493) sit out.
+  const top = modeSplit
+    .filter((r) => r.mode_group !== 'carpool' && r.mode_group !== 'drive')
+    .sort((a, b) => b.trips - a.trips)[0]
   if (!top || top.trips <= 0) return null
   const labels: Record<string, string> = {
     walk: 'Mostly on foot',

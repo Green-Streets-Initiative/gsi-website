@@ -101,7 +101,8 @@ export interface TownPageStats {
     co2_lbs: number
     active_users: number
   }
-  mode_split: Array<{ mode_group: 'walk' | 'bike' | 'bus' | 'train'; trips: number; miles: number }>
+  // carpool and drive from Shift 01493; older responses stop at train.
+  mode_split: Array<{ mode_group: 'walk' | 'bike' | 'bus' | 'train' | 'carpool' | 'drive'; trips: number; miles: number }>
   momentum: Array<{ week_start: string; active_trips: number }>
 }
 
