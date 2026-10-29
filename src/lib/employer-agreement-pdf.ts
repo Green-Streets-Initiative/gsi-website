@@ -12,8 +12,14 @@ import {
   ORDER_FORM_WITNESS,
   GSI_PARTY,
   GSI_SIGNER,
+  SPECIAL_TERMS_HEADING,
+  SPECIAL_TERMS_NOTE,
   agreementPlainText,
+  definedTermRanges,
   orderFormIntro,
+  orderFormRows,
+  specialTermsParagraphs,
+  typeset,
 } from '@/lib/employer-agreement'
 import { GSI_WORDMARK_URL } from '@/app/shift/employers/portal/_lib/portal-constants'
 
@@ -34,6 +40,8 @@ export type OrderTerms = {
   billing?: 'invoice' | 'card'
   /** YYYY-MM-DD */
   startDate: string
+  /** Negotiated terms for this customer only, typed by GSI staff. */
+  specialTerms?: string
 }
 
 export type Signer = { name: string; title: string; email: string }
@@ -58,23 +66,14 @@ export async function loadAgreementLogo(): Promise<Uint8Array | null> {
   }
 }
 
-function longDate(iso: string): string {
-  const d = new Date(`${iso}T12:00:00Z`)
-  return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
-}
-
-/** Curly quotes and apostrophes; the words stay exactly as written. */
-function typeset(s: string): string {
-  let out = ''
-  for (let i = 0; i < s.length; i++) {
-    const c = s[i]
-    const prev = i === 0 ? ' ' : s[i - 1]
-    const opens = /[\s([—-]/.test(prev)
-    if (c === '"') out += opens ? '“' : '”'
-    else if (c === "'") out += opens ? '‘' : '’'
-    else out += c
-  }
-  return out
+// Characters the PDF's built-in Helvetica can draw (WinAnsi). Anything
+// else in typed special terms becomes "?" rather than garbage.
+const WIN_ANSI_EXTRA = '€‚ƒ„…†‡ˆ‰Š‹ŒŽ‘’“”•–—˜™š›œžŸ'
+function drawable(s: string): string {
+  return s
+    .replace(/≤/g, '<=')
+    .replace(/≥/g, '>=')
+    .replace(/[^\x20-\x7E\xA0-\xFF]/g, (c) => (WIN_ANSI_EXTRA.includes(c) ? c : '?'))
 }
 
 type Rgb = [number, number, number]
@@ -118,10 +117,7 @@ export function buildAgreementPdf(order: OrderTerms, signer: Signer, logo: Uint8
     const raw = typeset(text)
     const bold = new Array<boolean>(raw.length).fill(allBold)
     if (!allBold) {
-      for (const m of raw.matchAll(/\((?:the |each )?(“[^”]+”)\)/g)) {
-        const start = m.index! + m[0].indexOf(m[1])
-        for (let i = start; i < start + m[1].length; i++) bold[i] = true
-      }
+      for (const [a, b] of definedTermRanges(raw)) for (let i = a; i < b; i++) bold[i] = true
     }
     const out: Word[] = []
     let i = 0
@@ -236,16 +232,7 @@ export function buildAgreementPdf(order: OrderTerms, signer: Signer, logo: Uint8
 
   // Order details: a bordered two-column table, labels shaded.
   heading(null, 'Order details')
-  const rows: Array<[string, string]> = [
-    ['Plan', order.plan],
-    ['Annual fee', `$${order.annualFee.toLocaleString('en-US')}`],
-    ...(order.billing ? [['Billing', order.billing === 'invoice' ? 'Invoice, due in 30 days' : 'Card'] as [string, string]] : []),
-    ['Access start date', longDate(order.startDate)],
-    [
-      'Term',
-      '12 months from the access start date, renewing each year unless either side declines before the renewal date. GSI sends a reminder with the renewal fee at least 30 days before.',
-    ],
-  ]
+  const rows = orderFormRows(order)
   const labelW = 118
   const pad = 5
   y -= 6
@@ -267,6 +254,15 @@ export function buildAgreementPdf(order: OrderTerms, signer: Signer, logo: Uint8
     y += h
   }
   y += 18
+
+  // Special terms: only when GSI staff typed some; long text runs on to
+  // the next page like any paragraph.
+  const special = specialTermsParagraphs(order.specialTerms)
+  if (special.length) {
+    heading(null, SPECIAL_TERMS_HEADING)
+    para(SPECIAL_TERMS_NOTE, { gap: 6, bold: true })
+    special.forEach((p, i) => para(drawable(p), { gap: i === special.length - 1 ? 14 : 5 }))
+  }
 
   heading(null, 'Key points in plain words')
   ORDER_FORM_KEY_POINTS.forEach((p, i) => {

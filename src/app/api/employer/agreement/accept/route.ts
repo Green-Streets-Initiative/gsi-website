@@ -6,8 +6,11 @@ import {
   AGREEMENT_PREAMBLE,
   AGREEMENT_SECTIONS,
   AGREEMENT_VERSION,
-  agreementPlainText,
+  SPECIAL_TERMS_NOTE,
+  acceptedTextSnapshot,
+  specialTermsParagraphs,
 } from '@/lib/employer-agreement'
+import { currentOrderTerms, latestEnvelope, loadGroup } from '@/lib/employer/agreement-esign'
 
 export const runtime = 'nodejs'
 
@@ -30,8 +33,15 @@ function buildConfirmationHtml(opts: {
   acceptedTitle: string
   acceptedEmail: string
   acceptedAt: string
+  specialTerms: string[]
 }): string {
-  const { groupName, acceptedName, acceptedTitle, acceptedEmail, acceptedAt } = opts
+  const { groupName, acceptedName, acceptedTitle, acceptedEmail, acceptedAt, specialTerms } = opts
+  const special = specialTerms.length
+    ? `<h3 style="margin:0 0 6px;font-size:14px;color:#191A2E;">Special terms</h3>
+       <p style="margin:0 0 6px;font-size:13px;line-height:1.6;color:#191A2E;font-weight:700;">${escapeHtml(SPECIAL_TERMS_NOTE)}</p>
+       ${specialTerms.map((p) => `<p style="margin:0 0 6px;font-size:13px;line-height:1.6;color:#374151;">${escapeHtml(p)}</p>`).join('')}
+       <div style="height:14px;"></div>`
+    : ''
   const sections = AGREEMENT_SECTIONS.map(
     (s) =>
       `<h3 style="margin:20px 0 6px;font-size:14px;color:#191A2E;">${escapeHtml(s.heading)}</h3>
@@ -63,6 +73,7 @@ function buildConfirmationHtml(opts: {
           <strong>Reference copy:</strong> <a href="${AGREEMENT_URL}" style="color:#2D6A4F;">${AGREEMENT_URL.replace('https://', '')}</a>
         </p>
       </div>
+      ${special}
       <p style="margin:0 0 4px;font-size:13px;line-height:1.6;color:#374151;">${escapeHtml(AGREEMENT_PREAMBLE)}</p>
       ${sections}
     </td>
@@ -100,6 +111,7 @@ export async function POST(request: Request) {
     name?: string
     title?: string
     version?: string
+    special_terms?: string | null
   } | null
   const groupId = body?.group_id
   const acceptedName = body?.name?.trim()
@@ -152,6 +164,18 @@ export async function POST(request: Request) {
     })
   }
 
+  // Special terms GSI set for this customer are part of what's accepted.
+  // Like the version check: refuse if they changed while the admin read.
+  const groupRow = await loadGroup(groupId)
+  const offered = groupRow ? currentOrderTerms(groupRow, await latestEnvelope(groupId)) : null
+  const specialTerms = offered?.specialTerms?.trim() ?? ''
+  if ((body?.special_terms ?? '').trim() !== specialTerms) {
+    return Response.json(
+      { error: 'The special terms for your workplace were updated while you were reading — please refresh and review them.' },
+      { status: 409 },
+    )
+  }
+
   const acceptedAt = new Date().toISOString()
   const { error: updateErr } = await sb
     .from('groups')
@@ -178,7 +202,7 @@ export async function POST(request: Request) {
     accepted_name: acceptedName,
     accepted_title: acceptedTitle,
     version: AGREEMENT_VERSION,
-    text_snapshot: agreementPlainText(),
+    text_snapshot: acceptedTextSnapshot(specialTerms),
     ip_address:
       request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? null,
     user_agent: request.headers.get('user-agent') ?? null,
@@ -198,6 +222,7 @@ export async function POST(request: Request) {
       acceptedTitle,
       acceptedEmail: callerEmail,
       acceptedAt,
+      specialTerms: specialTermsParagraphs(specialTerms),
     })
     try {
       await resend.emails.send({

@@ -10,8 +10,12 @@ import {
   AGREEMENT_PREAMBLE,
   AGREEMENT_SECTIONS,
   AGREEMENT_VERSION,
+  GSI_SIGNER,
+  SPECIAL_TERMS_HEADING,
+  SPECIAL_TERMS_NOTE,
+  specialTermsParagraphs,
 } from '@/lib/employer-agreement'
-import { EsignForm, EsignSteps, statusLine, useAgreementEsign } from './AgreementEsign'
+import { EsignForm, EsignSteps, downloadWordCopy, statusLine, useAgreementEsign } from './AgreementEsign'
 
 // Click-wrap gate: paid accounts (agreement_required) can't use the portal
 // until an admin accepts the Employer Platform Agreement. Acceptance is
@@ -20,7 +24,9 @@ import { EsignForm, EsignSteps, statusLine, useAgreementEsign } from './Agreemen
 // GSI admins bypass entirely. Since 2026-10-29 an admin's first choice is
 // to e-sign a one-page order form (AgreementEsign, through SignWell), sent
 // to themselves or to whoever signs for the company; the portal opens when
-// that person signs. The click-through stays as the other way.
+// that person signs. The click-through stays as the other way. Special
+// terms GSI set for this customer show in both, and a Word copy is there
+// for the customer's legal or finance team to mark up.
 export default function AgreementGate({ children }: { children: ReactNode }) {
   const { group, setGroup, isAdmin, sessionEmail, admins, agreementGated } = usePortal()
 
@@ -67,6 +73,9 @@ export default function AgreementGate({ children }: { children: ReactNode }) {
   const [resending, setResending] = useState(false)
   const esign = useAgreementEsign(agreementGated && isAdmin ? group?.id : undefined, true)
   const env = esign.state?.envelope ?? null
+  const specialTerms = esign.state?.defaults?.specialTerms?.trim() ?? ''
+  const [wordError, setWordError] = useState<string | null>(null)
+  const [wordBusy, setWordBusy] = useState(false)
 
   // Signed by e-signature (seen by polling): the portal opens.
   useEffect(() => {
@@ -124,6 +133,7 @@ export default function AgreementGate({ children }: { children: ReactNode }) {
           name: name.trim(),
           title: title.trim(),
           version: AGREEMENT_VERSION,
+          special_terms: specialTerms,
         }),
       })
       const payload = (await res.json().catch(() => null)) as {
@@ -196,10 +206,28 @@ export default function AgreementGate({ children }: { children: ReactNode }) {
             )}
             {esign.error && <p className="text-[14px] text-ep-danger">{esign.error}</p>}
           </div>
-          <div className="border-t border-line bg-surface-2 px-5 py-4 sm:px-7">
-            <button type="button" onClick={() => setMode('click')} className="text-[15px] font-semibold text-accent underline-offset-4 hover:underline">
-              Or read and accept it here
-            </button>
+          <div className="grid gap-2 border-t border-line bg-surface-2 px-5 py-4 sm:px-7">
+            <div className="flex flex-wrap gap-x-6 gap-y-2">
+              <button type="button" onClick={() => setMode('click')} className="text-[15px] font-semibold text-accent underline-offset-4 hover:underline">
+                Or read and accept it here
+              </button>
+              <button
+                type="button"
+                disabled={wordBusy}
+                onClick={async () => {
+                  setWordBusy(true)
+                  setWordError(await downloadWordCopy(group!.id, group!.name))
+                  setWordBusy(false)
+                }}
+                className="text-[15px] font-semibold text-accent underline-offset-4 hover:underline disabled:opacity-60"
+              >
+                {wordBusy ? 'Preparing...' : 'Word copy for legal review'}
+              </button>
+            </div>
+            <p className="text-[14px] text-ink-muted">
+              Your legal or finance team can mark it up and email it to {GSI_SIGNER.email}.
+            </p>
+            {wordError && <p className="text-[14px] text-ep-danger">{wordError}</p>}
           </div>
         </Card>
       </div>
@@ -224,6 +252,15 @@ export default function AgreementGate({ children }: { children: ReactNode }) {
           aria-label="Agreement terms"
           className="max-h-[46vh] overflow-y-auto px-5 py-5 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent sm:px-7"
         >
+          {specialTerms && (
+            <div className="mb-5 rounded-[10px] border border-line bg-surface-2 px-4 py-3">
+              <h3 className="text-[14px] font-bold text-ink">{SPECIAL_TERMS_HEADING} for {group!.name}</h3>
+              <p className="mt-1 text-[15px] font-semibold leading-relaxed text-ink">{SPECIAL_TERMS_NOTE}</p>
+              {specialTermsParagraphs(specialTerms).map((p, i) => (
+                <p key={i} className="mt-2 text-[15px] leading-relaxed text-ink">{p}</p>
+              ))}
+            </div>
+          )}
           <p className="text-[15px] leading-relaxed text-ink-muted">
             {AGREEMENT_PREAMBLE}
           </p>

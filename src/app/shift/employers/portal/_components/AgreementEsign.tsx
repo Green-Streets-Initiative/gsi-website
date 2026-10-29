@@ -5,12 +5,13 @@ import { supabase } from '@/lib/supabase'
 import Button from '@/components/employer/Button'
 import SegmentedControl from '@/components/employer/SegmentedControl'
 import { formatDateUTC } from '../_lib/portal-utils'
+import { SPECIAL_TERMS_MAX } from '@/lib/employer-agreement'
 
 // E-signature of the Employer Platform Agreement (Keith 2026-10-28/29):
 // shared by the agreement step (AgreementGate, a workplace admin) and the
 // Agreement card in Settings (GSI staff). Server: api/employer/agreement/esign.
 
-export type OrderTerms = { company: string; plan: string; annualFee: number; billing?: 'invoice' | 'card'; startDate: string }
+export type OrderTerms = { company: string; plan: string; annualFee: number; billing?: 'invoice' | 'card'; startDate: string; specialTerms?: string }
 
 export type EnvelopeView = {
   id: string
@@ -87,6 +88,7 @@ export async function sendForSignature(body: {
   annual_fee?: number
   billing?: 'invoice' | 'card' | null
   start_date?: string
+  special_terms?: string
 }): Promise<{ envelope?: EnvelopeView; error?: string }> {
   const headers = await authHeaders()
   if (!headers) return { error: 'Your session expired. Refresh and try again.' }
@@ -107,6 +109,26 @@ export async function openSignedPdf(groupId: string): Promise<string | null> {
   const body = await res.json().catch(() => null)
   if (!res.ok || !body?.url) return body?.error ?? "Couldn't open the PDF"
   window.open(body.url, '_blank', 'noopener')
+  return null
+}
+
+/** Downloads the Word copy (for review and tracked changes); returns an error or null. */
+export async function downloadWordCopy(groupId: string, companyName: string): Promise<string | null> {
+  const headers = await authHeaders()
+  if (!headers) return 'Your session expired. Refresh and try again.'
+  const res = await fetch(`/api/employer/agreement/esign?group_id=${groupId}&docx=1`, { headers })
+  if (!res.ok) {
+    const body = await res.json().catch(() => null)
+    return body?.error ?? "Couldn't make the Word copy"
+  }
+  const url = URL.createObjectURL(await res.blob())
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `Shift agreement for review - ${companyName}.docx`
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  window.setTimeout(() => URL.revokeObjectURL(url), 10_000)
   return null
 }
 
@@ -190,8 +212,9 @@ export function EsignForm({
   const [title, setTitle] = useState('')
   const [email, setEmail] = useState('')
   const [fee, setFee] = useState(defaults ? String(defaults.annualFee) : '')
-  const [billing, setBilling] = useState<'' | 'invoice' | 'card'>('')
+  const [billing, setBilling] = useState<'' | 'invoice' | 'card'>(defaults?.billing ?? '')
   const [start, setStart] = useState(defaults?.startDate ?? '')
+  const [special, setSpecial] = useState(defaults?.specialTerms ?? '')
   const [sending, setSending] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -205,7 +228,7 @@ export function EsignForm({
     const res = await sendForSignature({
       group_id: groupId,
       signer: { name: name.trim(), title: title.trim(), email: signerEmail.trim() },
-      ...(staff ? { annual_fee: Number(fee), billing: billing || null, start_date: start } : {}),
+      ...(staff ? { annual_fee: Number(fee), billing: billing || null, start_date: start, special_terms: special.trim() } : {}),
     })
     setSending(false)
     if (res.error || !res.envelope) {
@@ -279,11 +302,31 @@ export function EsignForm({
             <label htmlFor={`${fid}-start`} className="mb-1.5 block text-[14px] font-semibold text-ink-muted">Start date</label>
             <input id={`${fid}-start`} type="date" className={inputClass} value={start} onChange={(e) => setStart(e.target.value)} />
           </div>
+          <div className="sm:col-span-3">
+            <label htmlFor={`${fid}-special`} className="mb-1.5 block text-[14px] font-semibold text-ink-muted">
+              Special terms (optional)
+            </label>
+            <textarea
+              id={`${fid}-special`}
+              rows={4}
+              maxLength={SPECIAL_TERMS_MAX}
+              className={`${inputClass} resize-y leading-relaxed`}
+              placeholder="What you agreed to change for this customer. One term per line."
+              value={special}
+              onChange={(e) => setSpecial(e.target.value)}
+            />
+            <p className="mt-1.5 text-[14px] text-ink-muted">Printed on this customer&apos;s order form, above the agreement.</p>
+          </div>
         </div>
       ) : (
         defaults && (
           <ul className="flex flex-wrap gap-2" aria-label="On the order form">
-            {[defaults.plan, `$${defaults.annualFee.toLocaleString('en-US')} a year`, `Starts ${formatDateUTC(`${defaults.startDate}T12:00:00Z`)}`].map((t) => (
+            {[
+              defaults.plan,
+              `$${defaults.annualFee.toLocaleString('en-US')} a year`,
+              `Starts ${formatDateUTC(`${defaults.startDate}T12:00:00Z`)}`,
+              ...(defaults.specialTerms ? ['Special terms included'] : []),
+            ].map((t) => (
               <li key={t} className="rounded-full border border-line bg-surface px-3 py-1.5 text-[14px] text-ink">{t}</li>
             ))}
           </ul>
