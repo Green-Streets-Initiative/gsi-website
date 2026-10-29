@@ -40,7 +40,7 @@ export default function BillingPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const toast = useToast()
-  const { group, rewardPool, tierAtLeast, refreshPool, isAdmin, isGsiAdmin, loading } = usePortal()
+  const { group, rewardPool, tierAtLeast, refreshPool, isAdmin, isGsiAdmin, onTeam, loading } = usePortal()
   const [topUpAmount, setTopUpAmount] = useState('250')
   const [openingTopUp, setOpeningTopUp] = useState(false)
   const [topUpError, setTopUpError] = useState<string | null>(null)
@@ -114,8 +114,17 @@ export default function BillingPage() {
     : null
   const available = (rewardPool?.balance_cents ?? 0) - (rewardPool?.held_cents ?? 0)
 
+  // Stripe checkout and the billing portal act on the caller's own team
+  // row, so staff who opened a workplace they aren't on can't pay or change
+  // its plan from here (the functions also refuse a different group_id).
+  const STAFF_NO_PAY = "Payments and plan changes are made by this workplace's own admin."
+
   async function handleTopUp() {
     if (!group) return
+    if (!onTeam) {
+      toast(STAFF_NO_PAY)
+      return
+    }
     const cents = Math.round(parseFloat(topUpAmount) * 100)
     if (isNaN(cents) || cents < 2500) {
       setTopUpError('The smallest top-up is $25.')
@@ -142,7 +151,7 @@ export default function BillingPage() {
           Authorization: `Bearer ${session.access_token}`,
           apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
         },
-        body: JSON.stringify({ amount_cents: cents, origin: window.location.origin }),
+        body: JSON.stringify({ amount_cents: cents, origin: window.location.origin, group_id: group.id }),
       })
       const data = await res.json().catch(() => ({}))
       if (data.url) {
@@ -162,6 +171,10 @@ export default function BillingPage() {
    *  says `unavailable` and we explain instead of opening a page that can't. */
   async function openBillingPortal(flow?: 'cancel' | 'update' | 'payment_method') {
     if (!group || openingPortal) return
+    if (!onTeam) {
+      toast(STAFF_NO_PAY)
+      return
+    }
     setOpeningPortal(true)
     setPortalUnavailable(null)
     try {
@@ -179,7 +192,7 @@ export default function BillingPage() {
           Authorization: `Bearer ${session.access_token}`,
           apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
         },
-        body: JSON.stringify({ return_url: window.location.href, ...(flow ? { flow } : {}) }),
+        body: JSON.stringify({ return_url: window.location.href, group_id: group.id, ...(flow ? { flow } : {}) }),
       })
       const data = await res.json().catch(() => ({}))
       if (data.url) {

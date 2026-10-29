@@ -1,12 +1,15 @@
 import { requirePortalCaller } from '@/lib/employer/portal-auth'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
-import { defaultOrderTerms, latestEnvelope, publicEnvelope, sendAgreement, isTestWorkplace } from '@/lib/employer/agreement-esign'
+import { currentOrderTerms, latestEnvelope, publicEnvelope, sendAgreement, isTestWorkplace, type GroupRow } from '@/lib/employer/agreement-esign'
+import { buildAgreementDocx } from '@/lib/employer-agreement-docx'
+import { SPECIAL_TERMS_MAX } from '@/lib/employer-agreement'
 
 export const runtime = 'nodejs'
 
 // E-signature of the Employer Platform Agreement from the portal: the
 // agreement step (a workplace admin) and the Agreement card in Settings
-// (GSI staff, who may also set the fee, billing and start date).
+// (GSI staff, who may also set the fee, billing, start date and special
+// terms). ?docx=1 is the Word copy for a customer's lawyer to mark up.
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -27,9 +30,23 @@ export async function GET(request: Request) {
   if (caller.role !== 'admin' && caller.role !== 'gsi') {
     return Response.json({ error: 'Only an admin can see this' }, { status: 403 })
   }
-  const group = await loadGroup(groupId!)
+  const group = (await loadGroup(groupId!)) as (GroupRow & { agreement_version: string | null; agreement_accepted_name: string | null }) | null
   if (!group) return Response.json({ error: 'Workplace not found' }, { status: 404 })
   const env = await latestEnvelope(group.id)
+  const terms = currentOrderTerms(group, env)
+
+  // ?docx=1: the agreement as a Word file, for review and tracked changes.
+  if (url.searchParams.get('docx') === '1') {
+    if (!terms) return Response.json({ error: "This workplace's plan has no order form yet" }, { status: 409 })
+    const file = await buildAgreementDocx(terms)
+    return new Response(new Uint8Array(file), {
+      headers: {
+        'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'Content-Disposition': `attachment; filename="Shift agreement for review - ${group.name.replace(/[^\w .,&()-]/g, '')}.docx"`,
+        'Cache-Control': 'no-store',
+      },
+    })
+  }
 
   // ?pdf=1: a short-lived link to the signed PDF.
   if (url.searchParams.get('pdf') === '1') {
@@ -43,7 +60,7 @@ export async function GET(request: Request) {
 
   return Response.json({
     envelope: env ? publicEnvelope(env) : null,
-    defaults: defaultOrderTerms(group),
+    defaults: terms,
     test_mode: isTestWorkplace(group.billing_type),
     accepted: group.agreement_accepted_at
       ? { version: group.agreement_version, at: group.agreement_accepted_at, name: group.agreement_accepted_name }
@@ -58,6 +75,7 @@ export async function POST(request: Request) {
     annual_fee?: number
     billing?: 'invoice' | 'card' | null
     start_date?: string
+    special_terms?: string | null
   } | null
   const caller = await requirePortalCaller(request, body?.group_id)
   if (!caller.ok) return caller.res
@@ -77,7 +95,7 @@ export async function POST(request: Request) {
 
   // Only GSI staff change the order terms; an admin's form shows the plan
   // and list price as they are.
-  let overrides: { annualFee?: number; billing?: 'invoice' | 'card'; startDate?: string } | undefined
+  let overrides: { annualFee?: number; billing?: 'invoice' | 'card'; startDate?: string; specialTerms?: string } | undefined
   if (caller.role === 'gsi') {
     overrides = {}
     if (body?.annual_fee != null) {
@@ -88,6 +106,14 @@ export async function POST(request: Request) {
       overrides.annualFee = fee
     }
     if (body?.billing === 'invoice' || body?.billing === 'card') overrides.billing = body.billing
+    else if (body && 'billing' in body) overrides.billing = undefined
+    if (body && 'special_terms' in body) {
+      const special = (body.special_terms ?? '').trim()
+      if (special.length > SPECIAL_TERMS_MAX) {
+        return Response.json({ error: `Keep special terms under ${SPECIAL_TERMS_MAX.toLocaleString('en-US')} characters` }, { status: 400 })
+      }
+      overrides.specialTerms = special || undefined
+    }
     if (body?.start_date) {
       if (!/^\d{4}-\d{2}-\d{2}$/.test(body.start_date)) {
         return Response.json({ error: 'Pick a start date' }, { status: 400 })

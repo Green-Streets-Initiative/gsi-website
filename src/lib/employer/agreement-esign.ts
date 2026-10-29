@@ -1,8 +1,8 @@
 import 'server-only'
 import { Resend } from 'resend'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
-import { AGREEMENT_VERSION, GSI_SIGNER, agreementPlainText } from '@/lib/employer-agreement'
-import { buildAgreementPdf, type OrderTerms, type Signer } from '@/lib/employer-agreement-pdf'
+import { AGREEMENT_VERSION, GSI_SIGNER, acceptedTextSnapshot } from '@/lib/employer-agreement'
+import { buildAgreementPdf, loadAgreementLogo, type OrderTerms, type Signer } from '@/lib/employer-agreement-pdf'
 import { PLANS } from '@/lib/employer/plans'
 import { createDocument, deleteDocument, getCompletedPdf, getDocument, type SignWellDocument } from '@/lib/signwell'
 
@@ -70,7 +70,7 @@ export function publicEnvelope(e: Envelope) {
   }
 }
 
-type GroupRow = {
+export type GroupRow = {
   id: string
   name: string
   tier: string
@@ -92,7 +92,28 @@ export function defaultOrderTerms(group: GroupRow): OrderTerms | null {
   return { company: group.name, plan: plan.name, annualFee: plan.annualPrice, startDate: start }
 }
 
-async function loadGroup(groupId: string): Promise<GroupRow | null> {
+/**
+ * The terms on offer now: the last order form's fee, billing, start date
+ * and special terms (GSI staff may have set them for this customer), on
+ * today's plan and company name; the defaults if none was ever sent. A
+ * resend, the click-through and the Word copy all use these, so a
+ * negotiated term never drops off.
+ */
+export function currentOrderTerms(group: GroupRow, latest: Envelope | null): OrderTerms | null {
+  const defaults = defaultOrderTerms(group)
+  if (!defaults) return null
+  if (!latest) return defaults
+  const t = latest.order_terms
+  return {
+    ...defaults,
+    annualFee: t.annualFee,
+    startDate: t.startDate,
+    ...(t.billing ? { billing: t.billing } : {}),
+    ...(t.specialTerms?.trim() ? { specialTerms: t.specialTerms.trim() } : {}),
+  }
+}
+
+export async function loadGroup(groupId: string): Promise<GroupRow | null> {
   const sb = createServerSupabaseClient()
   const { data } = await sb
     .from('groups')
@@ -148,17 +169,19 @@ export async function sendAgreement(opts: {
   groupId: string
   signer: Signer
   requestedBy: string
-  /** GSI staff only: a fee, billing or start date other than the defaults. */
-  overrides?: Partial<Pick<OrderTerms, 'annualFee' | 'billing' | 'startDate'>>
+  /** GSI staff only: the fee, billing, start date and special terms to send. */
+  overrides?: Partial<Pick<OrderTerms, 'annualFee' | 'billing' | 'startDate' | 'specialTerms'>>
 }): Promise<{ ok: true; envelope: Envelope } | { ok: false; error: string; status: number }> {
   const sb = createServerSupabaseClient()
   const group = await loadGroup(opts.groupId)
   if (!group) return { ok: false, error: 'Workplace not found', status: 404 }
-  const defaults = defaultOrderTerms(group)
-  if (!defaults) return { ok: false, error: "This workplace's plan has no order form. Ask Green Streets to set the plan first.", status: 409 }
-  const order: OrderTerms = { ...defaults, ...opts.overrides }
-
   const prior = await latestEnvelope(group.id)
+  const current = currentOrderTerms(group, prior)
+  if (!current) return { ok: false, error: "This workplace's plan has no order form. Ask Green Streets to set the plan first.", status: 409 }
+  const order: OrderTerms = { ...current, ...opts.overrides }
+  if (!order.billing) delete order.billing
+  if (!order.specialTerms?.trim()) delete order.specialTerms
+
   if (prior?.status === 'customer_signed') {
     return { ok: false, error: 'The customer has already signed; it is waiting for Green Streets to countersign.', status: 409 }
   }
@@ -174,7 +197,7 @@ export async function sendAgreement(opts: {
       group_id: group.id,
       test_mode: testMode,
       version: AGREEMENT_VERSION,
-      text_snapshot: agreementPlainText(),
+      text_snapshot: acceptedTextSnapshot(order.specialTerms),
       order_terms: order,
       signer_name: opts.signer.name,
       signer_title: opts.signer.title,
@@ -192,12 +215,12 @@ export async function sendAgreement(opts: {
   }
 
   try {
-    const pdf = buildAgreementPdf(order, opts.signer)
+    const pdf = buildAgreementPdf(order, opts.signer, await loadAgreementLogo())
     const doc = await createDocument({
       test_mode: testMode,
       name: `Shift order form: ${group.name}`,
       subject: `Please sign: Shift order form for ${group.name}`,
-      message: `This is ${group.name}'s order form for the Shift Employer Platform, with the full agreement attached. Please read it and sign on page 1. Questions: info@gogreenstreets.org.`,
+      message: `This is ${group.name}'s order form for the Shift Employer Platform, with the full agreement attached. Please read it and sign the order form at the front. Questions: info@gogreenstreets.org.`,
       pdfBase64: pdf.toString('base64'),
       fileName: `Shift order form - ${group.name}.pdf`,
       recipients: [
@@ -216,7 +239,7 @@ export async function sendAgreement(opts: {
       .single()
     await notifyGsi(
       `Agreement sent to ${group.name}${testMode ? ' (test)' : ''}`,
-      `${opts.signer.name} (${opts.signer.title}, ${opts.signer.email}) signs first, then you. ${order.plan}, $${order.annualFee.toLocaleString('en-US')}/year. Requested by ${opts.requestedBy}.`,
+      `${opts.signer.name} (${opts.signer.title}, ${opts.signer.email}) signs first, then you. ${order.plan}, $${order.annualFee.toLocaleString('en-US')}/year${order.specialTerms ? ', with special terms' : ''}. Requested by ${opts.requestedBy}.`,
       { kind: 'agreement_sent', group_id: group.id, envelope_id: row.id },
     )
     return { ok: true, envelope: sent as Envelope }

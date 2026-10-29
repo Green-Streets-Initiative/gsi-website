@@ -32,7 +32,9 @@
 // one-page order form (ORDER_FORM_* below, rendered by
 // employer-agreement-pdf.ts and sent through SignWell) or in the portal.
 // "The service and the Order" counts the signed order form as an Order;
-// "Electronic acceptance" covers both ways.
+// "Electronic acceptance" covers both ways. The order form is not part of
+// the agreement text, so its wording and the PDF layout change without a
+// new version.
 //
 // ATTORNEY REVIEW STILL PENDING — planned as fixed-fee review before
 // customer #2-3; "Nature of payment" UBIT question flagged for counsel.
@@ -162,6 +164,102 @@ export const ORDER_FORM_KEY_POINTS = [
 
 export const ORDER_FORM_CLOSING =
   "These points summarize the agreement; the agreement's own wording controls. By signing, Customer accepts this Order Form and the agreement. Where this Order Form sets the plan, fee, or dates, it controls."
+
+// GSI as a party: the order form's opening paragraph and notice block.
+// Notice emails match the agreement's "Notices and governing law" section.
+export const GSI_PARTY = {
+  legalName: 'Green Streets Initiative',
+  address: '519 Somerville Ave, Ste 2, Box 103, Somerville, MA 02143',
+  noticeEmails: ['info@gogreenstreets.org', 'keith@gogreenstreets.org'],
+}
+
+// Opening paragraph of the order form (Keith 2026-10-29: laid out like a
+// standard signed agreement, parties named and defined up front).
+export function orderFormIntro(company: string): string {
+  return `This Order Form is between ${GSI_PARTY.legalName}, a Massachusetts 501(c)(3) nonprofit located at ${GSI_PARTY.address} ("GSI"), and ${company} ("Customer"). It takes effect on the date of the later signature below (the "Effective Date") and is governed by the ${AGREEMENT_TITLE}, version ${AGREEMENT_VERSION}, attached to this Order Form and published at gogreenstreets.org/shift/employers/agreement (the "Agreement").`
+}
+
+export const ORDER_FORM_WITNESS =
+  'IN WITNESS WHEREOF, the parties have signed this Order Form as of the Effective Date.'
+
+// Special terms (Keith 2026-10-29): how redlines are handled. The agreement
+// stays the same for everyone; whatever a customer negotiates is typed by
+// GSI staff onto that customer's order form, under this line. The General
+// section already has the Order control where it conflicts.
+export const SPECIAL_TERMS_HEADING = 'Special terms'
+export const SPECIAL_TERMS_NOTE =
+  'These special terms apply to Customer only. Where they conflict with the Agreement, they govern.'
+export const SPECIAL_TERMS_MAX = 6000
+
+/**
+ * What the archive keeps as accepted: the agreement text, plus this
+ * customer's special terms when it has any (the PDF fingerprint covers the
+ * standard text alone).
+ */
+export function acceptedTextSnapshot(specialTerms?: string | null): string {
+  const special = specialTermsParagraphs(specialTerms)
+  if (!special.length) return agreementPlainText()
+  return [agreementPlainText(), 'SPECIAL TERMS (ORDER FORM)', SPECIAL_TERMS_NOTE, ...special, ''].join('\n')
+}
+
+/** Special terms split into paragraphs, one per non-empty line. */
+export function specialTermsParagraphs(text: string | null | undefined): string[] {
+  return (text ?? '')
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter(Boolean)
+}
+
+export type OrderFormTerms = {
+  plan: string
+  annualFee: number
+  billing?: 'invoice' | 'card'
+  /** YYYY-MM-DD */
+  startDate: string
+}
+
+export function longDate(iso: string): string {
+  const d = new Date(`${iso}T12:00:00Z`)
+  return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
+}
+
+/** The order form's details table, shared by the PDF and the Word copy. */
+export function orderFormRows(order: OrderFormTerms): Array<[string, string]> {
+  return [
+    ['Plan', order.plan],
+    ['Annual fee', `$${order.annualFee.toLocaleString('en-US')}`],
+    ...(order.billing ? [['Billing', order.billing === 'invoice' ? 'Invoice, due in 30 days' : 'Card'] as [string, string]] : []),
+    ['Access start date', longDate(order.startDate)],
+    [
+      'Term',
+      '12 months from the access start date, renewing each year unless either side declines before the renewal date. GSI sends a reminder with the renewal fee at least 30 days before.',
+    ],
+  ]
+}
+
+/** Curly quotes and apostrophes; the words stay exactly as written. */
+export function typeset(s: string): string {
+  let out = ''
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i]
+    const prev = i === 0 ? ' ' : s[i - 1]
+    const opens = /[\s([—-]/.test(prev)
+    if (c === '"') out += opens ? '“' : '”'
+    else if (c === "'") out += opens ? '‘' : '’'
+    else out += c
+  }
+  return out
+}
+
+/** Character ranges of defined terms, as in ("GSI") or (the "Order"), in typeset text. */
+export function definedTermRanges(typesetText: string): Array<[number, number]> {
+  const out: Array<[number, number]> = []
+  for (const m of typesetText.matchAll(/\((?:the |each )?(“[^”]+”)\)/g)) {
+    const start = m.index! + m[0].indexOf(m[1])
+    out.push([start, start + m[1].length])
+  }
+  return out
+}
 
 // GSI's countersigner on every order form.
 export const GSI_SIGNER = {
