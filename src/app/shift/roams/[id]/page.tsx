@@ -371,7 +371,7 @@ export default async function RoamDetailPage({ params }: { params: Promise<{ id:
               )}
 
               {roam.elevation && (
-                <RoamHills elevation={roam.elevation} isLoop={isLoop} />
+                <RoamHills elevation={roam.elevation} isLoop={isLoop} from={startLabel} to={endLabel} />
               )}
 
               {roam.badge_name && (
