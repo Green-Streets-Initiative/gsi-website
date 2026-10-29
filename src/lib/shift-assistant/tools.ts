@@ -460,14 +460,14 @@ export const TOOLS: Anthropic.Tool[] = [
   },
   {
     name: 'join_shift_together',
-    description: "Sign the person up for Shift Together for a regular trip between two of their saved places (Home to Work, School...): kind newcomer (go with someone who knows the way), guide (show someone the way), or carpool (share the drive). Shift then suggests someone nearby; both say yes before either sees the other's email. Saving again changes their existing sign-up of that kind. Leave days and times empty unless they told you: Shift reads them from their own trips between the two places, and asks you only if it can't. Ask only what their trips can't say: the way they want to go (newcomer), or for a carpool whether they'd drive, ride or either. The card shows the agreement they accept (18 or older, meeting in public by their own choice, their own safety), and they approve it there.",
+    description: "Sign the person up for Shift Together: kind newcomer (go with someone the first time on a trip between two of their saved places, Home to Work, School...), guide (go with a neighbor the first time they try a trip: a guide needs only their Home, and is matched with newcomers who live within 2 miles and whose trip is no longer than max_miles, whether or not it's the guide's own trip), or carpool (share the drive between two saved places). Shift then suggests someone nearby; both say yes before either sees the other's email. Saving again changes their existing sign-up of that kind. Leave days and times empty unless they told you: Shift reads them from their own trips between the two places, and asks you only if it can't. Ask only what their trips can't say: the way they want to go (newcomer), or for a carpool whether they'd drive, ride or either. The card shows the agreement they accept (18 or older, meeting in public by their own choice, their own safety), and they approve it there.",
     input_schema: {
       type: 'object',
       properties: {
         kind: { type: 'string', enum: ['newcomer', 'guide', 'carpool'] },
         modes: { type: ['array', 'null'], items: { type: 'string', enum: ['walk', 'bike', 'transit', 'micro'] }, description: 'newcomer and guide: the ways (micro = scooter). Empty for a carpool.' },
         from: nullable('string', 'The name of a saved place where the trip starts, as get_my_places has it. Empty means Home.'),
-        to: nullable('string', 'The name of a saved place where it ends. Empty means Work, or School when they have no Work.'),
+        to: nullable('string', 'The name of a saved place where it ends. Empty means Work, or School when they have no Work. A guide needs none.'),
         days: { type: ['array', 'null'], items: { type: 'string', enum: ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] }, description: 'The days they make the trip. Empty means any.' },
         times: { type: ['array', 'null'], items: { type: 'string', enum: ['morning', 'midday', 'evening'] }, description: 'newcomer and guide: when. Empty means any.' },
         carpool_role: nullable('string', 'carpool only: driver, rider or either.'),
@@ -475,7 +475,8 @@ export const TOOLS: Anthropic.Tool[] = [
         leave_at: nullable('string', 'carpool only: HH:MM, 24-hour, when they head home.'),
         note: nullable('string', "A short note their match sees, in their words (\"Back on a bike after years, I'd like a calm route\")."),
         contact_email: nullable('string', "Only when the result told you their sign-in email is Apple's Hide My Email: an email they gave you that their match can write to."),
-        practice_slots: { type: ['array', 'null'], items: { type: 'string', enum: PRACTICE_SLOTS }, description: "guide by bike only, and only when they said yes to it: the times they'd also go on an easy practice ride near their home with someone out of practice." },
+        other_times: { type: ['array', 'null'], items: { type: 'string', enum: PRACTICE_SLOTS }, description: "newcomer: quieter times they'd also do the first trip (a calm weekend or evening run-through). guide: other times they're free, which also offers easy practice rides near home when they bike. Only what they said." },
+        max_miles: { type: ['number', 'null'], enum: [2, 3, 5, 8, null], description: 'guide only: the longest trip they would go on with someone. Empty means 5.' },
       },
       required: ['kind'],
     },
@@ -1753,13 +1754,14 @@ async function shiftTogetherCard(ctx: ToolCtx, input: Record<string, unknown>):
   const from = find(input.from, ['Home'])
   const to = find(input.to, ['Work', 'School'])
   if (!from) return { result: fail(input.from ? `They have no saved place called "${input.from}".` : 'They have no Home saved. Offer open_screen commute_setup to set it, then try again.') }
-  if (!to) return { result: fail(input.to ? `They have no saved place called "${input.to}".` : 'They have no Work or School saved. Ask where the trip goes, save it with save_place, then try again.') }
-  if (from.id === to.id) return { result: fail('The trip needs two different places.') }
+  // A guide is matched on where they live (Shift 01504); where they go only ranks them.
+  if (!to && (kind !== 'guide' || input.to)) return { result: fail(input.to ? `They have no saved place called "${input.to}".` : 'They have no Work or School saved. Ask where the trip goes, save it with save_place, then try again.') }
+  if (to && from.id === to.id) return { result: fail('The trip needs two different places.') }
 
   // What they didn't say comes from their own trips between the two places
   // (the form's prefill, 01350; Keith 2026-10-29: guess, don't ask).
   let fromTrips = false
-  if (!days.length || (kind === 'carpool' ? !arrive : !times.length) || (kind === 'guide' && !modes.length)) {
+  if (to && (!days.length || (kind === 'carpool' ? !arrive : !times.length) || (kind === 'guide' && !modes.length))) {
     const { data: p } = await ctx.user.rpc('get_my_partner_prefill', { p_origin_location_id: from.id, p_destination_location_id: to.id })
     const pre = (p ?? null) as { trips?: number; days?: string[]; time_of_day?: string[]; arrive_by?: string | null; leave_at?: string | null; modes?: string[] } | null
     if (pre && (pre.trips ?? 0) >= 3) {
@@ -1794,7 +1796,7 @@ async function shiftTogetherCard(ctx: ToolCtx, input: Record<string, unknown>):
   const existing = ((reqsQ.data ?? []) as { kind: string; status: string }[]).find((r) => r.kind === kind && r.status !== 'closed')
 
   const what = kind === 'newcomer'
-    ? `Go with someone who already makes this trip, ${modes.map((m) => TOGETHER_WAYS[m]).join(' or ')}`
+    ? `Go with someone nearby the first time, ${modes.map((m) => TOGETHER_WAYS[m]).join(' or ')}`
     : kind === 'guide'
       ? `Show someone the way, ${modes.map((m) => TOGETHER_WAYS[m]).join(' or ')}`
       : `Share the drive: ${role === 'driver' ? 'you drive' : role === 'rider' ? 'you ride along' : 'drive or ride'}`
@@ -1803,25 +1805,30 @@ async function shiftTogetherCard(ctx: ToolCtx, input: Record<string, unknown>):
   const when = [days.length ? (weekdays ? 'Weekdays' : days.map((d) => DAY_WORDS[d]).join(', ')) : 'Any day',
     kind === 'carpool' ? `arrive by ${ampm(arrive!)}${leave ? `, leave at ${ampm(leave)}` : ''}` : times.length ? times.join(', ') : 'any time'].join(', ')
   const note = typeof input.note === 'string' && input.note.trim() ? input.note.replace(/\s+/g, ' ').trim().slice(0, 300) : null
-  // A bike guide can also offer practice rides near home (01503), on builds that show them.
-  const practice = kind === 'guide' && modes.includes('bike') && canOpen(ctx, 'partner_practice') ? list(input.practice_slots, PRACTICE_SLOTS) : []
+  // Other times (01504): a newcomer's quieter first trip, a guide's other free
+  // times (practice rides too, when they bike); and how far a guide would go.
+  // Not given: left as they were.
+  const other = kind === 'carpool' || !Array.isArray(input.other_times) ? null : list(input.other_times, PRACTICE_SLOTS)
+  const maxMiles = kind === 'guide' && [2, 3, 5, 8].includes(Number(input.max_miles)) ? Number(input.max_miles) : null
   return {
     card: {
       title: existing ? 'Update your Shift Together sign-up' : 'Sign up for Shift Together',
       lines: [
         what,
-        `${from.label} to ${to.label}`,
+        to ? `${from.label} to ${to.label}` : `From ${from.label}`,
+        ...(kind === 'guide' ? [`Trips up to ${maxMiles ?? 5} miles`] : []),
         fromTrips ? `${when} (from your trips)` : when,
         ...(note ? [`Your note: "${note}"`] : []),
-        ...(practice.length ? [`Also an easy practice ride near your home: ${practice.map((x) => SLOT_WORDS[x]).join(' or ')}`] : []),
+        ...(other?.length ? [`${kind === 'guide' ? 'Also free' : 'Or a first trip on'} ${other.map((x) => SLOT_WORDS[x]).join(' or ')}`] : []),
         ...(given ? [`Your match can write to ${given} once you both say yes`] : []),
         "Shift suggests someone nearby. You both say yes before either of you sees the other's email",
         ...(accepted ? [] : [`By signing up you agree: ${TOGETHER_TERMS}`]),
       ],
       cta: existing ? 'Save' : 'Sign me up', tone: 'primary',
     },
-    input: { kind, modes, from_id: from.id, to_id: to.id, days, times, carpool_role: role, arrive_by: arrive, leave_at: leave, note,
-      contact_email: given || null, accept_version: accepted ? null : version, practice_slots: practice.length ? practice : null },
+    input: { kind, modes, from_id: from.id, to_id: to?.id ?? null, days, times, carpool_role: role, arrive_by: arrive, leave_at: leave, note,
+      contact_email: given || null, accept_version: accepted ? null : version,
+      other_times: other, max_miles: maxMiles },
   }
 }
 
@@ -1848,9 +1855,12 @@ async function runApprovedShiftTogether(ctx: ToolCtx, input: Record<string, unkn
     if (r.reason === 'under_18') return fail('Shift Together is for people 18 and older, and the birth date on their account says they are under 18. Tell them kindly; if the date is wrong, they can email info@gogreenstreets.org.')
     return fail(sorry)
   }
-  // The practice offer rides on the guide sign-up just saved; a miss leaves the sign-up standing.
-  if (Array.isArray(input.practice_slots) && input.practice_slots.length) {
-    const { data: g } = await ctx.user.rpc('set_guide_practice', { p_slots: input.practice_slots })
+  // Other times and a guide's distance ride on the sign-up just saved (Shift
+  // 01504); a miss leaves the sign-up standing.
+  if (input.kind !== 'carpool' && (Array.isArray(input.other_times) || input.max_miles != null)) {
+    const { data: g } = await ctx.user.rpc('set_partner_extras', {
+      p_kind: input.kind, p_slots: Array.isArray(input.other_times) ? input.other_times : null, p_max_miles: input.max_miles ?? null,
+    })
     r.matches = (r.matches ?? 0) + ((g as { matches?: number } | null)?.matches ?? 0)
   }
   const found = (r.matches ?? 0) > 0

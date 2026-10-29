@@ -112,7 +112,7 @@ function SubBar() {
   const path = usePathname()
   if (phase !== 'ready' && phase !== 'off') return null
   const nav = [
-    { href: '/together', label: 'Your sign-up', active: path === '/together' },
+    { href: '/together', label: 'Your sign-up', active: path === '/together' || path.startsWith('/together/practice') },
     { href: '/together/matches', label: 'Your matches', active: path.startsWith('/together/matches') },
   ]
   return (
@@ -155,7 +155,7 @@ function SubBar() {
 
 const STEPS: { title: string; hint: string; Icon: LucideIcon }[] = [
   { title: 'Tell us your trip', hint: 'What you\u2019d like to do, and where and when you go.', Icon: MapPinned },
-  { title: 'We find a match', hint: 'Someone who lives near you, works near your work and goes at the same times.', Icon: UsersRound },
+  { title: 'We find a match', hint: 'Someone who lives near you and can go when you can.', Icon: UsersRound },
   { title: 'You both say yes', hint: 'Then you see each other\u2019s email and plan the first trip.', Icon: Handshake },
 ]
 

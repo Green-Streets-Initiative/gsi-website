@@ -50,8 +50,8 @@ export default function NextSteps({ kind, ways, source }: { kind: PartnerKind; w
             sub={copied
               ? 'Link copied. Send it to them.'
               : kind === 'guide'
-                ? 'Send them this page. If they live near you and work near your work, Shift can match you so you can show them how.'
-                : 'Send them this page. If they live near you and work near your work, Shift can match you so they can show you how.'}
+                ? 'Send them this page. If they live near you, Shift can match you so you can show them how.'
+                : 'Send them this page. If they live near you, Shift can match you so they can show you how.'}
             onClick={() => void invite()}
           />
         ) : null}
