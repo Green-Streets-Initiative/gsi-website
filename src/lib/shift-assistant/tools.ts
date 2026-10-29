@@ -1414,20 +1414,37 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
           .filter((x) => !region || (x.sortBy != null && x.sortBy <= 30))
           .sort((a, b) => (words.length ? 0 : (a.sortBy ?? 1e9) - (b.sortBy ?? 1e9)))
           .slice(0, 5)
+        // A Roam's stretch can differ from its whole trail (the Mass Central
+        // is mostly stone dust with no train; Sudbury to Hudson is paved with
+        // one), so each Roam brings its own facts (2026-10-28).
+        const onFound = ((links ?? []) as { trail_id: string; roam_id: string; relation: string }[])
+          .filter((l) => roamName.has(l.roam_id) && found.some(({ t }) => t.id === l.trail_id))
+        const roamIds = [...new Set(onFound.map((l) => l.roam_id))]
+        const [{ data: facts }, roamFeel] = await Promise.all([
+          roamIds.length ? ctx.admin.from('roams').select('id, distance_miles, surface, access_note').in('id', roamIds) : Promise.resolve({ data: [] }),
+          roamHills(ctx, roamIds),
+        ])
+        const roamFacts = new Map(((facts ?? []) as { id: string; distance_miles: number | null; surface: string | null; access_note: string | null }[]).map((f) => [f.id, f]))
         const trails = found.map(({ t, pts, d }) => ({
           id: t.id, name: t.name, towns: (t.towns ?? []).slice(0, 12), miles: t.full_miles,
           surface: clip(t.surface, 340), about: clip(t.summary, 260),
           getting_there: clip(t.transit_note, 240), parking: clip(t.parking_note, 200),
           // "It meets the Mass Central Rail Trail here at the Diamond Crossing."
           meets: pts.filter((a) => /\b(meets|connects|links|joins)\b/i.test(a.notes ?? '')).slice(0, 3).map((a) => ({ at: a.name, what: clip(a.notes, 160) })),
-          roams: ((links ?? []) as { trail_id: string; roam_id: string; relation: string }[])
-            .filter((l) => l.trail_id === t.id && roamName.has(l.roam_id)).map((l) => ({ id: l.roam_id, name: roamName.get(l.roam_id), this_roam: l.relation === 'uses' ? 'rides it' : 'connects to it' })),
+          roams: onFound.filter((l) => l.trail_id === t.id).map((l) => {
+            const f = roamFacts.get(l.roam_id)
+            return {
+              id: l.roam_id, name: roamName.get(l.roam_id), this_roam: l.relation === 'uses' ? 'rides it' : 'connects to it',
+              miles: f?.distance_miles != null ? round1(f.distance_miles) : null, surface: clip(f?.surface, 120),
+              hills: roamFeel.get(l.roam_id)?.feel ?? null, getting_in: clip(f?.access_note, 200),
+            }
+          }),
           nearest_access_miles_away: d != null ? round1(d) : null,
         }))
         return ok({
           trails,
           ...(trails.length
-            ? { next: 'A trail with a Roam: get_roam for its hills and stops, and its button. Hills on a trail with no Roam are not in these records; say a rail trail is usually a gentle grade, not that it is flat.' }
+            ? { next: "A Roam's surface, hills and getting_in are for its own stretch and can differ from the whole trail's: describe a Roam by its own. For a Roam that fits, call get_roam (its hills, stops and button). Hills on a trail with no Roam are not in these records; say a rail trail is usually a gentle grade, not that it is flat." }
             : { note: 'No trail by that name in our records. Try find_roams, or list the nearest trails with no query.' }),
         })
       }
