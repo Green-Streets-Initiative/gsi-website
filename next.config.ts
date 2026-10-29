@@ -4,7 +4,7 @@ const nextConfig: NextConfig = {
   // Keep the Playwright + Chromium binary out of Next.js's bundler so its
   // /var/task/node_modules/@sparticuz/chromium/bin path resolves correctly
   // on Vercel's serverless runtime. Used by /api/render-social-image.
-  serverExternalPackages: ['@sparticuz/chromium', 'playwright-core'],
+  serverExternalPackages: ['@sparticuz/chromium', 'playwright-core', 'jspdf'],
   // Vercel's output-file tracer doesn't pick up the .br binaries because
   // nothing imports them directly — they're read at runtime. Force them
   // into the deployed lambda for the render route.
