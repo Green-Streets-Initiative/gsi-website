@@ -2,14 +2,14 @@
 
 import Link from 'next/link'
 import { useCallback, useEffect, useState } from 'react'
-import { Briefcase, Car, Clock, GraduationCap, House, Languages, Mail, Medal, Route, Sprout } from 'lucide-react'
+import { Briefcase, Car, Clock, GraduationCap, House, Languages, Mail, Medal, MessageSquare, Route, Sprout } from 'lucide-react'
 import NextSteps from '@/components/together/NextSteps'
 import { Avatar, Chip, ChipRow, FitMeter, WAY_ICON } from '@/components/together/bits'
 import { Journey } from '@/components/together/TogetherShell'
-import { Button, Card, Notice, Spinner, Textarea, cx } from '@/components/organizers/ui'
+import { Button, Card, Input, Notice, Spinner, Textarea, cx } from '@/components/organizers/ui'
 import {
   LANGUAGES, TIMES, WAYS, answerMatch, answerWent, arriveGap, clock, endMatch, experienceFit, isWay, myMatches, myRequests,
-  overallFit, rateMatch, reportMatch, routeFit, timingDaysKnown, timingFit, track,
+  overallFit, phoneLabel, rateMatch, reportMatch, routeFit, setMatchPhone, timingDaysKnown, timingFit, track,
   type Match, type PartnerRequest, type Rating, type ReportReason,
 } from '@/lib/together'
 
@@ -146,6 +146,53 @@ export default function MatchesPage() {
           ))}
         </ul>
       )}
+    </div>
+  )
+}
+
+/** Your number for this one match, so they can text you on the day (01502). Optional. */
+function MyPhone({ m, name }: { m: Match; name: string }) {
+  const [mine, setMine] = useState<string | null>(m.my_phone ?? null)
+  const [open, setOpen] = useState(false)
+  const [draft, setDraft] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [problem, setProblem] = useState<string | null>(null)
+
+  async function save(value: string) {
+    setSaving(true)
+    setProblem(null)
+    const r = await setMatchPhone(m.id, value)
+    setSaving(false)
+    if (!r.ok) return setProblem(r.reason === 'bad_phone' ? 'That doesn’t look like a phone number. Try it with the area code.' : 'That didn’t save. Try again.')
+    setMine(r.phone ?? null)
+    setOpen(false)
+    track(r.phone ? 'together_phone_added' : 'together_phone_removed', { kind: m.kind })
+  }
+
+  if (!open) {
+    return mine ? (
+      <p className="text-[15px] text-(--ev-ink-80)">
+        {name} can text you at {phoneLabel(mine)}.{' '}
+        <button type="button" className="font-semibold underline" onClick={() => { setDraft(phoneLabel(mine)); setOpen(true) }}>Change</button>
+      </p>
+    ) : (
+      <button type="button" className="w-fit text-left text-[15px] font-semibold underline" onClick={() => setOpen(true)}>
+        Add your number so {name} can text you on the day
+      </button>
+    )
+  }
+  return (
+    <div className="grid grid-cols-1 gap-2">
+      <Input type="tel" autoComplete="tel" inputMode="tel" maxLength={20} autoFocus value={draft} onChange={(e) => setDraft(e.target.value)}
+        placeholder="(617) 555-0123" aria-label={`Your number for ${name}`} />
+      <p className="text-[15px] text-(--ev-ink-80)">Optional. Only {name} sees it, and only until this match ends.</p>
+      {problem ? <p role="alert" className="text-[15px] font-semibold text-(--ev-danger)">{problem}</p> : null}
+      <div className="flex flex-wrap items-center gap-3">
+        <Button variant="primary" busy={saving} disabled={!draft.trim()} onClick={() => save(draft)}>Save my number</Button>
+        {mine
+          ? <Button disabled={saving} onClick={() => save('')}>Remove</Button>
+          : <Button disabled={saving} onClick={() => setOpen(false)}>Cancel</Button>}
+      </div>
     </div>
   )
 }
@@ -340,6 +387,17 @@ function MatchCard({ m, busy, myArrive, onAnswer, onWent, onRate, onEnd, onRepor
             ) : null}
           </div>
           <p className="select-all break-all text-[15px] text-(--ev-ink-85)">{m.other.email}</p>
+          {/* Trip-day texts: only if they added a number (01502). */}
+          {m.other.phone ? (
+            <a
+              href={`sms:${m.other.phone}`}
+              onClick={() => track('together_text_tapped', { kind: m.kind })}
+              className="inline-flex min-h-[44px] w-fit items-center gap-2 rounded-[10px] border border-(--ev-line-strong) bg-white px-4 text-[15px] font-semibold"
+            >
+              <MessageSquare className="h-4 w-4" aria-hidden /> Text {name} at {phoneLabel(m.other.phone)}
+            </a>
+          ) : null}
+          <MyPhone m={m} name={name} />
           {m.status === 'connected' ? (
             <p className="text-[15px] text-(--ev-ink-80)">
               {carpool

@@ -456,7 +456,7 @@ export const TOOLS: Anthropic.Tool[] = [
   },
   {
     name: 'join_shift_together',
-    description: "Sign the person up for Shift Together for a regular trip between two of their saved places (Home to Work, School...): kind newcomer (go with someone who knows the way), guide (show someone the way), or carpool (share the drive). Shift then suggests someone nearby; both say yes before either sees the other's email. Saving again changes their existing sign-up of that kind. Ask first for anything you don't know (the way, which days, morning or evening; for a carpool, whether they drive, ride or either, and when they need to arrive). The card shows the agreement they accept (18 or older, meeting in public by their own choice, their own safety), and they approve it there.",
+    description: "Sign the person up for Shift Together for a regular trip between two of their saved places (Home to Work, School...): kind newcomer (go with someone who knows the way), guide (show someone the way), or carpool (share the drive). Shift then suggests someone nearby; both say yes before either sees the other's email. Saving again changes their existing sign-up of that kind. Leave days and times empty unless they told you: Shift reads them from their own trips between the two places, and asks you only if it can't. Ask only what their trips can't say: the way they want to go (newcomer), or for a carpool whether they'd drive, ride or either. The card shows the agreement they accept (18 or older, meeting in public by their own choice, their own safety), and they approve it there.",
     input_schema: {
       type: 'object',
       properties: {
@@ -1708,15 +1708,14 @@ async function shiftTogetherCard(ctx: ToolCtx, input: Record<string, unknown>):
   if (!kind) return { result: fail('kind is newcomer, guide or carpool.') }
   if (!canOpen(ctx, 'partner_request')) return { result: fail("Their version of the app doesn't have Shift Together yet. Tell them an app update brings it.") }
   const list = (v: unknown, ok: string[]) => (Array.isArray(v) ? [...new Set(v.map(String).filter((x) => ok.includes(x)))] : [])
-  const modes = kind === 'carpool' ? [] : list(input.modes, ['walk', 'bike', 'transit', 'micro'])
-  if (kind !== 'carpool' && !modes.length) return { result: fail('Ask which way: walking, biking, the bus or train, or a scooter.') }
-  const days = list(input.days, Object.keys(DAY_WORDS))
-  const times = kind === 'carpool' ? [] : list(input.times, ['morning', 'midday', 'evening'])
+  let modes = kind === 'carpool' ? [] : list(input.modes, ['walk', 'bike', 'transit', 'micro'])
+  let days = list(input.days, Object.keys(DAY_WORDS))
+  let times = kind === 'carpool' ? [] : list(input.times, ['morning', 'midday', 'evening'])
   const role = kind === 'carpool' && ['driver', 'rider', 'either'].includes(String(input.carpool_role)) ? String(input.carpool_role) : null
   const hhmm = (v: unknown) => (typeof v === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(v) ? v : null)
-  const arrive = kind === 'carpool' ? hhmm(input.arrive_by) : null
-  const leave = kind === 'carpool' ? hhmm(input.leave_at) : null
-  if (kind === 'carpool' && (!role || !arrive)) return { result: fail('A carpool needs whether they drive, ride or either, and when they need to arrive.') }
+  let arrive = kind === 'carpool' ? hhmm(input.arrive_by) : null
+  let leave = kind === 'carpool' ? hhmm(input.leave_at) : null
+  if (kind === 'carpool' && !role) return { result: fail('Ask whether they would drive, ride along, or either.') }
 
   const [placesQ, contactQ, reqsQ, ackQ, versionQ] = await Promise.all([
     ctx.user.from('saved_locations').select('id, label, address_text, lat').eq('user_id', ctx.userId).limit(30),
@@ -1737,6 +1736,31 @@ async function shiftTogetherCard(ctx: ToolCtx, input: Record<string, unknown>):
   if (!to) return { result: fail(input.to ? `They have no saved place called "${input.to}".` : 'They have no Work or School saved. Ask where the trip goes, save it with save_place, then try again.') }
   if (from.id === to.id) return { result: fail('The trip needs two different places.') }
 
+  // What they didn't say comes from their own trips between the two places
+  // (the form's prefill, 01350; Keith 2026-10-29: guess, don't ask).
+  let fromTrips = false
+  if (!days.length || (kind === 'carpool' ? !arrive : !times.length) || (kind === 'guide' && !modes.length)) {
+    const { data: p } = await ctx.user.rpc('get_my_partner_prefill', { p_origin_location_id: from.id, p_destination_location_id: to.id })
+    const pre = (p ?? null) as { trips?: number; days?: string[]; time_of_day?: string[]; arrive_by?: string | null; leave_at?: string | null; modes?: string[] } | null
+    if (pre && (pre.trips ?? 0) >= 3) {
+      if (!days.length && pre.days?.length) { days = pre.days; fromTrips = true }
+      if (kind === 'carpool') {
+        // Arrive by the half hour at or after when they usually get there.
+        const half = (v: string | null | undefined, up: boolean) => {
+          if (!v) return null
+          const [h, m] = v.split(':').map(Number)
+          const mins = up ? Math.ceil((h * 60 + m) / 30) * 30 : Math.round((h * 60 + m) / 30) * 30
+          return mins < 24 * 60 ? `${String(Math.floor(mins / 60)).padStart(2, '0')}:${String(mins % 60).padStart(2, '0')}` : null
+        }
+        if (!arrive && half(pre.arrive_by, true)) { arrive = half(pre.arrive_by, true); fromTrips = true }
+        if (!leave && half(pre.leave_at, false)) { leave = half(pre.leave_at, false); fromTrips = true }
+      } else if (!times.length && pre.time_of_day?.length) { times = pre.time_of_day; fromTrips = true }
+      if (kind === 'guide' && !modes.length && pre.modes?.length) { modes = pre.modes; fromTrips = true }
+    }
+  }
+  if (kind !== 'carpool' && !modes.length) return { result: fail('Ask which way: walking, biking, the bus or train, or a scooter.') }
+  if (kind === 'carpool' && !arrive) return { result: fail("Their trips don't show when they get there. Ask what time they need to arrive.") }
+
   const contact = (contactQ.data ?? null) as { hidden?: boolean; contact_email?: string | null } | null
   const given = typeof input.contact_email === 'string' ? input.contact_email.trim().toLowerCase() : ''
   if (given && (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(given) || /@privaterelay\.appleid\.com$/.test(given))) {
@@ -1754,8 +1778,10 @@ async function shiftTogetherCard(ctx: ToolCtx, input: Record<string, unknown>):
     : kind === 'guide'
       ? `Show someone the way, ${modes.map((m) => TOGETHER_WAYS[m]).join(' or ')}`
       : `Share the drive: ${role === 'driver' ? 'you drive' : role === 'rider' ? 'you ride along' : 'drive or ride'}`
-  const when = [days.length ? days.map((d) => DAY_WORDS[d]).join(', ') : 'Any day',
-    kind === 'carpool' ? `arrive by ${arrive}${leave ? `, leave at ${leave}` : ''}` : times.length ? times.join(', ') : 'any time'].join(', ')
+  const ampm = (v: string) => { const [h, m] = v.split(':').map(Number); return `${h % 12 || 12}:${String(m).padStart(2, '0')} ${h < 12 ? 'AM' : 'PM'}` }
+  const weekdays = days.length === 5 && ['mon', 'tue', 'wed', 'thu', 'fri'].every((d) => days.includes(d))
+  const when = [days.length ? (weekdays ? 'Weekdays' : days.map((d) => DAY_WORDS[d]).join(', ')) : 'Any day',
+    kind === 'carpool' ? `arrive by ${ampm(arrive!)}${leave ? `, leave at ${ampm(leave)}` : ''}` : times.length ? times.join(', ') : 'any time'].join(', ')
   const note = typeof input.note === 'string' && input.note.trim() ? input.note.replace(/\s+/g, ' ').trim().slice(0, 300) : null
   return {
     card: {
@@ -1763,7 +1789,7 @@ async function shiftTogetherCard(ctx: ToolCtx, input: Record<string, unknown>):
       lines: [
         what,
         `${from.label} to ${to.label}`,
-        when,
+        fromTrips ? `${when} (from your trips)` : when,
         ...(note ? [`Your note: "${note}"`] : []),
         ...(given ? [`Your match can write to ${given} once you both say yes`] : []),
         "Shift suggests someone nearby. You both say yes before either of you sees the other's email",

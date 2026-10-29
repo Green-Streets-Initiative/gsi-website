@@ -196,6 +196,8 @@ export type Match = {
   my_answer: 'yes' | 'no' | null
   their_answer: 'yes' | 'waiting' | null
   my_rating: Rating | null
+  /** The number this person added for trip-day texts, while the match is live (01502). */
+  my_phone?: string | null
   home_miles: number | null
   dest_miles: number | null
   detour_minutes?: number | null
@@ -223,6 +225,8 @@ export type Match = {
     my_times: PartnerTime[]
     email: string | null
     last_initial: string | null
+    /** Their number, if they chose to add one for this match (01502). */
+    phone?: string | null
     languages?: PartnerLanguage[]
     shared_languages?: PartnerLanguage[]
   }
@@ -250,6 +254,19 @@ export async function answerWent(matchId: string, went: boolean): Promise<boolea
 export async function rateMatch(matchId: string, rating: Rating, comment: string | null): Promise<boolean> {
   const { data, error } = await supabase.rpc('rate_partner_match', { p_match_id: matchId, p_rating: rating, p_comment: comment })
   return !error && !!(data as { ok?: boolean } | null)?.ok
+}
+
+/** Add, change or (empty) remove your number on one live match (01502). */
+export async function setMatchPhone(matchId: string, phone: string): Promise<{ ok: boolean; reason?: string; phone?: string | null }> {
+  const { data, error } = await supabase.rpc('set_partner_match_phone', { p_match: matchId, p_phone: phone })
+  if (error || !data) return { ok: false, reason: 'failed' }
+  return data as { ok: boolean; reason?: string; phone?: string | null }
+}
+
+/** "+16175550123" -> "(617) 555-0123"; other countries as stored. */
+export function phoneLabel(phone: string): string {
+  const m = /^\+1(\d{3})(\d{3})(\d{4})$/.exec(phone)
+  return m ? `(${m[1]}) ${m[2]}-${m[3]}` : phone
 }
 
 export async function endMatch(matchId: string): Promise<boolean> {
