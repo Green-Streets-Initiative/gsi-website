@@ -516,6 +516,8 @@ export interface RoamDisruption {
   trail_name: string
   /** route = a trail this roam uses; access = one it connects to. */
   affects: 'route' | 'access'
+  /** access only: where the connecting path comes from ("Davis Square"), Shift 01490. */
+  from_label?: string | null
   title: string
   summary: string
   detours: TrailDetour[] | null

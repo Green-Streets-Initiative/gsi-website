@@ -27,7 +27,7 @@ const SECTIONS: { heading: string; body: string[]; list?: string[] }[] = [
     list: [
       'Trip comparisons', 'Group rides and walks', 'Fares', 'Weather', 'Service changes', 'Shuttles',
       'Live MBTA times', 'Station parking', 'Bikes on the T', 'Step-free stations and The RIDE',
-      'What an e-bike would cost you', 'Streets Shift members bike', 'Rewards Partners nearby',
+      'What an e-bike would cost you', 'Streets Shift members bike', 'How members get around a town', 'Rewards Partners nearby',
       'Your closure plans', 'Your challenges', 'Your workplace’s commute benefits', 'What your drives cost',
       'Your activity and progress',
     ],
@@ -42,7 +42,7 @@ const SECTIONS: { heading: string; body: string[]; list?: string[] }[] = [
       'Notes you asked it to remember, such as “I have an e-bike” or “I’d rather avoid busy streets”. Every new conversation starts with them, so you don’t have to say them again.',
       'When it signs you up for a Shift group ride or walk, you join that ride and your answer for the date is saved, as when you tap Going in the app. The ride’s organizer sees your name and your answer.',
       'A trip reminder you set keeps that trip’s start, destination and time. After the trip, Shift looks at your trips from around then for one that starts or ends near those places, to tell you it counted.',
-      'The streets Shift members bike and walk come from Shift’s town maps, which combine many people’s trips and show a street only where 3 or more different people went; nobody’s own trips can be picked out.',
+      'The streets Shift members bike and walk, and how members get around a town, combine many people’s trips: a street or a way of getting around shows only when 3 or more different people used it, and a town only when 10 or more travel there, so nobody’s own trips can be picked out.',
       'To answer, it looks up places and directions with Google Maps, the forecast with the National Weather Service, service changes, live times, station parking and step-free access with the MBTA, and a Ride with GPS route when you share its link. These receive the places involved, not your name or email.',
     ],
   },

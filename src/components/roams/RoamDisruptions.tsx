@@ -21,23 +21,33 @@ function day(d: string): string {
  * at the top of Around You. Compact until tapped (Keith 2026-10-20, same as
  * the app): what is closed, in one line; "Details and detour" opens the
  * summary, the detour by direction and the source with the date it was
- * last checked. An "access" closure says the route itself is open.
+ * last checked. An "access" closure is on a path that connects to the roam,
+ * so it says who it affects ("Coming from Davis Square?", or "If you come in
+ * on Linear Park" with no place stored) and that the route itself is open
+ * (Keith 2026-10-29: "It may or may not be 'on the way here' depending on
+ * where someone is coming from").
  */
+function who(d: RoamDisruption): string {
+  if (d.affects === 'route') return 'Closed on this route'
+  return d.from_label ? `Coming from ${d.from_label}?` : `If you come in on ${d.trail_name}`
+}
+
 function Notice({ d }: { d: RoamDisruption }) {
   const [open, setOpen] = useState(false)
   const hasDetour = !!(d.detours && d.detours.length > 0)
   return (
     <section
-      aria-label={d.affects === 'route' ? 'Closure on this route' : 'Closure on the way to this route'}
+      aria-label={d.affects === 'route' ? 'Closure on this route' : `Closure on ${d.trail_name}, a path that connects to this route`}
       className="rounded-[14px] border border-[#C2410C]/25 bg-[#FFF6F0] px-4 py-3 sm:px-5"
     >
       <div className="flex gap-3">
         <TriangleAlert size={18} className="mt-[3px] shrink-0 text-[#B4410C]" aria-hidden />
         <div className="min-w-0 flex-1">
           <p className="text-[0.875rem] font-semibold text-[#9A3412]">
-            {d.affects === 'route' ? 'Closed on this route' : 'Closed on the way here'}
+            {who(d)}
           </p>
           <h2 className="text-[1rem] font-semibold leading-snug text-navy">{d.title}</h2>
+          {d.affects === 'access' ? <p className="text-[0.9375rem] leading-snug text-ink-soft">This route is open.</p> : null}
           <button
             type="button"
             aria-expanded={open}
@@ -56,7 +66,6 @@ function Notice({ d }: { d: RoamDisruption }) {
       {open && (
             <div id={`notice-${d.id}`} className="pb-1 sm:pl-[30px]">
               <p className="mt-1 max-w-[68ch] text-[0.9375rem] leading-relaxed text-ink-soft">
-                {d.affects === 'access' ? <span className="font-semibold text-navy">This route itself is open. </span> : null}
                 {d.summary}
                 {d.ends_note ? ` ${d.ends_note}` : ''}
               </p>

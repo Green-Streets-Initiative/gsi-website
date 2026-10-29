@@ -14,7 +14,7 @@ import { fetchRideWithGps } from '@/lib/organizers/rwgps'
 import { bikeParkingNear, summarizeRoute } from '@/lib/organizer-assistant/route-designer'
 import { myChallenges, myWorkplace, officeAt, workplaceFacts } from '@/lib/shift-assistant/my-challenges'
 import { myClosurePlans, myDrives, shuttlesFor } from '@/lib/shift-assistant/trip-data'
-import { BIKE_RULES, bikeOk, departuresNear, myProgress, parkAndRide, popularStreets, rewardsPartnersNear } from '@/lib/shift-assistant/more-data'
+import { BIKE_RULES, bikeOk, departuresNear, myProgress, parkAndRide, popularStreets, rewardsPartnersNear, townAt, townMix } from '@/lib/shift-assistant/more-data'
 import { signedUrls } from '@/lib/shift-assistant/uploads'
 import { ALWAYS as FARES_FOR_EVERYONE, fareProgram, farePrograms } from '@/lib/facts/fare-programs'
 import { PRICES, usd } from '@/lib/facts/prices'
@@ -86,6 +86,8 @@ export type TrailCard = {
   closure: string | null
   /** false: the closure is on a path it connects to, not on the route. */
   closure_on_route: boolean
+  /** Where the connecting path with the closure comes from ("Davis Square"). */
+  closure_from: string | null
   open_label: string
 }
 
@@ -151,6 +153,20 @@ function thinLine(encoded: string | null | undefined, max = 60): string | null {
 }
 const fail = (error: string): ToolResult => ({ content: { error }, isError: true })
 
+/** Their home town, lowercased; else the town their saved Home, or their phone, is in. */
+async function homeTownName(ctx: ToolCtx): Promise<string> {
+  const { data } = await ctx.user.from('users').select('home_town').eq('id', ctx.userId).single()
+  const home = ((data as { home_town?: string | null } | null)?.home_town ?? '').toLowerCase()
+  if (home) return home
+  const { data: h } = await ctx.user.from('saved_locations').select('lat, lng').eq('user_id', ctx.userId).ilike('label', 'home').limit(1)
+  const at = ((h ?? [])[0] as { lat: number | null; lng: number | null } | undefined)
+  const point = at?.lat != null && at?.lng != null ? { lat: at.lat, lng: at.lng } : ctx.here ?? null
+  if (!point) return ''
+  const { data: nid } = await ctx.admin.rpc('find_neighborhood_for_point', { p_lat: point.lat, p_lng: point.lng })
+  const { data: nb } = nid ? await ctx.admin.from('neighborhoods').select('town').eq('id', nid as string).maybeSingle() : { data: null }
+  return ((nb as { town?: string } | null)?.town ?? '').toLowerCase()
+}
+
 /** Reminders need a build whose notice opens the conversation (Shift lib/assistant.ts "plans"). */
 const PLAN_TOOLS = new Set(['set_reminder', 'cancel_reminder'])
 export function toolsFor(ctx: ToolCtx): Anthropic.Tool[] {
@@ -187,6 +203,7 @@ export const ACTIVITY: Record<string, string> = {
   get_my_drives: 'Looking at your drives',
   find_shuttles: 'Checking shuttles',
   get_popular_streets: 'Finding the streets people use',
+  get_town_travel_mix: 'Seeing how people get around',
   find_rewards_partners: 'Looking for Rewards Partners',
   get_my_progress: 'Checking your progress',
   get_departures: 'Checking live departures',
@@ -347,6 +364,17 @@ export const TOOLS: Anthropic.Tool[] = [
         way: nullable('string', 'bike or walk. Empty for bike.'),
       },
       required: ['from'],
+    },
+  },
+  {
+    name: 'get_town_travel_mix',
+    description: "How Shift members get around a town, from their trips to, from or within it over the last 90 days: how many people walk, bike, take the bus or train, carpool or drive there, each way's share of trips, and how many combine ways (bike to the train). Shared only for towns with enough people that nobody can be picked out. Use for \"how do people get to Kendall\", \"does anyone bike in Lexington\", \"how do people get around here\". Their home town unless they name a town or a place.",
+    input_schema: {
+      type: 'object',
+      properties: {
+        town: nullable('string', 'A town or city name ("Lexington"). Leave empty for their home town or a place.'),
+        near: { ...placeSchema, description: 'A place from find_place, for the town it is in ("Kendall" is in Cambridge).' },
+      },
     },
   },
   {
@@ -1183,6 +1211,19 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
         if (!from) return fail('The place needs coordinates. Look it up with find_place first.')
         return ok(await popularStreets(ctx, from, asPlace(input.to), input.way === 'walk' ? 'walk' : 'bike'))
       }
+      case 'get_town_travel_mix': {
+        const asked = typeof input.town === 'string' ? input.town.trim().toLowerCase() : ''
+        const near = asked ? null : asPlace(input.near)
+        let town: { id: string; name: string } | null = null
+        if (near) town = await townAt(ctx, near)
+        else {
+          const name = asked || await homeTownName(ctx)
+          const t = name ? (await getTownDirectory()).find((x) => x.town_name.toLowerCase() === name) : undefined
+          town = t ? { id: t.group_id, name: t.town_name } : null
+        }
+        if (!town) return ok({ found: false, note: asked ? `No town named ${input.town} in Shift. Check the spelling or ask for the nearest one.` : "Their town isn't known. Ask which town they mean." })
+        return ok(await townMix(ctx, town))
+      }
       case 'find_rewards_partners': {
         let near = asPlace(input.near) ?? ctx.here ?? null
         if (!near) {
@@ -1224,19 +1265,7 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
         const towns = await getTownDirectory()
         let town = asked ? towns.find((t) => t.town_name.toLowerCase() === asked) : undefined
         if (!asked) {
-          // Their home town; else the town their saved Home, or their phone, is in.
-          const { data } = await ctx.user.from('users').select('home_town').eq('id', ctx.userId).single()
-          let home = ((data as { home_town?: string | null } | null)?.home_town ?? '').toLowerCase()
-          if (!home) {
-            const { data: h } = await ctx.user.from('saved_locations').select('lat, lng').eq('user_id', ctx.userId).ilike('label', 'home').limit(1)
-            const at = ((h ?? [])[0] as { lat: number | null; lng: number | null } | undefined)
-            const point = at?.lat != null && at?.lng != null ? { lat: at.lat, lng: at.lng } : ctx.here ?? null
-            if (point) {
-              const { data: nid } = await ctx.admin.rpc('find_neighborhood_for_point', { p_lat: point.lat, p_lng: point.lng })
-              const { data: nb } = nid ? await ctx.admin.from('neighborhoods').select('town').eq('id', nid as string).maybeSingle() : { data: null }
-              home = ((nb as { town?: string } | null)?.town ?? '').toLowerCase()
-            }
-          }
+          const home = await homeTownName(ctx)
           town = towns.find((t) => t.town_name.toLowerCase() === home)
           if (!town) return ok({ found: false, note: "Their town isn't known. Ask which town they mean." })
         }
@@ -1402,7 +1431,7 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
           profile: prof.filter((_, i) => i % step === 0 || i === prof.length - 1),
           start: first?.label ?? null, end: loop ? null : last?.label ?? null,
           getting_there: r.surface ? wayIn(r.access_note, r.parking_note) : wayIn(r.access_note ?? whole?.transit_note, r.parking_note ?? whole?.parking_note),
-          closure: closedNow ? clip(closedNow.title, 90) : null, closure_on_route: closedNow?.affects === 'route',
+          closure: closedNow ? clip(closedNow.title, 90) : null, closure_on_route: closedNow?.affects === 'route', closure_from: closedNow?.affects === 'access' ? closedNow.from_label ?? null : null,
           open_label: link.label,
         } : undefined
         const result = ok({
@@ -1416,7 +1445,7 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
           start: first ? { lat: first.lat, lng: first.lng, name: first.label } : null,
           ...(loop ? { loop: true } : last && last !== first ? { end: { lat: last.lat, lng: last.lng, name: last.label } } : {}),
           stops: stops.map((c) => c.label).slice(0, 10),
-          closures_now: trail.disruptions.map((d) => ({ trail: d.trail_name, on_this_route: d.affects === 'route', what: d.title, about: excerptOf(d.summary, 200), until: d.ends_on ?? d.ends_note, detour: d.detours?.[0]?.steps?.slice(0, 4) ?? null })),
+          closures_now: trail.disruptions.map((d) => ({ trail: d.trail_name, on_this_route: d.affects === 'route', coming_from: d.affects === 'access' ? d.from_label ?? null : null, what: d.title, about: excerptOf(d.summary, 200), until: d.ends_on ?? d.ends_note, detour: d.detours?.[0]?.steps?.slice(0, 4) ?? null })),
           next_group_outing: event ? { title: event.title, date: event.event_date, time: event.event_time?.slice(0, 5) ?? null, where: event.location_name, organizer: event.organizer_name } : null,
           next: 'Answer what they asked (how long, where it starts, how to get there) in a sentence or two; any closure first. Hills: say the feel and, when it is not a loop, which way climbs. Getting there: getting_in, or whole_trail.getting_there; pass start to check_trip only when they could walk, bike or take transit there.',
           ...(card ? { card: 'A card shows under your reply with its length, minutes, surface, hills (as a chart, with the climb each way), how to get there, any closure, and a button to the Roam. Leave those numbers to the card: say why it suits them and the one thing worth knowing.' } : {}),

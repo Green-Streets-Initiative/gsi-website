@@ -6,6 +6,7 @@ import { parkAndRideNear } from '@/lib/server/park-and-ride'
 
 // Round 3 of "give the assistant all the data it needs" (Keith 2026-10-28):
 //   town_corridor_heatmap (Shift 00557)            streets Shift people actually bike and walk
+//   assistant_town_mix (Shift 01489)               how Shift members get around a town
 //   catalog_merchant_locations, sponsors (00789)   Rewards Partner shops and discounts near a place
 //   get_switch_progress, streaks, user_tiers       their switch, streaks, personal bests and tier
 //   MBTA V3 predictions and trips                  live departures, with bikes allowed per train
@@ -45,7 +46,7 @@ function metersToSegment(p: Point, a: Point, b: Point): number {
 
 // ── Popular streets ────────────────────────────────────────────────────
 
-async function townAt(ctx: Ctx, p: Point): Promise<{ id: string; name: string } | null> {
+export async function townAt(ctx: Ctx, p: Point): Promise<{ id: string; name: string } | null> {
   const { data: nid } = await ctx.admin.rpc('find_neighborhood_for_point', { p_lat: p.lat, p_lng: p.lng })
   if (!nid) return null
   const { data: nb } = await ctx.admin.from('neighborhoods').select('town').eq('id', nid as string).maybeSingle()
@@ -106,6 +107,33 @@ export async function popularStreets(ctx: Ctx, from: Point, to: Point | null, wa
     })),
     ...(ranked.length ? {} : { none: to ? 'No street Shift members use runs along this trip yet.' : 'No street Shift members use within a 10-minute walk of here yet.' }),
     note: 'Popular is not the same as calm: a well-used street can still be busy with cars. check_trip says how calm each street on a route is. "newer_members_use_it" means people new to Shift ride it too, a good sign for someone starting out.',
+  }
+}
+
+const WAY_NAMES: Record<string, string> = { walk: 'Walking', bike: 'Biking or scooting', bus: 'Bus', train: 'Train, commuter rail or ferry', carpool: 'Carpool', drive: 'Driving alone' }
+
+/**
+ * How Shift members get around a town: their trips to, from or within it over
+ * the last 90 days, by way of travel (Shift 01489). Under 10 different people
+ * it shares nothing but the count, and a way shows only when 3 or more
+ * different people used it, so nobody's own trips can be picked out.
+ */
+export async function townMix(ctx: Ctx, town: { id: string; name: string }) {
+  const { data, error } = await ctx.admin.rpc('assistant_town_mix', { p_group_id: town.id })
+  if (error || !data) return { town: town.name, none: "Couldn't read how people get around there just now." }
+  type Mix = { people: number; too_few?: boolean; trips?: number; ways?: { way: string; trips: number; people: number }[]; combined?: { trips: number; people: number } | null }
+  const mix = data as Mix
+  if (mix.too_few || !mix.trips) return { town: town.name, none: `Too few Shift members travel in ${town.name} yet to say how they get around.` }
+  const pct = (n: number) => `${Math.round((n / mix.trips!) * 100)}%`
+  const ways = mix.ways ?? []
+  const drive = ways.find((w) => w.way === 'drive')
+  return {
+    town: town.name,
+    based_on: `${mix.people} Shift members, from their trips to, from or within ${town.name} over the last 90 days. A way shows only when 3 or more different people used it.`,
+    ways: ways.map((w) => ({ way: WAY_NAMES[w.way] ?? w.way, people: w.people, share_of_trips: pct(w.trips) })),
+    ...(drive ? { trips_not_driven_alone: pct(mix.trips - drive.trips) } : {}),
+    ...(mix.combined ? { people_who_combine_ways: mix.combined.people } : {}),
+    note: "Say \"Shift members\" in the sentence that gives a count; add no separate line about who is counted. One person can use several ways, so the people add up to more than the total. Lead with people who walk, bike or take transit, as a count: \"17 of the 35 Shift members who travel in Lexington bike there.\" A way that isn't listed had too few people to share; say nothing about it. Mention driving only when they ask about it, and never as something to beat. People who combine ways use more than one in a trip, like biking to the train.",
   }
 }
 
