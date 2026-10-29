@@ -13,6 +13,7 @@ import { EVENT_TYPE_ICONS } from './event-type-icons'
 import { EventsToneProvider, toneClass, useEventsTone, type EventsTone } from './EventsTone'
 import './events-tone.css'
 import EventCard from './EventCard'
+import FeederTray from './FeederTray'
 import WeekStrip from './WeekStrip'
 import FiltersSheet from './FiltersSheet'
 import FilterBar from './FilterBar'
@@ -303,25 +304,31 @@ export default function EventsPage({ events, tone = 'dark', hrefBase = '/events'
                   </div>
                 ) : (
                   <div className="flex flex-col gap-3">
-                    {(f.selectedDay ? f.filtered : f.filtered.slice(0, listLimit)).map((ev) => (
-                      <EventCard
-                        key={ev.id}
-                        event={ev}
-                        userLat={f.userLoc.lat}
-                        userLng={f.userLoc.lng}
-                        showDate={!f.selectedDay}
-                        saved={!!saved[ev.id]}
-                        onToggleSave={handleToggleSave}
-                      />
+                    {(f.selectedDay ? f.entries : f.entries.slice(0, listLimit)).map(({ event: ev, feeders }) => (
+                      <div key={ev.id}>
+                        <EventCard
+                          event={ev}
+                          userLat={f.userLoc.lat}
+                          userLng={f.userLoc.lng}
+                          showDate={!f.selectedDay}
+                          saved={!!saved[ev.id]}
+                          onToggleSave={handleToggleSave}
+                          ridesTo={f.ridesTo(ev)}
+                          attached={feeders.length > 0}
+                        />
+                        {feeders.length > 0 && (
+                          <FeederTray eventId={ev.id} feeders={feeders} userLat={f.userLoc.lat} userLng={f.userLoc.lng} />
+                        )}
+                      </div>
                     ))}
                   </div>
                 )}
-                {!f.selectedDay && f.filtered.length > listLimit && (
+                {!f.selectedDay && f.entries.length > listLimit && (
                   <button
                     onClick={() => setListLimit((n) => n + AGENDA_PAGE)}
                     className="mx-auto mt-5 block rounded-[10px] border border-(--ev-line-strong) px-6 py-3 text-[14px] font-semibold text-(--ev-ink) transition-colors hover:bg-(--ev-panel)"
                   >
-                    Show more · {f.filtered.length - listLimit} remaining
+                    Show more · {f.entries.length - listLimit} remaining
                   </button>
                 )}
               </div>
@@ -334,6 +341,8 @@ export default function EventsPage({ events, tone = 'dark', hrefBase = '/events'
               <AppliedFilters filters={f.activeFilters} onClearAll={f.clearAll} className="mb-4 hidden lg:flex" />
               <Agenda
                 events={f.filtered}
+                entries={f.entries}
+                ridesTo={f.ridesTo}
                 limit={listLimit}
                 onShowMore={() => setListLimit((n) => n + AGENDA_PAGE)}
                 paged={!f.selectedDay}

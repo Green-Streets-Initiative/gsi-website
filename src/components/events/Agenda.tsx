@@ -4,6 +4,8 @@ import { useMemo, type ReactNode } from 'react'
 import Link from 'next/link'
 import { type CommunityEvent, groupLabel, parseEventDate } from '@/lib/events'
 import EventCard from './EventCard'
+import FeederTray from './FeederTray'
+import type { CalendarEntry } from '@/lib/go-together'
 import type { UserLoc } from './useEventFilters'
 import { trackEvents } from './events-analytics'
 import { useEventsTone } from './EventsTone'
@@ -18,6 +20,10 @@ export const AGENDA_PAGE = 40
 
 interface AgendaProps {
   events: CommunityEvent[]
+  /** Go together: the same events with feeder rides nested under their event (useEventFilters). */
+  entries?: CalendarEntry<CommunityEvent>[]
+  /** "Rides to …" for a feeder that is a card of its own. */
+  ridesTo?: (ev: CommunityEvent) => string | null
   limit: number
   onShowMore: () => void
   paged: boolean
@@ -32,20 +38,22 @@ interface AgendaProps {
 }
 
 export default function Agenda({
-  events, limit, onShowMore, paged, userLoc, saved, onToggleSave, emptyMessage, emptyAction, showCount, countAction,
+  events, entries: nested, ridesTo, limit, onShowMore, paged, userLoc, saved, onToggleSave, emptyMessage, emptyAction, showCount, countAction,
 }: AgendaProps) {
   const { hrefBase } = useEventsTone()
-  const shown = paged ? events.slice(0, limit) : events
+  const entries = useMemo(() => nested ?? events.map((event) => ({ event, feeders: [] })), [nested, events])
+  const shown = paged ? entries.slice(0, limit) : entries
 
   const groups = useMemo(() => {
-    const out: { key: string; label: string; events: CommunityEvent[] }[] = []
+    const out: { key: string; label: string; entries: CalendarEntry<CommunityEvent>[] }[] = []
     let currentKey = ''
-    for (const ev of shown) {
+    for (const entry of shown) {
+      const ev = entry.event
       if (ev.event_date !== currentKey) {
         currentKey = ev.event_date
-        out.push({ key: currentKey, label: groupLabel(parseEventDate(ev.event_date)), events: [] })
+        out.push({ key: currentKey, label: groupLabel(parseEventDate(ev.event_date)), entries: [] })
       }
-      out[out.length - 1].events.push(ev)
+      out[out.length - 1].entries.push(entry)
     }
     return out
   }, [shown])
@@ -64,7 +72,7 @@ export default function Agenda({
   }
 
   let position = 0
-  const remaining = events.length - shown.length
+  const remaining = entries.length - shown.length
 
   return (
     <div>
@@ -82,21 +90,27 @@ export default function Agenda({
             <div className="sticky top-[116px] z-20 mb-3 flex items-center gap-3 bg-(--ev-bg) py-2 lg:top-[116px]">
               <h3 className="whitespace-nowrap text-[14px] font-semibold text-(--ev-ink-85)">{group.label}</h3>
               <div className="h-px flex-1 bg-(--ev-line)" />
-              <span className="font-mono text-[12px] text-(--ev-ink-75)">{group.events.length}</span>
+              <span className="font-mono text-[12px] text-(--ev-ink-75)">{group.entries.reduce((n, e) => n + 1 + e.feeders.length, 0)}</span>
             </div>
             <div className="flex flex-col gap-2.5">
-              {group.events.map((ev) => {
+              {group.entries.map(({ event: ev, feeders }) => {
                 const pos = position++
                 return (
-                  <EventCard
-                    key={ev.id}
-                    event={ev}
-                    userLat={userLoc.lat}
-                    userLng={userLoc.lng}
-                    saved={!!saved[ev.id]}
-                    onToggleSave={onToggleSave}
-                    onOpen={() => trackEvents('events_card_clicked', { id: ev.id, type: ev.event_type, position: pos })}
-                  />
+                  <div key={ev.id}>
+                    <EventCard
+                      event={ev}
+                      userLat={userLoc.lat}
+                      userLng={userLoc.lng}
+                      saved={!!saved[ev.id]}
+                      onToggleSave={onToggleSave}
+                      onOpen={() => trackEvents('events_card_clicked', { id: ev.id, type: ev.event_type, position: pos })}
+                      ridesTo={ridesTo?.(ev)}
+                      attached={feeders.length > 0}
+                    />
+                    {feeders.length > 0 && (
+                      <FeederTray eventId={ev.id} feeders={feeders} userLat={userLoc.lat} userLng={userLoc.lng} />
+                    )}
+                  </div>
                 )
               })}
             </div>

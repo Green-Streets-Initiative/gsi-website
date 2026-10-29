@@ -37,6 +37,8 @@ export interface CommunityEvent {
   featured: boolean
   /** Set when this event came from a ride planned in the Shift app (00817). */
   ride_series_id: string | null
+  /** A feeder ride's destination: the same-date event it goes to (Shift 01460). */
+  feeds_content_id?: string | null
   /** Free text as listed: "21 miles", "20-25 miles", "90 minutes". */
   distance_text: string | null
   /** Organizer's stated pace band (kids | relaxed | moderate | brisk | fast); null on scraped listings. */

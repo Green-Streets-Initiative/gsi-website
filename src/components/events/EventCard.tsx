@@ -16,6 +16,10 @@ interface EventCardProps {
   saved?: boolean
   onToggleSave?: (id: string) => void
   onOpen?: () => void
+  /** A feeder ride's destination, when it is a card of its own: "Rides to Critical Mass" (Shift 01460). */
+  ridesTo?: string | null
+  /** A Go together tray sits flush underneath (FeederTray). */
+  attached?: boolean
 }
 
 /**
@@ -23,7 +27,7 @@ interface EventCardProps {
  * a denser row with a fixed time column on the left (CSS only, so there is no
  * layout flash when the desktop media query resolves after hydration).
  */
-export default function EventCard({ event, userLat, userLng, showDate, saved, onToggleSave, onOpen }: EventCardProps) {
+export default function EventCard({ event, userLat, userLng, showDate, saved, onToggleSave, onOpen, ridesTo, attached }: EventCardProps) {
   const { tone, hrefBase } = useEventsTone()
   const meta = getTypeMeta(event.event_type)
   const Icon = EVENT_TYPE_ICONS[meta.icon] ?? Calendar
@@ -76,8 +80,8 @@ export default function EventCard({ event, userLat, userLng, showDate, saved, on
   )
 
   return (
-    <div className="group relative flex min-h-[72px] items-start gap-3 rounded-[14px] border border-(--ev-line) bg-(--ev-card) p-3.5 transition-all duration-200 hover:border-(--ev-line-mid) hover:bg-(--ev-card-hover) sm:gap-4 sm:p-4 lg:min-h-0 lg:items-center lg:px-4 lg:py-3">
-      <Link href={eventPath(event, hrefBase)} onClick={onOpen} className="absolute inset-0 z-10 rounded-[14px]" aria-label={event.title} />
+    <div className={`group relative flex min-h-[72px] items-start gap-3 border border-(--ev-line) bg-(--ev-card) p-3.5 transition-all duration-200 hover:border-(--ev-line-mid) hover:bg-(--ev-card-hover) sm:gap-4 sm:p-4 lg:min-h-0 lg:items-center lg:px-4 lg:py-3 ${attached ? 'rounded-t-[14px]' : 'rounded-[14px]'}`}>
+      <Link href={eventPath(event, hrefBase)} onClick={onOpen} className={`absolute inset-0 z-10 ${attached ? 'rounded-t-[14px]' : 'rounded-[14px]'}`} aria-label={event.title} />
 
       {/* Desktop time column */}
       <div className="hidden w-[76px] shrink-0 flex-col lg:flex">
@@ -137,6 +141,11 @@ export default function EventCard({ event, userLat, userLng, showDate, saved, on
           {(whenLg || organizer || where) && ' · '}
           {metaLine(whenLg, where)}
         </p>
+        {ridesTo && (
+          <p className="mt-1 truncate text-[13px] font-semibold text-(--ev-accent)">
+            {event.event_type === 'walking_tour' ? 'Walks' : 'Rides'} to {ridesTo}
+          </p>
+        )}
         {(event.ride_series_id || noDrop || event.tags.length > 0) && (
           <div className="mt-1.5 flex flex-wrap gap-1 lg:mt-1">
             {noDrop && (

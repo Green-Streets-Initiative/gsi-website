@@ -9,6 +9,7 @@ import {
   eventRideStyle, isNoDrop, styleFilterValue, parseStyleFilter,
 } from '@/lib/events'
 import { trackEvents } from './events-analytics'
+import { nestFeeders } from '@/lib/go-together'
 
 // ---------------------------------------------------------------------------
 // Options
@@ -87,7 +88,7 @@ function inDateRange(evDate: Date, range: WhenValue, today: Date): boolean {
   return evDate <= end
 }
 
-type Ignore = 'type' | 'tags' | 'audience' | 'day'
+type Ignore = 'type' | 'tags' | 'audience' | 'day' | 'distance'
 
 interface Options {
   saved: Record<string, boolean>
@@ -234,7 +235,7 @@ export function useEventFilters(events: CommunityEvent[], { saved, applyDateRang
         .filter(Boolean).join(' ').toLowerCase()
       if (!haystack.includes(q)) return false
     }
-    if (distance !== 'all') {
+    if (ignore !== 'distance' && distance !== 'all') {
       if (!ev.location_lat || !ev.location_lng) return false
       if (haversine(userLoc.lat, userLoc.lng, ev.location_lat, ev.location_lng) > Number(distance)) return false
     }
@@ -247,6 +248,18 @@ export function useEventFilters(events: CommunityEvent[], { saved, applyDateRang
     list.sort((a, b) => a.event_date.localeCompare(b.event_date) || (a.event_time ?? '').localeCompare(b.event_time ?? ''))
 
   const filtered = useMemo(() => sortEvents(events.filter((ev) => matches(ev))), [events, matches])
+
+  // Go Together: feeder rides sit in their event's tray, and a feeder within
+  // the distance brings in its event from past it (Keith 2026-10-29).
+  const entries = useMemo(
+    () => nestFeeders(filtered, sortEvents([...events]), (ev) => matches(ev, 'distance')),
+    [filtered, events, matches],
+  )
+  /** A feeder that is a card of its own says where it goes. */
+  const ridesTo = useMemo(() => {
+    const titles = new Map(events.map((ev) => [ev.id, ev.title]))
+    return (ev: CommunityEvent) => (ev.feeds_content_id ? titles.get(ev.feeds_content_id) ?? null : null)
+  }, [events])
 
   /** Same filters minus the picked day; feeds the mini month so its dots stay put. */
   const filteredNoDay = useMemo(
@@ -358,7 +371,7 @@ export function useEventFilters(events: CommunityEvent[], { saved, applyDateRang
     setQuery, setDistance, setTypeFilter, setDateRange, setSelectedDay, toggleTag, toggleAudience, setSavedOnly,
     useMyLocation, selectCity,
     // derived
-    filtered, filteredNoDay, typeCounts, typesByCount, tagCounts, audienceCounts,
+    filtered, filteredNoDay, entries, ridesTo, typeCounts, typesByCount, tagCounts, audienceCounts,
     activeFilters, activeFilterCount, clearAll, pageKey,
   }
 }
