@@ -21,7 +21,7 @@ const SECTIONS: { heading: string; body: string[]; list?: string[] }[] = [
   {
     heading: 'What it is',
     body: [
-      'The assistant is an optional part of the Shift app. You ask about getting around in your own words, and it answers with what Shift knows.',
+      'The assistant is an optional part of the Shift app, for people 18 and older. You ask about getting around in your own words, and it answers with what Shift knows.',
       'It saves a place, changes a setting, sets a trip reminder, signs you up for a Shift group ride or remembers something about you only after you tap the button on its card.',
     ],
     list: [
@@ -77,7 +77,7 @@ export default function ShiftAssistantDataPage() {
           <h1 className="font-serif text-[clamp(2.25rem,5vw,3.5rem)] font-normal leading-[1.05] tracking-[-0.01em] text-navy">
             The Shift assistant and your data
           </h1>
-          <p className="mt-4 text-[15px] text-ink-soft">Updated October 28, 2026</p>
+          <p className="mt-4 text-[15px] text-ink-soft">Updated October 30, 2026</p>
 
           <div className="mt-10 space-y-10">
             {SECTIONS.map((s) => (

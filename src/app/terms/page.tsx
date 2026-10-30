@@ -325,7 +325,8 @@ export default function TermsPage() {
                 organizers, that answers questions and helps with tasks. Its answers are written
                 by an AI model and can be wrong or out of date. Check routes, schedules, prices,
                 conditions, and anything that affects your safety before you rely on them. The
-                assistant does not give legal, medical, tax, or financial advice.
+                assistant does not give legal, medical, tax, or financial advice. The Shift
+                assistant is for people 18 and older.
               </P>
               <P>
                 The assistant can do only what your own account can do. It saves, changes, sends,
