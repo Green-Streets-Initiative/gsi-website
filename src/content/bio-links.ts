@@ -29,6 +29,13 @@ export type BioLink = {
 export const BIO_LINKS: BioLink[] = [
   // ── This week (dated) ──
   {
+    slug: 'walkma',
+    label: 'Walk around Massachusetts with us',
+    sublabel: "Join our team in WalkMassachusetts's Beat the Bay State, Nov 1 to 30. Shift counts your miles.",
+    url: 'https://www.gogreenstreets.org/walkma',
+    until: '2026-11-30T23:59:00-05:00',
+  },
+  {
     slug: 'tourdestreets',
     label: 'Tour de Streets: register',
     sublabel: "Sat Oct 24, Cambridge. LivableStreets' walking tour or guided bike ride",
