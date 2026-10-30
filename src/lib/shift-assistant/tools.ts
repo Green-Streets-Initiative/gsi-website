@@ -1697,7 +1697,7 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
           source: 'shift_assistant',
           title: `Shift assistant feedback (${String(input.kind)}): ${String(input.summary).slice(0, 120)}`,
           body: [input.their_words ? `"${String(input.their_words).slice(0, 1500)}"` : null, `${ctx.email}`, shot ? `Their picture (link works for 7 days): ${shot}` : null].filter(Boolean).join('\n'),
-          context: { kind: 'shift_assistant_feedback', feedback_kind: input.kind, user_id: ctx.userId, ...(ctx.screenshot ? { screenshot_path: ctx.screenshot } : {}) },
+          context: { kind: 'shift_assistant_feedback', feedback_kind: input.kind, summary: String(input.summary).slice(0, 600), user_id: ctx.userId, ...(ctx.screenshot ? { screenshot_path: ctx.screenshot } : {}) },
         })
         if (error) return fail("It didn't go through. Don't say it was passed on: suggest Send feedback in Profile > Help, or info@gogreenstreets.org.")
         return ok({ noted: true, ...(shot ? { picture_sent: true } : {}) })
