@@ -16,6 +16,7 @@ import { myChallenges, myWorkplace, officeAt, workplaceFacts } from '@/lib/shift
 import { myClosurePlans, myDrives, shuttlesFor } from '@/lib/shift-assistant/trip-data'
 import { BIKE_RULES, bikeOk, departuresNear, myProgress, parkAndRide, popularStreets, rewardsPartnersNear, townAt, townMix } from '@/lib/shift-assistant/more-data'
 import { signedUrls } from '@/lib/shift-assistant/uploads'
+import { HELP_TOPICS, helpIndex, helpTopic } from '@/lib/help/faq'
 import { ALWAYS as FARES_FOR_EVERYONE, fareProgram, farePrograms } from '@/lib/facts/fare-programs'
 import { PRICES, usd } from '@/lib/facts/prices'
 import { BORROW_RENT_BLURB, nearbyBorrowRent } from '@/lib/nearby/borrow-rent'
@@ -652,6 +653,11 @@ export const TOOLS: Anthropic.Tool[] = [
       type: 'object',
       properties: { id: nullable('string'), all: nullable('boolean', 'true to forget every note') },
     },
+  },
+  {
+    name: 'get_help',
+    description: `Shift's help page (gogreenstreets.org/help): the same answers people read there, one topic at a time. Call it before answering how Shift works: tracking and what to do when it stops, battery, being signed out, adding or fixing a trip, what counts, XP, tiers, streaks, badges, Roams, drawings and how winners are picked, rewards, privacy, deleting an account, languages, updates. Their own trips, points and rewards come from get_my_activity instead. Topics and their questions:\n${helpIndex()}`,
+    input_schema: { type: 'object', properties: { topic: { type: 'string', enum: HELP_TOPICS } }, required: ['topic'] },
   },
   {
     name: 'note_feedback',
@@ -1361,6 +1367,10 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
       }
       case 'get_ebike_math':
         return ok(await ebikeMath(ctx))
+      case 'get_help': {
+        const topic = helpTopic(String(input.topic))
+        return topic ? ok(topic) : fail(`No help topic "${String(input.topic)}". Topics: ${HELP_TOPICS.join(', ')}.`)
+      }
       case 'get_bike_rules': {
         const lines: [string, string, number, number | null][] = [['Red Line', 'Red', 1, null], ['Orange Line', 'Orange', 1, null], ['Blue Line inbound', 'Blue', 1, 0], ['Blue Line outbound', 'Blue', 1, 1], ['Green Line', 'Green-B', 0, null], ['Buses and Silver Line', '1', 3, null], ['Ferry', 'Boat-F1', 4, null]]
         return ok({ ...BIKE_RULES, full_size_bike_right_now: Object.fromEntries(lines.map(([label, id, type, dir]) => [label, bikeOk(id, type, dir).ok ? 'yes' : 'no'])) })
@@ -1681,13 +1691,15 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
       case 'note_feedback': {
         // A picture they attached goes with it, as a link that works for a week.
         const shot = ctx.screenshot ? (await signedUrls(ctx.admin, [ctx.screenshot], 7 * 86_400)).get(ctx.screenshot) ?? null : null
-        await ctx.admin.from('admin_notifications').insert({
+        // It used to say "noted" whether or not the row saved (2026-10-30).
+        const { error } = await ctx.admin.from('admin_notifications').insert({
           level: 'info',
           source: 'shift_assistant',
           title: `Shift assistant feedback (${String(input.kind)}): ${String(input.summary).slice(0, 120)}`,
           body: [input.their_words ? `"${String(input.their_words).slice(0, 1500)}"` : null, `${ctx.email}`, shot ? `Their picture (link works for 7 days): ${shot}` : null].filter(Boolean).join('\n'),
           context: { kind: 'shift_assistant_feedback', feedback_kind: input.kind, user_id: ctx.userId, ...(ctx.screenshot ? { screenshot_path: ctx.screenshot } : {}) },
         })
+        if (error) return fail("It didn't go through. Don't say it was passed on: suggest Send feedback in Profile > Help, or info@gogreenstreets.org.")
         return ok({ noted: true, ...(shot ? { picture_sent: true } : {}) })
       }
     }
