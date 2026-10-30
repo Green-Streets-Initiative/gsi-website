@@ -409,7 +409,7 @@ export async function POST(request: Request) {
     // About 100 m: enough to plan from, not a doorstep.
     ? { lat: Math.round(hereLat * 1e3) / 1e3, lng: Math.round(hereLng * 1e3) / 1e3 }
     : null
-  const screens = new Set(Array.isArray(body?.screens) ? body.screens.filter((x): x is string => typeof x === 'string').slice(0, 30) : [])
+  const screens = new Set(Array.isArray(body?.screens) ? body.screens.filter((x): x is string => typeof x === 'string').slice(0, 60) : [])
   const ctx: ToolCtx = { user: userClient, admin, token, userId: user.id, email: user.email ?? user.id, here, screens, threadId }
 
   const encoder = new TextEncoder()

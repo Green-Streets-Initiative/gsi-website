@@ -138,10 +138,12 @@ const CARD_SAVE = 'save_trip'
 const PRACTICE_SLOTS = ['weekend_morning', 'weekend_afternoon', 'weekday_evening']
 
 /** Screens added after the first release: offered only to builds that list them. */
-const NEWER_SCREENS = new Set(['trip', 'trip_history', 'my_rewards', 'notifications', 'vacation', 'partner_request', 'partner_matches', 'bike_confidence', 'roam', 'closure_plan', 'memories', 'partner_practice'])
+/** The Settings area's screens (Shift 2026-10-30): the index and one per row. */
+const SETTINGS_SCREENS = ['settings', 'tracking', 'language', 'car', 'privacy', 'assistant_settings', 'account', 'places', 'go_together', 'invite', 'help'] as const
+const NEWER_SCREENS = new Set(['trip', 'trip_history', 'my_rewards', 'notifications', 'vacation', 'partner_request', 'partner_matches', 'bike_confidence', 'roam', 'closure_plan', 'memories', 'partner_practice', ...SETTINGS_SCREENS])
 const canOpen = (ctx: ToolCtx, screen: string) => !NEWER_SCREENS.has(screen) || !!ctx.screens?.has(screen)
 
-const SCREENS = ['commute', 'commute_setup', 'around_you', 'rides', 'event', 'ride', 'rewards', 'log_trip', 'ride_plan', 'trip', 'trip_history', 'my_rewards', 'notifications', 'vacation', 'partner_request', 'partner_matches', 'bike_confidence', 'roam', 'closure_plan', 'memories', 'partner_practice'] as const
+const SCREENS = ['commute', 'commute_setup', 'around_you', 'rides', 'event', 'ride', 'rewards', 'log_trip', 'ride_plan', 'trip', 'trip_history', 'my_rewards', 'notifications', 'vacation', 'partner_request', 'partner_matches', 'bike_confidence', 'roam', 'closure_plan', 'memories', 'partner_practice', ...SETTINGS_SCREENS] as const
 type Screen = (typeof SCREENS)[number]
 
 const FUNCTIONS = `${(process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').replace(/\/$/, '')}/functions/v1`
@@ -248,7 +250,8 @@ export const ACTIVITY: Record<string, string> = {
 /** Tools that save something: the turn pauses on a card until the person approves. */
 export const NEEDS_APPROVAL = new Set([...RIDE_PLAN_NEEDS_APPROVAL, 'save_place', 'change_settings', 'set_reminder', 'remember', 'rsvp_ride', 'join_shift_together', 'join_practice_ride'])
 
-export type ApprovalCard = RidePlanCard & { confirmText?: string }
+/** tone danger: a red button, for turning the assistant itself off (the app draws both). */
+export type ApprovalCard = Omit<RidePlanCard, 'tone'> & { tone: 'primary' | 'danger'; confirmText?: string }
 
 export const TOOLS: Anthropic.Tool[] = [
   {
@@ -574,24 +577,30 @@ export const TOOLS: Anthropic.Tool[] = [
   },
   {
     name: 'get_my_settings',
-    description: "The person's notification settings (which kinds of phone notices are on) and their email lists.",
+    description: "The person's settings, as the app's Settings screen shows them: which kinds of phone notices are on, their email lists, trip tracking (automatic or manual), vacation mode (off, or on until a date), the app's language, the car they'd otherwise drive (for CO₂ estimates), whether their profile is public, and the AI assistant switch. Each comes with a summary line in the screen's own words. Read this before changing any setting, and whenever a message reads like a settings request (the Settings search box can send one, like \"stop the morning weather\").",
     input_schema: { type: 'object', properties: {} },
   },
   {
     name: 'change_settings',
-    description: "Turn phone notices or email lists on or off for the person, using the keys and ids from get_my_settings. The person approves on a card first.",
+    description: "Change the person's settings: phone notices and email lists (keys and ids from get_my_settings), vacation mode, trip tracking, the app's language, their car, their public profile, or turning the AI assistant off. Pass only what changes; leave the rest out or null. A card lists every change in plain words and the person approves it first; nothing is saved before that. Trip tracking, language and the assistant switch need a recent app (the tool says so when it can't). The assistant can turn itself off, never on. Email address, sign out and delete account can't be changed here: open_screen account instead.",
     input_schema: {
       type: 'object',
       properties: {
         notifications: nullable('object', 'Notification keys to set, e.g. {"weekly_summary": false}.'),
         emails: nullable('array', 'Email lists to set: [{"id": "...", "on": false}].'),
+        vacation: nullable('object', 'Vacation mode (tracking pauses, streak freezes, notices go quiet): {"until": "YYYY-MM-DD"} turns it on through that day (within 30 days, in the future), {"end": true} ends it now.'),
+        tracking_mode: nullable('string', 'Trip tracking: "auto" (Shift records trips by itself) or "manual" (they log trips by hand).'),
+        language: nullable('string', 'The app\'s language: "en", "es", "pt-BR" or "zh-Hans".'),
+        vehicle_type: nullable('string', 'The car they would otherwise drive, for CO₂ estimates: "gas", "hybrid", "ev" or "none".'),
+        profile_public: nullable('boolean', 'Whether other members can see their profile.'),
+        assistant_on: nullable('boolean', 'false turns the AI assistant off (the Ask button goes away). Only false; it can\'t be turned on from here.'),
       },
     },
   },
   ...RIDE_PLAN_TOOLS,
   {
     name: 'open_screen',
-    description: "A button to a screen of the Shift app, for things done there: commute (their saved commute), commute_setup (set home and work), around_you (the map of what's near them), rides (group rides and events), event or ride (one of them, by id; event also opens a challenge by its id from get_my_challenges), rewards (rewards they've won), log_trip (log a trip by hand), ride_plan (a Shift Together first ride plan, by its match_id), trip (one recorded trip, by its id from get_my_activity, where they can change how they traveled), trip_history (all their trips), my_rewards (rewards they've won), notifications (notification settings), vacation (pause tracking while away), partner_request (Shift Together sign-up: kind newcomer = go with someone who knows the way, guide = show someone the way, carpool = share the drive to work; mode bike, walk or transit, not for carpool), partner_matches (their Shift Together matches, where they also end a match or report a problem), partner_practice (the practice ride sign-up: an easy bike ride near home with a guide, off the commute), closure_plan (their plan for an MBTA closure, by its plan_id from get_my_closure_plan), memories (what you remember about them, where they can delete any of it). Also bike_confidence: \"How do you feel about biking there?\", which sends them to the first step that fits (go, a guide, a free road riding lesson near Somerville, or learn-to-ride classes).",
+    description: "A button to a screen of the Shift app, for things done there: commute (their saved commute), commute_setup (set home and work), around_you (the map of what's near them), rides (group rides and events), event or ride (one of them, by id; event also opens a challenge by its id from get_my_challenges), rewards (rewards they've won), log_trip (log a trip by hand), ride_plan (a Shift Together first ride plan, by its match_id), trip (one recorded trip, by its id from get_my_activity, where they can change how they traveled), trip_history (all their trips), my_rewards (rewards they've won), notifications (notification settings), vacation (pause tracking while away), partner_request (Shift Together sign-up: kind newcomer = go with someone who knows the way, guide = show someone the way, carpool = share the drive to work; mode bike, walk or transit, not for carpool), partner_matches (their Shift Together matches, where they also end a match or report a problem), partner_practice (the practice ride sign-up: an easy bike ride near home with a guide, off the commute), closure_plan (their plan for an MBTA closure, by its plan_id from get_my_closure_plan), memories (what you remember about them, where they can delete any of it). The Settings area: settings (the Settings screen itself), tracking (trip tracking: automatic or manual, location permission, Apple Health import), language (the app's language), car (which car they'd otherwise drive, for CO₂ estimates), privacy (their public profile), assistant_settings (the AI assistant switch, what it remembers, their conversations), account (their email, sign out, delete account), places (saved places: Home, Work, School), go_together (their Go together sign-ups and matches), invite (invite friends, their referral code), help (help and contact). An older app can't open the Settings screens; the tool says so, and then you say where it lives (\"Profile tab, then Settings\"). Also bike_confidence: \"How do you feel about biking there?\", which sends them to the first step that fits (go, a guide, a free road riding lesson near Somerville, or learn-to-ride classes).",
     input_schema: {
       type: 'object',
       properties: {
@@ -809,6 +818,41 @@ const NOTICES: Record<string, string> = {
   did_you_know: 'Tips & insights',
   campaign_emails: 'Shift updates (email)',
 }
+
+/** Where each Settings screen lives, for apps that can't open it from a button. */
+const SETTINGS_WHERE: Record<string, string> = {
+  settings: 'the Profile tab, then Settings',
+  tracking: 'the Profile tab, then Settings, then Trip tracking',
+  language: 'the Profile tab, then Settings, then Language',
+  car: 'the Profile tab, then Settings, then My car',
+  privacy: 'the Profile tab, then Settings, then Public profile',
+  assistant_settings: 'the Profile tab, then Settings, then AI assistant',
+  account: 'the Profile tab, then Settings, then Account',
+  places: 'the Profile tab, then Settings, then My places',
+  go_together: 'the Profile tab, then Go together',
+  invite: 'the Profile tab, then Invite friends',
+  help: 'the Profile tab, then Settings, then Help',
+}
+
+/** The settings beyond notices, in the words the app's Settings rows use. */
+const LANGUAGE_WORDS: Record<string, string> = { en: 'English', es: 'Spanish', 'pt-BR': 'Portuguese', 'zh-Hans': 'Chinese' }
+const CAR_WORDS: Record<string, string> = { gas: 'gas', hybrid: 'hybrid', ev: 'electric', none: 'no car' }
+const TRACKING_WORDS: Record<string, string> = { auto: 'automatic', manual: 'manual' }
+type SettingsRow = { tracking_mode?: string | null; vacation_until?: string | null; locale?: string | null; vehicle_type?: string | null; profile_public?: boolean | null; notification_preferences?: Record<string, boolean> | null }
+const SETTINGS_COLUMNS = 'notification_preferences, tracking_mode, vacation_until, locale, vehicle_type, profile_public'
+const VACATION_MAX_DAYS = 30
+
+/** Today in Boston as YYYY-MM-DD (vacation dates are calendar days). */
+const bostonToday = () => new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' })
+const plusDays = (ymd: string, n: number) => {
+  const d = new Date(`${ymd}T12:00:00Z`)
+  d.setUTCDate(d.getUTCDate() + n)
+  return d.toISOString().slice(0, 10)
+}
+/** "Nov 12" from YYYY-MM-DD. */
+const dayWord = (ymd: string) => new Date(`${ymd}T12:00:00Z`).toLocaleDateString('en-US', { timeZone: 'UTC', month: 'short', day: 'numeric' })
+/** The vacation that is on today, else null. */
+const vacationOn = (until: string | null | undefined) => until && until >= bostonToday() ? { until } : null
 
 const MODE_WORDS: Record<string, string> = {
   walk: 'walk', bike: 'bike', transit_bus: 'bus', transit_train: 'train', transit_commuter_rail: 'Commuter Rail',
@@ -1167,7 +1211,7 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
         if (screen === 'roam' && !canOpen(ctx, 'roam') && typeof input.id === 'string' && /^[A-Za-z0-9_-]{1,100}$/.test(input.id)) {
           return ok({ shown: true, next: 'The button shows under your reply. Now write the reply itself. Do not mention the button.' }, { href: `/shift/roams/${input.id}`, label: String(input.label || 'See the Roam').slice(0, 40) })
         }
-        if (!canOpen(ctx, screen)) return ok({ shown: false, note: "Their version of the app can't open that screen from here yet. Tell them where it is in a few words instead (a trip: Recent trips on the Home tab, then tap the trip; rewards they've won: the Rewards tab; notifications or vacation: Profile; a closure plan: the Around You card on Home)." })
+        if (!canOpen(ctx, screen)) return ok({ shown: false, note: `Their version of the app can't open that screen from here yet. Tell them where it is in a few words instead (${(SETTINGS_SCREENS as readonly string[]).includes(screen) ? SETTINGS_WHERE[screen] ?? 'the Profile tab, then Settings' : "a trip: Recent trips on the Home tab, then tap the trip; rewards they've won: the Rewards tab; notifications or vacation: Profile; a closure plan: the Around You card on Home"}).` })
         const id = typeof input.id === 'string' && /^[A-Za-z0-9_-]{1,100}$/.test(input.id) ? input.id : null
         if ((screen === 'event' || screen === 'ride' || screen === 'ride_plan' || screen === 'trip' || screen === 'roam' || screen === 'closure_plan') && !id) return fail(`A ${screen} button needs its id.`)
         const params: Record<string, string> | null = screen === 'partner_request'
@@ -1381,16 +1425,43 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
       }
       case 'get_my_settings': {
         const [u, e] = await Promise.all([
-          ctx.user.from('users').select('notification_preferences').eq('id', ctx.userId).single(),
+          ctx.user.from('users').select(SETTINGS_COLUMNS).eq('id', ctx.userId).single(),
           ctx.user.rpc('get_my_email_subscriptions'),
         ])
-        const prefs = ((u.data as { notification_preferences?: Record<string, boolean> } | null)?.notification_preferences ?? {})
+        const row = (u.data ?? {}) as SettingsRow
+        const prefs = row.notification_preferences ?? {}
         const em = (e.data ?? {}) as { all_off?: boolean; subscriptions?: { id: string; topic: string; names?: { en?: string }; on: boolean }[] }
+        const notifications = Object.entries(NOTICES).map(([key, name]) => ({ key, name, on: prefs[key] ?? true }))
+        const push = notifications.filter((n) => n.key !== 'campaign_emails')
+        const lists = (em.subscriptions ?? []).map((x) => ({ id: x.id, name: x.names?.en ?? x.topic, on: x.on }))
+        const vacation = vacationOn(row.vacation_until)
+        const tracking = row.tracking_mode === 'manual' ? 'manual' : 'auto'
+        const language = row.locale && row.locale in LANGUAGE_WORDS ? row.locale : null
+        const car = row.vehicle_type && row.vehicle_type in CAR_WORDS ? row.vehicle_type : 'gas'
+        const profilePublic = row.profile_public !== false
         return ok({
-          notifications: Object.entries(NOTICES).map(([key, name]) => ({ key, name, on: prefs[key] ?? true })),
-          email_lists: (em.subscriptions ?? []).map((x) => ({ id: x.id, name: x.names?.en ?? x.topic, on: x.on })),
+          notifications,
+          email_lists: lists,
           ...(em.all_off ? { note: 'They turned off all Shift email.' } : {}),
-        }, canOpen(ctx, 'notifications') ? { screen: 'notifications', label: 'Open notification settings' } : undefined)
+          tracking_mode: tracking,
+          vacation,
+          language,
+          vehicle_type: car,
+          profile_public: profilePublic,
+          assistant_on: true,
+          // The same words as the Settings rows, so the answer matches the screen.
+          summary: [
+            `Push: ${push.filter((n) => n.on).length} of ${push.length} kinds on`,
+            em.all_off ? 'Email: all off' : `Email: ${lists.filter((l) => l.on).length} of ${lists.length} lists on`,
+            `Trip tracking: ${TRACKING_WORDS[tracking]}`,
+            `Vacation mode: ${vacation ? `on until ${dayWord(vacation.until)}` : 'off'}`,
+            `Language: ${language ? LANGUAGE_WORDS[language] : 'not set (the phone decides)'}`,
+            `My car: ${CAR_WORDS[car]}`,
+            `Public profile: ${profilePublic ? 'on' : 'off'}`,
+            'AI assistant: on',
+          ],
+          can_change: 'All of these change with change_settings (a card they approve), except their email address, signing out and deleting the account: those are on the account screen (open_screen account).',
+        }, canOpen(ctx, 'settings') ? { screen: 'settings', label: 'Open Settings' } : canOpen(ctx, 'notifications') ? { screen: 'notifications', label: 'Open notification settings' } : undefined)
       }
       case 'check_route_link': {
         const r = await fetchRideWithGps(String(input.url ?? ''))
@@ -1713,14 +1784,76 @@ export async function approvalCard(ctx: ToolCtx, name: string, input: Record<str
       const l = lists.find((s) => s.id === v.id)
       return l && typeof v.on === 'boolean' ? [{ id: l.id, name: l.names?.en ?? l.topic, on: v.on }] : []
     })
-    if (!notices.length && !emails.length) return { result: fail('Nothing to change. Use the keys and ids from get_my_settings.') }
+    // The rest of the Settings screen (Shift 2026-10-30). Each line is the row's own words.
+    const lines: string[] = []
+    const changes: Record<string, unknown> = {}
+    const { data: me } = await ctx.user.from('users').select(SETTINGS_COLUMNS).eq('id', ctx.userId).single()
+    const row = (me ?? {}) as SettingsRow
+    const mode = input.tracking_mode
+    if (mode != null) {
+      if (mode !== 'auto' && mode !== 'manual') return { result: fail('Trip tracking is "auto" or "manual".') }
+      if (!canOpen(ctx, 'tracking')) return { result: fail("Their version of the app can't switch trip tracking from here. Tell them it lives in the app under Profile, then Settings, then Trip tracking.") }
+      if ((row.tracking_mode ?? 'auto') === mode) return { result: fail(`Trip tracking is already ${TRACKING_WORDS[mode]}.`) }
+      changes.tracking_mode = mode
+      lines.push(`Trip tracking: ${TRACKING_WORDS[mode]}`)
+    }
+    const lang = input.language
+    if (lang != null) {
+      if (typeof lang !== 'string' || !(lang in LANGUAGE_WORDS)) return { result: fail('The language is "en", "es", "pt-BR" or "zh-Hans".') }
+      if (!canOpen(ctx, 'language')) return { result: fail("Their version of the app can't change its language from here. Tell them it lives in the app under Profile, then Settings, then Language.") }
+      if (row.locale === lang) return { result: fail(`The app is already in ${LANGUAGE_WORDS[lang]}.`) }
+      changes.language = lang
+      lines.push(`Language: ${LANGUAGE_WORDS[lang]}`)
+    }
+    const vac = input.vacation
+    if (vac != null) {
+      const v = vac as { until?: unknown; end?: unknown }
+      const on = vacationOn(row.vacation_until)
+      if (v.end === true) {
+        if (!on) return { result: fail('Vacation mode is already off.') }
+        changes.vacation = { end: true }
+        lines.push('Vacation mode: off (tracking starts again)')
+      } else {
+        const until = typeof v.until === 'string' ? v.until.trim() : ''
+        const today = bostonToday()
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(until) || Number.isNaN(new Date(`${until}T12:00:00Z`).getTime())) return { result: fail('Give the last day of the vacation as YYYY-MM-DD.') }
+        if (until <= today) return { result: fail('The last day of the vacation has to be after today.') }
+        if (until > plusDays(today, VACATION_MAX_DAYS)) return { result: fail(`Vacation mode runs ${VACATION_MAX_DAYS} days at most. Offer ${dayWord(plusDays(today, VACATION_MAX_DAYS))}, the latest it can go.`) }
+        if (on?.until === until) return { result: fail(`Vacation mode is already on until ${dayWord(until)}.`) }
+        changes.vacation = { until }
+        lines.push(`Vacation mode: on until ${dayWord(until)}`)
+      }
+    }
+    const car = input.vehicle_type
+    if (car != null) {
+      if (typeof car !== 'string' || !(car in CAR_WORDS)) return { result: fail('The car is "gas", "hybrid", "ev" or "none".') }
+      if ((row.vehicle_type ?? 'gas') === car) return { result: fail(`My car is already ${CAR_WORDS[car]}.`) }
+      changes.vehicle_type = car
+      lines.push(`My car: ${CAR_WORDS[car]}`)
+    }
+    const pub = input.profile_public
+    if (pub != null) {
+      if (typeof pub !== 'boolean') return { result: fail('Public profile is true or false.') }
+      if ((row.profile_public !== false) === pub) return { result: fail(`Public profile is already ${pub ? 'on' : 'off'}.`) }
+      changes.profile_public = pub
+      lines.push(`Public profile: ${pub ? 'on' : 'off'}`)
+    }
+    const assistant = input.assistant_on
+    if (assistant != null) {
+      if (assistant !== false) return { result: fail("You can turn the assistant off, not on. It's on now.") }
+      if (!canOpen(ctx, 'assistant_settings')) return { result: fail("Their version of the app can't turn the assistant off from here. Tell them it lives in the app under Profile, then Settings, then AI assistant.") }
+      changes.assistant_on = false
+      lines.push('AI assistant: off (the Ask button goes away)')
+    }
+    if (!notices.length && !emails.length && !lines.length) return { result: fail('Nothing to change. Use the keys and ids from get_my_settings.') }
+    const off = changes.assistant_on === false
     return {
       card: {
         title: 'Change your settings',
-        lines: [...notices.map(([k, on]) => `${NOTICES[k]}: ${on ? 'on' : 'off'}`), ...emails.map((m) => `${m.name} email: ${m.on ? 'on' : 'off'}`)],
-        cta: 'Save', tone: 'primary',
+        lines: [...notices.map(([k, on]) => `${NOTICES[k]}: ${on ? 'on' : 'off'}`), ...emails.map((m) => `${m.name} email: ${m.on ? 'on' : 'off'}`), ...lines],
+        cta: off ? 'Turn off' : 'Save', tone: off ? 'danger' : 'primary',
       },
-      input: { notifications: Object.fromEntries(notices), emails: emails.map(({ id, on }) => ({ id, on })) },
+      input: { notifications: Object.fromEntries(notices), emails: emails.map(({ id, on }) => ({ id, on })), ...changes },
     }
   }
   return { result: fail(`Unknown tool ${name}`) }
@@ -1972,6 +2105,89 @@ async function runApprovedPracticeRide(ctx: ToolCtx, input: Record<string, unkno
 }
 
 /** Run a saving tool once the person approved its card. */
+/** The approved settings beyond notices and email, written the way the app
+ *  writes them (Shift lib/vacation.ts, lib/assistant.ts, profile/index.tsx),
+ *  then a button to the screen for what changed, with the params the new
+ *  app uses to apply it on the phone (tracking, language and the assistant
+ *  switch live partly on the device). The first in this order wins:
+ *  tracking, language, assistant, vacation, car, public profile, notices. */
+async function applySettings(ctx: ToolCtx, input: Record<string, unknown>, noticesChanged: boolean): Promise<ToolResult> {
+  const saved: string[] = []
+  const oops = (what: string) => fail(`${what} didn't save. Try again in a moment.`)
+  const mode = input.tracking_mode
+  if (mode === 'auto' || mode === 'manual') {
+    if (!canOpen(ctx, 'tracking')) return fail("Their version of the app can't switch trip tracking from here. Tell them it lives in the app under Profile, then Settings, then Trip tracking.")
+    const { error } = await ctx.user.from('users').update({ tracking_mode: mode }).eq('id', ctx.userId)
+    if (error) return oops('Trip tracking')
+    saved.push(`Trip tracking: ${TRACKING_WORDS[mode]}`)
+  }
+  const lang = input.language
+  if (typeof lang === 'string' && lang in LANGUAGE_WORDS) {
+    if (!canOpen(ctx, 'language')) return fail("Their version of the app can't change its language from here. Tell them it lives in the app under Profile, then Settings, then Language.")
+    const { error } = await ctx.user.from('users').update({ locale: lang }).eq('id', ctx.userId)
+    if (error) return oops('The language')
+    saved.push(`Language: ${LANGUAGE_WORDS[lang]}`)
+  }
+  const vac = input.vacation as { until?: unknown; end?: unknown } | null | undefined
+  if (vac && (vac.end === true || typeof vac.until === 'string')) {
+    // As lib/vacation.ts: end_vacation ends it as of yesterday; start_vacation
+    // starts today (the RPC allows a day either way of the person's own
+    // timezone) and sets users.vacation_until. A new date while one is on
+    // ends the old one first, since the RPC keeps one at a time.
+    const { data: me } = await ctx.user.from('users').select('vacation_until').eq('id', ctx.userId).single()
+    const on = vacationOn((me as SettingsRow | null)?.vacation_until)
+    if (on) {
+      const { error } = await ctx.user.rpc('end_vacation')
+      if (error) return oops('Vacation mode')
+    }
+    if (vac.end === true) saved.push('Vacation mode: off')
+    else {
+      const until = String(vac.until)
+      const { error } = await ctx.user.rpc('start_vacation', { p_starts_on: bostonToday(), p_ends_on: until })
+      if (error) return fail(error.message.includes('too_long') ? `Vacation mode runs ${VACATION_MAX_DAYS} days at most.` : error.message.includes('invalid') ? 'That date doesn\'t work for vacation mode. It has to be after today, within 30 days.' : "Vacation mode didn't save. Try again in a moment.")
+      saved.push(`Vacation mode: on until ${dayWord(until)}`)
+    }
+  }
+  const car = input.vehicle_type
+  if (typeof car === 'string' && car in CAR_WORDS) {
+    const { error } = await ctx.user.from('users').update({ vehicle_type: car }).eq('id', ctx.userId)
+    if (error) return oops('My car')
+    // Rescales their lifetime CO₂ against the new car, as the app does.
+    await ctx.user.rpc('rebuild_user_impact_cache', { p_user_id: ctx.userId })
+    saved.push(`My car: ${CAR_WORDS[car]}`)
+  }
+  const pub = input.profile_public
+  if (typeof pub === 'boolean') {
+    const { error } = await ctx.user.from('users').update({ profile_public: pub }).eq('id', ctx.userId)
+    if (error) return oops('Public profile')
+    saved.push(`Public profile: ${pub ? 'on' : 'off'}`)
+  }
+  if (input.assistant_on === false) {
+    if (!canOpen(ctx, 'assistant_settings')) return fail("Their version of the app can't turn the assistant off from here. Tell them it lives in the app under Profile, then Settings, then AI assistant.")
+    const { data, error } = await ctx.user.rpc('set_assistant_choice', { p_on: false })
+    if (error || (data as { ok?: boolean } | null)?.ok !== true) return oops('The assistant switch')
+    saved.push('AI assistant: off')
+  }
+  if (noticesChanged) saved.push('Notices and email lists')
+
+  // The button, for the first change in this order, and what the phone still needs.
+  const link: ScreenLink | undefined =
+    (mode === 'auto' || mode === 'manual') && canOpen(ctx, 'tracking') ? { screen: 'tracking', params: { mode }, label: 'Open Trip tracking' }
+    : typeof lang === 'string' && lang in LANGUAGE_WORDS && canOpen(ctx, 'language') ? { screen: 'language', params: { set: lang }, label: 'Open Language' }
+    : input.assistant_on === false && canOpen(ctx, 'assistant_settings') ? { screen: 'assistant_settings', params: { state: 'off' }, label: 'Open AI assistant settings' }
+    : vac && (vac.end === true || typeof vac.until === 'string') && canOpen(ctx, 'vacation') ? { screen: 'vacation', label: 'Open Vacation mode' }
+    : typeof car === 'string' && car in CAR_WORDS && canOpen(ctx, 'car') ? { screen: 'car', label: 'Open My car' }
+    : typeof pub === 'boolean' && canOpen(ctx, 'privacy') ? { screen: 'privacy', label: 'Open Public profile' }
+    : noticesChanged && canOpen(ctx, 'notifications') ? { screen: 'notifications', label: 'Open notification settings' }
+    : undefined
+  const note =
+    mode === 'auto' || mode === 'manual' ? `Saved. The phone switches when they tap the button, so say so in a sentence${mode === 'auto' ? ' (automatic tracking also needs location permission, which the screen asks for)' : ''}.`
+    : typeof lang === 'string' ? 'Saved. The app changes its language when they tap the button, so say so in a sentence.'
+    : input.assistant_on === false ? 'Saved. The Ask button goes away when they tap the button; say goodbye in a sentence and that the switch under Profile, then Settings, then AI assistant turns it back on.'
+    : 'Saved. Say so in a sentence; the Settings screen shows the same.'
+  return ok({ saved: true, changed: saved, note }, link)
+}
+
 export async function runApproved(ctx: ToolCtx, name: string, input: Record<string, unknown>): Promise<ToolResult> {
   try {
     if (RIDE_PLAN_NEEDS_APPROVAL.has(name)) return await runApprovedRidePlan(ctx, name, input)
@@ -2015,7 +2231,7 @@ export async function runApproved(ctx: ToolCtx, name: string, input: Record<stri
         const { error } = await ctx.user.rpc('set_my_email_subscription', { p_id: m.id, p_on: m.on })
         if (error) return fail("The email change didn't save. Try again in a moment.")
       }
-      return ok({ saved: true, note: 'Saved. The Notifications screen shows the same switches.' })
+      return await applySettings(ctx, input, Object.keys(notices).length > 0 || ((input.emails ?? []) as unknown[]).length > 0)
     }
     return fail(`Unknown tool ${name}`)
   } catch (e) {
