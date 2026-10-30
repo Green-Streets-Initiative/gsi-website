@@ -26,13 +26,19 @@ const SHOT_HEIGHT = 812
 const STRIP_TOP = 92
 const STRIP_HEIGHT = 40
 const STATUS_BAR = 54
+// Where the New Routes reward card starts in the screenshot. With the offer
+// closed the phone stops just above it, so the preview never shows a reward
+// residents can no longer get.
+const SHOT_HEIGHT_NO_OFFER = 690
 const ZOOM = SCREEN_WIDTH / SHOT_WIDTH
 const MOCKUP_WIDTH = SCREEN_WIDTH + BEZEL * 2
-const MOCKUP_HEIGHT = STATUS_BAR + Math.round(SHOT_HEIGHT * ZOOM) + BEZEL * 2
 
-export default function ResidentPreview() {
+/** offerDollars: "$15" while the New Routes offer is open, null once it closes. */
+export default function ResidentPreview({ offerDollars }: { offerDollars: string | null }) {
   const { name, logoPreview } = useSignup()
   const displayName = name.trim()
+  const shotHeight = offerDollars ? SHOT_HEIGHT : SHOT_HEIGHT_NO_OFFER
+  const mockupHeight = STATUS_BAR + Math.round(shotHeight * ZOOM) + BEZEL * 2
 
   return (
     <div className="flex flex-col items-center lg:pt-1">
@@ -41,21 +47,23 @@ export default function ResidentPreview() {
         role="img"
         aria-label={`The neighborhood page on a phone: ${
           displayName ? `"In partnership with ${displayName}"` : 'your logo'
-        } at the top, a map of nearby T stops, buses, Bluebikes and bike routes, and the $15 Shift welcome offer`}
+        } at the top and a map of nearby T stops, buses, Bluebikes and bike routes${
+          offerDollars ? `, and the ${offerDollars} Shift welcome offer` : ''
+        }`}
         className="relative m-0 [--mockup-scale:0.66] sm:[--mockup-scale:0.72] lg:[--mockup-scale:0.8]"
         style={{
           width: `calc(${MOCKUP_WIDTH}px * var(--mockup-scale))`,
-          height: `calc(${MOCKUP_HEIGHT}px * var(--mockup-scale))`,
+          height: `calc(${mockupHeight}px * var(--mockup-scale))`,
         }}
       >
         <div
           aria-hidden="true"
           className="pointer-events-none origin-top-left select-none"
-          style={{ width: MOCKUP_WIDTH, height: MOCKUP_HEIGHT, transform: 'scale(var(--mockup-scale))' }}
+          style={{ width: MOCKUP_WIDTH, height: mockupHeight, transform: 'scale(var(--mockup-scale))' }}
         >
           <PhoneShell>
             <div className="bg-[#F4F8EE]" style={{ height: STATUS_BAR }} />
-            <div className="relative" style={{ width: SHOT_WIDTH, height: SHOT_HEIGHT, zoom: ZOOM }}>
+            <div className="relative overflow-hidden" style={{ width: SHOT_WIDTH, height: shotHeight, zoom: ZOOM }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src="/images/move-in/nearby-phone.webp"
@@ -83,11 +91,13 @@ export default function ResidentPreview() {
           </PhoneShell>
         </div>
       </figure>
-      <p className="mt-5 max-w-[340px] text-[15px] leading-[1.6] text-ink-soft">
-        New residents who take 10 walking, biking or transit trips with Shift in their first 30
-        days unlock $15 at a local shop or a digital gift card, their choice. For the first 200
-        people to finish.
-      </p>
+      {offerDollars && (
+        <p className="mt-5 max-w-[340px] text-[15px] leading-[1.6] text-ink-soft">
+          New residents who take 10 walking, biking or transit trips with Shift in their first 30
+          days unlock {offerDollars} at a local shop or a digital gift card, their choice. For the
+          first 200 people to finish.
+        </p>
+      )}
     </div>
   )
 }

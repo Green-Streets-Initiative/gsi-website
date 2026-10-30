@@ -6,6 +6,7 @@ import { splitPlaceLabel } from '@/lib/nearby/neighborhood'
 import { fetchPopularBikeStreets } from '@/lib/nearby/popularity'
 import { parsePartnerSlug, partnerLogoPath } from '@/lib/nearby/partner'
 import { fetchCoBrand } from '@/lib/nearby/cobrand-server'
+import { loadNewRoutesOffer } from '@/lib/nearby/newroutes-offer-server'
 import { canonicalStreetKey } from '@/lib/nearby/street-names'
 import { shuttleAgencyFor } from '@/lib/nearby/shuttle-agencies'
 import { protectionLabel } from '@/lib/nearby/bike-labels'
@@ -96,7 +97,7 @@ export default async function NearbyPrintPage({ searchParams }: {
   if (partnerSlug && !qrParams.has('utm_source')) qrParams.set('utm_source', partnerSlug)
   const qrUrl = `${SITE_URL}${buildShareUrl(loc.lat, loc.lng, loc.label, qrParams)}`
 
-  const [snapshot, qrSvg, popularStreetKeys, partner] = await Promise.all([
+  const [snapshot, qrSvg, popularStreetKeys, partner, newRoutesOffer] = await Promise.all([
     buildNearbySnapshotModel(loc.lat, loc.lng, {
       maxTransit: MAX_PRINT_TRANSIT,
       maxBike: MAX_PRINT_BIKE,
@@ -116,6 +117,9 @@ export default async function NearbyPrintPage({ searchParams }: {
     // fetching this server-rendered page may block supabase.co directly.
     fetchCoBrand(partnerSlug).then(p =>
       p?.logoUrl ? { ...p, logoUrl: partnerLogoPath(p.slug) } : p),
+    // Whether the offer still runs: a sheet printed after the sign-up window
+    // closes must not carry the reward or the code
+    loadNewRoutesOffer(),
   ])
   const { stations, anyFar, hasRail, hasBus, bikeCorridors, docks: printDocks, destinations, lines, markers, drawnTiers } = snapshot
 
@@ -124,7 +128,7 @@ export default async function NearbyPrintPage({ searchParams }: {
   // link. Decided AFTER the partner row loads: a co-brand alone no longer
   // means the campaign, so a partner handing this sheet to their own
   // community no longer prints a movers' reward on it.
-  const newRoutes = isNewRoutesContext(params.toString(), partner?.campaign)
+  const newRoutes = !!newRoutesOffer && isNewRoutesContext(params.toString(), partner?.campaign)
 
   const legend: { swatch: React.ReactNode; label: string }[] = []
   if (hasRail) legend.push({ swatch: <LegendLine color="#DA291C" />, label: tr('print.legend_t_lines') })

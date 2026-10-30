@@ -3,13 +3,22 @@
 import posthog from 'posthog-js'
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import { ArrowSquareOut, Check, Copy, UploadSimple } from '@phosphor-icons/react'
+import AddressAutocomplete from '@/components/AddressAutocomplete'
 import { gaEvent } from '@/lib/ga'
+import { buildShareUrl } from '@/lib/nearby/share'
+import { combinePlaceLabel, resolvePlaceLabel } from '@/lib/nearby/neighborhood'
 import { BUTTON, H3 } from './sign'
 
 /**
- * Self-serve co-brand signup: name, role and an optional logo in, a live
- * /nearby?partner=<slug> link out, no login and no waiting on GSI. Submits to
- * /api/partners (service role does the row and upload; anon can't write).
+ * Self-serve co-brand signup: name, role, an optional building address and
+ * an optional logo in, a live /nearby?partner=<slug> link out, no login and
+ * no waiting on GSI. Submits to /api/partners (service role does the row and
+ * upload; anon can't write). With an address the link carries the building's
+ * lat/lng/label, so residents land on their building, as employer pages do.
+ *
+ * Outreach emails link here prefilled: ?name=<building>&address=<street
+ * address> (plus utm tags). A prefilled address the visitor never picked
+ * from the suggestions is looked up once on submit (first suggestion).
  *
  * The form and the phone preview beside it (ResidentPreview) share state
  * through SignupProvider, so the preview shows the visitor's own name or
@@ -19,7 +28,7 @@ import { BUTTON, H3 } from './sign'
  * the outreach funnel reads email → page → started → created → link copied:
  *   partner_signup_started    first interaction with the form
  *   partner_signup_submitted  submit pressed and passed client checks
- *   partner_signup_succeeded  row created ({ slug, role, has_logo })
+ *   partner_signup_succeeded  row created ({ slug, role, has_logo, has_address })
  *   partner_signup_failed     { stage: 'validation' | 'server' | 'network', reason }
  *   partner_link_copied       { kind: 'live', slug }
  *   partner_page_opened       { slug } — "Open your page" on the success card
@@ -51,6 +60,45 @@ function utmProps(): Partial<Record<(typeof UTM_KEYS)[number], string>> {
     if (v) out[k] = v
   }
   return out
+}
+
+// ?name= and ?address= prefill from an outreach email, capped like the form.
+function prefill(): { name: string; address: string } {
+  if (typeof window === 'undefined') return { name: '', address: '' }
+  const params = new URLSearchParams(window.location.search)
+  return {
+    name: (params.get('name') ?? '').trim().slice(0, 120),
+    address: (params.get('address') ?? '').trim().slice(0, 200),
+  }
+}
+
+/** A building on the map: coordinates plus the "Neighborhood, Town" label
+ *  the /nearby link carries. */
+interface Building {
+  lat: number
+  lng: number
+  label: string
+}
+
+// Coordinates for typed text: the first suggestion's location. Used only when
+// the visitor didn't pick a suggestion (a prefilled or pasted address).
+async function lookUpAddress(text: string): Promise<{ lat: number; lng: number } | null> {
+  try {
+    const res = await fetch('/api/places/autocomplete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ input: text }),
+    })
+    const placeId = (await res.json())?.predictions?.[0]?.placeId
+    if (!placeId) return null
+    const details = await fetch(`/api/places/details?placeId=${encodeURIComponent(placeId)}&fields=location`).then(r => r.json())
+    const loc = details?.location
+    return typeof loc?.latitude === 'number' && typeof loc?.longitude === 'number'
+      ? { lat: loc.latitude, lng: loc.longitude }
+      : null
+  } catch {
+    return null
+  }
 }
 
 function track(name: string, props: Record<string, unknown>) {
@@ -107,6 +155,10 @@ const INPUT =
 export function PartnerSignupForm() {
   const { name, setName, logo, logoPreview, setLogoFile } = useSignup()
   const [role, setRole] = useState('')
+  const [address, setAddress] = useState('')
+  const [picked, setPicked] = useState<{ lat: number; lng: number } | null>(null)
+  const [city, setCity] = useState<string | null>(null)
+  const [building, setBuilding] = useState<Building | null>(null)
   const [email, setEmail] = useState('')
   const [honeypot, setHoneypot] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -116,6 +168,33 @@ export function PartnerSignupForm() {
   const [slug, setSlug] = useState<string | null>(null)
   const started = useRef(false)
   const fileInput = useRef<HTMLInputElement>(null)
+
+  // Prefill from the outreach link once, on mount (window.location, not
+  // useSearchParams, which can be empty on the first render)
+  useEffect(() => {
+    const p = prefill()
+    if (p.name) setName(p.name)
+    if (p.address) setAddress(p.address)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Coordinates for the address, if any: the picked suggestion, else a
+  // lookup of the typed text. Then the label residents see. Fails soft: no
+  // address on the link is the old behavior, never a failed signup.
+  async function locateBuilding(): Promise<Building | null> {
+    const text = address.trim()
+    if (!text) return null
+    const coords = picked ?? (await lookUpAddress(text))
+    if (!coords) {
+      track('partner_signup_failed', { stage: 'validation', reason: 'address not found' })
+      return null
+    }
+    let label = ''
+    try {
+      label = combinePlaceLabel(await resolvePlaceLabel(coords.lat, coords.lng, city))
+    } catch { /* the page resolves its own label when the link has none */ }
+    return { ...coords, label }
+  }
 
   function markStarted() {
     if (started.current) return
@@ -154,11 +233,13 @@ export function PartnerSignupForm() {
     if (!role) return fail('validation', 'Please choose what best describes you.')
 
     setSubmitting(true)
-    track('partner_signup_submitted', { role, has_logo: !!logo })
+    track('partner_signup_submitted', { role, has_logo: !!logo, has_address: !!address.trim() })
     try {
+      const located = await locateBuilding()
       const fd = new FormData()
       fd.set('name', name)
       fd.set('role', role)
+      if (address.trim()) fd.set('address', address.trim())
       fd.set('contact_email', email)
       if (logo) fd.set('logo', logo)
       fd.set('website', honeypot)
@@ -169,7 +250,8 @@ export function PartnerSignupForm() {
         setSubmitting(false)
         return fail('server', data.error ?? 'Something went wrong. Please try again.')
       }
-      track('partner_signup_succeeded', { slug: data.slug, role, has_logo: !!logo })
+      track('partner_signup_succeeded', { slug: data.slug, role, has_logo: !!logo, has_address: !!located })
+      setBuilding(located)
       setSlug(data.slug)
     } catch {
       setSubmitting(false)
@@ -177,7 +259,7 @@ export function PartnerSignupForm() {
     }
   }
 
-  if (slug) return <SuccessCard slug={slug} />
+  if (slug) return <SuccessCard slug={slug} building={building} address={address.trim()} />
 
   return (
     <form
@@ -211,6 +293,32 @@ export function PartnerSignupForm() {
             className={INPUT}
           />
         </label>
+
+        <div>
+          {/* The component's own label is a small form label; this form's
+              labels are bolder, so it keeps that one for screen readers and
+              shows the form's style. */}
+          <span className={LABEL} aria-hidden>
+            Building address <span className="font-normal text-ink-soft">(optional)</span>
+          </span>
+          <AddressAutocomplete
+            value={address}
+            onChange={(v) => {
+              setAddress(v)
+              setPicked(null)
+              setCity(null)
+            }}
+            onPlaceSelected={(p) => setPicked({ lat: p.lat, lng: p.lng })}
+            onCityDetected={setCity}
+            label="Building address (optional)"
+            hideLabel
+            placeholder="123 Main St, Somerville"
+          />
+          <span className={HINT}>
+            Your page opens right on this building. Leave it blank if you manage several: each
+            resident enters their own address.
+          </span>
+        </div>
 
         <fieldset>
           <legend className={LABEL}>What best describes you?</legend>
@@ -332,9 +440,12 @@ export function PartnerSignupForm() {
 
 /* ── Success ─────────────────────────────────────────────── */
 
-function SuccessCard({ slug }: { slug: string }) {
+function SuccessCard({ slug, building, address }: { slug: string; building: Building | null; address: string }) {
   // utm_campaign tags the campaign; the partner slug identifies the building.
-  const liveUrl = `${SITE_URL}/nearby?partner=${slug}&utm_source=partner&utm_campaign=newroutes`
+  const tags = new URLSearchParams({ partner: slug, utm_source: 'partner', utm_campaign: 'newroutes' })
+  const liveUrl = building
+    ? `${SITE_URL}${buildShareUrl(building.lat, building.lng, building.label, tags)}`
+    : `${SITE_URL}/nearby?${tags.toString()}`
   const [copied, setCopied] = useState(false)
   const heading = useRef<HTMLHeadingElement>(null)
 
@@ -364,8 +475,11 @@ function SuccessCard({ slug }: { slug: string }) {
         Your page is ready
       </h2>
       <p className="mt-3 text-[1.0625rem] leading-[1.6] text-ink-soft">
-        Share this link with residents. It works for any Greater Boston address: each person enters
-        their own.
+        {building
+          ? `Share this link with residents. It opens right on ${address}.`
+          : address
+            ? 'Share this link with residents. We couldn’t find that address on the map, so each person enters their own. Open your page and enter the address to get a link that opens on your building.'
+            : 'Share this link with residents. It works for any Greater Boston address: each person enters their own.'}
       </p>
 
       <div className="mt-5 flex flex-col gap-2 sm:flex-row">
@@ -394,9 +508,9 @@ function SuccessCard({ slug }: { slug: string }) {
       </a>
 
       <p className="mt-5 border-t border-navy/10 pt-5 text-[15px] leading-[1.6] text-ink-soft">
-        For a single building, open your page and enter its address. Copy link on that page then
-        opens right on your building, and Print makes a one-page sheet with a QR code for welcome
-        packets.
+        {building
+          ? 'Print on your page makes a one-page sheet with a QR code for welcome packets.'
+          : 'For a single building, open your page and enter its address. Copy link on that page then opens right on your building, and Print makes a one-page sheet with a QR code for welcome packets.'}
       </p>
     </div>
   )
