@@ -16,7 +16,7 @@ const SHIFT_JOIN_URL = 'https://shift.gogreenstreets.org/join/WALKMA'
 export const metadata: Metadata = {
   title: 'Walk around Massachusetts with us | Green Streets Initiative',
   description:
-    "Join Team Green Streets in WalkMassachusetts's Beat the Bay State challenge, Nov 1 to 30. Shift counts your walking miles for you.",
+    "Join Team Green Streets in WalkMassachusetts's virtual Beat the Bay State challenge, Nov 1 to 30: walk anywhere, log your miles, move your team around a map of the state. Shift counts your walking miles for you.",
   alternates: { canonical: '/walkma' },
   robots: { index: true, follow: true },
 }
@@ -36,8 +36,9 @@ export default function WalkMaPage() {
             Walk around Massachusetts with us
           </h1>
           <p className="mt-3 text-[16px] leading-snug text-white/90">
-            WalkMassachusetts&rsquo;s Beat the Bay State: teams walk the 900 miles around the state in
-            November. We&rsquo;re in, and Shift counts your miles.
+            WalkMassachusetts&rsquo;s Beat the Bay State, Nov 1 to 30: walk anywhere, log your miles, and
+            move your team around a map of the state&rsquo;s 900-mile perimeter. We&rsquo;re in, and Shift
+            counts your miles.
           </p>
         </header>
 
