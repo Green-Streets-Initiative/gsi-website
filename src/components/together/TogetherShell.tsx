@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
-import { Car, Handshake, LogOut, MailCheck, MapPinned, Sprout, UsersRound, type LucideIcon } from 'lucide-react'
+import { Car, Handshake, LogOut, MailCheck, MapPinned, Plane, Sprout, TrainFront, UsersRound, type LucideIcon } from 'lucide-react'
 import { toneClass } from '@/components/events/EventsTone'
 import { Button, Card, Field, Input, Notice, Spinner, cx } from '@/components/organizers/ui'
 import { supabase } from '@/lib/supabase'
@@ -20,7 +20,10 @@ import '@/components/events/events-tone.css'
  */
 type Phase = 'checking' | 'signed_out' | 'off' | 'ready' | 'error'
 
-type State = { phase: Phase; userId: string | null; email: string | null; notice: string | null; signOut: () => Promise<void> }
+/** 'logan': gogreenstreets.org/logan (Shift 01518), open to anyone signed in, with its own words. */
+export type ShellVariant = 'together' | 'logan'
+
+type State = { phase: Phase; userId: string | null; email: string | null; notice: string | null; signOut: () => Promise<void>; variant: ShellVariant }
 const Ctx = createContext<State | null>(null)
 
 const WAYS_TO_GO: { label: string; Icon: LucideIcon }[] = [
@@ -35,7 +38,7 @@ export function useTogether(): State {
   return v
 }
 
-export default function TogetherShell({ children }: { children: ReactNode }) {
+export default function TogetherShell({ children, variant = 'together' }: { children: ReactNode; variant?: ShellVariant }) {
   const [phase, setPhase] = useState<Phase>('checking')
   const [userId, setUserId] = useState<string | null>(null)
   const [email, setEmail] = useState<string | null>(null)
@@ -73,11 +76,13 @@ export default function TogetherShell({ children }: { children: ReactNode }) {
         }
         setUserId(session.user.id)
         setEmail(session.user.email ?? null)
-        setPhase((await togetherOn(session.user.id)) ? 'ready' : 'off')
+        // Logan trips are open to everyone; the rest of Shift Together waits for its switch.
+        setPhase(variant === 'logan' || (await togetherOn(session.user.id)) ? 'ready' : 'off')
       } catch {
         setPhase('error')
       }
     })()
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- runs once on arrival
   }, [])
 
   useEffect(() => {
@@ -95,7 +100,7 @@ export default function TogetherShell({ children }: { children: ReactNode }) {
   }, [])
 
   return (
-    <Ctx.Provider value={{ phase, userId, email, notice, signOut }}>
+    <Ctx.Provider value={{ phase, userId, email, notice, signOut, variant }}>
       <div className={cx('min-h-[70dvh] bg-(--ev-bg) text-(--ev-ink)', toneClass('light'))}>
         <SubBar />
         <div className="mx-auto w-full max-w-[920px] px-4 pb-16 pt-6 sm:px-6 sm:pt-8">
@@ -108,7 +113,7 @@ export default function TogetherShell({ children }: { children: ReactNode }) {
 
 /** Under the site header once signed in: the two pages and the account. */
 function SubBar() {
-  const { phase, email, signOut } = useTogether()
+  const { phase, email, signOut, variant } = useTogether()
   const path = usePathname()
   if (phase !== 'ready' && phase !== 'off') return null
   const nav = [
@@ -118,8 +123,10 @@ function SubBar() {
   return (
     <div className="border-b border-(--ev-line) bg-(--ev-bar)">
       <div className="mx-auto flex min-h-[56px] max-w-[920px] items-center gap-x-4 px-4 sm:px-6">
-        <span className="hidden font-display text-[17px] font-extrabold sm:inline">Shift Together</span>
-        {phase === 'ready' && (
+        <span className={cx('font-display text-[17px] font-extrabold', variant === 'logan' ? 'inline' : 'hidden sm:inline')}>
+          {variant === 'logan' ? 'Going to Logan together' : 'Shift Together'}
+        </span>
+        {phase === 'ready' && variant === 'together' && (
           <nav aria-label="Shift Together" className="flex items-center gap-1">
             {nav.map((n) => (
               <Link
@@ -223,8 +230,8 @@ function JourneySteps({ at, full }: { at?: 1 | 2 | 3; full: boolean }) {
 }
 
 function Gate({ children }: { children: ReactNode }) {
-  const { phase } = useTogether()
-  if (phase === 'checking') return <Spinner label="Opening Shift Together" />
+  const { phase, variant } = useTogether()
+  if (phase === 'checking') return <Spinner label={variant === 'logan' ? 'Opening your trips' : 'Opening Shift Together'} />
   if (phase === 'signed_out') return <SignIn />
   if (phase === 'off') {
     return (
@@ -247,8 +254,21 @@ function Gate({ children }: { children: ReactNode }) {
   return <>{children}</>
 }
 
+const LOGAN_POINTS: { label: string; Icon: LucideIcon }[] = [
+  { label: 'Take the T to the airport with someone from near you', Icon: TrainFront },
+  { label: 'Or share a taxi or ride app and split the fare', Icon: Car },
+  { label: 'Going there, coming home, or both', Icon: Plane },
+]
+
+const LOGAN_STEPS: { title: string; hint: string }[] = [
+  { title: 'Tell us your flight', hint: 'When it leaves or lands, and where you live.' },
+  { title: 'We find someone', hint: 'Near you, at the airport when you are.' },
+  { title: 'You both say yes', hint: 'Then you get the plan and each other’s email.' },
+]
+
 function SignIn() {
-  const { notice } = useTogether()
+  const { notice, variant } = useTogether()
+  const logan = variant === 'logan'
   const [email, setEmail] = useState('')
   const [sent, setSent] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -281,9 +301,9 @@ function SignIn() {
       {/* Phone: heading, then the sign-in, then how it works. Wide: heading and ways left, sign-in right. */}
       <div className="grid grid-cols-1 gap-6 md:grid-cols-[1.15fr_1fr] md:items-start md:gap-x-10">
         <div className="md:col-start-1 md:row-start-1">
-          <p className="text-[15px] font-semibold text-(--ev-accent)">Shift Together, from Green Streets Initiative</p>
+          <p className="text-[15px] font-semibold text-(--ev-accent)">{logan ? 'Shift, from Green Streets Initiative' : 'Shift Together, from Green Streets Initiative'}</p>
           <h1 className="mt-2 font-display text-[clamp(30px,4.2vw,44px)] font-extrabold leading-[1.05] text-balance">
-            Try a new way to get there, with someone who knows it
+            {logan ? 'Going to Logan? Find someone to go with' : 'Try a new way to get there, with someone who knows it'}
           </h1>
         </div>
         <Card className="shadow-(--ev-shadow) md:col-start-2 md:row-span-2 md:row-start-1">
@@ -306,14 +326,16 @@ function SignIn() {
                 <Input id="together-email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />
               </Field>
               <Button type="submit" variant="primary" busy={busy}>Email me a sign-in link</Button>
-              <p className="text-[15px] leading-snug text-(--ev-ink-80)">
-                Met us at the Somerville Connection Expo? Use the email you gave us.
-              </p>
+              {logan ? null : (
+                <p className="text-[15px] leading-snug text-(--ev-ink-80)">
+                  Met us at the Somerville Connection Expo? Use the email you gave us.
+                </p>
+              )}
             </form>
           )}
         </Card>
         <ul className="grid gap-2 md:col-start-1 md:row-start-2" aria-label="Ways to take part">
-          {WAYS_TO_GO.map(({ label, Icon }) => (
+          {(logan ? LOGAN_POINTS : WAYS_TO_GO).map(({ label, Icon }) => (
             <li key={label} className="flex items-center gap-3 text-[17px] font-semibold">
               <span className="flex h-9 w-9 items-center justify-center rounded-full bg-(--ev-panel) text-(--ev-accent)" aria-hidden>
                 <Icon className="h-5 w-5" />
@@ -325,9 +347,23 @@ function SignIn() {
       </div>
       <section aria-labelledby="together-how">
         <h2 id="together-how" className="mb-3 font-display text-[22px] font-extrabold">How it works</h2>
-        <Journey full />
+        {logan ? (
+          <ol className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            {LOGAN_STEPS.map((st, i) => (
+              <li key={st.title} className="flex items-start gap-3 rounded-2xl border border-(--ev-line) bg-white p-4">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-(--ev-accent-fill) font-display text-[17px] font-extrabold text-(--ev-on-accent-fill)" aria-hidden>{i + 1}</span>
+                <span className="min-w-0">
+                  <span className="block text-[17px] font-bold leading-snug">{st.title}</span>
+                  <span className="mt-1 block text-[15px] leading-snug text-(--ev-ink-80)">{st.hint}</span>
+                </span>
+              </li>
+            ))}
+          </ol>
+        ) : <Journey full />}
         <p className="mt-4 text-[15px] leading-snug text-(--ev-ink-80)">
-          Free, and no app needed. Your match sees only your first name until you both say yes.
+          {logan
+            ? 'Free, and no app needed. Your match sees only your first name and town until you both say yes.'
+            : 'Free, and no app needed. Your match sees only your first name until you both say yes.'}
         </p>
       </section>
     </div>
