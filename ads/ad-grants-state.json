@@ -950,6 +950,43 @@
       "month_end_math": "8.8% on 3,534 impr with 2 days left; October's 5% and 1-conversion rules both met.",
       "alerts": [],
       "emailed": false
+    },
+    {
+      "date": "2026-10-30",
+      "source": "scheduled quick check (ad-grants-pulse), live account, This month = Oct 1-30 (authuser=9 redirected to 5)",
+      "mtd": {
+        "window": "2026-10-01..2026-10-30",
+        "impressions": 3716,
+        "clicks": 326,
+        "ctr_pct": 8.77,
+        "cost": 1525.07,
+        "conversions": 34
+      },
+      "by_campaign": {
+        "How-to Guides": { "impressions": 3356, "clicks": 313, "conversions": 34 },
+        "Town Walking & Biking": { "impressions": 311, "clicks": 13 },
+        "GSI — Brand": { "impressions": 14, "clicks": 2 },
+        "New Routes — Movers": { "impressions": 30, "clicks": 0 },
+        "Shift App — Massachusetts": { "impressions": 11, "clicks": 0 },
+        "Shift Your Semester — Students": { "impressions": 1, "clicks": 0 }
+      },
+      "campaign_status": "How-to Guides and Brand Eligible (Limited) Limited by search volume; others Eligible. Budgets unchanged ($449.50/day).",
+      "banners": [
+        "NEW: Apply for healthcare certification (replaces the financial-services certification prompt seen since 10-12; same kind of prompt, no ad is Limited by policy, so not serving-threatening; do not apply)",
+        "Protect your account from unauthorized activity",
+        "Recommendation card: Add broad match keywords (not applied)"
+      ],
+      "ads": {
+        "rows_read": "all 41",
+        "disapproved_seen": 0,
+        "limited_by_policy": 0,
+        "not_eligible": 0,
+        "poor": "2, both already known (How to Pay for the T RSA; Walking School Bus Ideas)"
+      },
+      "search_terms": "773 terms; named rows 205 clicks / 1,876 impr, 23 conv. Top 25 by impressions all How-to Guides / Paying for the T transit and fare lookups (boston public transportation 11/95, boston t 2/27, how to pay for the t in boston 2/27, charlie card 6/25). Zero-click terms at 3+ impr are on-target fare/transit lookups; 'www paybyplatema com' still 0/7 (no new impressions since 10-29); 'boston öffentliche verkehrsmittel' 0/5 is on-topic (German). Town 'bike path near me' 0/5 (keyword paused 10-28, <14 days). No negatives proposed.",
+      "month_end_math": "8.77% on 3,716 impr with 1 day left; October's 5% and 1-conversion rules both met.",
+      "alerts": [],
+      "emailed": false
     }
   ],
   "snapshots": [
