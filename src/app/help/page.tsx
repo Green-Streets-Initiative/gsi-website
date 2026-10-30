@@ -21,11 +21,13 @@ const quickLinks = [
     sections: [
       { name: 'Getting Started', anchor: '#getting-started' },
       { name: 'Tracking Your Trips', anchor: '#trip-tracking' },
-      { name: 'Earning XP & Unlocking Rewards', anchor: '#points-rewards' },
+      { name: 'Getting Around', anchor: '#getting-around' },
+      { name: 'XP & Rewards', anchor: '#points-rewards' },
       { name: 'Badges, Streaks & Tiers', anchor: '#badges-streaks-tiers' },
       { name: 'Roams', anchor: '#roams' },
-      { name: 'Finding Rewards Partners', anchor: '#rewards-partners-users' },
-      { name: 'Shift Your Summer', anchor: '#competitions' },
+      { name: 'Drawings & Challenges', anchor: '#competitions' },
+      { name: 'Privacy & Data', anchor: '#privacy-data' },
+      { name: 'Account & Settings', anchor: '#account-settings' },
     ],
   },
   {
@@ -46,6 +48,9 @@ const quickLinks = [
 
 const linkClass = 'underline hover:text-[#2966E5] transition-colors'
 
+// Checked against the app (Update 21) and the live database 2026-10-30.
+// Paths like "Profile > Settings > Trip tracking" follow the October 2026
+// Settings redesign.
 const faqSections = [
   {
     id: 'getting-started',
@@ -54,7 +59,7 @@ const faqSections = [
       {
         question: 'What is Shift?',
         answer:
-          'Shift is a free app from Green Streets Initiative that logs your walking, biking, and transit trips \u2014 and rewards you for choosing active transportation. You\u2019ll earn XP, unlock achievement badges, climb tier levels, and unlock perks at local Rewards Partners as you go. You can also enter prize draws during seasonal events like Shift Your Summer.',
+          'Shift is a free app from Green Streets Initiative that records your walking, biking, scooter and transit trips on its own and rewards you for them. You earn XP, badges and tiers, unlock offers at local businesses, get gift cards for trying new ways of getting around, and are entered in monthly prize drawings like Walk/Ride Day. It also shows the next buses and trains near you and plans routes.',
       },
       {
         question: 'How do I download the Shift app?',
@@ -73,12 +78,17 @@ const faqSections = [
       {
         question: 'How do I create an account?',
         answer:
-          'Open the app and tap "Get Started." You can sign up with your email address, or sign in with Apple or Google. You\u2019ll be asked to choose a display name and can add your neighborhood to appear on local leaderboards.',
+          'Open the app and enter your email, and we’ll send you a sign-in link. You can also continue with Google, or with Apple on an iPhone. Then add your name. To appear on your town’s leaderboard, add your Home under Profile > Your places.',
       },
       {
         question: 'Is Shift really free?',
         answer:
           'Yes. Shift is completely free to download and use. There are no premium tiers, in-app purchases, or hidden fees.',
+      },
+      {
+        question: 'What do I get for inviting friends?',
+        answer:
+          'Your invite code is under Profile > Invite friends. When a friend joins with your code and makes 5 trips, you get $10 to spend at a local business.',
       },
     ],
   },
@@ -89,72 +99,103 @@ const faqSections = [
       {
         question: 'How does trip tracking work?',
         answer:
-          'Shift uses background location services on your phone to automatically detect when you\u2019re walking, biking, or taking transit. When a trip is detected, it\u2019s logged with the distance, duration, and mode. You\u2019ll see it appear in your trip history.',
+          'Shift uses your phone’s location in the background to notice when you walk, bike, scoot or take transit. Each trip is saved with its distance, time and mode, and shows up in your trip history. When Shift isn’t sure how you traveled, it asks you.',
       },
       {
-        question: 'What transportation modes count?',
+        question: 'Which ways of getting around count?',
         answer:
-          'Shift recognizes walking, biking, public transit (bus, subway, commuter rail), carpooling, and e-scooter rides. These are the modes that earn XP and count toward your tier. Driving does not.',
+          'Walking, biking, bus, subway, commuter rail, ferry, e-scooter and carpool trips earn XP. Carpools don’t count toward your tier. Driving doesn’t earn anything.',
       },
       {
-        question: 'Why didn\u2019t my trip get logged?',
+        question: 'Shift stopped recording my trips. How do I fix it?',
         answer:
-          'A few common reasons: (1) Location permissions may not be set to "Always Allow" \u2014 check your phone\u2019s Settings > Shift > Location. (2) Very short trips (under a couple of minutes) may not register. (3) Poor GPS signal in areas like tunnels or underground stations can occasionally cause a trip to be missed. If a trip is missing, you can always log it manually.',
+          'Open Profile > Settings > Trip tracking. It shows anything that’s off, like location not set to Always, Precise Location turned off, or Background App Refresh off on an iPhone, with a button to fix it. If tracking stops, a card at the top of Home walks you through it too. Trips under 0.1 mile or 2 minutes aren’t saved, and tunnels or underground stations can occasionally cause a missed trip.',
       },
       {
-        question: 'Can I log a trip manually?',
+        question: 'I got signed out. Did I lose my trips?',
         answer:
-          'Yes. From the home screen, tap the + button and choose Log past trip. Enter the mode, approximate distance, and date. Manual trips earn XP and count toward your tier the same way automatic trips do.',
+          'No. While you’re signed out, Shift keeps the trips it records for up to 30 days and sends them once you sign in again.',
+      },
+      {
+        question: 'Can I add a trip Shift missed?',
+        answer:
+          'Yes. Tap Log past trip on the Home tracking card, then pick how you traveled, the distance and the day, up to a week back. Trips added this way earn XP and count toward your tier, but they don’t earn drawing entries or gift-card rewards. For a trip to count for those, tap Start Trip as you set off. You can also import walks and rides from Apple Health or Health Connect in Profile > Settings > Trip tracking.',
+      },
+      {
+        question: 'How do I fix a wrong travel mode?',
+        answer:
+          'Open the trip and pick the right travel mode. A trip you fix or confirm counts in full: XP, drawing entries and rewards.',
+      },
+      {
+        question: 'Do trips outside Massachusetts count?',
+        answer:
+          'Shift saves them, but when a trip starts and ends outside Massachusetts, only walks earn XP and drawing entries. If you’re away for a while, you can turn on Vacation mode in Profile > Settings.',
       },
       {
         question: 'How accurate is background tracking?',
         answer:
-          'Background tracking is generally accurate within a reasonable margin. GPS precision varies depending on your environment \u2014 dense urban areas with tall buildings and underground transit can reduce accuracy. The app uses intelligent filtering to distinguish modes, but occasional misclassifications can happen.',
+          'Background tracking is generally accurate within a reasonable margin. GPS precision varies depending on your environment — dense urban areas with tall buildings and underground transit can reduce accuracy. The app uses intelligent filtering to distinguish modes, but occasional misclassifications can happen.',
       },
       {
         question: 'Does tracking drain my battery?',
         answer:
-          'Shift uses efficient background location services designed to minimize battery impact. Most users see minimal additional drain. If you notice an issue, make sure your phone\u2019s OS and the Shift app are both up to date.',
+          'Shift uses efficient background location services designed to minimize battery impact. Most users see minimal additional drain. If you notice an issue, make sure your phone’s OS and the Shift app are both up to date.',
+      },
+    ],
+  },
+  {
+    id: 'getting-around',
+    title: 'Getting Around',
+    items: [
+      {
+        question: 'How do I see departures near me or plan a trip?',
+        answer:
+          'Around You on the Home screen shows the next buses and trains near you, and nearby bikes. Tap Plan a route for directions to anywhere. You can save a trip you make often, and it shows up on Home and under Profile > Your trips.',
       },
     ],
   },
   {
     id: 'points-rewards',
-    title: 'Earning XP & Unlocking Rewards',
+    title: 'XP & Rewards',
     items: [
       {
-        question: 'How does the rewards model work?',
+        question: 'How do rewards work?',
         answer:
-          'Shift uses an access-based rewards model. As you take active trips you earn XP and climb through five tiers. Once you reach the second tier (Mover), all Rewards Partner offers are unlocked \u2014 discounts, freebies, or member-only deals at local businesses. You don\u2019t spend XP to redeem; your tier is your key.',
+          'There are two kinds. Offers at local businesses (discounts, freebies and member deals) open once you reach Mover, the second tier. You don’t spend XP on them; your tier is your key. Gift cards come from winning a drawing, finishing a challenge, trying a new way to make a regular trip, or inviting a friend.',
       },
       {
         question: 'How do I earn XP?',
         answer:
-          'You earn XP every time you log an active trip (walk, bike, transit, carpool, or e-scooter). The amount per trip depends on your tier: Starters earn 1 XP per trip, Movers 2, Shifters 3, Pacesetters 4, and Trailblazers 5. You can earn up to 15 XP per day from trips. On top of that, you earn bonus XP for hitting badge milestones (streaks, distances, mode mix) and for tier promotions. During a Featured Goal sprint, completing the goal in time gives you a 50% XP bonus on the badge.',
+          'You earn XP every time you take an active trip (walk, bike, transit, carpool, or e-scooter). The amount per trip depends on your tier: Starters earn 1 XP per trip, Movers 2, Shifters 3, Pacesetters 4, and Trailblazers 5. You can earn up to 15 XP per day from trips. On top of that, you earn bonus XP for hitting badge milestones (streaks, distances, mode mix) and for tier promotions. During a Featured Goal sprint, completing the goal in time gives you a 50% XP bonus on the badge. Trips added with Log past trip earn XP too, but not drawing entries or gift-card rewards.',
       },
       {
         question: 'Is XP a currency I can spend?',
         answer:
-          'No. XP is a record of your progress, not a wallet. It drives tier advancement and shows up on your profile so you can see how far you\u2019ve come \u2014 but you never spend it to redeem an offer. Rewards Partner offers are unlocked by your tier.',
+          'No. XP is a record of your progress, not a wallet. It drives tier advancement and shows how far you’ve come — but you never spend it to redeem an offer. Rewards Partner offers are unlocked by your tier.',
       },
       {
-        question: 'How do I unlock and use a Rewards Partner offer?',
+        question: 'I got a gift card. How do I use it?',
         answer:
-          'Open the Rewards tab to see what\u2019s available. All offers unlock once you reach Mover (the second tier). Tap any offer to see the details, the partner location, and any terms. To redeem in-store, show your tier badge on the app screen to the cashier and they\u2019ll apply the offer.',
+          'Open the Rewards tab, tap Your rewards, and pick where to spend it before the pick-by date. Brand gift cards arrive right away; cards for local shops take a couple of business days.',
+      },
+      {
+        question: 'How do I find and use a Rewards Partner offer?',
+        answer:
+          'The Rewards tab lists every partner offer with its location and details. All of them open at Mover. To use one in a store, show your tier badge on the offer screen to the cashier. For online offers, use the code or link shown in the app.',
       },
       {
         question: 'Where can I see my XP and tier?',
         answer:
-          'Your current XP total and tier are visible on your profile screen and on the home screen status card. The Rewards tab also shows your tier so you can quickly see which offers are unlocked.',
+          'Your tier is at the top of Home; tap it for details. Your XP total and history are on the Progress tab.',
       },
       {
         question: 'Does XP expire?',
         answer:
-          'XP is a progression metric, so there\u2019s nothing to "expire" \u2014 your lifetime XP and tier history are always part of your profile. If you stop using the app for a long time we may archive inactive accounts, but as long as you\u2019re using Shift your progress is safe.',
+          'XP is a progression metric, so there’s nothing to "expire" — your lifetime XP and tier history are always part of your profile. If you stop using the app for a long time we may archive inactive accounts, but as long as you’re using Shift your progress is safe.',
       },
       {
         question:
-          'A Rewards Partner didn\u2019t honor an offer I should be eligible for. What do I do?',
+          'A Rewards Partner didn’t honor an offer I should be eligible for. What do I do?',
         answer: (
           <p>
             Email us at{' '}
@@ -165,99 +206,6 @@ const faqSections = [
             out with the partner directly so you get the offer.
           </p>
         ),
-      },
-    ],
-  },
-  {
-    id: 'badges-streaks-tiers',
-    title: 'Badges, Streaks & Tiers',
-    items: [
-      {
-        question: 'What are the tier levels?',
-        answer:
-          'Shift has five tiers: Starter, Mover, Shifter, Pacesetter, and Trailblazer. You advance by accumulating active trips and maintaining a strong Shift Rate. Each step up unlocks more Rewards Partner offers and increases the XP you earn per trip.',
-      },
-      {
-        question: 'What is Shift Rate?',
-        answer:
-          'Shift Rate is the percentage of your total trips that are active \u2014 walking, biking or scooting, or taking transit. The home screen shows your 7-day Shift Rate as a quick read on how the week is going. Tier advancement uses your 60-day Shift Rate so a single off-week doesn\u2019t bump you down a tier.',
-      },
-      {
-        question: 'How do achievement badges work?',
-        answer:
-          'Achievement badges are earned by reaching specific milestones \u2014 trying new modes, building streaks, hitting cumulative distance goals, completing Roams, and more. Check your profile to see which badges you\u2019ve unlocked and what\u2019s next. Most badges award bonus XP when earned.',
-      },
-      {
-        question: 'What is a Featured Goal?',
-        answer:
-          'A Featured Goal is a 14-day sprint highlighting the next badge you\u2019re closest to earning. If you complete the goal within the 14-day window, you get a 50% XP bonus on top of the badge\u2019s normal XP. Featured Goals replace the older "challenges" concept \u2014 same idea, more personalized.',
-      },
-      {
-        question: 'How do streaks work?',
-        answer:
-          'A streak counts the days when you take at least one active trip (walking, biking, transit, or e-scooter). You get a 2-day grace window \u2014 miss up to two days in a row and the streak stays alive. Take an active trip on the third day or sooner to keep going. Three consecutive days without an active trip resets the streak. We also automatically protect your streak during significant MBTA service disruptions so you\u2019re not penalized for something outside your control.',
-      },
-      {
-        question: 'What happens if I break a streak?',
-        answer:
-          'Your current streak resets to 1, but your longest streak is saved on your profile. Streaks are meant to be motivating, not punishing \u2014 start a new one whenever you\u2019re ready.',
-      },
-    ],
-  },
-  {
-    id: 'roams',
-    title: 'Roams',
-    items: [
-      {
-        question: 'What is a Roam?',
-        answer:
-          'A Roam is a curated outing — a set of checkpoints along a walking, biking, transit, or multi-modal route that you visit in any order. Think of it as a self-guided tour that rewards you for exploring your city by active transportation. Roams range from quick neighborhood loops to longer cross-city adventures.',
-      },
-      {
-        question: 'How do I start a Roam?',
-        answer:
-          'Open the Community tab and look for available Roams. Tap one to see its checkpoints on a map, the estimated distance, and which modes are recommended (walk, bike, transit, or any combination). When you’re ready, tap Start. The app will track your progress as you visit each checkpoint.',
-      },
-      {
-        question: 'How does checkpoint detection work?',
-        answer:
-          'As you move near a checkpoint, the app detects your arrival automatically using your phone’s location. If auto-detection doesn’t trigger (GPS can be imprecise in dense areas), you can tap the checkpoint on the map and use the manual check-in button when you’re nearby. Either way counts the same.',
-      },
-      {
-        question: 'Do I need to visit every checkpoint?',
-        answer:
-          'Most Roams require visiting all checkpoints to complete. Some longer Roams have a lower threshold — for example, a 20-checkpoint trail Roam might only require 16. The Roam detail screen shows how many checkpoints you need.',
-      },
-      {
-        question: 'Do I need to follow a specific route between checkpoints?',
-        answer:
-          'No. You choose your own path between checkpoints. The map shows checkpoint locations, but how you get between them is up to you. Walk, bike, or take transit — whatever the Roam’s recommended modes include.',
-      },
-      {
-        question: 'What do I earn for completing a Roam?',
-        answer:
-          'Completing a Roam earns you a badge and XP. Some Roams are part of collections — finish all Roams in a collection for a bonus badge. During Shift Your Summer, completing a Roam also adds bonus sweepstakes entries.',
-      },
-      {
-        question: 'Any safety tips for Roams?',
-        answer:
-          'Always follow traffic laws and use sidewalks, bike lanes, and crosswalks. Stay aware of your surroundings — don’t stare at your phone while moving. Plan your route before you start, especially for longer Roams. Bring water, wear weather-appropriate gear, and let someone know your plans for longer outings. The app is a guide, not a GPS navigator — use your own judgment about safe routes.',
-      },
-    ],
-  },
-  {
-    id: 'rewards-partners-users',
-    title: 'Finding Rewards Partners',
-    items: [
-      {
-        question: 'How do I find Rewards Partners near me?',
-        answer:
-          'The Rewards tab in the app shows available partner offers in your area. Each offer lists the partner location, the offer details, and the minimum tier required to unlock it.',
-      },
-      {
-        question: 'What kinds of rewards are available?',
-        answer:
-          'Rewards vary by partner \u2014 discounts, free items, member-only deals, or special online offers. Each partner sets the offer and the minimum tier required to unlock it. Higher tiers unlock more offers.',
       },
       {
         question: 'Can I suggest a business as a Rewards Partner?',
@@ -278,108 +226,127 @@ const faqSections = [
     ],
   },
   {
-    id: 'competitions',
-    title: 'Shift Your Summer',
+    id: 'badges-streaks-tiers',
+    title: 'Badges, Streaks & Tiers',
     items: [
       {
-        question: 'What is Shift Your Summer?',
+        question: 'What are the tier levels?',
         answer:
-          'Shift Your Summer is our flagship summer event \u2014 a sweepstakes where your active trips, Roam completions, referrals, and other actions all count as entries into prize draws from leading brands and local partners. It runs from mid-June through mid-August. Check the Community tab during the event for full details and a live look at available prizes.',
+          'Shift has five tiers: Starter, Mover, Shifter, Pacesetter, and Trailblazer. You move up by taking active trips and keeping a strong 60-day Shift Rate. Each step up earns more XP per trip, and every partner offer opens at Mover.',
       },
       {
-        question: 'Who is eligible?',
+        question: 'What is Shift Rate?',
+        answer:
+          'Shift Rate is the share of your trips that weren’t made by driving: walking, biking, scooting, transit or carpooling. Home shows your 60-day Shift Rate, the same one that sets your tier, so a single off-week doesn’t bump you down.',
+      },
+      {
+        question: 'How do achievement badges work?',
+        answer:
+          'Achievement badges are earned by reaching specific milestones — trying new modes, building streaks, hitting cumulative distance goals, completing Roams, and more. The Progress tab shows which badges you’ve unlocked and what’s next. Most badges award bonus XP when earned.',
+      },
+      {
+        question: 'What is a Featured Goal?',
+        answer:
+          'A Featured Goal is a 14-day sprint highlighting the next badge you’re closest to earning. If you complete the goal within the 14-day window, you get a 50% XP bonus on top of the badge’s normal XP.',
+      },
+      {
+        question: 'How do streaks work?',
+        answer:
+          'A streak counts the days when you take at least one active trip (walking, biking, transit, or e-scooter). You get a 2-day grace window — miss up to two days in a row and the streak stays alive. Three days in a row without an active trip resets it. New to Shift? Home counts weeks in a row with an active trip until your daily streak reaches 3 days. We also protect your streak during significant MBTA service disruptions, and if you’re going away, turn on Vacation mode in Profile > Settings and your streak waits for you.',
+      },
+      {
+        question: 'What happens if I break a streak?',
+        answer:
+          'Your current streak resets to 1, but your longest streak is saved on your profile. Streaks are meant to be motivating, not punishing — start a new one whenever you’re ready.',
+      },
+    ],
+  },
+  {
+    id: 'roams',
+    title: 'Roams',
+    items: [
+      {
+        question: 'What is a Roam?',
+        answer:
+          'A Roam is a curated outing — a set of checkpoints along a walking, biking, transit, or multi-modal route that you visit in any order. Think of it as a self-guided tour that rewards you for exploring your city by active transportation. Roams range from quick neighborhood loops to longer cross-city adventures.',
+      },
+      {
+        question: 'How do I start a Roam?',
+        answer:
+          'Open the Community tab and look for available Roams. Tap one to see its checkpoints on a map, the estimated distance, and which modes are recommended (walk, bike, transit, or any combination). When you’re ready, tap Start this Roam. The app will track your progress as you visit each checkpoint.',
+      },
+      {
+        question: 'How does checkpoint detection work?',
+        answer:
+          'As you move near a checkpoint, the app detects your arrival automatically using your phone’s location. If auto-detection doesn’t trigger (GPS can be imprecise in dense areas), you can tap the checkpoint on the map and use the manual check-in button when you’re nearby. Either way counts the same.',
+      },
+      {
+        question: 'Do I need to visit every checkpoint?',
+        answer:
+          'Most Roams require visiting all checkpoints to complete. Some trail Roams need only some of their stops, and bonus stops are always optional. The Roam detail screen shows how many checkpoints you need.',
+      },
+      {
+        question: 'Do I need to follow a specific route between checkpoints?',
+        answer:
+          'No. You choose your own path between checkpoints. The map shows checkpoint locations, but how you get between them is up to you. Walk, bike, or take transit — whatever the Roam’s recommended modes include.',
+      },
+      {
+        question: 'What do I earn for completing a Roam?',
+        answer:
+          'Completing a Roam earns you a badge and XP. Some Roams are part of collections — finish all Roams in a collection for a bonus badge.',
+      },
+      {
+        question: 'Any safety tips for Roams?',
+        answer:
+          'Always follow traffic laws and use sidewalks, bike lanes, and crosswalks. Stay aware of your surroundings — don’t stare at your phone while moving. Plan your route before you start, especially for longer Roams. Bring water, wear weather-appropriate gear, and let someone know your plans for longer outings. The app is a guide, not a GPS navigator — use your own judgment about safe routes.',
+      },
+    ],
+  },
+  {
+    id: 'competitions',
+    title: 'Drawings & Challenges',
+    items: [
+      {
+        question: 'What is Walk/Ride Day?',
         answer: (
           <p>
-            Shift Your Summer is open to Massachusetts residents aged 18 and
-            older. You must have a Shift account and opt in to the sweepstakes
-            through the app. No purchase is necessary to enter. See the{' '}
+            One day a month, every walking, biking or transit trip you record
+            in Shift enters you in a prize drawing. Entry is automatic, with
+            nothing to sign up for. It&rsquo;s open to Massachusetts residents
+            18 and older, and no purchase is necessary. The{' '}
+            <Link href="/programs/walk-ride-days" className={linkClass}>
+              Walk/Ride Day page
+            </Link>{' '}
+            has the dates and prizes, and the{' '}
+            <Link href="/events/walk-ride-day/rules" className={linkClass}>
+              official rules
+            </Link>{' '}
+            have the details.
+          </p>
+        ),
+      },
+      {
+        question: 'Are there other challenges?',
+        answer:
+          'Workplaces and groups that use Shift run their own challenges, and you’ll see them in the app if you belong to one. Shift also gives gift cards for trying something new, like making a regular trip by bike or transit.',
+      },
+      {
+        question: 'How are winners chosen, and what happens if I win?',
+        answer:
+          'Winners are drawn at random from all eligible entries after the drawing closes. Trips Shift tracked, or that you fixed or confirmed, earn entries; trips added with Log past trip don’t. If you win, we’ll email you and send a notice in the app. Claim your prize in the Rewards tab within the time shown.',
+      },
+      {
+        question: 'What happened to Shift Your Summer?',
+        answer: (
+          <p>
+            Shift Your Summer ran from June to August 2026 and has ended. Its{' '}
             <Link
               href="/events/shift-your-summer/rules"
               className={linkClass}
             >
               official rules
             </Link>{' '}
-            for full details.
-          </p>
-        ),
-      },
-      {
-        question: 'How do I get sweepstakes entries?',
-        answer: (
-          <div>
-            <p>There are several ways to get entries during the event:</p>
-            <ul className="mt-2 list-disc space-y-1 pl-5">
-              <li>
-                <strong>Active trips</strong> &mdash; Each walk, bike, or
-                transit trip counts as 1 entry, up to 6 entries per day.
-              </li>
-              <li>
-                <strong>Roam completion</strong> &mdash; Completing a Roam adds
-                10 bonus entries.
-              </li>
-              <li>
-                <strong>Checkpoint visits</strong> &mdash; Each Roam checkpoint
-                you visit adds 1 entry.
-              </li>
-              <li>
-                <strong>Collection completion</strong> &mdash; Finishing all
-                Roams in a collection adds 50 bonus entries.
-              </li>
-              <li>
-                <strong>What Moves Us videos</strong> &mdash; Submitting a video
-                to an eligible What Moves Us campaign adds 5 entries.
-              </li>
-              <li>
-                <strong>Referrals</strong> &mdash; For each friend who joins
-                Shift using your referral code and takes a verified trip, you
-                get up to 10 entries. New users who join through a referral
-                start with 2 entries. Limit 10 referred friends (up to 100
-                referral entries total).
-              </li>
-              <li>
-                <strong>Free mail-in entry (AMOE)</strong> &mdash; You can enter
-                without using the app by mailing a handwritten request. See
-                the{' '}
-                <Link
-                  href="/events/shift-your-summer/rules"
-                  className={linkClass}
-                >
-                  official rules
-                </Link>{' '}
-                for details.
-              </li>
-            </ul>
-          </div>
-        ),
-      },
-      {
-        question: 'Is there a limit on how many entries I can get?',
-        answer:
-          'Trip entries are capped at 6 per day. Referral entries max out at 10 referred friends. All other entry types (Roams, checkpoints, collections, What Moves Us) have no daily cap \u2014 the more you do, the more entries you add.',
-      },
-      {
-        question: 'How are winners chosen?',
-        answer:
-          'Winners are drawn after the event ends using a verifiable random selection from all eligible entries for each prize. More entries means better odds, but every eligible entrant has a chance. If you win, you’ll get an in-app notification with instructions to claim your prize.',
-      },
-      {
-        question: 'What happens if I win?',
-        answer:
-          'You’ll receive an in-app notification and an email with claiming instructions. You have 7 days to claim your prize. If you don’t claim in time, we redraw to the next eligible person.',
-      },
-      {
-        question: 'Where are the official rules?',
-        answer: (
-          <p>
-            Full official rules, including legal terms, prize descriptions, and
-            the free mail-in entry process, are available at{' '}
-            <Link
-              href="/events/shift-your-summer/rules"
-              className={linkClass}
-            >
-              gogreenstreets.org/events/shift-your-summer/rules
-            </Link>
-            .
+            are still online.
           </p>
         ),
       },
@@ -428,25 +395,25 @@ const faqSections = [
         question: 'How do I access my business dashboard?',
         answer: (
           <p>
-            Log in at{' '}
+            Go to{' '}
             <Link href="/shift/rewards-partners" className={linkClass}>
               gogreenstreets.org/shift/rewards-partners
             </Link>{' '}
-            with the credentials you set up during onboarding. The dashboard
-            shows your active offers, redemption history, and monthly summary
-            reports.
+            and enter your email under Partner login. We&rsquo;ll send you a
+            sign-in link. Your dashboard shows your offer, redemptions and
+            locations.
           </p>
         ),
       },
       {
         question: 'What does it cost to be a Rewards Partner?',
         answer:
-          'Nothing. There are no fees to join the Shift Rewards Partner network. You set the reward you\u2019re comfortable offering, and you benefit from exposure to an engaged community of sustainability-minded local customers.',
+          'Nothing. There are no fees to join the Shift Rewards Partner network. You set the reward you’re comfortable offering, and you benefit from exposure to an engaged community of sustainability-minded local customers.',
       },
       {
         question: 'Can I change or pause my reward offer?',
         answer:
-          'Yes. You can update your offer, change the minimum tier required, or temporarily pause your listing from your business dashboard at any time.',
+          'Yes. From your dashboard you can edit your offer, turn locations on or off, and pause your listing. While it’s paused, your offer and locations are hidden in the app until you reactivate. To change who qualifies, email us at info@gogreenstreets.org.',
       },
     ],
   },
@@ -520,7 +487,7 @@ const faqSections = [
       {
         question: 'Can students use the Shift app?',
         answer:
-          'The Shift app is designed for users 13 and older. The Shift for Schools classroom challenge is a separate, app-free experience \u2014 students participate through their teacher\u2019s daily show-of-hands tally without needing any device or account.',
+          'The Shift app is for people 13 and older, and some features are for adults 18 and older. The Shift for Schools classroom challenge is a separate, app-free experience \u2014 students participate through their teacher\u2019s daily show-of-hands tally without needing any device or account.',
       },
     ],
   },
@@ -532,10 +499,13 @@ const faqSections = [
         question: 'What data does Shift collect?',
         answer: (
           <p>
-            Shift collects your email, display name, and trip data (start/end
-            location area, distance, duration, mode). Location data is used to
-            detect and log trips. We never sell your personal data. For full
-            details, see our{' '}
+            Your email, your name, the places you save, and your trips (where
+            they start and end, distance, time and mode). Also anything you
+            choose to add: a school or work email, workouts imported from Apple
+            Health or Health Connect, and your birth date if you enter a prize
+            drawing. If you use the AI assistant, your conversations go to
+            Anthropic&rsquo;s Claude to answer you, and we keep them for 12
+            months. We never sell your personal data. For full details, see our{' '}
             <Link href="/privacy" className={linkClass}>
               Privacy Policy
             </Link>
@@ -546,15 +516,20 @@ const faqSections = [
       {
         question: 'How is my location data used?',
         answer:
-          'Location data is used solely to detect and record your trips. We use it to calculate distances, identify transportation modes, and place you on neighborhood leaderboards (if you\u2019ve opted in). We do not share raw location data with third parties.',
+          'Location data is used to detect and record your trips: to calculate distances, identify how you traveled, and count your trips toward your town’s and groups’ leaderboards. We do not share raw location data with third parties.',
+      },
+      {
+        question: 'Who can see my profile?',
+        answer:
+          'Profiles are public by default, so others in Shift can see your name, photo and badges, and you appear on leaderboards. To hide them, turn off Public profile in Profile > Settings > Privacy. Your trips still count for your groups either way.',
       },
       {
         question: 'How do I delete my account and data?',
         answer: (
           <p>
-            You can delete your account from the Settings screen in the app.
-            This permanently removes your profile, trip history, and all
-            associated data. If you have any trouble, email{' '}
+            Go to Profile &gt; Settings &gt; Account &gt; Delete account. This
+            permanently removes your profile and trip history. If you have any
+            trouble, email{' '}
             <a href="mailto:info@gogreenstreets.org" className={linkClass}>
               info@gogreenstreets.org
             </a>{' '}
@@ -569,23 +544,32 @@ const faqSections = [
     title: 'Account & Settings',
     items: [
       {
-        question: 'How do I reset my password?',
+        question: 'How do I sign in? Is there a password?',
         answer:
-          'Tap "Forgot Password" on the login screen and enter your email. You\u2019ll receive a password reset link. If you don\u2019t see it, check your spam folder.',
+          'Shift doesn’t use passwords. Enter your email on the sign-in screen and we’ll send you a sign-in link; open it on the same phone. You can also continue with Google, or with Apple on an iPhone. If a link doesn’t work, send yourself a new one, and check your spam folder.',
       },
       {
-        question: 'How do I change my display name or neighborhood?',
+        question: 'How do I change my name or neighborhood?',
         answer:
-          'Go to Settings > Profile in the app. You can update your display name and neighborhood at any time.',
+          'Profile > Edit profile changes your name and photo. Your neighborhood follows your Home place, which you can change in Profile > Your places.',
+      },
+      {
+        question: 'Can I use Shift in another language?',
+        answer:
+          'Yes. Shift is available in English, Spanish, Portuguese and Chinese. Choose yours in Profile > Settings > Language.',
+      },
+      {
+        question: 'How do I update Shift or see my version?',
+        answer:
+          'Most updates install on their own the next time you open Shift. Profile > Help shows your version and when it last updated. For bigger updates, the App Store or Google Play will offer the new version.',
       },
       {
         question: 'How do I get help or send feedback from inside the app?',
         answer: (
           <p>
-            Open the Profile tab and scroll to the Account section. Tap{' '}
-            <strong>Help &amp; FAQ</strong> to come right back to this page, or{' '}
-            <strong>Send feedback</strong> to email us with the basics about
-            your phone and app version pre-filled. You can also email{' '}
+            Open Profile &gt; Help. Tap <strong>Help &amp; FAQ</strong> to come
+            right back to this page, or <strong>Send feedback</strong> to email
+            us with your phone and app details filled in. You can also email{' '}
             <a href="mailto:info@gogreenstreets.org" className={linkClass}>
               info@gogreenstreets.org
             </a>{' '}
@@ -594,12 +578,12 @@ const faqSections = [
         ),
       },
       {
-        question: 'I\u2019m having a technical issue not listed here.',
+        question: 'I’m having a technical issue not listed here.',
         answer: (
           <p>
-            Use the in-app <strong>Send feedback</strong>{' '}link (Profile &rarr;
-            Account) &mdash; it pre-fills your phone model, OS version, and app
-            build, which helps us reproduce the issue quickly. Or email{' '}
+            Use <strong>Send feedback</strong> in Profile &gt; Help. It fills in
+            your phone model, OS and app version, and a short tracking summary
+            (no locations), which helps us find the problem quickly. Or email{' '}
             <a href="mailto:info@gogreenstreets.org" className={linkClass}>
               info@gogreenstreets.org
             </a>{' '}
