@@ -23,6 +23,8 @@ interface Props {
   closed?: LngLat[][]
   /** Place names for orientation (lib/trails/places.ts) */
   places?: Array<{ label: string; lat: number; lng: number }>
+  /** Stretches reported after snow in the last day, colored by condition (lib/trails/conditionText.ts) */
+  reports?: Array<{ line: LngLat[]; color: string }>
 }
 
 function esc(s: string) {
@@ -31,8 +33,9 @@ function esc(s: string) {
 
 /** One trail on the quiet map (same style as /trails): the path in green,
  *  its access points numbered to match the list beside it, place names for
- *  orientation, the faint network of other bike paths, closures in orange. */
-export default function TrailMap({ name, lines, points, closed = [], places = [] }: Props) {
+ *  orientation, the faint network of other bike paths, closures in orange,
+ *  and stretches reported after snow in their condition's color. */
+export default function TrailMap({ name, lines, points, closed = [], places = [], reports = [] }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<maplibregl.Map | null>(null)
 
@@ -98,6 +101,19 @@ export default function TrailMap({ name, lines, points, closed = [], places = []
           layout: { 'line-join': 'round', 'line-cap': 'round' },
           paint: { 'line-color': '#2D6A4F', 'line-width': 4.2 },
         })
+        if (reports.length > 0) {
+          map.addSource('trail-reports', {
+            type: 'geojson',
+            data: { type: 'FeatureCollection', features: reports.map((r) => ({ type: 'Feature', properties: { color: r.color }, geometry: { type: 'LineString', coordinates: r.line } })) },
+          })
+          map.addLayer({
+            id: 'trail-reports',
+            type: 'line',
+            source: 'trail-reports',
+            layout: { 'line-join': 'round', 'line-cap': 'round' },
+            paint: { 'line-color': ['get', 'color'], 'line-width': 6 },
+          })
+        }
         if (closed.length > 0) {
           map.addSource('trail-closed', {
             type: 'geojson',

@@ -1,4 +1,6 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
+import { Snowflake } from 'lucide-react'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
 import TrailIndex, { type Region } from '@/components/trails/TrailIndex'
@@ -63,6 +65,11 @@ export default async function TrailsPage() {
             <p className="mt-2.5 max-w-[62ch] text-[1.0625rem] leading-[1.55] text-ink-soft">
               {trails.length} rail trails, river paths and greenways, each with where to get on and how to get there.
               {closedCount > 0 ? ` ${closedCount === 1 ? 'One is' : `${closedCount} are`} partly closed today.` : ''}
+            </p>
+            <p className="mt-2 text-[0.9375rem]">
+              <Link href="/trails/conditions" className="inline-flex items-center gap-1.5 font-semibold text-forest underline-offset-4 hover:underline">
+                <Snowflake size={14} aria-hidden /> Path conditions after snow
+              </Link>
             </p>
             <div className="mt-6">
               <TrailIndex regions={regions} network={lines} />

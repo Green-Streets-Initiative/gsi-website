@@ -16,11 +16,13 @@ import { getTrail, isLoopLike, type TrailNotice } from '@/lib/trails/queries'
 import { getTrailLines } from '@/lib/trails/geometry'
 import { MAP_PLACES } from '@/lib/trails/places'
 import { RAIL_HOME } from '@/lib/trails/railHome'
-import { WINTER } from '@/lib/trails/winter'
+import { getPathConditions } from '@/lib/trails/conditions'
+import { CLEARED_SHORT, CONDITION_COLOR, headline, isWintry, reportLine, snowLine, timeOf } from '@/lib/trails/conditionText'
 import { getBluebikesDocks } from '@/lib/server/bluebikes'
 import { withUtm } from '@/lib/utm'
 
-export const revalidate = 3600
+// Ten minutes: path conditions after snow change through the morning.
+export const revalidate = 600
 
 const SITE_URL = 'https://www.gogreenstreets.org'
 const IOS_URL = process.env.NEXT_PUBLIC_IOS_URL || ''
@@ -150,10 +152,11 @@ export default async function TrailPage({ params }: { params: Promise<{ slug: st
   const pts = t.access_points
   const first = pts[0] ?? null
   const last = pts.length > 1 ? pts[pts.length - 1] : null
-  const [geo, docksFirst, docksLast] = await Promise.all([
+  const [geo, docksFirst, docksLast, conditions] = await Promise.all([
     getTrailLines(t.id),
     first ? getBluebikesDocks(first.lat, first.lng, 600).catch(() => []) : Promise.resolve([]),
     last ? getBluebikesDocks(last.lat, last.lng, 600).catch(() => []) : Promise.resolve([]),
+    getPathConditions(),
   ])
   const lines = geo?.lines ?? []
   // Place names for the maps: this trail's (lib/trails/places.ts), at its own access points.
@@ -212,11 +215,18 @@ export default async function TrailPage({ params }: { params: Promise<{ slug: st
       : `${miles(rail.meters / 1609)} miles from ${railFrom}`
     : null
 
-  // Who clears snow: in About all year, and in the overview from November to March.
-  const winter = WINTER[t.id] ?? null
-  const month = Number(new Date().toLocaleDateString('en-US', { month: 'numeric', timeZone: 'America/New_York' }))
+  // Who clears snow: in About all year, and in the overview from November to
+  // March. After snow, the newest report from someone who used the trail, or
+  // how much snow fell, comes first (Keith 2026-10-31).
+  const cond = conditions.get(t.id) ?? null
+  const winter = cond?.winter ?? null
+  const now = new Date()
+  const month = Number(now.toLocaleDateString('en-US', { month: 'numeric', timeZone: 'America/New_York' }))
   const winterSeason = month >= 11 || month <= 3
-  const winterShort = winter ? { yes: 'Plowed in winter', partly: 'Partly plowed in winter', no: 'Not plowed in winter' }[winter.cleared] : null
+  const winterShort = winter ? CLEARED_SHORT[winter.cleared] : null
+  const nowLine = headline(cond, now)
+  const reportLines = (cond?.reports ?? []).flatMap((r) => (r.line ?? []).map((l) => ({ line: l, color: CONDITION_COLOR[r.condition] })))
+  const hasWinterRow = !!winter || !!nowLine
 
   // One column per card, so a trail with no bike share has no empty third cell.
   const getThereCols = [t.transit_note, t.bike_share_note || dockGroups.length > 0, t.parking_note].filter(Boolean).length
@@ -340,6 +350,19 @@ export default async function TrailPage({ params }: { params: Promise<{ slug: st
                 </p>
               )}
 
+              {nowLine && (
+                <p className="mt-2 flex items-start gap-2 text-[0.9375rem] leading-snug text-navy">
+                  {nowLine.kind === 'report'
+                    ? <i className="mt-[5px] inline-block h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: CONDITION_COLOR[nowLine.condition] }} aria-hidden />
+                    : <Snowflake size={15} className="mt-[3px] shrink-0 text-ink-soft" aria-hidden />}
+                  <span>
+                    <span className="font-semibold">{nowLine.text}</span>
+                    {nowLine.kind === 'report' ? ` · Reported by a rider, ${nowLine.when}` : ''}
+                    {' · '}
+                    <a href="#winter" className="font-semibold text-forest underline-offset-4 hover:underline">Conditions</a>
+                  </span>
+                </p>
+              )}
               {winter && winterSeason && (
                 <p className="mt-2 flex items-start gap-2 text-[0.9375rem] leading-snug text-navy">
                   <Snowflake size={15} className="mt-[3px] shrink-0 text-ink-soft" aria-hidden />
@@ -388,7 +411,7 @@ export default async function TrailPage({ params }: { params: Promise<{ slug: st
             <div className="mt-5 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-start">
               <div className="lg:sticky lg:top-[124px]">
                 <div className="h-[320px] overflow-hidden rounded-[18px] border border-navy/10 sm:h-[400px] lg:h-[min(560px,calc(100vh-240px))]">
-                  <TrailMap name={t.name} lines={lines} points={pts.map((p) => ({ name: p.name, lat: p.lat, lng: p.lng, parking: !!p.parking }))} closed={closedLines} places={places} />
+                  <TrailMap name={t.name} lines={lines} points={pts.map((p) => ({ name: p.name, lat: p.lat, lng: p.lng, parking: !!p.parking }))} closed={closedLines} places={places} reports={reportLines} />
                 </div>
                 <div className="mt-2 flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
                   <p className="text-[0.875rem] text-ink-soft">
@@ -585,14 +608,38 @@ export default async function TrailPage({ params }: { params: Promise<{ slug: st
               <dl className="min-w-0 divide-y divide-navy/[0.07] self-start rounded-[16px] bg-white shadow-[0_1px_2px_rgba(25,26,46,0.05),0_0_0_1px_rgba(25,26,46,0.06)]">
                 {t.surface && <AboutRow label="Surface" body={t.surface} />}
                 {t.rules_note && <AboutRow label="Rules" body={t.rules_note} />}
-                {winter && (
+                {hasWinterRow && (
                   <div id="winter" className="scroll-mt-28 px-5 py-4">
                     <dt className="text-[0.9375rem] font-semibold text-navy">In winter</dt>
-                    <dd className="m-0 mt-1 text-[0.9375rem] leading-relaxed text-ink-soft">
-                      {winter.note}{' '}
-                      <a href={winter.source} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 whitespace-nowrap font-semibold text-forest underline-offset-4 hover:underline">
-                        Source{winter.as_of ? `, ${winter.as_of}` : ''} <ExternalLink size={11} aria-hidden />
-                      </a>
+                    {(cond?.reports.length ?? 0) > 0 && (
+                      <dd className="m-0 mt-2">
+                        <ul className="space-y-1.5">
+                          {cond!.reports.slice(0, 4).map((r, i) => (
+                            <li key={i} className="flex items-start gap-2 text-[0.9375rem] leading-snug text-navy">
+                              <i className="mt-[5px] inline-block h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: CONDITION_COLOR[r.condition] }} aria-hidden />
+                              <span><span className="font-semibold">{reportLine(r)}</span> · {timeOf(r.rode_at, now)}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </dd>
+                    )}
+                    {isWintry(cond?.weather ?? null) && (
+                      <dd className="m-0 mt-2 flex items-start gap-2 text-[0.9375rem] leading-snug text-navy">
+                        <Snowflake size={14} className="mt-[3px] shrink-0 text-ink-soft" aria-hidden /> {snowLine(cond!.weather!, now)}
+                      </dd>
+                    )}
+                    {winter && (
+                      <dd className="m-0 mt-2 text-[0.9375rem] leading-relaxed text-ink-soft">
+                        {winter.note}{' '}
+                        <a href={winter.source} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 whitespace-nowrap font-semibold text-forest underline-offset-4 hover:underline">
+                          Source{winter.as_of ? `, ${winter.as_of}` : ''} <ExternalLink size={11} aria-hidden />
+                        </a>
+                      </dd>
+                    )}
+                    <dd className="m-0 mt-2 text-[0.9375rem]">
+                      <Link href="/trails/conditions" className="inline-flex items-center gap-1 font-semibold text-forest underline-offset-4 hover:underline">
+                        Conditions on every path <ArrowRight size={14} aria-hidden />
+                      </Link>
                     </dd>
                   </div>
                 )}
