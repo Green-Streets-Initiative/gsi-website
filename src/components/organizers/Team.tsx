@@ -34,7 +34,7 @@ export default function Team() {
       const who = email.trim()
       setMsg({
         tone: 'good',
-        text: res.status === 'invited' ? `Invited ${who}.${res.emailed ? ' They have an email with how to sign in.' : ''} Once they sign in here or in the app with that address, they're a co-organizer.`
+        text: res.status === 'invited' ? `Invited ${who}.${res.emailed ? ' They have an email with how to sign in.' : res.already_emailed ? ' We already emailed them today, so no new email went out.' : ''} Once they sign in here or in the app with that address, they're a co-organizer.`
           : res.status === 'made_leader' ? `${who} was already on the ride and is now a co-organizer.${res.emailed ? " We've let them know." : ''}`
             : res.status === 'already_leader' ? `${who} is already a co-organizer.` : `${who} organizes this ride.`,
       })

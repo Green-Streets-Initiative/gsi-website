@@ -7,6 +7,7 @@ import EventMap from '@/components/events/EventMap'
 import RouteMap from '@/components/organizers/RouteMap'
 import { buildIcs, gcalUrl as eventGcalUrl } from '@/lib/event-calendar'
 import { routeMiles } from '@/lib/organizers/route-geo'
+import { todayKey } from '@/lib/organizers/ride-words'
 import RideStoreBadges from '@/components/rides/RideStoreBadges'
 import OrganizerChannels from '@/components/rides/OrganizerChannels'
 import RideFacts from '@/components/rides/RideFacts'
@@ -68,13 +69,14 @@ function directionsUrl(d: Pick<RideDate, 'meetup_lat' | 'meetup_lng'>): string {
 /** One date as the events calendar's entry, so "save to calendar" carries the
  *  same details the events pages do (lib/event-calendar.ts: the place with
  *  ", MA" when needed, the description, sign-up link, host, a link back). */
-function calendarEvent(ride: PublicRide, d: RideDate) {
+function calendarEvent(ride: PublicRide, d: RideDate, hostName: string | null) {
   return {
     id: `${ride.code}-${d.date}`, slug: null, title: d.title || ride.name, body: d.description || ride.description,
     event_date: d.date, event_time: d.start_time, event_end_time: d.end_time,
     location_name: d.meetup_name, location_address: d.meetup_address, location_lat: d.meetup_lat, location_lng: d.meetup_lng,
-    organizer_name: ride.organizer_name, organizer_url: ride.organizer_url,
-    event_url: pageUrl(ride), registration_url: ride.registration_url, tags: ride.tags ?? [],
+    organizer_name: hostName, organizer_url: null,
+    // Back to this date on the ride page, not an events URL rides don't have.
+    event_url: `${pageUrl(ride)}?date=${d.date}`, registration_url: ride.registration_url, tags: ride.tags ?? [],
   } as unknown as Parameters<typeof buildIcs>[0]
 }
 
@@ -83,8 +85,8 @@ function pageUrl(ride: PublicRide): string {
   return `https://www.gogreenstreets.org/rides/${ride.code}`
 }
 
-function downloadIcs(ride: PublicRide, d: RideDate) {
-  const blob = new Blob([buildIcs(calendarEvent(ride, d))], { type: 'text/calendar;charset=utf-8' })
+function downloadIcs(ride: PublicRide, d: RideDate, hostName: string | null) {
+  const blob = new Blob([buildIcs(calendarEvent(ride, d, hostName))], { type: 'text/calendar;charset=utf-8' })
   const a = document.createElement('a')
   a.href = URL.createObjectURL(blob)
   a.download = `${ride.name.replace(/[^\w-]+/g, '-').slice(0, 40)}-${d.date}.ics`
@@ -99,10 +101,15 @@ export default function RidePage({ ride, host = null, ascentFt = null, initialDa
   initialDate?: string | null
 }) {
   const hostHref = host?.href ?? null
-  const hostName = host?.name ?? ride.organizer_name
+  // The organization only once verified (Shift 01563, rideExtras); a typed-in
+  // name could be anyone's, so it isn't shown, as on the events calendar.
+  const hostName = host?.name ?? null
   const open = ride.occurrences.filter((d) => d.status === 'scheduled')
+  // A link to one date opens that date; if it isn't open, say so and pick
+  // nothing rather than quietly answering for another date.
+  const linkedMissing = !!initialDate && !ride.occurrences.some((d) => d.date === initialDate)
   const [selectedId, setSelectedId] = useState<string | null>(
-    ride.occurrences.find((d) => d.date === initialDate)?.id ?? open[0]?.id ?? ride.occurrences[0]?.id ?? null)
+    initialDate ? (ride.occurrences.find((d) => d.date === initialDate)?.id ?? null) : (open[0]?.id ?? ride.occurrences[0]?.id ?? null))
   const selected = ride.occurrences.find((d) => d.id === selectedId) ?? null
   const [counts, setCounts] = useState<Record<string, { going: number; maybe: number }>>(() =>
     Object.fromEntries(ride.occurrences.map((d) => [d.id, { going: d.going, maybe: d.maybe }])),
@@ -133,7 +140,8 @@ export default function RidePage({ ride, host = null, ascentFt = null, initialDa
 
   const myAnswer = selected ? me.answers[selected.id] : undefined
   const ended = ride.status === 'archived'
-  const paused = ride.status === 'paused' || !!ride.break_until
+  // A break ends on its own when its date comes: the banner goes with it.
+  const paused = ride.status === 'paused' || (!!ride.break_until && ride.break_until > todayKey())
 
   // A new date resets the form to that date's own answer.
   useEffect(() => { setDone(null); setError(null); setChoice(null) }, [selectedId])
@@ -275,6 +283,9 @@ export default function RidePage({ ride, host = null, ascentFt = null, initialDa
                 <p className="text-[15px] text-(--ev-ink-80)">No upcoming dates yet. Check back soon.</p>
               ) : (
                 <>
+                  {linkedMissing && !selectedId && (
+                    <p className="mb-3 text-[15px] text-(--ev-ink-85)">{dateLong(initialDate!)} isn&rsquo;t open yet. Pick another date below.</p>
+                  )}
                   <p className="text-[13px] font-semibold text-(--ev-ink-75)">Pick a date</p>
                   <div className="-mx-1 mt-2 flex gap-2 overflow-x-auto px-1 pb-1" role="group" aria-label="Ride dates">
                     {ride.occurrences.map((d) => {
@@ -345,16 +356,18 @@ export default function RidePage({ ride, host = null, ascentFt = null, initialDa
                               </p>
                               {done.status !== 'not_going' && (
                                 <p className="mt-1 text-[14px] text-(--ev-ink-75)">
-                                  We emailed you the details. You&rsquo;ll hear from us the evening before, and right away if the plan changes.
+                                  {done.status === 'maybe'
+                                    ? <>We emailed you the details. We&rsquo;ll let you know if anything changes.</>
+                                    : <>We emailed you the details. You&rsquo;ll hear from us the evening before, and right away if the plan changes.</>}
                                 </p>
                               )}
                               <div className="mt-3 flex flex-wrap gap-2">
                                 {done.status !== 'not_going' && (
                                   <>
-                                    <a href={eventGcalUrl(calendarEvent(ride, selected))} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-[40px] items-center gap-1.5 rounded-[10px] border border-(--ev-line-strong) px-4 py-2 text-[14px] font-semibold text-(--ev-ink) hover:bg-(--ev-panel)">
+                                    <a href={eventGcalUrl(calendarEvent(ride, selected, hostName))} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-[40px] items-center gap-1.5 rounded-[10px] border border-(--ev-line-strong) px-4 py-2 text-[14px] font-semibold text-(--ev-ink) hover:bg-(--ev-panel)">
                                       <Calendar size={14} /> Google Calendar
                                     </a>
-                                    <button type="button" onClick={() => downloadIcs(ride, selected)} className="inline-flex min-h-[40px] items-center gap-1.5 rounded-[10px] border border-(--ev-line-strong) px-4 py-2 text-[14px] font-semibold text-(--ev-ink) hover:bg-(--ev-panel)">
+                                    <button type="button" onClick={() => downloadIcs(ride, selected, hostName)} className="inline-flex min-h-[40px] items-center gap-1.5 rounded-[10px] border border-(--ev-line-strong) px-4 py-2 text-[14px] font-semibold text-(--ev-ink) hover:bg-(--ev-panel)">
                                       <Download size={14} /> Apple or Outlook
                                     </button>
                                   </>

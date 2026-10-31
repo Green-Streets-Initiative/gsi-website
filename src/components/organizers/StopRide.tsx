@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { errorText, getStopPreview, resumeRide, stopRide } from '@/lib/organizers/api'
+import { errorText, getStopPreview, resumeRide, sendStopNotice, stopRide, type Sent } from '@/lib/organizers/api'
 import { dateLabel, plural, todayKey } from '@/lib/organizers/ride-words'
 import type { RideRow } from '@/lib/organizers/types'
 import { sentLine } from './PostUpdate'
@@ -42,6 +42,8 @@ export function StopRideDialog({ ride, open, onClose, onDone }: { ride: RideRow;
   const [preview, setPreview] = useState<Preview | null>(null)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
+  // Stopped, but the notice didn't go out: offer to send it again.
+  const [failed, setFailed] = useState(false)
 
   useEffect(() => {
     if (!open) return
@@ -57,14 +59,39 @@ export function StopRideDialog({ ride, open, onClose, onDone }: { ride: RideRow;
     setBusy(true)
     setErr(null)
     try {
-      const sent = await stopRide(ride.id, mode, until, note, (preview?.notify ?? 0) > 0)
-      onDone(mode === 'end'
-        ? `The ride has ended. ${sentLine(sent)}`
-        : `The ride is on a break until ${dateLabel(until)}. ${sentLine(sent)}`)
+      // Skip the notice only when the count is known to be zero: a count that
+      // failed to load must not mean nobody hears the ride has stopped.
+      finish(await stopRide(ride.id, mode, until, note, preview ? preview.notify > 0 : true), false)
     } catch (e) {
       setErr(errorText(e))
       setBusy(false)
     }
+  }
+
+  const stoppedLine = mode === 'end' ? 'The ride has ended.' : `The ride is on a break until ${dateLabel(until)}.`
+  function finish(r: Sent, again: boolean) {
+    if (!r.noticeFailed) { onDone(`${stoppedLine} ${sentLine(r.sent)}`); return }
+    setFailed(true)
+    if (again) setErr("It still didn't go out. Check your connection and try again.")
+    setBusy(false)
+  }
+  async function resend() {
+    setBusy(true)
+    setErr(null)
+    finish(await sendStopNotice(ride.id, mode), true)
+  }
+
+  if (failed) {
+    const close = () => onDone(`${stoppedLine} The notice didn't go out.`)
+    return (
+      <Dialog open={open} onClose={close} title={mode === 'end' ? 'The ride has ended' : 'The ride is on a break'}
+        footer={<>
+          <Button variant="ghost" onClick={close}>Close</Button>
+          <Button variant="primary" onClick={() => void resend()} busy={busy}>Send it again</Button>
+        </>}>
+        <Notice tone="off">{err ?? `${stoppedLine.replace(/\.$/, '')}, but the notice didn't go out. Send it again so people hear about it.`}</Notice>
+      </Dialog>
+    )
   }
 
   return (

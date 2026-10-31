@@ -206,7 +206,7 @@ export default function RouteReview({ route, reading, pace, focus, onFocus }: {
       {pieces.length > 0 && <p className="text-[15px] font-semibold text-(--ev-ink)">{verdict.text}</p>}
       {assessRouteRisk(route.comfortSegments, route.flags as { type?: string; description?: string }[]).level === 'high' && (
         <p className="rounded-xl bg-[#FFF4D6] px-4 py-3 text-[15px] text-[#6B4200]">
-          Most of this route is on streets shared with cars, with a crash history or fast traffic. If the ride is public, GSI checks it before it goes on the events calendar; the ride page works right away.
+          Most of this route is on streets shared with cars, with a crash history or fast traffic. People see this warning on the ride page. Try another street if you can.
         </p>
       )}
       {newLaneNotes(option.flags).length > 0 && (

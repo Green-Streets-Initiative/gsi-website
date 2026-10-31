@@ -243,7 +243,7 @@ export default function RideOverview() {
           <p className="text-[15px] text-(--ev-ink-85)">No later dates yet.</p>
         ) : later.length === 0 ? (
           <Empty title={ended ? 'This ride has ended' : 'No upcoming dates'}>
-            {ended ? 'Its history and turnout are still here.' : r.ride_date ? 'This one-off ride has happened. Set up a new ride for the next one.' : "Dates appear here within a day of saving. If it's been longer, check the season dates in Edit ride."}
+            {ended ? 'Its history and turnout are still here.' : r.ride_date ? 'This one-off ride has happened. Set up a new ride for the next one.' : 'No upcoming dates. Check When and the season dates in Edit ride.'}
           </Empty>
         ) : (
           <ul>

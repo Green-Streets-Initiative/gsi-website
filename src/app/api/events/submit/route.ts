@@ -384,6 +384,16 @@ function buildAdminNotificationHtml(ev: {
   title: string; date: string; city: string; eventType: string;
   organizer?: string; contactName?: string; contactEmail: string; id: string;
 }) {
+  // Everything here is what a stranger typed into the public form: escape it
+  // so it can't put links or markup into the admin inbox.
+  const esc = (v: string) => v.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!))
+  ev = {
+    ...ev,
+    title: esc(ev.title), city: esc(ev.city), eventType: esc(ev.eventType),
+    organizer: ev.organizer ? esc(ev.organizer) : ev.organizer,
+    contactName: ev.contactName ? esc(ev.contactName) : ev.contactName,
+    contactEmail: esc(ev.contactEmail),
+  }
   const typeLabel = ev.eventType.replace(/_/g, ' ')
   const d = new Date(ev.date + 'T12:00:00')
   const dateStr = d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })

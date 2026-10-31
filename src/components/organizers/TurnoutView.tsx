@@ -67,7 +67,7 @@ export default function TurnoutView() {
     <div className="grid grid-cols-[minmax(0,1fr)] gap-5">
       <Card>
         <SectionTitle
-          hint="From people's own trips in the Shift app, plus requests you approve."
+          hint="Came counts people who ride with the Shift app, plus requests you approve. People who answered on your ride page show under Said going."
           action={
             <div className="flex flex-wrap gap-2">
               <Button size="sm" onClick={() => { downloadCsv(`${file}-turnout-by-month.csv`, monthRows()); track('organizer_turnout_exported', { ride_id: r.id, by: 'month' }) }}><Download className="h-4 w-4" aria-hidden />Monthly CSV</Button>

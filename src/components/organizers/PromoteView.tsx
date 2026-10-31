@@ -264,7 +264,7 @@ export default function PromoteView() {
     <div className="grid grid-cols-[minmax(0,1fr)] gap-5">
       {!facts.upcoming && (
         <Notice tone="warn">
-          No dates coming up, so these posts point to a ride that&apos;s over. <Link href={`/organizers/rides/${r.id}`} className="font-semibold underline">Add a date</Link> before you post.
+          No dates coming up, so these posts point to a ride that&apos;s over. <Link href={`/organizers/rides/${r.id}/edit`} className="font-semibold underline">{r.ride_date ? 'Set up the next one' : r.break_until ? 'Change the restart date' : 'Edit the ride'}</Link> before you post.
         </Notice>
       )}
 
@@ -358,7 +358,7 @@ export default function PromoteView() {
                 {r.visibility !== 'public' ? 'Invite-only rides stay off the calendar.'
                   : listed ? 'Listed for you, and updated when the ride changes.'
                   : r.calendar_status === 'pending' ? 'Off the calendar for now.'
-                  : "Not listed. Write to keith@gogreenstreets.org if that's a mistake."}
+                  : "Not listed. Write to info@gogreenstreets.org if that's a mistake."}
               </p>
             </div>
           </li>

@@ -15,6 +15,10 @@ function esc(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 }
 
+function clip(s: string, max: number): string {
+  return s.length > max ? `${s.slice(0, max - 1).trimEnd()}…` : s
+}
+
 function inviteHtml(inviter: string, rideName: string, already: boolean): string {
   const lead = already
     ? `${esc(inviter)} made you a co-organizer of <b>${esc(rideName)}</b> on Shift.`
@@ -44,28 +48,33 @@ export type InviteStatus = 'invited' | 'made_leader' | 'already_leader' | 'alrea
 export async function inviteCoOrganizer(
   asOrganizer: SupabaseClient,
   args: { seriesId: string; email: string; organizerEmail: string | null },
-): Promise<{ ok: true; status: InviteStatus; rideName: string; emailed: boolean } | { ok: false; error: string }> {
+): Promise<{ ok: true; status: InviteStatus; rideName: string; emailed: boolean; alreadyEmailed: boolean } | { ok: false; error: string }> {
   const email = args.email.trim().toLowerCase()
   if (args.organizerEmail && email === args.organizerEmail.toLowerCase()) {
     return { ok: false, error: "That's your own address. You already run this ride." }
   }
   const { data, error } = await asOrganizer.rpc('invite_ride_leader', { p_series_id: args.seriesId, p_email: email })
   if (error) return { ok: false, error: error.message }
-  const result = data as { status: InviteStatus; ride_name: string; inviter?: string | null }
+  // send is false when this invite was already emailed in the last 24 hours
+  // (Shift 01563): one email a day per address, however often it's clicked.
+  const result = data as { status: InviteStatus; ride_name: string; inviter?: string | null; send?: boolean }
+  const alreadyEmailed = result.send === false
   let emailed = false
-  if ((result.status === 'invited' || result.status === 'made_leader') && process.env.RESEND_API_KEY) {
-    const inviter = (result.inviter ?? '').trim() || 'A ride organizer'
+  if ((result.status === 'invited' || result.status === 'made_leader') && !alreadyEmailed && process.env.RESEND_API_KEY) {
+    // Names go in the subject line: keep them short.
+    const inviter = clip((result.inviter ?? '').trim(), 40) || 'A ride organizer'
+    const rideName = clip(result.ride_name, 60)
     const { error: sendError } = await resend.emails.send({
       from: 'Shift <noreply@gogreenstreets.org>',
       to: email,
       replyTo: args.organizerEmail ?? undefined,
       subject: result.status === 'made_leader'
-        ? `You're now a co-organizer of ${result.ride_name}`
-        : `${inviter} invited you to help run ${result.ride_name}`,
-      html: inviteHtml(inviter, result.ride_name, result.status === 'made_leader'),
+        ? `You're now a co-organizer of ${rideName}`
+        : `${inviter} invited you to help run ${rideName}`,
+      html: inviteHtml(inviter, rideName, result.status === 'made_leader'),
     }).catch((e: unknown) => ({ error: e as Error }))
     if (sendError) console.error('[organizers] invite email refused:', sendError)
     else emailed = true
   }
-  return { ok: true, status: result.status, rideName: result.ride_name, emailed }
+  return { ok: true, status: result.status, rideName: result.ride_name, emailed, alreadyEmailed }
 }

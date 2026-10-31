@@ -140,12 +140,46 @@ export async function postUpdate(args: {
   return r
 }
 
+/**
+ * A change that went through, and whether its notice did. `noticeFailed`
+ * means the change stands but nobody was told: the console says so and
+ * offers to send it again, instead of claiming it was posted.
+ */
+export interface Sent {
+  sent: SendResult | null
+  noticeFailed: boolean
+}
+
+async function notice(body: Record<string, unknown>): Promise<Sent> {
+  try {
+    return { sent: await shiftFunction<SendResult>('notify-ride-canceled', body), noticeFailed: false }
+  } catch {
+    return { sent: null, noticeFailed: true }
+  }
+}
+
+/** The "date is off" notice; also how the console sends it again. */
+export const sendCancelNotice = (occurrenceId: string) => notice({ occurrence_id: occurrenceId })
+/** The "date has changed" notice; also how the console sends it again. */
+export const sendChangeNotice = (occurrenceId: string) => notice({ occurrence_id: occurrenceId, change: true })
+/** The "ride has ended / is on a break" notice; also how the console sends it again. */
+export const sendStopNotice = (seriesId: string, mode: 'end' | 'break') =>
+  notice({ series_id: seriesId, stop: mode === 'end' ? 'ended' : 'break' })
+
+/** How many a cancel or change notice for this date would reach (a dry run; null if unknown). */
+export async function noticeReach(occurrenceId: string, kind: 'cancel' | 'change'): Promise<number | null> {
+  const r = await shiftFunction<SendResult>('notify-ride-canceled', {
+    occurrence_id: occurrenceId, dry_run: true, ...(kind === 'change' ? { change: true } : {}),
+  }).catch(() => null)
+  return r?.would_notify ?? null
+}
+
 /** Cancel or bring back one date; a cancel tells everyone on it. */
-export async function setDateCanceled(occurrenceId: string, canceled: boolean): Promise<SendResult | null> {
+export async function setDateCanceled(occurrenceId: string, canceled: boolean): Promise<Sent> {
   await rpc('set_ride_occurrence_canceled', { p_occurrence_id: occurrenceId, p_canceled: canceled })
   track(canceled ? 'organizer_date_canceled' : 'organizer_date_restored', { occurrence_id: occurrenceId })
-  if (!canceled) return null
-  return shiftFunction<SendResult>('notify-ride-canceled', { occurrence_id: occurrenceId }).catch(() => null)
+  if (!canceled) return { sent: null, noticeFailed: false }
+  return sendCancelNotice(occurrenceId)
 }
 
 /** Move one date's time or meeting point; tells everyone on it if it changed. */
@@ -154,7 +188,7 @@ export async function changeDate(occurrenceId: string, args: {
   meetup?: { name: string | null; address: string | null; lat: number; lng: number } | null
   resetTime?: boolean
   resetMeetup?: boolean
-}): Promise<{ changed: boolean; sent: SendResult | null }> {
+}): Promise<Sent & { changed: boolean }> {
   const data = await rpc<{ changed?: boolean }>('change_ride_occurrence', {
     p_occurrence_id: occurrenceId,
     p_start_time: args.startTime ?? null,
@@ -165,11 +199,9 @@ export async function changeDate(occurrenceId: string, args: {
     p_reset_time: !!args.resetTime,
     p_reset_meetup: !!args.resetMeetup,
   })
-  if (!data?.changed) return { changed: false, sent: null }
+  if (!data?.changed) return { changed: false, sent: null, noticeFailed: false }
   track('organizer_date_changed', { occurrence_id: occurrenceId, time: args.startTime !== undefined || !!args.resetTime, meetup: args.meetup !== undefined || !!args.resetMeetup })
-  const sent = await shiftFunction<SendResult>('notify-ride-canceled', { occurrence_id: occurrenceId, change: true })
-    .catch(() => null)
-  return { changed: true, sent }
+  return { changed: true, ...(await sendChangeNotice(occurrenceId)) }
 }
 
 /**
@@ -195,12 +227,11 @@ export async function saveDateDetails(occurrenceId: string, details: {
 }
 
 /** End the ride or take a break, then tell everyone, as the app's stop screen does. */
-export async function stopRide(seriesId: string, mode: 'end' | 'break', until: string | null, note: string, notify: boolean) {
+export async function stopRide(seriesId: string, mode: 'end' | 'break', until: string | null, note: string, notify: boolean): Promise<Sent> {
   await rpc('stop_ride_series', { p_series_id: seriesId, p_mode: mode, p_until: mode === 'break' ? until : null, p_note: note.trim() || null })
   track('organizer_ride_stopped', { ride_id: seriesId, mode, notify })
-  if (!notify) return null
-  return shiftFunction<SendResult>('notify-ride-canceled', { series_id: seriesId, stop: mode === 'end' ? 'ended' : 'break' })
-    .catch(() => null)
+  if (!notify) return { sent: null, noticeFailed: false }
+  return sendStopNotice(seriesId, mode)
 }
 
 export async function resumeRide(seriesId: string) {
@@ -219,7 +250,7 @@ export async function settleCredit(occurrenceId: string, memberId: string, appro
 }
 
 export async function inviteLeader(seriesId: string, email: string) {
-  const r = await siteApi<{ status: 'invited' | 'made_leader' | 'already_leader' | 'already_organizer'; emailed?: boolean }>(
+  const r = await siteApi<{ status: 'invited' | 'made_leader' | 'already_leader' | 'already_organizer'; emailed?: boolean; already_emailed?: boolean }>(
     '/api/organizers/invite-leader', { series_id: seriesId, email },
   )
   track('organizer_leader_invited', { ride_id: seriesId, status: r.status })

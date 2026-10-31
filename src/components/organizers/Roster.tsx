@@ -108,7 +108,7 @@ export default function Roster() {
   const came = (rows ?? []).filter((p) => p.attended)
 
   if (dates.length === 0) {
-    return <Empty title="No dates yet">Dates appear here within a day of saving the ride.</Empty>
+    return <Empty title="No dates yet">Dates appear here as soon as the ride is saved. If none show, check When in Edit ride.</Empty>
   }
 
   return (
@@ -173,7 +173,7 @@ export default function Roster() {
       {msg && !(canReview && requests.length > 0) && <Notice tone="good" onClose={() => setMsg(null)}>{msg}</Notice>}
 
       <Card>
-        <SectionTitle hint="First names only. Shift messages everyone for you.">
+        <SectionTitle hint="First name and last initial. Shift messages everyone for you.">
           {past ? 'Who was on the list' : "Who's coming"}
         </SectionTitle>
         {err && <Notice tone="off">{err} <button type="button" className="font-semibold underline" onClick={() => void load()}>Try again</button></Notice>}

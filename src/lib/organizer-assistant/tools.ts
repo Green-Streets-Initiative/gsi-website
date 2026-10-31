@@ -1001,7 +1001,7 @@ export async function runApproved(ctx: ToolCtx, name: string, input: Record<stri
       case 'invite_co_organizer': {
         const r = await inviteCoOrganizer(ctx.user, { seriesId: String(input.series_id), email: String(input.email), organizerEmail: ctx.email })
         if (!r.ok) return fail(r.error)
-        return ok({ status: r.status, emailed: r.emailed }, { href: `/organizers/rides/${input.series_id}/team`, label: 'See co-organizers' })
+        return ok({ status: r.status, emailed: r.emailed, already_emailed_today: r.alreadyEmailed }, { href: `/organizers/rides/${input.series_id}/team`, label: 'See co-organizers' })
       }
       case 'settle_credit': {
         const r = await rpc<{ ok: boolean; state: string; remaining: number }>(ctx, 'settle_ride_credit_request', {

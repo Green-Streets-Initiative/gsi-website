@@ -155,7 +155,7 @@ function SignIn() {
       <div>
         <p className="text-[15px] font-semibold text-(--ev-accent)">Shift for ride organizers</p>
         <h1 className="mt-2 font-display text-[clamp(30px,4.2vw,44px)] font-extrabold leading-[1.05] text-(--ev-ink)">
-          Plan and run your group&rsquo;s rides from your laptop
+          Plan and run your group&rsquo;s rides
         </h1>
         <ul className="mt-5 space-y-2.5 text-[16px] leading-snug text-(--ev-ink-85)">
           <li>Set up a one-off ride or a whole season, with a route drawn on the map or brought in from Ride with GPS.</li>
@@ -174,7 +174,7 @@ function SignIn() {
             <MailCheck className="h-8 w-8 text-(--ev-accent)" aria-hidden />
             <h2 className="mt-3 font-display text-[22px] font-extrabold">Check your inbox</h2>
             <p className="mt-2 text-[15px] leading-snug text-(--ev-ink-85)">
-              We sent a sign-in link to <b>{sent}</b>. Open it on this computer and you&rsquo;ll land back here, signed in.
+              We sent a sign-in link to <b>{sent}</b>. Open it on the phone or computer you want to use and you&rsquo;ll land here, signed in.
             </p>
             <p className="mt-3 text-[14px] leading-snug text-(--ev-ink-75)">
               It comes from Shift by Green Streets Initiative and works for an hour.

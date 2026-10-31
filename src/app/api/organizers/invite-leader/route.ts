@@ -18,5 +18,5 @@ export async function POST(request: Request) {
 
   const r = await inviteCoOrganizer(caller.db, { seriesId, email, organizerEmail: caller.email })
   if (!r.ok) return Response.json({ error: r.error }, { status: 400 })
-  return Response.json({ status: r.status, emailed: r.emailed })
+  return Response.json({ status: r.status, emailed: r.emailed, already_emailed: r.alreadyEmailed })
 }

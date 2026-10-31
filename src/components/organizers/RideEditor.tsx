@@ -466,7 +466,7 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
               <Field label="What to call it" htmlFor="meetup-name" hint="The spot people look for when they arrive.">
                 <Input id="meetup-name" value={f.meetup_name} onChange={(e) => set('meetup_name', e.target.value)} placeholder="The bike racks by the Davis T entrance" />
               </Field>
-              {meetup && <p className="text-[14px] text-(--ev-ink-75)">Click the map to move the pin to the exact spot.</p>}
+              {meetup && <p className="text-[14px] text-(--ev-ink-75)">Tap or click the map to move the pin to the exact spot.</p>}
             </div>
             <RouteMap
               line={[]}

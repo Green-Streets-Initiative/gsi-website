@@ -27,10 +27,13 @@ export interface RideExtras {
 
 export async function rideExtras(rideId: string): Promise<RideExtras> {
   const db = createServerSupabaseClient()
-  const { data: s } = await db.from('ride_series').select('event_organizer_id, route_elevation').eq('id', rideId).maybeSingle()
-  const row = s as { event_organizer_id: string | null; route_elevation: { ascent_ft?: number } | null } | null
+  const { data: s } = await db.from('ride_series').select('event_organizer_id, org_verification_status, route_elevation').eq('id', rideId).maybeSingle()
+  const row = s as { event_organizer_id: string | null; org_verification_status: string | null; route_elevation: { ascent_ft?: number } | null } | null
   const ascent = typeof row?.route_elevation?.ascent_ft === 'number' ? Math.round(row.route_elevation.ascent_ft) : null
-  const orgId = row?.event_organizer_id
+  // The organization's name, logo and links only once the organizer's claim
+  // on it is verified (Shift 01563: automatic when their email domain matches
+  // its website). Before that anyone could post a ride as any group.
+  const orgId = row?.org_verification_status === 'verified' ? row.event_organizer_id : null
   if (!orgId) return { host: null, ascentFt: ascent }
   const [{ data: o }, qualifies] = await Promise.all([
     db.from('event_organizers').select('id, name, url, logo_url, social_links').eq('id', orgId).maybeSingle(),

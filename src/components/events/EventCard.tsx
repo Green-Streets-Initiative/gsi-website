@@ -159,7 +159,7 @@ export default function EventCard({ event, userLat, userLng, showDate, saved, on
                 following a link to somebody else's site. */}
             {event.ride_series_id && (
               <span className="inline-block rounded-full bg-(--ev-accent-tint-15) px-2 py-0.5 text-[10px] font-semibold leading-tight text-(--ev-accent)">
-                Join with Shift
+                RSVP, no app needed
               </span>
             )}
             {event.tags.slice(0, 3).map(tag => {
