@@ -26,6 +26,7 @@ import {
   Medal,
   PartyPopper,
   Plus,
+  Sparkles,
   Sun,
   Trophy,
   X,
@@ -54,6 +55,7 @@ import { useObservances } from '../_lib/use-observances'
 import { observancesInRange, shortDay } from '@/lib/employer/observances'
 import { formPrizeCostCents, fundingGapFor, shortSentence, type FundingGap } from './funding'
 import PreflightPanel, { ShortfallPanel } from './PreflightPanel'
+import ChallengePagePreview from './ChallengePagePreview'
 import type { CheckResult } from './challenge-actions'
 
 export type { ChallengeOffice }
@@ -364,6 +366,7 @@ export default function ChallengeWizard({
   payBusy,
   onPay,
   onChargeCard,
+  assistantOn = false,
 }: {
   group: { id: string; name: string }
   editMode: boolean
@@ -409,6 +412,8 @@ export default function ChallengeWizard({
   payBusy: 'checkout' | 'card' | null
   onPay: () => void
   onChargeCard: () => void
+  /** The workplace has the assistant: offer "Write it for me" on the description. */
+  assistantOn?: boolean
 }) {
   const confirm = useConfirm()
   const { refreshPool } = usePortal()
@@ -922,6 +927,19 @@ export default function ChallengeWizard({
                 ))}
                 {rulesLocked && <Locked text="This challenge has started, so its start date is fixed. You can still move the end date." />}
               </div>
+              <DescriptionField
+                value={form.description ?? ''}
+                onChange={(v) => set('description', v)}
+                assistantOn={assistantOn}
+                groupId={group.id}
+                context={() => ({
+                  name: form.name,
+                  starts_on: form.starts_at,
+                  ends_on: form.ends_at,
+                  trips: tripsSummary({ ...form.counting_rules, commute_only: false }),
+                  rewards: prizeForms.map((p) => prizeSummary(p)),
+                })}
+              />
             </>
           )}
 
@@ -1082,8 +1100,19 @@ export default function ChallengeWizard({
 
       {/* Live preview */}
       <aside className="min-w-0 lg:sticky lg:top-6 lg:col-start-2 lg:row-start-1 lg:row-span-2">
-        <div className="mb-2 text-[14px] font-semibold text-ink-muted">What employees see</div>
-        <PhonePreview employer={group.name} challengeName={form.name} startsAt={form.starts_at} prize={headline} kind={headlineKind} />
+        <div className="mb-2 text-[14px] font-semibold text-ink-muted">What employees see: the challenge page</div>
+        <ChallengePagePreview
+          employer={group.name}
+          name={form.name}
+          startsAt={form.starts_at}
+          endsAt={form.ends_at}
+          description={form.description}
+          prizes={prizeForms}
+        />
+        <div className="mb-2 mt-5 text-[14px] font-semibold text-ink-muted">And on their Rewards tab</div>
+        <div className="max-w-[380px]">
+          <PhonePreview employer={group.name} challengeName={form.name} startsAt={form.starts_at} prize={headline} kind={headlineKind} />
+        </div>
         {rulesLines.length > 0 && (
           <details className="mt-3 rounded-xl border border-line bg-surface p-4">
             <summary className="cursor-pointer text-[14px] font-semibold text-ink">The rules, as shown in the app</summary>
@@ -1094,21 +1123,14 @@ export default function ChallengeWizard({
             </ul>
           </details>
         )}
-        {(form.description || seasonalTips.length > 0) && (
+        {seasonalTips.length > 0 && (
           <div className="mt-3 grid gap-2.5 rounded-xl border border-line bg-surface p-4">
-            {form.description && (
-              <p className="text-[14px] leading-[1.5] text-ink">{form.description}</p>
-            )}
-            {seasonalTips.length > 0 && (
-              <>
-                <div className="text-[14px] font-semibold text-ink">Tips to share with your team</div>
-                <ul className="grid list-disc gap-1.5 pl-5 text-[14px] leading-[1.5] text-ink">
-                  {seasonalTips.map((t) => (
-                    <li key={t}>{t}</li>
-                  ))}
-                </ul>
-              </>
-            )}
+            <div className="text-[14px] font-semibold text-ink">Tips to share with your team</div>
+            <ul className="grid list-disc gap-1.5 pl-5 text-[14px] leading-[1.5] text-ink">
+              {seasonalTips.map((t) => (
+                <li key={t}>{t}</li>
+              ))}
+            </ul>
           </div>
         )}
       </aside>
@@ -1678,6 +1700,107 @@ function MoreRules({ rules, onChange }: { rules: CountingRules | null; onChange:
       <button type="button" className="justify-self-start text-[14px] font-semibold text-accent hover:underline" onClick={() => onChange(office)}>
         Reset to the usual rules
       </button>
+    </div>
+  )
+}
+
+const DESCRIPTION_MAX = 280
+
+/**
+ * "What's it about?": one or two sentences under the dates on the app's
+ * challenge page (competitions.description). With the assistant on, "Write
+ * it for me" drafts one from the challenge as it stands, or tightens what
+ * they wrote; it lands in the box to edit, and Undo puts theirs back.
+ */
+function DescriptionField({
+  value,
+  onChange,
+  assistantOn,
+  groupId,
+  context,
+}: {
+  value: string
+  onChange: (v: string) => void
+  assistantOn: boolean
+  groupId: string
+  context: () => { name: string; starts_on: string; ends_on: string; trips: string; rewards: string[] }
+}) {
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [before, setBefore] = useState<string | null>(null)
+
+  const draft = async () => {
+    setBusy(true)
+    setError(null)
+    try {
+      const { data } = await supabase.auth.getSession()
+      const res = await fetch('/api/employer/assistant', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${data.session?.access_token ?? ''}` },
+        body: JSON.stringify({ group_id: groupId, describe: { ...context(), current: value } }),
+      })
+      const json = (await res.json().catch(() => null)) as { description?: string; error?: string } | null
+      if (!res.ok || !json?.description) {
+        setError(json?.error ?? "That didn't work just now. Try again, or write your own.")
+        return
+      }
+      setBefore(value)
+      onChange(json.description.slice(0, DESCRIPTION_MAX))
+    } catch {
+      setError("That didn't work just now. Try again, or write your own.")
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div>
+      <div className="flex flex-wrap items-baseline justify-between gap-x-3">
+        <label className={label} htmlFor="cw-desc-about">
+          What&apos;s it about? <span className="font-normal">(optional)</span>
+        </label>
+        {assistantOn && (
+          <button
+            type="button"
+            onClick={() => void draft()}
+            disabled={busy}
+            className="mb-1.5 inline-flex items-center gap-1.5 text-[14px] font-semibold text-accent hover:underline disabled:text-ink-muted disabled:no-underline"
+          >
+            <Sparkles size={14} strokeWidth={2} />
+            {busy ? 'Writing...' : value.trim() ? 'Tighten it with AI' : 'Write it for me with AI'}
+          </button>
+        )}
+      </div>
+      <textarea
+        id="cw-desc-about"
+        className={`${input} min-h-[84px] resize-y leading-[1.5]`}
+        maxLength={DESCRIPTION_MAX}
+        value={value}
+        placeholder="e.g. Make 8 trips on foot, by bike, transit or carpool this month to enter our drawing."
+        onChange={(e) => {
+          setBefore(null)
+          onChange(e.target.value)
+        }}
+      />
+      <div className="mt-1.5 flex items-start justify-between gap-3 text-[14px] leading-[1.5] text-ink-muted">
+        <span>Why you&apos;re running it and what to aim for. It shows under the dates on the challenge page in the app.</span>
+        <span aria-live="polite" className="shrink-0 whitespace-nowrap">
+          {before !== null && (
+            <button
+              type="button"
+              className="mr-3 font-semibold text-accent hover:underline"
+              onClick={() => {
+                onChange(before)
+                setBefore(null)
+              }}
+            >
+              Undo
+            </button>
+          )}
+          {value.length}/{DESCRIPTION_MAX}
+        </span>
+      </div>
+      {error && <p className="mt-1.5 text-[14px] font-semibold text-ep-danger">{error}</p>}
     </div>
   )
 }

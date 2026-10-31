@@ -2,6 +2,7 @@
 //
 // GET  ?group_id=&thread_id=   the conversation so far (latest thread if no id)
 // POST { group_id, thread_id?, message?, decision?: { tool_use_id, approve } , new_thread?, attachments?, list_file? }
+//      or { group_id, describe: {...} }: a challenge description draft, as JSON
 //      streams newline-delimited JSON events while the assistant works:
 //      {type:'thread', id} {type:'text', delta} {type:'tool', id, label}
 //      {type:'tool_done', id, ok, link?} {type:'choices', options}
@@ -17,6 +18,7 @@ import Anthropic from '@anthropic-ai/sdk'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { SYSTEM_PROMPT, contextBlock, pageLabel } from '@/lib/employer-assistant/prompt'
+import { draftDescription, type DescribeInput } from '@/lib/employer-assistant/describe'
 import {
   ACTIVITY,
   NEEDS_APPROVAL,
@@ -421,6 +423,8 @@ export async function POST(request: Request) {
     page?: string
     /** Thumbs up / down on one reply (Shift 01373). No model call. */
     rating?: { message_id: number; up: boolean; note?: string }
+    /** The builder's "Write it for me": a challenge description draft. */
+    describe?: DescribeInput
   } | null
   const auth = await authorize(request, body?.group_id)
   if ('error' in auth) return auth.error
@@ -455,6 +459,20 @@ export async function POST(request: Request) {
       })
     }
     return Response.json({ ok: true })
+  }
+
+  // "Write it for me" on the builder's description box: one short draft, no
+  // conversation, nothing saved (the admin edits it in the box).
+  if (body?.describe) {
+    if (role === 'viewer') return Response.json({ error: 'Viewers can look but not change challenges.' }, { status: 403 })
+    try {
+      const description = await draftDescription(body.describe, group.name)
+      if (!description) return Response.json({ error: "That didn't work just now. Try again, or write your own." }, { status: 502 })
+      return Response.json({ description })
+    } catch (e) {
+      console.error('[assistant] describe failed', e)
+      return Response.json({ error: "That didn't work just now. Try again, or write your own." }, { status: 502 })
+    }
   }
 
   const text = (body?.message ?? '').trim().slice(0, 4000)

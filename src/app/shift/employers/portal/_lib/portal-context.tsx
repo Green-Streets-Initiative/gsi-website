@@ -303,7 +303,7 @@ export function PortalProvider({ children }: { children: ReactNode }) {
       const [challengeRes, flagshipRes, memberRes, dashboardRes, membersRes, poolRes, adminsRes, selfRes] = await Promise.all([
         supabase
           .from('competitions')
-          .select('id, name, metric, starts_at, ends_at, prize_description, counting_rules, contact_name, contact_email')
+          .select('id, name, metric, starts_at, ends_at, description, prize_description, counting_rules, contact_name, contact_email')
           .eq('group_id', groupData.id)
           .order('starts_at', { ascending: false }),
         supabase

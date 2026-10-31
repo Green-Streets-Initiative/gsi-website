@@ -56,7 +56,7 @@ import TellYourTeam, { type TeamPrize } from './TellYourTeam'
 import { useEmployerLocations } from '../_lib/use-employer-locations'
 import { useChallengeTemplates, type SeasonalOption } from '../_lib/use-challenge-templates'
 import YearPlanCard from './YearPlanCard'
-import { ASSISTANT_CHANGED_EVENT, openAssistant } from '../_components/AssistantPanel'
+import { ASSISTANT_CHANGED_EVENT, assistantAvailable, openAssistant } from '../_components/AssistantPanel'
 import AwardsRecap from './AwardsRecap'
 import TeamHearsPanel from './TeamHearsPanel'
 import { useYearPlan, runRange, templatePrizeLine } from '../_lib/use-year-plan'
@@ -316,6 +316,7 @@ export default function ChallengesPage() {
         counting_rules: c.counting_rules ?? null,
         contact_name: c.contact_name ?? '',
         contact_email: c.contact_email ?? '',
+        description: c.description ?? null,
       })
       setPrizeForms(
         prizes.map((p) => ({
@@ -532,7 +533,7 @@ export default function ChallengesPage() {
     async (competitionId: string) => {
       const { data } = await supabase
         .from('competitions')
-        .select('id, name, metric, starts_at, ends_at, prize_description, counting_rules, contact_name, contact_email')
+        .select('id, name, metric, starts_at, ends_at, description, prize_description, counting_rules, contact_name, contact_email')
         .eq('id', competitionId)
         .maybeSingle()
       if (data) {
@@ -715,7 +716,7 @@ export default function ChallengesPage() {
       const [comps, prizes] = await Promise.all([
         supabase
           .from('competitions')
-          .select('id, name, metric, starts_at, ends_at, prize_description, counting_rules, contact_name, contact_email')
+          .select('id, name, metric, starts_at, ends_at, description, prize_description, counting_rules, contact_name, contact_email')
           .eq('group_id', group.id)
           .order('starts_at', { ascending: false }),
         supabase.from('employer_challenge_prizes').select('*').eq('group_id', group.id).order('display_order'),
@@ -1400,6 +1401,7 @@ export default function ChallengesPage() {
       {builderOpen && group && (
         <ChallengeWizard
           group={{ id: group.id, name: group.name }}
+          assistantOn={assistantAvailable(group, isGsiAdmin)}
           editMode={editMode}
           form={form}
           setForm={(u) => setForm((p) => u(p))}

@@ -77,6 +77,8 @@ export type Challenge = {
   metric: string
   starts_at: string
   ends_at: string
+  /** What it's about: shown under the dates on the app's challenge page. */
+  description?: string | null
   prize_description: string | null
   public_leaderboard: boolean
   is_flagship?: boolean
