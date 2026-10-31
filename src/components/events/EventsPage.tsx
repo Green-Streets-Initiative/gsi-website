@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { eventPath } from '@/lib/events-url'
 import { ArrowRight, Calendar as CalendarIcon, List, Search, SlidersHorizontal } from 'lucide-react'
 import {
-  type CommunityEvent, getTypeMeta, parseEventDate, dateLong, formatTime, isDeadline,
+  type CommunityEvent, getTypeMeta, parseEventDate, dateLong, dateRangeLong, eventLastDay, formatTime, isDeadline,
 } from '@/lib/events'
 import { typeInk, TINT } from '@/lib/events-tone'
 import { PILL } from '@/components/org/Section'
@@ -53,11 +53,11 @@ function SpotlightCard({ event, compact }: { event: CommunityEvent; compact: boo
   const ink = typeInk(meta, tone)
   const tint = TINT[tone]
   const Icon = EVENT_TYPE_ICONS[meta.icon] ?? CalendarIcon
-  const evDate = parseEventDate(event.event_date)
   const timeStr = event.event_time ? formatTime(event.event_time) : null
+  // "November 1 to 30, 2026" for a multi-day event (Shift 01557).
   const dateLine =
     (isDeadline(event.event_type) ? 'Entry deadline: ' : '') +
-    dateLong(evDate) +
+    dateRangeLong(event) +
     (timeStr ? ` · ${timeStr}` : '')
   const summary = event.body?.split('\n').find((line) => line.trim()) ?? null
 
@@ -165,7 +165,8 @@ export default function EventsPage({ events, tone = 'dark', hrefBase = '/events'
   const today = new Date()
   today.setHours(0, 0, 0, 0)
   const spotlightEvents = events
-    .filter((ev) => ev.featured && parseEventDate(ev.event_date) >= today)
+    // Still running: a featured month-long campaign stays up through its last day.
+    .filter((ev) => ev.featured && parseEventDate(eventLastDay(ev)) >= today)
     .sort((a, b) => a.event_date.localeCompare(b.event_date))
     .slice(0, SPOTLIGHT_MAX)
 

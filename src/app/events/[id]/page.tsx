@@ -52,7 +52,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
-        <EventDetail event={event} nextUp={nextUp} isPast={isPastEvent(event.event_date)} tone="light" sponsorLinks={sponsorLinks} roamLinks={roamLinks} rideCode={rideCode} hostHref={hostHref} />
+        <EventDetail event={event} nextUp={nextUp} isPast={isPastEvent(event.event_date, event.event_end_date)} tone="light" sponsorLinks={sponsorLinks} roamLinks={roamLinks} rideCode={rideCode} hostHref={hostHref} />
       </main>
       <Footer variant="light" />
     </>

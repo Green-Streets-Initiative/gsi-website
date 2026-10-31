@@ -218,6 +218,16 @@ export async function POST(request: Request) {
   if (eventDate > maxDate) {
     return Response.json({ error: 'That date is too far in the future. Pick a date within the next two years.' }, { status: 400 })
   }
+  // Optional last day of a multi-day event (Shift 01557); blank means one day.
+  const endDate = typeof body.endDate === 'string' && body.endDate.trim() ? body.endDate.trim() : null
+  if (endDate !== null) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(endDate) || Number.isNaN(new Date(`${endDate}T12:00:00`).getTime())) {
+      return Response.json({ error: 'Please enter a valid last day.' }, { status: 400 })
+    }
+    if (endDate < body.date) {
+      return Response.json({ error: 'The last day must be on or after the first day.' }, { status: 400 })
+    }
+  }
 
   // Two or more junk-looking fields is well past coincidence.
   if (spamScore(body) >= 2) {
@@ -295,6 +305,7 @@ export async function POST(request: Request) {
   const { error: edError } = await supabase.from('event_details').insert({
     content_id: contentId,
     event_date: body.date,
+    event_end_date: endDate && endDate > body.date ? endDate : null,
     event_time: body.startTime || null,
     event_end_time: body.endTime || null,
     location_name: body.venueName.trim(),

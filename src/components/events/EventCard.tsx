@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { eventPath } from '@/lib/events-url'
 import { Calendar, Bookmark } from 'lucide-react'
-import { type CommunityEvent, getTypeMeta, getTagMeta, formatTime, formatDistance, haversine, isDeadline, parseEventDate, dateShort, eventRideStyle, isNoDrop, formatDistanceText, RIDE_STYLE_LABEL } from '@/lib/events'
+import { type CommunityEvent, getTypeMeta, getTagMeta, formatTime, formatDistance, haversine, isDeadline, dateRangeShort, eventDayKeys, isMultiDay, eventRideStyle, isNoDrop, formatDistanceText, RIDE_STYLE_LABEL } from '@/lib/events'
 import { typeInk, tagInk, rideStyleInk, TINT } from '@/lib/events-tone'
 import { EVENT_TYPE_ICONS } from './event-type-icons'
 import { useEventsTone } from './EventsTone'
@@ -45,10 +45,12 @@ export default function EventCard({ event, userLat, userLng, showDate, saved, on
     ? haversine(userLat, userLng, event.location_lat, event.location_lng)
     : null
 
-  const evDate = parseEventDate(event.event_date)
   const timeStr = event.event_time ? formatTime(event.event_time) : null
   const endStr = event.event_end_time ? formatTime(event.event_end_time) : null
-  const datePart = showDate ? dateShort(evDate) : null
+  // "Nov 1 to 30" for a multi-day event (Shift 01557), "Nov 1" otherwise.
+  const datePart = showDate ? dateRangeShort(event) : null
+  // The desktop time column says how long a multi-day, all-day event runs.
+  const spanLabel = isMultiDay(event) ? `${eventDayKeys(event).length} days` : 'All day'
   const deadline = isDeadline(event.event_type)
 
   // Who runs it sits on the card itself: people come to trust specific groups,
@@ -86,7 +88,7 @@ export default function EventCard({ event, userLat, userLng, showDate, saved, on
       {/* Desktop time column */}
       <div className="hidden w-[76px] shrink-0 flex-col lg:flex">
         <span className="text-[14px] font-semibold leading-tight text-(--ev-ink)">
-          {deadline ? 'Deadline' : timeStr ?? 'All day'}
+          {deadline ? 'Deadline' : timeStr ?? spanLabel}
         </span>
         {!deadline && timeStr && endStr && (
           <span className="mt-0.5 text-[11px] leading-tight text-(--ev-ink-75)">to {endStr}</span>

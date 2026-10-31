@@ -1,6 +1,6 @@
 import type { CommunityEvent } from './events'
 import { eventUrl } from '@/lib/events-url'
-import { parseEventDate, formatTime, eventImages } from './events'
+import { parseEventDate, formatTime, eventImages, eventLastDay, isMultiDay, dateRangeShort } from './events'
 
 /**
  * Search-facing metadata for /events/[id]: page title, meta description, and
@@ -69,9 +69,12 @@ export function townFromAddress(address: string | null): string | null {
 export function whenLabel(event: CommunityEvent, recurring: boolean): string {
   const d = parseEventDate(event.event_date)
   const time = event.event_time ? formatTime(event.event_time) : null
-  const day = recurring
+  // A multi-day event (Shift 01557) reads "Nov 1 to 30".
+  const day = recurring && !isMultiDay(event)
     ? WEEKDAY_PLURAL[d.getDay()]
-    : `${MONTH_SHORT[d.getMonth()]} ${d.getDate()}`
+    : isMultiDay(event)
+      ? dateRangeShort(event)
+      : `${MONTH_SHORT[d.getMonth()]} ${d.getDate()}`
   return time ? `${day}${recurring ? ' ' : ', '}${time}` : day
 }
 
@@ -226,8 +229,10 @@ export function buildEventJsonLd(
     ),
   }
 
-  if (event.event_end_time) {
-    json.endDate = isoDateTime(event.event_date, event.event_end_time, timeZone)
+  // The end is on the last day (Shift 01557); a multi-day event with no end
+  // time still ends on a known date.
+  if (event.event_end_time || isMultiDay(event)) {
+    json.endDate = isoDateTime(eventLastDay(event), event.event_end_time, timeZone)
   }
   // Flyer front first, then the extra pages or map; schema.org takes a list.
   const images = eventImages(event)

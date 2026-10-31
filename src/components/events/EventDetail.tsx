@@ -17,7 +17,7 @@ import { withUtm as appUtm } from '@/lib/utm'
 import { EVENT_TYPE_ICONS } from './event-type-icons'
 import {
   type CommunityEvent, type NextUp,
-  getTypeMeta, getTagMeta, formatTime, dateLong, isDeadline, parseEventDate,
+  getTypeMeta, getTagMeta, formatTime, dateLong, dateRangeLong, isDeadline, parseEventDate,
   buildIcs, gcalUrl, directionsUrl,
   eventRideStyle, isNoDrop, isRideEvent, PACE_BAND_LABEL, RIDE_STYLE_LABEL, RIDE_STYLE_BLURB,
   eventImages,
@@ -154,7 +154,8 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
     if (event.pace && PACE_BAND_LABEL[event.pace]) rideFacts.push(PACE_BAND_LABEL[event.pace])
     if (event.distance_text) rideFacts.push(event.distance_text)
   }
-  const evDate = parseEventDate(event.event_date)
+  // "November 1 to 30, 2026" for a multi-day event (Shift 01557).
+  const dateText = dateRangeLong(event)
   // Deadline-style events (contests) are places to enter, not places to go —
   // no map, no directions.
   const deadline = isDeadline(event.event_type)
@@ -301,7 +302,7 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
                 </p>
                 <p className="text-[13px] text-(--ev-ink-75)">
                   {deadline && 'Entry deadline: '}
-                  {dateLong(evDate)}
+                  {dateText}
                   {timeStr && ` · ${timeStr}`}
                   {!deadline && endTimeStr && ` – ${endTimeStr}`}
                 </p>
@@ -462,7 +463,7 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
                 <Calendar size={16} className="mt-0.5 shrink-0 text-(--ev-ink-40)" />
                 <div>
                   <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-(--ev-ink-70)">{deadline ? 'Entry deadline' : 'Date'}</p>
-                  <p className="text-[14px] text-(--ev-ink-80)">{dateLong(evDate)}</p>
+                  <p className="text-[14px] text-(--ev-ink-80)">{dateText}</p>
                 </div>
               </div>
               {timeStr && (

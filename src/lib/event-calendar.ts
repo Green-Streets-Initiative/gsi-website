@@ -22,7 +22,12 @@ type CalendarEvent = Pick<
   | 'id' | 'slug' | 'title' | 'body' | 'event_date' | 'event_time' | 'event_end_time'
   | 'location_name' | 'location_address' | 'location_lat' | 'location_lng'
   | 'organizer_name' | 'organizer_url' | 'event_url' | 'registration_url' | 'tags'
-> & { registration_notes?: string | null }
+> & { registration_notes?: string | null; event_end_date?: string | null }
+
+/** The last day of a multi-day event (Shift 01557), else the event's own day. */
+function lastDay(ev: Pick<CalendarEvent, 'event_date' | 'event_end_date'>): string {
+  return ev.event_end_date && ev.event_end_date > ev.event_date ? ev.event_end_date : ev.event_date
+}
 
 const DEFAULT_EVENT_MINUTES = 120 // a typical community event
 /** Long enough for any real description; calendar apps truncate past this. */
@@ -111,7 +116,13 @@ function nextDay(date: string): string {
 
 /** Start and end, or an all-day day when the listing has no start time. */
 function span(ev: CalendarEvent): { allDay: true; start: string; end: string } | { allDay: false; start: string; end: string } {
-  if (!ev.event_time) return { allDay: true, start: ev.event_date.replace(/-/g, ''), end: nextDay(ev.event_date) }
+  const last = lastDay(ev)
+  // All-day end is exclusive: the day after the last day.
+  if (!ev.event_time) return { allDay: true, start: ev.event_date.replace(/-/g, ''), end: nextDay(last) }
+  if (last !== ev.event_date) {
+    // Multi-day and timed: ends on the last day, at the end time if there is one.
+    return { allDay: false, start: stamp(ev.event_date, ev.event_time), end: stamp(last, ev.event_end_time ?? ev.event_time) }
+  }
   const end = ev.event_end_time && ev.event_end_time > ev.event_time
     ? ev.event_end_time
     : plusMinutes(ev.event_time, DEFAULT_EVENT_MINUTES)

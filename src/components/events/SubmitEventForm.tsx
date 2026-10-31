@@ -15,6 +15,8 @@ interface FormData {
   length: string
   description: string
   date: string
+  /** Last day of a multi-day event; blank for one day (Shift 01557). */
+  endDate: string
   startTime: string
   endTime: string
   venueName: string
@@ -38,7 +40,7 @@ interface FormData {
 
 const EMPTY_FORM: FormData = {
   title: '', eventType: '', length: '', description: '',
-  date: '', startTime: '', endTime: '',
+  date: '', endDate: '', startTime: '', endTime: '',
   venueName: '', city: '', address: '', lat: '', lng: '',
   pace: '', organizerName: '', organizerUrl: '', eventUrl: '', registrationUrl: '', routeUrl: '',
   contactName: '', contactEmail: '', contactPhone: '',
@@ -209,6 +211,10 @@ export default function SubmitEventForm({ tone = 'dark', hrefBase = '/events' }:
       } else if (picked > maxDate) {
         errs.date = 'Pick a date within the next two years.'
       }
+    }
+    if (form.endDate) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(form.endDate)) errs.endDate = 'Enter a valid date.'
+      else if (form.date && form.endDate < form.date) errs.endDate = 'The last day must be on or after the first day.'
     }
     setErrors(errs)
     if (Object.keys(errs).length > 0) {
@@ -458,6 +464,11 @@ export default function SubmitEventForm({ tone = 'dark', hrefBase = '/events' }:
                 <label className={labelClass}>Date <span className="text-(--ev-accent)">*</span></label>
                 <input type="date" value={form.date} onChange={set('date')} className={inputClass('date')} style={{ colorScheme: tone }} />
                 {errors.date && <p className="mt-1 text-[12px] text-(--ev-danger)">{errors.date}</p>}
+              </div>
+              <div>
+                <label className={labelClass}>Last day <span className="font-normal text-(--ev-ink-75)">(multi-day events only)</span></label>
+                <input type="date" value={form.endDate} min={form.date || undefined} onChange={set('endDate')} className={inputClass('endDate')} style={{ colorScheme: tone }} />
+                {errors.endDate && <p className="mt-1 text-[12px] text-(--ev-danger)">{errors.endDate}</p>}
               </div>
               <div>
                 <label className={labelClass}>Start time <span className="text-(--ev-accent)">*</span></label>

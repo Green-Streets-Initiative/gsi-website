@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation'
 import {
   type CommunityEvent, type RideStyle, EVENT_TYPES, TAG_META, TYPE_FILTER_ORDER, DEFAULT_LOCATION,
   RIDE_STYLE_ORDER, RIDE_STYLE_LABEL, RIDE_STYLE_FILTER_LABEL,
-  haversine, parseEventDate, todayKey, getTypeMeta, getTagMeta, dateMedium,
+  haversine, parseEventDate, todayKey, getTypeMeta, getTagMeta, dateMedium, eventLastDay,
   eventRideStyle, isNoDrop, styleFilterValue, parseStyleFilter,
 } from '@/lib/events'
 import { trackEvents } from './events-analytics'
@@ -221,7 +221,8 @@ export function useEventFilters(events: CommunityEvent[], { saved, applyDateRang
   const q = query.trim().toLowerCase()
 
   const matches = useCallback((ev: CommunityEvent, ignore?: Ignore): boolean => {
-    if (ev.event_date < today) return false
+    // A multi-day event (Shift 01557) stays until its last day.
+    if (eventLastDay(ev) < today) return false
     if (ignore !== 'type' && typeFilter !== 'All') {
       const level = parseStyleFilter(typeFilter)
       if (level ? eventRideStyle(ev) !== level : ev.event_type !== typeFilter) return false
@@ -239,7 +240,8 @@ export function useEventFilters(events: CommunityEvent[], { saved, applyDateRang
       if (!ev.location_lat || !ev.location_lng) return false
       if (haversine(userLoc.lat, userLoc.lng, ev.location_lat, ev.location_lng) > Number(distance)) return false
     }
-    if (ignore !== 'day' && selectedDay) return ev.event_date === selectedDay
+    // A picked day shows what is on that day, including a multi-day event in progress.
+    if (ignore !== 'day' && selectedDay) return ev.event_date <= selectedDay && selectedDay <= eventLastDay(ev)
     if (applyDateRange && !inDateRange(parseEventDate(ev.event_date), dateRange, todayDate)) return false
     return true
   }, [today, typeFilter, tags, audience, savedOnly, saved, q, distance, userLoc, selectedDay, applyDateRange, dateRange, todayDate])

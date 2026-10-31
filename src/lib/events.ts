@@ -12,6 +12,8 @@ export interface CommunityEvent {
   body: string | null
   status: string
   event_date: string        // YYYY-MM-DD
+  /** Last day of a multi-day event, inclusive (Shift 01557). Null means one day: event_date. */
+  event_end_date: string | null
   event_time: string | null // HH:MM:SS
   event_end_time: string | null
   location_name: string
@@ -278,6 +280,11 @@ export function dateShort(d: Date): string {
   return `${MONTHS_SHORT[d.getMonth()]} ${d.getDate()}`
 }
 
+// Multi-day events (Shift 01557) live in event-days.ts; re-exported here so
+// every events reader imports from one place.
+import { eventDayKeys } from './event-days'
+export { eventLastDay, isMultiDay, eventDayKeys, dateRangeShort, dateRangeLong } from './event-days'
+
 export function groupLabel(d: Date): string {
   return `${WEEKDAYS_LONG[d.getDay()]} · ${MONTHS[d.getMonth()]} ${d.getDate()}`
 }
@@ -319,17 +326,22 @@ export function dateMedium(d: Date): string {
 export function eventDotsByDay(events: CommunityEvent[], max = 3, tone: 'dark' | 'light' = 'dark'): Map<string, string[]> {
   const map = new Map<string, string[]>()
   for (const ev of events) {
-    const colors = map.get(ev.event_date) ?? []
     const meta = getTypeMeta(ev.event_type)
     const c = tone === 'light' ? meta.ink : meta.color
-    if (!colors.includes(c) && colors.length < max) colors.push(c)
-    map.set(ev.event_date, colors)
+    // A multi-day event marks every day it runs (Shift 01557).
+    for (const day of eventDayKeys(ev)) {
+      const colors = map.get(day) ?? []
+      if (!colors.includes(c) && colors.length < max) colors.push(c)
+      map.set(day, colors)
+    }
   }
   return map
 }
 
 export function eventCountByDay(events: CommunityEvent[]): Map<string, number> {
   const map = new Map<string, number>()
-  for (const ev of events) map.set(ev.event_date, (map.get(ev.event_date) ?? 0) + 1)
+  for (const ev of events) {
+    for (const day of eventDayKeys(ev)) map.set(day, (map.get(day) ?? 0) + 1)
+  }
   return map
 }

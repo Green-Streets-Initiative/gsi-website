@@ -17,6 +17,7 @@ import { eventUrl } from '@/lib/events-url'
 const EVENT_FIELDS = `
       content_id,
       event_date,
+      event_end_date,
       event_time,
       event_end_time,
       location_name,
@@ -59,6 +60,19 @@ type EventRow = Record<string, unknown> & {
   content_items: Record<string, unknown>
 }
 
+/**
+ * PostgREST filter for "today or later", counting a multi-day event as
+ * upcoming until its last day (Shift 01557). Null end date means one day.
+ */
+function stillRunning(today: string): string {
+  return `event_date.gte.${today},event_end_date.gte.${today}`
+}
+
+/** The opposite: one-day events before today, multi-day events whose last day has passed. */
+function finished(today: string): string {
+  return `and(event_end_date.is.null,event_date.lt.${today}),event_end_date.lt.${today}`
+}
+
 function toCommunityEvent(row: EventRow): CommunityEvent {
   const ci = row.content_items as unknown as Record<string, unknown>
   return {
@@ -68,6 +82,7 @@ function toCommunityEvent(row: EventRow): CommunityEvent {
     body: ci.body as string | null,
     status: ci.status as string,
     event_date: row.event_date as string,
+    event_end_date: (row.event_end_date as string | null) ?? null,
     event_time: row.event_time as string | null,
     event_end_time: row.event_end_time as string | null,
     location_name: row.location_name as string,
@@ -108,7 +123,7 @@ export async function loadEventsListing(): Promise<CommunityEvent[]> {
     .select(LISTING_SELECT)
     .eq('content_items.status', 'approved')
     .eq('content_items.content_type', 'community_event')
-    .gte('event_date', today)
+    .or(stillRunning(today))
     .order('event_date', { ascending: true })
     .limit(500)
 
@@ -133,8 +148,8 @@ export async function loadOrganizerEvents(
     .eq('content_items.status', 'approved')
     .eq('content_items.content_type', 'community_event')
   q = when === 'upcoming'
-    ? q.gte('event_date', today).order('event_date', { ascending: true })
-    : q.lt('event_date', today).order('event_date', { ascending: false })
+    ? q.or(stillRunning(today)).order('event_date', { ascending: true })
+    : q.or(finished(today)).order('event_date', { ascending: false })
   const { data } = await q.limit(limit)
   return ((data ?? []) as unknown as EventRow[]).map(toCommunityEvent)
 }
@@ -154,7 +169,7 @@ export async function countUpcomingEvents(): Promise<number | null> {
       .select('content_id, content_items!inner(id)', { count: 'exact', head: true })
       .eq('content_items.status', 'approved')
       .eq('content_items.content_type', 'community_event')
-      .gte('event_date', today)
+      .or(stillRunning(today))
 
     return count ?? null
   } catch {

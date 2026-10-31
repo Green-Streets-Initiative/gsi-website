@@ -83,6 +83,14 @@ describe('buildIcs', () => {
     assert.ok(allDay.includes('DTSTART;VALUE=DATE:20261021'))
     assert.ok(allDay.includes('DTEND;VALUE=DATE:20261022'))
   })
+  it('spans a multi-day event through its last day (Shift 01557)', () => {
+    const month = buildIcs({ ...base, event_date: '2026-11-01', event_end_date: '2026-11-30', event_time: null, event_end_time: null } as unknown as typeof base)
+    assert.ok(month.includes('DTSTART;VALUE=DATE:20261101'))
+    assert.ok(month.includes('DTEND;VALUE=DATE:20261201'))
+    const timed = buildIcs({ ...base, event_date: '2026-11-01', event_end_date: '2026-11-03', event_time: '09:00:00', event_end_time: '17:00:00' })
+    assert.ok(timed.includes('DTSTART:20261101T090000'))
+    assert.ok(timed.includes('DTEND:20261103T170000'))
+  })
 })
 
 describe('gcalUrl', () => {
