@@ -342,7 +342,13 @@ export default function SettingsPage() {
       <PortalPageHead
         title="Settings"
         subtitle="Your company, team, who can join, and notifications"
-        actions={<AskAssistantButton label="Change a setting with the assistant" prompt="I'd like to change a setting." />}
+        actions={
+          canManageAccount ? (
+            <AskAssistantButton label="Change a setting with the assistant" prompt="I'd like to change a setting." />
+          ) : (
+            <AskAssistantButton label="Ask about settings" prompt="What can I change in Settings, and who on our team changes the rest?" />
+          )
+        }
       />
 
       <TabStrip tabs={[...VIEWS]} value={view} onChange={(v) => changeView(v as SettingsView)} label="Settings" prefix="settings" />

@@ -45,6 +45,15 @@ const DAILY_PERSON_CAP = 150
 const SOFT_CONTEXT = 60_000
 const HARD_CONTEXT = 150_000
 const SUMMARY_MODEL = 'claude-haiku-5-5'
+/** A step that goes on to look something up can open with a working note
+ *  ("The ended challenge's winners, need prize ids.", 2026-10-31 review),
+ *  though the prompt says not to. Words up to this long before a lookup are
+ *  kept from the screen, as in the Shift assistant. */
+const NOTE_MAX = 280
+/** Tools whose words before them are the reply: buttons, notes and approval cards. */
+const showsWords = (name: string) => name === 'open_page' || name === 'note_feedback' || name === 'offer_choices' || NEEDS_APPROVAL.has(name)
+const isNote = (text: string, blocks: Record<string, unknown>[]) =>
+  text.trim().length <= NOTE_MAX && blocks.some((b) => b.type === 'tool_use' && !showsWords(String(b.name)))
 
 /** Input tokens the latest reply in this conversation read. */
 async function contextSize(admin: SupabaseClient, threadId: string): Promise<number> {
@@ -234,7 +243,10 @@ function transcript(messages: { id?: number; role: string; content: unknown }[],
   const byId = new Map<string, Extract<Item, { kind: 'tool' }>>()
   for (const m of messages) {
     const blocks = (Array.isArray(m.content) ? m.content : [{ type: 'text', text: String(m.content) }]) as Record<string, unknown>[]
+    const said = blocks.filter((b) => b.type === 'text').map((b) => String(b.text ?? '')).join('')
+    const note = m.role === 'assistant' && !!said.trim() && isNote(said, blocks)
     for (const b of blocks) {
+      if (note && b.type === 'text') continue
       if (b.type === 'image' && m.role === 'user') {
         const src = b.source as { type?: string; url?: string } | undefined
         if (src?.url) items.push({ kind: 'user_image', url: src.url })
@@ -648,6 +660,7 @@ export async function POST(request: Request) {
         const client = new Anthropic()
         const today = new Date().toLocaleDateString('en-US', { timeZone: 'America/New_York', weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
         const tools = TOOLS.map((t, i) => (i === TOOLS.length - 1 ? { ...t, cache_control: { type: 'ephemeral' as const } } : t))
+        let retriedEmpty = false
         for (let step = 0; step < MAX_STEPS; step++) {
           const history = await loadMessages(admin, threadId)
           const s = client.beta.messages.stream({
@@ -666,8 +679,19 @@ export async function POST(request: Request) {
             messages: history.map(({ role, content }) => ({ role, content })) as Anthropic.Beta.BetaMessageParam[],
           } as Anthropic.Beta.MessageCreateParamsStreaming)
           const visible = choicesFilter((delta) => emit({ type: 'text', delta }))
-          s.on('text', (delta) => visible.push(delta))
+          // A step's first words wait until it is clear whether a lookup follows.
+          let opener = ''
+          let released = false
+          s.on('text', (delta) => {
+            if (released) return visible.push(delta)
+            opener += delta
+            if (opener.length > NOTE_MAX) {
+              released = true
+              visible.push(opener)
+            }
+          })
           const msg = await s.finalMessage()
+          if (!released && opener && !isNote(opener, msg.content as unknown as Record<string, unknown>[])) visible.push(opener)
           visible.flush()
           const options = splitChoices(
             msg.content
@@ -679,6 +703,14 @@ export async function POST(request: Request) {
           // An empty reply ends the turn; the API refuses empty assistant
           // messages on replay.
           if (msg.content.length === 0) break
+          // A last step can come back with only its thinking and no words
+          // (2026-10-31 review: "Update our Commute Advisor page" ended on a
+          // bare link). Ask once more instead of leaving them nothing, as the
+          // Shift assistant does.
+          if (!retriedEmpty && msg.stop_reason === 'end_turn' && !msg.content.some((b) => (b.type === 'text' && b.text.trim()) || b.type === 'tool_use')) {
+            retriedEmpty = true
+            continue
+          }
           await append('assistant', msg.content, { model: msg.model, usage: msg.usage })
 
           if (msg.stop_reason === 'refusal') {

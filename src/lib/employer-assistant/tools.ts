@@ -453,7 +453,14 @@ async function accountOverview(ctx: ToolCtx) {
   const advisorDone = !!(benefits.destination_address && Object.entries(benefits).some(([k, v]) => k !== 'destination_address' && !!v))
   return {
     workplace: { name: g.name, plan: g.tier, rewards_included: canRewards, status: g.status, access_ends: g.access_ends_at ?? null, join_code: g.invite_code, join_link: g.invite_code ? `https://shift.gogreenstreets.org/join/${g.invite_code}` : null, join_policy: g.join_policy ?? 'open' },
-    you: { email: ctx.email, role: ctx.role, can_add_money: ctx.role === 'admin', can_change_settings: ctx.role === 'admin' || ctx.role === 'gsi' },
+    you: {
+      email: ctx.email,
+      role: ctx.role,
+      can_run_challenges_and_invites: ctx.role !== 'viewer',
+      can_add_money: ctx.role === 'admin',
+      can_change_settings: ctx.role === 'admin' || ctx.role === 'gsi',
+      can_change_anything: ctx.role !== 'viewer',
+    },
     setup_checklist: {
       success_plan: !!(onboarding.goal_type || onboarding.success_definition || onboarding.launch_date),
       company_profile: !!(g.name && g.admin_name && (g.admin_phone || g.website_url)),
