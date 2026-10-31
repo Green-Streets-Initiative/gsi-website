@@ -51,11 +51,14 @@ export default function BillingPage() {
 
   const canView = isAdmin || isGsiAdmin
 
-  // Viewers land on Home. Wait for the portal to finish loading first: the
-  // role is unknown until then and a redirect would bounce a real admin.
+  // Viewers and managers land on Home, told why. Wait for the portal to
+  // finish loading first: the role is unknown until then and a redirect
+  // would bounce a real admin.
   useEffect(() => {
-    if (!loading && group && !canView) router.replace('/shift/employers/portal/dashboard')
-  }, [loading, group, canView, router])
+    if (loading || !group || canView) return
+    toast('Billing & rewards is for admins')
+    router.replace('/shift/employers/portal/dashboard')
+  }, [loading, group, canView, router, toast])
 
   // Back from checkout: ?topup=success|canceled. Read it once, drop it from
   // the address bar so a reload doesn't repeat the banner, and pull the

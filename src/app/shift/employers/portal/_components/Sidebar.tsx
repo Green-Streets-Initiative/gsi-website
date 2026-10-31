@@ -17,7 +17,7 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import { usePortal, type PortalRole } from '../_lib/portal-context'
-import { computeSetupSteps, nextSetupStep } from '../_lib/setup-steps'
+import { computeSetupSteps, nextDoableStep } from '../_lib/setup-steps'
 import MobileNav from './MobileNav'
 import { openAssistant } from './AssistantPanel'
 
@@ -26,7 +26,7 @@ export type PortalNavItem = {
   label: string
   icon: LucideIcon
   href: string
-  /** Only while setup still has an unfinished step. */
+  /** Only while setup has an unfinished step this person can do (Keith 2026-10-31: viewers never see it). */
   setupOnly?: boolean
   /** Only for admins (role known and 'admin'). */
   adminOnly?: boolean
@@ -103,10 +103,13 @@ function ChevronMark({ size = 36 }: { size?: number }) {
 
 function SidebarContent() {
   const pathname = usePathname()
-  const { group, role, isGsiAdmin, memberCount, challenges, benefitsForm, loading } = usePortal()
+  const { group, role, isGsiAdmin, memberCount, challenges, benefitsForm, loading, canManageAccount, canManageChallenges } = usePortal()
 
+  // Setup, and its dot, only while there is a step this person can act on.
   const setupIncomplete =
-    !loading && !!group && !!nextSetupStep(computeSetupSteps({ group, benefitsForm, memberCount, challenges }))
+    !loading &&
+    !!group &&
+    !!nextDoableStep(computeSetupSteps({ group, benefitsForm, memberCount, challenges }), { canManageAccount, canManageChallenges })
   const entries = visibleNav({ role, isGsiAdmin, setupIncomplete, surveyEnabled: group?.commute_survey_enabled === true })
 
   return (

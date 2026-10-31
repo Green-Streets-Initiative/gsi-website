@@ -60,7 +60,7 @@ export default async function SurveyReportPage({ searchParams }: { searchParams:
   const { doc, survey, group, rows, evidence } = built
   const responded = survey.responded_matched + survey.responded_unmatched
   const rate = survey.headcount ? (responded / survey.headcount) * 100 : null
-  const generated = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+  const generated = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'America/New_York' })
   const share = modeShare(rows)
   const activeShare = pct(share.shares.walk + share.shares.bike + share.shares.transit, share.commuteDays)
 
@@ -257,7 +257,7 @@ export default async function SurveyReportPage({ searchParams }: { searchParams:
               <span className="font-bold">Green Streets</span> Initiative · a Massachusetts nonprofit · gogreenstreets.org
             </p>
             <p className="text-ink-soft">
-              Prepared {generated} for {verified.payload.email}
+              Prepared {generated} for {group.name}
             </p>
           </footer>
         </div>

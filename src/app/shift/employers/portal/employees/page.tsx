@@ -16,6 +16,7 @@ import {
   Send,
   Check,
   MessageSquareText,
+  Link2,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useModalFocus } from '@/lib/employer/use-modal-focus'
@@ -341,16 +342,23 @@ export default function EmployeesPage() {
         subtitle="Who's in, and getting more people in"
         actions={
           effectiveCount > 0 ? (
-            <>
-              {inviteWithAssistant && (
-                <Button variant="secondary" icon={MessageSquareText} onClick={inviteWithAssistant}>
-                  Invite from a spreadsheet
+            canManage ? (
+              <>
+                {inviteWithAssistant && (
+                  <Button variant="secondary" icon={MessageSquareText} onClick={inviteWithAssistant}>
+                    Invite from a spreadsheet
+                  </Button>
+                )}
+                <Button variant="primary" icon={Mail} onClick={() => setInviteOpen(true)}>
+                  Invite
                 </Button>
-              )}
-              <Button variant="primary" icon={Mail} onClick={() => setInviteOpen(true)}>
-                Invite
+              </>
+            ) : (
+              // A viewer can't send invitations, but can pass the join link on.
+              <Button variant="secondary" icon={Link2} onClick={() => changeView('share')}>
+                Share link
               </Button>
-            </>
+            )
           ) : undefined
         }
       />
@@ -438,7 +446,7 @@ export default function EmployeesPage() {
             <div className="min-w-0">
               <h3 className="text-[16px] font-bold tracking-[-0.01em] text-ink">Employee leaderboard</h3>
               <p className="mt-0.5 text-[14px] text-ink-tertiary">
-                Only portal admins and viewers see this list. Employees never see each other&apos;s numbers here.
+                Only your portal team sees this list. Employees never see each other&apos;s numbers here.
               </p>
             </div>
             <div className="flex flex-col items-end gap-1">
@@ -906,7 +914,7 @@ function EmployeeDrawer({
                       {sendError && <p className="text-[14px] text-ep-danger">{sendError}</p>}
                     </>
                   ) : (
-                    <p className="text-[14px] text-ink-tertiary">Only portal admins can send nudges.</p>
+                    <p className="text-[14px] text-ink-tertiary">Only admins and managers can send nudges.</p>
                   )}
                 </div>
               )}

@@ -29,7 +29,7 @@ const CHALLENGE_STEPS = [
   },
   {
     title: 'You see the results',
-    body: 'The week after, we send you how many took part, how many trips they made and the mix of ways they got there. Aggregate numbers only.',
+    body: 'The week after, we send you how many took part, how many trips they made and the mix of ways they got there. Team totals only: nobody at your company sees where an individual goes.',
   },
 ]
 
@@ -48,7 +48,7 @@ const employerFaqItems = [
   {
     question: 'What does an employer challenge look like?',
     answer:
-      'Employees download the Shift app and join your group via an invite code. Shift detects walks, bike rides, bus and subway trips automatically, so there is nothing to log. Your company receives aggregate data: active employee count, total trips, mode share, and CO₂ avoided. Individual trip data is always private.',
+      'Employees download the Shift app and join your group via an invite code. Shift detects walks, bike rides, bus and subway trips automatically, so there is nothing to log. You see each member\'s name and trip numbers (trips, Shift Rate, miles and CO₂ saved), team totals, and never anyone\'s routes or where they go. Joining is each person\'s choice.',
   },
   {
     question: 'Can we run an ongoing program, not just a one-time challenge?',
@@ -58,7 +58,7 @@ const employerFaqItems = [
   {
     question: 'What information can we share with employees through the group?',
     answer:
-      'Employer groups can include curated content — commuter benefits, transit pass information, bike parking locations, and other resources specific to your workplace. This content is customized during onboarding.',
+      'Employer groups can include curated content: commuter benefits, transit pass information, bike parking locations, and other resources specific to your workplace. This content is customized during onboarding.',
   },
   {
     question: 'Is there a cost?',
@@ -68,7 +68,7 @@ const employerFaqItems = [
   {
     question: 'How is individual employee privacy protected?',
     answer:
-      'Your organization never sees anyone\'s trips or routes. Your dashboard, weekly email and impact reports are aggregates: active members, trips, mode share and CO₂ avoided. The team leaderboard shows members\' names and trip counts, the same view members see in the app. Participation is voluntary: employees join by downloading the app and entering your invite code, and can leave the group at any time.',
+      'You see each member\'s name and trip numbers (trips, Shift Rate, miles and CO₂ saved), team totals, and never anyone\'s routes or where they go. Your dashboard, weekly email and impact reports are team totals: active members, trips, mode share and CO₂ avoided. The team leaderboard shows the same view members see in the app. Joining is each person\'s choice: employees join by downloading the app and entering your invite code, and can leave the group at any time.',
   },
   {
     question: 'How does this connect to our ESG reporting?',
@@ -169,7 +169,7 @@ export default async function ShiftEmployersPage() {
                 Bring my team &rarr;
               </a>
               <p className="text-[13px] leading-snug text-ink-soft">
-                Nobody at your company sees an individual&apos;s trips. Drawings are open to Shift members 18 or older in Massachusetts.{' '}
+                Drawings are open to Shift members 18 or older in Massachusetts.{' '}
                 <Link href="/events/walk-ride-day/rules" className="font-semibold text-forest underline-offset-4 hover:underline">
                   Official rules
                 </Link>
@@ -211,7 +211,7 @@ export default async function ShiftEmployersPage() {
                 },
                 {
                   title: 'Private by design',
-                  body: 'You see team totals and the leaderboard, never anyone’s trips or routes. Joining is always each person’s choice.',
+                  body: 'You see each member’s name and trip numbers (trips, Shift Rate, miles and CO₂ saved), team totals, and never anyone’s routes or where they go. Joining is each person’s choice.',
                 },
                 {
                   title: 'Built by a Massachusetts nonprofit',
@@ -267,7 +267,7 @@ export default async function ShiftEmployersPage() {
                 </h3>
                 <ul className="flex flex-col gap-4">
                   {[
-                    'Private team leaderboard — see how you stack up against colleagues',
+                    'Private team leaderboard: see how you stack up against colleagues',
                     'Tier status and badges that reward consistency over time',
                     'Flagship events like Shift Your Summer, a statewide challenge',
                   ].map((item) => (
@@ -345,7 +345,7 @@ export default async function ShiftEmployersPage() {
                 { src: '/images/shift-app/employer-join-2026-10.png', width: 1170, height: 2532, alt: 'Shift app: the Join a Group screen with the employer’s invite code, QUILL1, typed in', caption: 'Join with your code' },
                 { src: '/images/shift-app/employer-trips-2026-10.png', width: 1170, height: 2532, alt: 'Shift app Trip History: walks, bike rides, train and bus trips listed by day, each with its miles, time and what it saved', caption: 'Trip logging is automatic' },
                 { src: '/images/shift-app/employer-group-2026-10.png', width: 1170, height: 2532, alt: 'Shift app team page for Quillmont Analytics, a sample company: this month’s Shift Rate, active trips, miles and time, the member’s own standing, the note that the employer sees names and trip totals but never routes, and the live Fall Commute Challenge', caption: 'Your team’s page and challenges' },
-                { src: '/images/shift-app/employer-prizes-2026-10.png', width: 1170, height: 2532, alt: 'Shift app challenge page: the Fall Commute Challenge, ending on Walk/Ride Day, with a $15 gift card the member earned by reaching 20 trips', caption: 'Prizes your company funds' },
+                { src: '/images/shift-app/employer-prizes-2026-10.png', width: 1170, height: 2532, alt: 'Shift app challenge page: the Fall Commute Challenge, ending on Walk/Ride Day, with a $15 gift card the member won by reaching 20 trips', caption: 'Prizes your company funds' },
               ]}
             />
             <h3 className="mb-4 font-serif text-[1.375rem] leading-tight text-navy">Your portal</h3>

@@ -53,8 +53,8 @@ export default function NoWorkplace() {
         </p>
         <ul className="mt-4 list-disc space-y-2 pl-5 text-[14px] leading-[1.55] text-ink-muted">
           <li>
-            If a colleague runs your workplace&apos;s portal, ask them to add this email on their
-            Team page. Your access opens the moment they do.
+            If a colleague runs your workplace&apos;s portal, ask them to add this email in
+            Settings, under Team. Your access opens the moment they do.
           </li>
           <li>
             If your workplace uses a different email for you, sign out and sign in with that one.

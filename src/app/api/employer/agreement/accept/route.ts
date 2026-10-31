@@ -27,6 +27,14 @@ function escapeHtml(str: string): string {
     .replace(/"/g, '&quot;')
 }
 
+/** "October 31, 2026, 10:02 AM Eastern": the time as the admin experienced it. */
+function formatAcceptedAt(iso: string): string {
+  const d = new Date(iso)
+  const day = d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'America/New_York' })
+  const time = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'America/New_York' })
+  return `${day}, ${time} Eastern`
+}
+
 function buildConfirmationHtml(opts: {
   groupName: string
   acceptedName: string
@@ -63,13 +71,13 @@ function buildConfirmationHtml(opts: {
   </tr>
   <tr>
     <td style="padding:32px;">
-      <h1 style="margin:0 0 8px;font-size:19px;color:#191A2E;">${escapeHtml(AGREEMENT_TITLE)} — accepted</h1>
+      <h1 style="margin:0 0 8px;font-size:19px;color:#191A2E;">${escapeHtml(AGREEMENT_TITLE)}: accepted</h1>
       <div style="background:#E7F0EA;border-radius:10px;padding:14px 18px;margin:16px 0 24px;">
         <p style="margin:0;font-size:13px;line-height:1.7;color:#2D6A4F;">
           <strong>Customer:</strong> ${escapeHtml(groupName)}<br/>
           <strong>Accepted by:</strong> ${escapeHtml(acceptedName)}, ${escapeHtml(acceptedTitle)} (${escapeHtml(acceptedEmail)})<br/>
           <strong>Version:</strong> ${escapeHtml(AGREEMENT_VERSION)}<br/>
-          <strong>Accepted at:</strong> ${escapeHtml(acceptedAt)} (UTC)<br/>
+          <strong>Accepted at:</strong> ${escapeHtml(formatAcceptedAt(acceptedAt))}<br/>
           <strong>Reference copy:</strong> <a href="${AGREEMENT_URL}" style="color:#2D6A4F;">${AGREEMENT_URL.replace('https://', '')}</a>
         </p>
       </div>
@@ -125,7 +133,7 @@ export async function POST(request: Request) {
   // text the user never saw.
   if (body?.version && body.version !== AGREEMENT_VERSION) {
     return Response.json(
-      { error: 'The agreement was updated while you were reading — please refresh and review the current version.' },
+      { error: 'The agreement was updated while you were reading. Please refresh and review the current version.' },
       { status: 409 },
     )
   }
@@ -171,7 +179,7 @@ export async function POST(request: Request) {
   const specialTerms = offered?.specialTerms?.trim() ?? ''
   if ((body?.special_terms ?? '').trim() !== specialTerms) {
     return Response.json(
-      { error: 'The special terms for your workplace were updated while you were reading — please refresh and review them.' },
+      { error: 'The special terms for your workplace were updated while you were reading. Please refresh and review them.' },
       { status: 409 },
     )
   }
@@ -229,7 +237,7 @@ export async function POST(request: Request) {
         from: 'Shift <noreply@gogreenstreets.org>',
         to: [callerEmail, 'info@gogreenstreets.org'],
         replyTo: 'info@gogreenstreets.org',
-        subject: `${AGREEMENT_TITLE} accepted — ${group.name}`,
+        subject: `${AGREEMENT_TITLE} accepted: ${group.name}`,
         html,
       })
     } catch (err) {

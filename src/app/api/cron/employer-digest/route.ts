@@ -171,8 +171,8 @@ function guaranteedPrizeLines(p: GuaranteedDigestPrize): string[] {
 
 /**
  * Every employer challenge running now or ended this week: who's counting,
- * this week vs last, the top three, and each reward's standing. Admins see
- * names here (the portal shows members anyway).
+ * this week vs last, and each reward's standing. No member names in the
+ * email; the portal's standings page has them.
  */
 function buildChallengeSection(challenges: DigestChallenge[]): string {
   const cards = challenges.flatMap((c) => {
@@ -187,9 +187,7 @@ function buildChallengeSection(challenges: DigestChallenge[]): string {
         `<strong>${t.counting} of ${t.members}</strong> ${t.members === 1 ? 'colleague' : 'colleagues'} counting, ${plural(t.total_counted, 'active trip', 'active trips')} so far.`,
       )
       lines.push(`${plural(t.this_week, 'active trip', 'active trips')} this week, ${t.last_week} last week ${delta(t.this_week, t.last_week)}.`)
-      if (t.top.length > 0) {
-        lines.push(`Top so far: ${t.top.map((m) => `${escapeHtml(m.name)} (${m.counted})`).join(', ')}.`)
-      }
+      // No names here (Keith 2026-10-31): the portal's standings page has them.
       for (const p of e.other_prizes) {
         const kind = p.award_mode === 'drawing' ? 'drawing' : 'leaderboard reward'
         lines.push(
@@ -382,8 +380,12 @@ function buildLaunchProgressHtml(opts: {
   launchDate: string | null
   /** Pace verdict and next step under the progress line (goalPaceHtml). */
   paceHtml?: string
+  /** The group's next or running challenge, when it has one. */
+  challenge: { name: string; starts_at: string; ends_at: string } | null
+  /** Plan tier (src/lib/employer/plans.ts); the challenge step shows only where rewards are included. */
+  tier: string | null
 }): string {
-  const { groupName, groupLogoUrl, memberCount, inviteCode, headcount, targetSignupPct, launchDate } = opts
+  const { groupName, groupLogoUrl, memberCount, inviteCode, headcount, targetSignupPct, launchDate, challenge, tier } = opts
 
   const goalCount =
     headcount && targetSignupPct ? Math.ceil((headcount * targetSignupPct) / 100) : null
@@ -394,12 +396,19 @@ function buildLaunchProgressHtml(opts: {
     ? `<p style="margin:8px 0 0;font-size:13px;color:#5A5C6E;">Your launch date: <strong>${escapeHtml(launchDate)}</strong></p>`
     : ''
 
+  const shortDate = (iso: string) =>
+    new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'America/New_York' })
+  const challengeStep = challenge
+    ? `Your <strong>${escapeHtml(challenge.name)}</strong> runs ${shortDate(challenge.starts_at)} to ${shortDate(challenge.ends_at)}.`
+    : tier === 'standard' || tier === 'premium'
+      ? `Line up a launch challenge with weekly prize drawings in <a href="${PORTAL_URL}/challenges" style="color:#2D6A4F;">Challenges</a>.`
+      : null
   const steps = [
     inviteCode
-      ? `Share your invite code <span style="font-family:monospace;font-weight:700;">${escapeHtml(inviteCode)}</span> — the <a href="${PORTAL_URL}/employees?view=share" style="color:#2D6A4F;">Invite &amp; share</a> page has a QR poster, email templates, and a printable flyer.`
+      ? `Share your invite code <span style="font-family:monospace;font-weight:700;">${escapeHtml(inviteCode)}</span>: the <a href="${PORTAL_URL}/employees?view=share" style="color:#2D6A4F;">Invite &amp; share</a> page has a QR poster, email templates, and a printable flyer.`
       : `Open the <a href="${PORTAL_URL}/employees?view=share" style="color:#2D6A4F;">Invite &amp; share</a> page for a QR poster, email templates, and a printable flyer.`,
-    `Ask a leader (not HR) to send the announcement email — it's the single biggest driver of sign-ups.`,
-    `Line up a launch challenge with weekly prize drawings in <a href="${PORTAL_URL}/challenges" style="color:#2D6A4F;">Challenges</a>.`,
+    `Ask a leader (not HR) to send the announcement email.`,
+    ...(challengeStep ? [challengeStep] : []),
   ]
 
   return `<!DOCTYPE html>
@@ -441,7 +450,7 @@ function buildLaunchProgressHtml(opts: {
   <tr>
     <td style="padding:0 32px 24px;">
       <p style="margin:0;font-size:13px;color:#5A5C6E;line-height:1.6;">
-        Want a hand planning your launch? Just reply — we help every new team get going.
+        Want a hand planning your launch? Just reply. We help every new team get going.
       </p>
     </td>
   </tr>
@@ -504,12 +513,12 @@ function buildRenewalReminderHtml(opts: {
       <p style="margin:0 0 16px;font-size:14px;color:#374151;line-height:1.6;">
         ${escapeHtml(groupName)}'s <strong>${escapeHtml(tierLabel)}</strong> subscription
         (${price}/year) renews on <strong>${escapeHtml(renewalDate)}</strong>. For
-        invoice-billed accounts, we'll send the renewal invoice with Net-30 terms —
+        invoice-billed accounts, we'll send the renewal invoice with Net-30 terms;
         no card will be charged automatically.
       </p>
       <p style="margin:0 0 16px;font-size:14px;color:#374151;line-height:1.6;">
         Nothing to do if you'd like to continue. To make changes or decline renewal,
-        use your portal's Rewards &amp; billing page or just reply to this email
+        use your portal's Billing &amp; rewards page or just reply to this email
         before the renewal date.
       </p>
       <p style="margin:0;font-size:13px;color:#5A5C6E;line-height:1.6;">
@@ -698,6 +707,19 @@ export async function GET(req: Request) {
         skipped.push(group.name)
         continue
       }
+      // The group's next or running challenge, so the checklist names it
+      // instead of asking them to line one up.
+      const { data: nextChallengeRows } = await sb
+        .from('competitions')
+        .select('name, starts_at, ends_at')
+        .eq('group_id', group.id)
+        .eq('event_type', 'employer')
+        .gte('ends_at', new Date().toISOString())
+        .order('starts_at', { ascending: true })
+        .limit(1)
+      const nextChallenge = nextChallengeRows?.[0]
+        ? { name: nextChallengeRows[0].name as string, starts_at: nextChallengeRows[0].starts_at as string, ends_at: nextChallengeRows[0].ends_at as string }
+        : null
       const launchHtml = buildLaunchProgressHtml({
         groupName: group.name,
         groupLogoUrl: group.logo_url ?? null,
@@ -708,6 +730,8 @@ export async function GET(req: Request) {
         targetSignupPct: goal?.type === 'participation' ? goal.targetPct : (onboarding.target_signup_pct ?? null),
         launchDate: onboarding.launch_date ?? null,
         paceHtml,
+        challenge: nextChallenge,
+        tier: (group.tier as string | null) ?? null,
       })
 
       for (const admin of digestRecipients) {
@@ -927,7 +951,7 @@ export async function GET(req: Request) {
           prior_week: priorWeek,
           tip: tip?.key ?? null,
           html_bytes: html.length,
-          ...(includeHtml ? { subject: `Your weekly Shift report — ${group.name}`, html } : {}),
+          ...(includeHtml ? { subject: `Your weekly Shift report: ${group.name}`, html } : {}),
         })
         continue
       }
@@ -936,7 +960,7 @@ export async function GET(req: Request) {
         const ok = await sendOrRecord(resend, group.id, 'weekly digest', {
           from: FROM,
           to: admin.email,
-          subject: `Your weekly Shift report — ${group.name}`,
+          subject: `Your weekly Shift report: ${group.name}`,
           html,
           headers: {
             'List-Unsubscribe': `<${PORTAL_URL}/settings>`,
@@ -1009,7 +1033,7 @@ export async function GET(req: Request) {
       if (!allAdmins?.length) continue
 
       const renewalDate = new Date(group.access_ends_at).toLocaleDateString('en-US', {
-        month: 'long', day: 'numeric', year: 'numeric',
+        month: 'long', day: 'numeric', year: 'numeric', timeZone: 'America/New_York',
       })
       const tierLabel =
         (group.tier as string).charAt(0).toUpperCase() + (group.tier as string).slice(1)

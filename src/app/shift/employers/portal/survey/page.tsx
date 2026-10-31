@@ -337,16 +337,16 @@ export default function SurveyPage() {
         <PortalPageHead title="Commute survey" subtitle="The yearly commute survey for MassDEP or Boston, or for your staff commuting emissions." />
         <Card>
           <CardBody>
-            <p className="text-[14px] leading-[1.55] text-ink">
-              Part of the Standard plan. Staff get a two-minute survey by personal link or in the Shift app, you watch the response rate against your headcount, and at the end you get the summary MassDEP or Boston asks for, plus your staff commuting emissions.
+            <h2 className="text-[17px] font-semibold leading-tight text-ink">Your first commute survey is free</h2>
+            <p className="mt-2 text-[15px] leading-[1.55] text-ink-muted">
+              Email us and we switch it on today; after the first, it is included in Standard and Premium.
             </p>
-            <p className="mt-3 text-[15px] leading-[1.55] text-ink-muted">
-              To switch it on, email{' '}
-              <a href="mailto:info@gogreenstreets.org" className="font-semibold text-accent hover:underline">
-                info@gogreenstreets.org
-              </a>
-              .
-            </p>
+            <a
+              href={`mailto:info@gogreenstreets.org?subject=${encodeURIComponent(`Switch on the commute survey for ${group.name}`)}`}
+              className="mt-4 inline-flex items-center justify-center rounded-[10px] bg-accent px-4 py-[10px] text-[14px] font-semibold leading-none text-white shadow-sm transition-all duration-[120ms] hover:bg-accent-dark"
+            >
+              Email us to switch it on
+            </a>
           </CardBody>
         </Card>
       </>

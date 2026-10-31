@@ -44,7 +44,7 @@ function loadedWindowDays(d: unknown): number | null {
 
 export default function DashboardPage() {
   const portal = usePortal()
-  const { group, challenges, memberCount, dashboard, dashboardError, members, benefitsForm, loading, refreshDashboard, isAdmin, isGsiAdmin, selfMember, sessionEmail } = portal
+  const { group, challenges, memberCount, dashboard, dashboardError, members, benefitsForm, loading, refreshDashboard, isGsiAdmin, selfMember, sessionEmail } = portal
   const otherWorkplaces = (portal as { otherWorkplaces?: number }).otherWorkplaces ?? 0
   const refetchedFor = useRef<string | null>(null)
   const [skippedJoins, setSkippedJoins] = useState<string[]>(readSkippedJoins)
@@ -87,12 +87,14 @@ export default function DashboardPage() {
       /* hidden for this visit only */
     }
   }
+  // The flags already cover GSI staff and a lapsed account (portal-context).
   const next = homeSuggestions({
     group,
     steps,
     challenges,
     memberCount,
-    canAct: isAdmin || isGsiAdmin || portal.canManageChallenges,
+    canAct: portal.canManageChallenges,
+    canManageAccount: portal.canManageAccount,
     nowMs: now(),
     joinYourself: offerJoin,
   })

@@ -4,21 +4,28 @@ import { createHmac, timingSafeEqual } from 'node:crypto'
 /**
  * Self-serve team challenge: the signed link in the "confirm your email"
  * message. It carries what the person typed, so nothing is stored until they
- * confirm. HS256, JWT-shaped, 72-hour expiry, same secret as the employer
- * report links (EMPLOYER_REPORT_TOKEN_SECRET) with its own scope.
+ * confirm. HS256, JWT-shaped, 6-hour expiry (Keith 2026-10-31; was 72
+ * hours), same secret as the employer report links
+ * (EMPLOYER_REPORT_TOKEN_SECRET) with its own scope.
  *
  * Opening the link changes nothing: the confirm page asks for a click first,
  * so a corporate mail scanner that loads every link can't create the team.
  */
 
 const SCOPE = 'employer_team_challenge'
-const TTL_SECONDS = 72 * 60 * 60
+const TTL_HOURS = 6
+const TTL_SECONDS = TTL_HOURS * 60 * 60
+
+/** How long the link works, in words, for the email and the expired page. */
+export const TOKEN_LIFETIME_WORDS = 'six hours'
 
 export interface TeamChallengeSignup {
   company: string
   name: string
   email: string
   headcount: number
+  /** The company website, as typed (required since 2026-10-31; links signed before carry none). */
+  website: string
 }
 
 interface Payload extends TeamChallengeSignup {
@@ -62,5 +69,8 @@ export function verifyTeamChallengeToken(token: string): TeamChallengeTokenResul
   }
   if (p.scope !== SCOPE || !p.company || !p.email || typeof p.exp !== 'number') return { ok: false, error: 'malformed' }
   if (p.exp * 1000 < Date.now()) return { ok: false, error: 'expired' }
-  return { ok: true, signup: { company: p.company, name: p.name ?? '', email: p.email, headcount: p.headcount } }
+  return {
+    ok: true,
+    signup: { company: p.company, name: p.name ?? '', email: p.email, headcount: p.headcount, website: typeof p.website === 'string' ? p.website : '' },
+  }
 }

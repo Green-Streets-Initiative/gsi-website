@@ -69,6 +69,7 @@ import type {
   ChallengePrize,
   PrizeWinner,
 } from '../_lib/portal-types'
+import { PRIZE_WINNER_COLUMNS } from '../_lib/portal-types'
 
 // Shift 01040: drawing and leaderboard winners get a catalog gift card at the
 // draw (catalog_reward_id), the sweep can draw on its own (auto_draw_*), and
@@ -892,7 +893,7 @@ export default function ChallengesPage() {
       }
       const [{ data: updated }, { data: winners }] = await Promise.all([
         supabase.from('employer_challenge_prizes').select('*').eq('id', p.id).single(),
-        supabase.from('employer_prize_winners').select('*').eq('prize_id', p.id),
+        supabase.from('employer_prize_winners').select(PRIZE_WINNER_COLUMNS).eq('prize_id', p.id),
       ])
       if (updated) {
         setChallengePrizes(
@@ -1507,7 +1508,7 @@ function PrizeCard({
 
   async function reloadWinners() {
     const [{ data: updatedWinners }, { data: updatedPrize }] = await Promise.all([
-      supabase.from('employer_prize_winners').select('*').eq('prize_id', p.id),
+      supabase.from('employer_prize_winners').select(PRIZE_WINNER_COLUMNS).eq('prize_id', p.id),
       supabase.from('employer_challenge_prizes').select('*').eq('id', p.id).single(),
     ])
     if (updatedWinners) onWinnersUpdated(updatedWinners as PrizeWinner[])
@@ -1773,9 +1774,9 @@ function PrizeCard({
                       <td className="py-2 text-right text-ink-muted">
                         {p.metric === 'pct_non_car'
                           ? `${Number(w.metric_value).toFixed(1)}%`
-                          : p.metric === 'tried_new'
-                            ? String(Math.round(Number(w.metric_value)))
-                            : Number(w.metric_value).toFixed(1)}
+                          : p.metric === 'miles'
+                            ? Number(w.metric_value).toFixed(1)
+                            : Math.round(Number(w.metric_value)).toLocaleString('en-US')}
                       </td>
                       {p.funded_from_pool && (
                         <td className="py-2 text-right text-ink-muted">

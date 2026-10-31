@@ -20,8 +20,14 @@ import type { Challenge, EmployerOnboarding, Group } from '../_lib/portal-types'
 const PORTAL = '/shift/employers/portal'
 const DAY = 86_400_000
 
-// A 'join' step is the person's own: no assistant, an outside link and a way to say no.
-type Step = { id: string; icon: typeof Users; title: string; desc: string; prompt: string; href: string; kind?: 'join' }
+// A 'join' step is the person's own: no assistant, an outside link and a way
+// to say no. An 'ask' step is one only an admin can do (the profile, the
+// logo): it is listed so a manager knows it is open, with "Ask an admin" in
+// place of the buttons.
+type Step = { id: string; icon: typeof Users; title: string; desc: string; prompt: string; href: string; kind?: 'join' | 'ask' }
+
+/** Steps that change the account itself, so only an admin does them. */
+const ACCOUNT_STEPS = new Set(['profile', 'logo'])
 
 /** Setup steps, as tasks the assistant can take on. */
 const SETUP: Record<string, { icon: typeof Users; desc: string }> = {
@@ -40,12 +46,16 @@ export function homeSuggestions(args: {
   steps: SetupStepDef[]
   challenges: Challenge[]
   memberCount: number
+  /** Can run programs: challenges, inviting, the advisor (admins, managers, GSI staff, while access is live). */
   canAct: boolean
+  /** Can change the account: the profile and logo steps. Admins only; a manager sees "Ask an admin". */
+  canManageAccount?: boolean
   nowMs: number
   /** True when the signed-in person isn't on the team yet and hasn't said no. */
   joinYourself?: boolean
 }): { steps: Step[]; starters: string[] } {
   const { group, steps, challenges, memberCount, canAct, nowMs, joinYourself } = args
+  const canManageAccount = args.canManageAccount ?? canAct
   const headcount = ((group.onboarding ?? {}) as EmployerOnboarding).headcount ?? null
   const own = challenges.filter((c) => !c.is_flagship)
   const upcoming = own.filter((c) => new Date(c.starts_at).getTime() > nowMs).sort((a, b) => a.starts_at.localeCompare(b.starts_at))[0]
@@ -84,7 +94,16 @@ export function homeSuggestions(args: {
   if (canAct) {
     for (const s of steps) {
       if (s.done || !SETUP[s.id] || !SETUP_PROMPTS[s.id] || (s.id === 'employees' && out.some((o) => o.id === 'people'))) continue
-      out.push({ id: s.id, icon: SETUP[s.id].icon, title: s.label, desc: SETUP[s.id].desc, prompt: SETUP_PROMPTS[s.id], href: s.route ?? `${PORTAL}/setup` })
+      const askAdmin = ACCOUNT_STEPS.has(s.id) && !canManageAccount
+      out.push({
+        id: s.id,
+        icon: SETUP[s.id].icon,
+        title: s.label,
+        desc: SETUP[s.id].desc,
+        prompt: SETUP_PROMPTS[s.id],
+        href: s.route ?? `${PORTAL}/setup`,
+        ...(askAdmin ? { kind: 'ask' as const } : {}),
+      })
     }
   }
   if (ended) {
@@ -183,7 +202,9 @@ export function NextUp({ steps, withAssistant, onSkipJoin }: { steps: Step[]; wi
                 <p className="text-[16px] font-semibold leading-snug text-ink">{s.title}</p>
                 <p className="line-clamp-2 text-[14px] text-ink-muted">{s.desc}</p>
               </div>
-              {s.kind === 'join' ? (
+              {s.kind === 'ask' ? (
+                <span className="shrink-0 text-[14px] font-medium text-ink-muted">Ask an admin</span>
+              ) : s.kind === 'join' ? (
                 <span className="flex shrink-0 flex-col items-end gap-1 sm:flex-row sm:items-center sm:gap-2">
                   <Button variant="secondary" size="sm" iconRight={ExternalLink} onClick={() => window.open(s.href, '_blank', 'noopener')}>
                     Get the app

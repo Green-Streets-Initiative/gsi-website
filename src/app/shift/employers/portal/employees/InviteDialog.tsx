@@ -32,6 +32,9 @@ const EMAIL_RE = /^[^\s@<>()[\],;:"']+@[^\s@<>()[\],;:"']+\.[a-z]{2,}$/i
 const REASONS: Record<string, string> = {
   forbidden: 'Only an admin on your team can send invitations.',
   no_access: 'Your plan is not active right now, so invitations are paused.',
+  daily_cap: "You've reached today's limit of 300 invitations. The rest can go out tomorrow.",
+  domain_not_verified:
+    "Invitations from this portal go to your company's email addresses. Add your email domain under Settings, then try again.",
 }
 
 export type ParsedEmails = { valid: string[]; wrong: string[] }
@@ -77,6 +80,12 @@ type AddResult = {
   unsubscribed?: number
   invalid?: number
   total_pending?: number
+  /** Skipped because the address is not on one of the company's email domains (self-serve teams whose domain did not match their website). */
+  wrong_domain?: number
+  /** Skipped because today's 300-invitation limit was reached. */
+  over_cap?: number
+  /** A plain sentence from the server about what was skipped, when there is one. */
+  message?: string
 }
 
 function plural(n: number, one: string, many: string) {
@@ -100,6 +109,13 @@ export function summarize(r: AddResult, sentNow: boolean): string {
   if (r.already_invited) parts.push(`${r.already_invited} ${r.already_invited === 1 ? 'was' : 'were'} already invited.`)
   if (r.unsubscribed) parts.push(`${r.unsubscribed} asked not to be emailed.`)
   if (r.invalid) parts.push(`${r.invalid} ${r.invalid === 1 ? 'was not' : 'were not'} a valid address.`)
+  if (r.wrong_domain) {
+    parts.push(
+      `${r.wrong_domain} ${r.wrong_domain === 1 ? 'is' : 'are'} not on your company's email domain, so ${r.wrong_domain === 1 ? 'it was' : 'they were'} skipped.`,
+    )
+  }
+  if (r.over_cap) parts.push(`${r.over_cap} ${r.over_cap === 1 ? 'is' : 'are'} over today's limit of 300 and can go out tomorrow.`)
+  if (r.message && !r.wrong_domain && !r.over_cap) parts.push(r.message)
   return parts.join(' ')
 }
 

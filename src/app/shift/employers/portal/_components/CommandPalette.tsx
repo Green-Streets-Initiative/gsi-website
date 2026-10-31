@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { ListChecks, MessageSquareText, Search, Trophy, UserPlus, Wallet, Printer, LogOut, ShieldCheck, type LucideIcon } from 'lucide-react'
 import { usePortal } from '../_lib/portal-context'
-import { computeSetupSteps, nextSetupStep } from '../_lib/setup-steps'
+import { computeSetupSteps, nextDoableStep } from '../_lib/setup-steps'
 import { visibleNav, isNavItem } from './Sidebar'
 import { assistantAvailable, openAssistant } from './AssistantPanel'
 import Avatar from '@/components/employer/Avatar'
@@ -24,8 +24,21 @@ type ResultItem = {
 
 export default function CommandPalette({ onClose }: { onClose: () => void }) {
   const router = useRouter()
-  const { members, role, isAdmin, isGsiAdmin, group, benefitsForm, memberCount, challenges, loading, signOut } =
-    usePortal()
+  const {
+    members,
+    role,
+    isAdmin,
+    isGsiAdmin,
+    group,
+    benefitsForm,
+    memberCount,
+    challenges,
+    loading,
+    signOut,
+    canManageAccount,
+    canManageChallenges,
+    canInviteEmployees,
+  } = usePortal()
   const inputRef = useRef<HTMLInputElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
   const [query, setQuery] = useState('')
@@ -41,8 +54,11 @@ export default function CommandPalette({ onClose }: { onClose: () => void }) {
   // Escape is handled with the arrow keys below.
   useModalFocus(panelRef, { initialFocus: () => inputRef.current })
 
+  // Same rule as the sidebar: Setup is a page while there is a step this person can do.
   const setupIncomplete =
-    !loading && !!group && !!nextSetupStep(computeSetupSteps({ group, benefitsForm, memberCount, challenges }))
+    !loading &&
+    !!group &&
+    !!nextDoableStep(computeSetupSteps({ group, benefitsForm, memberCount, challenges }), { canManageAccount, canManageChallenges })
 
   const results = useMemo(() => {
     const q = query.toLowerCase().trim()
@@ -75,9 +91,14 @@ export default function CommandPalette({ onClose }: { onClose: () => void }) {
           ]),
     ]
 
+    // Actions a person can't take aren't offered (Keith 2026-10-31).
     const actions: ResultItem[] = [
-      { id: 'a-challenge', type: 'action', label: 'Create a challenge', icon: Trophy, href: '/shift/employers/portal/challenges?new=1' },
-      { id: 'a-invite', type: 'action', label: 'Invite employees', icon: UserPlus, href: '/shift/employers/portal/employees?invite=1' },
+      ...(canManageChallenges
+        ? [{ id: 'a-challenge', type: 'action' as const, label: 'Create a challenge', icon: Trophy, href: '/shift/employers/portal/challenges?new=1' }]
+        : []),
+      ...(canInviteEmployees
+        ? [{ id: 'a-invite', type: 'action' as const, label: 'Invite employees', icon: UserPlus, href: '/shift/employers/portal/employees?invite=1' }]
+        : []),
       ...(isAdmin || isGsiAdmin
         ? [{ id: 'a-topup', type: 'action' as const, label: 'Top up rewards balance', icon: Wallet, href: '/shift/employers/portal/billing' }]
         : []),
@@ -105,7 +126,7 @@ export default function CommandPalette({ onClose }: { onClose: () => void }) {
     if (!canAsk || !q) return found
     const ask: ResultItem = { id: 'ask', type: 'ask', label: query.trim(), icon: MessageSquareText, run: () => openAssistant(query.trim()) }
     return askFirst ? [ask, ...found] : [...found, ask]
-  }, [query, members, role, isAdmin, isGsiAdmin, setupIncomplete, loading, signOut, canAsk, askFirst])
+  }, [query, members, role, isAdmin, isGsiAdmin, setupIncomplete, loading, signOut, canAsk, askFirst, canManageChallenges, canInviteEmployees])
 
   // Reset the highlight when the list changes (adjusted during render, not in an effect).
   const [seenQuery, setSeenQuery] = useState(query)

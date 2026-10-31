@@ -485,7 +485,7 @@ export default async function EmployerReportPage({
               <span className="font-bold">Green Streets</span> Initiative · a Massachusetts nonprofit · gogreenstreets.org
             </p>
             <p className="text-ink-soft">
-              Prepared {generated} for {verified.payload.email}
+              Prepared {generated} for {group.name}
             </p>
           </footer>
         </div>

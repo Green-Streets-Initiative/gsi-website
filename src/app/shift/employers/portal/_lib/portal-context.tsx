@@ -22,6 +22,7 @@ import type {
   PrizeWinner,
   EmployerBenefits,
 } from './portal-types'
+import { PRIZE_WINNER_COLUMNS } from './portal-types'
 import { hasAccess, isTierAtLeast } from './portal-utils'
 import { isOwnerRow, normalizeRole, type PortalRole } from './portal-roles'
 import { readStaffWorkplace, takeWorkplaceParam, writeStaffWorkplace } from './staff-workplace'
@@ -377,7 +378,7 @@ export function PortalProvider({ children }: { children: ReactNode }) {
           if (drawnIds.length > 0) {
             const { data: winners } = await supabase
               .from('employer_prize_winners')
-              .select('*')
+              .select(PRIZE_WINNER_COLUMNS)
               .in('prize_id', drawnIds)
 
             if (winners) {
@@ -547,8 +548,12 @@ export function PortalProvider({ children }: { children: ReactNode }) {
   const isManager = role === 'manager'
   const me = admins.find((a) => a.email.toLowerCase() === (sessionEmail ?? ''))
   const isOwner = !!me && isOwnerRow(me, group?.admin_email)
-  const canRunPrograms = isAdmin || isManager || isGsiAdmin
-  const canAdminister = isAdmin || isGsiAdmin
+  // A lapsed account loses every action here, in one place (Keith
+  // 2026-10-31): the server refuses the writes anyway, so the buttons go
+  // too. accessActive already lets GSI staff through. Billing stays open to
+  // admins so they can renew.
+  const canRunPrograms = (isAdmin || isManager || isGsiAdmin) && accessActive
+  const canAdminister = (isAdmin || isGsiAdmin) && accessActive
 
   const value: PortalContextValue = {
     group,
@@ -584,7 +589,7 @@ export function PortalProvider({ children }: { children: ReactNode }) {
     canInviteEmployees: canRunPrograms,
     canEditAdvisor: canRunPrograms,
     canManageTeam: canAdminister,
-    canManageBilling: canAdminister,
+    canManageBilling: isAdmin || isGsiAdmin,
     canManageAccount: canAdminister,
     agreementGated,
     tierAtLeast,

@@ -254,7 +254,23 @@ export type PrizeWinner = {
   fulfillment_status: 'pending' | 'fulfilled' | 'forfeited'
   fulfilled_at: string | null
   tremendous_order_id: string | null
+  catalog_reward_id?: string | null
+  reached_at?: string | null
+  handed_out_at?: string | null
+  received_at?: string | null
+  claim_name?: string | null
+  claim_email?: string | null
+  claim_consent_at?: string | null
 }
+
+/**
+ * The winner columns the portal reads. Named on purpose: Shift migration
+ * 01553 takes `reward_link` (the gift-card redemption link) away from
+ * signed-in users, and a `select('*')` fails outright under a column-level
+ * grant, so every portal read of employer_prize_winners uses this list.
+ */
+export const PRIZE_WINNER_COLUMNS =
+  'id, prize_id, user_id, metric, metric_value, amount_cents, drawn_at, fulfillment_status, fulfilled_at, tremendous_order_id, catalog_reward_id, reached_at, handed_out_at, received_at, claim_name, claim_email, claim_consent_at'
 
 export type PrizeFormState = {
   id: string | null
