@@ -1,0 +1,836 @@
+{
+  "pulled_at": "2026-11-01T12:49:26.109Z",
+  "project_id": 436603,
+  "host": "https://us.posthog.com",
+  "definition": "Organic = distinct $session_id on $pageview where $referring_domain matches google/bing/duckduckgo/ecosia/yahoo/brave, excluding mail-security link-scanner paths (%/1/0100% and /preferences/%). Monday-start weeks.",
+  "partial_week": {
+    "week_start": "2026-10-26",
+    "sessions": 291
+  },
+  "weeks": [
+    {
+      "week_start": "2026-10-19",
+      "sessions": 287
+    },
+    {
+      "week_start": "2026-10-12",
+      "sessions": 219
+    },
+    {
+      "week_start": "2026-10-05",
+      "sessions": 142
+    },
+    {
+      "week_start": "2026-09-28",
+      "sessions": 156
+    },
+    {
+      "week_start": "2026-09-21",
+      "sessions": 55
+    },
+    {
+      "week_start": "2026-09-14",
+      "sessions": 71
+    },
+    {
+      "week_start": "2026-09-07",
+      "sessions": 29
+    },
+    {
+      "week_start": "2026-08-31",
+      "sessions": 35
+    },
+    {
+      "week_start": "2026-08-24",
+      "sessions": 29
+    },
+    {
+      "week_start": "2026-08-17",
+      "sessions": 35
+    },
+    {
+      "week_start": "2026-08-10",
+      "sessions": 25
+    },
+    {
+      "week_start": "2026-08-03",
+      "sessions": 32
+    }
+  ],
+  "organic_sessions_last_complete_week": 287,
+  "organic_sessions_4wk_mean": 201,
+  "organic_sessions_12wk_mean": 92.92,
+  "top_organic_landing_pages": [
+    {
+      "path": "/guides/how-to-pay-for-the-t",
+      "sessions": 93
+    },
+    {
+      "path": "/events/moving-together-conference-2026-2026-10-27",
+      "sessions": 34
+    },
+    {
+      "path": "/shift/employers/challenge",
+      "sessions": 33
+    },
+    {
+      "path": "/",
+      "sessions": 17
+    },
+    {
+      "path": "/events/scul-hallowheels-2026-10-31",
+      "sessions": 11
+    },
+    {
+      "path": "/shift/towns/boston-ma",
+      "sessions": 9
+    },
+    {
+      "path": "/events/memorial-drive-recreation-sunday-2026-11-01",
+      "sessions": 8
+    },
+    {
+      "path": "/shift/roams/community-path",
+      "sessions": 7
+    },
+    {
+      "path": "/events/boston-halloween-ride-2026-10-31",
+      "sessions": 5
+    },
+    {
+      "path": "/nearby",
+      "sessions": 5
+    },
+    {
+      "path": "/events/trek-or-treat-ride-bruce-freeman-rail-trail-2026-10-27",
+      "sessions": 5
+    },
+    {
+      "path": "/events/great-commuter-challenge-halloween-2026-10-31",
+      "sessions": 5
+    },
+    {
+      "path": "/events/trick-or-treat-ride-2026-10-28",
+      "sessions": 5
+    },
+    {
+      "path": "/events/halloween-family-bike-ride-2026-10-18",
+      "sessions": 4
+    },
+    {
+      "path": "/events/critical-mass-boston-group-ride-2026-10-30",
+      "sessions": 4
+    },
+    {
+      "path": "/shift/towns",
+      "sessions": 4
+    },
+    {
+      "path": "/events",
+      "sessions": 4
+    },
+    {
+      "path": "/events/massdot-safe-streets-smart-trips-high-school-video-contest-2026-10-04",
+      "sessions": 3
+    },
+    {
+      "path": "/events/boston-cafe-bikers-ride-2026-10-31",
+      "sessions": 3
+    },
+    {
+      "path": "/events/wednesday-night-flex-walk-2026-10-28",
+      "sessions": 3
+    },
+    {
+      "path": "/events/gas-man-cometh-2026-2026-10-30",
+      "sessions": 3
+    },
+    {
+      "path": "/guides/boston-traffic",
+      "sessions": 3
+    },
+    {
+      "path": "/challenges",
+      "sessions": 3
+    },
+    {
+      "path": "/events/boston-halloween-bike-ride-2026-10-31",
+      "sessions": 3
+    },
+    {
+      "path": "/shift/roams/northern-strand-trail",
+      "sessions": 2
+    }
+  ],
+  "answer_engine_referrals_7d": [],
+  "answer_engine_referral_sessions_7d": 0,
+  "channels_definition": "Per session, first match wins: paid_search (gclid/wbraid/gbraid or utm_medium cpc|ppc|paid), organic_search (search-engine referrer), answer_engine (answer-engine referrer). Web events only. activated = 'advisor_results_shown', 'snapshot_viewed', 'event_outbound_click'; app_intent = 'shift_store_click', 'snapshot_app_cta_clicked', 'advisor_app_cta_clicked'. Weeks keyed by the session's first event. NOTE organic_search here EXCLUDES paid; the older `weeks` series above does not, and diverges once Ad Grants traffic grows.",
+  "channels_by_week": {
+    "2026-10-26": {
+      "organic_search": {
+        "sessions": 203,
+        "activated": 15,
+        "app_intent": 1
+      },
+      "paid_other": {
+        "sessions": 561,
+        "activated": 1,
+        "app_intent": 22
+      },
+      "paid_search": {
+        "sessions": 105,
+        "activated": 3,
+        "app_intent": 1
+      }
+    },
+    "2026-10-19": {
+      "organic_search": {
+        "sessions": 173,
+        "activated": 19,
+        "app_intent": 3
+      },
+      "paid_other": {
+        "sessions": 404,
+        "activated": 26,
+        "app_intent": 18
+      },
+      "paid_search": {
+        "sessions": 129,
+        "activated": 4,
+        "app_intent": 2
+      }
+    },
+    "2026-10-12": {
+      "organic_search": {
+        "sessions": 142,
+        "activated": 15,
+        "app_intent": 2
+      },
+      "paid_other": {
+        "sessions": 396,
+        "activated": 136,
+        "app_intent": 10
+      },
+      "paid_search": {
+        "sessions": 95,
+        "activated": 7,
+        "app_intent": 0
+      }
+    },
+    "2026-10-05": {
+      "organic_search": {
+        "sessions": 96,
+        "activated": 10,
+        "app_intent": 4
+      },
+      "paid_other": {
+        "sessions": 638,
+        "activated": 423,
+        "app_intent": 17
+      },
+      "paid_search": {
+        "sessions": 61,
+        "activated": 1,
+        "app_intent": 0
+      }
+    },
+    "2026-09-28": {
+      "organic_search": {
+        "sessions": 151,
+        "activated": 6,
+        "app_intent": 3
+      },
+      "paid_other": {
+        "sessions": 206,
+        "activated": 1,
+        "app_intent": 5
+      },
+      "paid_search": {
+        "sessions": 11,
+        "activated": 0,
+        "app_intent": 0
+      }
+    },
+    "2026-09-21": {
+      "answer_engine": {
+        "sessions": 5,
+        "activated": 0,
+        "app_intent": 0
+      },
+      "organic_search": {
+        "sessions": 54,
+        "activated": 1,
+        "app_intent": 1
+      },
+      "paid_other": {
+        "sessions": 383,
+        "activated": 13,
+        "app_intent": 26
+      },
+      "paid_search": {
+        "sessions": 11,
+        "activated": 1,
+        "app_intent": 0
+      }
+    },
+    "2026-09-14": {
+      "answer_engine": {
+        "sessions": 1,
+        "activated": 0,
+        "app_intent": 0
+      },
+      "organic_search": {
+        "sessions": 71,
+        "activated": 0,
+        "app_intent": 2
+      },
+      "paid_other": {
+        "sessions": 69,
+        "activated": 1,
+        "app_intent": 6
+      },
+      "paid_search": {
+        "sessions": 3,
+        "activated": 0,
+        "app_intent": 0
+      }
+    },
+    "2026-09-07": {
+      "organic_search": {
+        "sessions": 29,
+        "activated": 0,
+        "app_intent": 0
+      },
+      "paid_other": {
+        "sessions": 1,
+        "activated": 0,
+        "app_intent": 0
+      },
+      "paid_search": {
+        "sessions": 11,
+        "activated": 0,
+        "app_intent": 0
+      }
+    },
+    "2026-08-31": {
+      "organic_search": {
+        "sessions": 35,
+        "activated": 1,
+        "app_intent": 0
+      },
+      "paid_other": {
+        "sessions": 2,
+        "activated": 0,
+        "app_intent": 0
+      },
+      "paid_search": {
+        "sessions": 14,
+        "activated": 2,
+        "app_intent": 0
+      }
+    },
+    "2026-08-24": {
+      "answer_engine": {
+        "sessions": 2,
+        "activated": 0,
+        "app_intent": 0
+      },
+      "organic_search": {
+        "sessions": 29,
+        "activated": 0,
+        "app_intent": 0
+      },
+      "paid_other": {
+        "sessions": 7,
+        "activated": 3,
+        "app_intent": 0
+      },
+      "paid_search": {
+        "sessions": 5,
+        "activated": 1,
+        "app_intent": 0
+      }
+    },
+    "2026-08-17": {
+      "answer_engine": {
+        "sessions": 5,
+        "activated": 0,
+        "app_intent": 0
+      },
+      "organic_search": {
+        "sessions": 35,
+        "activated": 0,
+        "app_intent": 0
+      },
+      "paid_other": {
+        "sessions": 2,
+        "activated": 0,
+        "app_intent": 0
+      },
+      "paid_search": {
+        "sessions": 18,
+        "activated": 9,
+        "app_intent": 0
+      }
+    },
+    "2026-08-10": {
+      "answer_engine": {
+        "sessions": 3,
+        "activated": 1,
+        "app_intent": 0
+      },
+      "organic_search": {
+        "sessions": 25,
+        "activated": 0,
+        "app_intent": 0
+      },
+      "paid_other": {
+        "sessions": 235,
+        "activated": 0,
+        "app_intent": 0
+      }
+    },
+    "2026-08-03": {
+      "answer_engine": {
+        "sessions": 1,
+        "activated": 0,
+        "app_intent": 0
+      },
+      "organic_search": {
+        "sessions": 32,
+        "activated": 0,
+        "app_intent": 0
+      },
+      "paid_other": {
+        "sessions": 629,
+        "activated": 0,
+        "app_intent": 0
+      }
+    }
+  },
+  "channels_last_complete_week": {
+    "organic_search": {
+      "sessions": 173,
+      "activated": 19,
+      "app_intent": 3
+    },
+    "paid_other": {
+      "sessions": 404,
+      "activated": 26,
+      "app_intent": 18
+    },
+    "paid_search": {
+      "sessions": 129,
+      "activated": 4,
+      "app_intent": 2
+    }
+  },
+  "outcome_tracking_start": "2026-09-14",
+  "landing_outcomes_8wk": [
+    {
+      "channel": "answer_engine",
+      "landing_class": "/programs",
+      "sessions": 3,
+      "activated": 0,
+      "app_intent": 0
+    },
+    {
+      "channel": "organic_search",
+      "landing_class": "/events",
+      "sessions": 516,
+      "activated": 57,
+      "app_intent": 3
+    },
+    {
+      "channel": "organic_search",
+      "landing_class": "/(home)",
+      "sessions": 104,
+      "activated": 5,
+      "app_intent": 5
+    },
+    {
+      "channel": "organic_search",
+      "landing_class": "/shift/roams",
+      "sessions": 66,
+      "activated": 1,
+      "app_intent": 0
+    },
+    {
+      "channel": "organic_search",
+      "landing_class": "/shift/towns",
+      "sessions": 63,
+      "activated": 3,
+      "app_intent": 4
+    },
+    {
+      "channel": "organic_search",
+      "landing_class": "/shift-your-semester",
+      "sessions": 37,
+      "activated": 0,
+      "app_intent": 1
+    },
+    {
+      "channel": "organic_search",
+      "landing_class": "/shift/employers",
+      "sessions": 35,
+      "activated": 0,
+      "app_intent": 0
+    },
+    {
+      "channel": "organic_search",
+      "landing_class": "/guides",
+      "sessions": 20,
+      "activated": 0,
+      "app_intent": 0
+    },
+    {
+      "channel": "organic_search",
+      "landing_class": "/about",
+      "sessions": 13,
+      "activated": 0,
+      "app_intent": 0
+    },
+    {
+      "channel": "organic_search",
+      "landing_class": "/programs",
+      "sessions": 11,
+      "activated": 0,
+      "app_intent": 1
+    },
+    {
+      "channel": "organic_search",
+      "landing_class": "/shift",
+      "sessions": 5,
+      "activated": 0,
+      "app_intent": 2
+    },
+    {
+      "channel": "organic_search",
+      "landing_class": "/get-involved",
+      "sessions": 4,
+      "activated": 0,
+      "app_intent": 0
+    },
+    {
+      "channel": "organic_search",
+      "landing_class": "/es",
+      "sessions": 3,
+      "activated": 0,
+      "app_intent": 0
+    },
+    {
+      "channel": "organic_search",
+      "landing_class": "/blog",
+      "sessions": 3,
+      "activated": 0,
+      "app_intent": 0
+    },
+    {
+      "channel": "paid_other",
+      "landing_class": "/shift-your-semester",
+      "sessions": 1125,
+      "activated": 5,
+      "app_intent": 58
+    },
+    {
+      "channel": "paid_other",
+      "landing_class": "/shift",
+      "sessions": 704,
+      "activated": 3,
+      "app_intent": 36
+    },
+    {
+      "channel": "paid_other",
+      "landing_class": "/nearby",
+      "sessions": 589,
+      "activated": 589,
+      "app_intent": 9
+    },
+    {
+      "channel": "paid_other",
+      "landing_class": "/shift/employers",
+      "sessions": 120,
+      "activated": 0,
+      "app_intent": 0
+    },
+    {
+      "channel": "paid_other",
+      "landing_class": "/events",
+      "sessions": 49,
+      "activated": 4,
+      "app_intent": 0
+    },
+    {
+      "channel": "paid_other",
+      "landing_class": "/(home)",
+      "sessions": 30,
+      "activated": 0,
+      "app_intent": 0
+    },
+    {
+      "channel": "paid_other",
+      "landing_class": "/links",
+      "sessions": 12,
+      "activated": 0,
+      "app_intent": 0
+    },
+    {
+      "channel": "paid_other",
+      "landing_class": "/shift/towns",
+      "sessions": 10,
+      "activated": 0,
+      "app_intent": 1
+    },
+    {
+      "channel": "paid_other",
+      "landing_class": "/programs",
+      "sessions": 8,
+      "activated": 0,
+      "app_intent": 0
+    },
+    {
+      "channel": "paid_other",
+      "landing_class": "/challenges",
+      "sessions": 6,
+      "activated": 0,
+      "app_intent": 0
+    },
+    {
+      "channel": "paid_search",
+      "landing_class": "/guides",
+      "sessions": 314,
+      "activated": 14,
+      "app_intent": 3
+    },
+    {
+      "channel": "paid_search",
+      "landing_class": "/(home)",
+      "sessions": 63,
+      "activated": 0,
+      "app_intent": 0
+    },
+    {
+      "channel": "paid_search",
+      "landing_class": "/shift/towns",
+      "sessions": 19,
+      "activated": 1,
+      "app_intent": 0
+    },
+    {
+      "channel": "paid_search",
+      "landing_class": "/shift",
+      "sessions": 12,
+      "activated": 0,
+      "app_intent": 0
+    },
+    {
+      "channel": "paid_search",
+      "landing_class": "/programs",
+      "sessions": 3,
+      "activated": 0,
+      "app_intent": 0
+    }
+  ],
+  "paid_landings_7d": [
+    {
+      "click_id": "fbclid",
+      "utm_source": "meta",
+      "utm_medium": "paid_social",
+      "utm_campaign": "one_line_test",
+      "path": "/shift",
+      "sessions": 348
+    },
+    {
+      "click_id": "utm",
+      "utm_source": "linkedin",
+      "utm_medium": "paid",
+      "utm_campaign": "team-challenge-nov-2026",
+      "path": "/shift/employers/challenge",
+      "sessions": 120
+    },
+    {
+      "click_id": "gclid",
+      "utm_source": null,
+      "utm_medium": null,
+      "utm_campaign": null,
+      "path": "/guides/how-to-pay-for-the-t",
+      "sessions": 93
+    },
+    {
+      "click_id": "rdt_cid",
+      "utm_source": null,
+      "utm_medium": "cpc",
+      "utm_campaign": "semester",
+      "path": "/shift-your-semester/northeastern",
+      "sessions": 44
+    },
+    {
+      "click_id": "rdt_cid",
+      "utm_source": null,
+      "utm_medium": "cpc",
+      "utm_campaign": "semester",
+      "path": "/shift-your-semester/mit",
+      "sessions": 31
+    },
+    {
+      "click_id": "rdt_cid",
+      "utm_source": null,
+      "utm_medium": "cpc",
+      "utm_campaign": "semester",
+      "path": "/shift-your-semester/harvard",
+      "sessions": 25
+    },
+    {
+      "click_id": "rdt_cid",
+      "utm_source": null,
+      "utm_medium": "cpc",
+      "utm_campaign": "semester",
+      "path": "/shift-your-semester/tufts",
+      "sessions": 13
+    },
+    {
+      "click_id": "fbclid",
+      "utm_source": "meta",
+      "utm_medium": "paid_social",
+      "utm_campaign": "one_line_test",
+      "path": "/shift/towns",
+      "sessions": 10
+    },
+    {
+      "click_id": "gclid",
+      "utm_source": null,
+      "utm_medium": null,
+      "utm_campaign": null,
+      "path": "/shift/towns/boston-ma",
+      "sessions": 7
+    },
+    {
+      "click_id": "fbclid",
+      "utm_source": "ig",
+      "utm_medium": "social",
+      "utm_campaign": null,
+      "path": "/shift",
+      "sessions": 6
+    },
+    {
+      "click_id": "fbclid",
+      "utm_source": "ig",
+      "utm_medium": "social",
+      "utm_campaign": null,
+      "path": "/links",
+      "sessions": 5
+    },
+    {
+      "click_id": "fbclid",
+      "utm_source": null,
+      "utm_medium": null,
+      "utm_campaign": null,
+      "path": "/shift",
+      "sessions": 4
+    },
+    {
+      "click_id": "gclid",
+      "utm_source": null,
+      "utm_medium": null,
+      "utm_campaign": null,
+      "path": "/",
+      "sessions": 4
+    },
+    {
+      "click_id": "fbclid",
+      "utm_source": null,
+      "utm_medium": null,
+      "utm_campaign": null,
+      "path": "/links",
+      "sessions": 4
+    },
+    {
+      "click_id": "fbclid",
+      "utm_source": "meta",
+      "utm_medium": "paid_social",
+      "utm_campaign": "one_line_test",
+      "path": "/commute-advisor",
+      "sessions": 3
+    },
+    {
+      "click_id": "rdt_cid",
+      "utm_source": null,
+      "utm_medium": "cpc",
+      "utm_campaign": "semester",
+      "path": "/about",
+      "sessions": 3
+    },
+    {
+      "click_id": "gclid",
+      "utm_source": null,
+      "utm_medium": null,
+      "utm_campaign": null,
+      "path": "/nearby",
+      "sessions": 3
+    },
+    {
+      "click_id": "gclid",
+      "utm_source": null,
+      "utm_medium": null,
+      "utm_campaign": null,
+      "path": "/shift",
+      "sessions": 3
+    },
+    {
+      "click_id": "gclid",
+      "utm_source": null,
+      "utm_medium": null,
+      "utm_campaign": null,
+      "path": "/zh-Hans/guides/how-to-pay-for-the-t",
+      "sessions": 2
+    },
+    {
+      "click_id": "utm",
+      "utm_source": null,
+      "utm_medium": "cpc",
+      "utm_campaign": "semester",
+      "path": "/shift-your-semester/northeastern",
+      "sessions": 2
+    },
+    {
+      "click_id": "fbclid",
+      "utm_source": "ig",
+      "utm_medium": "social",
+      "utm_campaign": null,
+      "path": "/events",
+      "sessions": 2
+    },
+    {
+      "click_id": "gclid",
+      "utm_source": null,
+      "utm_medium": null,
+      "utm_campaign": null,
+      "path": "/shift/towns",
+      "sessions": 2
+    },
+    {
+      "click_id": "fbclid",
+      "utm_source": "meta",
+      "utm_medium": "paid_social",
+      "utm_campaign": "one_line_test",
+      "path": "/about",
+      "sessions": 2
+    },
+    {
+      "click_id": "rdt_cid",
+      "utm_source": null,
+      "utm_medium": "cpc",
+      "utm_campaign": "semester",
+      "path": "/",
+      "sessions": 2
+    },
+    {
+      "click_id": "rdt_cid",
+      "utm_source": null,
+      "utm_medium": "cpc",
+      "utm_campaign": "semester",
+      "path": "/shift",
+      "sessions": 1
+    }
+  ]
+}

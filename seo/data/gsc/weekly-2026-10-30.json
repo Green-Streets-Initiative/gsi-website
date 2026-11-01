@@ -1,0 +1,3165 @@
+{
+  "mode": "weekly",
+  "range": {
+    "startDate": "2026-10-24",
+    "endDate": "2026-10-30"
+  },
+  "priorRange": {
+    "startDate": "2026-10-17",
+    "endDate": "2026-10-23"
+  },
+  "site_totals": {
+    "clicks": 146,
+    "impressions": 10439,
+    "ctr": 0.014,
+    "position": 6.6
+  },
+  "prior_site_totals": {
+    "clicks": 139,
+    "impressions": 7809,
+    "ctr": 0.0178,
+    "position": 6.6
+  },
+  "totals": {
+    "clicks": 40,
+    "impressions": 2201,
+    "ctr": 0.0182,
+    "position": 5.9
+  },
+  "priorTotals": {
+    "clicks": 47,
+    "impressions": 3197,
+    "ctr": 0.0147,
+    "position": 6.4
+  },
+  "clusters": [
+    {
+      "id": "used-car-to-ebike",
+      "clicks": 0,
+      "impressions": 0,
+      "avg_position": null,
+      "top_queries": [],
+      "prev_clicks": 0,
+      "prev_impressions": 0
+    },
+    {
+      "id": "new-to-boston",
+      "clicks": 0,
+      "impressions": 41,
+      "avg_position": 15,
+      "top_queries": [
+        {
+          "query": "getting around boston",
+          "clicks": 0,
+          "impressions": 21,
+          "ctr": 0,
+          "position": 16.285714285714285
+        },
+        {
+          "query": "getting around cambridge",
+          "clicks": 0,
+          "impressions": 8,
+          "ctr": 0,
+          "position": 11.25
+        },
+        {
+          "query": "best ways to get around boston",
+          "clicks": 0,
+          "impressions": 4,
+          "ctr": 0,
+          "position": 10
+        },
+        {
+          "query": "best way to get around boston",
+          "clicks": 0,
+          "impressions": 2,
+          "ctr": 0,
+          "position": 41
+        },
+        {
+          "query": "charliecard boston",
+          "clicks": 0,
+          "impressions": 1,
+          "ctr": 0,
+          "position": 11
+        },
+        {
+          "query": "como moverse en boston",
+          "clicks": 0,
+          "impressions": 1,
+          "ctr": 0,
+          "position": 8
+        },
+        {
+          "query": "do you need a car to live in boston",
+          "clicks": 0,
+          "impressions": 1,
+          "ctr": 0,
+          "position": 11
+        },
+        {
+          "query": "do you need to rent a car in boston",
+          "clicks": 0,
+          "impressions": 1,
+          "ctr": 0,
+          "position": 21
+        }
+      ],
+      "prev_clicks": 0,
+      "prev_impressions": 6
+    },
+    {
+      "id": "family-logistics",
+      "clicks": 0,
+      "impressions": 0,
+      "avg_position": null,
+      "top_queries": [],
+      "prev_clicks": 0,
+      "prev_impressions": 1
+    },
+    {
+      "id": "year-round-weather",
+      "clicks": 0,
+      "impressions": 4,
+      "avg_position": 9.3,
+      "top_queries": [
+        {
+          "query": "how do commuters plan a trip that combines a bus, train, and walking in one city?",
+          "clicks": 0,
+          "impressions": 4,
+          "ctr": 0,
+          "position": 9.25
+        }
+      ],
+      "prev_clicks": 0,
+      "prev_impressions": 0
+    },
+    {
+      "id": "students-campus",
+      "clicks": 0,
+      "impressions": 65,
+      "avg_position": 5.5,
+      "top_queries": [
+        {
+          "query": "bu cycle kitchen",
+          "clicks": 0,
+          "impressions": 36,
+          "ctr": 0,
+          "position": 5.166666666666667
+        },
+        {
+          "query": "bu bike kitchen",
+          "clicks": 0,
+          "impressions": 23,
+          "ctr": 0,
+          "position": 5
+        },
+        {
+          "query": "bu cycle kitchen hours",
+          "clicks": 0,
+          "impressions": 3,
+          "ctr": 0,
+          "position": 9
+        },
+        {
+          "query": "bike to the sea bike kitchen",
+          "clicks": 0,
+          "impressions": 1,
+          "ctr": 0,
+          "position": 11
+        },
+        {
+          "query": "brandeis university shuttle",
+          "clicks": 0,
+          "impressions": 1,
+          "ctr": 0,
+          "position": 9
+        },
+        {
+          "query": "bu bike shop",
+          "clicks": 0,
+          "impressions": 1,
+          "ctr": 0,
+          "position": 8
+        }
+      ],
+      "prev_clicks": 0,
+      "prev_impressions": 51
+    },
+    {
+      "id": "roams-trails",
+      "clicks": 3,
+      "impressions": 273,
+      "avg_position": 8.2,
+      "top_queries": [
+        {
+          "query": "somerville community path",
+          "clicks": 2,
+          "impressions": 83,
+          "ctr": 0.024096385542168676,
+          "position": 8.590361445783133
+        },
+        {
+          "query": "how long is a 10 minute drive walking",
+          "clicks": 0,
+          "impressions": 29,
+          "ctr": 0,
+          "position": 5.9655172413793105
+        },
+        {
+          "query": "how long does a 10 minute drive take to walk",
+          "clicks": 0,
+          "impressions": 23,
+          "ctr": 0,
+          "position": 10.956521739130435
+        },
+        {
+          "query": "10 minute drive is how long of a walk",
+          "clicks": 0,
+          "impressions": 17,
+          "ctr": 0,
+          "position": 4.9411764705882355
+        },
+        {
+          "query": "battle road trail",
+          "clicks": 0,
+          "impressions": 17,
+          "ctr": 0,
+          "position": 10.588235294117647
+        },
+        {
+          "query": "how long does it take to walk a 10 minute drive",
+          "clicks": 0,
+          "impressions": 11,
+          "ctr": 0,
+          "position": 6.909090909090909
+        },
+        {
+          "query": "charles river wheelers",
+          "clicks": 0,
+          "impressions": 8,
+          "ctr": 0,
+          "position": 6.375
+        },
+        {
+          "query": "a 10 minute drive is how long of a walk",
+          "clicks": 0,
+          "impressions": 7,
+          "ctr": 0,
+          "position": 6.428571428571429
+        }
+      ],
+      "prev_clicks": 1,
+      "prev_impressions": 85
+    },
+    {
+      "id": "events-programs",
+      "clicks": 24,
+      "impressions": 1159,
+      "avg_position": 3.4,
+      "top_queries": [
+        {
+          "query": "moving together conference 2026",
+          "clicks": 17,
+          "impressions": 694,
+          "ctr": 0.024495677233429394,
+          "position": 2.511527377521614
+        },
+        {
+          "query": "massdot moving together conference 2026",
+          "clicks": 2,
+          "impressions": 308,
+          "ctr": 0.006493506493506494,
+          "position": 4.301948051948052
+        },
+        {
+          "query": "moving together conference",
+          "clicks": 3,
+          "impressions": 67,
+          "ctr": 0.04477611940298507,
+          "position": 4.1940298507462686
+        },
+        {
+          "query": "boston halloween bike ride",
+          "clicks": 1,
+          "impressions": 31,
+          "ctr": 0.03225806451612903,
+          "position": 5.516129032258065
+        },
+        {
+          "query": "2026 moving together conference",
+          "clicks": 1,
+          "impressions": 23,
+          "ctr": 0.043478260869565216,
+          "position": 2.8260869565217392
+        },
+        {
+          "query": "boston group rides",
+          "clicks": 0,
+          "impressions": 6,
+          "ctr": 0,
+          "position": 23.333333333333332
+        },
+        {
+          "query": "fluff festival 2026",
+          "clicks": 0,
+          "impressions": 4,
+          "ctr": 0,
+          "position": 10.75
+        },
+        {
+          "query": "crw cranberry century",
+          "clicks": 0,
+          "impressions": 3,
+          "ctr": 0,
+          "position": 8
+        }
+      ],
+      "prev_clicks": 20,
+      "prev_impressions": 1081
+    },
+    {
+      "id": "town-commuters",
+      "clicks": 0,
+      "impressions": 25,
+      "avg_position": 11.4,
+      "top_queries": [
+        {
+          "query": "boston cafe bikers",
+          "clicks": 0,
+          "impressions": 19,
+          "ctr": 0,
+          "position": 7.947368421052632
+        },
+        {
+          "query": "cambridge bike path",
+          "clicks": 0,
+          "impressions": 2,
+          "ctr": 0,
+          "position": 35
+        },
+        {
+          "query": "biking brookline",
+          "clicks": 0,
+          "impressions": 1,
+          "ctr": 0,
+          "position": 7
+        },
+        {
+          "query": "biking in boston",
+          "clicks": 0,
+          "impressions": 1,
+          "ctr": 0,
+          "position": 36
+        },
+        {
+          "query": "cambridge transit",
+          "clicks": 0,
+          "impressions": 1,
+          "ctr": 0,
+          "position": 9
+        },
+        {
+          "query": "clipper city rail trail",
+          "clicks": 0,
+          "impressions": 1,
+          "ctr": 0,
+          "position": 11
+        }
+      ],
+      "prev_clicks": 2,
+      "prev_impressions": 54
+    },
+    {
+      "id": "drive-time-conversion",
+      "clicks": 0,
+      "impressions": 65,
+      "avg_position": 7.4,
+      "top_queries": [
+        {
+          "query": "2 min drive to walk",
+          "clicks": 0,
+          "impressions": 13,
+          "ctr": 0,
+          "position": 5.538461538461538
+        },
+        {
+          "query": "10 min drive to walk time",
+          "clicks": 0,
+          "impressions": 7,
+          "ctr": 0,
+          "position": 8.428571428571429
+        },
+        {
+          "query": "10 min drive to walk",
+          "clicks": 0,
+          "impressions": 4,
+          "ctr": 0,
+          "position": 1
+        },
+        {
+          "query": "10 minute drive to walk",
+          "clicks": 0,
+          "impressions": 4,
+          "ctr": 0,
+          "position": 3.5
+        },
+        {
+          "query": "4 min drive to walk",
+          "clicks": 0,
+          "impressions": 4,
+          "ctr": 0,
+          "position": 10.75
+        },
+        {
+          "query": "10 minute car ride to walking",
+          "clicks": 0,
+          "impressions": 3,
+          "ctr": 0,
+          "position": 8.333333333333332
+        },
+        {
+          "query": "10 minutes drive to walk",
+          "clicks": 0,
+          "impressions": 3,
+          "ctr": 0,
+          "position": 7
+        },
+        {
+          "query": "5 minute drive to walk",
+          "clicks": 0,
+          "impressions": 3,
+          "ctr": 0,
+          "position": 10.333333333333334
+        }
+      ],
+      "prev_clicks": 0,
+      "prev_impressions": 44
+    },
+    {
+      "id": "ebike-curious",
+      "clicks": 0,
+      "impressions": 0,
+      "avg_position": null,
+      "top_queries": [],
+      "prev_clicks": 0,
+      "prev_impressions": 0
+    },
+    {
+      "id": "employers-rto",
+      "clicks": 0,
+      "impressions": 0,
+      "avg_position": null,
+      "top_queries": [],
+      "prev_clicks": 0,
+      "prev_impressions": 0
+    },
+    {
+      "id": "schools-wellness",
+      "clicks": 0,
+      "impressions": 0,
+      "avg_position": null,
+      "top_queries": [],
+      "prev_clicks": 0,
+      "prev_impressions": 0
+    },
+    {
+      "id": "local-business-partners",
+      "clicks": 0,
+      "impressions": 0,
+      "avg_position": null,
+      "top_queries": [],
+      "prev_clicks": 0,
+      "prev_impressions": 0
+    },
+    {
+      "id": "brand-navigational",
+      "clicks": 3,
+      "impressions": 70,
+      "avg_position": 7.3,
+      "top_queries": [
+        {
+          "query": "frisoli youth center",
+          "clicks": 0,
+          "impressions": 46,
+          "ctr": 0,
+          "position": 7.956521739130435
+        },
+        {
+          "query": "green street",
+          "clicks": 0,
+          "impressions": 10,
+          "ctr": 0,
+          "position": 8.8
+        },
+        {
+          "query": "green streets initiative",
+          "clicks": 3,
+          "impressions": 7,
+          "ctr": 0.42857142857142855,
+          "position": 1
+        },
+        {
+          "query": "green line velo",
+          "clicks": 0,
+          "impressions": 2,
+          "ctr": 0,
+          "position": 10
+        },
+        {
+          "query": "green streets",
+          "clicks": 0,
+          "impressions": 2,
+          "ctr": 0,
+          "position": 2
+        },
+        {
+          "query": "go shift app",
+          "clicks": 0,
+          "impressions": 1,
+          "ctr": 0,
+          "position": 8
+        },
+        {
+          "query": "green street garage rates",
+          "clicks": 0,
+          "impressions": 1,
+          "ctr": 0,
+          "position": 12
+        },
+        {
+          "query": "greenstreet",
+          "clicks": 0,
+          "impressions": 1,
+          "ctr": 0,
+          "position": 8
+        }
+      ],
+      "prev_clicks": 4,
+      "prev_impressions": 99
+    },
+    {
+      "id": "aeo-sentinels",
+      "clicks": 0,
+      "impressions": 0,
+      "avg_position": null,
+      "top_queries": [],
+      "prev_clicks": 0,
+      "prev_impressions": 0
+    }
+  ],
+  "unmatched_top_queries": [
+    {
+      "query": "critical mass boston",
+      "clicks": 0,
+      "impressions": 50,
+      "ctr": 0,
+      "position": 6.2
+    },
+    {
+      "query": "moving together",
+      "clicks": 2,
+      "impressions": 36,
+      "ctr": 0.05555555555555555,
+      "position": 4.638888888888889
+    },
+    {
+      "query": "baldeação ônibus",
+      "clicks": 0,
+      "impressions": 36,
+      "ctr": 0,
+      "position": 6.111111111111111
+    },
+    {
+      "query": "brandeis shuttle",
+      "clicks": 0,
+      "impressions": 32,
+      "ctr": 0,
+      "position": 8
+    },
+    {
+      "query": "baldeação",
+      "clicks": 0,
+      "impressions": 20,
+      "ctr": 0,
+      "position": 9.1
+    },
+    {
+      "query": "tour de streets 2026",
+      "clicks": 4,
+      "impressions": 17,
+      "ctr": 0.23529411764705882,
+      "position": 1.9411764705882353
+    },
+    {
+      "query": "baldeação de onibus",
+      "clicks": 0,
+      "impressions": 16,
+      "ctr": 0,
+      "position": 6.9375
+    },
+    {
+      "query": "bike to the sea",
+      "clicks": 0,
+      "impressions": 15,
+      "ctr": 0,
+      "position": 8.533333333333333
+    },
+    {
+      "query": "brandeis turkey shuttle",
+      "clicks": 0,
+      "impressions": 12,
+      "ctr": 0,
+      "position": 9.083333333333334
+    },
+    {
+      "query": "tour de streets",
+      "clicks": 1,
+      "impressions": 11,
+      "ctr": 0.09090909090909091,
+      "position": 3.3636363636363638
+    },
+    {
+      "query": "henry arfoon",
+      "clicks": 0,
+      "impressions": 11,
+      "ctr": 0,
+      "position": 8.818181818181818
+    },
+    {
+      "query": "brandeis shuttle schedule",
+      "clicks": 0,
+      "impressions": 9,
+      "ctr": 0,
+      "position": 9.11111111111111
+    },
+    {
+      "query": "como funciona a baldeação de ônibus",
+      "clicks": 0,
+      "impressions": 9,
+      "ctr": 0,
+      "position": 4.666666666666666
+    },
+    {
+      "query": "baldeacoes",
+      "clicks": 0,
+      "impressions": 7,
+      "ctr": 0,
+      "position": 8.857142857142858
+    },
+    {
+      "query": "hiking equipment for commuters",
+      "clicks": 0,
+      "impressions": 7,
+      "ctr": 0,
+      "position": 13
+    },
+    {
+      "query": "baldeaçao",
+      "clicks": 0,
+      "impressions": 6,
+      "ctr": 0,
+      "position": 7.833333333333333
+    },
+    {
+      "query": "boston critical mass",
+      "clicks": 0,
+      "impressions": 6,
+      "ctr": 0,
+      "position": 6.166666666666667
+    },
+    {
+      "query": "10 minutos en auto cuanto es caminando",
+      "clicks": 0,
+      "impressions": 5,
+      "ctr": 0,
+      "position": 4.8
+    },
+    {
+      "query": "5 minutos de carro equivale a quantos minutos a pé",
+      "clicks": 0,
+      "impressions": 5,
+      "ctr": 0,
+      "position": 9
+    },
+    {
+      "query": "boston common garage rates",
+      "clicks": 0,
+      "impressions": 5,
+      "ctr": 0,
+      "position": 11.4
+    },
+    {
+      "query": "brandeis tripshot",
+      "clicks": 0,
+      "impressions": 5,
+      "ctr": 0,
+      "position": 7.2
+    },
+    {
+      "query": "communityinitiatives off-road",
+      "clicks": 0,
+      "impressions": 5,
+      "ctr": 0,
+      "position": 62.6
+    },
+    {
+      "query": "cummins highway mattapan",
+      "clicks": 0,
+      "impressions": 5,
+      "ctr": 0,
+      "position": 4.2
+    },
+    {
+      "query": "does boston have bad traffic",
+      "clicks": 0,
+      "impressions": 5,
+      "ctr": 0,
+      "position": 5
+    },
+    {
+      "query": "baldeação o que é",
+      "clicks": 0,
+      "impressions": 4,
+      "ctr": 0,
+      "position": 8.75
+    },
+    {
+      "query": "baldeações",
+      "clicks": 0,
+      "impressions": 4,
+      "ctr": 0,
+      "position": 7.75
+    },
+    {
+      "query": "baldiaçao",
+      "clicks": 0,
+      "impressions": 4,
+      "ctr": 0,
+      "position": 11.75
+    },
+    {
+      "query": "braintree station parking cost",
+      "clicks": 0,
+      "impressions": 4,
+      "ctr": 0,
+      "position": 7.25
+    },
+    {
+      "query": "burlington trick or treat 2026",
+      "clicks": 0,
+      "impressions": 4,
+      "ctr": 0,
+      "position": 2.25
+    },
+    {
+      "query": "3 minutos de carro equivale a quantos minutos a pé",
+      "clicks": 0,
+      "impressions": 3,
+      "ctr": 0,
+      "position": 7
+    }
+  ],
+  "top_pages": [
+    {
+      "page": "https://www.gogreenstreets.org/events/moving-together-conference-2026-2026-10-27",
+      "clicks": 36,
+      "impressions": 1607,
+      "position": 3.7
+    },
+    {
+      "page": "https://www.gogreenstreets.org/guides/how-far-is-a-ten-minute-drive-on-foot",
+      "clicks": 2,
+      "impressions": 732,
+      "position": 6.6
+    },
+    {
+      "page": "https://www.gogreenstreets.org/pt-BR/guides/how-bus-transfers-work",
+      "clicks": 0,
+      "impressions": 542,
+      "position": 7.3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/guides/boston-parking-costs",
+      "clicks": 0,
+      "impressions": 380,
+      "position": 7.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/pt-BR/guides/how-far-is-a-ten-minute-drive-on-foot",
+      "clicks": 0,
+      "impressions": 326,
+      "position": 5.9
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/roams/community-path",
+      "clicks": 6,
+      "impressions": 321,
+      "position": 8.2
+    },
+    {
+      "page": "https://www.gogreenstreets.org/es/guides/how-far-is-a-ten-minute-drive-on-foot",
+      "clicks": 0,
+      "impressions": 293,
+      "position": 6.3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift-your-semester/brandeis",
+      "clicks": 1,
+      "impressions": 224,
+      "position": 7.4
+    },
+    {
+      "page": "https://www.gogreenstreets.org/guides/when-walking-is-faster",
+      "clicks": 1,
+      "impressions": 219,
+      "position": 7.9
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ride-for-your-life-2026-10-25",
+      "clicks": 4,
+      "impressions": 210,
+      "position": 6.4
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/somerstreets-monster-mash-2026-10-18",
+      "clicks": 0,
+      "impressions": 203,
+      "position": 7.9
+    },
+    {
+      "page": "https://www.gogreenstreets.org/zh-Hans/guides/how-far-is-a-ten-minute-drive-on-foot",
+      "clicks": 0,
+      "impressions": 196,
+      "position": 5.3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_sync_boston_bike_events_07ac7b01ae1a",
+      "clicks": 1,
+      "impressions": 147,
+      "position": 5.6
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/roams/battle-road-trail",
+      "clicks": 0,
+      "impressions": 135,
+      "position": 9
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/trick-or-treat-ride-2026-10-28",
+      "clicks": 3,
+      "impressions": 132,
+      "position": 5.3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/guides/boston-traffic",
+      "clicks": 2,
+      "impressions": 130,
+      "position": 4.7
+    },
+    {
+      "page": "https://www.gogreenstreets.org/guides/what-to-wear-on-the-bus-and-train",
+      "clicks": 1,
+      "impressions": 114,
+      "position": 4.3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift-your-semester/boston-university",
+      "clicks": 0,
+      "impressions": 94,
+      "position": 6.2
+    },
+    {
+      "page": "https://www.gogreenstreets.org/es/guides/how-bus-transfers-work",
+      "clicks": 1,
+      "impressions": 93,
+      "position": 6.1
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/mbta-fall-rail-ride-2026-11-07",
+      "clicks": 1,
+      "impressions": 92,
+      "position": 5.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/guides/keeping-a-car-in-boston",
+      "clicks": 1,
+      "impressions": 85,
+      "position": 5.9
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/scul-hallowheels-2026-10-31",
+      "clicks": 4,
+      "impressions": 79,
+      "position": 4.6
+    },
+    {
+      "page": "https://www.gogreenstreets.org/commute-advisor",
+      "clicks": 0,
+      "impressions": 79,
+      "position": 7.2
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/tour-de-streets-2026-2026-10-24",
+      "clicks": 9,
+      "impressions": 77,
+      "position": 2.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/es/guides/where-to-lock-your-bike",
+      "clicks": 0,
+      "impressions": 71,
+      "position": 7.1
+    },
+    {
+      "page": "https://www.gogreenstreets.org/guides/getting-around-boston",
+      "clicks": 0,
+      "impressions": 69,
+      "position": 14.6
+    },
+    {
+      "page": "https://www.gogreenstreets.org/programs/what-moves-us/frisoli-youth-center",
+      "clicks": 0,
+      "impressions": 69,
+      "position": 7.7
+    },
+    {
+      "page": "https://www.gogreenstreets.org/guides/biking-through-a-boston-winter",
+      "clicks": 0,
+      "impressions": 67,
+      "position": 4.2
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/roams/wachusett-greenways",
+      "clicks": 1,
+      "impressions": 65,
+      "position": 6.8
+    },
+    {
+      "page": "https://www.gogreenstreets.org/",
+      "clicks": 8,
+      "impressions": 64,
+      "position": 6
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_massdot-video-contest_20261004",
+      "clicks": 3,
+      "impressions": 63,
+      "position": 5.1
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/roams/northern-strand-trail",
+      "clicks": 0,
+      "impressions": 61,
+      "position": 8.2
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/roams/twin-cities-rail-trail",
+      "clicks": 0,
+      "impressions": 61,
+      "position": 11.1
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/roams/fresh-pond-loop",
+      "clicks": 0,
+      "impressions": 60,
+      "position": 7.9
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/cambridge-ma",
+      "clicks": 1,
+      "impressions": 59,
+      "position": 10.7
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/organizers/critical-mass-boston",
+      "clicks": 0,
+      "impressions": 57,
+      "position": 5.9
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/memorial-drive-recreation-sunday-2026-11-08",
+      "clicks": 1,
+      "impressions": 53,
+      "position": 7.2
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/salem-slow-roll-halloween-ride-2026-10-26",
+      "clicks": 3,
+      "impressions": 51,
+      "position": 4.8
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/rozziebikes-halloween-family-ride-2026-10-25",
+      "clicks": 0,
+      "impressions": 50,
+      "position": 5.9
+    },
+    {
+      "page": "https://www.gogreenstreets.org/guides/picking-a-walking-route",
+      "clicks": 0,
+      "impressions": 50,
+      "position": 8.6
+    },
+    {
+      "page": "https://www.gogreenstreets.org/guides/backup-plans-for-the-t",
+      "clicks": 0,
+      "impressions": 44,
+      "position": 7.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/pt-BR/guides/where-to-lock-your-bike",
+      "clicks": 0,
+      "impressions": 44,
+      "position": 8.8
+    },
+    {
+      "page": "https://www.gogreenstreets.org/guides/carrying-your-things-on-a-walking-commute",
+      "clicks": 1,
+      "impressions": 43,
+      "position": 9.3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/wednesday-night-flex-walk-2026-10-28",
+      "clicks": 3,
+      "impressions": 42,
+      "position": 7.1
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/brookline-ma",
+      "clicks": 2,
+      "impressions": 42,
+      "position": 8.9
+    },
+    {
+      "page": "https://www.gogreenstreets.org/es/guides/when-walking-is-faster",
+      "clicks": 0,
+      "impressions": 42,
+      "position": 6.9
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/employers",
+      "clicks": 0,
+      "impressions": 40,
+      "position": 8.3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/es/guides/how-to-pay-for-the-t",
+      "clicks": 0,
+      "impressions": 39,
+      "position": 5.4
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/roams/emerald-necklace",
+      "clicks": 3,
+      "impressions": 38,
+      "position": 6
+    },
+    {
+      "page": "https://www.gogreenstreets.org/es/guides/boston-parking-costs",
+      "clicks": 0,
+      "impressions": 38,
+      "position": 5.4
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/boston-ma",
+      "clicks": 0,
+      "impressions": 38,
+      "position": 8.8
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift",
+      "clicks": 1,
+      "impressions": 36,
+      "position": 6.3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/memorial-drive-recreation-sunday-2026-10-25",
+      "clicks": 0,
+      "impressions": 35,
+      "position": 7.6
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/roams/minuteman",
+      "clicks": 2,
+      "impressions": 34,
+      "position": 12.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/roams/salem-by-rail",
+      "clicks": 0,
+      "impressions": 33,
+      "position": 10.9
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/somerville-ma",
+      "clicks": 0,
+      "impressions": 32,
+      "position": 7.7
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/trek-or-treat-ride-bruce-freeman-rail-trail-2026-10-27",
+      "clicks": 4,
+      "impressions": 31,
+      "position": 3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/about",
+      "clicks": 1,
+      "impressions": 31,
+      "position": 3.2
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/medford-ma",
+      "clicks": 1,
+      "impressions": 31,
+      "position": 9.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/roams/clipper-city-rail-trail",
+      "clicks": 0,
+      "impressions": 31,
+      "position": 9.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/boston-cafe-bikers-ride-2026-10-31",
+      "clicks": 1,
+      "impressions": 30,
+      "position": 5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/es/guides/subway-vs-bus",
+      "clicks": 0,
+      "impressions": 30,
+      "position": 8
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/chandler-street-may-street-improvements-public-meeting-2026-10-15",
+      "clicks": 0,
+      "impressions": 30,
+      "position": 6.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/zh-Hans/guides/your-first-bus-ride",
+      "clicks": 0,
+      "impressions": 29,
+      "position": 5.9
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/memorial-drive-recreation-sunday-2026-11-01",
+      "clicks": 3,
+      "impressions": 28,
+      "position": 6.4
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/family-group-bike-ride-with-bike-to-the-sea-2026-10-18",
+      "clicks": 0,
+      "impressions": 28,
+      "position": 7.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/zh-Hans/guides/planning-a-transit-trip",
+      "clicks": 0,
+      "impressions": 27,
+      "position": 5.6
+    },
+    {
+      "page": "https://www.gogreenstreets.org/zh-Hans/guides/when-walking-is-faster",
+      "clicks": 0,
+      "impressions": 27,
+      "position": 6.6
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/knobby-tire-ride-roll-2026-10-25",
+      "clicks": 1,
+      "impressions": 26,
+      "position": 3.7
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events",
+      "clicks": 0,
+      "impressions": 26,
+      "position": 9.8
+    },
+    {
+      "page": "https://www.gogreenstreets.org/programs",
+      "clicks": 0,
+      "impressions": 26,
+      "position": 21.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/everett-ma",
+      "clicks": 0,
+      "impressions": 26,
+      "position": 7.8
+    },
+    {
+      "page": "https://www.gogreenstreets.org/zh-Hans/guides/cold-weather-biking",
+      "clicks": 0,
+      "impressions": 24,
+      "position": 5.1
+    },
+    {
+      "page": "https://www.gogreenstreets.org/zh-Hans/guides/subway-vs-bus",
+      "clicks": 0,
+      "impressions": 23,
+      "position": 6.8
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/critical-mass-boston-group-ride-2026-11-27",
+      "clicks": 0,
+      "impressions": 22,
+      "position": 7.3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/belmont-ma",
+      "clicks": 0,
+      "impressions": 22,
+      "position": 8.4
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/newton-ma",
+      "clicks": 0,
+      "impressions": 22,
+      "position": 18.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/great-commuter-challenge-halloween-2026-10-31",
+      "clicks": 3,
+      "impressions": 21,
+      "position": 5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/pt-BR/guides/boston-parking-costs",
+      "clicks": 0,
+      "impressions": 21,
+      "position": 6.3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/pt-BR/guides/when-walking-is-faster",
+      "clicks": 0,
+      "impressions": 21,
+      "position": 7.7
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/roams/marblehead-rail-trail",
+      "clicks": 0,
+      "impressions": 21,
+      "position": 8.4
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/arlington-ma",
+      "clicks": 0,
+      "impressions": 21,
+      "position": 11
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/critical-mass-boston-group-ride-2026-10-30",
+      "clicks": 3,
+      "impressions": 20,
+      "position": 3.8
+    },
+    {
+      "page": "https://www.gogreenstreets.org/es/guides/keeping-a-car-in-boston",
+      "clicks": 0,
+      "impressions": 20,
+      "position": 6.7
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/open-newbury-2026-10-11",
+      "clicks": 0,
+      "impressions": 20,
+      "position": 8.2
+    },
+    {
+      "page": "https://www.gogreenstreets.org/pt-BR/guides/how-to-pay-for-the-t",
+      "clicks": 0,
+      "impressions": 20,
+      "position": 7.6
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/woburn-ma",
+      "clicks": 0,
+      "impressions": 20,
+      "position": 9.7
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/organizers/boston-cafe-bikers",
+      "clicks": 1,
+      "impressions": 19,
+      "position": 15.2
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_sync_boston_bike_events_f7bb40e355ed",
+      "clicks": 0,
+      "impressions": 19,
+      "position": 5.4
+    },
+    {
+      "page": "https://www.gogreenstreets.org/zh-Hans/guides/picking-a-bike-route",
+      "clicks": 0,
+      "impressions": 18,
+      "position": 5.7
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/trail-cleanup-linden-square-2026-10-17",
+      "clicks": 1,
+      "impressions": 17,
+      "position": 8.6
+    },
+    {
+      "page": "https://www.gogreenstreets.org/get-involved",
+      "clicks": 1,
+      "impressions": 17,
+      "position": 3.1
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/boston-cafe-bikers-ride-2026-10-11",
+      "clicks": 0,
+      "impressions": 17,
+      "position": 7.2
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_sync_massbike_40714a020911",
+      "clicks": 0,
+      "impressions": 17,
+      "position": 8.1
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_sync_massbike_7d6d1c8d4ff2",
+      "clicks": 0,
+      "impressions": 17,
+      "position": 9.6
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_sync_massbike_e9a681aa99db",
+      "clicks": 0,
+      "impressions": 17,
+      "position": 6.9
+    },
+    {
+      "page": "https://www.gogreenstreets.org/zh-Hans/guides/how-bus-transfers-work",
+      "clicks": 0,
+      "impressions": 17,
+      "position": 5.1
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/50-adults-worcester-earn-a-bike-nights-2026-10-06",
+      "clicks": 0,
+      "impressions": 16,
+      "position": 7.1
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_sync_massbike_b49998bb61ce",
+      "clicks": 0,
+      "impressions": 16,
+      "position": 6.9
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/os26_boston_roslindale_2026-10-18",
+      "clicks": 0,
+      "impressions": 16,
+      "position": 7.6
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/transitmatters-frame-campaign-launch-2026-10-26",
+      "clicks": 0,
+      "impressions": 16,
+      "position": 6.7
+    },
+    {
+      "page": "https://www.gogreenstreets.org/guides/what-to-carry-on-the-bus-and-train",
+      "clicks": 0,
+      "impressions": 16,
+      "position": 9.6
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/chelsea-ma",
+      "clicks": 0,
+      "impressions": 16,
+      "position": 5.6
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/winchester-ma",
+      "clicks": 0,
+      "impressions": 16,
+      "position": 8.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/es/guides/how-to-use-bluebikes",
+      "clicks": 0,
+      "impressions": 15,
+      "position": 14.6
+    },
+    {
+      "page": "https://www.gogreenstreets.org/es/guides/your-first-ride-in-a-bike-lane",
+      "clicks": 0,
+      "impressions": 15,
+      "position": 9.1
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/belmont-community-path-construction-update-2026-11-10",
+      "clicks": 0,
+      "impressions": 15,
+      "position": 7
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/city-council-hearing-on-blocked-bike-lanes-2026-10-22",
+      "clicks": 0,
+      "impressions": 15,
+      "position": 5.1
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/organizers/bu-cycle-kitchen-buck",
+      "clicks": 0,
+      "impressions": 15,
+      "position": 8.4
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/canton-ma",
+      "clicks": 0,
+      "impressions": 15,
+      "position": 6
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/watertown-ma",
+      "clicks": 0,
+      "impressions": 15,
+      "position": 7.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/worcester-ma",
+      "clicks": 0,
+      "impressions": 15,
+      "position": 10.1
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/memorial-drive-recreation-sunday-2026-10-11",
+      "clicks": 1,
+      "impressions": 14,
+      "position": 7.7
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift-your-semester/emerson",
+      "clicks": 0,
+      "impressions": 14,
+      "position": 8.6
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/roams/alewife-mystic-greenway",
+      "clicks": 0,
+      "impressions": 14,
+      "position": 8.8
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/annual-fall-colors-ride-2026-10-25",
+      "clicks": 3,
+      "impressions": 13,
+      "position": 2.3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/roams/b-line-crawl",
+      "clicks": 1,
+      "impressions": 13,
+      "position": 7.6
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_sync_cambridge_learn_to_bike_87175399c37e",
+      "clicks": 0,
+      "impressions": 13,
+      "position": 9.2
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/memorial-drive-recreation-sunday-2026-10-04?utm_source=nanopress&utm_medium=web&utm_campaign=east-cambridge-kendall-square-ma",
+      "clicks": 0,
+      "impressions": 13,
+      "position": 9.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/october-bike-party-halloween-bike-ride-2026-10-15",
+      "clicks": 0,
+      "impressions": 13,
+      "position": 7.2
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/organizers/charles-river-wheelers",
+      "clicks": 0,
+      "impressions": 13,
+      "position": 5.8
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/organizers/mbta",
+      "clicks": 0,
+      "impressions": 13,
+      "position": 6.9
+    },
+    {
+      "page": "https://www.gogreenstreets.org/sponsor",
+      "clicks": 0,
+      "impressions": 13,
+      "position": 4.6
+    },
+    {
+      "page": "https://www.gogreenstreets.org/zh-Hans/guides/boston-parking-costs",
+      "clicks": 0,
+      "impressions": 13,
+      "position": 10.4
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/free-bike-repair-workshop-at-bcyf-blackstone-2026-11-04",
+      "clicks": 1,
+      "impressions": 12,
+      "position": 8.6
+    },
+    {
+      "page": "https://www.gogreenstreets.org/es/guides/walking-through-the-weather",
+      "clicks": 0,
+      "impressions": 12,
+      "position": 8.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/autumn-in-the-arboretum-2026-11-07",
+      "clicks": 0,
+      "impressions": 12,
+      "position": 8
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/awash-in-color-a-fall-foliage-walking-tour-2026-10-24",
+      "clicks": 0,
+      "impressions": 12,
+      "position": 4.8
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/memorial-drive-recreation-sunday-2026-10-18",
+      "clicks": 0,
+      "impressions": 12,
+      "position": 14.1
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/organizers/worcester-earn-a-bike-weab",
+      "clicks": 0,
+      "impressions": 12,
+      "position": 6.3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/streetwise-at-aeronaut-2027-01-20",
+      "clicks": 0,
+      "impressions": 12,
+      "position": 7.3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/pt-BR/guides/planning-a-transit-trip",
+      "clicks": 0,
+      "impressions": 12,
+      "position": 14.6
+    },
+    {
+      "page": "https://www.gogreenstreets.org/pt-BR/guides/your-first-bus-ride",
+      "clicks": 0,
+      "impressions": 12,
+      "position": 8
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/quincy-ma",
+      "clicks": 0,
+      "impressions": 12,
+      "position": 9.8
+    },
+    {
+      "page": "https://www.gogreenstreets.org/es/guides/getting-around-boston",
+      "clicks": 1,
+      "impressions": 11,
+      "position": 6.7
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/organizers/boston-walking-meetup",
+      "clicks": 1,
+      "impressions": 11,
+      "position": 6.9
+    },
+    {
+      "page": "https://www.gogreenstreets.org/es/guides/planning-a-transit-trip",
+      "clicks": 0,
+      "impressions": 11,
+      "position": 6.9
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/b2c-halloween-ripper-2026-10-31",
+      "clicks": 0,
+      "impressions": 11,
+      "position": 4.8
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/landrys-natick-mtb-ride-at-vietnam-trails-2026-10-13",
+      "clicks": 0,
+      "impressions": 11,
+      "position": 7.7
+    },
+    {
+      "page": "https://www.gogreenstreets.org/guides/walking-with-stuff",
+      "clicks": 0,
+      "impressions": 11,
+      "position": 6
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift-your-semester/northeastern",
+      "clicks": 0,
+      "impressions": 11,
+      "position": 7.4
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns",
+      "clicks": 0,
+      "impressions": 11,
+      "position": 4.3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/lexington-ma",
+      "clicks": 0,
+      "impressions": 11,
+      "position": 5.9
+    },
+    {
+      "page": "https://www.gogreenstreets.org/zh-Hans/guides/boston-traffic",
+      "clicks": 0,
+      "impressions": 11,
+      "position": 6.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/es/guides/boston-traffic",
+      "clicks": 0,
+      "impressions": 10,
+      "position": 6.8
+    },
+    {
+      "page": "https://www.gogreenstreets.org/es/guides/your-first-bus-ride",
+      "clicks": 0,
+      "impressions": 10,
+      "position": 7.9
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_family_group_bike_ride_with_bi_20260927",
+      "clicks": 0,
+      "impressions": 10,
+      "position": 7.6
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/crw-cranberry-harvest-century-2026-2026-10-18",
+      "clicks": 0,
+      "impressions": 10,
+      "position": 5.7
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/organizers/roslindale-bicycle-club",
+      "clicks": 0,
+      "impressions": 10,
+      "position": 5.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/os26_newbury_2026-09-06",
+      "clicks": 0,
+      "impressions": 10,
+      "position": 8.9
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/snail-walk-with-mary-p-2026-10-28",
+      "clicks": 0,
+      "impressions": 10,
+      "position": 4.6
+    },
+    {
+      "page": "https://www.gogreenstreets.org/guides/when-transit-is-faster",
+      "clicks": 0,
+      "impressions": 10,
+      "position": 7.1
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/bedford-ma",
+      "clicks": 0,
+      "impressions": 10,
+      "position": 6.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/milton-ma",
+      "clicks": 0,
+      "impressions": 10,
+      "position": 6.8
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/waltham-ma",
+      "clicks": 0,
+      "impressions": 10,
+      "position": 7.8
+    },
+    {
+      "page": "https://www.gogreenstreets.org/zh-Hans/guides/what-you-can-do-with-an-e-cargo-bike",
+      "clicks": 0,
+      "impressions": 10,
+      "position": 7.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/columbia-point-one-peninsula-many-stories-harborwalk-tour-2026-11-07",
+      "clicks": 1,
+      "impressions": 9,
+      "position": 5.7
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/worcester-tweed-ride-2026-10-24",
+      "clicks": 1,
+      "impressions": 9,
+      "position": 3.1
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/cummins-highway-community-walkthrough-2026-10-24",
+      "clicks": 0,
+      "impressions": 9,
+      "position": 4
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/os26_boston_allston_2026-10-04",
+      "clicks": 0,
+      "impressions": 9,
+      "position": 6.8
+    },
+    {
+      "page": "https://www.gogreenstreets.org/guides/picking-a-bike-route",
+      "clicks": 0,
+      "impressions": 9,
+      "position": 4.3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/sturbridge-ma",
+      "clicks": 0,
+      "impressions": 9,
+      "position": 9.9
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/weymouth-ma",
+      "clicks": 0,
+      "impressions": 9,
+      "position": 11.6
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/turkey-burner-2026-11-27",
+      "clicks": 1,
+      "impressions": 8,
+      "position": 2.8
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/chelmsford-ma",
+      "clicks": 1,
+      "impressions": 8,
+      "position": 6.9
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/critical-mass-5-45-pm-adams-park-6-30-gather-in-copley-squar-2026-10-30",
+      "clicks": 0,
+      "impressions": 8,
+      "position": 3.9
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/glv-bicycle-block-party-social-ride-2026-09-02",
+      "clicks": 0,
+      "impressions": 8,
+      "position": 7.9
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/organizers/boston-cyclists-union",
+      "clicks": 0,
+      "impressions": 8,
+      "position": 24.9
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/organizers/org_dcr",
+      "clicks": 0,
+      "impressions": 8,
+      "position": 13.4
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/roams/mcrt-sudhud",
+      "clicks": 0,
+      "impressions": 8,
+      "position": 6.1
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/acton-ma",
+      "clicks": 0,
+      "impressions": 8,
+      "position": 13.1
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/mansfield-ma",
+      "clicks": 0,
+      "impressions": 8,
+      "position": 11.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/melrose-ma",
+      "clicks": 0,
+      "impressions": 8,
+      "position": 8.1
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/sharon-ma",
+      "clicks": 0,
+      "impressions": 8,
+      "position": 12.9
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/wakefield-ma",
+      "clicks": 0,
+      "impressions": 8,
+      "position": 6.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/zh-Hans/guides/backup-plans-for-the-t",
+      "clicks": 0,
+      "impressions": 8,
+      "position": 6.1
+    },
+    {
+      "page": "https://www.gogreenstreets.org/zh-Hans/guides/when-transit-is-faster",
+      "clicks": 0,
+      "impressions": 8,
+      "position": 6.1
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/weekly-multigroup-community-sunset-walk-at-fresh-pond-option-2026-10-25",
+      "clicks": 1,
+      "impressions": 7,
+      "position": 4.6
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_import_abha-social-bike-ride_2026-09-30",
+      "clicks": 0,
+      "impressions": 7,
+      "position": 6.3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_sync_boston_bike_events_323399e30d40",
+      "clicks": 0,
+      "impressions": 7,
+      "position": 9.7
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_sync_massbike_5e7dd9b71afe",
+      "clicks": 0,
+      "impressions": 7,
+      "position": 6.4
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/free-bike-repair-workshop-at-bpl-east-boston-2026-10-20",
+      "clicks": 0,
+      "impressions": 7,
+      "position": 5.3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/landrys-needham-intermediate-gravel-ride-2026-10-18",
+      "clicks": 0,
+      "impressions": 7,
+      "position": 8.1
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/nature-walk-arnold-arboretum-2026-12-12",
+      "clicks": 0,
+      "impressions": 7,
+      "position": 7.9
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/october-group-walk-2026-10-17",
+      "clicks": 0,
+      "impressions": 7,
+      "position": 5.6
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/open-streets-boston-roslindale-2026-10-18",
+      "clicks": 0,
+      "impressions": 7,
+      "position": 5.9
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/peters-hill-tour-2026-10-31",
+      "clicks": 0,
+      "impressions": 7,
+      "position": 4.7
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/worcester-bike-party-2026-09-25",
+      "clicks": 0,
+      "impressions": 7,
+      "position": 3.6
+    },
+    {
+      "page": "https://www.gogreenstreets.org/guides/transit-plus-walking-or-biking",
+      "clicks": 0,
+      "impressions": 7,
+      "position": 11.4
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift-your-semester/mit",
+      "clicks": 0,
+      "impressions": 7,
+      "position": 11.6
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift-your-semester/simmons",
+      "clicks": 0,
+      "impressions": 7,
+      "position": 9.1
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift-your-semester/tufts",
+      "clicks": 0,
+      "impressions": 7,
+      "position": 8.9
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift-your-semester/umass-boston",
+      "clicks": 0,
+      "impressions": 7,
+      "position": 8.6
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/roams/shining-sea-bikeway",
+      "clicks": 0,
+      "impressions": 7,
+      "position": 16.4
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/organizers/nature-walking-group-arnold-arboretum",
+      "clicks": 1,
+      "impressions": 6,
+      "position": 5.3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_sync_crw_002cf098315f",
+      "clicks": 0,
+      "impressions": 6,
+      "position": 2.7
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_sync_crw_4fd3e9586c34",
+      "clicks": 0,
+      "impressions": 6,
+      "position": 5.3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/gravel-tuesday-2nd-annual-thanksgiving-week-edition-concord-2026-11-24",
+      "clicks": 0,
+      "impressions": 6,
+      "position": 5.3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/nature-walk-arnold-arboretum-2026-10-24",
+      "clicks": 0,
+      "impressions": 6,
+      "position": 6.8
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/organizers/parkway-cycling-club",
+      "clicks": 0,
+      "impressions": 6,
+      "position": 18
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/os26_memdrive_2026-09-13",
+      "clicks": 0,
+      "impressions": 6,
+      "position": 22.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/somerville-cycle-social-esplanade-ride-to-night-shift-2026-10-27",
+      "clicks": 0,
+      "impressions": 6,
+      "position": 9
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/somerville-cycle-social-fresh-pond-loop-and-bow-market-2026-11-03",
+      "clicks": 0,
+      "impressions": 6,
+      "position": 3.2
+    },
+    {
+      "page": "https://www.gogreenstreets.org/programs/what-moves-us/everett-schools",
+      "clicks": 0,
+      "impressions": 6,
+      "position": 7.8
+    },
+    {
+      "page": "https://www.gogreenstreets.org/pt-BR/guides/biking-in-the-rain",
+      "clicks": 0,
+      "impressions": 6,
+      "position": 6.2
+    },
+    {
+      "page": "https://www.gogreenstreets.org/pt-BR/guides/getting-around-boston",
+      "clicks": 0,
+      "impressions": 6,
+      "position": 5.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/roams/manhan-rail-trail",
+      "clicks": 0,
+      "impressions": 6,
+      "position": 9.7
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/agawam-ma",
+      "clicks": 0,
+      "impressions": 6,
+      "position": 7.7
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/beverly-ma",
+      "clicks": 0,
+      "impressions": 6,
+      "position": 8
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/littleton-ma",
+      "clicks": 0,
+      "impressions": 6,
+      "position": 5.7
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/lynn-ma",
+      "clicks": 0,
+      "impressions": 6,
+      "position": 6.3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/topsfield-ma",
+      "clicks": 0,
+      "impressions": 6,
+      "position": 6.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/wayland-ma",
+      "clicks": 0,
+      "impressions": 6,
+      "position": 9.8
+    },
+    {
+      "page": "https://www.gogreenstreets.org/zh-Hans/guides/how-to-pay-for-the-t",
+      "clicks": 0,
+      "impressions": 6,
+      "position": 3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/zh-Hans/guides/keeping-a-car-in-boston",
+      "clicks": 0,
+      "impressions": 6,
+      "position": 6.2
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/grrreasetime-2026-10-28",
+      "clicks": 1,
+      "impressions": 5,
+      "position": 3.8
+    },
+    {
+      "page": "https://www.gogreenstreets.org/donate",
+      "clicks": 0,
+      "impressions": 5,
+      "position": 22
+    },
+    {
+      "page": "https://www.gogreenstreets.org/es/guides/picking-a-bike-route",
+      "clicks": 0,
+      "impressions": 5,
+      "position": 6.4
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/babes-bike-boston-2026-09-06",
+      "clicks": 0,
+      "impressions": 5,
+      "position": 5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_learn-to-ride-malden-adults_2026-08-22",
+      "clicks": 0,
+      "impressions": 5,
+      "position": 6.8
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_tour_of_waltham_20261004",
+      "clicks": 0,
+      "impressions": 5,
+      "position": 6.8
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_walk-ride-day_20261030",
+      "clicks": 0,
+      "impressions": 5,
+      "position": 3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/landrys-braintree-enduro-mtb-ride-at-blue-hills-2026-10-15",
+      "clicks": 0,
+      "impressions": 5,
+      "position": 2.8
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/landrys-natick-mtb-ride-at-vietnam-trails-2026-10-20",
+      "clicks": 0,
+      "impressions": 5,
+      "position": 4.2
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/massdot-safe-streets-smart-trips-high-school-video-contest-2026-10-04",
+      "clicks": 0,
+      "impressions": 5,
+      "position": 5.2
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/organizers/malden-recreation-department",
+      "clicks": 0,
+      "impressions": 5,
+      "position": 2.4
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/pedal-the-cummins-highway-2026-10-17",
+      "clicks": 0,
+      "impressions": 5,
+      "position": 7
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/tour-of-charlesgate-2026-10-31",
+      "clicks": 0,
+      "impressions": 5,
+      "position": 7
+    },
+    {
+      "page": "https://www.gogreenstreets.org/nearby",
+      "clicks": 0,
+      "impressions": 5,
+      "position": 9.6
+    },
+    {
+      "page": "https://www.gogreenstreets.org/privacy",
+      "clicks": 0,
+      "impressions": 5,
+      "position": 7.2
+    },
+    {
+      "page": "https://www.gogreenstreets.org/pt-BR/guides/walking-with-stuff",
+      "clicks": 0,
+      "impressions": 5,
+      "position": 11.6
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/andover-ma",
+      "clicks": 0,
+      "impressions": 5,
+      "position": 16.2
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/norwood-ma",
+      "clicks": 0,
+      "impressions": 5,
+      "position": 4
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/reading-ma",
+      "clicks": 0,
+      "impressions": 5,
+      "position": 9.6
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/streetwise-2nd-annual-transportation-trivia-2026-11-23",
+      "clicks": 1,
+      "impressions": 4,
+      "position": 1.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/randolph-ma",
+      "clicks": 1,
+      "impressions": 4,
+      "position": 5.8
+    },
+    {
+      "page": "https://www.gogreenstreets.org/contact",
+      "clicks": 0,
+      "impressions": 4,
+      "position": 1.8
+    },
+    {
+      "page": "https://www.gogreenstreets.org/es/guides/walking-with-stuff",
+      "clicks": 0,
+      "impressions": 4,
+      "position": 7.8
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_sync_boston_bike_events_ddd0384c17e8",
+      "clicks": 0,
+      "impressions": 4,
+      "position": 6.8
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_sync_massbike_77d4b15d3d29",
+      "clicks": 0,
+      "impressions": 4,
+      "position": 7.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_sync_massbike_7c0b4300b10e",
+      "clicks": 0,
+      "impressions": 4,
+      "position": 6.3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/glow-walk-2026-2026-10-24",
+      "clicks": 0,
+      "impressions": 4,
+      "position": 2
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/landrys-needham-intermediate-gravel-ride-2026-10-18?utm_source=nanopress&utm_medium=web&utm_campaign=needham-ma",
+      "clicks": 0,
+      "impressions": 4,
+      "position": 7.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/mushroom-hunt-2026-11-15",
+      "clicks": 0,
+      "impressions": 4,
+      "position": 3.8
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/nature-walk-arnold-arboretum-2026-10-31",
+      "clicks": 0,
+      "impressions": 4,
+      "position": 5.3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/organizers/queers-on-wheels",
+      "clicks": 0,
+      "impressions": 4,
+      "position": 5.8
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/os26_newbury_2026-09-20",
+      "clicks": 0,
+      "impressions": 4,
+      "position": 19.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/pumpkin-patch-ride-2026-10-10",
+      "clicks": 0,
+      "impressions": 4,
+      "position": 6
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/saturday-group-walk-newton-centre-ma-10-5km-walk-options-2026-10-31",
+      "clicks": 0,
+      "impressions": 4,
+      "position": 2.8
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/submit",
+      "clicks": 0,
+      "impressions": 4,
+      "position": 28
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/walking-tour-allston-under-construction-2026-10-31",
+      "clicks": 0,
+      "impressions": 4,
+      "position": 10.3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/whats-scarier-than-mass-ave-2026-10-31",
+      "clicks": 0,
+      "impressions": 4,
+      "position": 9.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/guides/planning-a-transit-trip",
+      "clicks": 0,
+      "impressions": 4,
+      "position": 8.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/guides/what-a-cargo-ebike-costs",
+      "clicks": 0,
+      "impressions": 4,
+      "position": 7.3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/programs/walk-ride-days",
+      "clicks": 0,
+      "impressions": 4,
+      "position": 3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/roams/freedom-stroll",
+      "clicks": 0,
+      "impressions": 4,
+      "position": 11
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/dedham-ma",
+      "clicks": 0,
+      "impressions": 4,
+      "position": 9.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/lowell-ma",
+      "clicks": 0,
+      "impressions": 4,
+      "position": 5.8
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/peabody-ma",
+      "clicks": 0,
+      "impressions": 4,
+      "position": 20.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/zh-Hans/guides/bike-commute-gear",
+      "clicks": 0,
+      "impressions": 4,
+      "position": 2.8
+    },
+    {
+      "page": "https://www.gogreenstreets.org/zh-Hans/guides/your-first-ride-in-a-bike-lane",
+      "clicks": 0,
+      "impressions": 4,
+      "position": 4.8
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/free-bike-repair-workshop-at-bpl-east-boston-2026-11-17",
+      "clicks": 1,
+      "impressions": 3,
+      "position": 4.3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/pt-BR/guides/bike-commute-gear",
+      "clicks": 1,
+      "impressions": 3,
+      "position": 5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/es/guides/bike-commute-gear",
+      "clicks": 0,
+      "impressions": 3,
+      "position": 9
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/adult-learn-to-bike-2026-10-17",
+      "clicks": 0,
+      "impressions": 3,
+      "position": 4.7
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/awash-in-color-a-fall-foliage-walking-tour-2026-11-01",
+      "clicks": 0,
+      "impressions": 3,
+      "position": 5.3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/cambridge-street-working-group-meeting-october-2026-2026-10-22",
+      "clicks": 0,
+      "impressions": 3,
+      "position": 3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_sync_boston_bike_events_9087e696d157",
+      "clicks": 0,
+      "impressions": 3,
+      "position": 6.7
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/centre-st-beds-up-close-2026-10-25",
+      "clicks": 0,
+      "impressions": 3,
+      "position": 5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/charles-river-community-cleanup-2026-10-24",
+      "clicks": 0,
+      "impressions": 3,
+      "position": 3.3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/cycle-with-mit-club-of-boston-2026-10-22",
+      "clicks": 0,
+      "impressions": 3,
+      "position": 3.7
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/cycling-gives-you-a-cool-butt-2026-10-11",
+      "clicks": 0,
+      "impressions": 3,
+      "position": 10.3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/explore-allston-bike-and-scooter-tour-2026-10-08",
+      "clicks": 0,
+      "impressions": 3,
+      "position": 5.7
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/fall-cargo-bike-test-drive-event-2026-10-04?utm_source=nanopress&utm_medium=web&utm_campaign=east-cambridge-kendall-square-ma",
+      "clicks": 0,
+      "impressions": 3,
+      "position": 6.7
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/landrys-braintree-enduro-mtb-ride-at-blue-hills-2026-10-08",
+      "clicks": 0,
+      "impressions": 3,
+      "position": 3.3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/landrys-natick-mtb-ride-at-vietnam-trails-2026-10-27",
+      "clicks": 0,
+      "impressions": 3,
+      "position": 5.3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/landrys-needham-womens-non-binary-mtb-ride-at-cat-rock-2026-09-01",
+      "clicks": 0,
+      "impressions": 3,
+      "position": 6.3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/lgr26_worcester_road_2026-10-14",
+      "clicks": 0,
+      "impressions": 3,
+      "position": 6.3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/nature-walk-arnold-arboretum-2026-11-21",
+      "clicks": 0,
+      "impressions": 3,
+      "position": 10
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/november-group-walk-2026-11-07",
+      "clicks": 0,
+      "impressions": 3,
+      "position": 3.3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/organizers/boston-women-over-40-walking-group",
+      "clicks": 0,
+      "impressions": 3,
+      "position": 4.3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/organizers/landrys-bicycles",
+      "clicks": 0,
+      "impressions": 3,
+      "position": 6.3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/organizers/somerville-cycle-social",
+      "clicks": 0,
+      "impressions": 3,
+      "position": 3.3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ride-chill-2026-10-11",
+      "clicks": 0,
+      "impressions": 3,
+      "position": 4.3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/smart-navigation-maps-transit-and-ride-shares-2026-11-04",
+      "clicks": 0,
+      "impressions": 3,
+      "position": 7.7
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/social-organizing-hour-2026-10-06",
+      "clicks": 0,
+      "impressions": 3,
+      "position": 5.3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/sundays-at-jacks-abby-east-for-39-miles-2026-11-01",
+      "clicks": 0,
+      "impressions": 3,
+      "position": 1.7
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/west-podunk-fall-edition-47-32-2026-10-24",
+      "clicks": 0,
+      "impressions": 3,
+      "position": 1
+    },
+    {
+      "page": "https://www.gogreenstreets.org/guides/what-you-can-do-with-an-e-cargo-bike",
+      "clicks": 0,
+      "impressions": 3,
+      "position": 8
+    },
+    {
+      "page": "https://www.gogreenstreets.org/guides/where-to-lock-your-bike",
+      "clicks": 0,
+      "impressions": 3,
+      "position": 9
+    },
+    {
+      "page": "https://www.gogreenstreets.org/pt-BR/guides/boston-traffic",
+      "clicks": 0,
+      "impressions": 3,
+      "position": 2.3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/pt-BR/guides/walking-through-the-weather",
+      "clicks": 0,
+      "impressions": 3,
+      "position": 8
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift-your-semester/suffolk",
+      "clicks": 0,
+      "impressions": 3,
+      "position": 5.7
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/roams",
+      "clicks": 0,
+      "impressions": 3,
+      "position": 3.7
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/roams/bakery-run",
+      "clicks": 0,
+      "impressions": 3,
+      "position": 5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/roams/charles-loop",
+      "clicks": 0,
+      "impressions": 3,
+      "position": 9.3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/schools",
+      "clicks": 0,
+      "impressions": 3,
+      "position": 3.7
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/essex-ma",
+      "clicks": 0,
+      "impressions": 3,
+      "position": 8.3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/gloucester-ma",
+      "clicks": 0,
+      "impressions": 3,
+      "position": 9.3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/grafton-ma",
+      "clicks": 0,
+      "impressions": 3,
+      "position": 9.7
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/lincoln-ma",
+      "clicks": 0,
+      "impressions": 3,
+      "position": 8.7
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/nahant-ma",
+      "clicks": 0,
+      "impressions": 3,
+      "position": 7
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/needham-ma",
+      "clicks": 0,
+      "impressions": 3,
+      "position": 10.3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/newburyport-ma",
+      "clicks": 0,
+      "impressions": 3,
+      "position": 9.7
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/sandwich-ma",
+      "clicks": 0,
+      "impressions": 3,
+      "position": 10
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/springfield-ma",
+      "clicks": 0,
+      "impressions": 3,
+      "position": 5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/westford-ma",
+      "clicks": 0,
+      "impressions": 3,
+      "position": 9.7
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/westwood-ma",
+      "clicks": 0,
+      "impressions": 3,
+      "position": 8.3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/volunteer",
+      "clicks": 0,
+      "impressions": 3,
+      "position": 5.3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/zh-Hans/guides/bike-commute-without-sweat",
+      "clicks": 0,
+      "impressions": 3,
+      "position": 5.3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/zh-Hans/guides/walking-through-the-weather",
+      "clicks": 0,
+      "impressions": 3,
+      "position": 5.7
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/bcu-annual-celebration-2026-10-17",
+      "clicks": 1,
+      "impressions": 2,
+      "position": 7.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/dot-bike-social-2026-10-29",
+      "clicks": 1,
+      "impressions": 2,
+      "position": 4.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/shift-your-summer",
+      "clicks": 1,
+      "impressions": 2,
+      "position": 4.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/challenges",
+      "clicks": 0,
+      "impressions": 2,
+      "position": 4.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/bike-nation-bike-repair-2026-10-18",
+      "clicks": 0,
+      "impressions": 2,
+      "position": 3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_import_free-bike-repair-workshop-at-bpl-east-boston_2026-10-20",
+      "clicks": 0,
+      "impressions": 2,
+      "position": 18.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_intro_to_bluebikes_group_ride_20260808",
+      "clicks": 0,
+      "impressions": 2,
+      "position": 9
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_sync_boston_bike_events_887aa746fc20",
+      "clicks": 0,
+      "impressions": 2,
+      "position": 7.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_sync_cambridge_bike_safety_6685839e121c",
+      "clicks": 0,
+      "impressions": 2,
+      "position": 6
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_sync_crw_35fcfd55f051",
+      "clicks": 0,
+      "impressions": 2,
+      "position": 4
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_sync_massbike_68a0c2bf2575",
+      "clicks": 0,
+      "impressions": 2,
+      "position": 9
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_sync_massbike_d410c7a042e3",
+      "clicks": 0,
+      "impressions": 2,
+      "position": 8
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/cranksgiving-worcester-2026-11-14",
+      "clicks": 0,
+      "impressions": 2,
+      "position": 2.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/fall-foliage-walk-franklin-park-2026-11-10",
+      "clicks": 0,
+      "impressions": 2,
+      "position": 9.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/fixit-clinic-hyde-park-2026-11-07",
+      "clicks": 0,
+      "impressions": 2,
+      "position": 3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/free-bike-repair-workshop-at-bcyf-blackstone-2026-10-14",
+      "clicks": 0,
+      "impressions": 2,
+      "position": 11.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/free-bike-repair-workshop-at-bpl-south-boston-2026-10-13",
+      "clicks": 0,
+      "impressions": 2,
+      "position": 7
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/golden-gears-everett-2026-10-17",
+      "clicks": 0,
+      "impressions": 2,
+      "position": 9.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/great-oaks-a-walking-tour-2026-11-08",
+      "clicks": 0,
+      "impressions": 2,
+      "position": 2.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/landrys-braintree-all-levels-saturday-road-ride-2026-10-17",
+      "clicks": 0,
+      "impressions": 2,
+      "position": 9.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/landrys-needham-intermediate-gravel-ride-2026-10-25",
+      "clicks": 0,
+      "impressions": 2,
+      "position": 5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/lgr26_charlestown_road_2026-09-06",
+      "clicks": 0,
+      "impressions": 2,
+      "position": 11
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/light-up-your-ride-free-bike-lights-in-everett-2026-11-02",
+      "clicks": 0,
+      "impressions": 2,
+      "position": 8.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/newton-dover-donut-ride-25-34-or-47-miles-9-15a-social-ride-2026-10-04",
+      "clicks": 0,
+      "impressions": 2,
+      "position": 5.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/organizers/boston-harbor-now",
+      "clicks": 0,
+      "impressions": 2,
+      "position": 41.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/organizers/friends-of-mount-auburn-cemetery",
+      "clicks": 0,
+      "impressions": 2,
+      "position": 5.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/parkway-cycling-club-wellesley-college-greenhouses-23-miles-2026-10-25",
+      "clicks": 0,
+      "impressions": 2,
+      "position": 2.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/quincycles-destination-ride-cape-cod-rail-trail-2026-10-17",
+      "clicks": 0,
+      "impressions": 2,
+      "position": 5.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/revisit-the-charles-where-bicyclists-played-in-1895-14-2026-10-11",
+      "clicks": 0,
+      "impressions": 2,
+      "position": 7
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/rideshare-month-trivia-challenge-2026-10-31",
+      "clicks": 0,
+      "impressions": 2,
+      "position": 2
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/second-saturdays-2026-11-14",
+      "clicks": 0,
+      "impressions": 2,
+      "position": 3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/semi-annual-forum-on-accessibility-at-the-mbta-2026-11-17",
+      "clicks": 0,
+      "impressions": 2,
+      "position": 5.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/shift-your-summer/rules",
+      "clicks": 0,
+      "impressions": 2,
+      "position": 7
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/somerville-cycle-social-ride-to-sam-adams-downtown-2026-11-10",
+      "clicks": 0,
+      "impressions": 2,
+      "position": 5.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/somerville-cycle-social-ride-to-short-path-distillery-2026-10-13",
+      "clicks": 0,
+      "impressions": 2,
+      "position": 11
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/take-the-train-for-a-bike-tour-of-the-south-coast-2026-10-11",
+      "clicks": 0,
+      "impressions": 2,
+      "position": 7.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/the-norwellian-cruiser-fall-ride-new-time-2026-10-17",
+      "clicks": 0,
+      "impressions": 2,
+      "position": 7.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/truant-thursdays-concord-edition-2026-10-22?utm_source=nanopress&utm_medium=web&utm_campaign=concord-carlisle-ma",
+      "clicks": 0,
+      "impressions": 2,
+      "position": 20
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/tuesday-morning-walk-2026-10-27",
+      "clicks": 0,
+      "impressions": 2,
+      "position": 4.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/tuesday-morning-walk-2026-11-03",
+      "clicks": 0,
+      "impressions": 2,
+      "position": 13.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/walk-network-lunch-2026-11-07",
+      "clicks": 0,
+      "impressions": 2,
+      "position": 9.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/walk-network-lunch-2026-12-05",
+      "clicks": 0,
+      "impressions": 2,
+      "position": 6.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/wednesday-wheelers-2026-12-30",
+      "clicks": 0,
+      "impressions": 2,
+      "position": 4
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/weekly-social-bike-ride-2026-09-03",
+      "clicks": 0,
+      "impressions": 2,
+      "position": 2.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/guides/your-first-ride-in-a-bike-lane",
+      "clicks": 0,
+      "impressions": 2,
+      "position": 7
+    },
+    {
+      "page": "https://www.gogreenstreets.org/help",
+      "clicks": 0,
+      "impressions": 2,
+      "position": 2
+    },
+    {
+      "page": "https://www.gogreenstreets.org/programs/what-moves-us",
+      "clicks": 0,
+      "impressions": 2,
+      "position": 8
+    },
+    {
+      "page": "https://www.gogreenstreets.org/programs/what-moves-us/boston-area-active-commuters",
+      "clicks": 0,
+      "impressions": 2,
+      "position": 3.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/programs/what-moves-us/everett-community-fair",
+      "clicks": 0,
+      "impressions": 2,
+      "position": 30
+    },
+    {
+      "page": "https://www.gogreenstreets.org/pt-BR/guides/bike-commute-without-sweat",
+      "clicks": 0,
+      "impressions": 2,
+      "position": 5.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/pt-BR/guides/keeping-a-car-in-boston",
+      "clicks": 0,
+      "impressions": 2,
+      "position": 5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/pt-BR/guides/picking-a-bike-route",
+      "clicks": 0,
+      "impressions": 2,
+      "position": 8.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/pt-BR/guides/what-you-can-do-with-an-e-cargo-bike",
+      "clicks": 0,
+      "impressions": 2,
+      "position": 10
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/employers/login",
+      "clicks": 0,
+      "impressions": 2,
+      "position": 5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/rewards-partners",
+      "clicks": 0,
+      "impressions": 2,
+      "position": 5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/roams/eastie-eats",
+      "clicks": 0,
+      "impressions": 2,
+      "position": 8
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/roams/fort-river-trail",
+      "clicks": 0,
+      "impressions": 2,
+      "position": 9.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/roams/museum-hop",
+      "clicks": 0,
+      "impressions": 2,
+      "position": 4.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/charlton-ma",
+      "clicks": 0,
+      "impressions": 2,
+      "position": 3
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/malden-ma",
+      "clicks": 0,
+      "impressions": 2,
+      "position": 9
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/saugus-ma",
+      "clicks": 0,
+      "impressions": 2,
+      "position": 9
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/west-springfield-ma",
+      "clicks": 0,
+      "impressions": 2,
+      "position": 1
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/wilmington-ma",
+      "clicks": 0,
+      "impressions": 2,
+      "position": 1
+    },
+    {
+      "page": "https://www.gogreenstreets.org/wayfinding/carnaval",
+      "clicks": 0,
+      "impressions": 2,
+      "position": 1.5
+    },
+    {
+      "page": "https://www.gogreenstreets.org/zh-Hans/guides/where-to-lock-your-bike",
+      "clicks": 0,
+      "impressions": 2,
+      "position": 9
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_import_weekly-social-bike-ride_2026-08-13",
+      "clicks": 1,
+      "impressions": 1,
+      "position": 2
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/streetwise-at-aeronaut-2026-10-21",
+      "clicks": 1,
+      "impressions": 1,
+      "position": 1
+    },
+    {
+      "page": "https://www.gogreenstreets.org/shift/towns/ipswich-ma",
+      "clicks": 1,
+      "impressions": 1,
+      "position": 1
+    },
+    {
+      "page": "http://gogreenstreets.org/",
+      "clicks": 0,
+      "impressions": 1,
+      "position": 1
+    },
+    {
+      "page": "https://media.gogreenstreets.org/docs/everett-schools-final-report.pdf",
+      "clicks": 0,
+      "impressions": 1,
+      "position": 8
+    },
+    {
+      "page": "https://www.gogreenstreets.org/cashier-guide.html",
+      "clicks": 0,
+      "impressions": 1,
+      "position": 7
+    },
+    {
+      "page": "https://www.gogreenstreets.org/es/guides/biking-through-a-boston-winter",
+      "clicks": 0,
+      "impressions": 1,
+      "position": 10
+    },
+    {
+      "page": "https://www.gogreenstreets.org/es/guides/cold-weather-biking",
+      "clicks": 0,
+      "impressions": 1,
+      "position": 11
+    },
+    {
+      "page": "https://www.gogreenstreets.org/es/guides/what-you-can-do-with-an-e-cargo-bike",
+      "clicks": 0,
+      "impressions": 1,
+      "position": 7
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/a-simple-machine-bike-convoy-2026-10-11",
+      "clicks": 0,
+      "impressions": 1,
+      "position": 7
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/bike-thursday-2026-10-15",
+      "clicks": 0,
+      "impressions": 1,
+      "position": 7
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/boston-hidden-gems-special-places-5-and-10-km-walks-2026-11-15",
+      "clicks": 0,
+      "impressions": 1,
+      "position": 7
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/cannoli-ride-2026-11-14",
+      "clicks": 0,
+      "impressions": 1,
+      "position": 2
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_bike_ride_decorating_event_fri_20260829",
+      "clicks": 0,
+      "impressions": 1,
+      "position": 11
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_fall_cargo_bike_test_drive_eve_20260927",
+      "clicks": 0,
+      "impressions": 1,
+      "position": 2
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_import_free-bike-repair-workshop-at-bpl-south-boston_2026-09-08",
+      "clicks": 0,
+      "impressions": 1,
+      "position": 9
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_import_weekly-social-bike-ride_2026-08-20",
+      "clicks": 0,
+      "impressions": 1,
+      "position": 4
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_streetwise_bcu_labs_what_we_ar_20260819",
+      "clicks": 0,
+      "impressions": 1,
+      "position": 10
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_sync_bu_cycle_kitchen_f5ec9ea81311",
+      "clicks": 0,
+      "impressions": 1,
+      "position": 7
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_sync_crw_8a5a778658bf",
+      "clicks": 0,
+      "impressions": 1,
+      "position": 7
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_sync_crw_b77710fb83c4",
+      "clicks": 0,
+      "impressions": 1,
+      "position": 7
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_sync_crw_bcb49595d5d6",
+      "clicks": 0,
+      "impressions": 1,
+      "position": 2
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_sync_crw_cf54c1e089bb",
+      "clicks": 0,
+      "impressions": 1,
+      "position": 4
+    },
+    {
+      "page": "https://www.gogreenstreets.org/events/ce_sync_crw_f58a4a973eb5",
+      "clicks": 0,
+      "impressions": 1,
+      "position": 4
+    }
+  ]
+}

@@ -342,14 +342,16 @@ async function main() {
   }
   if (mode !== 'weekly') die(`unknown --mode "${mode}" (expected check or weekly)`)
 
-  const [sessionRows, landingRows, answerRows, channelRows, paidLandingRows, landingOutcomeRows] = await Promise.all([
-    hogql(cred, projectId, weeklySessionsQuery),
-    hogql(cred, projectId, landingPagesQuery),
-    hogql(cred, projectId, answerEngineQuery),
-    hogql(cred, projectId, channelSessionsQuery),
-    hogql(cred, projectId, paidLandingQuery),
-    hogql(cred, projectId, landingOutcomesQuery),
-  ])
+  // One query at a time (2026-11-01). Run in parallel, the six together hit
+  // PostHog's max execution time on every attempt once paid traffic grew; the
+  // 12-week session scan is the heavy one.
+  const queries = [
+    weeklySessionsQuery, landingPagesQuery, answerEngineQuery,
+    channelSessionsQuery, paidLandingQuery, landingOutcomesQuery,
+  ]
+  const results = []
+  for (const q of queries) results.push(await hogql(cred, projectId, q))
+  const [sessionRows, landingRows, answerRows, channelRows, paidLandingRows, landingOutcomeRows] = results
 
   // { 'YYYY-MM-DD': { organic_search: {sessions, activated, app_intent}, ... } }
   const byWeek = {}

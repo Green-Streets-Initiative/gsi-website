@@ -56,7 +56,8 @@
         "(need|without|no).*car.*(boston|cambridge|somerville)",
         "get(ting)? around.*(boston|cambridge|somerville)",
         "charliecard",
-        "walkable.*(boston|cambridge|somerville)"
+        "walkable.*(boston|cambridge|somerville)",
+        "baldea[cç][aãoõ]|transbordo"
       ],
       "target_urls": [
         "/nearby",
@@ -154,7 +155,8 @@
         "(bike|bikes|blue ?bike|bluebike|t.?pass|tpass|mbta|charlie|shuttle|safe ?ride|cycle kitchen|bike kitchen|quad bikes|parking).*\\b(bu|mit|tufts|harvard|northeastern|neu|suffolk|simmons|berklee|lesley|emerson|umass|bc)\\b",
         "(student|campus|semester|dorm|grad school).*(pass|bike|transit|shuttle|parking|commut|mbta|blue ?bike)",
         "(cycle kitchen|bike kitchen|quad bikes|safe ?ride|red ?eye shuttle)",
-        "(college|university).*(mbta|t.?pass|blue ?bike|bike|shuttle|commut|semester pass)"
+        "(college|university).*(mbta|t.?pass|blue ?bike|bike|shuttle|commut|semester pass)",
+        "brandeis.*(shuttle|tripshot|boston|commuter rail)"
       ],
       "target_urls": [
         "/shift-your-semester",
@@ -231,7 +233,8 @@
         "\\b20\\d\\d (schedule|dates?|lineup)\\b",
         "\\bconference\\b",
         "\\bcentury\\b",
-        "slow ?roll|block party|ride ?out\\b|\\bride for\\b"
+        "slow ?roll|block party|ride ?out\\b|\\bride for\\b",
+        "somerstreets|monster mash|tour de streets|critical mass|moving together|bike to the sea|halloween (parade|ride)|trick.or.treat ride"
       ],
       "target_urls": [
         "/events",
@@ -303,7 +306,8 @@
         "(drive|driving).*(in|to|vs|versus).*(walk|walking|bike|biking)",
         "(walk|walking|bike|biking).*(in|to|vs|versus).*(drive|driving)",
         "^commute times?$",
-        "how (far|long).*(walk|walking|bike|biking).*(mile|minute|min)"
+        "how (far|long).*(walk|walking|bike|biking).*(mile|minute|min)",
+        "minutos (de carro|en (auto|coche|carro))"
       ],
       "target_urls": [
         "/commute-advisor",
