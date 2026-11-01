@@ -3,6 +3,7 @@ import Link from 'next/link'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
+import { resultsPath } from '../_lib/results'
 
 export const metadata: Metadata = {
   title: 'Walk/Ride Day · Official Rules | Green Streets Initiative',
@@ -449,6 +450,27 @@ export default async function WalkRideDayRulesPage() {
                   the winner has enabled them. GSI is not responsible for a notification that fails
                   to reach a winner because of an incorrect email address, a full mailbox, a spam
                   filter, or disabled notifications.
+                </li>
+                <li>
+                  After the drawing, GSI posts the results, including a list of winners, at{' '}
+                  {competition ? (
+                    <Link href={resultsPath(competition.starts_at)} className="font-semibold text-forest underline-offset-4 hover:underline">
+                      gogreenstreets.org{resultsPath(competition.starts_at)}
+                    </Link>
+                  ) : (
+                    <Link href="/events/walk-ride-day/results" className="font-semibold text-forest underline-offset-4 hover:underline">
+                      gogreenstreets.org/events/walk-ride-day/results
+                    </Link>
+                  )}
+                  , and tells everyone who entered that the results are in. Winners are listed by
+                  first name, last initial and town, or by town only when their Shift profile is
+                  private or they ask.
+                </li>
+                <li>
+                  Winners may be asked to participate in promotional activities (social media post,
+                  photo, testimonial). Acceptance of a prize may constitute permission to use the
+                  winner&rsquo;s name and likeness for promotional purposes (except where prohibited
+                  by law).
                 </li>
               </Ul>
             </Section>
