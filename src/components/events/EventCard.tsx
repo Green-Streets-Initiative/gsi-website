@@ -52,6 +52,9 @@ export default function EventCard({ event, userLat, userLng, showDate, saved, on
   // The desktop time column says how long a multi-day, all-day event runs.
   const spanLabel = isMultiDay(event) ? `${eventDayKeys(event).length} days` : 'All day'
   const deadline = isDeadline(event.event_type)
+  // A Shift ride's cancelled date stays on the list, struck through, so
+  // someone planning on it sees it's off instead of it quietly vanishing.
+  const off = event.schedule_status === 'cancelled'
 
   // Who runs it sits on the card itself: people come to trust specific groups,
   // and they shouldn't have to click through to find out (Keith, 2026-09-14).
@@ -87,7 +90,7 @@ export default function EventCard({ event, userLat, userLng, showDate, saved, on
 
       {/* Desktop time column */}
       <div className="hidden w-[76px] shrink-0 flex-col lg:flex">
-        <span className="text-[14px] font-semibold leading-tight text-(--ev-ink)">
+        <span className={`text-[14px] font-semibold leading-tight ${off ? 'text-(--ev-ink-75) line-through' : 'text-(--ev-ink)'}`}>
           {deadline ? 'Deadline' : timeStr ?? spanLabel}
         </span>
         {!deadline && timeStr && endStr && (
@@ -125,10 +128,11 @@ export default function EventCard({ event, userLat, userLng, showDate, saved, on
             </>
           )}
         </p>
-        <h3 className="mt-0.5 line-clamp-2 font-display text-[17px] font-bold leading-snug text-(--ev-ink) sm:text-[18px] lg:mt-0 lg:line-clamp-1 lg:text-[16px]">
-          {event.title}
+        <h3 className={`mt-0.5 line-clamp-2 font-display text-[17px] font-bold leading-snug sm:text-[18px] lg:mt-0 lg:line-clamp-1 lg:text-[16px] ${off ? 'text-(--ev-ink-75)' : 'text-(--ev-ink)'}`}>
+          {off && <span className="mr-2 inline-block rounded-full bg-[#FBE4DF] px-2 py-0.5 align-middle font-sans text-[13px] font-bold leading-tight text-(--ev-danger)">Cancelled</span>}
+          <span className={off ? 'line-through' : undefined}>{event.title}</span>
         </h3>
-        <p className="mt-1 text-[13px] leading-snug text-(--ev-ink-75) lg:hidden">
+        <p className={`mt-1 text-[13px] leading-snug text-(--ev-ink-75) lg:hidden ${off ? 'line-through' : ''}`}>
           {metaLine(when, where)}
         </p>
         <p className="mt-0.5 hidden truncate text-[13px] leading-snug text-(--ev-ink-75) lg:block">
@@ -157,7 +161,7 @@ export default function EventCard({ event, userLat, userLng, showDate, saved, on
             )}
             {/* Planned in the Shift app — riders can RSVP there rather than
                 following a link to somebody else's site. */}
-            {event.ride_series_id && (
+            {event.ride_series_id && !off && (
               <span className="inline-block rounded-full bg-(--ev-accent-tint-15) px-2 py-0.5 text-[10px] font-semibold leading-tight text-(--ev-accent)">
                 RSVP, no app needed
               </span>

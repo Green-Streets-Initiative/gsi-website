@@ -14,3 +14,11 @@ export function eventPath(e: { id: string; slug?: string | null }, base = '/even
 export function eventUrl(e: { id: string; slug?: string | null }, origin = 'https://www.gogreenstreets.org'): string {
   return `${origin}${eventPath(e)}`
 }
+
+/**
+ * Where a list row should open: a Shift group ride's own page for that date,
+ * where people say they're going (no app needed), else the event's page.
+ */
+export function eventHref(e: { id: string; slug?: string | null; ride_code?: string | null; event_date: string }, base = '/events'): string {
+  return e.ride_code ? `/rides/${encodeURIComponent(e.ride_code)}?date=${e.event_date}` : eventPath(e, base)
+}

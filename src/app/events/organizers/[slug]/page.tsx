@@ -8,7 +8,7 @@ import FixListingLink from '@/components/hosts/FixListingLink'
 import '@/components/events/events-tone.css'
 import OrganizerChannels from '@/components/rides/OrganizerChannels'
 import { loadHostPage, hostPath } from '@/lib/hosts'
-import { eventPath } from '@/lib/events-url'
+import { eventHref, eventPath } from '@/lib/events-url'
 import { formatTime, getTagMeta, getTypeMeta, parseEventDate } from '@/lib/events'
 import { SITE_URL } from '@/lib/seo'
 import type { CommunityEvent } from '@/lib/events'
@@ -47,16 +47,19 @@ function EventRow({ ev }: { ev: CommunityEvent }) {
   const { wk, md } = monthDay(ev.event_date)
   const time = ev.event_time ? formatTime(ev.event_time) : null
   const place = ev.location_name && ev.location_name !== 'See event page for details' ? ev.location_name : null
+  const off = ev.schedule_status === 'cancelled'
   return (
     <li>
-      <Link href={eventPath(ev)} className="flex gap-4 rounded-2xl border border-(--ev-line) bg-(--ev-card) px-4 py-3 transition-colors hover:border-(--ev-line-stronger)">
-        <div className="flex w-14 shrink-0 flex-col items-center justify-center rounded-xl bg-(--ev-panel) py-1.5">
-          <span className="text-[12px] font-semibold text-(--ev-ink-75)">{wk}</span>
+      {/* A Shift ride opens its own page on that date, where people RSVP. */}
+      <Link href={off ? eventPath(ev) : eventHref(ev)} className="flex gap-4 rounded-2xl border border-(--ev-line) bg-(--ev-card) px-4 py-3 transition-colors hover:border-(--ev-line-stronger)">
+        <div className={`flex w-14 shrink-0 flex-col items-center justify-center rounded-xl bg-(--ev-panel) py-1.5 ${off ? 'line-through decoration-2' : ''}`}>
+          <span className="text-[13px] font-semibold text-(--ev-ink-75)">{wk}</span>
           <span className="text-[15px] font-bold text-(--ev-ink)">{md}</span>
         </div>
         <div className="min-w-0">
-          <p className="text-[15px] font-semibold leading-snug text-(--ev-ink)">{ev.title}</p>
+          <p className={`text-[15px] font-semibold leading-snug ${off ? 'text-(--ev-ink-75) line-through' : 'text-(--ev-ink)'}`}>{ev.title}</p>
           <p className="mt-0.5 text-[14px] text-(--ev-ink-75)">
+            {off && <span className="mr-1.5 rounded-full bg-[#FBE4DF] px-2 py-0.5 text-[13px] font-bold text-(--ev-danger)">Cancelled</span>}
             {[getTypeMeta(ev.event_type).label, time, place].filter(Boolean).join(' · ')}
           </p>
         </div>

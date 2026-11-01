@@ -113,6 +113,27 @@ function toCommunityEvent(row: EventRow): CommunityEvent {
   }
 }
 
+/**
+ * The ride page code for listings that come from a Shift group ride, so a
+ * list can link straight to /rides/<code>?date= (where people RSVP) instead
+ * of the calendar page that only links on to it. One read for the whole list.
+ */
+async function withRideCodes(
+  supabase: ReturnType<typeof createServerSupabaseClient>,
+  events: CommunityEvent[],
+): Promise<CommunityEvent[]> {
+  const ids = [...new Set(events.map((e) => e.ride_series_id).filter((x): x is string => !!x))]
+  if (ids.length === 0) return events
+  const { data } = await supabase
+    .from('ride_series')
+    .select('id, invite_code')
+    .in('id', ids)
+    .eq('kind', 'group_ride')
+    .eq('status', 'active')
+  const codes = new Map(((data ?? []) as { id: string; invite_code: string | null }[]).map((r) => [r.id, r.invite_code]))
+  return events.map((e) => (e.ride_series_id && codes.get(e.ride_series_id) ? { ...e, ride_code: codes.get(e.ride_series_id)! } : e))
+}
+
 /** Every approved upcoming event, soonest first. */
 export async function loadEventsListing(): Promise<CommunityEvent[]> {
   const supabase = createServerSupabaseClient()
@@ -127,7 +148,7 @@ export async function loadEventsListing(): Promise<CommunityEvent[]> {
     .order('event_date', { ascending: true })
     .limit(500)
 
-  return ((data ?? []) as unknown as EventRow[]).map(toCommunityEvent)
+  return withRideCodes(supabase, ((data ?? []) as unknown as EventRow[]).map(toCommunityEvent))
 }
 
 /**
@@ -151,7 +172,7 @@ export async function loadOrganizerEvents(
     ? q.or(stillRunning(today)).order('event_date', { ascending: true })
     : q.or(finished(today)).order('event_date', { ascending: false })
   const { data } = await q.limit(limit)
-  return ((data ?? []) as unknown as EventRow[]).map(toCommunityEvent)
+  return withRideCodes(supabase, ((data ?? []) as unknown as EventRow[]).map(toCommunityEvent))
 }
 
 /**

@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { Calendar } from 'lucide-react'
-import { eventPath } from '@/lib/events-url'
+import { eventHref, eventPath } from '@/lib/events-url'
 import { type CommunityEvent, getTypeMeta, formatTime, haversine } from '@/lib/events'
 import { feederPlace, shortOrganizer } from '@/lib/go-together'
 import { EVENT_TYPE_ICONS } from './event-type-icons'
@@ -45,15 +45,17 @@ export default function FeederTray({ eventId, feeders, userLat, userLng }: {
         {visible.map(({ f, miles }) => {
           const Icon = EVENT_TYPE_ICONS[getTypeMeta(f.event_type).icon] ?? Calendar
           const place = feederPlace(f.title, f.location_name)
+          const off = f.schedule_status === 'cancelled'
           const sub = [
-            f.event_time ? `Leaves ${formatTime(f.event_time)}` : null,
+            off ? 'Cancelled' : f.event_time ? `Leaves ${formatTime(f.event_time)}` : null,
             shortOrganizer(f.organizer_name),
           ].filter(Boolean).join(' · ')
           const away = miles !== null ? (miles < 10 ? miles.toFixed(1) : String(Math.round(miles))) : null
           return (
             <li key={f.id}>
               <Link
-                href={eventPath(f, hrefBase)}
+                // A Shift ride opens its own page on that date, where people RSVP, no app needed.
+                href={off ? eventPath(f, hrefBase) : eventHref(f, hrefBase)}
                 onClick={() => trackEvents('events_feeder_clicked', { id: f.id, event_id: eventId })}
                 className="flex min-h-[48px] items-center gap-3 rounded-[10px] px-1 py-1.5 transition-colors hover:bg-(--ev-card)"
               >
@@ -65,7 +67,7 @@ export default function FeederTray({ eventId, feeders, userLat, userLng }: {
                   </span>
                 )}
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[15px] font-bold text-(--ev-ink)">From {place}</span>
+                  <span className={`block truncate text-[15px] font-bold ${off ? 'text-(--ev-ink-75) line-through' : 'text-(--ev-ink)'}`}>From {place}</span>
                   {sub && <span className="block truncate text-[14px] text-(--ev-ink-75)">{sub}</span>}
                 </span>
                 {away && (

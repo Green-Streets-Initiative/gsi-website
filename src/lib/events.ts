@@ -39,6 +39,8 @@ export interface CommunityEvent {
   featured: boolean
   /** Set when this event came from a ride planned in the Shift app (00817). */
   ride_series_id: string | null
+  /** That ride's page code (/rides/<code>), for an active group ride; set by the list loaders. */
+  ride_code?: string | null
   /** A feeder ride's destination: the same-date event it goes to (Shift 01460). */
   feeds_content_id?: string | null
   /** Free text as listed: "21 miles", "20-25 miles", "90 minutes". */
@@ -47,7 +49,8 @@ export interface CommunityEvent {
   pace: string | null
   /** True when the organizer promises nobody gets dropped; set on Shift-planned rides or by hand. */
   no_drop: boolean | null
-  /** Organizer changed the plan (Shift 01013). Cancelled/postponed rows are archived but keep their page. */
+  /** Organizer changed the plan (Shift 01013). Cancelled/postponed rows are archived but keep their page;
+   *  a Shift ride's cancelled date stays listed with 'cancelled' and shows as Cancelled. */
   schedule_status?: 'cancelled' | 'postponed' | 'moved' | null
   schedule_note?: string | null
   previous_event_date?: string | null
