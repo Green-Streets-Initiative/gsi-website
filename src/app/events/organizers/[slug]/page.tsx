@@ -73,6 +73,8 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
   const page = await loadHostPage(decodeURIComponent(slug))
   if (!page) notFound()
   const { host, upcoming, recent, pastYearCount } = page
+  // Cancelled dates stay listed (struck through) but aren't counted as coming up.
+  const liveCount = upcoming.filter((ev) => ev.schedule_status !== 'cancelled').length
 
   const socials = Object.entries(host.social_links ?? {}).filter(([, u]) => typeof u === 'string' && /^https?:\/\//.test(u))
   const noDrop = host.rides_no_drop === true || host.ride_tags.includes('no_drop')
@@ -86,7 +88,7 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
     url: host.url ?? pageUrl,
     ...(host.description ? { description: host.description } : {}),
     ...(socials.length ? { sameAs: socials.map(([, u]) => u) } : {}),
-    event: upcoming.slice(0, 10).map((ev) => ({
+    event: upcoming.filter((ev) => ev.schedule_status !== 'cancelled').slice(0, 10).map((ev) => ({
       '@type': 'Event',
       name: ev.title,
       startDate: ev.event_time ? `${ev.event_date}T${ev.event_time.slice(0, 5)}` : ev.event_date,
@@ -112,8 +114,8 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
               {host.name}
             </h1>
             <p className="mt-2 text-[15px] font-medium text-(--ev-ink-80)">
-              {upcoming.length > 0
-                ? `${upcoming.length} upcoming on the calendar`
+              {liveCount > 0
+                ? `${liveCount} upcoming on the calendar`
                 : 'Nothing on the calendar right now'}
               {pastYearCount > 0 ? ` · ${pastYearCount} in the past year` : ''}
             </p>

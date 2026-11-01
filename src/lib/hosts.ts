@@ -106,7 +106,9 @@ export async function loadHostPage(id: string, { evenIfThin = false }: { evenIfT
     countEvents(id, yearAgo(), today),
     evenIfThin ? Promise.resolve(true) : hasShiftRide(id),
   ])
-  if (!evenIfThin && !shiftRide && upcoming.length < MIN_UPCOMING && pastYearCount < MIN_PAST_YEAR) return null
+  // A cancelled date (listed, marked) doesn't count toward a page.
+  const live = upcoming.filter((e) => e.schedule_status !== 'cancelled').length
+  if (!evenIfThin && !shiftRide && live < MIN_UPCOMING && pastYearCount < MIN_PAST_YEAR) return null
 
   return {
     host: {

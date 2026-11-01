@@ -134,21 +134,59 @@ async function withRideCodes(
   return events.map((e) => (e.ride_series_id && codes.get(e.ride_series_id) ? { ...e, ride_code: codes.get(e.ride_series_id)! } : e))
 }
 
-/** Every approved upcoming event, soonest first. */
-export async function loadEventsListing(): Promise<CommunityEvent[]> {
+/**
+ * A Shift ride's cancelled dates that are still ahead: their listing comes
+ * off the approved list (Shift 01576 archives it) but keeps
+ * schedule_status 'cancelled', so lists can show it struck through as
+ * Cancelled instead of it vanishing for someone planning on it. Rides only;
+ * a synced source's cancelled events stay off lists as before.
+ */
+async function cancelledRideDates(
+  supabase: ReturnType<typeof createServerSupabaseClient>,
+  today: string,
+  organizerId?: string,
+): Promise<CommunityEvent[]> {
+  let q = supabase
+    .from('event_details')
+    .select(LISTING_SELECT)
+    .eq('content_items.status', 'archived')
+    .eq('content_items.content_type', 'community_event')
+    .eq('schedule_status', 'cancelled')
+    .not('ride_series_id', 'is', null)
+    .or(stillRunning(today))
+  if (organizerId) q = q.eq('organizer_id', organizerId)
+  const { data } = await q.order('event_date', { ascending: true }).limit(100)
+  return ((data ?? []) as unknown as EventRow[]).map(toCommunityEvent)
+}
+
+/** Soonest first, then by start time; the merge keeps a list in calendar order. */
+function bySoonest(a: CommunityEvent, b: CommunityEvent): number {
+  return a.event_date.localeCompare(b.event_date) || (a.event_time ?? '').localeCompare(b.event_time ?? '')
+}
+
+/**
+ * Every approved upcoming event, soonest first. With `withCancelled`, a
+ * Shift ride's cancelled dates too, marked by schedule_status (the events
+ * page shows them as Cancelled).
+ */
+export async function loadEventsListing({ withCancelled = false }: { withCancelled?: boolean } = {}): Promise<CommunityEvent[]> {
   const supabase = createServerSupabaseClient()
   const today = new Date().toISOString().slice(0, 10)
 
-  const { data } = await supabase
-    .from('event_details')
-    .select(LISTING_SELECT)
-    .eq('content_items.status', 'approved')
-    .eq('content_items.content_type', 'community_event')
-    .or(stillRunning(today))
-    .order('event_date', { ascending: true })
-    .limit(500)
+  const [{ data }, cancelled] = await Promise.all([
+    supabase
+      .from('event_details')
+      .select(LISTING_SELECT)
+      .eq('content_items.status', 'approved')
+      .eq('content_items.content_type', 'community_event')
+      .or(stillRunning(today))
+      .order('event_date', { ascending: true })
+      .limit(500),
+    withCancelled ? cancelledRideDates(supabase, today) : Promise.resolve([] as CommunityEvent[]),
+  ])
 
-  return withRideCodes(supabase, ((data ?? []) as unknown as EventRow[]).map(toCommunityEvent))
+  const events = ((data ?? []) as unknown as EventRow[]).map(toCommunityEvent)
+  return withRideCodes(supabase, cancelled.length ? [...events, ...cancelled].sort(bySoonest) : events)
 }
 
 /**
@@ -171,8 +209,13 @@ export async function loadOrganizerEvents(
   q = when === 'upcoming'
     ? q.or(stillRunning(today)).order('event_date', { ascending: true })
     : q.or(finished(today)).order('event_date', { ascending: false })
-  const { data } = await q.limit(limit)
-  return withRideCodes(supabase, ((data ?? []) as unknown as EventRow[]).map(toCommunityEvent))
+  // Upcoming lists (host page, embed, calendar feed) keep a ride's cancelled dates, marked.
+  const [{ data }, cancelled] = await Promise.all([
+    q.limit(limit),
+    when === 'upcoming' ? cancelledRideDates(supabase, today, organizerId) : Promise.resolve([] as CommunityEvent[]),
+  ])
+  const events = ((data ?? []) as unknown as EventRow[]).map(toCommunityEvent)
+  return withRideCodes(supabase, cancelled.length ? [...events, ...cancelled].sort(bySoonest).slice(0, limit) : events)
 }
 
 /**

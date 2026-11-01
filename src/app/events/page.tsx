@@ -20,7 +20,8 @@ export async function generateMetadata(
 export const dynamic = 'force-dynamic'
 
 export default async function EventsListingPage() {
-  const events = await loadEventsListing()
+  // A Shift ride's cancelled dates stay on the list, shown as Cancelled.
+  const events = await loadEventsListing({ withCancelled: true })
 
   return (
     <>
