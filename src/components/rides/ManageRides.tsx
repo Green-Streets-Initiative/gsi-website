@@ -44,6 +44,8 @@ export default function ManageRides() {
   const [saving, setSaving] = useState<string | null>(null)
   const [forgotten, setForgotten] = useState(false)
   const [confirmForget, setConfirmForget] = useState(intent === 'forget')
+  // Leaving takes every answer for that ride with it, so it asks first.
+  const [confirmLeave, setConfirmLeave] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     if (!token) { setError('This page needs the link from your ride email.'); return }
@@ -125,10 +127,24 @@ export default function ManageRides() {
               <h2 className="text-[18px] font-bold text-(--ev-ink)">
                 <Link href={`/rides/${r.code}`} className="hover:underline">{r.name}</Link>
               </h2>
-              <button onClick={() => act({ action: 'leave', series_id: r.series_id }, `leave-${r.series_id}`)} className="text-[13px] font-semibold text-(--ev-ink-75) hover:text-(--ev-ink) hover:underline">
-                Leave this ride
-              </button>
+              {confirmLeave !== r.series_id && (
+                <button onClick={() => setConfirmLeave(r.series_id)} className="min-h-[40px] text-[14px] font-semibold text-(--ev-ink-75) hover:text-(--ev-ink) hover:underline">
+                  Leave this ride
+                </button>
+              )}
             </div>
+            {confirmLeave === r.series_id && (
+              <div className="mt-3 rounded-xl border border-(--ev-line-mid) bg-(--ev-panel) p-4">
+                <p className="text-[15px] font-semibold text-(--ev-ink)">Leave {r.name}?</p>
+                <p className="mt-1 text-[14px] text-(--ev-ink-80)">Your answers for its dates go, and you won&rsquo;t get its emails.</p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <button onClick={() => { setConfirmLeave(null); void act({ action: 'leave', series_id: r.series_id }, `leave-${r.series_id}`) }}
+                    disabled={saving === `leave-${r.series_id}`}
+                    className="min-h-[40px] rounded-[10px] bg-(--ev-danger) px-4 text-[14px] font-bold text-white disabled:opacity-60">Leave the ride</button>
+                  <button onClick={() => setConfirmLeave(null)} className="min-h-[40px] rounded-[10px] border border-(--ev-line-strong) px-4 text-[14px] font-semibold text-(--ev-ink)">Stay on it</button>
+                </div>
+              </div>
+            )}
             {r.dates.length === 0 ? (
               <p className="mt-2 text-[14px] text-(--ev-ink-75)">No upcoming dates.</p>
             ) : (

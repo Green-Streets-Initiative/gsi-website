@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import posthog from 'posthog-js'
-import { Bike, Calendar, Check, Clock, CloudSun, Download, ExternalLink, MapPin, Radio, Route as RouteIcon, Share2, Users } from 'lucide-react'
+import { Bike, Calendar, Check, CloudSun, Download, ExternalLink, MapPin, Radio, Route as RouteIcon, Share2, Users } from 'lucide-react'
 import EventMap from '@/components/events/EventMap'
 import RouteMap from '@/components/organizers/RouteMap'
 import { buildIcs, gcalUrl as eventGcalUrl } from '@/lib/event-calendar'
@@ -121,7 +121,9 @@ export default function RidePage({ ride, host = null, ascentFt = null, initialDa
   const [choice, setChoice] = useState<RsvpStatus | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [done, setDone] = useState<{ status: RsvpStatus; first: string } | null>(null)
+  // `emailed` is the server's word on whether a confirmation went out (null
+  // when it doesn't say), so the page never claims an email nobody sent.
+  const [done, setDone] = useState<{ status: RsvpStatus; first: string; emailed: boolean | null } | null>(null)
   const [copied, setCopied] = useState(false)
 
   // The forecast for the chosen date, once it's within the weather service's week.
@@ -199,7 +201,7 @@ export default function RidePage({ ride, host = null, ascentFt = null, initialDa
       if (typeof data.going === 'number') {
         setCounts((c) => ({ ...c, [selected.id]: { going: data.going, maybe: data.maybe ?? 0 } }))
       }
-      setDone({ status: choice, first: data.first_name ?? first_name })
+      setDone({ status: choice, first: data.first_name ?? first_name, emailed: typeof data.emailed === 'boolean' ? data.emailed : null })
       setChoice(null)
       posthog.capture('ride_rsvp_submitted', { code: ride.code, status: choice, surface: 'web' })
     } catch {
@@ -211,13 +213,12 @@ export default function RidePage({ ride, host = null, ascentFt = null, initialDa
 
   const updates = useMemo(() => ride.updates.slice(0, 6), [ride.updates])
   const latestFor = (occId: string) => ride.updates.find((u) => u.occurrence_id === occId)
-  // A repeating ride reads as its pattern; anything else as its next date.
-  const next = open[0] ?? null
-  const headerSchedule = (ride.days ?? []).length > 0 || ride.frequency === 'daily'
-    ? scheduleText(ride)
-    : next
-      ? `Next: ${dateLong(next.date)}${next.start_time ? ` · ${clock(next.start_time)}` : ''}`
-      : scheduleText(ride)
+  // A repeating ride reads as its pattern up top. The chosen date itself, with
+  // its own time and meeting spot, lives once, in the card under the title,
+  // so the date isn't said three times before the Going button.
+  const repeats = !ride.ride_date && ((ride.days ?? []).length > 0 || ride.frequency === 'daily')
+  const headerSchedule = repeats ? scheduleText(ride) : null
+  const pastOneOff = !!ride.ride_date && ride.ride_date < todayKey()
   // Most groups ride somewhere new each time (Shift 01432): the chosen date's
   // own route, name, description and flyer, else the ride's.
   const own = selected?.own_route && selected.route ? selected.route : null
@@ -255,16 +256,7 @@ export default function RidePage({ ride, host = null, ascentFt = null, initialDa
         <h1 className="mt-2 font-display text-[clamp(30px,4vw,44px)] font-extrabold leading-[1.08] tracking-tight text-(--ev-ink)">
           {ride.name}
         </h1>
-        <p className="mt-2 text-[15px] font-medium text-(--ev-ink-80)">
-          {headerSchedule}
-          {ride.meetup_name ? ` · ${ride.meetup_name}` : ''}
-        </p>
-        {/* The chosen date's own name (Shift 01432), up top for someone who
-            came from that date's listing. */}
-        {dateTitle && selected && (
-          <p className="mt-2 text-[17px] font-bold text-(--ev-accent)">{dateLong(selected.date)}: {dateTitle}</p>
-        )}
-        <RideFacts ride={ride} miles={miles} ascentFt={climb} />
+        {headerSchedule && <p className="mt-2 text-[15px] font-medium text-(--ev-ink-80)">{headerSchedule}</p>}
 
         {(ended || paused) && (
           <div className={`mt-6 rounded-2xl px-5 py-4 ${ended ? TONE_STYLE.off : TONE_STYLE.warn}`}>
@@ -275,19 +267,31 @@ export default function RidePage({ ride, host = null, ascentFt = null, initialDa
           </div>
         )}
 
-        <div className="mt-8 grid grid-cols-[minmax(0,1fr)] gap-8 lg:grid-cols-[minmax(0,1fr)_400px]">
-          {/* ---- RSVP card (first on phones, right column on desktop) ---- */}
-          <aside className="lg:col-start-2 lg:row-span-3 lg:row-start-1">
+        <div className="mt-6 grid grid-cols-[minmax(0,1fr)] gap-8 lg:grid-cols-[minmax(0,1fr)_400px]">
+          {/* ---- RSVP card: right under the title on phones, so the date,
+               where to meet and Going / Maybe / Can't go are the first
+               screen; the right column on desktop ---- */}
+          <aside className="lg:col-start-2 lg:row-start-1">
             <div className="rounded-2xl border border-(--ev-line-mid) bg-(--ev-card) p-5 shadow-(--ev-shadow) lg:sticky lg:top-24">
               {ride.occurrences.length === 0 ? (
-                <p className="text-[15px] text-(--ev-ink-80)">No upcoming dates yet. Check back soon.</p>
+                <div>
+                  <p className="text-[16px] font-bold text-(--ev-ink)">
+                    {ended ? 'No more dates' : pastOneOff ? 'This ride has happened' : paused && ride.break_until ? `Back on ${dateLong(ride.break_until)}` : 'No upcoming dates yet'}
+                  </p>
+                  <p className="mt-1 text-[15px] text-(--ev-ink-80)">
+                    {ended || pastOneOff
+                      ? <>See what else is on: <a href={hostHref ?? '/events?type=group_ride'} className="font-semibold text-(--ev-accent) hover:underline">{hostHref && hostName ? `more rides from ${hostName}` : 'group rides on the calendar'}</a>.</>
+                      : paused ? 'Dates open here when the break ends.' : 'Check back soon. New dates show up here.'}
+                  </p>
+                </div>
               ) : (
                 <>
                   {linkedMissing && !selectedId && (
                     <p className="mb-3 text-[15px] text-(--ev-ink-85)">{dateLong(initialDate!)} isn&rsquo;t open yet. Pick another date below.</p>
                   )}
-                  <p className="text-[13px] font-semibold text-(--ev-ink-75)">Pick a date</p>
-                  <div className="-mx-1 mt-2 flex gap-2 overflow-x-auto px-1 pb-1" role="group" aria-label="Ride dates">
+                  {ride.occurrences.length > 1 && (<>
+                  <p className="text-[14px] font-semibold text-(--ev-ink-75)">Pick a date</p>
+                  <div className="-mx-1 mt-2 mb-4 flex gap-2 overflow-x-auto px-1 pb-1" role="group" aria-label="Ride dates">
                     {ride.occurrences.map((d) => {
                       const active = d.id === selectedId
                       const answered = me.answers[d.id]
@@ -310,42 +314,48 @@ export default function RidePage({ ride, host = null, ascentFt = null, initialDa
                       )
                     })}
                   </div>
+                  </>)}
 
                   {selected && (
                     <>
                       {(() => {
                         const s = dateStatusLine(ride, selected)
+                        // "Scheduled" says nothing the date line doesn't; any other state shows.
+                        if (s.tone === 'plain' && !latestFor(selected.id)?.note) return null
                         return (
-                          <div className={`mt-4 rounded-xl px-3 py-2 ${TONE_STYLE[s.tone]}`}>
+                          <div className={`mb-3 rounded-xl px-3 py-2 ${TONE_STYLE[s.tone]}`}>
                             <p className="flex items-center gap-2 text-[14px] font-semibold">
                               {s.tone === 'good' && selected.live ? <Radio size={15} /> : s.tone === 'good' ? <Check size={15} /> : null}
                               {s.text}
                             </p>
                             {latestFor(selected.id)?.note && (
-                              <p className="mt-1 text-[13px] font-medium">&ldquo;{latestFor(selected.id)!.note}&rdquo; <span className="opacity-80">· {ago(latestFor(selected.id)!.created_at)}</span></p>
+                              <p className="mt-1 text-[14px] font-medium">&ldquo;{latestFor(selected.id)!.note}&rdquo; <span className="opacity-80">· {ago(latestFor(selected.id)!.created_at)}</span></p>
                             )}
                           </div>
                         )
                       })()}
 
-                      <div className="mt-4 space-y-2 text-[14px] text-(--ev-ink-80)">
-                        <p className="flex gap-2"><Calendar size={16} className="mt-0.5 shrink-0 text-(--ev-ink-60)" />{dateLong(selected.date)}</p>
-                        {selected.start_time && (
-                          <p className="flex gap-2"><Clock size={16} className="mt-0.5 shrink-0 text-(--ev-ink-60)" />{clock(selected.start_time)}{selected.end_time ? ` – ${clock(selected.end_time)}` : ''}</p>
-                        )}
+                      {/* The chosen date's own name (Shift 01432), for someone who came from that date's listing. */}
+                      {dateTitle && <p className="text-[17px] font-bold leading-snug text-(--ev-ink)">{dateTitle}</p>}
+                      <div className={`${dateTitle ? 'mt-2' : ''} space-y-2 text-[15px] text-(--ev-ink-85)`}>
+                        <p className="flex gap-2 font-semibold text-(--ev-ink)">
+                          <Calendar size={17} className="mt-0.5 shrink-0 text-(--ev-ink-60)" />
+                          <span>{dateLong(selected.date)}{selected.start_time ? ` · ${clock(selected.start_time)}${selected.end_time ? ` to ${clock(selected.end_time)}` : ''}` : ''}</span>
+                        </p>
                         {(selected.meetup_name || selected.meetup_address) && (
-                          <p className="flex gap-2"><MapPin size={16} className="mt-0.5 shrink-0 text-(--ev-ink-60)" />{selected.meetup_name || selected.meetup_address}</p>
+                          <p className="flex gap-2"><MapPin size={17} className="mt-0.5 shrink-0 text-(--ev-ink-60)" />{selected.meetup_name || selected.meetup_address}</p>
                         )}
                         {forecast?.id === selected.id && (
-                          <p className="flex gap-2"><CloudSun size={16} className="mt-0.5 shrink-0 text-(--ev-ink-60)" />{forecast.line}</p>
+                          <p className="flex gap-2"><CloudSun size={17} className="mt-0.5 shrink-0 text-(--ev-ink-60)" />{forecast.line}</p>
                         )}
                         <p className="flex gap-2">
-                          <Users size={16} className="mt-0.5 shrink-0 text-(--ev-ink-60)" />
+                          <Users size={17} className="mt-0.5 shrink-0 text-(--ev-ink-60)" />
                           {(counts[selected.id]?.going ?? 0) === 0 && (counts[selected.id]?.maybe ?? 0) === 0
                             ? 'Be the first to say you’re going'
                             : `${counts[selected.id]?.going ?? 0} going${(counts[selected.id]?.maybe ?? 0) > 0 ? ` · ${counts[selected.id].maybe} maybe` : ''}`}
                         </p>
                       </div>
+
 
                       {selected.status === 'scheduled' && !ended && (
                         <div className="mt-5 border-t border-(--ev-line) pt-5">
@@ -355,10 +365,11 @@ export default function RidePage({ ride, host = null, ascentFt = null, initialDa
                                 {done.status === 'going' ? `You're going, ${done.first}.` : done.status === 'maybe' ? `Saved as a maybe, ${done.first}.` : `Got it, ${done.first}. Maybe next time.`}
                               </p>
                               {done.status !== 'not_going' && (
-                                <p className="mt-1 text-[14px] text-(--ev-ink-75)">
+                                <p className="mt-1 text-[15px] text-(--ev-ink-80)">
+                                  {done.emailed ? <>We emailed you the details. </> : null}
                                   {done.status === 'maybe'
-                                    ? <>We emailed you the details. We&rsquo;ll let you know if anything changes.</>
-                                    : <>We emailed you the details. You&rsquo;ll hear from us the evening before, and right away if the plan changes.</>}
+                                    ? <>We&rsquo;ll let you know if anything changes.</>
+                                    : <>You&rsquo;ll hear from us the evening before, and right away if the plan changes.</>}
                                 </p>
                               )}
                               <div className="mt-3 flex flex-wrap gap-2">
@@ -372,7 +383,7 @@ export default function RidePage({ ride, host = null, ascentFt = null, initialDa
                                     </button>
                                   </>
                                 )}
-                                <button onClick={() => setDone(null)} className="rounded-[10px] px-3 py-2 text-[13px] font-semibold text-(--ev-accent) hover:underline">
+                                <button onClick={() => setDone(null)} className="rounded-[10px] px-3 py-2 text-[14px] font-semibold text-(--ev-accent) hover:underline">
                                   Change answer
                                 </button>
                               </div>
@@ -406,21 +417,21 @@ export default function RidePage({ ride, host = null, ascentFt = null, initialDa
                                 <form onSubmit={submit} className="mt-4 space-y-3">
                                   <div className="grid grid-cols-2 gap-2">
                                     <label className="block">
-                                      <span className="text-[13px] font-semibold text-(--ev-ink-80)">First name</span>
+                                      <span className="text-[14px] font-semibold text-(--ev-ink-80)">First name</span>
                                       <input name="first_name" required maxLength={40} defaultValue={me.first_name} autoComplete="given-name" className="mt-1 w-full rounded-[10px] border border-(--ev-line-strong) bg-white px-3 py-2.5 text-[15px] text-(--ev-ink) placeholder:text-(--ev-ink-60)" />
                                     </label>
                                     <label className="block">
-                                      <span className="text-[13px] font-semibold text-(--ev-ink-80)">Last name <span className="font-normal text-(--ev-ink-75)">(optional)</span></span>
+                                      <span className="text-[14px] font-semibold text-(--ev-ink-80)">Last name <span className="font-normal text-(--ev-ink-75)">(optional)</span></span>
                                       <input name="last_name" maxLength={40} defaultValue={me.last_name} autoComplete="family-name" className="mt-1 w-full rounded-[10px] border border-(--ev-line-strong) bg-white px-3 py-2.5 text-[15px] text-(--ev-ink)" />
                                     </label>
                                   </div>
                                   <label className="block">
-                                    <span className="text-[13px] font-semibold text-(--ev-ink-80)">Email</span>
+                                    <span className="text-[14px] font-semibold text-(--ev-ink-80)">Email</span>
                                     <input name="email" type="email" required defaultValue={me.email} autoComplete="email" inputMode="email" placeholder="you@example.com" className="mt-1 w-full rounded-[10px] border border-(--ev-line-strong) bg-white px-3 py-2.5 text-[15px] text-(--ev-ink) placeholder:text-(--ev-ink-60)" />
                                   </label>
                                   {/* People never see this; scripts fill it in. */}
                                   <input name="website" tabIndex={-1} autoComplete="off" aria-hidden="true" className="absolute left-[-9999px] h-px w-px opacity-0" />
-                                  <p className="text-[13px] leading-snug text-(--ev-ink-75)">
+                                  <p className="text-[14px] leading-snug text-(--ev-ink-75)">
                                     {choice === 'not_going'
                                       ? 'We’ll let the organizer know.'
                                       : 'We’ll email you the evening before and if the plan changes. The organizer sees your first name and last initial, never your email.'}
@@ -441,15 +452,19 @@ export default function RidePage({ ride, host = null, ascentFt = null, initialDa
               )}
 
               <div className="mt-5 flex items-center gap-2 border-t border-(--ev-line) pt-4">
-                <button onClick={share} className="inline-flex items-center gap-1.5 rounded-[10px] border border-(--ev-line-strong) px-4 py-2 text-[13px] font-semibold text-(--ev-ink) hover:bg-(--ev-panel)">
+                <button onClick={share} className="inline-flex items-center gap-1.5 rounded-[10px] border border-(--ev-line-strong) px-4 py-2 text-[14px] font-semibold text-(--ev-ink) hover:bg-(--ev-panel)">
                   <Share2 size={14} /> {copied ? 'Link copied' : 'Share this ride'}
                 </button>
               </div>
             </div>
           </aside>
 
+          <div className="grid grid-cols-[minmax(0,1fr)] content-start gap-8 lg:col-start-1 lg:row-start-1">
+          {/* What it's like (pace, level, policies): under the RSVP on phones. */}
+          <RideFacts ride={ride} miles={miles} ascentFt={climb} className="" />
+
           {/* ---- Latest from the organizer ---- */}
-          <section className="lg:col-start-1 lg:row-start-1" aria-labelledby="updates-h">
+          <section aria-labelledby="updates-h">
             <h2 id="updates-h" className="font-display text-[22px] font-extrabold text-(--ev-ink)">Latest from the organizer</h2>
             {updates.length === 0 ? (
               <p className="mt-2 text-[15px] text-(--ev-ink-75)">Nothing new. If anything changes, it shows up here and in your inbox.</p>
@@ -459,7 +474,7 @@ export default function RidePage({ ride, host = null, ascentFt = null, initialDa
                   <li key={u.id} className="rounded-2xl border border-(--ev-line) bg-(--ev-card) px-4 py-3">
                     <div className="flex items-baseline justify-between gap-3">
                       <p className="text-[15px] font-semibold text-(--ev-ink)">{u.title}</p>
-                      <time dateTime={u.created_at} className="shrink-0 text-[13px] text-(--ev-ink-75)">{ago(u.created_at)}</time>
+                      <time dateTime={u.created_at} className="shrink-0 text-[14px] text-(--ev-ink-75)">{ago(u.created_at)}</time>
                     </div>
                     {u.body && <p className="mt-0.5 text-[14px] text-(--ev-ink-80)">{u.body}</p>}
                     {u.note && <p className="mt-1.5 border-l-2 border-(--ev-accent-line) pl-3 text-[14px] text-(--ev-ink-80)">&ldquo;{u.note}&rdquo;</p>}
@@ -476,7 +491,7 @@ export default function RidePage({ ride, host = null, ascentFt = null, initialDa
           </section>
 
           {/* ---- About, meeting point, organizer ---- */}
-          <section className="space-y-6 lg:col-start-1" aria-label="About this ride">
+          <section className="space-y-6" aria-label="About this ride">
             {about && (
               <div>
                 <h2 className="font-display text-[22px] font-extrabold text-(--ev-ink)">About this ride</h2>
@@ -497,7 +512,7 @@ export default function RidePage({ ride, host = null, ascentFt = null, initialDa
                 <div className="flex flex-wrap items-center justify-between gap-3 p-4">
                   <div>
                     <p className="text-[15px] font-semibold text-(--ev-ink)">Meet at {place.meetup_name || 'the start'}</p>
-                    {place.meetup_address && <p className="mt-0.5 text-[13px] text-(--ev-ink-75)">{place.meetup_address}</p>}
+                    {place.meetup_address && <p className="mt-0.5 text-[14px] text-(--ev-ink-75)">{place.meetup_address}</p>}
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {/* Nearby plans the trip there by bike, the T or Bluebikes, from where they are. */}
@@ -557,6 +572,7 @@ export default function RidePage({ ride, host = null, ascentFt = null, initialDa
               <RideStoreBadges code={ride.code} className="mt-3" placement="ride_page" height={40} />
             </div>
           </section>
+          </div>
         </div>
       </div>
     </div>

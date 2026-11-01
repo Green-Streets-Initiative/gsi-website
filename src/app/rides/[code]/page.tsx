@@ -16,16 +16,23 @@ import { rideExtras } from '@/lib/rides/host'
  */
 export const dynamic = 'force-dynamic'
 
-async function loadRide(code: string, date: string | null = null): Promise<RideLookup | null> {
+/** The ride, null when there is no such ride, or 'error' when the lookup
+ *  itself failed: a hiccup must not tell someone their ride doesn't exist. */
+async function loadRide(code: string, date: string | null = null): Promise<RideLookup | null | 'error'> {
   if (!looksLikeRideCode(code)) return null
-  // With a date (a calendar listing's ?date=), the lookup includes that date
-  // even when it's past the first eight (Shift 01564).
-  const { data, error } = await createServerSupabaseClient().rpc('get_ride_public', date ? { p_code: code, p_date: date } : { p_code: code })
-  if (error) {
-    console.error('get_ride_public error:', error)
-    return null
+  try {
+    // With a date (a calendar listing's ?date=), the lookup includes that date
+    // even when it's past the first eight (Shift 01564).
+    const { data, error } = await createServerSupabaseClient().rpc('get_ride_public', date ? { p_code: code, p_date: date } : { p_code: code })
+    if (error) {
+      console.error('get_ride_public error:', error)
+      return 'error'
+    }
+    return (data as RideLookup | null) ?? null
+  } catch (e) {
+    console.error('get_ride_public threw:', e)
+    return 'error'
   }
-  return (data as RideLookup | null) ?? null
 }
 
 type Search = Promise<{ date?: string | string[] }>
@@ -36,6 +43,7 @@ export async function generateMetadata({ params, searchParams }: { params: Promi
   // A link to one date (from its calendar listing) previews that date's own name and description.
   const want = dateParam((await searchParams).date)
   const ride = await loadRide(code, want)
+  if (ride === 'error') return { title: 'Group ride', robots: { index: false } }
   if (!ride) return { title: 'Ride not found', robots: { index: false } }
   if (!ride.web) return { title: ride.name, robots: { index: false } }
   const day = want ? ride.occurrences.find((d) => d.date === want) : undefined
@@ -62,6 +70,7 @@ export default async function Page({ params, searchParams }: { params: Promise<{
   const { code } = await params
   const initialDate = dateParam((await searchParams).date)
   const ride = await loadRide(code, initialDate)
+  if (ride === 'error') return <CouldNotLoad href={`/rides/${encodeURIComponent(code)}${initialDate ? `?date=${initialDate}` : ''}`} />
   if (!ride) notFound()
 
   // Who runs it (logo, channels, their calendar page) and the route's climbing.
@@ -72,6 +81,26 @@ export default async function Page({ params, searchParams }: { params: Promise<{
       <Nav variant="light" />
       <main className="bg-cream" style={{ paddingTop: '60px' }}>
         {ride.web ? <RidePage ride={ride} host={extras?.host ?? null} ascentFt={extras?.ascentFt ?? null} initialDate={initialDate} /> : <AppOnlyRidePage ride={ride} />}
+      </main>
+      <Footer variant="light" />
+    </>
+  )
+}
+
+/** The lookup failed (not "no such ride"): say so and offer the same page again. */
+function CouldNotLoad({ href }: { href: string }) {
+  return (
+    <>
+      <Nav variant="light" />
+      <main className="bg-cream" style={{ paddingTop: '60px' }}>
+        <div className="mx-auto max-w-[560px] px-4 py-16 sm:px-8">
+          <h1 className="font-display text-[30px] font-extrabold leading-tight text-[#191A2E]">Couldn&rsquo;t load this ride</h1>
+          <p className="mt-2 text-[16px] text-[#191A2E]/80">Something went wrong on our side. Try again in a moment.</p>
+          {/* A full reload, so the lookup runs again. */}
+          <a href={href} className="mt-6 inline-flex min-h-[46px] items-center rounded-[10px] bg-[#191A2E] px-5 text-[15px] font-bold text-white hover:opacity-90">
+            Try again
+          </a>
+        </div>
       </main>
       <Footer variant="light" />
     </>
