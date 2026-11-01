@@ -385,7 +385,7 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
                   onClick={() => trackDirections('details')}
                 >
                   <MapPin size={15} />
-                  Getting there
+                  Directions
                 </a>
               )}
 
@@ -598,7 +598,8 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
                 for 0.6% of search visitors, against 6.3% from town pages, so an
                 event in a town with a page links there instead, where Shift is
                 pitched in context (exp-2026-11-1). Other events keep the card.
-                Contests are places to enter, not to travel to, so they skip both. */}
+                Contests are places to enter, not to travel to, so they skip both.
+                The map buttons say "Directions" so this is the page's only "Getting there". */}
             {!deadline && town ? (
               <p className="mt-6 text-[14px] text-(--ev-ink-80)">
                 <Link
@@ -689,7 +690,7 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
             onClick={() => trackDirections('phone_bar')}
           >
             <MapPin size={16} />
-            Getting there
+            Directions
           </a>
         ) : null}
         <div className="relative">
