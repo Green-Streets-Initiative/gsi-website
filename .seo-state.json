@@ -317,38 +317,7 @@
       "do_not": "Do not assume a guide is discoverable just because its own /guides/<slug> URL returns 200. After shipping a guide, check the /guides index, sitemap.xml and llms.txt too — the slug route is dynamic and will 200 well before the index catches up."
     }
   ],
-  "pending": [
-    {
-      "report_date": "2026-11-01",
-      "item_n": 1,
-      "type": "page edit",
-      "experiment_id": "exp-2026-11-2",
-      "title": "Drive-time guide: a description that earns the click (replaces 2026-10-19 item 1)",
-      "ref": "not yet built",
-      "ship_steps": "Branch via branch.mjs: set the English meta description for /guides/how-far-is-a-ten-minute-drive-on-foot (searchMeta in src/components/guides/GuideView.tsx or the guide's description field, whichever the page reads) to 'Walk and bike times for a 5, 10, 15 or 20-minute drive around Boston, and the door-to-door minutes that change the answer.' Title and body unchanged; no redirect. check, finish, ship, inspect.mjs meta --expect.",
-      "base": "732 impr / 2 clicks (0.27%), pos 6.6, week to 2026-10-30"
-    },
-    {
-      "report_date": "2026-11-01",
-      "item_n": 2,
-      "type": "page edit",
-      "experiment_id": "exp-2026-10-4",
-      "title": "Title the /shift/roams hub for trail searches + ItemList (carried from 2026-10-19 item 2)",
-      "ref": "not yet built",
-      "ship_steps": "Same as 2026-10-19 item 2. Hub still titled 'Shift Roams — Self-Guided Walking, Biking & Transit Routes' on 2026-11-01 (the 10-20/10-22 hub work added filters, not a search title).",
-      "base": "hub ~0 impressions, week to 2026-10-30"
-    },
-    {
-      "report_date": "2026-11-01",
-      "item_n": 3,
-      "type": "page edit",
-      "experiment_id": "exp-2026-11-1",
-      "title": "Event pages: link to the town page instead of the app-store card",
-      "ref": "not yet built",
-      "ship_steps": "Branch via branch.mjs: on non-contest event pages, replace the 'Walking, biking or taking transit there?' store-button card with one line linking to the event's town page (match the event's town to /shift/towns/<slug>), text 'Getting there: walking, biking and transit around <town>', tracked as event_town_click (add to ACTIVATION_EVENTS in scripts/seo/pull-posthog.mjs). Events with no matching town keep the current card. Keep event_outbound_click. check, finish, ship; verify on one live event page.",
-      "base": "organic /events landings 3/516 app intent (0.6%), 57/516 register/event-info clicks, 09-14 -> 10-31"
-    }
-  ],
+  "pending": [],
   "superseded_pending": [
     {
       "report_date": "2026-10-19",

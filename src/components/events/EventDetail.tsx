@@ -235,7 +235,11 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
 
   const timeStr = event.event_time ? formatTime(event.event_time) : null
   const endTimeStr = event.event_end_time ? formatTime(event.event_end_time) : null
-  const location = [event.location_name, event.location_address].filter(Boolean).join(', ')
+  // Some listings carry the street address as the place name too; print it once.
+  const sameAsName = (a: string | null) =>
+    !!a && !!event.location_name && a.trim().toLowerCase() === event.location_name.trim().toLowerCase()
+  const address = sameAsName(event.location_address) ? null : event.location_address
+  const location = [event.location_name, address].filter(Boolean).join(', ')
 
   return (
     <EventsToneProvider tone={tone} hrefBase={hrefBase}>
@@ -263,8 +267,8 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
                   </div>
                   <div className="p-4">
                     <p className="text-[14px] font-semibold text-(--ev-ink)">{event.location_name}</p>
-                    {event.location_address && (
-                      <p className="mt-0.5 text-[13px] text-(--ev-ink-75)">{event.location_address}</p>
+                    {address && (
+                      <p className="mt-0.5 text-[13px] text-(--ev-ink-75)">{address}</p>
                     )}
                     <a
                       href={directionsUrl(event)}
