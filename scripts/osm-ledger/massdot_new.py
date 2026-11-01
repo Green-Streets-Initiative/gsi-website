@@ -7,7 +7,8 @@ bike inventory for every bike lane, separated lane and shared-use path it lists
 as opened in the last two years, statewide (~300 records), and replace
 massdot_new_bike_facilities with them. The ride page, the town page, both
 assistants and the app read it through get_new_bike_infra_*; the same records
-also back an OpenStreetMap ledger event before it may show (see 01577).
+also back an OpenStreetMap ledger event before it may show: after the
+refresh, refresh_osm_event_corroboration (01578) records what backs each one.
 
 A failed or empty answer leaves yesterday's table alone: MassDOT answering
 nothing looks exactly like "no new lanes" (reference_route_data_sources).
@@ -149,7 +150,10 @@ def main():
     # Records MassDOT no longer lists (aged out of two years, or corrected).
     stamp = urllib.parse.quote(started.isoformat())
     req("DELETE", f"/rest/v1/massdot_new_bike_facilities?fetched_at=lt.{stamp}")
-    heartbeat(started, "ok", len(rows), f"{len(rows)} facilities")
+    # The automated second pass on the OSM ledger's events (Shift 01578): what
+    # backs each one, so only those backed by more than one mapper show as opened.
+    checked = req("POST", "/rest/v1/rpc/refresh_osm_event_corroboration", {}, "return=representation")
+    heartbeat(started, "ok", len(rows), f"{len(rows)} facilities; {checked} OSM events checked")
 
 
 if __name__ == "__main__":
