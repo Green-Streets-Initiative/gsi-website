@@ -234,7 +234,7 @@ const answerEngineQuery = `
 const OUTCOME_TRACKING_START = '2026-09-14'
 // event_outbound_click (Register / Event info on an event page) arrives with
 // seo/2026-09-app-invites; until that ships it simply never matches.
-const ACTIVATION_EVENTS = `'advisor_results_shown', 'snapshot_viewed', 'event_outbound_click'`
+const ACTIVATION_EVENTS = `'advisor_results_shown', 'snapshot_viewed', 'event_outbound_click', 'event_town_click'`
 const APP_INTENT_EVENTS = `'shift_store_click', 'snapshot_app_cta_clicked', 'advisor_app_cta_clicked'`
 
 const channelSessionsQuery = `

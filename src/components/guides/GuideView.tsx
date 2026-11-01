@@ -52,7 +52,7 @@ export interface GuideRow {
 // Search titles for guides whose library title is written for the app and
 // leaves out the words people search with. The page heading keeps the library
 // title. Evidence for each entry is in seo/reports/.
-export const searchMeta: Record<string, { title: string; description: string; heading?: string }> = {
+export const searchMeta: Record<string, { title?: string; description: string; heading?: string }> = {
   // 2026-10-12: Ad Grants search terms are "how to pay for the t in boston" and
   // siblings; the organic page had 0 impressions with no "Boston" or "MBTA".
   // 2026-10-14: the heading says the same thing the search title does, so an ad
@@ -62,6 +62,13 @@ export const searchMeta: Record<string, { title: string; description: string; he
     description:
       'Tap your phone or a contactless card, or load a CharlieCard pass if you ride most workdays. MBTA transfers, Commuter Rail and reduced fares in plain language.',
     heading: 'How to pay for the T in Boston',
+  },
+  // 2026-11-01: 732 impressions a week at position 6.6 and 0.27% CTR, because
+  // the summary gave the whole answer away in the snippet. Description only;
+  // the title already matches the search. Experiment exp-2026-11-2.
+  'how-far-is-a-ten-minute-drive-on-foot': {
+    description:
+      'Walk and bike times for a 5, 10, 15 or 20-minute drive around Boston, and the door-to-door minutes that change the answer.',
   },
 }
 

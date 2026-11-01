@@ -1,27 +1,39 @@
 import type { Metadata } from 'next'
+import { cache } from 'react'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
 import RoamCard from '@/components/roams/RoamCard'
 import RoamHubFilters from '@/components/roams/RoamHubFilters'
+import JsonLd from '@/components/JsonLd'
 import { getActiveRoams, getUpcomingRoamEvents } from '@/lib/roams/queries'
 
 export const revalidate = 3600
 
 const SITE_URL = 'https://www.gogreenstreets.org'
 
-export const metadata: Metadata = {
-  title: 'Shift Roams — Self-Guided Walking, Biking & Transit Routes | Green Streets Initiative',
-  description:
-    'Self-guided routes to explore on foot, by bike, or by transit — rail trails, greenways, harbor loops, and neighborhood food crawls. Follow along in the free Shift app and unlock badges.',
-  alternates: { canonical: `${SITE_URL}/shift/roams` },
-  openGraph: {
-    title: 'Shift Roams — Self-Guided Walking, Biking & Transit Routes',
-    description:
-      'Self-guided routes to explore on foot, by bike, or by transit. Follow along in the free Shift app and unlock badges.',
-    url: `${SITE_URL}/shift/roams`,
-    siteName: 'Green Streets Initiative',
-    type: 'website',
-  },
+// The hub's search title names what people search for (bike paths, rail
+// trails, walking loops), not the product. It had ~0 impressions under
+// "Shift Roams — Self-Guided ..." while the Roam pages themselves get clicked.
+// Experiment exp-2026-10-4 (seo/reports/2026-11-01.md, item 2).
+const SEARCH_TITLE = 'Bike paths, rail trails and walking loops around Boston'
+
+const roamsOnce = cache(getActiveRoams)
+
+export async function generateMetadata(): Promise<Metadata> {
+  const roams = await roamsOnce()
+  const description = `${roams.length} mapped bike paths, rail trails, walks and transit day trips around Boston and across Massachusetts, each with its distance, time and stops. Follow any of them in the free Shift app.`
+  return {
+    title: SEARCH_TITLE,
+    description,
+    alternates: { canonical: `${SITE_URL}/shift/roams` },
+    openGraph: {
+      title: SEARCH_TITLE,
+      description,
+      url: `${SITE_URL}/shift/roams`,
+      siteName: 'Green Streets Initiative',
+      type: 'website',
+    },
+  }
 }
 
 /** The hub groups routes by how you travel them, in this order. Any mode not
@@ -33,7 +45,7 @@ const GROUPS = [
 ] as const
 
 export default async function RoamsIndexPage() {
-  const [roams, upcoming] = await Promise.all([getActiveRoams(), getUpcomingRoamEvents()])
+  const [roams, upcoming] = await Promise.all([roamsOnce(), getUpcomingRoamEvents()])
   const known = new Set<string>(GROUPS.flatMap((g) => [...g.modes]))
   const groups = GROUPS.map((g, i) => ({
     ...g,
@@ -42,8 +54,23 @@ export default async function RoamsIndexPage() {
     ),
   })).filter((g) => g.roams.length > 0)
 
+  // The routes as a list search engines can read, in the order the page shows them.
+  const itemList = {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name: SEARCH_TITLE,
+    numberOfItems: roams.length,
+    itemListElement: groups.flatMap((g) => g.roams).map((r, i) => ({
+      '@type': 'ListItem',
+      position: i + 1,
+      name: r.name,
+      url: `${SITE_URL}/shift/roams/${encodeURIComponent(r.id)}`,
+    })),
+  }
+
   return (
     <>
+      <JsonLd data={itemList} />
       <Nav variant="light" />
       <main style={{ paddingTop: '60px' }} className="bg-cream">
         <section className="px-6 pb-8 pt-12 md:pt-16 lg:px-8">

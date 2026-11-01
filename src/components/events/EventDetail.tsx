@@ -138,9 +138,11 @@ interface EventDetailProps {
   rideCode?: string | null
   /** The host's page on this site, when they run often enough to have one. */
   hostHref?: string | null
+  /** The town page for the event's address, when that town has one. */
+  town?: { name: string; href: string } | null
 }
 
-export default function EventDetail({ event, nextUp = null, isPast = false, tone = 'dark', hrefBase = '/events', sponsorLinks = {}, roamLinks = [], rideCode = null, hostHref = null }: EventDetailProps) {
+export default function EventDetail({ event, nextUp = null, isPast = false, tone = 'dark', hrefBase = '/events', sponsorLinks = {}, roamLinks = [], rideCode = null, hostHref = null, town = null }: EventDetailProps) {
   const meta = getTypeMeta(event.event_type)
   const Icon = EVENT_TYPE_ICONS[meta.icon] ?? Calendar
   // The type's color for this surface: the navy-tuned one, or its ink on cream.
@@ -587,12 +589,23 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
               ))}
             </div>
 
-            {/* App invitation. Event pages are the site's top organic click class
-                and, until 2026-09, the only major landing class with no way into
-                Shift (0 of 36 organic event visits reached the app). Contests are
-                places to enter, not to travel to, so they skip it.
-                Experiment exp-2026-09-8. */}
-            {!deadline && STORE_LIVE && (
+            {/* Getting there. Event pages are the site's top organic click class.
+                The app invitation that sat here (exp-2026-09-8) reached the app
+                for 0.6% of search visitors, against 6.3% from town pages, so an
+                event in a town with a page links there instead, where Shift is
+                pitched in context (exp-2026-11-1). Other events keep the card.
+                Contests are places to enter, not to travel to, so they skip both. */}
+            {!deadline && town ? (
+              <p className="mt-6 text-[14px] text-(--ev-ink-80)">
+                <Link
+                  href={town.href}
+                  className="font-semibold text-(--ev-accent) hover:underline"
+                  onClick={() => posthog.capture('event_town_click', eventProps({ town: town.name }))}
+                >
+                  Getting there: walking, biking and transit around {town.name}
+                </Link>
+              </p>
+            ) : !deadline && STORE_LIVE ? (
               <div className="mt-6 rounded-[14px] border border-(--ev-line-strong) px-5 py-4">
                 <p className="text-[14px] font-semibold text-(--ev-ink)">Walking, biking or taking transit there?</p>
                 <p className="mt-1 text-[13px] leading-relaxed text-(--ev-ink-80)">
@@ -607,7 +620,7 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
                   className="mt-3.5 [&>a]:max-[420px]:basis-full"
                 />
               </div>
-            )}
+            ) : null}
 
             <div className="mt-8 border-t border-(--ev-line) pt-5">
               {/* A ride planned in Shift is the organizer's own listing, not one built from public posts. */}
