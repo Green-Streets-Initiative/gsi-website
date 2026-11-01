@@ -4,7 +4,7 @@ import posthog from 'posthog-js'
 import { Beer, Bike, Coffee, Croissant, Dumbbell, ExternalLink, IceCreamCone, Landmark, ShoppingBag, ShoppingBasket, Store, UtensilsCrossed, type LucideIcon } from 'lucide-react'
 import { PERK_KIND_LABEL, perkWhere, type PerkKind, type PerkStop } from '@/lib/bike-perks'
 
-const KIND_ICON: Record<PerkKind, LucideIcon> = {
+export const KIND_ICON: Record<PerkKind, LucideIcon> = {
   cafe: Coffee, bakery: Croissant, food: UtensilsCrossed, bar: Beer, sweets: IceCreamCone, market: ShoppingBasket,
   bike_shop: Bike, shop: ShoppingBag, fitness: Dumbbell, attraction: Landmark, other: Store,
 }

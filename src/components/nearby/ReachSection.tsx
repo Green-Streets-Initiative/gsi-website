@@ -10,6 +10,7 @@ import type { RouteLegTapInfo } from './NearbyMap'
 import BikeComfortBlock, { NEARBY_COMFORT_COLORS } from './BikeComfortBlock'
 import type { ReachRow, ReachStep, ReachSegment, BikeComfortTier, BikeComfortData } from './types'
 import { useNearbyT, useNearbyLocale } from './NearbyI18n'
+import { TripPerks } from './NearbyPerks'
 
 /** Comfort-tier → i18n key, so a tapped bike leg's tier reads in the page
  *  language (matches BikeComfortBlock's localized labels). */
@@ -479,6 +480,7 @@ export function ReachList({ center, rows, onRowTap, modeFilter, routeSelection, 
                         />
                       </>
                     )}
+                    {expanded.mode === 'bike' && <TripPerks row={row} />}
                     {/* Hand off to their maps app for the actual trip — turn-by-turn is its job */}
                     <a
                       href={directionsUrl(row.lat, row.lng, {

@@ -1,5 +1,6 @@
 import type { RoamCardData } from '@/components/roams/RoamCard'
 import type { BluebikeStationLive } from '@/lib/wayfinding/types'
+import type { PerkStop } from '@/lib/bike-perks'
 
 export type SectionStatus = 'loading' | 'ready' | 'error'
 
@@ -128,6 +129,11 @@ export interface ReachRow {
   /** Bike-share docks nearest the destination, live, nearest first. Only on
    *  trips the visitor planned (/api/nearby/trip); absent on curated rows. */
   dest_docks?: BluebikeStationLive[]
+  /** Bicycle Benefits members within a block of the bike route, in riding
+   *  order. Only on planned trips (src/lib/server/trip.ts). */
+  bike_perks?: PerkStop[]
+  /** Set when the trip was planned by tapping a perk: the destination is it. */
+  perk_dest?: PerkStop
 }
 
 export interface GuideItem {

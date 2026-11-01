@@ -28,6 +28,7 @@ import { nearbyAlerts, type SurfacedAlert } from '@/lib/nearby/alerts'
 import { ReachList, RouteChoice, RouteLegNote, TransitChain, TransitLegs, TripFacts } from './ReachSection'
 import TripPlanner from './TripPlanner'
 import { ExploreBody } from './ExploreBody'
+import { ExplorePerks, TripPerks, isPerkMarker, useNearbyPerks, usePerkMarkers } from './NearbyPerks'
 import PartnerCobrand from './PartnerCobrand'
 import NewRoutesOffer from './NewRoutesOffer'
 import type { NearbyPartner } from '@/lib/nearby/partner'
@@ -239,6 +240,19 @@ export default function NearbyShell({
     selectReach(row, defaultRouteMode(row, prefer ?? reachModeFor(modeFilter) ?? undefined), 'trip')
   }, [selectReach, modeFilter])
 
+  // Bicycle Benefits members: pins and rows on Explore, where a tap plans the
+  // bike trip there (it opens over the tab, and Back returns to Explore); the
+  // one or two on the way while a bike trip is drawn.
+  const nearbyPerks = useNearbyPerks({ center, onPlanned })
+  const routeSel = model.routeSelection
+  const perkMarkers = usePerkMarkers({
+    perks: nearbyPerks.perks,
+    showNearby: tab === 'explore' && !selection,
+    route: routeSel?.mode === 'bike' ? reachRows.find(r => r.id === routeSel.id) ?? null : null,
+  })
+  const mapMarkers = useMemo(
+    () => (perkMarkers.length ? [...shellMarkers, ...perkMarkers] : shellMarkers), [shellMarkers, perkMarkers])
+
   // A tapped stretch of the drawn route; cleared whenever the selection moves
   const [legInfo, setLegInfo] = useState<RouteLegTapInfo | null>(null)
   // Which street bullet the reader is pointing at. Lives here so the list and
@@ -358,7 +372,7 @@ export default function NearbyShell({
       <div className="absolute inset-0 [&_.maplibregl-ctrl-bottom-right]:!bottom-[88px]">
         <NearbyMap
           center={center}
-          markers={shellMarkers}
+          markers={mapMarkers}
           lines={backgroundLines}
           paintedVisible={showBike && paintedOn}
           separatedVisible={showBike}
@@ -371,7 +385,7 @@ export default function NearbyShell({
             if (id) selectReveal({ type: 'corridor', id }, source)
             else select(null, source)
           }}
-          onMarkerTap={markerTapReveal}
+          onMarkerTap={(id) => (isPerkMarker(id) ? nearbyPerks.planById(id) : markerTapReveal(id))}
           onLaneTap={(info) => selectReveal({ type: 'lane', info }, 'map')}
           onReachLegTap={handleLegTap}
           fitCount={7}
@@ -565,6 +579,7 @@ export default function NearbyShell({
         <div className={selection || tab !== 'explore' ? 'hidden' : ''}>
           <div className="mt-2">
             <ExploreBody community={community} />
+            <ExplorePerks perks={nearbyPerks.perks} planning={nearbyPerks.planning} failed={nearbyPerks.failed} onPlan={nearbyPerks.plan} />
           </div>
         </div>
 
@@ -668,6 +683,8 @@ function ReachDetail({ row, mode, center, onMode, legInfo, highlightedStreetKey,
           />
         </>
       )}
+
+      {mode === 'bike' && <TripPerks row={row} />}
 
       {/* Hand off to their maps app for the actual trip — turn-by-turn is its job */}
       <a

@@ -22,6 +22,7 @@ import { ReachList } from './ReachSection'
 import TripPlanner from './TripPlanner'
 import { defaultRouteMode, reachModeFor } from '@/lib/nearby/reach-ui'
 import { ExploreBody } from './ExploreBody'
+import { ExplorePerks, isPerkMarker, useNearbyPerks, usePerkMarkers } from './NearbyPerks'
 import PartnerCobrand from './PartnerCobrand'
 import NewRoutesOffer from './NewRoutesOffer'
 import type { NearbyPartner } from '@/lib/nearby/partner'
@@ -210,6 +211,36 @@ export default function NearbyDesktop({
     posthog.capture('nearby_tab_changed', { tab: next, surface: 'desktop' })
   }, [selection, select])
 
+  // Bicycle Benefits members: pins and rows on Explore, where a tap plans the
+  // bike trip there. A trip opens in the Destinations pane like any planned
+  // one, so the rail moves there with it (not through changeRailTab, which
+  // would close the trip it just opened). The one or two on the way pin while
+  // a bike trip is drawn.
+  const destPaneRef = useRef<HTMLDivElement>(null)
+  const railHeadRef = useRef<HTMLDivElement>(null)
+  const onPerkPlanned = useCallback((row: ReachRow, prefer?: 'transit' | 'bike') => {
+    setRailTab('destinations')
+    onPlanned(row, prefer)
+    // The page is still scrolled to Explore's list: land on the trip that
+    // just opened, under the sticky tabs, once the pane has rendered.
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      const open = destPaneRef.current?.querySelector('[aria-expanded="true"]')
+      if (!open) return
+      const under = railHeadRef.current?.getBoundingClientRect().bottom ?? 0
+      const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      window.scrollTo({ top: window.scrollY + open.getBoundingClientRect().top - under - 8, behavior: reduce ? 'auto' : 'smooth' })
+    }))
+  }, [onPlanned])
+  const nearbyPerks = useNearbyPerks({ center, onPlanned: onPerkPlanned })
+  const routeSel = model.routeSelection
+  const perkMarkers = usePerkMarkers({
+    perks: nearbyPerks.perks,
+    showNearby: railTab === 'explore' && !selection,
+    route: routeSel?.mode === 'bike' ? reachRows.find(r => r.id === routeSel.id) ?? null : null,
+  })
+  const mapMarkers = useMemo(
+    () => (perkMarkers.length ? [...overlay.markers, ...perkMarkers] : overlay.markers), [overlay.markers, perkMarkers])
+
   // The floating detail card covers the bottom of the map — measure the map
   // box so the point-focus ease can land the tapped marker in the uncovered
   // area above the card (same pattern as the mobile shell's fitPadding).
@@ -375,7 +406,7 @@ export default function NearbyDesktop({
             <div ref={mapBoxRef} className="relative min-h-0 flex-1 overflow-hidden rounded-2xl border border-(--nb-line)">
               <NearbyMap
                 center={center}
-                markers={overlay.markers}
+                markers={mapMarkers}
                 lines={backgroundLines}
                 paintedVisible={showBike && paintedOn}
                 separatedVisible={showBike}
@@ -388,7 +419,7 @@ export default function NearbyDesktop({
                   if (id) select({ type: 'corridor', id }, source)
                   else select(null, source)
                 }}
-                onMarkerTap={handleMarkerTap}
+                onMarkerTap={(id) => (isPerkMarker(id) ? nearbyPerks.planById(id) : handleMarkerTap(id))}
                 onLaneTap={(info) => select({ type: 'lane', info }, 'map')}
                 onReachLegTap={handleLegTap}
                 fitCount={7}
@@ -438,7 +469,7 @@ export default function NearbyDesktop({
               mobile sheet header. Both stick just under the top bar
               (60+52=112). */}
           <div className="min-w-0">
-            <div className="sticky top-[112px] z-10 bg-(--nb-bg) pb-2.5 pt-1">
+            <div ref={railHeadRef} className="sticky top-[112px] z-10 bg-(--nb-bg) pb-2.5 pt-1">
               <div className="flex gap-1 rounded-xl bg-(--nb-panel) p-1">
                 {RAIL_TABS.map(t => (
                   <button
@@ -524,7 +555,7 @@ export default function NearbyDesktop({
               )}
             </div>
 
-            <div className={railTab === 'destinations' ? '' : 'hidden'}>
+            <div ref={destPaneRef} className={railTab === 'destinations' ? '' : 'hidden'}>
               {/* Planning a specific trip leads — most people arrive wanting
                   their own destination, not our curated set. It answers here,
                   in a row like any other; the Advisor's full cost comparison
@@ -561,6 +592,7 @@ export default function NearbyDesktop({
 
             <div className={railTab === 'explore' ? '' : 'hidden'}>
               <ExploreBody community={community} compact />
+              <ExplorePerks perks={nearbyPerks.perks} planning={nearbyPerks.planning} failed={nearbyPerks.failed} onPlan={nearbyPerks.plan} />
             </div>
 
             {/* Get-Shift hook — persistent at the bottom of the rail on EVERY
