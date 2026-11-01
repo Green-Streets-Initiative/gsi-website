@@ -78,20 +78,22 @@ function DateRow({ d, canManage, canEdit, rideId, usualMiles, hasUsual, onCancel
           </>
         )}
       </div>
-      <div className="flex flex-wrap gap-1.5">
+      {/* Pulled left by the buttons' own padding so the labels line up with the
+          date, with tighter padding so all four fit on one line at phone width. */}
+      <div className="-ml-2 flex flex-wrap">
         {!off && (
-          <Link href={`/organizers/rides/${rideId}/roster?date=${d.id}`} className="inline-flex min-h-[36px] items-center rounded-[10px] px-3 text-[14px] font-semibold text-(--ev-ink-85) hover:bg-(--ev-panel)">
+          <Link href={`/organizers/rides/${rideId}/roster?date=${d.id}`} className="inline-flex min-h-[36px] items-center rounded-[10px] px-2 text-[14px] font-semibold text-(--ev-ink-85) hover:bg-(--ev-panel)">
             {past ? 'Who came' : "Who's coming"}
           </Link>
         )}
         {canEdit && !past && !off && (
-          <Link href={`/organizers/rides/${rideId}/dates/${d.id}`} className="inline-flex min-h-[36px] items-center rounded-[10px] px-3 text-[14px] font-semibold text-(--ev-ink-85) hover:bg-(--ev-panel)">
+          <Link href={`/organizers/rides/${rideId}/dates/${d.id}`} className="inline-flex min-h-[36px] items-center rounded-[10px] px-2 text-[14px] font-semibold text-(--ev-ink-85) hover:bg-(--ev-panel)">
             Plan
           </Link>
         )}
-        {canManage && !past && !off && <Button size="sm" variant="ghost" onClick={onChange}>Change</Button>}
-        {canManage && !past && !off && <Button size="sm" variant="ghost" onClick={onCancel}>Cancel</Button>}
-        {canManage && !past && off && !d.canceled_by_stop && <Button size="sm" variant="ghost" onClick={onRestore}>Bring back</Button>}
+        {canManage && !past && !off && <Button size="sm" variant="ghost" className="px-2!" onClick={onChange}>Change</Button>}
+        {canManage && !past && !off && <Button size="sm" variant="ghost" className="px-2!" onClick={onCancel}>Cancel</Button>}
+        {canManage && !past && off && !d.canceled_by_stop && <Button size="sm" variant="ghost" className="px-2!" onClick={onRestore}>Bring back</Button>}
       </div>
     </li>
   )

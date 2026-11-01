@@ -320,16 +320,21 @@ export default function RidePage({ ride, host = null, ascentFt = null, initialDa
                     <>
                       {(() => {
                         const s = dateStatusLine(ride, selected)
+                        const latest = latestFor(selected.id)
                         // "Scheduled" says nothing the date line doesn't; any other state shows.
-                        if (s.tone === 'plain' && !latestFor(selected.id)?.note) return null
+                        // The note is clamped so the RSVP stays on a phone's first screen; the
+                        // full text is under "Latest from the organizer".
+                        if (s.tone === 'plain' && !latest?.note) return null
                         return (
                           <div className={`mb-3 rounded-xl px-3 py-2 ${TONE_STYLE[s.tone]}`}>
-                            <p className="flex items-center gap-2 text-[14px] font-semibold">
-                              {s.tone === 'good' && selected.live ? <Radio size={15} /> : s.tone === 'good' ? <Check size={15} /> : null}
-                              {s.text}
-                            </p>
-                            {latestFor(selected.id)?.note && (
-                              <p className="mt-1 text-[14px] font-medium">&ldquo;{latestFor(selected.id)!.note}&rdquo; <span className="opacity-80">· {ago(latestFor(selected.id)!.created_at)}</span></p>
+                            {s.tone !== 'plain' && (
+                              <p className="flex items-center gap-2 text-[14px] font-semibold">
+                                {s.tone === 'good' && selected.live ? <Radio size={15} /> : s.tone === 'good' ? <Check size={15} /> : null}
+                                {s.text}
+                              </p>
+                            )}
+                            {latest?.note && (
+                              <p className={`${s.tone !== 'plain' ? 'mt-1 ' : ''}line-clamp-2 text-[14px] font-medium`}>&ldquo;{latest.note}&rdquo; <span className="opacity-80">· {ago(latest.created_at)}</span></p>
                             )}
                           </div>
                         )

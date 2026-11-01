@@ -61,7 +61,7 @@ export function SkipDatesDialog({ ride, dates, open, onClose, onDone }: {
         <Button variant="primary" onClick={() => void save()} busy={busy} disabled={!changed}>Save skipped dates</Button>
       </>}>
       <p className="text-[15px] leading-snug text-(--ev-ink-85)">
-        Tap the dates you won&rsquo;t ride. Dates before {dateLabel(from)} are on the ride page; cancel those there so people hear.
+        Tap the dates you won&rsquo;t ride. The next few dates are already listed above; cancel those there so people hear.
       </p>
       {listed.length === 0 ? (
         <p className="mt-4 text-[15px] text-(--ev-ink-80)">No more dates in the next six months.</p>
