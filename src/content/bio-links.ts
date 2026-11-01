@@ -30,14 +30,21 @@ export const BIO_LINKS: BioLink[] = [
   // ── This week (dated) ──
   {
     slug: 'walkma',
-    label: 'Walk around Massachusetts with us',
-    sublabel: "Join our team in WalkMassachusetts's Beat the Bay State, Nov 1 to 30. Shift counts your miles.",
+    label: 'Join Team Green Streets',
+    sublabel: "Walk with us in WalkMassachusetts's Beat the Bay State, Nov 1 to 30. Your $20 entry supports WalkMassachusetts.",
     url: 'https://www.gogreenstreets.org/walkma',
     until: '2026-11-30T23:59:00-05:00',
   },
   {
+    slug: 'bikerepair',
+    label: 'Free bike repair this week',
+    sublabel: 'Boston: BCYF Blackstone Wed, Bikes Not Bombs Thu, Fixit Clinic Hyde Park Sat',
+    url: 'https://www.gogreenstreets.org/events?q=bike+repair&when=week',
+    until: '2026-11-07T13:00:00-05:00',
+  },
+  {
     slug: 'wdor',
-    label: 'Volunteer for World Day of Remembrance',
+    label: 'Volunteers needed: World Day of Remembrance',
     sublabel: 'Mon Nov 9 packing night or Tue Nov 10 at the State House. MassBike and the Vision Zero Coalition',
     url: 'https://tinyurl.com/WDOR2026',
     until: '2026-11-10T15:00:00-05:00',
