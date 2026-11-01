@@ -23,6 +23,8 @@ import { BORROW_RENT_BLURB, nearbyBorrowRent } from '@/lib/nearby/borrow-rent'
 import { getBikeShareDocks } from '@/lib/server/bluebikes'
 import { bikePerkPool } from '@/lib/server/bike-perks'
 import { PERK_KIND_LABEL, perksAlong, perksNear, perkWhere, type PerkStop } from '@/lib/bike-perks'
+import { newInfraInTown, newInfraNear, newInfraOnRoute } from '@/lib/server/new-infra'
+import { newInfraForAssistant } from '@/lib/new-infra'
 import { getActiveRoams, getNextRoamEvent, getRoamDetail, getRoamKeepGoing, getRoamTrailInfo } from '@/lib/roams/queries'
 import { ACCESS_LINKS, accessibleNear, ebikeMath, myRides, rsvpRide, shiftRideDates } from '@/lib/shift-assistant/audit-data'
 import { RIDE_PLAN_ACTIVITY, RIDE_PLAN_NEEDS_APPROVAL, RIDE_PLAN_TOOLS, ridePlanCard, runApprovedRidePlan, runRidePlanTool, type RidePlanCard } from '@/lib/shift-assistant/ride-plan-tools'
@@ -226,6 +228,7 @@ export const ACTIVITY: Record<string, string> = {
   get_town_travel_mix: 'Seeing how people get around',
   find_rewards_partners: 'Looking for Rewards Partners',
   find_bike_perks: 'Looking for bike perks',
+  get_whats_new: 'Looking for new bike lanes',
   get_my_progress: 'Checking your progress',
   get_departures: 'Checking live departures',
   find_park_and_ride: 'Finding station parking',
@@ -422,6 +425,19 @@ export const TOOLS: Anthropic.Tool[] = [
         from: { ...placeSchema, description: 'With to: look along the bike route of this trip.' },
         to: { ...placeSchema, description: 'With from: look along the bike route of this trip.' },
         kind: nullable('string', 'cafe, bakery, food, bar, sweets, market, bike_shop or shop, when they asked for one kind. Empty for any.'),
+      },
+    },
+  },
+  {
+    name: 'get_whats_new',
+    description: "New bike infrastructure: lanes and paths that opened in the last two years (MassDOT's bike inventory, plus OpenStreetMap changes only when a second source backs them), and street, path and intersection projects with a public hearing or comment period coming. Near a place, in a town, or along the bike route between two places. Use for \"what's new near me\", \"any new bike lanes on my way to work\", \"what's changing on Broadway\".",
+    input_schema: {
+      type: 'object',
+      properties: {
+        near: { ...placeSchema, description: 'Where to look. Leave out for their location, else their Home. Ignored when town or from and to are given.' },
+        town: nullable('string', 'A Massachusetts town or city ("Cambridge") when they ask about a whole town.'),
+        from: { ...placeSchema, description: 'With to: look along the bike route of this trip.' },
+        to: { ...placeSchema, description: 'With from: look along the bike route of this trip.' },
       },
     },
   },
@@ -1393,6 +1409,31 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
         return ok(wider.length
           ? { near: facts(wider), about }
           : { near: [], note: 'No Bicycle Benefits member within 5 miles. Members are mostly in Greater Boston, the Pioneer Valley and Worcester.', about })
+      }
+      case 'get_whats_new': {
+        const note = "Opened leads; say when it opened and, on a route, how much of the trip is on it. For a coming project, what it is and the hearing date; describe it neutrally and add open_link (kind town_page) when they want to weigh in. MassDOT misses some city projects, so nothing here doesn't mean nothing is new."
+        const town = typeof input.town === 'string' && input.town.trim() ? input.town.trim() : null
+        const from = asPlace(input.from)
+        const to = asPlace(input.to)
+        if (town) {
+          const n = await newInfraInTown(town)
+          return ok({ town, ...newInfraForAssistant(n, todayKey(), false), note })
+        }
+        if (from && to) {
+          if (!inServiceArea(from.lat, from.lng) || !inServiceArea(to.lat, to.lng)) return ok({ found: false, note: 'This covers Massachusetts.' })
+          const r = await getTrip(from, to, to.name ?? '')
+          const line = r.bike_polyline ? decodePolyline(r.bike_polyline).map(([lat, lng]) => ({ lat, lng })) : []
+          if (line.length < 2) return fail('No bike route between those places. Try near one of them instead.')
+          return ok({ along_the_bike_route: newInfraForAssistant(await newInfraOnRoute(line), todayKey(), true), note })
+        }
+        let near = asPlace(input.near) ?? ctx.here ?? null
+        if (!near) {
+          const { data: h } = await ctx.user.from('saved_locations').select('lat, lng').eq('user_id', ctx.userId).ilike('label', 'home').limit(1)
+          const at = ((h ?? [])[0] as { lat: number | null; lng: number | null } | undefined)
+          near = at?.lat != null && at?.lng != null ? { lat: at.lat, lng: at.lng } : null
+        }
+        if (!near) return fail('Their location is unknown. Ask where to look, then find_place.')
+        return ok({ within_2_miles: newInfraForAssistant(await newInfraNear(near, 2), todayKey(), false), note })
       }
       case 'find_rewards_partners': {
         let near = asPlace(input.near) ?? ctx.here ?? null

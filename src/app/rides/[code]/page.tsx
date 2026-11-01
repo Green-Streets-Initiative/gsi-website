@@ -8,6 +8,7 @@ import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { looksLikeRideCode, scheduleText, type PublicRide, type RideLookup } from '@/lib/rides/public'
 import { rideExtras } from '@/lib/rides/host'
 import { bikePerksForPlaces } from '@/lib/server/bike-perks'
+import { newInfraForPlaces } from '@/lib/server/new-infra'
 
 /**
  * A Shift group ride's public page: the link organizers put in their
@@ -75,16 +76,17 @@ export default async function Page({ params, searchParams }: { params: Promise<{
   if (!ride) notFound()
 
   // Who runs it (logo, channels, their calendar page) and the route's climbing;
-  // and the Bicycle Benefits members by any of its meeting spots or routes.
-  const [extras, perks] = ride.web
-    ? await Promise.all([rideExtras(ride.id).catch(() => null), bikePerksForPlaces(ridePlaces(ride)).catch(() => [])])
-    : [null, []]
+  // the Bicycle Benefits members by any of its meeting spots or routes; and
+  // what's new on each of its routes (or by each meeting spot).
+  const [extras, perks, newInfra] = ride.web
+    ? await Promise.all([rideExtras(ride.id).catch(() => null), bikePerksForPlaces(ridePlaces(ride)).catch(() => []), newInfraForPlaces(ridePlaces(ride))])
+    : [null, [], []]
 
   return (
     <>
       <Nav variant="light" />
       <main className="bg-cream" style={{ paddingTop: '60px' }}>
-        {ride.web ? <RidePage ride={ride} host={extras?.host ?? null} ascentFt={extras?.ascentFt ?? null} initialDate={initialDate} perks={perks} /> : <AppOnlyRidePage ride={ride} />}
+        {ride.web ? <RidePage ride={ride} host={extras?.host ?? null} ascentFt={extras?.ascentFt ?? null} initialDate={initialDate} perks={perks} newInfra={newInfra} /> : <AppOnlyRidePage ride={ride} />}
       </main>
       <Footer variant="light" />
     </>

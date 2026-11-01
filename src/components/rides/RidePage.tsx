@@ -12,6 +12,8 @@ import RideStoreBadges from '@/components/rides/RideStoreBadges'
 import OrganizerChannels from '@/components/rides/OrganizerChannels'
 import RideFacts from '@/components/rides/RideFacts'
 import RidePerks from '@/components/rides/RidePerks'
+import RideNewInfra from '@/components/rides/RideNewInfra'
+import { hasNewInfra, newInfraKey, type NewInfraFor } from '@/lib/new-infra'
 import { perksAlong, type BikePerk } from '@/lib/bike-perks'
 import type { RideHost } from '@/lib/rides/host'
 import { EventsToneProvider, toneClass } from '@/components/events/EventsTone'
@@ -97,12 +99,14 @@ function downloadIcs(ride: PublicRide, d: RideDate, hostName: string | null) {
   a.remove()
 }
 
-export default function RidePage({ ride, host = null, ascentFt = null, initialDate = null, perks = [] }: {
+export default function RidePage({ ride, host = null, ascentFt = null, initialDate = null, perks = [], newInfra = [] }: {
   ride: PublicRide; host?: RideHost | null; ascentFt?: number | null
   /** A date the visitor came for (?date=YYYY-MM-DD from a calendar listing). */
   initialDate?: string | null
   /** Bicycle Benefits members by any of the ride's meeting spots or routes. */
   perks?: BikePerk[]
+  /** What's new on each of its routes, or by each meeting spot (newInfraForPlaces). */
+  newInfra?: NewInfraFor[]
 }) {
   const hostHref = host?.href ?? null
   // The organization only once verified (Shift 01563, rideExtras); a typed-in
@@ -242,6 +246,9 @@ export default function RidePage({ ride, host = null, ascentFt = null, initialDa
   const hasMap = place?.meetup_lat != null && place?.meetup_lng != null
   // The ones within a block of this date's meeting spot or route.
   const perkStops = perksAlong(perks, route, hasMap ? { lat: place!.meetup_lat!, lng: place!.meetup_lng! } : null)
+  // New this season on this date's route, else by its meeting spot.
+  const newKey = newInfraKey(route, hasMap ? { lat: place!.meetup_lat!, lng: place!.meetup_lng! } : null)
+  const newHere = newInfra.find((n) => n.key === newKey)?.info
 
   return (
     <EventsToneProvider tone="light">
@@ -545,6 +552,8 @@ export default function RidePage({ ride, host = null, ascentFt = null, initialDa
                 <RouteIcon size={15} /> The full route, turn by turn <ExternalLink size={13} />
               </a>
             )}
+
+            {hasNewInfra(newHere) && <RideNewInfra info={newHere} onRoute={route.length >= 2} />}
 
             {perkStops.length > 0 && <RidePerks stops={perkStops} code={ride.code} />}
 

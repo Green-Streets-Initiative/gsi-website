@@ -8,6 +8,8 @@ import type { DashboardRide, DetailDate, RideDetail, RideRow, RosterRow, Turnout
 import { designRoute, encodePlan, summarizeRoute } from './route-designer'
 import { fetchRideWithGps } from '@/lib/organizers/rwgps'
 import { forecastLine, rideForecast } from '@/lib/rides/forecast'
+import { newInfraNear, newInfraOnRoute } from '@/lib/server/new-infra'
+import { newInfraForAssistant } from '@/lib/new-infra'
 
 // The organizer assistant's tools (Keith 2026-10-22). Same shape as the
 // employer assistant's: reads run straight away as the organizer; anything
@@ -138,6 +140,18 @@ export const TOOLS: Anthropic.Tool[] = [
     name: 'get_forecast',
     description: "The National Weather Service hourly forecast at a date's meeting point around its start time. Reaches about a week ahead.",
     input_schema: { type: 'object', properties: { series_id: uuid, occurrence_id: uuid }, required: ['series_id', 'occurrence_id'] },
+  },
+  {
+    name: 'get_whats_new',
+    description: "What's new on a ride's route: bike lanes and paths it rides that opened in the last two years (MassDOT's bike inventory, plus OpenStreetMap changes only when a second source backs them), and street projects along it with a public hearing coming. A date with no route gets the half mile around its meeting point. Or near any place. The same lines show on the ride page under \"New on this route\". Good for a ride description (\"we'll ride the new Cummins Hwy protected lane\").",
+    input_schema: {
+      type: 'object',
+      properties: {
+        series_id: nullable('string', "A ride's id."),
+        occurrence_id: nullable('string', 'With series_id: one date, when it has its own route or meeting point.'),
+        near: { ...placeSchema, description: 'A place from find_place, instead of a ride.' },
+      },
+    },
   },
   {
     name: 'find_place',
@@ -305,6 +319,7 @@ export const ACTIVITY: Record<string, string> = {
   get_credit_requests: 'Reading credit requests',
   get_turnout: 'Adding up turnout',
   get_forecast: 'Checking the forecast',
+  get_whats_new: 'Looking for new bike lanes',
   find_place: 'Looking up the place',
   plan_route: 'Planning the route (up to a minute)',
   check_route_link: 'Checking the route',
@@ -548,6 +563,22 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
         await loadDetail(ctx, input.series_id)
         const t = await rpc<Turnout>(ctx, 'organizer_ride_turnout', { p_series_id: input.series_id })
         return ok({ months: t.months, last_dates: t.dates.slice(0, 8) }, { href: `/organizers/rides/${input.series_id}/turnout`, label: 'Open turnout and downloads' })
+      }
+      case 'get_whats_new': {
+        const note = 'Lead with what opened: name it, when, and how much of the ride is on it. A coming project gets one line with its hearing date, described neutrally. MassDOT misses some city projects: if nothing turns up, say so and ask whether they know one.'
+        const sid = typeof input.series_id === 'string' && /^[0-9a-f-]{36}$/i.test(input.series_id) ? input.series_id : null
+        if (sid) {
+          const d = await loadDetail(ctx, sid)
+          const o = input.occurrence_id ? findDate(d, input.occurrence_id) : null
+          const line = (o?.own_route && o.route ? o.route.route_waypoints : d.ride.route_waypoints) ?? []
+          if (line.length >= 2) return ok({ on_the_route: newInfraForAssistant(await newInfraOnRoute(line), todayKey(), true), note })
+          const lat = o?.meetup_lat ?? d.ride.meetup_lat, lng = o?.meetup_lng ?? d.ride.meetup_lng
+          if (lat == null || lng == null) return fail('This ride has no route or meeting point yet.')
+          return ok({ no_route_yet: true, near_the_start: newInfraForAssistant(await newInfraNear({ lat, lng }, 0.5), todayKey(), false), note })
+        }
+        const p = input.near as { lat?: unknown; lng?: unknown } | null
+        if (!p || typeof p.lat !== 'number' || typeof p.lng !== 'number') return fail('Give a ride (series_id) or a place from find_place.')
+        return ok({ within_1_mile: newInfraForAssistant(await newInfraNear({ lat: p.lat, lng: p.lng }, 1), todayKey(), false), note })
       }
       case 'get_forecast': {
         const d = await loadDetail(ctx, input.series_id)
