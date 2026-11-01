@@ -121,23 +121,25 @@ type OccRow = {
   ride_series: { id: string; name: string; start_time: string | null; meetup_name: string | null; meetup_address: string | null; organizer_name: string | null; visibility: string; status: string }
 }
 
-/** A Shift ride date someone can sign up for here: a public, active ride,
- *  a scheduled date from today on, listed on the calendar (its event
- *  approved). The rehearsal rides stay out until their listing is approved. */
+/** A Shift ride date someone can sign up for here: a scheduled date from
+ *  today on, of an active ride that is either public and listed on the
+ *  calendar (its event approved) or one they already belong to (an
+ *  invite-only ride they joined). The rehearsal rides stay out until their
+ *  listing is approved. */
 export async function shiftRideDates(ctx: Ctx, by: { eventIds?: string[]; occurrenceId?: string }): Promise<ShiftRideDate[]> {
   let q = ctx.admin.from('ride_occurrences')
     .select('id, occurrence_date, event_content_id, title, status, start_time_override, meetup_name_override, meetup_address_override, ride_series!inner(id, name, start_time, meetup_name, meetup_address, organizer_name, visibility, status)')
-    .eq('status', 'scheduled').eq('ride_series.visibility', 'public').eq('ride_series.status', 'active')
+    .eq('status', 'scheduled').eq('ride_series.status', 'active')
     .gte('occurrence_date', new Date().toLocaleDateString('en-CA', { timeZone: ET }))
   if (by.occurrenceId) q = q.eq('id', by.occurrenceId)
-  else if (by.eventIds?.length) q = q.in('event_content_id', by.eventIds)
+  else if (by.eventIds?.length) q = q.in('event_content_id', by.eventIds).eq('ride_series.visibility', 'public')
   else return []
   const { data } = await q.limit(20)
   const rows = (data ?? []) as unknown as OccRow[]
+  if (!rows.length) return []
   const eventIds = rows.map((r) => r.event_content_id).filter((x): x is string => !!x)
-  if (!eventIds.length) return []
   const [listed, members] = await Promise.all([
-    ctx.admin.from('content_items').select('id').in('id', eventIds).eq('status', 'approved'),
+    eventIds.length ? ctx.admin.from('content_items').select('id').in('id', eventIds).eq('status', 'approved') : { data: [] },
     ctx.user.from('ride_series_members').select('id, series_id').eq('user_id', ctx.userId).in('series_id', [...new Set(rows.map((r) => r.ride_series.id))]),
   ])
   const ok = new Set(((listed.data ?? []) as { id: string }[]).map((x) => x.id))
@@ -147,7 +149,8 @@ export async function shiftRideDates(ctx: Ctx, by: { eventIds?: string[]; occurr
     ? await ctx.user.from('ride_attendance').select('occurrence_id, rsvp_status').in('member_id', memberIds).in('occurrence_id', rows.map((r) => r.id))
     : { data: [] }
   const rsvp = new Map(((att ?? []) as { occurrence_id: string; rsvp_status: string | null }[]).map((a) => [a.occurrence_id, a.rsvp_status]))
-  return rows.filter((r) => r.event_content_id && ok.has(r.event_content_id)).map((r) => ({
+  const open = (r: OccRow) => memberOf.has(r.ride_series.id) || (r.ride_series.visibility === 'public' && !!r.event_content_id && ok.has(r.event_content_id))
+  return rows.filter(open).map((r) => ({
     occurrence_id: r.id, event_id: r.event_content_id,
     title: r.title || r.ride_series.name, day: dayName(r.occurrence_date),
     time: clock12(r.start_time_override ?? r.ride_series.start_time),
@@ -172,6 +175,53 @@ export async function rsvpRide(ctx: Ctx, occurrenceId: string, status: 'going' |
   const { error } = await ctx.user.rpc('set_ride_rsvp', { p_occurrence_id: occurrenceId, p_status: status })
   if (error) return { error: error.message }
   return { date }
+}
+
+const ROLE_WORDS: Record<string, string> = { organizer: 'the organizer', leader: 'a leader', rider: 'on the ride' }
+
+/** The rides and walks this person belongs to (as organizer, leader or
+ *  rider, invite-only ones included), each with its dates in the next 60
+ *  days and their answer for each. Memberships are read as the person, so
+ *  only their own come back. */
+export async function myRides(ctx: Ctx) {
+  const { data: mem } = await ctx.user.from('ride_series_members').select('id, series_id, role').eq('user_id', ctx.userId).limit(30)
+  const members = (mem ?? []) as { id: string; series_id: string; role: string }[]
+  if (!members.length) return { rides: [], note: "They aren't on any Shift ride or walk yet. Offer find_rides_and_events near home." }
+  const ids = members.map((m) => m.series_id)
+  const today = new Date().toLocaleDateString('en-CA', { timeZone: ET })
+  const until = new Date(Date.now() + 60 * 864e5).toLocaleDateString('en-CA', { timeZone: ET })
+  const [seriesQ, occQ] = await Promise.all([
+    ctx.admin.from('ride_series').select('id, name, kind, start_time, meetup_name, meetup_address, organizer_name, visibility').in('id', ids).eq('status', 'active'),
+    ctx.admin.from('ride_occurrences').select('id, series_id, occurrence_date, title, status, start_time_override, meetup_name_override, meetup_address_override')
+      .in('series_id', ids).in('status', ['scheduled', 'canceled']).gte('occurrence_date', today).lte('occurrence_date', until)
+      .order('occurrence_date', { ascending: true }).limit(200),
+  ])
+  type S = { id: string; name: string; kind: string | null; start_time: string | null; meetup_name: string | null; meetup_address: string | null; organizer_name: string | null; visibility: string }
+  type O = { id: string; series_id: string; occurrence_date: string; title: string | null; status: string; start_time_override: string | null; meetup_name_override: string | null; meetup_address_override: string | null }
+  const occs = (occQ.data ?? []) as O[]
+  const { data: att } = occs.length
+    ? await ctx.user.from('ride_attendance').select('occurrence_id, rsvp_status').in('member_id', members.map((m) => m.id)).in('occurrence_id', occs.map((o) => o.id))
+    : { data: [] }
+  const rsvp = new Map(((att ?? []) as { occurrence_id: string; rsvp_status: string | null }[]).map((a) => [a.occurrence_id, a.rsvp_status]))
+  const roleOf = new Map(members.map((m) => [m.series_id, m.role]))
+  const rides = ((seriesQ.data ?? []) as S[]).map((s) => {
+    const runs = roleOf.get(s.id) !== 'rider'
+    const dates = occs.filter((o) => o.series_id === s.id).slice(0, 4).map((o) => ({
+      occurrence_id: o.id, title: o.title || s.name, day: dayName(o.occurrence_date),
+      time: clock12(o.start_time_override ?? s.start_time),
+      meetup: o.meetup_name_override ?? o.meetup_address_override ?? s.meetup_name ?? s.meetup_address,
+      ...(o.status === 'canceled' ? { canceled: true } : runs ? {} : { your_answer: rsvp.get(o.id)?.replace('_', ' ') ?? 'not answered yet' }),
+    }))
+    return {
+      ride_id: s.id, name: s.name, kind: s.kind?.includes('walk') ? 'walk' : s.kind === 'bike_bus' ? 'bike bus' : 'ride', you_are: ROLE_WORDS[roleOf.get(s.id) ?? 'rider'],
+      organizer: s.organizer_name, invite_only: s.visibility !== 'public' || undefined,
+      dates, ...(dates.length ? {} : { note: 'No dates in the next 60 days.' }),
+    }
+  })
+  return {
+    rides,
+    next: "Lead with the soonest date that isn't canceled: the ride, day, time and meetup, and their answer. A canceled date: say so plainly. To change a rider's answer, offer rsvp_ride with that date's occurrence_id. For the ride's page, open_screen ride with its ride_id. Someone who runs a ride manages it on that page or in the organizer tools on the website.",
+  }
 }
 
 // ── E-bike math ────────────────────────────────────────────────────────

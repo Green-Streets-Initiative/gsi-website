@@ -22,7 +22,7 @@ import { PRICES, usd } from '@/lib/facts/prices'
 import { BORROW_RENT_BLURB, nearbyBorrowRent } from '@/lib/nearby/borrow-rent'
 import { getBikeShareDocks } from '@/lib/server/bluebikes'
 import { getActiveRoams, getNextRoamEvent, getRoamDetail, getRoamKeepGoing, getRoamTrailInfo } from '@/lib/roams/queries'
-import { ACCESS_LINKS, accessibleNear, ebikeMath, rsvpRide, shiftRideDates } from '@/lib/shift-assistant/audit-data'
+import { ACCESS_LINKS, accessibleNear, ebikeMath, myRides, rsvpRide, shiftRideDates } from '@/lib/shift-assistant/audit-data'
 import { RIDE_PLAN_ACTIVITY, RIDE_PLAN_NEEDS_APPROVAL, RIDE_PLAN_TOOLS, ridePlanCard, runApprovedRidePlan, runRidePlanTool, type RidePlanCard } from '@/lib/shift-assistant/ride-plan-tools'
 
 // The Shift assistant's tools, for everyone in the app (Keith 2026-10-24).
@@ -212,6 +212,7 @@ export const ACTIVITY: Record<string, string> = {
   get_weather: 'Checking the forecast',
   find_place: 'Looking up the place',
   find_rides_and_events: 'Looking for rides and events',
+  get_my_rides: 'Checking your rides',
   get_service_alerts: 'Checking service alerts',
   get_my_activity: 'Reading your trips and rewards',
   get_my_challenges: 'Checking your challenges',
@@ -330,6 +331,11 @@ export const TOOLS: Anthropic.Tool[] = [
     },
   },
   {
+    name: 'get_my_rides',
+    description: "The Shift group rides and walks this person is on (as rider, leader or organizer, invite-only ones included): each with its next dates in the next 60 days, any canceled date, and their answer (going, maybe, can't make it, or not answered yet). Use for \"which rides am I on\", \"when's my next ride\", \"is Saturday's ride still on\" or \"did I say I'm going\".",
+    input_schema: { type: 'object', properties: {} },
+  },
+  {
     name: 'get_service_alerts',
     description: "MBTA service changes on some lines, happening now or coming up: shuttle buses, suspensions and station closures, with dates; and elevators out of service right now. check_trip already includes them for its own lines, so use this when someone asks about a line or a station directly (\"is the Red Line running?\", \"any elevators out at Park Street?\").",
     input_schema: {
@@ -443,7 +449,7 @@ export const TOOLS: Anthropic.Tool[] = [
   },
   {
     name: 'rsvp_ride',
-    description: "Sign the person up for a date of a Shift group ride or walk (the shift_ride entries from find_rides_and_events, by occurrence_id): joins the ride if they haven't, then says going, maybe or can't make it. The organizer sees their name. The person approves on a card first.",
+    description: "Sign the person up for a date of a Shift group ride or walk (the shift_ride entries from find_rides_and_events, or a date from get_my_rides, by occurrence_id): joins the ride if they haven't, then says going, maybe or can't make it. The organizer sees their name. The person approves on a card first.",
     input_schema: {
       type: 'object',
       properties: {
@@ -1210,6 +1216,8 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
         return ok({ within_miles: miles, days_ahead: days, events: found, ...(found.length ? {} : { note: 'Nothing that close in that window. Offer a wider radius or more days.' }) },
           found.length ? { screen: 'rides', label: 'See all rides and events' } : undefined)
       }
+      case 'get_my_rides':
+        return ok(await myRides(ctx))
       case 'open_screen': {
         const screen = SCREENS.find((s) => s === input.screen)
         if (!screen) return fail('Unknown screen.')
@@ -2214,7 +2222,7 @@ export async function runApproved(ctx: ToolCtx, name: string, input: Record<stri
     if (name === 'rsvp_ride') {
       const r = await rsvpRide(ctx, String(input.occurrence_id), input.status as 'going' | 'maybe' | 'not_going')
       if ('error' in r) return fail(`That didn't save: ${r.error}`)
-      return ok({ saved: true, ride: r.date.title, day: r.date.day, time: r.date.time, meetup: r.date.meetup, event_id: r.date.event_id, note: 'Done. Say so in a sentence with the day, time and meeting spot. Offer a reminder (set_reminder) for getting there, or open_screen event with event_id for the details.' })
+      return ok({ saved: true, ride: r.date.title, day: r.date.day, time: r.date.time, meetup: r.date.meetup, event_id: r.date.event_id, note: `Done. Say so in a sentence with the day, time and meeting spot. Offer a reminder (set_reminder) for getting there${r.date.event_id ? ', or open_screen event with event_id for the details' : ''}.` })
     }
     if (name === 'remember') {
       const { error } = await ctx.admin.from('member_assistant_memories').insert({ user_id: ctx.userId, note: String(input.note) })
