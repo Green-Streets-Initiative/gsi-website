@@ -1,6 +1,7 @@
 import type { CommunityEvent } from './events'
 import { eventUrl } from '@/lib/events-url'
 import { parseEventDate, formatTime, eventImages, eventLastDay, isMultiDay, dateRangeShort } from './events'
+import { eventBodyPlain } from './event-body'
 
 /**
  * Search-facing metadata for /events/[id]: page title, meta description, and
@@ -136,7 +137,7 @@ export function buildEventDescription(event: CommunityEvent, recurring: boolean)
     ? `${event.location_name}, ${town}`
     : event.location_name
   const lead = `${whenLabel(event, recurring)} at ${where}.`
-  const body = (event.body ?? '').replace(/\s+/g, ' ').trim()
+  const body = eventBodyPlain(event.body)
 
   let out = lead
   if (body) {
@@ -178,7 +179,7 @@ function isoDateTime(date: string, time: string | null, timeZone: string): strin
 }
 
 function plainDescription(body: string | null, fallback: string): string {
-  const text = (body ?? '').replace(/\s+/g, ' ').trim()
+  const text = eventBodyPlain(body)
   if (!text) return fallback
   return text.length > 480 ? `${text.slice(0, 477)}…` : text
 }

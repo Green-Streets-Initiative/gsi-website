@@ -24,6 +24,7 @@ import EventAlertSignup from './EventAlertSignup'
 import { TypePills, LevelPills, LocationControl, DistancePills, WhenPills, TagToggles, AudienceToggles, hasAudienceChoices } from './FilterControls'
 import { useEventFilters } from './useEventFilters'
 import { useSavedEvents } from './useSavedEvents'
+import { eventBodyPlain } from '@/lib/event-body'
 
 // ---------------------------------------------------------------------------
 // Viewport: phones can switch between the list and a week strip; desktop is
@@ -59,7 +60,8 @@ function SpotlightCard({ event, compact }: { event: CommunityEvent; compact: boo
     (isDeadline(event.event_type) ? 'Entry deadline: ' : '') +
     dateRangeLong(event) +
     (timeStr ? ` · ${timeStr}` : '')
-  const summary = event.body?.split('\n').find((line) => line.trim()) ?? null
+  const firstLine = event.body?.split('\n').find((line) => line.trim())
+  const summary = firstLine ? eventBodyPlain(firstLine) : null
 
   return (
     <Link

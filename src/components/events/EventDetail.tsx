@@ -23,6 +23,7 @@ import {
   eventImages,
 } from '@/lib/events'
 import EventImageCarousel from './EventImageCarousel'
+import { parseEventBody } from '@/lib/event-body'
 import { typeInk, tagInk, rideStyleInk, TINT } from '@/lib/events-tone'
 import { EventsToneProvider, toneClass, useEventsTone, type EventsTone } from './EventsTone'
 import './events-tone.css'
@@ -440,8 +441,21 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
 
             {/* Description */}
             {event.body && (
-              <div className="mb-8 text-[15px] leading-relaxed text-(--ev-ink-75) whitespace-pre-line">
-                {event.body}
+              <div className="mb-8 text-[15px] leading-relaxed text-(--ev-ink-75)">
+                {parseEventBody(event.body).map((line, i) =>
+                  line.kind === 'blank' ? (
+                    <div key={i} className="h-3" aria-hidden />
+                  ) : line.kind === 'heading' ? (
+                    <p key={i} className="font-semibold text-(--ev-ink)">{line.text}</p>
+                  ) : (
+                    <p key={i} className={line.kind === 'bullet' ? 'pl-4 -indent-4' : undefined}>
+                      {line.kind === 'bullet' && '•\u00a0\u00a0'}
+                      {line.parts.map((part, j) =>
+                        part.bold ? <strong key={j} className="font-semibold text-(--ev-ink)">{part.text}</strong> : part.text,
+                      )}
+                    </p>
+                  ),
+                )}
               </div>
             )}
 
