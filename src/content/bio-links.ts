@@ -36,6 +36,20 @@ export const BIO_LINKS: BioLink[] = [
     until: '2026-11-30T23:59:00-05:00',
   },
   {
+    slug: 'wdor',
+    label: 'Volunteer for World Day of Remembrance',
+    sublabel: 'Mon Nov 9 packing night or Tue Nov 10 at the State House. MassBike and the Vision Zero Coalition',
+    url: 'https://tinyurl.com/WDOR2026',
+    until: '2026-11-10T15:00:00-05:00',
+  },
+  {
+    slug: 'walkridedaynov',
+    label: 'Walk/Ride Day: Fri Nov 20',
+    sublabel: 'A week early this month, for Thanksgiving. One trip on foot, bike or transit',
+    url: 'https://www.gogreenstreets.org/programs/walk-ride-days',
+    until: '2026-11-20T23:59:00-05:00',
+  },
+  {
     slug: 'tourdestreets',
     label: 'Tour de Streets: register',
     sublabel: "Sat Oct 24, Cambridge. LivableStreets' walking tour or guided bike ride",
