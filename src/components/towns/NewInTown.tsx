@@ -1,6 +1,6 @@
-import { ShieldCheck } from 'lucide-react'
 import { SectionHeading } from '@/components/org/Section'
-import { comingWhen, openedMeta, openedTitle, type NewInfra } from '@/lib/new-infra'
+import NewInfraRow from '@/components/new-infra/NewInfraRow'
+import { comingWhen, type NewInfra } from '@/lib/new-infra'
 import { todayKey } from '@/lib/organizers/ride-words'
 
 /**
@@ -21,12 +21,8 @@ export default function NewInTown({ info, townName, hasInvolved }: { info: NewIn
       />
       <ul className="divide-y divide-navy/10 border-y border-navy/15">
         {shown.map((o) => (
-          <li key={`${o.name}|${o.facility}`} className="flex gap-3 py-3">
-            <ShieldCheck size={18} className="mt-0.5 shrink-0 text-green-deep" aria-hidden />
-            <div className="min-w-0">
-              <p className="text-[16px] font-semibold text-navy">{openedTitle(o)}</p>
-              <p className="mt-0.5 text-[14px] text-ink-soft">{openedMeta(o, false)}</p>
-            </div>
+          <li key={`${o.name}|${o.facility}`} className="py-3">
+            <NewInfraRow o={o} onRoute={false} showTown={false} tone="town" />
           </li>
         ))}
       </ul>

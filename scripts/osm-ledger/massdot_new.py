@@ -153,7 +153,9 @@ def main():
     # The automated second pass on the OSM ledger's events (Shift 01578): what
     # backs each one, so only those backed by more than one mapper show as opened.
     checked = req("POST", "/rest/v1/rpc/refresh_osm_event_corroboration", {}, "return=representation")
-    heartbeat(started, "ok", len(rows), f"{len(rows)} facilities; {checked} OSM events checked")
+    # Each stretch's trail, roam, closest way in, photo and Street View spot (Shift 01580).
+    placed = req("POST", "/rest/v1/rpc/refresh_new_bike_infra_context", {}, "return=representation")
+    heartbeat(started, "ok", len(rows), f"{len(rows)} facilities; {checked} OSM events checked; {placed} placed")
 
 
 if __name__ == "__main__":

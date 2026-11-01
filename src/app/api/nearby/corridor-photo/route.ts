@@ -20,7 +20,7 @@ import {
  *    Curated beauty shot resolved through the existing unsplash-proxy
  *    (same mechanism Roams use). Unsplash requires visible attribution.
  *
- *  ?lat=&lng=[&heading=]     → streams a Street View JPEG of that spot
+ *  ?lat=&lng=[&heading=][&after=YYYY-MM]  → streams a Street View JPEG of that spot
  *    Last resort: eye-level photo at the access point, facing along the
  *    corridor. Street View shoots from the road, so paths/stations often
  *    get a photo of the nearest street — hence the pipeline above.
@@ -37,7 +37,7 @@ const GOOGLE_KEY = process.env.GOOGLE_PLACES_API_KEY || process.env.GOOGLE_ROUTE
 
 const META_OK_TTL = 7 * 24 * 60 * 60 * 1000
 const META_MISS_TTL = 10 * 60 * 1000 // short: recovers quickly once the API is enabled
-const metaCache = new Map<string, { ok: boolean; expires: number }>()
+const metaCache = new Map<string, { ok: boolean; date: string | null; expires: number }>()
 
 const round4 = (n: number) => Math.round(n * 10000) / 10000
 
@@ -102,6 +102,9 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'valid lat and lng required' }, { status: 400 })
   }
   const heading = parseFloat(searchParams.get('heading') || '')
+  // New this season: a lane that opened in Aug 2026 asks for a picture taken
+  // then or later, so an older picture never shows the street before it.
+  const after = /^\d{4}-\d{2}$/.test(searchParams.get('after') || '') ? searchParams.get('after') : null
 
   if (!GOOGLE_KEY) return new NextResponse(null, { status: 404 })
 
@@ -120,9 +123,9 @@ export async function GET(req: NextRequest) {
       )
       const data = await res.json()
       const ok = data.status === 'OK'
-      meta = { ok, expires: Date.now() + (ok ? META_OK_TTL : META_MISS_TTL) }
+      meta = { ok, date: typeof data.date === 'string' ? data.date.slice(0, 7) : null, expires: Date.now() + (ok ? META_OK_TTL : META_MISS_TTL) }
     } catch {
-      meta = { ok: false, expires: Date.now() + META_MISS_TTL }
+      meta = { ok: false, date: null, expires: Date.now() + META_MISS_TTL }
     }
     if (metaCache.size > 2000) {
       const oldest = metaCache.keys().next().value
@@ -131,6 +134,7 @@ export async function GET(req: NextRequest) {
     metaCache.set(metaKey, meta)
   }
   if (!meta.ok) return new NextResponse(null, { status: 404 })
+  if (after && (!meta.date || meta.date < after)) return new NextResponse(null, { status: 404 })
 
   const params = new URLSearchParams({
     size: '640x360',

@@ -1,5 +1,6 @@
-import { CalendarClock, ShieldCheck } from 'lucide-react'
-import { comingWhen, openedMeta, openedTitle, type NewInfra } from '@/lib/new-infra'
+import { CalendarClock } from 'lucide-react'
+import NewInfraRow from '@/components/new-infra/NewInfraRow'
+import { comingWhen, type NewInfra } from '@/lib/new-infra'
 import { todayKey } from '@/lib/organizers/ride-words'
 
 /**
@@ -16,14 +17,8 @@ export default function RideNewInfra({ info, onRoute }: { info: NewInfra; onRout
       {info.opened.length > 0 && (
         <ul className="mt-3 space-y-3">
           {info.opened.slice(0, 4).map((o) => (
-            <li key={`${o.name}|${o.facility}`} className="flex gap-3">
-              <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-(--ev-accent-tint-14) text-(--ev-accent)">
-                <ShieldCheck size={17} aria-hidden />
-              </span>
-              <div className="min-w-0">
-                <p className="text-[15px] font-semibold text-(--ev-ink)">{openedTitle(o)}</p>
-                <p className="mt-0.5 text-[14px] text-(--ev-ink-75)">{openedMeta(o, onRoute)}</p>
-              </div>
+            <li key={`${o.name}|${o.facility}`}>
+              <NewInfraRow o={o} onRoute={onRoute} showTown tone="ride" />
             </li>
           ))}
         </ul>
