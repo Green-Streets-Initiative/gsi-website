@@ -166,6 +166,13 @@
       "id": "t-closures-adgroup",
       "status": "LIVE 2026-10-17, read after the Oct 31 Green Line closure 10-21: 2 impressions so far. Has only 1 RSA, which breaks the 2-ads-per-ad-group rule; weekly item 1 adds a second. 10-28 weekly: still 1 RSA, 2 impressions MTD; recommended again as item 1 (draft headlines in the 10-28 report).",
       "what": "Check impressions/CTR/search terms of How-to Guides > T closures after the Oct 31 and Nov 7 Green Line suspensions. Pause any keyword under 5% CTR after 300 impressions. Consider a conversion for guide_tool_used (trip planner use) if volume is real."
+    },
+    {
+      "id": "newroutes-movers-decision",
+      "added": "2026-11-01",
+      "from": "Keith (via the Social Lead's W45 review)",
+      "what": "Keith asked this routine to analyze what to do with the 'New Routes — Movers' campaign. Context: Keith dropped the weekly organic New Routes social post on 11-01 ('Unless we plan to run paid ads with that post, I'd be comfortable skipping that post'). Reddit (ended Oct 19, 1 join) and Meta (ended Oct 20) are over, so Movers is the only paid line for New Routes. October: 30 impressions, 0 clicks (from the Social Lead's survey; re-read it live). New Routes offer: new Shift members, code NEWROUTES at sign-up, 10 auto-detected active trips in 30 days unlocks $15, cap 200, ends Dec 15; 6 sign-ups in the last 30 days (personas.md). The Housing /move-in page shows the $15 offer while New Routes runs. Decide and recommend one of: (a) keep as is, (b) rework (keywords movers actually search, landing page, e.g. /move-in or town pages), (c) pause and move its share of the grant to campaigns that win clicks, (d) pair it with a dated organic social post if a rework is worth testing. Show the numbers behind the call (impressions, clicks, search terms, keyword eligibility, CTR effect on the account's 5% floor) and the cost of each option. Weigh the account's CTR floor: a near-zero-click campaign drags account CTR down only if it gets impressions. If the call is (d), say so and the Social Lead will add a post the week the change goes live.",
+      "status": "OPEN: first look in the 2026-11-04 weekly review; recommend as an item with 'do ad grants item N'."
     }
   ],
   "pulse_log": [
