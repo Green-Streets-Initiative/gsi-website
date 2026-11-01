@@ -54,13 +54,20 @@ export default function TurnoutView() {
   }
 
   const file = slug(r.name)
+  // The on-screen note travels with the file, so a funder reading the CSV
+  // knows what "Came" counts.
+  const NOTE = ['Came counts people who ride with the Shift app, plus requests the organizer approved. People who answered on the ride page show under Said going.']
   const monthRows = (): (string | number)[][] => [
     ['Ride', 'Month', 'Dates run', 'Dates cancelled', 'Said going', 'Came (attendances)', 'People', 'First-timers', 'Came back'],
     ...t.months.map((m) => [r.name, m.month.slice(0, 7), m.dates_run, m.dates_canceled, m.going, m.attended, m.people, m.first_timers, m.came_back]),
+    [],
+    NOTE,
   ]
   const dateRows = (): (string | number)[][] => [
     ['Ride', 'Date', 'Status', 'Said going', 'Maybe', 'Came', 'Kids', 'First-timers', 'Came back'],
     ...t.dates.map((d) => [r.name, d.date, d.status === 'canceled' ? 'cancelled' : 'ran', d.going, d.maybe, d.attended, d.kids, d.first_timers, d.came_back]),
+    [],
+    NOTE,
   ]
 
   return (

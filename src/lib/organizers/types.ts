@@ -109,6 +109,8 @@ export interface RideRow {
   frequency: Frequency
   week_of_month: number | null
   org_verification_status: 'verified' | 'pending_verification' | null
+  /** When the ride was made; an every-other-week ride counts its weeks from it when no season start is set. */
+  created_at?: string
   flyer_url: string | null
   comfort_segments: ComfortSegment[] | null
   comfort_rating: string | null

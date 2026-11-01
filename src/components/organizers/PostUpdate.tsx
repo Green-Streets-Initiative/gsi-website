@@ -25,20 +25,24 @@ export function sentLine(r: SendResult | null | undefined): string {
  * ride-update function, so it reaches app members by push and web guests by
  * email, and shows on the ride page. A dry run first says how many it reaches.
  */
-export default function PostUpdate({ seriesId, dates, onPosted, autoFocus }: {
+export default function PostUpdate({ seriesId, dates, onPosted, autoFocus, initialKind, initialNote = '' }: {
   seriesId: string
   dates: DetailDate[]
   onPosted: () => void
   autoFocus?: boolean
+  /** A ready-made message, as after a break ends ("Tell everyone it's back?"). */
+  initialKind?: Kind
+  initialNote?: string
 }) {
   const today = todayKey()
   const open = useMemo(() => dates.filter((d) => d.status === 'scheduled' && d.date >= today), [dates, today])
   // With no open date, "It's on" can't be picked: start on a note.
-  const [kind, setKind] = useState<Kind>(open.length ? 'on' : 'note')
-  const [picked, setDateId] = useState<string>(open[0]?.id ?? '')
+  const [kind, setKind] = useState<Kind>(initialKind ?? (open.length ? 'on' : 'note'))
+  // A whole-ride note starts on "The whole ride"; a date update on the next date.
+  const [picked, setDateId] = useState<string>(initialKind === 'note' ? '' : (open[0]?.id ?? ''))
   // A picked date that has since been cancelled falls back to the next open one.
   const dateId = picked === '' || open.some((d) => d.id === picked) ? picked : (open[0]?.id ?? '')
-  const [note, setNote] = useState('')
+  const [note, setNote] = useState(initialNote)
   const [reach, setReach] = useState<number | null>(null)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)

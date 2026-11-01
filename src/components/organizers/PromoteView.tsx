@@ -4,12 +4,13 @@ import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import QRCode from 'qrcode'
 import { Check, Clock, Copy, Download, ExternalLink, ImageIcon, Minus, Printer } from 'lucide-react'
-import { getPromoStats } from '@/lib/organizers/api'
+import { errorText, getPromoStats } from '@/lib/organizers/api'
 import { PACE_OPTIONS, todayKey } from '@/lib/organizers/ride-words'
 import type { PromoStats } from '@/lib/organizers/types'
 import { clock, dateLong, dateShort, dayShort, scheduleText } from '@/lib/rides/public'
 import { PROMO_CHANNELS, PROMO_LABEL, promoLink, type PromoChannel } from '@/lib/rides/promo'
 import { useRide } from './RideFrame'
+import { resume } from './StopRide'
 import { Button, Card, Notice, SectionTitle, Spinner, Toggle, copyText, cx } from './ui'
 import { track } from '@/lib/organizers/track'
 
@@ -111,7 +112,9 @@ function wrap(ctx: CanvasRenderingContext2D, text: string, width: number, max: n
 }
 
 export default function PromoteView() {
-  const { detail } = useRide()
+  const { detail, reload } = useRide()
+  const [resuming, setResuming] = useState(false)
+  const [resumeErr, setResumeErr] = useState<string | null>(null)
   const r = detail.ride
   const code = r.invite_code
   // "cap-ig", "link-wa", "cal": which words or link went out, never the text.
@@ -262,11 +265,27 @@ export default function PromoteView() {
 
   return (
     <div className="grid grid-cols-[minmax(0,1fr)] gap-5">
-      {!facts.upcoming && (
+      {!facts.upcoming && (r.break_until && r.break_until > todayKey() ? (
+        // On a break the editor has no restart date to change: ending the break is the fix.
         <Notice tone="warn">
-          No dates coming up, so these posts point to a ride that&apos;s over. <Link href={`/organizers/rides/${r.id}/edit`} className="font-semibold underline">{r.ride_date ? 'Set up the next one' : r.break_until ? 'Change the restart date' : 'Edit the ride'}</Link> before you post.
+          You&apos;re on a break until {dateShort(r.break_until)}, so these posts point to no date yet.{' '}
+          {detail.can_manage ? (
+            <button type="button" disabled={resuming} className="font-semibold underline disabled:opacity-60"
+              onClick={async () => {
+                setResuming(true)
+                setResumeErr(null)
+                try { await resume(r.id); await reload() } catch (e) { setResumeErr(errorText(e)) } finally { setResuming(false) }
+              }}>
+              {resuming ? 'Ending the break…' : 'End the break'}
+            </button>
+          ) : <Link href={`/organizers/rides/${r.id}`} className="font-semibold underline">See the ride</Link>}
+          {' '}before you post.{resumeErr ? ` ${resumeErr}` : ''}
         </Notice>
-      )}
+      ) : (
+        <Notice tone="warn">
+          No dates coming up, so these posts point to a ride that&apos;s over. <Link href={`/organizers/rides/${r.id}/edit`} className="font-semibold underline">{r.ride_date ? 'Set up the next one' : 'Edit the ride'}</Link> before you post.
+        </Notice>
+      ))}
 
       <nav aria-label="Promote steps" className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         {steps.map((s) => (

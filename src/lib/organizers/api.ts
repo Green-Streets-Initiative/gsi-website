@@ -234,6 +234,26 @@ export async function stopRide(seriesId: string, mode: 'end' | 'break', until: s
   return sendStopNotice(seriesId, mode)
 }
 
+/** Delete a ride nobody has joined or ridden yet (the server refuses otherwise), as the app's stop screen does. */
+export async function deleteRide(seriesId: string) {
+  await rpc<void>('delete_ride_series', { p_series_id: seriesId })
+  track('organizer_ride_deleted', { ride_id: seriesId })
+}
+
+/**
+ * Skip dates ahead of time, before they're on the schedule (more than four
+ * weeks out). A date already on the schedule is cancelled on its own, so the
+ * people on it hear about it. Only the ride's organizer can do this (the
+ * table's own rule); skip_dates isn't one of the fields whose change sends
+ * a notice.
+ */
+export async function setSkipDates(seriesId: string, skipDates: string[]) {
+  const { error } = await supabase.from('ride_series').update({ skip_dates: [...new Set(skipDates)].sort() }).eq('id', seriesId)
+  if (error) throw new Error(error.message)
+  track('organizer_skip_dates_saved', { ride_id: seriesId, count: skipDates.length })
+  await generateDates(seriesId).catch(() => {})
+}
+
 export async function resumeRide(seriesId: string) {
   const r = await rpc<{ reinstated: number }>('resume_ride_series', { p_series_id: seriesId })
   track('organizer_ride_resumed', { ride_id: seriesId, reinstated: r?.reinstated ?? null })
@@ -262,6 +282,55 @@ export const revokeLeaderInvite = (inviteId: string) =>
 
 export const setMemberRole = (seriesId: string, userId: string, role: 'leader' | 'rider') =>
   rpc<{ ok: boolean }>('set_ride_member_role', { p_series_id: seriesId, p_user_id: userId, p_role: role })
+
+// ── Organizations (the same writes as the app's ride form) ─────────────
+
+export interface OrgMatch { id: string; name: string; url: string | null }
+
+/** Organizations on the calendar whose name matches, for "Find your organization". */
+export async function searchOrgs(text: string): Promise<OrgMatch[]> {
+  const q = text.trim().replace(/[%_,()]/g, ' ')
+  if (q.length < 2) return []
+  const { data, error } = await supabase.from('event_organizers').select('id, name, url').ilike('name', `%${q}%`).limit(6)
+  if (error) throw new Error(error.message)
+  return (data ?? []) as OrgMatch[]
+}
+
+/**
+ * Say you run an organization. The server verifies the claim on the spot
+ * when your sign-in email is at its website's domain (Shift 01563);
+ * otherwise it stays pending. Returns the claim's status. An existing claim
+ * keeps its status.
+ */
+export async function claimOrg(organizerId: string): Promise<'verified' | 'pending'> {
+  const { data: s } = await supabase.auth.getSession()
+  const uid = s.session?.user.id
+  if (!uid) throw new Error('Not signed in')
+  const { data: had } = await supabase.from('event_organizer_admins').select('status').eq('organizer_id', organizerId).eq('user_id', uid).maybeSingle()
+  if (had) return had.status === 'verified' ? 'verified' : 'pending'
+  const { data, error } = await supabase.from('event_organizer_admins')
+    .insert({ organizer_id: organizerId, user_id: uid, status: 'pending' }).select('status').single()
+  if (error && error.code !== '23505') throw new Error(error.message)
+  track('organizer_org_claimed', { organizer_id: organizerId, status: data?.status ?? 'pending' })
+  return data?.status === 'verified' ? 'verified' : 'pending'
+}
+
+/** Add an organization that isn't on the calendar yet, and claim it. */
+export async function createOrg(name: string, url: string): Promise<{ id: string; status: 'verified' | 'pending' }> {
+  const { data: s } = await supabase.auth.getSession()
+  const uid = s.session?.user.id
+  if (!uid) throw new Error('Not signed in')
+  const id = name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 80)
+  if (!id) throw new Error('Give the organization a name')
+  const { error } = await supabase.from('event_organizers')
+    .insert({ id, name: name.trim(), url: url.trim() || null, created_by: uid, status: 'pending_review' })
+  if (error) {
+    if (error.code === '23505') throw new Error(`${name.trim()} is already listed. Search for it above.`)
+    throw new Error(error.message)
+  }
+  track('organizer_org_created', { organizer_id: id })
+  return { id, status: await claimOrg(id) }
+}
 
 export async function saveHostPage(organizerId: string, profile: Record<string, unknown>) {
   const r = await rpc<Record<string, unknown>>('update_event_organizer_profile', { p_organizer_id: organizerId, p_profile: profile })
