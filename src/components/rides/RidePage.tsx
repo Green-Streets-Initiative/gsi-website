@@ -11,6 +11,8 @@ import { todayKey } from '@/lib/organizers/ride-words'
 import RideStoreBadges from '@/components/rides/RideStoreBadges'
 import OrganizerChannels from '@/components/rides/OrganizerChannels'
 import RideFacts from '@/components/rides/RideFacts'
+import RidePerks from '@/components/rides/RidePerks'
+import { perksAlong, type BikePerk } from '@/lib/bike-perks'
 import type { RideHost } from '@/lib/rides/host'
 import { EventsToneProvider, toneClass } from '@/components/events/EventsTone'
 import {
@@ -95,10 +97,12 @@ function downloadIcs(ride: PublicRide, d: RideDate, hostName: string | null) {
   a.remove()
 }
 
-export default function RidePage({ ride, host = null, ascentFt = null, initialDate = null }: {
+export default function RidePage({ ride, host = null, ascentFt = null, initialDate = null, perks = [] }: {
   ride: PublicRide; host?: RideHost | null; ascentFt?: number | null
   /** A date the visitor came for (?date=YYYY-MM-DD from a calendar listing). */
   initialDate?: string | null
+  /** Bicycle Benefits members by any of the ride's meeting spots or routes. */
+  perks?: BikePerk[]
 }) {
   const hostHref = host?.href ?? null
   // The organization only once verified (Shift 01563, rideExtras); a typed-in
@@ -236,6 +240,8 @@ export default function RidePage({ ride, host = null, ascentFt = null, initialDa
       ? { meetup_lat: ride.meetup_lat, meetup_lng: ride.meetup_lng, meetup_name: ride.meetup_name, meetup_address: ride.meetup_address }
       : null)
   const hasMap = place?.meetup_lat != null && place?.meetup_lng != null
+  // The ones within a block of this date's meeting spot or route.
+  const perkStops = perksAlong(perks, route, hasMap ? { lat: place!.meetup_lat!, lng: place!.meetup_lng! } : null)
 
   return (
     <EventsToneProvider tone="light">
@@ -539,6 +545,8 @@ export default function RidePage({ ride, host = null, ascentFt = null, initialDa
                 <RouteIcon size={15} /> The full route, turn by turn <ExternalLink size={13} />
               </a>
             )}
+
+            {perkStops.length > 0 && <RidePerks stops={perkStops} code={ride.code} />}
 
             {(hostName || ride.registration_url) && (
               <div className="space-y-2 text-[14px] text-(--ev-ink-80)">

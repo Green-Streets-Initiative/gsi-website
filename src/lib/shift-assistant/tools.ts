@@ -21,6 +21,8 @@ import { ALWAYS as FARES_FOR_EVERYONE, fareProgram, farePrograms } from '@/lib/f
 import { PRICES, usd } from '@/lib/facts/prices'
 import { BORROW_RENT_BLURB, nearbyBorrowRent } from '@/lib/nearby/borrow-rent'
 import { getBikeShareDocks } from '@/lib/server/bluebikes'
+import { bikePerkPool } from '@/lib/server/bike-perks'
+import { PERK_KIND_LABEL, perksAlong, perksNear, perkWhere, type PerkStop } from '@/lib/bike-perks'
 import { getActiveRoams, getNextRoamEvent, getRoamDetail, getRoamKeepGoing, getRoamTrailInfo } from '@/lib/roams/queries'
 import { ACCESS_LINKS, accessibleNear, ebikeMath, myRides, rsvpRide, shiftRideDates } from '@/lib/shift-assistant/audit-data'
 import { RIDE_PLAN_ACTIVITY, RIDE_PLAN_NEEDS_APPROVAL, RIDE_PLAN_TOOLS, ridePlanCard, runApprovedRidePlan, runRidePlanTool, type RidePlanCard } from '@/lib/shift-assistant/ride-plan-tools'
@@ -223,6 +225,7 @@ export const ACTIVITY: Record<string, string> = {
   get_popular_streets: 'Finding the streets people use',
   get_town_travel_mix: 'Seeing how people get around',
   find_rewards_partners: 'Looking for Rewards Partners',
+  find_bike_perks: 'Looking for bike perks',
   get_my_progress: 'Checking your progress',
   get_departures: 'Checking live departures',
   find_park_and_ride: 'Finding station parking',
@@ -408,6 +411,19 @@ export const TOOLS: Anthropic.Tool[] = [
     name: 'find_rewards_partners',
     description: "Rewards Partners near a place: local shops in Shift's rewards catalog (where a gift card they win can be spent), with the nearest stop and Bluebikes dock, and Rewards Partner offers (what each gives, the Shift level that unlocks it, and whether they have that level). Use for \"where can I use my reward\", \"any partners near work\", \"what does Shift get me around here\". Near their location unless you pass a place.",
     input_schema: { type: 'object', properties: { near: { ...placeSchema, description: 'Where to look. Leave out for their location, else their Home.' } } },
+  },
+  {
+    name: 'find_bike_perks',
+    description: "Bicycle Benefits members: local businesses that give a perk (a discount, a free drink) to anyone with the program's helmet sticker, from the program's own published list. Near a place, or along the bike route between two places (within about a block of it). Each has its perk, what kind of place it is, whether it sells the sticker and whether it has an air pump. Use for \"a café on the way that gives a bike perk\", \"where can I use my Bicycle Benefits sticker\", \"bike-friendly coffee near the ride start\". Not Shift's Rewards Partners (find_rewards_partners).",
+    input_schema: {
+      type: 'object',
+      properties: {
+        near: { ...placeSchema, description: 'Where to look. Leave out for their location, else their Home. Ignored when from and to are given.' },
+        from: { ...placeSchema, description: 'With to: look along the bike route of this trip.' },
+        to: { ...placeSchema, description: 'With from: look along the bike route of this trip.' },
+        kind: nullable('string', 'cafe, bakery, food, bar, sweets, market, bike_shop or shop, when they asked for one kind. Empty for any.'),
+      },
+    },
   },
   {
     name: 'get_my_progress',
@@ -1136,6 +1152,9 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
               named_paths: r.bike_steps.map((s) => s.label),
               streets: (r.bike_comfort?.streets ?? []).slice(0, 8).map((s) => ({ street: s.label, kind: s.rating, miles: round1(s.distance_mi) })),
               calmer_or_quicker_option: r.bike_alt ? { minutes: r.bike_alt.minutes, overall: r.bike_alt.comfort?.rating ?? null } : null,
+              perks_on_the_way: r.bike_perks.length
+                ? r.bike_perks.map((p) => ({ name: p.name, perk: p.perk, kind: PERK_KIND_LABEL[p.kind], sells_the_sticker: p.stickers }))
+                : null,
               parking_at_the_end: racks == null ? null : racks.length === 0
                 ? 'No public bike racks mapped within a block. A sign post or railing may do; worth asking there.'
                 : { racks_within_a_block: racks.length, spaces: racks.reduce((a, s) => a + (s.capacity ?? 2), 0), covered: racks.filter((s) => s.covered).length },
@@ -1342,6 +1361,38 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
         }
         if (!town) return ok({ found: false, note: asked ? `No town named ${input.town} in Shift. Check the spelling or ask for the nearest one.` : "Their town isn't known. Ask which town they mean." })
         return ok(await townMix(ctx, town))
+      }
+      case 'find_bike_perks': {
+        const kind = typeof input.kind === 'string' && input.kind in PERK_KIND_LABEL ? input.kind : null
+        const from = asPlace(input.from)
+        const to = asPlace(input.to)
+        const pool = (await bikePerkPool()).filter((x) => !kind || x.kind === kind || (kind === 'cafe' && x.kind === 'bakery'))
+        const facts = (stops: PerkStop[]) => stops.map((p) => ({
+          name: p.name, perk: p.perk, kind: PERK_KIND_LABEL[p.kind], where: perkWhere(p), address: p.address,
+          sells_the_sticker: p.stickers, air_pump: p.pump,
+        }))
+        const about = 'Bicycle Benefits (bicyclebenefits.org): the perk needs the program\'s helmet sticker, sold at many members (sells_the_sticker). Name the program when you mention one. Shift has no deal with these businesses; it shows their published list.'
+        if (from && to) {
+          if (!inServiceArea(from.lat, from.lng) || !inServiceArea(to.lat, to.lng)) return ok({ found: false, note: 'This covers Massachusetts and nearby.' })
+          const r = await getTrip(from, to, to.name ?? '')
+          const line = r.bike_polyline ? decodePolyline(r.bike_polyline).map(([lat, lng]) => ({ lat, lng })) : []
+          const along = perksAlong(pool, line, null, { cap: 5 })
+          return ok(along.length
+            ? { along_the_bike_route: facts(along), about }
+            : { along_the_bike_route: [], note: 'No Bicycle Benefits member within a block of this bike route. Offer ones near either end instead (find_bike_perks with near).', about })
+        }
+        let near = asPlace(input.near) ?? ctx.here ?? null
+        if (!near) {
+          const { data: h } = await ctx.user.from('saved_locations').select('lat, lng').eq('user_id', ctx.userId).ilike('label', 'home').limit(1)
+          const at = ((h ?? [])[0] as { lat: number | null; lng: number | null } | undefined)
+          near = at?.lat != null && at?.lng != null ? { lat: at.lat, lng: at.lng } : null
+        }
+        if (!near) return fail('Their location is unknown. Ask where to look, then find_place.')
+        const close = perksNear(pool, near, 1609, 6)
+        const wider = close.length ? close : perksNear(pool, near, 5 * 1609, 4)
+        return ok(wider.length
+          ? { near: facts(wider), about }
+          : { near: [], note: 'No Bicycle Benefits member within 5 miles. Members are mostly in Greater Boston, the Pioneer Valley and Worcester.', about })
       }
       case 'find_rewards_partners': {
         let near = asPlace(input.near) ?? ctx.here ?? null

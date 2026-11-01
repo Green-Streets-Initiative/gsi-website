@@ -5,8 +5,9 @@ import Footer from '@/components/Footer'
 import RidePage from '@/components/rides/RidePage'
 import AppOnlyRidePage from '@/components/rides/AppOnlyRidePage'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
-import { looksLikeRideCode, scheduleText, type RideLookup } from '@/lib/rides/public'
+import { looksLikeRideCode, scheduleText, type PublicRide, type RideLookup } from '@/lib/rides/public'
 import { rideExtras } from '@/lib/rides/host'
+import { bikePerksForPlaces } from '@/lib/server/bike-perks'
 
 /**
  * A Shift group ride's public page: the link organizers put in their
@@ -73,18 +74,34 @@ export default async function Page({ params, searchParams }: { params: Promise<{
   if (ride === 'error') return <CouldNotLoad href={`/rides/${encodeURIComponent(code)}${initialDate ? `?date=${initialDate}` : ''}`} />
   if (!ride) notFound()
 
-  // Who runs it (logo, channels, their calendar page) and the route's climbing.
-  const extras = ride.web ? await rideExtras(ride.id).catch(() => null) : null
+  // Who runs it (logo, channels, their calendar page) and the route's climbing;
+  // and the Bicycle Benefits members by any of its meeting spots or routes.
+  const [extras, perks] = ride.web
+    ? await Promise.all([rideExtras(ride.id).catch(() => null), bikePerksForPlaces(ridePlaces(ride)).catch(() => [])])
+    : [null, []]
 
   return (
     <>
       <Nav variant="light" />
       <main className="bg-cream" style={{ paddingTop: '60px' }}>
-        {ride.web ? <RidePage ride={ride} host={extras?.host ?? null} ascentFt={extras?.ascentFt ?? null} initialDate={initialDate} /> : <AppOnlyRidePage ride={ride} />}
+        {ride.web ? <RidePage ride={ride} host={extras?.host ?? null} ascentFt={extras?.ascentFt ?? null} initialDate={initialDate} perks={perks} /> : <AppOnlyRidePage ride={ride} />}
       </main>
       <Footer variant="light" />
     </>
   )
+}
+
+/** Each meeting spot and route the ride page can show: the ride's own and each date's. */
+function ridePlaces(ride: PublicRide) {
+  const pt = (lat: number | null, lng: number | null) => (lat != null && lng != null ? { lat, lng } : null)
+  const line = (w: { lat: number; lng: number }[] | null | undefined) => (w ?? []).filter((p) => Number.isFinite(p?.lat) && Number.isFinite(p?.lng))
+  return [
+    { line: line(ride.route_waypoints), start: pt(ride.meetup_lat, ride.meetup_lng) },
+    ...ride.occurrences.map((d) => ({
+      line: line(d.own_route && d.route ? d.route.route_waypoints : ride.route_waypoints),
+      start: pt(d.meetup_lat, d.meetup_lng),
+    })),
+  ]
 }
 
 /** The lookup failed (not "no such ride"): say so and offer the same page again. */

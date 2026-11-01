@@ -11,6 +11,9 @@ import {
   REACH_ROW_VERSION,
   type ReachRow,
 } from './reach'
+import { bikePerkPool } from './bike-perks'
+import { decodePolyline } from '@/lib/geo/polyline'
+import { perksAlong, type PerkStop } from '@/lib/bike-perks'
 
 /**
  * "Where do you want to go?" — one destination the visitor picked, answered
@@ -54,7 +57,7 @@ export async function getTrip(
    *  morning (next Monday 8:30), the comparison the web map has always shown;
    *  the Shift assistant passes the time someone asked about. */
   departAt?: string,
-): Promise<ReachRow> {
+): Promise<TripRow> {
   // Round to ~110 m so a neighborhood's first visitor pays for everyone,
   // matching the reach cache's convention.
   const f = { lat: round3(from.lat), lng: round3(from.lng) }
@@ -66,7 +69,7 @@ export async function getTrip(
   const key = `${REACH_ROW_VERSION}:${f.lat},${f.lng}|${t.lat},${t.lng}${depart ? `@${depart}` : ''}`
 
   const cached = cache.get(key)
-  if (cached && cached.expires > Date.now()) return { ...cached.row, name }
+  if (cached && cached.expires > Date.now()) return { ...cached.row, name, bike_perks: await perksOnTheWay(cached.row) }
 
   const row = await durableTrip(f, t, depart)
 
@@ -77,7 +80,22 @@ export async function getTrip(
   cache.set(key, { row, expires: Date.now() + CACHE_TTL_MS })
   // The place NAME is the visitor's own text; it never enters the cache key
   // or the cached row, so one person's search can't relabel another's.
-  return { ...row, name }
+  return { ...row, name, bike_perks: await perksOnTheWay(row) }
+}
+
+/** A planned trip plus the Bicycle Benefits members within a block of its
+ *  bike route (Keith 2026-11-01), riding order. Matched outside the trip's
+ *  cache so the day's member list applies to every trip. */
+export type TripRow = ReachRow & { bike_perks: PerkStop[] }
+
+async function perksOnTheWay(row: ReachRow): Promise<PerkStop[]> {
+  if (!row.bike_polyline) return []
+  try {
+    const line = decodePolyline(row.bike_polyline).map(([lat, lng]) => ({ lat, lng }))
+    return perksAlong(await bikePerkPool(), line, null, { cap: 3 })
+  } catch {
+    return []
+  }
 }
 
 const durableTrip = unstable_cache(computeTrip, [`nearby-trip-${REACH_ROW_VERSION}`], {
