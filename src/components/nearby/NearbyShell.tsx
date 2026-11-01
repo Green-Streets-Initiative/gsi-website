@@ -36,6 +36,8 @@ import GuideLinks from './GuideLinks'
 import { SkeletonRows, ErrorCard } from './SectionShell'
 import { useNearbyT } from './NearbyI18n'
 import NearbyLanguagePill from './NearbyLanguagePill'
+import { useNearbyV2, wantsSignIn } from './useNearbyV2'
+import { NearbySignIn, V2Blocks, V2LayersButton, V2PlaceChips, type V2Layers } from './NearbyV2'
 
 /**
  * The phone experience: one screen, no page scroll. The map is the stage;
@@ -127,11 +129,22 @@ export default function NearbyShell({
     if (m === 'bike') setPaintedOn(true)
   }, [])
 
+  // Around You v2 (on for Keith and Meghan only): one answer-first view, the
+  // tabs and chips replaced by blocks and a Layers button (see NearbyV2)
+  const v2 = useNearbyV2()
+  const isV2 = v2.on
+  const [extrasLayer, setExtrasLayer] = useState(false)
+  const [perksLayer, setPerksLayer] = useState(false)
+  const [moreBikeOpen, setMoreBikeOpen] = useState(false)
+  const [moreNearbyOpen, setMoreNearbyOpen] = useState(false)
+  const [morePlacesOpen, setMorePlacesOpen] = useState(false)
+
   const startDockLabel = useCallback(
     (d: BluebikeStationLive) => tr('dock.pin_bikes', { count: d.num_bikes_available }), [tr])
   const model = useNearbyModel({
     center, transitCorridors, bikeCorridors, rail, bus, railFar, busFar, shuttles, docks,
-    modeFilter, paintedVisible: paintedOn, onRequestCorridorShape, startDockLabel,
+    modeFilter: isV2 ? 'all' : modeFilter, paintedVisible: paintedOn, onRequestCorridorShape, startDockLabel,
+    extrasVisible: !isV2 || extrasLayer || moreBikeOpen,
   })
   const {
     selection, select, handleMarkerTap,
@@ -247,7 +260,7 @@ export default function NearbyShell({
   const routeSel = model.routeSelection
   const perkMarkers = usePerkMarkers({
     perks: nearbyPerks.perks,
-    showNearby: tab === 'explore' && !selection,
+    showNearby: !selection && (isV2 ? perksLayer || moreNearbyOpen : tab === 'explore'),
     route: routeSel?.mode === 'bike' ? reachRows.find(r => r.id === routeSel.id) ?? null : null,
   })
   const mapMarkers = useMemo(
@@ -345,6 +358,32 @@ export default function NearbyShell({
     </>
   )
 
+  // v2: the search leads the sheet; focusing it raises the sheet so the
+  // suggestions have room
+  const v2Header = (
+    <div className="mx-4 mb-2.5" onFocusCapture={() => setSnap('full')}>
+      {/* The original planner below (always mounted) plans a ?to= link on
+          arrival, before the v2 check answers, so this one never does */}
+      <TripPlanner bare center={center} onPlanned={onPlanned} partnerSlug={partnerSlug} autoFocus={planFirst && !planTo} />
+      <V2PlaceChips
+        rows={reach.data}
+        onPick={(row) => selectReach(row, defaultRouteMode(row), 'chip')}
+        morePlacesOpen={morePlacesOpen}
+        onMorePlaces={() => { setMorePlacesOpen(o => !o); setSnap('full') }}
+      />
+      {trafficOn && <TrafficLegend className="mt-2" />}
+    </div>
+  )
+  const v2Layers: V2Layers = { painted: paintedOn, traffic: trafficOn, extras: extrasLayer, perks: perksLayer }
+  const toggleV2Layer = (key: keyof V2Layers) => {
+    if (key === 'painted') setPaintedOn(p => !p)
+    else if (key === 'traffic') toggleTraffic()
+    else if (key === 'extras') setExtrasLayer(x => !x)
+    else setPerksLayer(x => !x)
+  }
+  const visibleRouteIds = new Set(stations.flatMap(st => st.routes.map(r => r.id)))
+  const routeNames = new Map(stations.flatMap(st => st.routes.map(r => [r.id, r.name] as const)))
+
   return (
     // Fixed to the viewport (below the fixed Nav) rather than sized with
     // dvh math — Safari's URL-bar dance and scroll quirks can't touch it
@@ -426,7 +465,15 @@ export default function NearbyShell({
         </button>
       </div>
 
-      <NearbySheet snap={snap} onSnapChange={handleSnapChange} header={tabBar}>
+      {isV2 && (
+        <div className="absolute right-3 top-[64px] z-10">
+          <V2LayersButton layers={v2Layers} onToggle={toggleV2Layer} />
+        </div>
+      )}
+
+      <NearbySheet snap={snap} onSnapChange={handleSnapChange} header={isV2 ? v2Header : tabBar}>
+        {v2.checked && !v2.signedIn && wantsSignIn() && <NearbySignIn />}
+
         {/* Detail view replaces the tab content; tabs stay mounted below so
             list scroll positions survive */}
         {selection && (
@@ -484,7 +531,83 @@ export default function NearbyShell({
           </div>
         )}
 
-        <div className={selection || tab !== 'transit' ? 'hidden' : ''}>
+        {isV2 && !selection && (
+          <div>
+            {morePlacesOpen && reach.status === 'ready' && reachRows.length > 0 && (
+              <div className="mb-5">
+                <ReachList
+                  center={center}
+                  rows={reachRows}
+                  modeFilter="all"
+                  onRowTap={(row) => selectReach(row, defaultRouteMode(row), 'list')}
+                />
+              </div>
+            )}
+            {outside && (
+              <p className="mb-3 rounded-xl border border-(--nb-warn-line) bg-(--nb-warn-tint) px-4 py-3 text-[0.875rem] leading-relaxed text-(--nb-ink)">
+                {tr('shell.outside_banner')}
+              </p>
+            )}
+            {transitStatus === 'loading' && stations.length === 0 && <SkeletonRows count={3} />}
+            <V2Blocks
+              stations={stations}
+              alerts={nearbyAlerts(alerts, visibleRouteIds)}
+              routeNames={routeNames}
+              docks={docks}
+              bikeCorridors={bikeCorridors}
+              events={community.data?.events ?? []}
+              eventsLoading={community.status === 'loading'}
+              onLine={(row) => corridorById.has(`transit:${row.routeId}`)
+                ? selectShowing({ type: 'corridor', id: `transit:${row.routeId}` }, 'board')
+                : selectShowing({ type: 'station', key: row.stationKey }, 'board')}
+              onDock={(id) => selectShowing({ type: 'dock', id }, 'board')}
+              onBikeRoute={(id) => selectShowing({ type: 'corridor', id }, 'board')}
+              renderAllStops={() => (
+                <StationList
+                  stations={stations}
+                  corridorById={corridorById}
+                  highlightedCorridorId={highlightedCorridorId}
+                  status={transitStatus}
+                  onRetry={onRetry}
+                  onSelectRoute={(id) => selectShowing({ type: 'corridor', id }, 'list')}
+                  onFocusStation={focusStationReveal}
+                  focusedStationKey={model.focusedStationKey}
+                  alerts={alerts}
+                  mode="all"
+                  crossModeNearest={null}
+                  onSwitchMode={handleModeChange}
+                />
+              )}
+              moreBikeOpen={moreBikeOpen}
+              onMoreBike={() => setMoreBikeOpen(o => !o)}
+              renderMoreBike={() => (
+                <>
+                  <BikeRouteList
+                    bikeCorridors={bikeCorridors}
+                    popularStreetKeys={popularBikeStreetKeys}
+                    highlightedCorridorId={highlightedCorridorId}
+                    onSelect={(id) => selectShowing({ type: 'corridor', id }, 'list')}
+                    isSectionOpen={isSectionOpen}
+                    onToggleSection={toggleSection}
+                  />
+                  <DockList docks={docks} onSelect={(id) => selectShowing({ type: 'dock', id }, 'list')} selectedId={null} isSectionOpen={isSectionOpen} onToggleSection={toggleSection} />
+                  <BorrowRentList points={model.borrowRent} onSelect={(id) => selectShowing({ type: 'borrow', id }, 'list')} selectedId={null} isSectionOpen={isSectionOpen} onToggleSection={toggleSection} />
+                  <RepairList places={model.repairPlaces} onSelect={(id) => selectShowing({ type: 'repair', id }, 'list')} selectedId={null} isSectionOpen={isSectionOpen} onToggleSection={toggleSection} />
+                </>
+              )}
+              moreNearbyOpen={moreNearbyOpen}
+              onMoreNearby={() => setMoreNearbyOpen(o => !o)}
+              renderMoreNearby={() => (
+                <>
+                  <ExploreBody community={community} />
+                  <ExplorePerks perks={nearbyPerks.perks} planning={nearbyPerks.planning} failed={nearbyPerks.failed} onPlan={nearbyPerks.plan} />
+                </>
+              )}
+            />
+          </div>
+        )}
+
+        <div className={isV2 || selection || tab !== 'transit' ? 'hidden' : ''}>
           {outside && (
             <p className="mb-2 rounded-xl border border-(--nb-warn-line) bg-(--nb-warn-tint) px-4 py-3 text-[0.82rem] leading-relaxed text-(--nb-ink)">
               {tr('shell.outside_banner')}
@@ -548,7 +671,7 @@ export default function NearbyShell({
           )}
         </div>
 
-        <div className={selection || tab !== 'destinations' ? 'hidden' : ''}>
+        <div className={isV2 || selection || tab !== 'destinations' ? 'hidden' : ''}>
           {/* Planning a specific trip leads — most people arrive wanting
               their own destination, not our curated set. It answers here,
               in a row like any other; the Advisor's full cost comparison
@@ -576,7 +699,7 @@ export default function NearbyShell({
           </div>
         </div>
 
-        <div className={selection || tab !== 'explore' ? 'hidden' : ''}>
+        <div className={isV2 || selection || tab !== 'explore' ? 'hidden' : ''}>
           <div className="mt-2">
             <ExploreBody community={community} />
             <ExplorePerks perks={nearbyPerks.perks} planning={nearbyPerks.planning} failed={nearbyPerks.failed} onPlan={nearbyPerks.plan} />
