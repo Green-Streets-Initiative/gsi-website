@@ -60,6 +60,8 @@ export default function ManageRides() {
   const wentAnswer = params.get('a')
   const [went, setWent] = useState<WentResult | null>(null)
   const wentSent = useRef(false)
+  // The date they just answered sits in the card above, not in the list again.
+  const shown = (r: GuestRide) => r.dates.filter((d) => d.id !== went?.occurrence_id)
 
   const load = useCallback(async () => {
     if (!token) { setError('This page needs the link from your ride email.'); return }
@@ -144,7 +146,7 @@ export default function ManageRides() {
             {went.ride_name}{went.date_title && went.date_title !== went.ride_name ? `: ${went.date_title}` : ''}, {dayShort(went.date)}, {dateShort(went.date)}.
             {went.went ? ' The organizer sees you came.' : ''}
           </p>
-          {data.rides.some((r) => r.dates.some((d) => d.status === 'scheduled')) && (
+          {data.rides.some((r) => r.dates.some((d) => d.status === 'scheduled' && d.date > went.date)) && (
             <p className="mt-1 text-[15px] text-(--ev-ink-80)">Coming next time? Pick your answer below.</p>
           )}
           <button
@@ -193,11 +195,11 @@ export default function ManageRides() {
                 </div>
               </div>
             )}
-            {r.dates.length === 0 ? (
+            {shown(r).length === 0 ? (
               <p className="mt-2 text-[14px] text-(--ev-ink-75)">No upcoming dates.</p>
             ) : (
               <ul className="mt-3 divide-y divide-(--ev-line)">
-                {r.dates.map((d) => (
+                {shown(r).map((d) => (
                   <li key={d.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
                     <div>
                       <p className="text-[15px] font-semibold text-(--ev-ink)">{dayShort(d.date)}, {dateShort(d.date)}</p>
