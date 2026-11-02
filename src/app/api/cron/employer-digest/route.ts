@@ -11,7 +11,6 @@ import {
   type GoalOnboardingLike,
   type ParticipationPace,
 } from '@/lib/employer/goal-pace'
-import { formatCo2 } from '@/lib/impact-range'
 
 export const runtime = 'nodejs'
 export const maxDuration = 120
@@ -50,6 +49,12 @@ type DashboardRow = {
   /** The portal's CO₂e figure (per-mode factors and the rider's car). The
    * legacy co2_avoided_kg above is a flat 0.404 kg a mile, about 3x higher. */
   co2_avoided_kg_v2?: number
+  /** Share of ground travel emissions shifted (Shift migration 01591): CO₂
+   * avoided over CO₂ had every ground mile been driven alone. The same figure
+   * the portal and the app show. Null with no ground miles. */
+  emissions_shifted_pct?: number | null
+  /** The 7 days before this window, from the same call. */
+  prior_period?: { emissions_shifted_pct?: number | null }
   mode_breakdown: Array<{ mode: string; trip_count: number }>
   shift_rate_trip_pct: number
   /** Trips not driven alone (carpools count; Shift migration 01160). Absent
@@ -73,10 +78,9 @@ function escapeHtml(str: string): string {
     .replace(/"/g, '&quot;')
 }
 
-/** CO₂e avoided, the same figure the portal's Impact page shows (UX-E1).
- *  null when the RPC didn't send it: the email says "—", never a made-up 0. */
-function co2Kg(row: DashboardRow | null): number | null {
-  const v = row?.co2_avoided_kg_v2
+/** A share in percent, or null when the RPC didn't send one: the email
+ *  says "—", never a made-up 0. */
+function pctOrNull(v: number | null | undefined): number | null {
   return typeof v === 'number' && Number.isFinite(v) ? v : null
 }
 
@@ -259,7 +263,7 @@ function buildDigestHtml(opts: {
   groupName: string
   groupLogoUrl: string | null
   thisWeek: DashboardRow
-  priorWeek: { active_trips: number; miles: number; co2: number | null; shift_rate: number }
+  priorWeek: { active_trips: number; miles: number; emissions_pct: number | null; shift_rate: number }
   newMemberCount: number
   showNewMembers: boolean
   milestone: number | null
@@ -271,6 +275,7 @@ function buildDigestHtml(opts: {
   goalSection?: string
 }): string {
   const { groupName, groupLogoUrl, thisWeek, priorWeek, newMemberCount, showNewMembers, milestone, showMilestone } = opts
+  const emissionsPct = pctOrNull(thisWeek.emissions_shifted_pct)
 
   const newMembersSection = showNewMembers && newMemberCount > 0
     ? `<tr><td style="padding:0 32px 24px;">
@@ -325,9 +330,9 @@ function buildDigestHtml(opts: {
           ${statCell('Active trips', String(thisWeek.active_trips_this_period), delta(thisWeek.active_trips_this_period, priorWeek.active_trips))}
           ${statCell('Miles shifted', thisWeek.miles_shifted.toFixed(1), delta(thisWeek.miles_shifted, priorWeek.miles))}
           ${statCell(
-            'CO&#8322;e avoided',
-            co2Kg(thisWeek) == null ? '—' : formatCo2(co2Kg(thisWeek)!),
-            co2Kg(thisWeek) == null || priorWeek.co2 == null ? '—' : delta(co2Kg(thisWeek)!, priorWeek.co2),
+            'Ground travel emissions shifted',
+            emissionsPct == null ? '—' : Math.round(emissionsPct) + '%',
+            emissionsPct == null || priorWeek.emissions_pct == null ? '—' : deltaPts(emissionsPct, priorWeek.emissions_pct),
           )}
           ${statCell('Shift Rate', Math.round(thisWeek.shift_rate_trip_pct) + '%', deltaPts(thisWeek.shift_rate_trip_pct, priorWeek.shift_rate))}
         </tr>
@@ -782,10 +787,10 @@ export async function GET(req: Request) {
       ? {
           active_trips: priorActiveTrips,
           miles: twoWeek.miles_shifted - thisWeek.miles_shifted,
-          co2: co2Kg(twoWeek) == null || co2Kg(thisWeek) == null ? null : co2Kg(twoWeek)! - co2Kg(thisWeek)!,
+          emissions_pct: pctOrNull(thisWeek.prior_period?.emissions_shifted_pct),
           shift_rate: priorTrips > 0 ? (priorShiftedTrips / priorTrips) * 100 : 0,
         }
-      : { active_trips: 0, miles: 0, co2: 0, shift_rate: 0 }
+      : { active_trips: 0, miles: 0, emissions_pct: null, shift_rate: 0 }
 
     // Milestone check (total enrolled members)
     const lastNotified = group.milestone_last_notified ?? 0
