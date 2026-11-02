@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect, useMemo, useCallback } from 'react'
+import { useState, useRef, useEffect, useMemo, useCallback, type ComponentProps } from 'react'
 import Link from 'next/link'
 import posthog from 'posthog-js'
 import { trackAdConversion } from '@/lib/ad-pixels'
@@ -11,7 +11,8 @@ import { defaultRouteMode, reachModeFor } from '@/lib/nearby/reach-ui'
 import { directionsUrl } from '@/lib/nearby/transit-ui'
 import BikeComfortBlock from './BikeComfortBlock'
 import type { TripDest } from '@/lib/nearby/share'
-import type { SectionData, SectionStatus, CommunityData, GuideItem, ReachRow } from './types'
+import type { SectionData, SectionStatus, CommunityData, GuideItem, ReachRow, BikeComfortData } from './types'
+import { useAvoidStreets } from './useAvoidStreets'
 import NearbyMap, { TrafficToggle, TrafficLegend, useTrafficPreference, type FitPadding, type RouteLegTapInfo } from './NearbyMap'
 import { useReachOverlay } from './useReachOverlay'
 import NearbySheet from './NearbySheet'
@@ -220,7 +221,11 @@ export default function NearbyShell({
   // it renders, draws and selects exactly like a curated one — the planner
   // needed no new detail UI because a planned trip IS a reach row.
   const [plannedRows, setPlannedRows] = useState<ReachRow[]>([])
-  const reachRows = useMemo(() => [...plannedRows, ...reach.data], [plannedRows, reach.data])
+  // Around You v2: a trip re-planned around a street swaps in its new route
+  // here, so the map, the times and the detail all draw it.
+  const { apply: applyAvoid, avoid: avoidStreet, undo: undoAvoid, stateFor: avoidState } = useAvoidStreets(center)
+  const reachRows = useMemo(
+    () => [...plannedRows, ...reach.data].map(applyAvoid), [plannedRows, reach.data, applyAvoid])
 
   // Which of the two bike routes is being described. Cleared with the
   // selection — a choice made about one destination means nothing about the
@@ -271,6 +276,19 @@ export default function NearbyShell({
   // Which street bullet the reader is pointing at. Lives here so the list and
   // the map share one answer; cleared whenever the selection moves.
   const [highlightedStreetKey, setHighlightedStreetKey] = useState<string | null>(null)
+
+  const avoidFor = useCallback((row: ReachRow, comfort: BikeComfortData, minutes: number) => ({
+    state: avoidState(row.id),
+    onAvoid: (key: string, label: string) => {
+      void avoidStreet(row, comfort, minutes, key, label).then(ok => {
+        if (!ok) return
+        // The lit street is gone from the new route, which is the calm one
+        setHighlightedStreetKey(null)
+        setBikeAlt(false)
+      })
+    },
+    onUndo: () => undoAvoid(row.id),
+  }), [avoidState, avoidStreet, undoAvoid, setHighlightedStreetKey, setBikeAlt])
 
   // Section-collapse state for the bike-side shelves, owned here so it
   // survives the sheet's snap changes and tab hops (the app hoists it into
@@ -498,6 +516,7 @@ export default function NearbyShell({
                   onPickRoute={setBikeAlt}
                   onPlanCommute={onPlanCommute}
                   partnerSlug={partnerSlug}
+                  avoidFor={isV2 ? avoidFor : undefined}
                 />
               ) : null
             ) : (
@@ -733,7 +752,7 @@ export default function NearbyShell({
 
 /* ── Destination route detail: the route is on the MAIN map above ── */
 
-function ReachDetail({ row, mode, center, onMode, legInfo, highlightedStreetKey, onHighlightStreet, bikeAlt, onPickRoute, onPlanCommute, partnerSlug }: {
+function ReachDetail({ row, mode, center, onMode, legInfo, highlightedStreetKey, onHighlightStreet, bikeAlt, onPickRoute, onPlanCommute, partnerSlug, avoidFor }: {
   row: ReachRow
   mode: 'transit' | 'bike'
   center: { lat: number; lng: number }
@@ -745,6 +764,8 @@ function ReachDetail({ row, mode, center, onMode, legInfo, highlightedStreetKey,
   onPickRoute: (alt: boolean) => void
   onPlanCommute?: (row: ReachRow) => void
   partnerSlug?: string | null
+  /** Around You v2: "Avoid this street" on a lit street. */
+  avoidFor?: (row: ReachRow, comfort: BikeComfortData, minutes: number) => ComponentProps<typeof BikeComfortBlock>['avoid']
 }) {
   const tr = useNearbyT()
   const hasTransit = (row.transit_segments?.length ?? 0) > 0
@@ -803,6 +824,11 @@ function ReachDetail({ row, mode, center, onMode, legInfo, highlightedStreetKey,
             comfort={(bikeAlt ? row.bike_alt?.comfort : row.bike_comfort) ?? row.bike_comfort}
             highlightedStreetKey={highlightedStreetKey}
             onHighlightStreet={onHighlightStreet}
+            avoid={avoidFor?.(
+              row,
+              (bikeAlt ? row.bike_alt?.comfort : row.bike_comfort) ?? row.bike_comfort,
+              bikeAlt && row.bike_alt ? row.bike_alt.minutes : row.bike_minutes,
+            )}
           />
         </>
       )}

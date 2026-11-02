@@ -1,5 +1,6 @@
 'use client'
 
+import type { ComponentProps } from 'react'
 import Link from 'next/link'
 import posthog from 'posthog-js'
 import ModeIcon from '@/components/commute/ModeIcon'
@@ -302,7 +303,7 @@ export function TransitLegs({ steps, segments }: { steps: ReachStep[]; segments?
  *  - `routeSelection`/`onRouteSelect` (desktop two-pane): rows expand in
  *    place, following the PAGE selection — the parent owns the state and
  *    fires the reach_route_viewed analytics. */
-export function ReachList({ center, rows, onRowTap, modeFilter, routeSelection, onRouteSelect, legInfo, highlightedStreetKey, onHighlightStreet, bikeAlt = false, onPickRoute = () => {}, onPlanCommute, partnerSlug }: {
+export function ReachList({ center, rows, onRowTap, modeFilter, routeSelection, onRouteSelect, legInfo, highlightedStreetKey, onHighlightStreet, bikeAlt = false, onPickRoute = () => {}, onPlanCommute, partnerSlug, avoidFor }: {
   center: { lat: number; lng: number }
   rows: ReachRow[]
   onRowTap?: (row: ReachRow) => void
@@ -321,6 +322,9 @@ export function ReachList({ center, rows, onRowTap, modeFilter, routeSelection, 
   onPlanCommute?: (row: ReachRow) => void
   /** Co-brand slug — rides the advisor handoff link when present */
   partnerSlug?: string | null
+  /** Around You v2: "Avoid this street" on a lit street (useAvoidStreets).
+   *  Gets the bike route on screen: its comfort and its minutes. */
+  avoidFor?: (row: ReachRow, comfort: BikeComfortData, minutes: number) => ComponentProps<typeof BikeComfortBlock>['avoid']
 }) {
   const tr = useNearbyT()
   const expanded = routeSelection ?? null
@@ -477,6 +481,11 @@ export function ReachList({ center, rows, onRowTap, modeFilter, routeSelection, 
                           comfort={(bikeAlt ? row.bike_alt?.comfort : row.bike_comfort) ?? row.bike_comfort}
                           highlightedStreetKey={highlightedStreetKey}
                           onHighlightStreet={onHighlightStreet}
+                          avoid={avoidFor?.(
+                            row,
+                            (bikeAlt ? row.bike_alt?.comfort : row.bike_comfort) ?? row.bike_comfort,
+                            bikeAlt && row.bike_alt ? row.bike_alt.minutes : row.bike_minutes,
+                          )}
                         />
                       </>
                     )}

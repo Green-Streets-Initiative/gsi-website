@@ -5,6 +5,7 @@ import { resolveRegion } from '@/lib/nearby/regions'
 import { getBikeNetwork, haversineMeters, type BikeNetworkResponse } from '@/lib/server/bike-network'
 import { canonicalStreetKey, displayStreetName } from '@/lib/nearby/street-names'
 import { decodePolyline, encodePolyline } from '@/lib/geo/polyline'
+import { avoidsAll, detourVias } from '@/lib/nearby/avoid-stretch'
 import { getCrashClusters, type CrashCluster } from './crash-clusters'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { mbtaPilotFare } from '@/lib/nearby/mbta-fare'
@@ -1360,6 +1361,66 @@ export async function buildReachRow(
           comfort: chosen.alt.scored?.comfort ?? null,
         }
       : null,
+  }
+}
+
+/** A bike route re-planned around streets someone asked to avoid. */
+export interface AvoidingRoute {
+  minutes: number
+  polyline: string
+  comfort: BikeComfort | null
+  steps: ReachStep[]
+}
+
+/** The longest a way around may take: past this it's not a way around, it's
+ *  a different trip. */
+const AVOID_EXTRA_MAX_MIN = 20
+const AVOID_EXTRA_MAX_RATIO = 2
+
+/**
+ * "Avoid this street" (Around You v2): the calmest ride from origin to dest
+ * that stays off every street in `avoid` (each a street's stretches, as
+ * encoded polylines; the last one is the street just tapped).
+ *
+ * Three Google calls: the plain alternates, plus one via each side of the new
+ * street (lib/nearby/avoid-stretch). Every route that comes back is checked
+ * against ALL the streets, then ranked exactly as the first answer was.
+ * `route` is null when none of them gets around; null overall when Google
+ * didn't answer, so a failure is never mistaken for "no way around".
+ */
+export async function buildAvoidingRoute(
+  origin: { lat: number; lng: number },
+  dest: { lat: number; lng: number },
+  avoid: string[][],
+  laneIndex: LaneVertex[],
+  crashes: CrashCluster[] = [],
+): Promise<{ route: AvoidingRoute | null } | null> {
+  const streets = avoid.map(group => group.map(decodePolyline))
+  const newest = streets[streets.length - 1] ?? []
+  const vias = detourVias(newest, laneIndex)
+  const routes = (await Promise.all([
+    queryBikeRoutes(origin, dest),
+    ...vias.map(([lat, lng]) => queryBikeRoutes(origin, dest, { lat, lng })),
+  ])).flat()
+  if (routes.length === 0) return null
+
+  const fastest = Math.min(...routes.map(r => r.minutes))
+  const cap = Math.max(fastest + AVOID_EXTRA_MAX_MIN, fastest * AVOID_EXTRA_MAX_RATIO)
+  const ends: [number, number][] = [[origin.lat, origin.lng], [dest.lat, dest.lng]]
+  const around = routes.filter(r =>
+    !!r.encodedPolyline &&
+    r.minutes <= cap &&
+    avoidsAll(streets, decodePolyline(r.encodedPolyline), ends))
+  const chosen = chooseBikeRoute(around, laneIndex, crashes)
+  if (!chosen) return { route: null }
+  const r = chosen.primary
+  return {
+    route: {
+      minutes: r.minutes,
+      polyline: r.encodedPolyline,
+      comfort: r.scored?.comfort ?? null,
+      steps: matchBikeCorridors(r.encodedPolyline, laneIndex),
+    },
   }
 }
 

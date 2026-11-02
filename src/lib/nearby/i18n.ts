@@ -410,7 +410,7 @@ const en: Dict = {
   // Around You v2 (Keith 2026-11-01)
   'v2.where_to': 'Where to?',
   'v2.leaving_soon': 'Leaving soon',
-  'v2.stop_walk': '{stop} · {minutes} min walk',
+  'v2.stop_walk': '{minutes} min walk · {stop}',
   'v2.no_live_times': 'No live times',
   'v2.now': 'Now',
   'v2.min': 'min',
@@ -438,6 +438,16 @@ const en: Dict = {
   'v2.signin_sent': 'Check {email} for a sign-in link.',
   'v2.signin_bad_email': 'Enter your email address.',
   'v2.signin_failed': 'We couldn\'t send the link. Try again in a minute.',
+  'v2.avoid_street': 'Avoid {street}',
+  'v2.avoid_finding': 'Finding a way around {street}…',
+  'v2.avoiding': 'Avoiding {streets}',
+  'v2.avoid_and': ' and ',
+  'v2.avoid_longer': '{minutes} min longer',
+  'v2.avoid_quicker': '{minutes} min quicker',
+  'v2.avoid_same': 'same time',
+  'v2.avoid_undo': 'Undo',
+  'v2.avoid_none': 'No reasonable way around {street}.',
+  'v2.avoid_failed': 'We couldn\'t re-plan just now. Try again.',
 }
 
 const es: Dict = {
@@ -781,7 +791,7 @@ const es: Dict = {
   // Around You v2 (Keith 2026-11-01)
   "v2.where_to": "¿Adónde vas?",
   "v2.leaving_soon": "Sale pronto",
-  "v2.stop_walk": "{stop} · {minutes} min a pie",
+  "v2.stop_walk": "{minutes} min a pie · {stop}",
   "v2.no_live_times": "Sin horarios en vivo",
   "v2.now": "Ya",
   "v2.min": "min",
@@ -809,6 +819,16 @@ const es: Dict = {
   "v2.signin_sent": "Revisa {email}: te enviamos un enlace.",
   "v2.signin_bad_email": "Escribe tu correo.",
   "v2.signin_failed": "No pudimos enviar el enlace. Inténtalo en un minuto.",
+  "v2.avoid_street": "Evitar {street}",
+  "v2.avoid_finding": "Buscando cómo evitar {street}…",
+  "v2.avoiding": "Evitando {streets}",
+  "v2.avoid_and": " y ",
+  "v2.avoid_longer": "{minutes} min más",
+  "v2.avoid_quicker": "{minutes} min menos",
+  "v2.avoid_same": "mismo tiempo",
+  "v2.avoid_undo": "Deshacer",
+  "v2.avoid_none": "No hay una forma razonable de evitar {street}.",
+  "v2.avoid_failed": "No pudimos recalcular la ruta. Inténtalo de nuevo.",
 }
 
 const ptBR: Dict = {
@@ -1152,7 +1172,7 @@ const ptBR: Dict = {
   // Around You v2 (Keith 2026-11-01)
   "v2.where_to": "Para onde?",
   "v2.leaving_soon": "Saindo em breve",
-  "v2.stop_walk": "{stop} · {minutes} min a pé",
+  "v2.stop_walk": "{minutes} min a pé · {stop}",
   "v2.no_live_times": "Sem horários ao vivo",
   "v2.now": "Agora",
   "v2.min": "min",
@@ -1180,6 +1200,16 @@ const ptBR: Dict = {
   "v2.signin_sent": "Veja {email}: enviamos um link.",
   "v2.signin_bad_email": "Digite seu e-mail.",
   "v2.signin_failed": "Não conseguimos enviar o link. Tente de novo em um minuto.",
+  "v2.avoid_street": "Evitar {street}",
+  "v2.avoid_finding": "Procurando um caminho que evite {street}…",
+  "v2.avoiding": "Evitando {streets}",
+  "v2.avoid_and": " e ",
+  "v2.avoid_longer": "{minutes} min a mais",
+  "v2.avoid_quicker": "{minutes} min a menos",
+  "v2.avoid_same": "mesmo tempo",
+  "v2.avoid_undo": "Desfazer",
+  "v2.avoid_none": "Não há um caminho razoável que evite {street}.",
+  "v2.avoid_failed": "Não conseguimos refazer a rota agora. Tente de novo.",
 }
 
 const zhHans: Dict = {
@@ -1523,7 +1553,7 @@ const zhHans: Dict = {
   // Around You v2 (Keith 2026-11-01)
   "v2.where_to": "去哪里？",
   "v2.leaving_soon": "即将发车",
-  "v2.stop_walk": "{stop} · 步行 {minutes} 分钟",
+  "v2.stop_walk": "步行 {minutes} 分钟 · {stop}",
   "v2.no_live_times": "暂无实时时间",
   "v2.now": "现在",
   "v2.min": "分钟",
@@ -1551,6 +1581,16 @@ const zhHans: Dict = {
   "v2.signin_sent": "请查看 {email} 中的登录链接。",
   "v2.signin_bad_email": "请输入电子邮箱。",
   "v2.signin_failed": "链接发送失败，请一分钟后再试。",
+  "v2.avoid_street": "避开{street}",
+  "v2.avoid_finding": "正在寻找避开{street}的路线…",
+  "v2.avoiding": "已避开{streets}",
+  "v2.avoid_and": "和",
+  "v2.avoid_longer": "多 {minutes} 分钟",
+  "v2.avoid_quicker": "少 {minutes} 分钟",
+  "v2.avoid_same": "用时相同",
+  "v2.avoid_undo": "撤销",
+  "v2.avoid_none": "没有合理的路线可以避开{street}。",
+  "v2.avoid_failed": "暂时无法重新规划，请再试一次。",
 }
 
 const strings: Record<NearbyLocale, Dict> = {

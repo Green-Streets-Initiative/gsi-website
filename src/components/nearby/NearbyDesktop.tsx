@@ -5,7 +5,8 @@ import posthog from 'posthog-js'
 import type { BluebikeStationLive, MBTAStopLive } from '@/lib/wayfinding/types'
 import type { TransitCorridor, BikeCorridor } from '@/lib/nearby/corridors'
 import type { TripDest } from '@/lib/nearby/share'
-import type { SectionData, SectionStatus, CommunityData, GuideItem, ReachRow } from './types'
+import type { SectionData, SectionStatus, CommunityData, GuideItem, ReachRow, BikeComfortData } from './types'
+import { useAvoidStreets } from './useAvoidStreets'
 import NearbyMap, { TrafficToggle, TrafficLegend, useTrafficPreference, type FitPadding, type RouteLegTapInfo } from './NearbyMap'
 import { useInitialFocus } from './useInitialFocus'
 import type { InitialFocus } from '@/lib/nearby/focus'
@@ -162,7 +163,11 @@ export default function NearbyDesktop({
   // it renders, draws and selects exactly like a curated one — the planner
   // needed no new detail UI because a planned trip IS a reach row.
   const [plannedRows, setPlannedRows] = useState<ReachRow[]>([])
-  const reachRows = useMemo(() => [...plannedRows, ...reach.data], [plannedRows, reach.data])
+  // Around You v2: a trip re-planned around a street swaps in its new route
+  // here, so the map, the times and the rows all draw it.
+  const { apply: applyAvoid, avoid: avoidStreet, undo: undoAvoid, stateFor: avoidState } = useAvoidStreets(center)
+  const reachRows = useMemo(
+    () => [...plannedRows, ...reach.data].map(applyAvoid), [plannedRows, reach.data, applyAvoid])
 
   // Which of the two bike routes is being described. Cleared with the
   // selection — a choice made about one destination means nothing about the
@@ -293,6 +298,19 @@ export default function NearbyDesktop({
   // Which street bullet the reader is pointing at. Lives here so the list and
   // the map share one answer; cleared whenever the selection moves.
   const [highlightedStreetKey, setHighlightedStreetKey] = useState<string | null>(null)
+
+  const avoidFor = useCallback((row: ReachRow, comfort: BikeComfortData, minutes: number) => ({
+    state: avoidState(row.id),
+    onAvoid: (key: string, label: string) => {
+      void avoidStreet(row, comfort, minutes, key, label).then(ok => {
+        if (!ok) return
+        // The lit street is gone from the new route, which is the calm one
+        setHighlightedStreetKey(null)
+        setBikeAlt(false)
+      })
+    },
+    onUndo: () => undoAvoid(row.id),
+  }), [avoidState, avoidStreet, undoAvoid, setHighlightedStreetKey, setBikeAlt])
 
   // Section-collapse state for the bike-side shelves, owned here so it
   // survives the sheet's snap changes and tab hops (the app hoists it into
@@ -538,6 +556,7 @@ export default function NearbyDesktop({
                       onPickRoute={setBikeAlt}
                       onPlanCommute={onPlanCommute}
                       partnerSlug={partnerSlug}
+                      avoidFor={avoidFor}
                     />
                   </div>
                 )}

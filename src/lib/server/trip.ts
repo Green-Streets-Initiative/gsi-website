@@ -2,6 +2,7 @@ import 'server-only'
 
 import { unstable_cache } from 'next/cache'
 import {
+  buildAvoidingRoute,
   buildReachRow,
   laneIndexAlong,
   crashesFor,
@@ -9,6 +10,7 @@ import {
   nextMonday830,
   queryWalkRoute,
   REACH_ROW_VERSION,
+  type AvoidingRoute,
   type ReachRow,
 } from './reach'
 import { bikePerkPool } from './bike-perks'
@@ -129,6 +131,41 @@ async function computeTrip(
     // calmer line exists that Google's own alternates all missed.
     true,
   )
+}
+
+const avoidCache = new Map<string, { result: { route: AvoidingRoute | null }; expires: number }>()
+
+/**
+ * A trip's bike route re-planned around the streets someone asked to avoid
+ * (Around You v2). Cached a day per instance, keyed on the streets'
+ * geometry; a Google failure (null) is never kept.
+ */
+export async function getTripAvoiding(
+  from: { lat: number; lng: number },
+  to: { lat: number; lng: number },
+  avoid: string[][],
+): Promise<{ route: AvoidingRoute | null } | null> {
+  const f = { lat: round3(from.lat), lng: round3(from.lng) }
+  const t = { lat: round3(to.lat), lng: round3(to.lng) }
+  const key = `${REACH_ROW_VERSION}:${f.lat},${f.lng}|${t.lat},${t.lng}|${fnv(avoid.map(g => g.join(' ')).join('|'))}`
+  const cached = avoidCache.get(key)
+  if (cached && cached.expires > Date.now()) return cached.result
+
+  const [laneIndex, crashes] = await Promise.all([laneIndexAlong(f, [t]), crashesFor(f.lat, f.lng)])
+  const result = await buildAvoidingRoute(f, t, avoid, laneIndex, crashes)
+  if (!result) return null
+  if (avoidCache.size >= CACHE_MAX_ENTRIES) {
+    const oldest = avoidCache.keys().next().value
+    if (oldest) avoidCache.delete(oldest)
+  }
+  avoidCache.set(key, { result, expires: Date.now() + CACHE_TTL_MS })
+  return result
+}
+
+function fnv(s: string): string {
+  let h = 2166136261
+  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = (h * 16777619) >>> 0 }
+  return h.toString(36)
 }
 
 /** The walking route between two points, cached a day like the trip itself.

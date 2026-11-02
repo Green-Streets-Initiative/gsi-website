@@ -7,6 +7,7 @@ import { PanelPhoto } from './DetailPanel'
 import { decodePolyline, bearingDegrees } from '@/lib/geo/polyline'
 import { OTHER_OWNER } from '@/lib/nearby/route-lines'
 import type { BikeComfortData, BikeComfortTier } from './types'
+import type { AvoidState } from './useAvoidStreets'
 
 /**
  * Comfort picture for a reach row's bike route: the segmented comfort bar
@@ -57,12 +58,18 @@ function streetPhotoSpec(
   return { lat, lng, heading }
 }
 
-export default function BikeComfortBlock({ comfort, highlightedStreetKey, onHighlightStreet }: {
+export default function BikeComfortBlock({ comfort, highlightedStreetKey, onHighlightStreet, avoid }: {
   comfort: BikeComfortData
   /** The street currently lit on the map, if any. */
   highlightedStreetKey?: string | null
   /** Point at a street (or null to clear). Undefined leaves rows inert. */
   onHighlightStreet?: (key: string | null) => void
+  /** Around You v2: a lit street can be avoided (useAvoidStreets). */
+  avoid?: {
+    state: AvoidState
+    onAvoid: (key: string, label: string) => void
+    onUndo: () => void
+  }
 }) {
   const tr = useNearbyT()
   // ComfortBar defaults to the navy styling (white text); on the cream page
@@ -75,8 +82,31 @@ export default function BikeComfortBlock({ comfort, highlightedStreetKey, onHigh
     bike_lane: tr('bike.bike_lane'),
     shared_road: tr('bike.shared_road'),
   }
+  const av = avoid?.state
+  const delta = av?.deltaMin ?? null
   return (
     <div className="mt-2.5 space-y-2">
+      {av && av.avoiding.length > 0 && (
+        <div className="flex items-center justify-between gap-2 rounded-lg bg-(--nb-panel) px-2.5 py-1.5 text-[0.875rem] text-(--nb-ink)">
+          <span className="min-w-0">
+            {tr('v2.avoiding', { streets: av.avoiding.join(tr('v2.avoid_and')) })}
+            {delta !== null && (
+              <span className="text-(--nb-ink-70)">
+                {' · '}
+                {delta > 0
+                  ? tr('v2.avoid_longer', { minutes: delta })
+                  : delta < 0 ? tr('v2.avoid_quicker', { minutes: -delta }) : tr('v2.avoid_same')}
+              </span>
+            )}
+          </span>
+          <button
+            onClick={avoid!.onUndo}
+            className="min-h-[36px] shrink-0 px-2 text-[0.875rem] font-semibold text-(--nb-accent)"
+          >
+            {tr('v2.avoid_undo')}
+          </button>
+        </div>
+      )}
       <ComfortBar
         rating={comfort.rating}
         segments={comfort.segments.map(s => ({ label: '', rating: s.rating, distance_mi: s.distance_mi }))}
@@ -136,6 +166,28 @@ export default function BikeComfortBlock({ comfort, highlightedStreetKey, onHigh
                       imagery. */}
                   {photo && (
                     <PanelPhoto spec={{ kind: 'sv', ...photo }} alt={s.label} />
+                  )}
+                  {on && av && (
+                    <div className="mb-1 mt-1.5 px-1">
+                      {av.noneKey === s.key ? (
+                        <p className="text-[0.875rem] text-(--nb-ink-80)">{tr('v2.avoid_none', { street: s.label })}</p>
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => avoid!.onAvoid(s.key!, s.label)}
+                            disabled={av.pendingKey !== null}
+                            className="min-h-[36px] rounded-full border border-(--nb-line-mid) px-3 py-1 text-[0.8125rem] font-semibold text-(--nb-ink-80) hover:border-(--nb-line-strong) hover:text-(--nb-ink) disabled:opacity-70"
+                          >
+                            {av.pendingKey === s.key
+                              ? tr('v2.avoid_finding', { street: s.label })
+                              : tr('v2.avoid_street', { street: s.label })}
+                          </button>
+                          {av.failedKey === s.key && (
+                            <p className="mt-1 text-[0.875rem] text-(--nb-ink-80)">{tr('v2.avoid_failed')}</p>
+                          )}
+                        </>
+                      )}
+                    </div>
                   )}
                 </div>
               ) : (
