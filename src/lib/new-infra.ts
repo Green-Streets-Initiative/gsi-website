@@ -6,7 +6,7 @@
  * page, the town page and both assistants so they say it the same way.
  *
  * What counts as new is decided in the database, not here: MassDOT's opening
- * dates for the last two years, OpenStreetMap changes only when something
+ * dates for the last six months, OpenStreetMap changes only when something
  * besides one mapper backs them, and located street-project hearings still
  * ahead. See Shift docs/programs/product/new-this-season-2026-11/design.md.
  */

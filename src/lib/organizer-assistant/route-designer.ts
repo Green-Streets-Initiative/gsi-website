@@ -10,6 +10,7 @@ import { getBikeNetwork, haversineMeters, type BikeNetworkResponse } from '@/lib
 import { getBikeShareDocks } from '@/lib/server/bluebikes'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { bikeFriendlyPlaces, type BikeFriendlyPlace } from '@/lib/server/bike-friendly'
+import { NEW_FACILITY_MONTHS } from '@/lib/nearby/corridors'
 
 /**
  * The organizer assistant's route designer (Keith 2026-10-23): from goals in
@@ -21,7 +22,7 @@ import { bikeFriendlyPlaces, type BikeFriendlyPlace } from '@/lib/server/bike-fr
  *    Google Places near the start;
  *  - bike lanes worth showing off: the longest protected lanes and paths
  *    nearby (the /nearby bike network), or lanes MassDOT records as opened
- *    in the last two years (BikeInventory Open_Date; that is how Cummins
+ *    in the last six months (BikeInventory Open_Date; that is how Cummins
  *    Highway, opened 2026-08, shows up);
  *  - for a loop with a target distance, a turnaround point placed in the
  *    widest gap between stops and nudged onto a calm street, re-planned
@@ -297,7 +298,7 @@ async function bestLanes(start: LatLng, radiusMi: number): Promise<Lane[]> {
 }
 
 /**
- * Lanes MassDOT records as opened in the last two years, near the start.
+ * Lanes MassDOT records as opened in the last six months, near the start.
  * The site's bike network carries the same opening dates but reaches 3 mi;
  * a ride's area can be wider, so this asks MassDOT, and keeps the answer a
  * day per area (MassDOT adds lanes a few times a year).
@@ -308,13 +309,13 @@ async function newLanes(start: LatLng, radiusMi: number): Promise<Lane[]> {
 
 const newLanesCached = unstable_cache(
   (lat: number, lng: number, radiusMi: number) => fetchNewLanes({ lat, lng }, radiusMi),
-  ['designer-new-lanes-v1'],
+  ['designer-new-lanes-v2'],
   { revalidate: 24 * 60 * 60 },
 )
 
 async function fetchNewLanes(start: LatLng, radiusMi: number): Promise<Lane[]> {
   const since = new Date()
-  since.setFullYear(since.getFullYear() - 2)
+  since.setMonth(since.getMonth() - NEW_FACILITY_MONTHS)
   const dLat = radiusMi / 69
   const dLng = radiusMi / (69 * Math.cos((start.lat * Math.PI) / 180))
   const params = new URLSearchParams({
@@ -534,7 +535,7 @@ export async function designRoute(token: string, input: DesignInput): Promise<De
     const pick = lanes.slice(0, input.showcase === 'new' ? 2 : 1)
     if (pick.length === 0) {
       notes.push(input.showcase === 'new'
-        ? 'MassDOT lists no bike lanes opened in the last two years near this start. It misses many city projects, so the organizer may know of one to add by name.'
+        ? 'MassDOT lists no bike lanes opened in the last six months near this start. It misses many city projects, so the organizer may know of one to add by name.'
         : 'No long protected lane or path close to this start.')
     }
     for (const l of pick) { groups.push(laneStops(l, start)); showcased.push(l) }

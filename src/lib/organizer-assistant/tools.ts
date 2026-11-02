@@ -143,7 +143,7 @@ export const TOOLS: Anthropic.Tool[] = [
   },
   {
     name: 'get_whats_new',
-    description: "What's new on a ride's route: bike lanes and paths it rides that opened in the last two years (MassDOT's bike inventory, plus OpenStreetMap changes only when a second source backs them), and street projects along it with a public hearing coming. A date with no route gets the half mile around its meeting point. Or near any place. The same lines show on the ride page under \"New on this route\". Good for a ride description (\"we'll ride the new Cummins Hwy protected lane\").",
+    description: "What's new on a ride's route: bike lanes and paths it rides that opened in the last six months (MassDOT's bike inventory, plus OpenStreetMap changes only when a second source backs them), and street projects along it with a public hearing coming. A date with no route gets the half mile around its meeting point. Or near any place. The same lines show on the ride page under \"New on this route\". Good for a ride description (\"we'll ride the new Cummins Hwy protected lane\").",
     input_schema: {
       type: 'object',
       properties: {
@@ -188,7 +188,7 @@ export const TOOLS: Anthropic.Tool[] = [
   },
   {
     name: 'plan_route',
-    description: "Design a ride route from goals and have Shift's route planner build it: a loop or A to B, a target distance, places to pass (by name, or a kind like \"a coffee shop\"), bike lanes to show off (the longest protected lanes and paths nearby, or lanes opened in the last two years), and staying near Bluebikes docks and T stations. Returns the distance, riding time, share on calm streets, the spots to take carefully, how each goal came out, and a button that opens the route street by street with Street View in the editor, where they save it. Nothing is saved by this tool. Takes up to a minute.",
+    description: "Design a ride route from goals and have Shift's route planner build it: a loop or A to B, a target distance, places to pass (by name, or a kind like \"a coffee shop\"), bike lanes to show off (the longest protected lanes and paths nearby, or lanes opened in the last six months), and staying near Bluebikes docks and T stations. Returns the distance, riding time, share on calm streets, the spots to take carefully, how each goal came out, and a button that opens the route street by street with Street View in the editor, where they save it. Nothing is saved by this tool. Takes up to a minute.",
     input_schema: {
       type: 'object',
       properties: {
@@ -200,7 +200,7 @@ export const TOOLS: Anthropic.Tool[] = [
         target_miles: nullable('number', 'About how long, in miles.'),
         pace: nullable('string', 'relaxed (8–12 mph), moderate (12–15), brisk (15–18), fast (18+) or kids (5–8). A speed they give maps to the band it falls in.'),
         places: { type: 'array', items: { type: 'string' }, description: 'Places to pass, in their words: "Bow Market", "a coffee shop near the halfway point", "Mystic River Reservation". At most six.' },
-        showcase: { type: ['string', 'null'], enum: ['protected', 'new', null], description: 'protected: ride the best protected lanes and car-free paths nearby. new: ride lanes MassDOT lists as opened in the last two years.' },
+        showcase: { type: ['string', 'null'], enum: ['protected', 'new', null], description: 'protected: ride the best protected lanes and car-free paths nearby. new: ride lanes MassDOT lists as opened in the last six months.' },
         near_station_miles: nullable('number', 'Check that the start, and as much of the route as possible, is within this many miles of a Bluebikes dock or T station.'),
         prefer: { type: 'array', items: { type: 'string', enum: ['bicycle_benefits', 'bike_friendly_business'] }, description: 'Bike-friendly businesses to favor for a stop given as a kind ("a coffee shop"). bicycle_benefits: Bicycle Benefits members, which give a perk to people with the program\'s helmet sticker. bike_friendly_business: businesses the League of American Bicyclists certifies as Bicycle Friendly. Use what the organizer asks for.' },
       },

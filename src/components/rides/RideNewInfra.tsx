@@ -5,7 +5,7 @@ import { todayKey } from '@/lib/organizers/ride-words'
 
 /**
  * "New on this route": lanes and paths the ride uses that opened in the last
- * two years, then street projects along it with a hearing coming (Shift 01577).
+ * six months, then street projects along it with a hearing coming (Shift 01577).
  * A ride with no drawn route gets the same for the half mile around its
  * meeting spot. Opened leads: it's the news a rider can use on the day.
  */

@@ -17,7 +17,7 @@ export default function NewInTown({ info, townName, hasInvolved }: { info: NewIn
     <div className="max-w-[720px]">
       <SectionHeading
         title={`New in ${townName}`}
-        lede="Bike lanes and paths that opened in the last two years, from MassDOT's bike inventory."
+        lede="Bike lanes and paths that opened in the last six months, from MassDOT's bike inventory."
       />
       <ul className="divide-y divide-navy/10 border-y border-navy/15">
         {shown.map((o) => (

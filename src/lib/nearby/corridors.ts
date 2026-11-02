@@ -130,14 +130,15 @@ export interface BikeCorridor {
   accessDistanceMeters: number
   accessPoint: { lat: number; lng: number }
   geojson: GeoJSON.FeatureCollection
-  /** A real stretch of it opened in the last two years (MassDOT Open_Date):
+  /** A real stretch of it opened in the last six months (MassDOT Open_Date):
    *  the latest month, "YYYY-MM", and how many miles of it are that new.
    *  Absent otherwise. Shown as "New · opened Aug 2026". */
   newlyOpened?: { month: string; miles: number }
 }
 
-/** How far back "new" reaches for a bike facility. */
-export const NEW_FACILITY_MONTHS = 24
+/** How far back "new" reaches for a bike facility: six months (Keith
+ *  2026-11-02, the same window as Shift's _nbi_new_since, 01593). */
+export const NEW_FACILITY_MONTHS = 6
 
 export type Corridor = TransitCorridor | BikeCorridor
 

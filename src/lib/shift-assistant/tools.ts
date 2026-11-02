@@ -431,7 +431,7 @@ export const TOOLS: Anthropic.Tool[] = [
   },
   {
     name: 'get_whats_new',
-    description: "New bike infrastructure: lanes and paths that opened in the last two years (MassDOT's bike inventory, plus OpenStreetMap changes only when a second source backs them), and street, path and intersection projects with a public hearing or comment period coming. Near a place, in a town, or along the bike route between two places. Use for \"what's new near me\", \"any new bike lanes on my way to work\", \"what's changing on Broadway\".",
+    description: "New bike infrastructure: lanes and paths that opened in the last six months (MassDOT's bike inventory, plus OpenStreetMap changes only when a second source backs them), and street, path and intersection projects with a public hearing or comment period coming. Near a place, in a town, or along the bike route between two places. Use for \"what's new near me\", \"any new bike lanes on my way to work\", \"what's changing on Broadway\".",
     input_schema: {
       type: 'object',
       properties: {
