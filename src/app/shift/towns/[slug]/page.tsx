@@ -108,7 +108,7 @@ export default async function TownPage({ params }: { params: Promise<{ slug: str
     getTownRoams(centroid),
     getTownPartners(name, town.state),
     getTownHeatmap(town.group_id),
-    getEventPicks(centroid, 8, { recRidesAsFill: true }),
+    getEventPicks(centroid, 8, { recRidesAsFill: true, town: { name, state: town.state } }),
     getTownResources(town.group_id),
     getTownCivicEvents(name),
     // MassDOT and the town boundaries cover Massachusetts only.
