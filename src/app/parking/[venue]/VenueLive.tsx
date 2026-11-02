@@ -53,6 +53,11 @@ const railName = (route: string) =>
 const clock = (iso: string) =>
   new Date(iso).toLocaleTimeString('en-US', { timeZone: 'America/New_York', hour: 'numeric', minute: '2-digit' })
 
+// MBTA headers abbreviate months and streets ("Heath St (E), Nov. 7-8"), so
+// a period after one of those doesn't end the sentence.
+const firstSentence = (s: string) =>
+  s.split(/(?<!\b(?:Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec|St|Ave|Sq|Mt|approx)\.)(?<=\.)\s/)[0]
+
 /** Disruptions at the station on now or this week, MBTA's own words. */
 export function LiveAlerts({ stop, stopName }: { stop: string; stopName: string }) {
   const data = useContext(Live)
@@ -64,7 +69,7 @@ export function LiveAlerts({ stop, stopName }: { stop: string; stopName: string 
           <span aria-hidden="true" className="mt-0.5 text-[1.125rem] leading-none">⚠</span>
           <p className="text-[1rem] leading-[1.5] text-navy">
             <b>{a.now ? 'Now: ' : 'Coming up: '}</b>
-            {a.header.split(/(?<=\.)\s/)[0]}{' '}
+            {firstSentence(a.header)}{' '}
             <a href={`https://www.mbta.com/stops/${stop}`} target="_blank" rel="noopener noreferrer" className="font-bold text-forest underline underline-offset-4">
               Details
             </a>

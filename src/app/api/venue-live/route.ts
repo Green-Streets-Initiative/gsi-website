@@ -80,6 +80,8 @@ export async function GET(req: Request) {
   for (const a of alerts?.data ?? []) {
     const at = a.attributes ?? {}
     if (!BIG_EFFECTS.has(at.effect) || (at.severity ?? 0) < 5) continue
+    // Trains only: a bus detour near the station isn't the visitor's trip.
+    if (!(at.informed_entity ?? []).some((e: { route_type?: number }) => e.route_type !== undefined && e.route_type <= 2)) continue
     const period = (at.active_period ?? []).find(
       (p: { start: string; end: string | null }) => (!p.end || new Date(p.end).getTime() > now) && new Date(p.start).getTime() < now + WEEK_MS,
     )

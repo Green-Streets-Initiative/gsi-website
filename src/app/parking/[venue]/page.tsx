@@ -54,7 +54,9 @@ export async function generateMetadata({ params }: { params: Promise<{ venue: st
   const v = getVenue((await params).venue)
   if (!v) return {}
   return {
-    title: `${v.name} parking: garages, prices and the T | Green Streets Initiative`,
+    title: v.transit.eventTrains
+      ? `${v.name} parking: lots, prices and the event train | Green Streets Initiative`
+      : `${v.name} parking: garages, prices and the T | Green Streets Initiative`,
     description: v.bikes
       ? `Where to park for ${v.name}: the garages nearby, how far each is on foot and what they charge, plus live train times and Bluebikes docks.`
       : `Where to park for ${v.name}: the lots, how far each is on foot and what they charge, plus the event train and rideshare.`,
@@ -254,7 +256,11 @@ export default async function VenueParkingPage({ params }: { params: Promise<{ v
                             </span>
                             <span className="mt-0.5 block text-[0.9375rem] leading-snug text-navy/80">{t.times}</span>
                             <span className="mt-0.5 block text-[0.9375rem] leading-snug text-forest">
-                              {t.onSale <= today ? 'Tickets on sale now' : `Tickets from ${day(t.onSale)}, 11 AM`}
+                              {t.onSale < today
+                                ? 'Tickets on sale now'
+                                : t.onSale === today
+                                  ? 'Tickets on sale from 11 AM today'
+                                  : `Tickets from ${day(t.onSale)}, 11 AM`}
                             </span>
                           </li>
                         ))}
