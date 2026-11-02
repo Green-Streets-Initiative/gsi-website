@@ -1431,12 +1431,18 @@ export async function buildAvoidingRoute(
   if (!chosen) return { route: null }
   const r = chosen.primary
   const named = await nameSameStreetTowns(r.scored?.comfort ?? null, streets, names)
+  // The chip naming the ride takes the town too, or it reads as the street
+  // just avoided
+  const townNamed = new Map(
+    (named.comfort?.streets ?? []).filter(st => st.label.includes(',')).map(st => [baseStreetName(st.label), st.label]),
+  )
   return {
     route: {
       minutes: r.minutes,
       polyline: r.encodedPolyline,
       comfort: named.comfort,
-      steps: matchBikeCorridors(r.encodedPolyline, laneIndex),
+      steps: matchBikeCorridors(r.encodedPolyline, laneIndex).map(step =>
+        townNamed.has(baseStreetName(step.label)) ? { ...step, label: townNamed.get(baseStreetName(step.label))! } : step),
     },
     ...(named.avoidedTowns ? { avoided_towns: named.avoidedTowns } : {}),
   }

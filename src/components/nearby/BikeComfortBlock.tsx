@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useRef } from 'react'
 import ComfortBar from '@/components/commute/ComfortBar'
 import { useNearbyT } from './NearbyI18n'
 import { useNearbyTone } from './NearbyTone'
@@ -75,6 +76,13 @@ export default function BikeComfortBlock({ comfort, highlightedStreetKey, onHigh
   // ComfortBar defaults to the navy styling (white text); on the cream page
   // its header and legend were white-on-cream, leaving bare dots
   const tone = useNearbyTone()
+  // Avoid is pressed far down the list; the line saying what changed (and
+  // Undo) is at the top of the block, so bring it into view when it changes
+  const avoidingCount = avoid?.state.avoiding.length ?? 0
+  const avoidingRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (avoidingCount > 0) avoidingRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+  }, [avoidingCount])
   if (!comfort.segments || comfort.segments.length === 0) return null
   const labels: Record<BikeComfortTier, string> = {
     path: tr('bike.path'),
@@ -87,11 +95,11 @@ export default function BikeComfortBlock({ comfort, highlightedStreetKey, onHigh
   return (
     <div className="mt-2.5 space-y-2">
       {av && av.avoiding.length > 0 && (
-        <div className="flex items-center justify-between gap-2 rounded-lg bg-(--nb-panel) px-2.5 py-1.5 text-[0.875rem] text-(--nb-ink)">
+        <div ref={avoidingRef} className="scroll-mt-4 flex items-center justify-between gap-2 rounded-lg bg-(--nb-panel) px-2.5 py-1.5 text-[0.875rem] text-(--nb-ink)">
           <span className="min-w-0">
             {tr('v2.avoiding', { streets: av.avoiding.join(tr('v2.avoid_and')) })}
             {delta !== null && (
-              <span className="text-(--nb-ink-70)">
+              <span className="whitespace-nowrap text-(--nb-ink-70)">
                 {' · '}
                 {delta > 0
                   ? tr('v2.avoid_longer', { minutes: delta })
@@ -101,7 +109,7 @@ export default function BikeComfortBlock({ comfort, highlightedStreetKey, onHigh
           </span>
           <button
             onClick={avoid!.onUndo}
-            className="min-h-[36px] shrink-0 px-2 text-[0.875rem] font-semibold text-(--nb-accent)"
+            className="min-h-[44px] shrink-0 px-3 text-[0.875rem] font-semibold text-(--nb-accent)"
           >
             {tr('v2.avoid_undo')}
           </button>
@@ -168,7 +176,7 @@ export default function BikeComfortBlock({ comfort, highlightedStreetKey, onHigh
                     <PanelPhoto spec={{ kind: 'sv', ...photo }} alt={s.label} />
                   )}
                   {on && av && (
-                    <div className="mb-1 mt-1.5 px-1">
+                    <div className="mb-3 mt-2 px-1">
                       {av.noneKey === s.key ? (
                         <p className="text-[0.875rem] text-(--nb-ink-80)">{tr('v2.avoid_none', { street: s.label })}</p>
                       ) : (
@@ -176,7 +184,7 @@ export default function BikeComfortBlock({ comfort, highlightedStreetKey, onHigh
                           <button
                             onClick={() => avoid!.onAvoid(s.key!, s.label)}
                             disabled={av.pendingKey !== null}
-                            className="min-h-[36px] rounded-full border border-(--nb-line-mid) px-3 py-1 text-[0.8125rem] font-semibold text-(--nb-ink-80) hover:border-(--nb-line-strong) hover:text-(--nb-ink) disabled:opacity-70"
+                            className="min-h-[44px] rounded-full border border-(--nb-line-mid) px-4 py-1 text-[0.875rem] font-semibold text-(--nb-ink-80) hover:border-(--nb-line-strong) hover:text-(--nb-ink) disabled:opacity-70"
                           >
                             {av.pendingKey === s.key
                               ? tr('v2.avoid_finding', { street: s.label })
