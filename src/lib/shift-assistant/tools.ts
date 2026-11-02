@@ -14,7 +14,7 @@ import { fetchRideWithGps } from '@/lib/organizers/rwgps'
 import { bikeParkingNear, summarizeRoute } from '@/lib/organizer-assistant/route-designer'
 import { myChallenges, myWorkplace, officeAt, workplaceFacts } from '@/lib/shift-assistant/my-challenges'
 import { myClosurePlans, myDrives, shuttlesFor } from '@/lib/shift-assistant/trip-data'
-import { BIKE_RULES, bikeOk, departuresNear, myProgress, parkAndRide, popularStreets, rewardsPartnersNear, townAt, townMix } from '@/lib/shift-assistant/more-data'
+import { BIKE_RULES, badgeCatalog, bikeOk, departuresNear, myProgress,parkAndRide, popularStreets, rewardsPartnersNear, townAt, townMix } from '@/lib/shift-assistant/more-data'
 import { signedUrls } from '@/lib/shift-assistant/uploads'
 import { HELP_TOPICS, helpIndex, helpTopic } from '@/lib/help/faq'
 import { ALWAYS as FARES_FOR_EVERYONE, fareProgram, farePrograms } from '@/lib/facts/fare-programs'
@@ -230,6 +230,7 @@ export const ACTIVITY: Record<string, string> = {
   find_bike_perks: 'Looking for bike perks',
   get_whats_new: 'Looking for new bike lanes',
   get_my_progress: 'Checking your progress',
+  get_badges: 'Looking at the badges',
   get_departures: 'Checking live departures',
   find_park_and_ride: 'Finding station parking',
   get_bike_rules: 'Checking bikes on the T',
@@ -444,6 +445,11 @@ export const TOOLS: Anthropic.Tool[] = [
   {
     name: 'get_my_progress',
     description: "Their progress over time: the switch plan they said yes to (the trip, the new way, the first try, days so far of the 5 that make it a switch, the reward), their daily and weekly streaks, personal bests (longest walk, longest bike ride, most trips in a week and in a month), the last 12 months in trips and miles, and their Shift level with what the next one takes. Use for \"how's my switch going\", \"what's my streak\", \"what's my longest ride\", \"how do I get to the next level\".",
+    input_schema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'get_badges',
+    description: "Every badge they can unlock, grouped as the Progress tab groups them (trips and milestones, streaks, distance, weather, Roams and trails): what each takes, whether they have it, how far along they are, how rare it is (the share of people on Shift who have it), the rarest ones, and when a Roam's badge is in season. Use for \"what badges are there\", \"which are the rarest\", \"what's the hardest badge\", \"how do I get <badge>\".",
     input_schema: { type: 'object', properties: {} },
   },
   {
@@ -1447,6 +1453,8 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
       }
       case 'get_my_progress':
         return ok(await myProgress(ctx))
+      case 'get_badges':
+        return ok(await badgeCatalog(ctx))
       case 'get_departures': {
         const at = asPlace(input.place) ?? ctx.here ?? null
         if (!at) return fail('Their location is unknown. Ask which stop, then find_place.')

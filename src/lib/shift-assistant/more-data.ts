@@ -9,6 +9,7 @@ import { parkAndRideNear } from '@/lib/server/park-and-ride'
 //   assistant_town_mix (Shift 01489)               how Shift members get around a town
 //   catalog_merchant_locations, sponsors (00789)   Rewards Partner shops and discounts near a place
 //   get_switch_progress, streaks, user_tiers       their switch, streaks, personal bests and tier
+//   assistant_badge_catalog (Shift 01589)          every badge, how rare it is, and theirs
 //   MBTA V3 predictions and trips                  live departures, with bikes allowed per train
 //   MBTA V3 facilities (lib/server/park-and-ride)  station parking
 //   mbta.com/bikes                                 which trains take a bike, and when
@@ -305,6 +306,81 @@ export async function myProgress(ctx: Ctx) {
       } : null,
       unlocks: 'Higher levels unlock Rewards Partner offers.',
     } : { unknown: 'Shift has no level on file for them yet; the app shows it on their profile.' },
+  }
+}
+
+// ── Badges: every one, how rare, and theirs ────────────────────────────
+
+// assistant_badge_catalog (Shift 01589): every badge, whether it can still be
+// unlocked, and its share of people who have logged a trip. get_badge_progress
+// (the Progress tab's) says which they have, how far along they are, and which
+// they can see: a higher tier stays hidden until the one before is unlocked,
+// so hidden ones show only as a count.
+const BADGE_GROUPS: Record<string, string> = { special: 'Trips and milestones', streak: 'Streaks', distance: 'Distance', weather: 'Weather', roam: 'Roams and trails', event: 'Events', tier: 'Levels' }
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+const monthDay = (md: string) => `${MONTHS[+md.slice(0, 2) - 1]} ${+md.slice(3, 5)}`
+
+/** "in season until Nov 30" or "back Jun 20", from a Roam's "MM-DD to MM-DD". */
+function seasonNow(season: string | null): string | null {
+  const m = season?.match(/^(\d\d-\d\d) to (\d\d-\d\d)$/)
+  if (!m) return null
+  const today = new Date().toLocaleDateString('en-CA', { timeZone: ET }).slice(5)
+  const [from, to] = [m[1], m[2]]
+  const inSeason = from <= to ? today >= from && today <= to : today >= from || today <= to
+  return inSeason ? `in season until ${monthDay(to)}` : `off season, back ${monthDay(from)}`
+}
+
+const rarity = (pct: number) => (pct === 0 ? 'nobody has it yet' : pct < 1 ? 'under 1%' : `${Math.round(pct)}%`)
+
+export async function badgeCatalog(ctx: Ctx) {
+  const [catQ, mineQ] = await Promise.all([
+    ctx.admin.rpc('assistant_badge_catalog'),
+    ctx.user.rpc('get_badge_progress', { p_user_id: ctx.userId }),
+  ])
+  if (catQ.error) throw new Error(catQ.error.message)
+  type B = { id: string; name: string; category: string; how: string; after: string | null; share_pct: number; open: boolean; season: string | null }
+  type P = { badge_id: string; progress_type: string; progress_target: number | null; progress_current: number; is_earned: boolean }
+  const all = (catQ.data ?? []) as B[]
+  const mine = new Map(((mineQ.data ?? []) as P[]).map((p) => [p.badge_id, p]))
+
+  // Open tiers after this one that they can't see yet.
+  const hiddenAfter = (id: string): number => {
+    const next = all.find((b) => b.after === id && b.open && !mine.has(b.id))
+    return next ? 1 + hiddenAfter(next.id) : 0
+  }
+  const show = (b: B) => {
+    const p = mine.get(b.id)
+    const have = !!p?.is_earned
+    const progress = !have && p?.progress_target && p.progress_type !== 'boolean' && p.progress_type !== 'roam'
+      ? `${Math.min(p.progress_current, p.progress_target)} of ${p.progress_target}` : undefined
+    const more = hiddenAfter(b.id)
+    return {
+      name: b.name, how: b.how, have, progress,
+      share_who_have_it: rarity(b.share_pct),
+      season: b.category === 'roam' ? seasonNow(b.season) ?? undefined : undefined,
+      more_tiers_after: more || undefined,
+    }
+  }
+
+  const visible = all.filter((b) => b.open && mine.has(b.id))
+  const groups: Record<string, ReturnType<typeof show>[]> = {}
+  for (const b of visible) (groups[BADGE_GROUPS[b.category] ?? b.category] ??= []).push(show(b))
+  // Roam badges are rare because few people walk a Roam yet, not because they're hard: the
+  // rarest list is the milestones, and Roams get one line.
+  const rarest = visible.filter((b) => b.category !== 'roam').sort((x, y) => x.share_pct - y.share_pct).slice(0, 6)
+    .map((b) => ({ name: b.name, how: b.how, share_who_have_it: rarity(b.share_pct), have: !!mine.get(b.id)?.is_earned }))
+  const roams = visible.filter((b) => b.category === 'roam')
+  const roamsNobody = roams.filter((b) => b.share_pct === 0).length
+  const retiredTheyHave = all.filter((b) => !b.open && mine.get(b.id)?.is_earned).map((b) => b.name)
+
+  return {
+    rule: 'share_who_have_it is the share of people who have logged a trip on Shift. Say it as a share or "1 in N", never as a number of people. Tiers after one they can see stay hidden in the app until they unlock it: say more tiers follow, never name them.',
+    they_have: visible.filter((b) => mine.get(b.id)?.is_earned).length,
+    can_still_unlock: visible.filter((b) => !mine.get(b.id)?.is_earned).length + visible.reduce((n, b) => n + hiddenAfter(b.id), 0),
+    rarest,
+    roam_badges: roams.length ? `${roams.length} Roam and trail badges, one for each Roam; the most common is held by ${rarity(Math.max(...roams.map((b) => b.share_pct)))}, and nobody has ${roamsNobody} of them yet.` : undefined,
+    badges: groups,
+    no_longer_offered_but_theirs: retiredTheyHave.length ? retiredTheyHave : undefined,
   }
 }
 
