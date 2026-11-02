@@ -51,6 +51,37 @@ const CHIP = 'rounded-full bg-forest/10 px-3.5 py-1.5 text-[0.9375rem] font-bold
 const GHOST =
   'inline-flex min-h-[44px] items-center justify-center rounded-full border-2 border-navy/20 bg-white px-5 text-[0.9375rem] font-bold text-navy transition-colors hover:border-forest'
 
+const SITE_URL = 'https://www.gogreenstreets.org'
+
+/** What answer engines read: the venue, and each garage or lot with where it is. lastReviewed moves with the weekly price check. */
+const jsonLdFor = (v: Venue) => ({
+  '@context': 'https://schema.org',
+  '@type': 'WebPage',
+  name: `Parking at ${v.name}`,
+  url: `${SITE_URL}/parking/${v.slug}`,
+  lastReviewed: v.checked,
+  isPartOf: { '@type': 'WebSite', name: 'Green Streets Initiative', url: SITE_URL },
+  about: {
+    '@type': 'StadiumOrArena',
+    name: v.name,
+    address: v.address,
+    geo: { '@type': 'GeoCoordinates', latitude: v.lat, longitude: v.lng },
+  },
+  mainEntity: {
+    '@type': 'ItemList',
+    itemListElement: v.garages.map((g, i) => ({
+      '@type': 'ListItem',
+      position: i + 1,
+      item: {
+        '@type': 'ParkingFacility',
+        name: g.name,
+        ...(g.address ? { address: g.address } : {}),
+        geo: { '@type': 'GeoCoordinates', latitude: g.lat, longitude: g.lng },
+      },
+    })),
+  },
+})
+
 export function generateStaticParams() {
   return Object.keys(VENUES).map((venue) => ({ venue }))
 }
@@ -93,6 +124,7 @@ export default async function VenueParkingPage({ params }: { params: Promise<{ v
 
   return (
     <div className="street min-h-screen bg-cream text-navy" style={{ fontFamily: GSI_FONT }}>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdFor(v)) }} />
       <Nav variant="light" street />
       <JumpBar after="start" links={links} />
       <LiveProvider venue={v.slug}>

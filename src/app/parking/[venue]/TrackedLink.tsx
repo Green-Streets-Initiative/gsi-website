@@ -1,9 +1,14 @@
 'use client'
 
+import posthog from 'posthog-js'
 import type { ReactNode } from 'react'
 import { gaEvent } from '@/lib/ga'
 
-/** A link that tells GA it was clicked (parking_reserve_click, venue_trip_planned). */
+/**
+ * A link that records its click (parking_reserve_click, venue_trip_planned) in
+ * PostHog, where the SEO routine reads landing outcomes, and in GA4, where Ads
+ * imports conversions.
+ */
 export default function TrackedLink({
   href,
   event,
@@ -22,7 +27,10 @@ export default function TrackedLink({
   return (
     <a
       href={href}
-      onClick={() => gaEvent(event, params)}
+      onClick={() => {
+        posthog.capture(event, params)
+        gaEvent(event, params)
+      }}
       className={className}
       {...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
     >
