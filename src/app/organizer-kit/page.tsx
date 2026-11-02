@@ -108,7 +108,7 @@ function Pictured({ card }: { card: Card }) {
         <p className="mt-2 text-[1.0625rem] leading-[1.55] text-navy/80">{card.body}</p>
       </div>
       {card.img && (
-        <div className={`mt-auto flex h-[340px] items-start justify-center overflow-hidden border-t border-navy/10 print:h-[260px] ${card.img.dark ? 'bg-[#1b1c30]' : 'bg-[#f3f5ee]'}`}>
+        <div className={`mt-auto flex h-[340px] items-start justify-center overflow-hidden border-t border-navy/10 print:h-[190px] ${card.img.dark ? 'bg-[#1b1c30]' : 'bg-[#f3f5ee]'}`}>
           <Image
             src={card.img.src}
             width={card.img.w}
@@ -125,11 +125,11 @@ function Pictured({ card }: { card: Card }) {
 
 function Section({ id, title, lede, children }: { id: string; title: string; lede?: ReactNode; children: ReactNode }) {
   return (
-    <section id={id} className="scroll-mt-28 border-t border-navy/10 py-14 print:break-before-page print:border-0 print:py-6">
-      <h2 className="[font-family:var(--font-overpass),Trebuchet_MS,sans-serif] text-[clamp(1.75rem,3.6vw,2.5rem)] font-extrabold leading-[1.08] text-navy">
+    <section id={id} className="scroll-mt-28 border-t border-navy/10 py-14 print:border-0 print:py-4">
+      <h2 className="print:break-after-avoid [font-family:var(--font-overpass),Trebuchet_MS,sans-serif] text-[clamp(1.75rem,3.6vw,2.5rem)] font-extrabold leading-[1.08] text-navy">
         {title}
       </h2>
-      {lede && <div className="mt-3 max-w-[720px] text-[1.0625rem] leading-[1.6] text-navy/80">{lede}</div>}
+      {lede && <div className="mt-3 max-w-[720px] print:break-inside-avoid print:break-after-avoid text-[1.0625rem] leading-[1.6] text-navy/80">{lede}</div>}
       <div className="mt-8">{children}</div>
     </section>
   )
@@ -207,7 +207,7 @@ export default function OrganizerKitPage() {
           lede="You run everything on the web. Nobody coming has to install anything; people who already use Shift get more."
         >
           <div className="overflow-x-auto rounded-[20px] border border-navy/10 bg-white">
-            <table className="w-full min-w-[720px] border-collapse text-left text-[1rem] leading-[1.45]">
+            <table className="w-full min-w-[720px] border-collapse text-left text-[1rem] leading-[1.45] print:min-w-0 print:text-[0.875rem]">
               <thead>
                 <tr className="border-b border-navy/10 text-[0.9375rem] text-navy/75">
                   <th className="px-5 py-4 font-bold" scope="col"></th>
@@ -218,7 +218,7 @@ export default function OrganizerKitPage() {
               </thead>
               <tbody>
                 {ROWS.map(([what, ...cells]) => (
-                  <tr key={what} className="border-b border-navy/10 last:border-0">
+                  <tr key={what} className="break-inside-avoid border-b border-navy/10 last:border-0">
                     <th scope="row" className="px-5 py-3.5 font-bold text-navy">{what}</th>
                     {cells.map((c, i) => (
                       <td key={i} className="px-5 py-3.5 text-navy/80">{c || <span className="text-navy/40">&ndash;</span>}</td>
@@ -231,7 +231,7 @@ export default function OrganizerKitPage() {
         </Section>
 
         <Section id="start" title="Get started">
-          <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
+          <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px] print:break-inside-avoid">
             <ol className="grid gap-4">
               {[
                 ['Check your listing', 'Look at your rides on GSI’s events calendar. Tell us anything that’s wrong, and where else you post rides.'],
