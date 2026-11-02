@@ -99,6 +99,23 @@ function downloadIcs(ride: PublicRide, d: RideDate, hostName: string | null) {
   a.remove()
 }
 
+const xmlText = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+
+/** The route as drawn on the map, as a GPX track a bike computer or a ride app can load. */
+function downloadGpx(ride: PublicRide, line: { lat: number; lng: number }[], date: string | null) {
+  const name = xmlText(ride.name)
+  const pts = line.map((p) => `<trkpt lat="${p.lat.toFixed(6)}" lon="${p.lng.toFixed(6)}"/>`).join('')
+  const gpx = `<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="Shift by Green Streets Initiative" xmlns="http://www.topografix.com/GPX/1/1">`
+    + `<metadata><name>${name}</name><link href="${pageUrl(ride)}"/></metadata><trk><name>${name}</name><trkseg>${pts}</trkseg></trk></gpx>\n`
+  const blob = new Blob([gpx], { type: 'application/gpx+xml' })
+  const a = document.createElement('a')
+  a.href = URL.createObjectURL(blob)
+  a.download = `${ride.name.replace(/[^\w-]+/g, '-').slice(0, 40)}${date ? `-${date}` : ''}.gpx`
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+}
+
 export default function RidePage({ ride, host = null, ascentFt = null, initialDate = null, perks = [], newInfra = [] }: {
   ride: PublicRide; host?: RideHost | null; ascentFt?: number | null
   /** A date the visitor came for (?date=YYYY-MM-DD from a calendar listing). */
@@ -553,11 +570,21 @@ export default function RidePage({ ride, host = null, ascentFt = null, initialDa
               </div>
             )}
 
-            {routeLink && /^https?:\/\//.test(routeLink) && (
-              <a href={routeLink} target="_blank" rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 text-[15px] font-semibold text-(--ev-accent) hover:underline">
-                <RouteIcon size={15} /> The full route, turn by turn <ExternalLink size={13} />
-              </a>
+            {((routeLink && /^https?:\/\//.test(routeLink)) || route.length >= 2) && (
+              <div className="flex flex-wrap gap-x-6 gap-y-2">
+                {routeLink && /^https?:\/\//.test(routeLink) && (
+                  <a href={routeLink} target="_blank" rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 text-[15px] font-semibold text-(--ev-accent) hover:underline">
+                    <RouteIcon size={15} /> The full route, turn by turn <ExternalLink size={13} />
+                  </a>
+                )}
+                {route.length >= 2 && (
+                  <button type="button" onClick={() => downloadGpx(ride, route, selected?.date ?? null)}
+                    className="inline-flex items-center gap-1.5 text-[15px] font-semibold text-(--ev-accent) hover:underline">
+                    <Download size={15} /> GPX for a bike computer
+                  </button>
+                )}
+              </div>
             )}
 
             {hasNewInfra(newHere) && <RideNewInfra info={newHere} onRoute={route.length >= 2} />}

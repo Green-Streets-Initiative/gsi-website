@@ -77,6 +77,17 @@ export const redeemLink = (token: string) =>
 /** The calendar host and its listings, for "Make your first ride". */
 export const getFirstRideStart = () => rpc<FirstRideStart>('organizer_first_ride_start')
 export const getRides = () => rpc<DashboardRide[]>('organizer_console_rides')
+
+/** The ride of mine whose first date just went by and that I haven't told us about (01595). */
+export type FeedbackDue = { series_id: string; ride_name: string; ride_date: string } | null
+export const getFeedbackDue = () => rpc<FeedbackDue>('organizer_feedback_due')
+export const sendFeedback = (f: {
+  seriesId: string | null; rideDate: string | null; how: 'great' | 'okay' | 'rough' | null
+  fix: string; quote: string; mayQuote: boolean; shownName: string
+}) => rpc<{ ok: true }>('submit_organizer_feedback', {
+  p_series_id: f.seriesId, p_ride_date: f.rideDate, p_how: f.how, p_fix: f.fix,
+  p_quote: f.quote, p_may_quote: f.mayQuote, p_shown_name: f.shownName,
+})
 export const getRide = (seriesId: string) => rpc<RideDetail>('organizer_ride_detail', { p_series_id: seriesId })
 export const getRoster = async (occurrenceId: string) =>
   (await rpc<RosterRow[] | null>('organizer_date_roster', { p_occurrence_id: occurrenceId })) ?? []

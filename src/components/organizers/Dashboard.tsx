@@ -9,6 +9,7 @@ import { UPDATE_KIND_LABEL, dateLabel, plural, todayKey } from '@/lib/organizers
 import type { DashboardRide, NextDate } from '@/lib/organizers/types'
 import { ASSISTANT_CHANGED_EVENT, openAssistant } from './AssistantPanel'
 import { useConsole } from './ConsoleContext'
+import { FeedbackDueCard, FeedbackLink } from './Feedback'
 import { Badge, Button, Card, Empty, Notice, Spinner, cx, type Tone } from './ui'
 
 export function rideStateBadges(r: Pick<DashboardRide, 'status' | 'visibility' | 'calendar_status' | 'break_until' | 'my_role'>) {
@@ -210,6 +211,8 @@ export default function Dashboard() {
         {newRide}
       </div>
 
+      <FeedbackDueCard />
+
       {assistant && <AskBox rides={groups.mine} canCreate={!!me?.can_create} />}
 
       {claimNote > 0 && (
@@ -259,6 +262,8 @@ export default function Dashboard() {
           {showEnded && <ul className="mt-3 space-y-4">{groups.ended.map((r) => <RideCard key={r.id} r={r} />)}</ul>}
         </section>
       )}
+
+      {rides && <FeedbackLink />}
     </div>
   )
 }
