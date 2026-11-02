@@ -161,6 +161,28 @@ export function scheduleText(r: Pick<PublicRide, 'ride_date' | 'frequency' | 'da
 }
 
 /**
+ * "every Saturday": the every-date answer on a repeating ride (Shift 01598),
+ * the same words as the emails (_shared/ride-guest-copy.ts everyLabel). Null
+ * for a ride with one date.
+ */
+export function everyLabel(r: Pick<PublicRide, 'ride_date' | 'frequency' | 'days'>): string | null {
+  if (r.ride_date) return null
+  if (r.frequency === 'daily') return 'every day'
+  const days = (r.days ?? []).filter((d) => d >= 1 && d <= 7)
+  if (days.length === 0) return null
+  if (r.frequency === 'monthly') return 'every month'
+  const names = ['', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+  if (days.length > 1) return r.frequency === 'biweekly' ? 'every other week' : 'every week'
+  return r.frequency === 'biweekly' ? `every other ${names[days[0]]}` : `every ${names[days[0]]}`
+}
+
+/** The group chat link people get once they say they're coming (Shift 01598). */
+export interface RideChat {
+  url: string
+  label: string
+}
+
+/**
  * "When" for a flyer or a share card: a repeating ride names its pattern, a
  * one-time ride its next open date. Empty once no open date is left, so an
  * ended ride never advertises a date that has passed.

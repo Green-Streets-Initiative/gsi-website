@@ -30,6 +30,7 @@ function Person({ p, past }: { p: RosterRow; past: boolean }) {
         {p.is_guest && <Badge tone="info">Ride page</Badge>}
         {p.kids_count > 0 && <Badge>+{plural(p.kids_count, 'kid')}</Badge>}
         {p.first_time && p.role === 'rider' && <Badge tone="good">First time</Badge>}
+        {p.every_date && <Badge tone="info">Every date</Badge>}
         {past && p.attended && <Badge tone="good"><Check className="h-3 w-3" aria-hidden />Came</Badge>}
         {past && p.pending_state === 'claimed' && <Badge tone="warn">Asked for credit</Badge>}
       </span>

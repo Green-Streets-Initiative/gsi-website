@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import Image from 'next/image'
 import type { ReactNode } from 'react'
 import {
-  BellRing, Bike, CalendarPlus, Download, Gift, MessagesSquare, QrCode, ShieldCheck, Trophy, Users,
+  BellRing, Bike, Download, Gift, MessagesSquare, QrCode, Repeat, ShieldCheck, Trophy, Users,
 } from 'lucide-react'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
@@ -62,10 +62,10 @@ const BENEFITS: { title: string; body: string; chips?: string[]; pic: Pic }[] = 
 
 const ALSO: { icon: typeof Bike; title: string; body: string }[] = [
   { icon: BellRing, title: 'Changes reach everyone', body: 'Cancel or move one date, and everyone coming hears.' },
-  { icon: MessagesSquare, title: 'Your group chat too', body: 'Updates also post to your Discord or GroupMe, set up in the app.' },
+  { icon: MessagesSquare, title: 'Your group chat', body: 'People who say they’re coming get your WhatsApp or Discord link. Replies to updates can come to you.' },
   { icon: QrCode, title: 'Flyer and QR code', body: 'Plus ready captions and four calendars to post on.' },
   { icon: Download, title: 'GPX for bike computers', body: 'People load your route with one tap.' },
-  { icon: CalendarPlus, title: 'Add to calendar', body: 'Google, Apple or Outlook, from the ride page.' },
+  { icon: Repeat, title: 'Every week', body: 'Regulars tick once and they’re on the list for every date.' },
   { icon: Users, title: 'Co-organizers', body: 'Share the work with your ride leaders.' },
   { icon: Gift, title: 'Bike shop perks', body: 'Shops and cafés near the ride with Bicycle Benefits discounts.' },
   { icon: Trophy, title: 'Their ride counts', body: 'People on Shift get Walk/Ride Day entries and challenges.' },

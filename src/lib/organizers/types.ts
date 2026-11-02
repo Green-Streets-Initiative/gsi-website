@@ -119,6 +119,8 @@ export interface RideRow {
   calendar_status: 'pending' | 'approved' | 'rejected'
   registration_url: string | null
   contact_url: string | null
+  /** Update emails carry Reply-To with the organizer's address (Shift 01598). */
+  replies_to_organizer?: boolean
   route_risk: 'high' | null
   live_sharing: 'off' | 'members' | 'link'
   pace: Pace | null
@@ -224,6 +226,8 @@ export interface RosterRow {
   kids_count: number
   first_time: boolean
   joined_at: string
+  /** Going on every date until they stop (Shift 01598). */
+  every_date?: boolean
 }
 
 export interface CreditRequest {

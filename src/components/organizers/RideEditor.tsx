@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ArrowLeft, ChevronDown, ImagePlus, MessageSquareText, Trash2 } from 'lucide-react'
 import AddressAutocomplete from '@/components/AddressAutocomplete'
-import { errorText, getRideFundFor, saveRide, setEndShop, uploadFlyer, type RideFundHere } from '@/lib/organizers/api'
+import { errorText, getRideFundFor, saveRide, setEndShop, setRepliesToOrganizer, uploadFlyer, type RideFundHere } from '@/lib/organizers/api'
 import { takePrefill } from '@/lib/organizers/first-ride'
 import { decodePlan, draftOf, routePayload } from '@/lib/organizers/saved-route'
 import { DAY_LABELS, PACE_OPTIONS, TAG_OPTIONS, WEEK_OPTIONS, dateLabel, todayKey } from '@/lib/organizers/ride-words'
@@ -43,6 +43,8 @@ interface Form {
   tags: string[]
   registration_url: string
   contact_url: string
+  /** Update emails carry Reply-To with the organizer's address (Shift 01598); saved on its own. */
+  replies_to_organizer: boolean
   live_sharing: 'off' | 'members' | 'link'
   visibility: 'public' | 'invite'
   event_organizer_id: string
@@ -62,7 +64,7 @@ function blank(): Form {
     meetup_name: '', meetup_address: '', meetup_lat: null, meetup_lng: null,
     route: null, route_google_maps_url: '',
     pace: '', no_drop: false, tags: [],
-    registration_url: '', contact_url: '', live_sharing: 'off',
+    registration_url: '', contact_url: '', replies_to_organizer: false, live_sharing: 'off',
     visibility: 'public', event_organizer_id: '', organizer_name: '', organizer_url: '',
     end_location_id: null,
   }
@@ -81,6 +83,7 @@ function fromRow(r: RideRow): Form {
     route_google_maps_url: r.route_google_maps_url ?? '',
     pace: r.pace ?? '', no_drop: !!r.no_drop, tags: r.tags ?? [],
     registration_url: r.registration_url ?? '', contact_url: r.contact_url ?? '',
+    replies_to_organizer: !!r.replies_to_organizer,
     live_sharing: r.live_sharing ?? 'off',
     visibility: r.visibility === 'invite' ? 'invite' : 'public',
     event_organizer_id: r.event_organizer_id ?? '',
@@ -352,6 +355,16 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
           // A new ride exists now, so carry on; its coffee shop can be set on its edit page.
           if (ride) {
             setErr(errorText(e, "The ride saved, but the coffee shop didn't. Try again."))
+            setSaving(false)
+            return
+          }
+        }
+      }
+      if (f.replies_to_organizer !== !!ride?.replies_to_organizer) {
+        // A ride that saved without its replies setting still saved; say so.
+        try { await setRepliesToOrganizer(res.id, f.replies_to_organizer) } catch (e) {
+          if (ride) {
+            setErr(errorText(e, "The ride saved, but the replies setting didn't. Try again."))
             setSaving(false)
             return
           }
@@ -688,10 +701,17 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
               error={!LINK_OK(f.registration_url) ? 'Links start with https://' : null}>
               <Input id="reg" value={f.registration_url} onChange={(e) => set('registration_url', e.target.value)} placeholder="https://…" inputMode="url" />
             </Field>
-            <Field label="How people reach you" htmlFor="contact" optional hint="A WhatsApp or Discord group, or an email link. Only people on the ride see it."
+            <Field label="Your group chat" htmlFor="contact" optional hint="A WhatsApp, Signal, GroupMe or Discord invite link, or an email link. People get it once they say they're coming, on the ride page and in their emails."
               error={!LINK_OK(f.contact_url, true) ? 'Start with https:// or mailto:' : null}>
               <Input id="contact" value={f.contact_url} onChange={(e) => set('contact_url', e.target.value)} placeholder="https://chat.whatsapp.com/…" inputMode="url" />
             </Field>
+            <label className="flex cursor-pointer items-start gap-3">
+              <input type="checkbox" checked={f.replies_to_organizer} onChange={(e) => set('replies_to_organizer', e.target.checked)} className="mt-1 h-5 w-5 accent-(--ev-accent-fill)" />
+              <span>
+                <span className="block text-[15px] font-semibold text-(--ev-ink)">Replies to my update emails come to me</span>
+                <span className="block text-[14px] text-(--ev-ink-75)">People can answer an update by replying to its email. They&rsquo;ll see your sign-in email address.</span>
+              </span>
+            </label>
             <Field label="Live location on the day" htmlFor="live" hint="On the day, your phone shows where the group is, as one dot.">
               <Select id="live" value={f.live_sharing} onChange={(e) => set('live_sharing', e.target.value as Form['live_sharing'])} className="max-w-[320px]">
                 <option value="off">Off</option>

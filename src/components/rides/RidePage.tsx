@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import posthog from 'posthog-js'
-import { Bike, Calendar, Check, CloudSun, Download, ExternalLink, MapPin, Radio, Route as RouteIcon, Share2, Users } from 'lucide-react'
+import { Bike, Calendar, Check, CloudSun, Download, ExternalLink, MapPin, MessageCircle, Radio, Route as RouteIcon, Share2, Users } from 'lucide-react'
 import EventMap from '@/components/events/EventMap'
 import RouteMap from '@/components/organizers/RouteMap'
 import { buildIcs, gcalUrl as eventGcalUrl } from '@/lib/event-calendar'
@@ -26,8 +26,10 @@ import {
   dateShort,
   dateStatusLine,
   dayShort,
+  everyLabel,
   scheduleText,
   type PublicRide,
+  type RideChat,
   type RideDate,
   type RsvpStatus,
 } from '@/lib/rides/public'
@@ -151,7 +153,10 @@ export default function RidePage({ ride, host = null, ascentFt = null, initialDa
   const [error, setError] = useState<string | null>(null)
   // `emailed` is the server's word on whether a confirmation went out (null
   // when it doesn't say), so the page never claims an email nobody sent.
-  const [done, setDone] = useState<{ status: RsvpStatus; first: string; emailed: boolean | null } | null>(null)
+  const [done, setDone] = useState<{ status: RsvpStatus; first: string; emailed: boolean | null; every: string | null; chat: RideChat | null } | null>(null)
+  // "Count me in every Saturday" (Shift 01598): Going on every date of a
+  // repeating ride, including dates that open later.
+  const [every, setEvery] = useState(false)
   const [copied, setCopied] = useState(false)
 
   // The forecast for the chosen date, once it's within the weather service's week.
@@ -174,7 +179,7 @@ export default function RidePage({ ride, host = null, ascentFt = null, initialDa
   const paused = ride.status === 'paused' || (!!ride.break_until && ride.break_until > todayKey())
 
   // A new date resets the form to that date's own answer.
-  useEffect(() => { setDone(null); setError(null); setChoice(null) }, [selectedId])
+  useEffect(() => { setDone(null); setError(null); setChoice(null); setEvery(false) }, [selectedId])
 
   const share = async () => {
     // The ride's own link: a promo link's ?via= stays with the first visitor.
@@ -216,6 +221,7 @@ export default function RidePage({ ride, host = null, ascentFt = null, initialDa
           website: String(form.get('website') ?? ''),
           // The Promote tab's short link they came in on, if any.
           via: new URLSearchParams(window.location.search).get('via') ?? undefined,
+          every: choice === 'going' && every && !!everyText,
         }),
       })
       const data = await res.json().catch(() => ({}))
@@ -223,15 +229,22 @@ export default function RidePage({ ride, host = null, ascentFt = null, initialDa
         setError(data.error ?? 'Something went wrong. Try again in a minute.')
         return
       }
-      const next: Remembered = { first_name, last_name, email, answers: { ...me.answers, [selected.id]: choice } }
+      const answers = { ...me.answers, [selected.id]: choice }
+      // Every date: the open dates they haven't answered read as Going here too.
+      if (data.every_date) for (const d of open) if (!answers[d.id]) answers[d.id] = 'going'
+      const next: Remembered = { first_name, last_name, email, answers }
       writeRemembered(next)
       setMe(next)
       if (typeof data.going === 'number') {
         setCounts((c) => ({ ...c, [selected.id]: { going: data.going, maybe: data.maybe ?? 0 } }))
       }
-      setDone({ status: choice, first: data.first_name ?? first_name, emailed: typeof data.emailed === 'boolean' ? data.emailed : null })
+      setDone({
+        status: choice, first: data.first_name ?? first_name, emailed: typeof data.emailed === 'boolean' ? data.emailed : null,
+        every: data.every_date && choice === 'going' && every ? (data.every ?? everyText) : null,
+        chat: data.chat?.url ? data.chat : null,
+      })
       setChoice(null)
-      posthog.capture('ride_rsvp_submitted', { code: ride.code, status: choice, surface: 'web' })
+      posthog.capture('ride_rsvp_submitted', { code: ride.code, status: choice, surface: 'web', every: choice === 'going' && every })
     } catch {
       setError('Something went wrong. Try again in a minute.')
     } finally {
@@ -251,6 +264,8 @@ export default function RidePage({ ride, host = null, ascentFt = null, initialDa
   // so the date isn't said three times before the Going button.
   const repeats = !ride.ride_date && ((ride.days ?? []).length > 0 || ride.frequency === 'daily')
   const headerSchedule = repeats ? scheduleText(ride) : null
+  // Offered with Going when there's more than one date to say yes to.
+  const everyText = repeats && open.length > 1 ? everyLabel(ride) : null
   const pastOneOff = !!ride.ride_date && ride.ride_date < todayKey()
   // Most groups ride somewhere new each time (Shift 01432): the chosen date's
   // own route, name, description and flyer, else the ride's.
@@ -405,15 +420,24 @@ export default function RidePage({ ride, host = null, ascentFt = null, initialDa
                           {done ? (
                             <div aria-live="polite">
                               <p className="text-[17px] font-bold text-(--ev-ink)">
-                                {done.status === 'going' ? `You're going, ${done.first}.` : done.status === 'maybe' ? `Saved as a maybe, ${done.first}.` : `Got it, ${done.first}. Maybe next time.`}
+                                {done.every ? `You're in ${done.every}, ${done.first}.` : done.status === 'going' ? `You're going, ${done.first}.` : done.status === 'maybe' ? `Saved as a maybe, ${done.first}.` : `Got it, ${done.first}. Maybe next time.`}
                               </p>
                               {done.status !== 'not_going' && (
                                 <p className="mt-1 text-[15px] text-(--ev-ink-80)">
                                   {done.emailed ? <>We emailed you the details. </> : null}
-                                  {done.status === 'maybe'
+                                  {done.every
+                                    ? <>You&rsquo;ll hear from us the evening before each one. Can&rsquo;t make one? Pick that date and say Can&rsquo;t go.</>
+                                    : done.status === 'maybe'
                                     ? <>We&rsquo;ll let you know if anything changes.</>
                                     : <>You&rsquo;ll hear from us the evening before, and right away if the plan changes.</>}
                                 </p>
+                              )}
+                              {done.chat && done.status !== 'not_going' && (
+                                <a href={done.chat.url} target="_blank" rel="noopener noreferrer"
+                                  onClick={() => posthog.capture('ride_chat_opened', { code: ride.code, surface: 'web' })}
+                                  className="mt-3 flex min-h-[44px] items-center justify-center gap-2 rounded-[10px] bg-(--ev-accent-fill) px-4 text-[15px] font-bold text-(--ev-on-accent-fill) hover:opacity-90">
+                                  <MessageCircle size={17} /> {done.chat.label}
+                                </a>
                               )}
                               <div className="mt-3 flex flex-wrap gap-2">
                                 {done.status !== 'not_going' && (
@@ -472,6 +496,15 @@ export default function RidePage({ ride, host = null, ascentFt = null, initialDa
                                     <span className="text-[14px] font-semibold text-(--ev-ink-80)">Email</span>
                                     <input name="email" type="email" required defaultValue={me.email} autoComplete="email" inputMode="email" placeholder="you@example.com" className="mt-1 w-full rounded-[10px] border border-(--ev-line-strong) bg-white px-3 py-2.5 text-[15px] text-(--ev-ink) placeholder:text-(--ev-ink-60)" />
                                   </label>
+                                  {choice === 'going' && everyText && (
+                                    <label className="flex min-h-[44px] cursor-pointer items-start gap-3 rounded-[10px] border border-(--ev-line-strong) bg-white px-3 py-2.5">
+                                      <input type="checkbox" checked={every} onChange={(e) => setEvery(e.target.checked)} className="mt-1 h-4 w-4 shrink-0 accent-(--ev-accent-fill)" />
+                                      <span>
+                                        <span className="block text-[15px] font-semibold text-(--ev-ink)">Count me in {everyText}</span>
+                                        <span className="block text-[14px] text-(--ev-ink-75)">You&rsquo;ll be on the list for each date. Say Can&rsquo;t go on any one.</span>
+                                      </span>
+                                    </label>
+                                  )}
                                   {/* People never see this; scripts fill it in. */}
                                   <input name="website" tabIndex={-1} autoComplete="off" aria-hidden="true" className="absolute left-[-9999px] h-px w-px opacity-0" />
                                   <p className="text-[14px] leading-snug text-(--ev-ink-75)">
@@ -483,7 +516,7 @@ export default function RidePage({ ride, host = null, ascentFt = null, initialDa
                                   </p>
                                   {error && <p role="alert" className="text-[14px] font-semibold text-(--ev-danger)">{error}</p>}
                                   <button type="submit" disabled={busy} className="min-h-[46px] w-full rounded-[10px] bg-(--ev-accent-fill) text-[15px] font-bold text-(--ev-on-accent-fill) transition-opacity hover:opacity-90 disabled:opacity-60">
-                                    {busy ? 'Saving…' : choice === 'going' ? "I'm going" : choice === 'maybe' ? 'Save as maybe' : "I can't make it"}
+                                    {busy ? 'Saving…' : choice === 'going' ? (every && everyText ? `I'm in ${everyText}` : "I'm going") : choice === 'maybe' ? 'Save as maybe' : "I can't make it"}
                                   </button>
                                 </form>
                               )}

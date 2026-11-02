@@ -4,7 +4,8 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { toneClass } from '@/components/events/EventsTone'
-import { FUNCTIONS_BASE, clock, dateShort, dayShort, type RsvpStatus } from '@/lib/rides/public'
+import { MessageCircle } from 'lucide-react'
+import { FUNCTIONS_BASE, clock, dateShort, dayShort, type RideChat, type RsvpStatus } from '@/lib/rides/public'
 import '@/components/events/events-tone.css'
 
 interface GuestDate {
@@ -20,6 +21,11 @@ interface GuestRide {
   code: string
   name: string
   status: string
+  /** Going on every date (Shift 01598), and how that reads ("every Saturday"). */
+  every_date: boolean
+  every: string | null
+  /** The organizer's group chat or email link, for people on the ride. */
+  chat: RideChat | null
   dates: GuestDate[]
 }
 interface Overview {
@@ -193,6 +199,30 @@ export default function ManageRides() {
                     className="min-h-[40px] rounded-[10px] bg-(--ev-danger) px-4 text-[14px] font-bold text-white disabled:opacity-60">Leave the ride</button>
                   <button onClick={() => setConfirmLeave(null)} className="min-h-[40px] rounded-[10px] border border-(--ev-line-strong) px-4 text-[14px] font-semibold text-(--ev-ink)">Stay on it</button>
                 </div>
+              </div>
+            )}
+            {(r.every || r.chat) && (
+              <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+                {r.every && (r.every_date ? (
+                  <p className="text-[15px] text-(--ev-ink-85)">
+                    <b className="text-(--ev-ink)">You&rsquo;re in {r.every}.</b>{' '}
+                    <button onClick={() => act({ action: 'every', series_id: r.series_id, on: false }, `every-${r.series_id}`)}
+                      disabled={saving === `every-${r.series_id}`}
+                      className="min-h-[40px] font-semibold text-(--ev-accent) hover:underline disabled:opacity-60">Stop</button>
+                  </p>
+                ) : r.dates.some((d) => d.status === 'scheduled') && (
+                  <button onClick={() => act({ action: 'every', series_id: r.series_id, on: true }, `every-${r.series_id}`)}
+                    disabled={saving === `every-${r.series_id}`}
+                    className="min-h-[40px] text-[15px] font-semibold text-(--ev-accent) hover:underline disabled:opacity-60">
+                    Count me in {r.every}
+                  </button>
+                ))}
+                {r.chat && (
+                  <a href={r.chat.url} target="_blank" rel="noopener noreferrer"
+                    className="inline-flex min-h-[40px] items-center gap-1.5 rounded-[10px] border border-(--ev-line-strong) px-3 text-[14px] font-semibold text-(--ev-ink) hover:bg-(--ev-panel)">
+                    <MessageCircle size={15} /> {r.chat.label}
+                  </a>
+                )}
               </div>
             )}
             {shown(r).length === 0 ? (

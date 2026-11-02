@@ -285,6 +285,13 @@ export async function setSkipDates(seriesId: string, skipDates: string[]) {
   await generateDates(seriesId).catch(() => {})
 }
 
+/** Update emails carry Reply-To with the organizer's sign-in address (Shift 01598). Organizer only (the table's own rule). */
+export async function setRepliesToOrganizer(seriesId: string, on: boolean) {
+  const { error } = await supabase.from('ride_series').update({ replies_to_organizer: on }).eq('id', seriesId)
+  if (error) throw new Error(error.message)
+  track('organizer_replies_set', { ride_id: seriesId, on })
+}
+
 export async function resumeRide(seriesId: string) {
   const r = await rpc<{ reinstated: number }>('resume_ride_series', { p_series_id: seriesId })
   track('organizer_ride_resumed', { ride_id: seriesId, reinstated: r?.reinstated ?? null })
