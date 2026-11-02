@@ -72,7 +72,6 @@ const ALSO: { icon: typeof Bike; title: string; body: string }[] = [
 ]
 
 const PEOPLE: Pic[] = [
-  { src: '/organizer-kit/ride-page.jpg', w: 640, h: 848, alt: 'A ride page: pick a date, then Going, Maybe or Can’t go, with distance, pace, hills and level' },
   { src: '/organizer-kit/ride-facts.jpg', w: 640, h: 1045, alt: 'Ride facts in the app: distance, hills, level, no-drop, beginner friendly' },
   { src: '/organizer-kit/live-map.jpg', w: 640, h: 1094, alt: 'The ride’s map with the route and the meeting spot' },
 ]
@@ -155,7 +154,7 @@ export default async function OrganizerKitPage({ searchParams }: { searchParams:
               <div className="mt-7"><Start link={link} light /></div>
             </div>
             <div className="mx-auto w-full max-w-[420px] overflow-hidden rounded-[18px] bg-white shadow-[0_18px_40px_rgba(0,0,0,0.25)] print:max-w-[280px]">
-              <Image src="/organizer-kit/route.jpg" width={640} height={800} priority alt="A ride’s route rated for comfort, with distance, climbing and riding time" className="h-auto w-full" sizes="(min-width: 1024px) 420px, 100vw" />
+              <Image src="/organizer-kit/ride-page.jpg" width={640} height={848} priority alt="A ride page: pick a date, then Going, Maybe or Can’t go, with distance, pace, hills and level" className="h-auto w-full" sizes="(min-width: 1024px) 420px, 100vw" />
             </div>
           </div>
           <ul className="mt-4 grid gap-2 text-[15px] font-bold text-navy sm:grid-cols-3 print:grid-cols-3">
@@ -209,9 +208,9 @@ export default async function OrganizerKitPage({ searchParams }: { searchParams:
           lede="Distance, hills, pace and no-drop before they decide. One tap to say they’re coming. Your route and meeting spot on the day."
           className="border-t border-navy/10"
         >
-          <div className="grid grid-cols-3 gap-3 sm:gap-6 print:gap-4">
+          <div className="grid max-w-[760px] grid-cols-2 gap-3 sm:gap-6 print:gap-4">
             {PEOPLE.map((p) => (
-              <div key={p.src} className="h-[220px] overflow-hidden rounded-[16px] border border-navy/10 bg-white sm:h-[420px] print:h-[230px]">
+              <div key={p.src} className="h-[300px] overflow-hidden rounded-[16px] border border-navy/10 bg-white sm:h-[460px] print:h-[230px]">
                 <Image src={p.src} width={p.w} height={p.h} alt={p.alt} className="h-auto w-full" sizes="(min-width: 768px) 360px, 33vw" />
               </div>
             ))}
