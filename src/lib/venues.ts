@@ -48,7 +48,8 @@ export type Venue = {
   /** The one-line answer in the hero. */
   lede: string
   garages: Garage[]
-  /** Where the prices came from, and the day we last checked them. */
+  /** Where the prices came from, and the day they were last confirmed there (YYYY-MM-DD, Eastern).
+   *  The weekly price check moves it forward; after 45 days the page says the prices may be out of date. */
   priceSources: { label: string; url: string }[]
   checked: string
   /** Said before the sources line ("Buying ahead holds you a space."). */
@@ -82,7 +83,7 @@ export const VENUES: Record<string, Venue> = {
     address: '100 Legends Way, Boston',
     lat: 42.3663,
     lng: -71.06216,
-    lede: 'The North Station Garage is right under the arena: $60 if you buy ahead, or $70 at the gate on game nights.',
+    lede: 'The North Station Garage is right under the arena.',
     garages: [
       {
         name: 'North Station Garage',
@@ -137,7 +138,7 @@ export const VENUES: Record<string, Venue> = {
       },
     ],
     priceSources: [{ label: 'tdgarden.com', url: 'https://www.tdgarden.com/plan-your-visit/directions-parking/north-station-garage' }],
-    checked: 'November 2, 2026',
+    checked: '2026-11-02',
     priceNote: 'Buying ahead holds you a space.',
     others: {
       title: 'A short walk away',
@@ -149,7 +150,7 @@ export const VENUES: Record<string, Venue> = {
       stopName: 'North Station',
       lat: 42.365577,
       lng: -71.06129,
-      headline: 'Or skip the garage: North Station is under the arena.',
+      headline: 'Or take the T: North Station is under the arena.',
       live: 'board',
       lines: ['Orange Line', 'Green Line D and E', 'Commuter Rail north of Boston'],
       tips: [
@@ -185,7 +186,7 @@ export const VENUES: Record<string, Venue> = {
     address: '4 Jersey St, Boston',
     lat: 42.34646,
     lng: -71.0971,
-    lede: 'Fenway has no lot of its own. The Red Sox rate is at the Prudential Center Garage, about 15 minutes’ walk: $26 for night and weekend games, with that day’s ticket.',
+    lede: 'The Red Sox rate is at the Prudential Center Garage, a 15-minute walk, for night and weekend games.',
     garages: [
       {
         name: 'Prudential Center Garage',
@@ -195,6 +196,7 @@ export const VENUES: Record<string, Venue> = {
         lng: -71.07934,
         walkMin: 15,
         official: true,
+        offMap: true,
         where: 'Red Sox discount garage · 15 min walk',
         prices: [{ label: 'Night and weekend games', amount: '$26' }],
         facts: [
@@ -202,7 +204,6 @@ export const VENUES: Record<string, Venue> = {
           'Enter after 2 PM weekdays, 7 AM weekends',
           'Not for concerts or postponed games',
         ],
-        book: { label: 'Garage details', url: 'https://www.prudentialcenter.com/visit/parking/' },
       },
       { name: 'Van Ness Garage', address: '1341 Boylston St', lat: 42.34469, lng: -71.09932, walkMin: 5 },
       { name: 'Fenway Center Bower Garage', address: '771 Beacon St, enter on David Ortiz Dr', lat: 42.34722, lng: -71.10131, walkMin: 6 },
@@ -222,7 +223,7 @@ export const VENUES: Record<string, Venue> = {
       { label: 'prudentialcenter.com', url: 'https://www.prudentialcenter.com/visit/parking/' },
       { label: 'WBUR', url: 'https://www.wbur.org/news/2026/08/21/fenway-park-guide-food-transportation-parking' },
     ],
-    checked: 'November 2, 2026',
+    checked: '2026-11-02',
     priceNote: 'These are the 2026 season rates.',
     others: {
       title: 'A short walk away',
@@ -234,7 +235,7 @@ export const VENUES: Record<string, Venue> = {
       stopName: 'Kenmore',
       lat: 42.348949,
       lng: -71.095169,
-      headline: 'Or skip the garage: Kenmore station is a 5-minute walk.',
+      headline: 'Or take the T: Kenmore station is a 5-minute walk.',
       live: 'board',
       lines: ['Green Line B, C and D', 'Commuter Rail at Lansdowne'],
       tips: [
@@ -264,11 +265,11 @@ export const VENUES: Record<string, Venue> = {
     address: '1 Patriot Place, Foxborough',
     lat: 42.09089,
     lng: -71.26417,
-    lede: 'Parking is free in the lots across Route 1, a 10 to 17 minute walk to the stadium. The lots open 4 hours before kickoff.',
+    lede: 'The general lots are across Route 1, a 10 to 17 minute walk to the stadium.',
     garages: [
       {
         name: 'Free lots across Route 1',
-        address: 'Follow the signs from Route 1',
+        address: '',
         lat: 42.09198,
         lng: -71.27264,
         walkMin: 10,
@@ -276,9 +277,9 @@ export const VENUES: Record<string, Venue> = {
         where: 'For every ticket holder · 10 to 17 min walk',
         prices: [
           { label: 'Patriots, concerts and Revolution', amount: 'Free' },
-          { label: 'Visa card if you wait 75 min to leave', amount: '$50' },
+          { label: 'Visa card to wait 75 min after Patriots games', amount: '$50' },
         ],
-        facts: ['Open 4 hours before kickoff', 'No re-entry', 'No overnight parking', 'Tailgating OK, no open fires'],
+        facts: ['Open 4 hours before kickoff', 'Close 2 hours after day games', 'No re-entry', 'Tailgating OK, no open fires'],
         book: { label: 'Lot maps and rules', url: 'https://www.gillettestadium.com/parking/' },
       },
       {
@@ -287,7 +288,7 @@ export const VENUES: Record<string, Venue> = {
         lat: 42.09725,
         lng: -71.26988,
         walkMin: 14,
-        note: 'Patriots games: a $50 Visa card, and you wait 75 minutes to leave. Closed 30 minutes after kickoff.',
+        note: '$50 Visa card · leave 75 min after the game · full 30 min after kickoff',
       },
       {
         name: 'Stadium-side lots',
@@ -295,18 +296,18 @@ export const VENUES: Record<string, Venue> = {
         lat: 42.0939,
         lng: -71.26329,
         walkMin: 6,
-        note: 'Prepaid only. Sold out for 2026 Patriots games; sold with concert tickets.',
+        note: 'Prepaid only · Patriots: sold out for 2026',
       },
     ],
     priceSources: [{ label: 'gillettestadium.com', url: 'https://www.gillettestadium.com/parking/' }],
-    checked: 'November 2, 2026',
-    others: { title: 'Other lots', note: 'Lots close 2 hours after day games and right after night games.' },
+    checked: '2026-11-02',
+    others: { title: 'Other lots', note: 'Closer to the stadium, or paid to wait.' },
     transit: {
       stop: 'place-FS-0049',
       stopName: 'Foxboro',
       lat: 42.0951,
       lng: -71.26151,
-      headline: 'Or skip the drive: the $20 event train stops at the stadium.',
+      headline: 'Or take the train: the $20 event train stops at the stadium.',
       live: 'alerts',
       lines: ['From South Station, Back Bay and Dedham', 'From Providence on some dates'],
       tips: [

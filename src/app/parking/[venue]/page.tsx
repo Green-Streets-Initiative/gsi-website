@@ -7,7 +7,7 @@ import type { Placement } from '@/components/home/tracking'
 import { BUTTON, CONTAINER, GSI_FONT, H3, SignHero } from '@/app/move-in/sign'
 import JumpBar from '@/app/bike-lessons/JumpBar'
 import { VENUES, getVenue, type Venue } from '@/lib/venues'
-import { LiveAlerts, LiveDepartures, LiveDocks, LiveProvider } from './VenueLive'
+import { LiveAlertChip, LiveAlerts, LiveDepartures, LiveDocks, LiveProvider } from './VenueLive'
 import VenueMap from './VenueMap'
 import TrackedLink from './TrackedLink'
 
@@ -38,6 +38,11 @@ const PRICE_COLS = ['grid-cols-1 max-w-[240px]', 'grid-cols-2', 'grid-cols-3']
 const todayEastern = () => new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' })
 const day = (iso: string) =>
   new Date(`${iso}T12:00:00Z`).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' })
+const longDate = (iso: string) =>
+  new Date(`${iso}T12:00:00Z`).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
+/** Prices not confirmed for this long read as "last confirmed", with a nudge to check. */
+const STALE_DAYS = 45
+const daysBetween = (a: string, b: string) => Math.round((Date.parse(b) - Date.parse(a)) / 86_400_000)
 
 const H2 = '[font-family:var(--font-overpass),Trebuchet_MS,sans-serif] text-[clamp(1.625rem,3.4vw,2.25rem)] font-extrabold leading-[1.08] text-navy'
 const BODY = 'text-[1.0625rem] leading-[1.6] text-navy'
@@ -82,6 +87,9 @@ export default async function VenueParkingPage({ params }: { params: Promise<{ v
   const today = todayEastern()
   const trains = v.transit.eventTrains
   const upcoming = trains?.trips.filter((t) => t.date >= today) ?? []
+  const stale = daysBetween(v.checked, today) > STALE_DAYS
+  // With no booking button on the venue's own card (Fenway), comparing garages is the main action.
+  const compareIsPrimary = !official?.book
 
   return (
     <div className="street min-h-screen bg-cream text-navy" style={{ fontFamily: GSI_FONT }}>
@@ -100,6 +108,7 @@ export default async function VenueParkingPage({ params }: { params: Promise<{ v
                   </a>
                 ))}
               </nav>
+              <LiveAlertChip stopName={v.transit.stopName} />
             </div>
           }
         />
@@ -152,7 +161,13 @@ export default async function VenueParkingPage({ params }: { params: Promise<{ v
                       </TrackedLink>
                     )}
                     <p className="mt-3 text-[0.9375rem] leading-relaxed text-navy/80">
-                      {v.priceNote && `${v.priceNote} `}Prices from{' '}
+                      {stale ? (
+                        <>
+                          <b className="text-navy">Last confirmed {longDate(v.checked)}.</b> Check{' '}
+                        </>
+                      ) : (
+                        <>{v.priceNote && `${v.priceNote} `}Prices from </>
+                      )}
                       {v.priceSources.map((s, i) => (
                         <span key={s.url}>
                           {i > 0 && ' and '}
@@ -161,7 +176,7 @@ export default async function VenueParkingPage({ params }: { params: Promise<{ v
                           </a>
                         </span>
                       ))}
-                      , checked {v.checked}.
+                      {stale ? ' for today’s price.' : `, checked ${longDate(v.checked)}.`}
                     </p>
                   </div>
                 )}
@@ -199,7 +214,7 @@ export default async function VenueParkingPage({ params }: { params: Promise<{ v
                     external
                     event="parking_reserve_click"
                     params={{ venue: v.slug, garage: 'compare' }}
-                    className={`${GHOST} mt-4`}
+                    className={`${compareIsPrimary ? BUTTON : GHOST} mt-4`}
                   >
                     {v.compare.label}
                   </TrackedLink>
@@ -210,32 +225,17 @@ export default async function VenueParkingPage({ params }: { params: Promise<{ v
         {/* The soft ramp: the station under the building, live. */}
         <section id="transit" className="scroll-mt-[128px] bg-cream">
           <div className={`${CONTAINER} py-12 lg:py-16`}>
-            <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_440px] lg:gap-12">
-              <div className="min-w-0">
+            {/* Phones: heading, then the live board, then the tips and the button. Desktop: board on the right. */}
+            <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_440px] lg:grid-rows-[auto_1fr] lg:gap-x-12 lg:gap-y-0">
+              <div className="min-w-0 lg:col-start-1 lg:row-start-1">
                 <h2 className={H2}>{v.transit.headline}</h2>
                 <ul className="mt-5 flex flex-wrap gap-2" aria-label={`Lines at ${v.transit.stopName}`}>
                   {v.transit.lines.map((l) => (
                     <li key={l} className={CHIP}>{l}</li>
                   ))}
                 </ul>
-                <ul className="mt-6 space-y-3">
-                  {v.transit.tips.map((t) => (
-                    <li key={t} className={`${BODY} flex gap-3`}>
-                      <span aria-hidden="true" className="mt-[0.6em] h-1.5 w-1.5 shrink-0 rounded-full bg-forest" />
-                      {t}
-                    </li>
-                  ))}
-                </ul>
-                <TrackedLink
-                  href={planUrl}
-                  event="venue_trip_planned"
-                  params={{ venue: v.slug }}
-                  className={`${BUTTON} mt-7`}
-                >
-                  Plan your trip to {v.name}
-                </TrackedLink>
               </div>
-              <div className="min-w-0">
+              <div className="min-w-0 lg:col-start-2 lg:row-span-2 lg:row-start-1">
                 <div className="[&>ul]:mt-0 [&>ul]:mb-4">
                   <LiveAlerts stop={v.transit.stop} stopName={v.transit.stopName} />
                 </div>
@@ -273,10 +273,28 @@ export default async function VenueParkingPage({ params }: { params: Promise<{ v
                       <a href={trains.source.url} target="_blank" rel="noopener noreferrer" className={LINK}>
                         {trains.source.label}
                       </a>
-                      , checked {v.checked}.
+                      , checked {longDate(v.checked)}.
                     </p>
                   </div>
                 )}
+              </div>
+              <div className="min-w-0 lg:col-start-1 lg:row-start-2">
+                <ul className="space-y-3 lg:mt-6">
+                  {v.transit.tips.map((t) => (
+                    <li key={t} className={`${BODY} flex gap-3`}>
+                      <span aria-hidden="true" className="mt-[0.6em] h-1.5 w-1.5 shrink-0 rounded-full bg-forest" />
+                      {t}
+                    </li>
+                  ))}
+                </ul>
+                <TrackedLink
+                  href={planUrl}
+                  event="venue_trip_planned"
+                  params={{ venue: v.slug }}
+                  className={`${BUTTON} mt-7`}
+                >
+                  Plan your trip to {v.name}
+                </TrackedLink>
               </div>
             </div>
           </div>

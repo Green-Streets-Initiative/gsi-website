@@ -58,6 +58,22 @@ const clock = (iso: string) =>
 const firstSentence = (s: string) =>
   s.split(/(?<!\b(?:Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec|St|Ave|Sq|Mt|approx)\.)(?<=\.)\s/)[0]
 
+/** In the hero: one line saying the station has a service change, jumping to the details. */
+export function LiveAlertChip({ stopName }: { stopName: string }) {
+  const data = useContext(Live)
+  if (!data || data === 'failed' || data.alerts.length === 0) return null
+  const now = data.alerts.some((a) => a.now)
+  return (
+    <a
+      href="#transit"
+      className="mt-4 inline-flex min-h-[44px] items-center gap-2 rounded-full border-2 border-[#B54708]/40 bg-[#FFF6E5] px-4 text-[0.9375rem] font-bold text-navy hover:border-[#B54708]"
+    >
+      <span aria-hidden="true">⚠</span>
+      {now ? `Service change at ${stopName} now` : `Service change at ${stopName} this week`}
+    </a>
+  )
+}
+
 /** Disruptions at the station on now or this week, MBTA's own words. */
 export function LiveAlerts({ stop, stopName }: { stop: string; stopName: string }) {
   const data = useContext(Live)
