@@ -5,6 +5,7 @@ import { SCHOOLS } from '@/lib/semester/schools'
 import { loadEventsListing } from '@/app/events/_lib/load'
 import { SITE_URL } from '@/lib/seo'
 import { eventUrl } from '@/lib/events-url'
+import { VENUES } from '@/lib/venues'
 
 // Served at /llms.txt. Generated (not a static file) so the guide and town
 // inventories stay in sync with the database the same way the sitemap does.
@@ -126,6 +127,16 @@ export async function GET() {
   for (const s of SCHOOLS) {
     const summary = s.seoDescription ? `: ${s.seoDescription}` : ''
     L.push(`- [Getting around ${s.name}](${SITE_URL}/shift-your-semester/${s.slug})${summary}`)
+  }
+  L.push('')
+
+  // Venue parking pages (exp-2026-11-3): where to park for a game or show,
+  // with each garage's walk and published price, then the train. The prices
+  // are re-checked every Monday, so the date tells an answer engine how fresh
+  // the page is.
+  L.push('## Parking at big venues')
+  for (const v of Object.values(VENUES)) {
+    L.push(`- [Parking at ${v.name}](${SITE_URL}/parking/${v.slug}): ${v.lede} Garages and lots with walk times and published prices (checked ${v.checked}), and how to get there by train.`)
   }
   L.push('')
 

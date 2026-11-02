@@ -6,6 +6,7 @@ import StoreBadges from '@/components/StoreBadges'
 import type { Placement } from '@/components/home/tracking'
 import { BUTTON, CONTAINER, GSI_FONT, H3, SignHero } from '@/app/move-in/sign'
 import JumpBar from '@/app/bike-lessons/JumpBar'
+import { SITE_URL } from '@/lib/seo'
 import { VENUES, getVenue, type Venue } from '@/lib/venues'
 import { LiveAlertChip, LiveAlerts, LiveDepartures, LiveDocks, LiveProvider } from './VenueLive'
 import VenueMap from './VenueMap'
@@ -18,8 +19,9 @@ import TrackedLink from './TrackedLink'
  * in). The garages with their walk and published prices, then the station
  * under the building with live trains, Bluebikes docks and rideshare.
  *
- * DRAFT: hidden from search and the sitemap until Keith signs off; no ads
- * point here yet. Data in src/lib/venues.ts; live parts from /api/venue-live.
+ * Live and indexed since Keith's go on 2026-11-02 (exp-2026-11-3). Venues in
+ * src/lib/venues.ts, prices in src/lib/venue-facts.json (re-checked every
+ * Monday by the venue-parking-prices routine); live parts from /api/venue-live.
  */
 
 export const revalidate = 3600
@@ -50,8 +52,6 @@ const LINK = 'font-bold text-forest underline underline-offset-4 hover:opacity-8
 const CHIP = 'rounded-full bg-forest/10 px-3.5 py-1.5 text-[0.9375rem] font-bold leading-snug text-navy'
 const GHOST =
   'inline-flex min-h-[44px] items-center justify-center rounded-full border-2 border-navy/20 bg-white px-5 text-[0.9375rem] font-bold text-navy transition-colors hover:border-forest'
-
-const SITE_URL = 'https://www.gogreenstreets.org'
 
 /** What answer engines read: the venue, and each garage or lot with where it is. lastReviewed moves with the weekly price check. */
 const jsonLdFor = (v: Venue) => ({
@@ -97,7 +97,6 @@ export async function generateMetadata({ params }: { params: Promise<{ venue: st
       ? `Where to park for ${v.name}: the garages nearby, how far each is on foot and what they charge, plus live train times and Bluebikes docks.`
       : `Where to park for ${v.name}: the lots, how far each is on foot and what they charge, plus the event train and rideshare.`,
     alternates: { canonical: `/parking/${v.slug}` },
-    robots: { index: false, follow: false },
   }
 }
 
