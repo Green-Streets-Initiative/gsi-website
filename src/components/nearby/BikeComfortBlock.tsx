@@ -153,7 +153,7 @@ export default function BikeComfortBlock({ comfort, highlightedStreetKey, onHigh
                 .join(' · ')
               const body = (
                 <>
-                  <span className="flex min-w-0 items-center gap-1.5">
+                  <span className="flex shrink-0 items-center gap-1.5">
                     <span className="flex shrink-0 gap-[2px]" aria-hidden="true">
                       {(otherTiers.length > 0
                         ? otherTiers
@@ -166,9 +166,12 @@ export default function BikeComfortBlock({ comfort, highlightedStreetKey, onHigh
                         />
                       ))}
                     </span>
-                    <span className="truncate">{tr('bike.connecting_stretches')}</span>
+                    <span className="whitespace-nowrap">{tr('bike.connecting_stretches')}</span>
                   </span>
-                  <span className="shrink-0 tabular-nums text-(--nb-ink-70)">
+                  {/* Several tiers run long ("0.3 mi shared use path · 0.1 mi
+                      shared road · …"): wrap under the label's right edge
+                      rather than run off the card. */}
+                  <span className="min-w-0 text-right tabular-nums text-(--nb-ink-70)">
                     {made || `${otherMi} ${tr('bike.unit_mi')}`}
                   </span>
                 </>
