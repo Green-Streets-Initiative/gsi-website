@@ -10,6 +10,7 @@
  */
 import { supabase } from '@/lib/supabase'
 import { track } from './track'
+import type { FirstRideStart, LinkProblem } from './first-ride'
 import type {
   ConsoleMe, CreditRequest, DashboardRide, PromoStats, RideDetail, RosterRow, Turnout,
 } from './types'
@@ -68,6 +69,13 @@ async function siteApi<T>(path: string, body: Record<string, unknown>): Promise<
 // ── Reads ──────────────────────────────────────────────────────────────
 
 export const getMe = () => rpc<ConsoleMe>('organizer_console_me')
+
+/** A personal console link (Shift 01588); reason says why it didn't open. */
+export const redeemLink = (token: string) =>
+  rpc<{ ok: boolean; already?: boolean; reason?: LinkProblem }>('redeem_ride_organizer_link', { p_token: token })
+
+/** The calendar host and its listings, for "Make your first ride". */
+export const getFirstRideStart = () => rpc<FirstRideStart>('organizer_first_ride_start')
 export const getRides = () => rpc<DashboardRide[]>('organizer_console_rides')
 export const getRide = (seriesId: string) => rpc<RideDetail>('organizer_ride_detail', { p_series_id: seriesId })
 export const getRoster = async (occurrenceId: string) =>

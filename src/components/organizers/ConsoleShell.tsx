@@ -11,6 +11,7 @@ import { AssistantDock, openAssistant } from './AssistantPanel'
 import { ConsoleProvider, useConsole } from './ConsoleContext'
 import ConsoleTracking from './ConsoleTracking'
 import { track } from '@/lib/organizers/track'
+import type { LinkProblem } from '@/lib/organizers/first-ride'
 import { Button, Card, Field, Input, Notice, Spinner, cx } from './ui'
 import '@/components/events/events-tone.css'
 
@@ -117,7 +118,7 @@ function Gate({ children }: { children: ReactNode }) {
 }
 
 function SignIn() {
-  const { notice, clearNotice } = useConsole()
+  const { notice, clearNotice, linkToken } = useConsole()
   const [email, setEmail] = useState('')
   const [sent, setSent] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -137,7 +138,8 @@ function SignIn() {
     // Shift sign-in allowlist); the app's own email carries it.
     const { error } = await supabase.auth.signInWithOtp({
       email: addr,
-      options: { emailRedirectTo: `${window.location.origin}/organizers` },
+      // A personal link rides along, so opening the email on another device still lets them in.
+      options: { emailRedirectTo: `${window.location.origin}/organizers${linkToken ? `?link=${linkToken}` : ''}` },
     })
     setBusy(false)
     if (error) {
@@ -152,8 +154,9 @@ function SignIn() {
 
   return (
     <div className="mx-auto grid max-w-[980px] gap-8 pt-2 md:grid-cols-[1.1fr_1fr] md:items-center md:pt-10">
-      <div>
-        <p className="text-[15px] font-semibold text-(--ev-accent)">Shift for ride organizers</p>
+      {/* Someone with a personal link came to sign in: on a phone the form leads. */}
+      <div className={cx(linkToken && 'order-2 md:order-none')}>
+        <p className="text-[15px] font-semibold text-(--ev-accent)">{linkToken ? 'You\u2019re invited' : 'Shift for ride organizers'}</p>
         <h1 className="mt-2 font-display text-[clamp(30px,4.2vw,44px)] font-extrabold leading-[1.05] text-(--ev-ink)">
           Plan and run your group&rsquo;s rides
         </h1>
@@ -187,8 +190,12 @@ function SignIn() {
           </div>
         ) : (
           <form onSubmit={send} noValidate>
-            <h2 className="font-display text-[22px] font-extrabold">Sign in</h2>
-            <p className="mt-1 text-[15px] leading-snug text-(--ev-ink-80)">Use the email address you use for Shift. We&rsquo;ll email you a sign-in link.</p>
+            <h2 className="font-display text-[22px] font-extrabold">{linkToken ? 'Sign in to get started' : 'Sign in'}</h2>
+            <p className="mt-1 text-[15px] leading-snug text-(--ev-ink-80)">
+              {linkToken
+                ? 'Your personal link is ready. Enter your email and we\u2019ll send you a sign-in link. Open it and you\u2019re in.'
+                : <>Use the email address you use for Shift. We&rsquo;ll email you a sign-in link.</>}
+            </p>
             {notice && <div className="mt-4"><Notice tone="warn">{notice}</Notice></div>}
             <div className="mt-5">
               <Field label="Email" htmlFor="org-email" error={err}>
@@ -206,7 +213,9 @@ function SignIn() {
             </div>
             <Button type="submit" variant="primary" className="mt-4 w-full" busy={busy}>Email me a sign-in link</Button>
             <p className="mt-4 text-[14px] leading-snug text-(--ev-ink-75)">
-              Ride tools are invite-only while we try them with a few groups.
+              {linkToken
+                ? 'New to Shift? The same email sets up your account. No app needed.'
+                : 'Ride tools are invite-only while we try them with a few groups.'}
             </p>
           </form>
         )}
@@ -215,27 +224,54 @@ function SignIn() {
   )
 }
 
+const LINK_PROBLEM: Record<LinkProblem, { title: string; body: string }> = {
+  used: {
+    title: 'This link has already been used',
+    body: 'Each personal link opens for one account, and a different account opened this one. If that was you, sign in with that email instead. If not, ask the person who sent it for a new link.',
+  },
+  revoked: {
+    title: 'This link has been turned off',
+    body: 'Ask the person who sent it for a new one.',
+  },
+  not_found: {
+    title: 'We don\u2019t recognize that link',
+    body: 'Check that you opened the whole link from the email. If it still doesn\u2019t work, ask the person who sent it for a new one.',
+  },
+  too_many: {
+    title: 'Too many tries',
+    body: 'Wait an hour, then open your link again.',
+  },
+}
+
 function NoAccess() {
-  const { me, signOut } = useConsole()
+  const { me, linkProblem, signOut } = useConsole()
+  const problem = linkProblem ? LINK_PROBLEM[linkProblem] : null
   return (
     <Card className="mx-auto mt-4 max-w-xl">
-      <h1 className="font-display text-[26px] font-extrabold leading-tight">Ride tools are invite-only for now</h1>
+      <h1 className="font-display text-[26px] font-extrabold leading-tight">{problem?.title ?? 'Ride tools are invite-only for now'}</h1>
       <p className="mt-3 text-[15px] leading-relaxed text-(--ev-ink-85)">
-        You&rsquo;re signed in as <b>{me?.email}</b>. We&rsquo;re building ride tools with a few groups first, so each
-        organizer gets set up with us directly.
+        You&rsquo;re signed in as <b>{me?.email}</b>.{' '}
+        {problem?.body ?? 'We\u2019re trying ride tools with a small group of organizers first, and each one gets a personal link from us.'}
       </p>
-      <p className="mt-3 text-[15px] leading-relaxed text-(--ev-ink-85)">
-        If you run group rides or walks and want in, tell us about your group: who you are, where you meet and how often.
-        If another organizer invited you, sign in with the address their invite went to.
-      </p>
+      {!problem && (
+        <p className="mt-3 text-[15px] leading-relaxed text-(--ev-ink-85)">
+          Run group rides or walks? Tell us about your group: who you are, where you meet and how often. If an organizer added you to
+          their ride, sign in with the email their invite went to.
+        </p>
+      )}
       <div className="mt-5 flex flex-wrap gap-2">
+        {/* A used link most likely means they signed in with their other address. */}
+        {linkProblem === 'used' && <Button variant="primary" onClick={() => void signOut()}>Sign in with another email</Button>}
         <a
           href="mailto:info@gogreenstreets.org?subject=Ride%20organizer%20tools"
-          className="inline-flex min-h-[44px] items-center justify-center rounded-[10px] bg-(--ev-accent-fill) px-4 text-[15px] font-semibold text-(--ev-on-accent-fill) hover:opacity-90"
+          className={cx('inline-flex min-h-[44px] items-center justify-center rounded-[10px] px-4 text-[15px] font-semibold',
+            linkProblem === 'used'
+              ? 'text-(--ev-ink) hover:bg-(--ev-panel)'
+              : 'bg-(--ev-accent-fill) text-(--ev-on-accent-fill) hover:opacity-90')}
         >
-          Ask for access
+          {problem ? 'Email us' : 'Ask for access'}
         </a>
-        <Button variant="ghost" onClick={() => void signOut()}>Use a different email</Button>
+        {linkProblem !== 'used' && <Button variant="ghost" onClick={() => void signOut()}>Use a different email</Button>}
       </div>
     </Card>
   )

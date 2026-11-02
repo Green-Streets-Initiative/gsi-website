@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ArrowLeft, ChevronDown, ImagePlus, MessageSquareText, Trash2 } from 'lucide-react'
 import AddressAutocomplete from '@/components/AddressAutocomplete'
 import { errorText, saveRide, uploadFlyer } from '@/lib/organizers/api'
+import { takePrefill } from '@/lib/organizers/first-ride'
 import { decodePlan, draftOf, routePayload } from '@/lib/organizers/saved-route'
 import { DAY_LABELS, PACE_OPTIONS, TAG_OPTIONS, WEEK_OPTIONS, dateLabel, todayKey } from '@/lib/organizers/ride-words'
 import { biweeklyStarts, scheduleDates } from '@/lib/organizers/schedule'
@@ -184,11 +185,33 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
   // choices stay put after a pick (undefined until a pick).
   const [weekBase, setWeekBase] = useState<string | null | undefined>(undefined)
   const restoredOnce = useRef(false)
+  // Arrived from a personal console link (FirstRide): ?first=1, and
+  // ?from=calendar when the form is filled in from their calendar listing.
+  const [first, setFirst] = useState(false)
+  const [fromCalendar, setFromCalendar] = useState(false)
 
   // Unsaved work survives a closed tab or a lost sign-in.
   useEffect(() => {
     if (restoredOnce.current) return
     restoredOnce.current = true
+    if (!ride) {
+      const params = new URLSearchParams(window.location.search)
+      const calendar = params.get('from') === 'calendar'
+      if (calendar || params.get('first')) {
+        setFirst(true)
+        const url = new URL(window.location.href)
+        url.searchParams.delete('from')
+        url.searchParams.delete('first')
+        window.history.replaceState({}, '', url.pathname + url.search + url.hash)
+      }
+      const prefill = calendar ? takePrefill() : null
+      if (prefill) {
+        setF({ ...blank(), ...prefill } as Form)
+        setDirty(true)
+        setFromCalendar(true)
+        return
+      }
+    }
     try {
       const raw = localStorage.getItem(draftKey)
       if (!raw) return
@@ -199,7 +222,7 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
       setRestored(true)
       setMore(true)
     } catch { /* storage unavailable */ }
-  }, [draftKey])
+  }, [draftKey, ride])
 
   // A route the assistant planned arrives as ?plan= (its stops in order, the
   // option picked for each leg and the pace): the route section re-plans it
@@ -280,6 +303,7 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
     setF(initial)
     setDirty(false)
     setRestored(false)
+    setFromCalendar(false)
   }
 
   const orgs = me?.orgs ?? []
@@ -360,7 +384,7 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
       <Link href={ride ? `/organizers/rides/${ride.id}` : '/organizers'} className="mb-3 inline-flex items-center gap-1.5 text-[14px] font-semibold text-(--ev-ink-80) hover:text-(--ev-ink)">
         <ArrowLeft className="h-4 w-4" aria-hidden />{ride ? ride.name : 'Your rides'}
       </Link>
-      <h1 className="font-display text-[clamp(28px,3.6vw,38px)] font-extrabold leading-tight">{ride ? 'Edit ride' : 'New ride'}</h1>
+      <h1 className="font-display text-[clamp(28px,3.6vw,38px)] font-extrabold leading-tight">{ride ? 'Edit ride' : first ? 'Make your first ride' : 'New ride'}</h1>
       <p className="mt-1 max-w-2xl text-[15px] leading-snug text-(--ev-ink-80)">
         {ride
           ? 'Changes show on your ride page and in the app right away. To change a single date, use that date on the ride page.'
@@ -371,6 +395,15 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
         <div className="mt-4 flex flex-col items-start gap-3 rounded-xl border border-(--ev-accent-line-30) bg-white px-4 py-3 sm:flex-row sm:items-center">
           <p className="flex min-w-0 flex-1 items-start gap-2 text-[15px] text-(--ev-ink-85)"><MessageSquareText className="mt-0.5 h-5 w-5 shrink-0 text-(--ev-accent)" aria-hidden />Rather talk it through? The assistant asks a few questions and sets it up with you.</p>
           <Button size="sm" onClick={() => openAssistant('Plan a new ride with me')}>Plan it with the assistant</Button>
+        </div>
+      )}
+
+      {fromCalendar && (
+        <div className="mt-4">
+          <Notice tone="good">
+            Filled in from your listing on the GSI calendar. Check each part, then save.{' '}
+            <button type="button" className="font-semibold underline" onClick={discardDraft}>Start from scratch instead</button>
+          </Notice>
         </div>
       )}
 
