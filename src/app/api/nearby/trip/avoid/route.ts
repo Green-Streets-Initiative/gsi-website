@@ -4,13 +4,15 @@ import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { getTripAvoiding, inServiceArea } from '@/lib/server/trip'
 
 /**
- * "Avoid this street" (Around You v2): POST { from, to, avoid } with the
- * signed-in person's Supabase token. `avoid` is one list of encoded
- * polylines per street, oldest first; the answer is { route } (null when
- * there's no reasonable way around).
+ * "Avoid this street" (Around You v2): POST { from, to, avoid, names } with
+ * the signed-in person's Supabase token. `avoid` is one list of encoded
+ * polylines per street, oldest first, and `names` their names (optional);
+ * the answer is { route } (null when there's no reasonable way around), plus
+ * `avoided_towns` when a same-named street in another town had to be told
+ * apart.
  *
  * Only for people with Around You v2 on (around_you_v2, Shift 01581): each
- * call can cost three Google route lookups, so the switch is checked here,
+ * call can cost up to three Google route lookups, so the switch is checked here,
  * not just in the page.
  */
 
@@ -25,6 +27,12 @@ function point(raw: unknown): { lat: number; lng: number } | null {
   const lat = Number(p?.lat)
   const lng = Number(p?.lng)
   return inServiceArea(lat, lng) ? { lat, lng } : null
+}
+
+/** Street names, one per avoided street; anything malformed is just left out. */
+function streetNames(raw: unknown, count: number): string[] {
+  if (!Array.isArray(raw) || raw.length !== count) return []
+  return raw.every(s => typeof s === 'string' && s.length <= 120) ? (raw as string[]) : []
 }
 
 function streets(raw: unknown): string[][] | null {
@@ -52,7 +60,7 @@ export async function POST(req: NextRequest) {
   const avoid = streets(body?.avoid)
   if (!from || !to || !avoid) return NextResponse.json({ error: 'from, to and avoid required' }, { status: 400 })
 
-  const result = await getTripAvoiding(from, to, avoid)
+  const result = await getTripAvoiding(from, to, avoid, streetNames(body?.names, avoid.length))
   if (!result) return NextResponse.json({ error: 'route lookup failed' }, { status: 502 })
   return NextResponse.json(result, { headers: { 'Cache-Control': 'private, no-store' } })
 }

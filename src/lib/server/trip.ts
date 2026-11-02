@@ -144,15 +144,16 @@ export async function getTripAvoiding(
   from: { lat: number; lng: number },
   to: { lat: number; lng: number },
   avoid: string[][],
-): Promise<{ route: AvoidingRoute | null } | null> {
+  names: string[] = [],
+): Promise<{ route: AvoidingRoute | null; avoided_towns?: (string | null)[] } | null> {
   const f = { lat: round3(from.lat), lng: round3(from.lng) }
   const t = { lat: round3(to.lat), lng: round3(to.lng) }
-  const key = `${REACH_ROW_VERSION}:${f.lat},${f.lng}|${t.lat},${t.lng}|${fnv(avoid.map(g => g.join(' ')).join('|'))}`
+  const key = `${REACH_ROW_VERSION}:${f.lat},${f.lng}|${t.lat},${t.lng}|${fnv(avoid.map(g => g.join(' ')).join('|') + '#' + names.join('|'))}`
   const cached = avoidCache.get(key)
   if (cached && cached.expires > Date.now()) return cached.result
 
   const [laneIndex, crashes] = await Promise.all([laneIndexAlong(f, [t]), crashesFor(f.lat, f.lng)])
-  const result = await buildAvoidingRoute(f, t, avoid, laneIndex, crashes)
+  const result = await buildAvoidingRoute(f, t, avoid, laneIndex, crashes, names)
   if (!result) return null
   if (avoidCache.size >= CACHE_MAX_ENTRIES) {
     const oldest = avoidCache.keys().next().value

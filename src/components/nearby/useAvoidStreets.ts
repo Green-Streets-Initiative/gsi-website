@@ -11,6 +11,8 @@ import type { BikeComfortData, ReachRow, ReachStep } from './types'
  * (/api/nearby/trip/avoid) and the answer replaces the trip's bike route, so
  * the map, the time and the comfort rows all follow without knowing about it.
  * Several streets can be avoided in turn; Undo puts the first answer back.
+ * When the new route rides a same-named street in another town, the server
+ * names both towns and the Avoiding line takes its town too.
  */
 
 type Avoided = { key: string; label: string; polylines: string[] }
@@ -32,6 +34,9 @@ export type AvoidState = {
   noneKey: string | null
   failedKey: string | null
 }
+
+/** "Cambridge Street, Boston" → "Cambridge Street". */
+const streetOnly = (label: string) => label.split(',')[0].trim()
 
 export function useAvoidStreets(center: { lat: number; lng: number }) {
   const [entries, setEntries] = useState<Record<string, Entry>>({})
@@ -79,16 +84,21 @@ export function useAvoidStreets(center: { lat: number; lng: number }) {
           from: center,
           to: { lat: row.lat, lng: row.lng },
           avoid: avoided.map(a => a.polylines),
+          names: avoided.map(a => streetOnly(a.label)),
         }),
       })
       if (!resp.ok) throw new Error(String(resp.status))
-      const { route } = await resp.json() as { route: Entry['route'] | null }
+      const { route, avoided_towns: towns } = await resp.json() as {
+        route: Entry['route'] | null
+        avoided_towns?: (string | null)[]
+      }
       if (!route) {
         setNone({ rowId: row.id, key })
         posthog.capture('nearby_avoid_street_none', { destination: row.id })
         return false
       }
-      setEntries(e => ({ ...e, [row.id]: { avoided, route, baseMinutes: prev?.baseMinutes ?? shownMinutes } }))
+      const named = avoided.map((a, i) => (towns?.[i] ? { ...a, label: `${streetOnly(a.label)}, ${towns[i]}` } : a))
+      setEntries(e => ({ ...e, [row.id]: { avoided: named, route, baseMinutes: prev?.baseMinutes ?? shownMinutes } }))
       return true
     } catch {
       setFailed({ rowId: row.id, key })

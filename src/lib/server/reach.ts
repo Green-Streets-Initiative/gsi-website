@@ -1382,11 +1382,17 @@ const AVOID_EXTRA_MAX_RATIO = 2
  * that stays off every street in `avoid` (each a street's stretches, as
  * encoded polylines; the last one is the street just tapped).
  *
- * Three Google calls: the plain alternates, plus one via each side of the new
- * street (lib/nearby/avoid-stretch). Every route that comes back is checked
+ * The plain alternates first: when one of them already gets around, that's
+ * one Google call. Only if none does, one more via each side of the new
+ * street (lib/nearby/avoid-stretch), so three at most. Every route is checked
  * against ALL the streets, then ranked exactly as the first answer was.
  * `route` is null when none of them gets around; null overall when Google
  * didn't answer, so a failure is never mistaken for "no way around".
+ *
+ * `names` are the avoided streets' names, same order. When the new route
+ * rides a street of the same name in another town, both get their town
+ * ("Cambridge Street, Cambridge" in the list, Boston in the Avoiding line),
+ * so it doesn't read as the street just avoided.
  */
 export async function buildAvoidingRoute(
   origin: { lat: number; lng: number },
@@ -1394,33 +1400,115 @@ export async function buildAvoidingRoute(
   avoid: string[][],
   laneIndex: LaneVertex[],
   crashes: CrashCluster[] = [],
-): Promise<{ route: AvoidingRoute | null } | null> {
+  names: string[] = [],
+): Promise<{ route: AvoidingRoute | null; avoided_towns?: (string | null)[] } | null> {
   const streets = avoid.map(group => group.map(decodePolyline))
-  const newest = streets[streets.length - 1] ?? []
-  const vias = detourVias(newest, laneIndex)
-  const routes = (await Promise.all([
-    queryBikeRoutes(origin, dest),
-    ...vias.map(([lat, lng]) => queryBikeRoutes(origin, dest, { lat, lng })),
-  ])).flat()
-  if (routes.length === 0) return null
-
-  const fastest = Math.min(...routes.map(r => r.minutes))
-  const cap = Math.max(fastest + AVOID_EXTRA_MAX_MIN, fastest * AVOID_EXTRA_MAX_RATIO)
   const ends: [number, number][] = [[origin.lat, origin.lng], [dest.lat, dest.lng]]
-  const around = routes.filter(r =>
-    !!r.encodedPolyline &&
-    r.minutes <= cap &&
-    avoidsAll(streets, decodePolyline(r.encodedPolyline), ends))
-  const chosen = chooseBikeRoute(around, laneIndex, crashes)
+  const pick = (routes: { minutes: number; encodedPolyline: string | null }[]) => {
+    const fastest = Math.min(...routes.map(r => r.minutes))
+    const cap = Math.max(fastest + AVOID_EXTRA_MAX_MIN, fastest * AVOID_EXTRA_MAX_RATIO)
+    return chooseBikeRoute(
+      routes.filter(r =>
+        !!r.encodedPolyline &&
+        r.minutes <= cap &&
+        avoidsAll(streets, decodePolyline(r.encodedPolyline), ends)),
+      laneIndex,
+      crashes,
+    )
+  }
+
+  const plain = await queryBikeRoutes(origin, dest)
+  let chosen = plain.length > 0 ? pick(plain) : null
+  if (!chosen) {
+    const vias = detourVias(streets[streets.length - 1] ?? [], laneIndex)
+    const detours = (await Promise.all(
+      vias.map(([lat, lng]) => queryBikeRoutes(origin, dest, { lat, lng })),
+    )).flat()
+    const routes = [...plain, ...detours]
+    if (routes.length === 0) return null
+    chosen = pick(routes)
+  }
   if (!chosen) return { route: null }
   const r = chosen.primary
+  const named = await nameSameStreetTowns(r.scored?.comfort ?? null, streets, names)
   return {
     route: {
       minutes: r.minutes,
       polyline: r.encodedPolyline,
-      comfort: r.scored?.comfort ?? null,
+      comfort: named.comfort,
       steps: matchBikeCorridors(r.encodedPolyline, laneIndex),
     },
+    ...(named.avoidedTowns ? { avoided_towns: named.avoidedTowns } : {}),
+  }
+}
+
+/** "Cambridge Street, Boston" → "cambridge street": a name already carrying
+ *  its town (from an earlier answer) still matches. */
+const baseStreetName = (s: string) => s.split(',')[0].trim().toLowerCase()
+
+/** Town lines are stored as MassGIS writes them ("BOSTON"). */
+const townLabel = (s: string) =>
+  s === s.toUpperCase() ? s.toLowerCase().replace(/\b\w/g, c => c.toUpperCase()) : s
+
+/**
+ * The towns of the route's streets that share a name with an avoided one,
+ * and of those avoided ones, only where the two differ. Nothing is looked
+ * up unless a name repeats, which is rare. A failed lookup leaves the names
+ * as they were.
+ */
+async function nameSameStreetTowns(
+  comfort: BikeComfort | null,
+  avoided: [number, number][][][],
+  names: string[],
+): Promise<{ comfort: BikeComfort | null; avoidedTowns: (string | null)[] | null }> {
+  const none = { comfort, avoidedTowns: null }
+  if (!comfort || names.length === 0) return none
+  const wanted = names.map(baseStreetName)
+  const clashes = comfort.streets.filter(st => wanted.includes(baseStreetName(st.label)))
+  if (clashes.length === 0) return none
+
+  const middle = (line: [number, number][]) => line[Math.floor(line.length / 2)] ?? null
+  const routePoint = (key: string) => {
+    const seg = comfort.segments.find(s => s.street_key === key) ?? comfort.segments.find(s => s.street_keys.includes(key))
+    return seg ? middle(decodePolyline(seg.polyline)) : null
+  }
+  const avoidedIdx = wanted.map((n, i) => (clashes.some(st => baseStreetName(st.label) === n) ? i : -1)).filter(i => i >= 0)
+  const points = [
+    ...clashes.map(st => routePoint(st.key)),
+    ...avoidedIdx.map(i => middle(avoided[i]?.[0] ?? [])),
+  ]
+  try {
+    const db = createServerSupabaseClient()
+    const ids = await Promise.all(points.map(async p => {
+      if (!p) return null
+      const { data, error } = await db.rpc('town_boundary_at', { p_lat: p[0], p_lng: p[1] })
+      return error ? null : ((data as string | null) ?? null)
+    }))
+    const known = [...new Set(ids.filter((x): x is string => !!x))]
+    if (known.length === 0) return none
+    const { data: rows, error } = await db.from('town_boundaries').select('id, name').in('id', known)
+    if (error || !rows) return none
+    const nameOf = new Map(rows.map(row => [row.id as string, townLabel(row.name as string)]))
+    const townAt = (k: number) => (ids[k] ? nameOf.get(ids[k]!) ?? null : null)
+
+    const avoidedTown = new Map<string, string | null>()
+    avoidedIdx.forEach((i, k) => avoidedTown.set(wanted[i], townAt(clashes.length + k)))
+    const avoidedTowns: (string | null)[] = wanted.map(() => null)
+    const relabel = new Map<string, string>()
+    clashes.forEach((st, k) => {
+      const mine = townAt(k)
+      const theirs = avoidedTown.get(baseStreetName(st.label)) ?? null
+      if (!mine || !theirs || mine === theirs) return
+      relabel.set(st.key, `${st.label.split(',')[0].trim()}, ${mine}`)
+      wanted.forEach((n, i) => { if (n === baseStreetName(st.label)) avoidedTowns[i] = theirs })
+    })
+    if (relabel.size === 0) return none
+    return {
+      comfort: { ...comfort, streets: comfort.streets.map(st => (relabel.has(st.key) ? { ...st, label: relabel.get(st.key)! } : st)) },
+      avoidedTowns,
+    }
+  } catch {
+    return none
   }
 }
 
