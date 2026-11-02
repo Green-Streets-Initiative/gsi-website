@@ -11,7 +11,12 @@
  * OpenStreetMap addresses (TD Garden checked 2026-10-28, Fenway and
  * Gillette 2026-11-02), rounded up. Where the venue or garage publishes its
  * own walk time, that one is used and the entry says so.
+ *
+ * Prices, rules and event trains are in venue-facts.json, kept current by the
+ * weekly venue-parking-prices routine; this file holds what rarely changes.
  */
+
+import venueFacts from './venue-facts.json'
 
 export type Garage = {
   name: string
@@ -76,7 +81,7 @@ export type Venue = {
   rideshare: string
 }
 
-export const VENUES: Record<string, Venue> = {
+const BASE: Record<string, VenueBase> = {
   'td-garden': {
     slug: 'td-garden',
     name: 'TD Garden',
@@ -93,12 +98,6 @@ export const VENUES: Record<string, Venue> = {
         walkMin: 0,
         official: true,
         where: 'Under the arena',
-        prices: [
-          { label: 'Bought ahead', amount: '$60' },
-          { label: 'Game nights', amount: '$70' },
-          { label: 'Other events', amount: '$65' },
-        ],
-        facts: ['Elevator to the arena', 'Good for 8 hours, then $5 an hour', 'Height limit 6′8″', 'EV charging on levels 1 and 3'],
         book: {
           label: 'Buy parking on Ticketmaster',
           url: 'https://www.ticketmaster.com/venue/8337?tab=addOns&addOnType=PARKING',
@@ -138,7 +137,6 @@ export const VENUES: Record<string, Venue> = {
       },
     ],
     priceSources: [{ label: 'tdgarden.com', url: 'https://www.tdgarden.com/plan-your-visit/directions-parking/north-station-garage' }],
-    checked: '2026-11-02',
     priceNote: 'Buying ahead holds you a space.',
     others: {
       title: 'A short walk away',
@@ -198,12 +196,6 @@ export const VENUES: Record<string, Venue> = {
         official: true,
         offMap: true,
         where: 'Red Sox discount garage · 15 min walk',
-        prices: [{ label: 'Night and weekend games', amount: '$26' }],
-        facts: [
-          'Scan that day’s Red Sox ticket at the exit',
-          'Enter after 2 PM weekdays, 7 AM weekends',
-          'Not for concerts or postponed games',
-        ],
       },
       { name: 'Van Ness Garage', address: '1341 Boylston St', lat: 42.34469, lng: -71.09932, walkMin: 5 },
       { name: 'Fenway Center Bower Garage', address: '771 Beacon St, enter on David Ortiz Dr', lat: 42.34722, lng: -71.10131, walkMin: 6 },
@@ -215,7 +207,6 @@ export const VENUES: Record<string, Venue> = {
         lat: 42.34805,
         lng: -71.07508,
         walkMin: 29,
-        note: 'Red Sox rate $12, night and weekend games',
         offMap: true,
       },
     ],
@@ -223,11 +214,9 @@ export const VENUES: Record<string, Venue> = {
       { label: 'prudentialcenter.com', url: 'https://www.prudentialcenter.com/visit/parking/' },
       { label: 'WBUR', url: 'https://www.wbur.org/news/2026/08/21/fenway-park-guide-food-transportation-parking' },
     ],
-    checked: '2026-11-02',
-    priceNote: 'These are the 2026 season rates.',
     others: {
       title: 'A short walk away',
-      note: 'Prices change by game. Cash lots on game days often ask $50 to $65.',
+      note: '',
     },
     compare: { label: 'Compare garages on SpotHero', url: 'https://spothero.com/destination/boston/fenway-park-parking' },
     transit: {
@@ -275,11 +264,6 @@ export const VENUES: Record<string, Venue> = {
         walkMin: 10,
         official: true,
         where: 'For every ticket holder · 10 to 17 min walk',
-        prices: [
-          { label: 'Patriots, concerts and Revolution', amount: 'Free' },
-          { label: 'Visa card to wait 75 min after Patriots games', amount: '$50' },
-        ],
-        facts: ['Open 4 hours before kickoff', 'Close 2 hours after day games', 'No re-entry', 'Tailgating OK, no open fires'],
         book: { label: 'Lot maps and rules', url: 'https://www.gillettestadium.com/parking/' },
       },
       {
@@ -288,7 +272,6 @@ export const VENUES: Record<string, Venue> = {
         lat: 42.09725,
         lng: -71.26988,
         walkMin: 14,
-        note: '$50 Visa card · leave 75 min after the game · full 30 min after kickoff',
       },
       {
         name: 'Stadium-side lots',
@@ -296,38 +279,56 @@ export const VENUES: Record<string, Venue> = {
         lat: 42.0939,
         lng: -71.26329,
         walkMin: 6,
-        note: 'Prepaid only · Patriots: sold out for 2026',
       },
     ],
     priceSources: [{ label: 'gillettestadium.com', url: 'https://www.gillettestadium.com/parking/' }],
-    checked: '2026-11-02',
     others: { title: 'Other lots', note: 'Closer to the stadium, or paid to wait.' },
     transit: {
       stop: 'place-FS-0049',
       stopName: 'Foxboro',
       lat: 42.0951,
       lng: -71.26151,
-      headline: 'Or take the train: the $20 event train stops at the stadium.',
+      headline: 'Or take the train: the event train stops at the stadium.',
       live: 'alerts',
       lines: ['From South Station, Back Bay and Dedham', 'From Providence on some dates'],
       tips: [
         'Trains get in about an hour before kickoff and leave 30 minutes after the game ends.',
         'Regular Commuter Rail tickets and passes don’t work on event trains.',
-        'On weekdays the regular Franklin/Foxboro Line stops here too ($8.75 from South Station), but the last train can leave before the event ends.',
+        'On weekdays the regular Franklin/Foxboro Line stops here too, but the last train can leave before the event ends.',
       ],
-      eventTrains: {
-        fare: '$20 round trip',
-        buy: 'mTicket app only. Patriots tickets go on sale at 11 AM the Monday before the game.',
-        trips: [
-          { date: '2026-11-08', event: 'Patriots vs. Packers', times: 'South Station 1:55 and 2:20 PM · Providence 1:50 PM', onSale: '2026-11-02' },
-          { date: '2026-12-06', event: 'Patriots vs. Bills', times: 'South Station 1:55 and 2:20 PM · Providence 1:50 PM', onSale: '2026-11-30' },
-          { date: '2026-12-10', event: 'Patriots vs. Vikings', times: 'South Station 5:25 PM · Providence 5:20 PM', onSale: '2026-12-03' },
-        ],
-        source: { label: 'mbta.com', url: 'https://www.mbta.com/destinations/gillette-stadium' },
-      },
+      eventTrainSource: { label: 'mbta.com', url: 'https://www.mbta.com/destinations/gillette-stadium' },
     },
     rideshare: 'Uber and Lyft pick up in Lot 15 or 16, next to Bass Pro Shops at Patriot Place; the event guide says which. No drop-offs on Route 1.',
   },
 }
+
+/** The parts that go out of date live in venue-facts.json (see its _comment). */
+type Facts = {
+  checked: string
+  priceNote?: string
+  othersNote?: string
+  prices: { label: string; amount: string }[]
+  facts?: string[]
+  notes?: Record<string, string>
+  trains?: { fare: string; buy: string; trips: EventTrain[] }
+}
+type VenueBase = Omit<Venue, 'checked' | 'transit'> & {
+  transit: Omit<Venue['transit'], 'eventTrains'> & { eventTrainSource?: { label: string; url: string } }
+}
+const FACTS = venueFacts as unknown as Record<string, Facts>
+
+const withFacts = ({ transit: { eventTrainSource, ...transit }, ...b }: VenueBase): Venue => {
+  const f = FACTS[b.slug]
+  return {
+    ...b,
+    checked: f.checked,
+    priceNote: f.priceNote ?? b.priceNote,
+    others: { ...b.others, note: f.othersNote ?? b.others.note },
+    garages: b.garages.map((g) => (g.official ? { ...g, prices: f.prices, facts: f.facts } : { ...g, note: f.notes?.[g.name] ?? g.note })),
+    transit: { ...transit, eventTrains: f.trains && eventTrainSource ? { ...f.trains, source: eventTrainSource } : undefined },
+  }
+}
+
+export const VENUES: Record<string, Venue> = Object.fromEntries(Object.entries(BASE).map(([slug, b]) => [slug, withFacts(b)]))
 
 export const getVenue = (slug: string): Venue | null => VENUES[slug] ?? null
