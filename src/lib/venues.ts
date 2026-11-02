@@ -8,7 +8,9 @@
  * from /api/venue-live.
  *
  * Walk minutes: straight-line distance × 1.25 at 80 m a minute, from
- * OpenStreetMap addresses (checked 2026-10-28), rounded up.
+ * OpenStreetMap addresses (TD Garden checked 2026-10-28, Fenway and
+ * Gillette 2026-11-02), rounded up. Where the venue or garage publishes its
+ * own walk time, that one is used and the entry says so.
  */
 
 export type Garage = {
@@ -18,17 +20,24 @@ export type Garage = {
   lng: number
   /** 0 = in the building. */
   walkMin: number
-  /** The venue's own garage. */
+  /** The venue's own garage, or the one the team points fans to. Shown as the big card. */
   official?: boolean
   /** Where it is, for the venue's own garage ("Under the arena"). */
   where?: string
   /** Published prices, largest first. Only from the venue or the garage. */
   prices?: { label: string; amount: string }[]
   facts?: string[]
-  book: { label: string; url: string }
+  /** One line under the address in the list (a published rate, a catch). */
+  note?: string
+  /** Left off the map when it's far enough to squash the pins near the venue. */
+  offMap?: boolean
+  book?: { label: string; url: string }
 }
 
 export type BikeDock = { ids: string[]; name: string; lat: number; lng: number; walkMin: number }
+
+/** A special event train (Gillette). Dates are Eastern, YYYY-MM-DD; past ones drop off the page. */
+export type EventTrain = { date: string; event: string; times: string; onSale: string }
 
 export type Venue = {
   slug: string
@@ -39,21 +48,30 @@ export type Venue = {
   /** The one-line answer in the hero. */
   lede: string
   garages: Garage[]
-  /** Where the prices came from. */
-  priceSource: { label: string; url: string; checked: string }
-  /** Where a visitor compares the other garages, and who suggests it. */
-  compare: { label: string; url: string; note: string }
+  /** Where the prices came from, and the day we last checked them. */
+  priceSources: { label: string; url: string }[]
+  checked: string
+  /** Said before the sources line ("Buying ahead holds you a space."). */
+  priceNote?: string
+  /** The list under the big card: its heading and one line above it. */
+  others: { title: string; note: string }
+  /** Where a visitor compares the other garages. Left out when there's nothing to compare. */
+  compare?: { label: string; url: string }
   transit: {
     /** MBTA parent stop id for live departures and alerts. */
     stop: string
     stopName: string
     lat: number
     lng: number
+    /** The section's heading, a full sentence. */
     headline: string
     lines: string[]
     tips: string[]
+    /** 'alerts' when the station has no useful live board (Foxboro on a game day). */
+    live: 'board' | 'alerts'
+    eventTrains?: { fare: string; buy: string; trips: EventTrain[]; source: { label: string; url: string } }
   }
-  bikes: { docks: BikeDock[]; note: string }
+  bikes?: { docks: BikeDock[]; note: string }
   rideshare: string
 }
 
@@ -118,22 +136,21 @@ export const VENUES: Record<string, Venue> = {
         book: { label: 'Event rates', url: 'https://governmentcentergarage.com/parking-faq.html' },
       },
     ],
-    priceSource: {
-      label: 'tdgarden.com',
-      url: 'https://www.tdgarden.com/plan-your-visit/directions-parking/north-station-garage',
-      checked: 'October 28, 2026',
-    },
-    compare: {
-      label: 'Compare garages on SpotHero',
-      url: 'https://spothero.com/destination/boston/td-garden-parking',
+    priceSources: [{ label: 'tdgarden.com', url: 'https://www.tdgarden.com/plan-your-visit/directions-parking/north-station-garage' }],
+    checked: 'November 2, 2026',
+    priceNote: 'Buying ahead holds you a space.',
+    others: {
+      title: 'A short walk away',
       note: 'Prices change by event. TD Garden sends people to SpotHero to compare the garages nearby.',
     },
+    compare: { label: 'Compare garages on SpotHero', url: 'https://spothero.com/destination/boston/td-garden-parking' },
     transit: {
       stop: 'place-north',
       stopName: 'North Station',
       lat: 42.365577,
       lng: -71.06129,
-      headline: 'North Station is under the arena',
+      headline: 'Or skip the garage: North Station is under the arena.',
+      live: 'board',
       lines: ['Orange Line', 'Green Line D and E', 'Commuter Rail north of Boston'],
       tips: [
         'Commuter Rail from the south: get off at Back Bay and take the Orange Line to North Station.',
@@ -157,6 +174,158 @@ export const VENUES: Record<string, Venue> = {
       note: 'North Station has bike racks outside.',
     },
     rideshare: 'Uber and Lyft pick up and drop off on Merrimac Street, 7 PM to 2 AM.',
+  },
+
+  // Red Sox rates are for the 2026 season (it ended in September); mlb.com
+  // can't be read by a script, so the rates come from the garage's own page
+  // and WBUR's Aug 21, 2026 guide, which agree.
+  'fenway-park': {
+    slug: 'fenway-park',
+    name: 'Fenway Park',
+    address: '4 Jersey St, Boston',
+    lat: 42.34646,
+    lng: -71.0971,
+    lede: 'Fenway has no lot of its own. The Red Sox rate is at the Prudential Center Garage, about 15 minutes’ walk: $26 for night and weekend games, with that day’s ticket.',
+    garages: [
+      {
+        name: 'Prudential Center Garage',
+        address: 'Enter from Boylston St, Huntington Ave, Dalton St, Exeter St or Belvidere St',
+        // The Prudential Center's and WBUR's walk time (0.9 mi), from the Dalton St side.
+        lat: 42.34837,
+        lng: -71.07934,
+        walkMin: 15,
+        official: true,
+        where: 'Red Sox discount garage · 15 min walk',
+        prices: [{ label: 'Night and weekend games', amount: '$26' }],
+        facts: [
+          'Scan that day’s Red Sox ticket at the exit',
+          'Enter after 2 PM weekdays, 7 AM weekends',
+          'Not for concerts or postponed games',
+        ],
+        book: { label: 'Garage details', url: 'https://www.prudentialcenter.com/visit/parking/' },
+      },
+      { name: 'Van Ness Garage', address: '1341 Boylston St', lat: 42.34469, lng: -71.09932, walkMin: 5 },
+      { name: 'Fenway Center Bower Garage', address: '771 Beacon St, enter on David Ortiz Dr', lat: 42.34722, lng: -71.10131, walkMin: 6 },
+      { name: 'Fenway Triangle Garage', address: '180 Brookline Ave', lat: 42.34426, lng: -71.10131, walkMin: 7 },
+      { name: 'Landmark Center Garage', address: '401 Park Dr', lat: 42.34461, lng: -71.10267, walkMin: 8 },
+      {
+        name: '100 Clarendon Garage',
+        address: '100 Clarendon St, Back Bay',
+        lat: 42.34805,
+        lng: -71.07508,
+        walkMin: 29,
+        note: 'Red Sox rate $12, night and weekend games',
+        offMap: true,
+      },
+    ],
+    priceSources: [
+      { label: 'prudentialcenter.com', url: 'https://www.prudentialcenter.com/visit/parking/' },
+      { label: 'WBUR', url: 'https://www.wbur.org/news/2026/08/21/fenway-park-guide-food-transportation-parking' },
+    ],
+    checked: 'November 2, 2026',
+    priceNote: 'These are the 2026 season rates.',
+    others: {
+      title: 'A short walk away',
+      note: 'Prices change by game. Cash lots on game days often ask $50 to $65.',
+    },
+    compare: { label: 'Compare garages on SpotHero', url: 'https://spothero.com/destination/boston/fenway-park-parking' },
+    transit: {
+      stop: 'place-kencl',
+      stopName: 'Kenmore',
+      lat: 42.348949,
+      lng: -71.095169,
+      headline: 'Or skip the garage: Kenmore station is a 5-minute walk.',
+      live: 'board',
+      lines: ['Green Line B, C and D', 'Commuter Rail at Lansdowne'],
+      tips: [
+        'Worcester Line Commuter Rail: Lansdowne is 3 minutes from the park.',
+        'Green Line D: the Fenway stop is about 8 minutes on foot.',
+        'Red Line: change at Park Street to a B, C or D train to Kenmore.',
+      ],
+    },
+    bikes: {
+      docks: [
+        { ids: ['2123672938202825324'], name: 'Ipswich St at Van Ness St', lat: 42.34581, lng: -71.09549, walkMin: 3 },
+        { ids: ['47c44bb1-d065-41f5-ad79-c18aee60af34'], name: 'Boylston St at Jersey St', lat: 42.34465, lng: -71.09733, walkMin: 4 },
+        { ids: ['f8347ccd-0de8-11e7-991c-3863bb43a7d0'], name: 'Kenmore Square', lat: 42.34871, lng: -71.09701, walkMin: 4 },
+        { ids: ['99675a11-a92c-465c-bf5a-434b08ba5fc6'], name: 'Lansdowne T Stop', lat: 42.34734, lng: -71.10017, walkMin: 5 },
+      ],
+      note: 'On game days there’s free bike valet at Gate D, Van Ness St at Jersey St. It closes 30 minutes after the game.',
+    },
+    rideshare: 'Fenway has no set pick-up zone. Walk a few blocks from the park and the app shows where to meet your driver.',
+  },
+
+  // Lot positions from OpenStreetMap (Lot 50A for the free lots across
+  // Route 1, which run Lots 41 to 55: 10 to 17 minutes' walk; Lot 55 for Be
+  // Paid to Park; Lot 4B for the stadium-side lots).
+  'gillette-stadium': {
+    slug: 'gillette-stadium',
+    name: 'Gillette Stadium',
+    address: '1 Patriot Place, Foxborough',
+    lat: 42.09089,
+    lng: -71.26417,
+    lede: 'Parking is free in the lots across Route 1, a 10 to 17 minute walk to the stadium. The lots open 4 hours before kickoff.',
+    garages: [
+      {
+        name: 'Free lots across Route 1',
+        address: 'Follow the signs from Route 1',
+        lat: 42.09198,
+        lng: -71.27264,
+        walkMin: 10,
+        official: true,
+        where: 'For every ticket holder · 10 to 17 min walk',
+        prices: [
+          { label: 'Patriots, concerts and Revolution', amount: 'Free' },
+          { label: 'Visa card if you wait 75 min to leave', amount: '$50' },
+        ],
+        facts: ['Open 4 hours before kickoff', 'No re-entry', 'No overnight parking', 'Tailgating OK, no open fires'],
+        book: { label: 'Lot maps and rules', url: 'https://www.gillettestadium.com/parking/' },
+      },
+      {
+        name: 'Be Paid to Park: Lots 45 and 55B',
+        address: 'Across Route 1',
+        lat: 42.09725,
+        lng: -71.26988,
+        walkMin: 14,
+        note: 'Patriots games: a $50 Visa card, and you wait 75 minutes to leave. Closed 30 minutes after kickoff.',
+      },
+      {
+        name: 'Stadium-side lots',
+        address: 'Next to the stadium',
+        lat: 42.0939,
+        lng: -71.26329,
+        walkMin: 6,
+        note: 'Prepaid only. Sold out for 2026 Patriots games; sold with concert tickets.',
+      },
+    ],
+    priceSources: [{ label: 'gillettestadium.com', url: 'https://www.gillettestadium.com/parking/' }],
+    checked: 'November 2, 2026',
+    others: { title: 'Other lots', note: 'Lots close 2 hours after day games and right after night games.' },
+    transit: {
+      stop: 'place-FS-0049',
+      stopName: 'Foxboro',
+      lat: 42.0951,
+      lng: -71.26151,
+      headline: 'Or skip the drive: the $20 event train stops at the stadium.',
+      live: 'alerts',
+      lines: ['From South Station, Back Bay and Dedham', 'From Providence on some dates'],
+      tips: [
+        'Trains get in about an hour before kickoff and leave 30 minutes after the game ends.',
+        'Regular Commuter Rail tickets and passes don’t work on event trains.',
+        'On weekdays the regular Franklin/Foxboro Line stops here too ($8.75 from South Station), but the last train can leave before the event ends.',
+      ],
+      eventTrains: {
+        fare: '$20 round trip',
+        buy: 'mTicket app only. Patriots tickets go on sale at 11 AM the Monday before the game.',
+        trips: [
+          { date: '2026-11-08', event: 'Patriots vs. Packers', times: 'South Station 1:55 and 2:20 PM · Providence 1:50 PM', onSale: '2026-11-02' },
+          { date: '2026-12-06', event: 'Patriots vs. Bills', times: 'South Station 1:55 and 2:20 PM · Providence 1:50 PM', onSale: '2026-11-30' },
+          { date: '2026-12-10', event: 'Patriots vs. Vikings', times: 'South Station 5:25 PM · Providence 5:20 PM', onSale: '2026-12-03' },
+        ],
+        source: { label: 'mbta.com', url: 'https://www.mbta.com/destinations/gillette-stadium' },
+      },
+    },
+    rideshare: 'Uber and Lyft pick up in Lot 15 or 16, next to Bass Pro Shops at Patriot Place; the event guide says which. No drop-offs on Route 1.',
   },
 }
 

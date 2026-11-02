@@ -6,7 +6,7 @@ import StoreBadges from '@/components/StoreBadges'
 import type { Placement } from '@/components/home/tracking'
 import { BUTTON, CONTAINER, GSI_FONT, H3, SignHero } from '@/app/move-in/sign'
 import JumpBar from '@/app/bike-lessons/JumpBar'
-import { VENUES, getVenue } from '@/lib/venues'
+import { VENUES, getVenue, type Venue } from '@/lib/venues'
 import { LiveAlerts, LiveDepartures, LiveDocks, LiveProvider } from './VenueLive'
 import VenueMap from './VenueMap'
 import TrackedLink from './TrackedLink'
@@ -26,11 +26,18 @@ export const revalidate = 3600
 
 const PLACEMENT = 'venue_parking' as Placement
 
-const LINKS = [
-  { id: 'garages', label: 'Garages' },
-  { id: 'transit', label: 'The T' },
-  { id: 'bike', label: 'Bike or rideshare' },
+const linksFor = (v: Venue) => [
+  { id: 'garages', label: 'Parking' },
+  { id: 'transit', label: v.transit.eventTrains ? 'Event train' : 'The T' },
+  { id: 'bike', label: v.bikes ? 'Bike or rideshare' : 'Rideshare' },
 ]
+
+const PRICE_COLS = ['grid-cols-1 max-w-[240px]', 'grid-cols-2', 'grid-cols-3']
+
+/** Today in Boston, YYYY-MM-DD, so past event trains drop off. */
+const todayEastern = () => new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' })
+const day = (iso: string) =>
+  new Date(`${iso}T12:00:00Z`).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' })
 
 const H2 = '[font-family:var(--font-overpass),Trebuchet_MS,sans-serif] text-[clamp(1.625rem,3.4vw,2.25rem)] font-extrabold leading-[1.08] text-navy'
 const BODY = 'text-[1.0625rem] leading-[1.6] text-navy'
@@ -48,7 +55,9 @@ export async function generateMetadata({ params }: { params: Promise<{ venue: st
   if (!v) return {}
   return {
     title: `${v.name} parking: garages, prices and the T | Green Streets Initiative`,
-    description: `Where to park for ${v.name}: the garages nearby, how far each is on foot and what they charge, plus live train times and Bluebikes docks.`,
+    description: v.bikes
+      ? `Where to park for ${v.name}: the garages nearby, how far each is on foot and what they charge, plus live train times and Bluebikes docks.`
+      : `Where to park for ${v.name}: the lots, how far each is on foot and what they charge, plus the event train and rideshare.`,
     alternates: { canonical: `/parking/${v.slug}` },
     robots: { index: false, follow: false },
   }
@@ -59,17 +68,23 @@ export default async function VenueParkingPage({ params }: { params: Promise<{ v
   if (!v) notFound()
 
   const [official, ...others] = v.garages
+  const links = linksFor(v)
   const planUrl = `/nearby?to=${v.lat},${v.lng}&toName=${encodeURIComponent(v.name)}`
   const pins = [
     { lat: v.lat, lng: v.lng, label: v.name, kind: 'venue' as const },
-    ...v.garages.map((g, i) => ({ lat: g.lat, lng: g.lng, label: g.official ? 'P' : String(i), kind: g.official ? ('official' as const) : ('garage' as const) })),
+    ...v.garages.flatMap((g, i) =>
+      g.offMap ? [] : [{ lat: g.lat, lng: g.lng, label: g.official ? 'P' : String(i), kind: g.official ? ('official' as const) : ('garage' as const) }],
+    ),
     { lat: v.transit.lat, lng: v.transit.lng, label: 'T', kind: 'station' as const },
   ]
+  const today = todayEastern()
+  const trains = v.transit.eventTrains
+  const upcoming = trains?.trips.filter((t) => t.date >= today) ?? []
 
   return (
     <div className="street min-h-screen bg-cream text-navy" style={{ fontFamily: GSI_FONT }}>
       <Nav variant="light" street />
-      <JumpBar after="start" links={LINKS} />
+      <JumpBar after="start" links={links} />
       <LiveProvider venue={v.slug}>
         <SignHero
           title={`Parking at ${v.name}`}
@@ -77,7 +92,7 @@ export default async function VenueParkingPage({ params }: { params: Promise<{ v
           after={
             <div id="start">
               <nav aria-label="On this page" className="mt-5 flex flex-wrap gap-2">
-                {LINKS.map((l) => (
+                {links.map((l) => (
                   <a key={l.id} href={`#${l.id}`} className={GHOST}>
                     {l.label}
                   </a>
@@ -90,7 +105,7 @@ export default async function VenueParkingPage({ params }: { params: Promise<{ v
         {/* The answer to the search: where to park, how far, what it costs. */}
         <section id="garages" className="scroll-mt-[128px] bg-white">
           <div className={`${CONTAINER} py-12 lg:py-16`}>
-            <h2 className={H2}>Garages near {v.name}</h2>
+            <h2 className={H2}>Where to park</h2>
             <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1fr)_440px] lg:gap-12">
               <div className="min-w-0">
                 {official && (
@@ -107,7 +122,7 @@ export default async function VenueParkingPage({ params }: { params: Promise<{ v
                       </div>
                     </div>
                     {official.prices && (
-                      <dl className="mt-5 grid grid-cols-3 gap-2">
+                      <dl className={`mt-5 grid gap-2 ${PRICE_COLS[Math.min(official.prices.length, 3) - 1]}`}>
                         {official.prices.map((p) => (
                           <div key={p.label} className="rounded-[12px] bg-white px-3 py-3 text-center">
                             <dd className="text-[1.75rem] font-extrabold leading-none tabular-nums text-navy">{p.amount}</dd>
@@ -123,21 +138,28 @@ export default async function VenueParkingPage({ params }: { params: Promise<{ v
                         ))}
                       </ul>
                     )}
-                    <TrackedLink
-                      href={official.book.url}
-                      external
-                      event="parking_reserve_click"
-                      params={{ venue: v.slug, garage: official.name }}
-                      className={`${BUTTON} mt-5 w-full sm:w-auto`}
-                    >
-                      {official.book.label}
-                    </TrackedLink>
+                    {official.book && (
+                      <TrackedLink
+                        href={official.book.url}
+                        external
+                        event="parking_reserve_click"
+                        params={{ venue: v.slug, garage: official.name }}
+                        className={`${BUTTON} mt-5 w-full sm:w-auto`}
+                      >
+                        {official.book.label}
+                      </TrackedLink>
+                    )}
                     <p className="mt-3 text-[0.9375rem] leading-relaxed text-navy/80">
-                      Buying ahead holds you a space. Prices from{' '}
-                      <a href={v.priceSource.url} target="_blank" rel="noopener noreferrer" className={LINK}>
-                        {v.priceSource.label}
-                      </a>
-                      , checked {v.priceSource.checked}.
+                      {v.priceNote && `${v.priceNote} `}Prices from{' '}
+                      {v.priceSources.map((s, i) => (
+                        <span key={s.url}>
+                          {i > 0 && ' and '}
+                          <a href={s.url} target="_blank" rel="noopener noreferrer" className={LINK}>
+                            {s.label}
+                          </a>
+                        </span>
+                      ))}
+                      , checked {v.checked}.
                     </p>
                   </div>
                 )}
@@ -149,8 +171,8 @@ export default async function VenueParkingPage({ params }: { params: Promise<{ v
               </div>
             </div>
 
-            <h3 className="mt-10 text-[1.125rem] font-bold text-navy">A short walk away</h3>
-            <p className="mt-1 max-w-[680px] text-[1rem] leading-[1.55] text-navy">{v.compare.note}</p>
+            <h3 className="mt-10 text-[1.125rem] font-bold text-navy">{v.others.title}</h3>
+            <p className="mt-1 max-w-[680px] text-[1rem] leading-[1.55] text-navy">{v.others.note}</p>
             <ol className="mt-4 grid gap-2 md:grid-cols-2">
                   {others.map((g, i) => (
                     <li key={g.name} className="flex items-center gap-3 rounded-[12px] border border-navy/10 bg-white px-4 py-3">
@@ -160,6 +182,7 @@ export default async function VenueParkingPage({ params }: { params: Promise<{ v
                       <span className="min-w-0 flex-1">
                         <span className="block text-[1rem] font-bold leading-snug text-navy">{g.name}</span>
                         <span className="block text-[0.9375rem] leading-snug text-navy/80">{g.address}</span>
+                        {g.note && <span className="mt-1 block text-[0.9375rem] font-bold leading-snug text-forest">{g.note}</span>}
                       </span>
                       <span className="shrink-0 text-right">
                         <span className="block text-[1.125rem] font-extrabold leading-none tabular-nums text-navy">{g.walkMin} min</span>
@@ -168,15 +191,17 @@ export default async function VenueParkingPage({ params }: { params: Promise<{ v
                     </li>
                   ))}
                 </ol>
-                <TrackedLink
-                  href={v.compare.url}
-                  external
-                  event="parking_reserve_click"
-                  params={{ venue: v.slug, garage: 'compare' }}
-                  className={`${GHOST} mt-4`}
-                >
-                  {v.compare.label}
-                </TrackedLink>
+                {v.compare && (
+                  <TrackedLink
+                    href={v.compare.url}
+                    external
+                    event="parking_reserve_click"
+                    params={{ venue: v.slug, garage: 'compare' }}
+                    className={`${GHOST} mt-4`}
+                  >
+                    {v.compare.label}
+                  </TrackedLink>
+                )}
           </div>
         </section>
 
@@ -185,7 +210,7 @@ export default async function VenueParkingPage({ params }: { params: Promise<{ v
           <div className={`${CONTAINER} py-12 lg:py-16`}>
             <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_440px] lg:gap-12">
               <div className="min-w-0">
-                <h2 className={H2}>Or skip the garage: {v.transit.headline}.</h2>
+                <h2 className={H2}>{v.transit.headline}</h2>
                 <ul className="mt-5 flex flex-wrap gap-2" aria-label={`Lines at ${v.transit.stopName}`}>
                   {v.transit.lines.map((l) => (
                     <li key={l} className={CHIP}>{l}</li>
@@ -212,7 +237,40 @@ export default async function VenueParkingPage({ params }: { params: Promise<{ v
                 <div className="[&>ul]:mt-0 [&>ul]:mb-4">
                   <LiveAlerts stop={v.transit.stop} stopName={v.transit.stopName} />
                 </div>
-                <LiveDepartures stop={v.transit.stop} stopName={v.transit.stopName} />
+                {v.transit.live === 'board' && <LiveDepartures stop={v.transit.stop} stopName={v.transit.stopName} />}
+                {trains && (
+                  <div className="rounded-[16px] border border-navy/10 bg-white">
+                    <div className="border-b border-navy/10 px-4 py-4">
+                      <p className="text-[1.75rem] font-extrabold leading-none tabular-nums text-navy">{trains.fare}</p>
+                      <p className="mt-2 text-[0.9375rem] leading-snug text-navy">{trains.buy}</p>
+                    </div>
+                    {upcoming.length > 0 ? (
+                      <ul className="divide-y divide-navy/10" aria-label="Upcoming event trains">
+                        {upcoming.map((t) => (
+                          <li key={t.date} className="px-4 py-3">
+                            <span className="flex items-baseline justify-between gap-3">
+                              <span className="text-[1rem] font-bold leading-snug text-navy">{t.event}</span>
+                              <span className="shrink-0 text-[0.9375rem] font-bold tabular-nums text-navy">{day(t.date)}</span>
+                            </span>
+                            <span className="mt-0.5 block text-[0.9375rem] leading-snug text-navy/80">{t.times}</span>
+                            <span className="mt-0.5 block text-[0.9375rem] leading-snug text-forest">
+                              {t.onSale <= today ? 'Tickets on sale now' : `Tickets from ${day(t.onSale)}, 11 AM`}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="px-4 py-4 text-[1rem] leading-[1.55] text-navy">No event trains are listed right now.</p>
+                    )}
+                    <p className="border-t border-navy/10 px-4 py-3 text-[0.9375rem] text-navy/80">
+                      Times and dates from{' '}
+                      <a href={trains.source.url} target="_blank" rel="noopener noreferrer" className={LINK}>
+                        {trains.source.label}
+                      </a>
+                      , checked {v.checked}.
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -220,13 +278,17 @@ export default async function VenueParkingPage({ params }: { params: Promise<{ v
 
         <section id="bike" className="scroll-mt-[128px] bg-white">
           <div className={`${CONTAINER} py-12 lg:py-16`}>
-            <h2 className={H2}>Bike or rideshare</h2>
-            <h3 className="mt-7 text-[1.125rem] font-bold text-navy">Bluebikes docks nearby</h3>
-            <div className="mt-3">
-              <LiveDocks docks={v.bikes.docks} />
-            </div>
-            <p className={`${BODY} mt-4`}>{v.bikes.note}</p>
-            <h3 className="mt-10 text-[1.125rem] font-bold text-navy">Uber and Lyft</h3>
+            <h2 className={H2}>{v.bikes ? 'Bike or rideshare' : 'Rideshare'}</h2>
+            {v.bikes && (
+              <>
+                <h3 className="mt-7 text-[1.125rem] font-bold text-navy">Bluebikes docks nearby</h3>
+                <div className="mt-3">
+                  <LiveDocks docks={v.bikes.docks} />
+                </div>
+                <p className={`${BODY} mt-4`}>{v.bikes.note}</p>
+              </>
+            )}
+            <h3 className={`${v.bikes ? 'mt-10' : 'mt-7'} text-[1.125rem] font-bold text-navy`}>Uber and Lyft</h3>
             <p className={`${BODY} mt-2`}>{v.rideshare}</p>
           </div>
         </section>

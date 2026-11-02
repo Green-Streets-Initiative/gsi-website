@@ -90,7 +90,7 @@ export async function GET(req: Request) {
   const byId = new Map<string, { num_bikes_available: number; num_docks_available: number; is_renting: number }>(
     (status?.data?.stations ?? []).map((s: { station_id: string }) => [s.station_id, s]),
   )
-  const bikes = venue.bikes.docks.map((d) => {
+  const bikes = (venue.bikes?.docks ?? []).map((d) => {
     const rows = d.ids.map((id) => byId.get(id)).filter((s) => s && s.is_renting)
     return {
       ids: d.ids,
