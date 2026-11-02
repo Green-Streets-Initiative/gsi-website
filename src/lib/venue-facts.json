@@ -1,0 +1,144 @@
+{
+  "_comment": "The parts of the venue parking pages that go out of date: prices, rules, event trains and the day each venue was last confirmed. The weekly venue-parking-prices routine reads every `verify` source, confirms each line, and changes this file only through scripts/venues/facts.mjs. Everything else about a venue (garages, walk times, stations) is in src/lib/venues.ts. After 45 days without a confirm, a page says its prices may be out of date.",
+  "td-garden": {
+    "checked": "2026-11-02",
+    "prices": [
+      {
+        "label": "Bought ahead",
+        "amount": "$60"
+      },
+      {
+        "label": "Game nights",
+        "amount": "$70"
+      },
+      {
+        "label": "Other events",
+        "amount": "$65"
+      }
+    ],
+    "facts": [
+      "Elevator to the arena",
+      "Good for 8 hours, then $5 an hour",
+      "Height limit 6′8″",
+      "EV charging on levels 1 and 3"
+    ],
+    "verify": [
+      {
+        "url": "https://www.tdgarden.com/plan-your-visit/directions-parking/north-station-garage",
+        "confirm": [
+          "Pre-purchase rate is $60",
+          "Day-of rate for Bruins and Celtics games is $70",
+          "Day-of rate for other TD Garden events is $65",
+          "Event rates are good for 8 hours, then $5 an hour",
+          "Height limit is 6'8\"",
+          "EV chargers on levels 1 and 3"
+        ]
+      }
+    ]
+  },
+  "fenway-park": {
+    "checked": "2026-11-02",
+    "priceNote": "These are the 2026 season rates.",
+    "othersNote": "Prices change by game. Cash lots on game days often ask $50 to $65.",
+    "prices": [
+      {
+        "label": "Night and weekend games",
+        "amount": "$26"
+      }
+    ],
+    "facts": [
+      "Scan that day’s Red Sox ticket at the exit",
+      "Enter after 2 PM weekdays, 7 AM weekends",
+      "Not for concerts or postponed games"
+    ],
+    "notes": {
+      "100 Clarendon Garage": "Red Sox rate $12, night and weekend games"
+    },
+    "verify": [
+      {
+        "url": "https://www.prudentialcenter.com/visit/parking/",
+        "confirm": [
+          "Red Sox parking is $26, night games and weekends only",
+          "Weekday entry after 2 PM, weekend entry after 7 AM",
+          "Scan a same-day Red Sox ticket at the exit machine",
+          "Not valid for Fenway concerts and events, or postponed games"
+        ]
+      },
+      {
+        "url": "https://www.wbur.org/news/2026/08/21/fenway-park-guide-food-transportation-parking",
+        "confirm": [
+          "Clarendon Street Garage charges $12 for game day parking",
+          "Cash lots: bring $50 to $65"
+        ],
+        "season": "This is a 2026 article. From March on, look for the 2027 Red Sox parking rates (search \"Red Sox parking 2027 Prudential Clarendon\"; mlb.com blocks automated reads, so use news coverage or the garages' own pages) and update priceNote to the new season."
+      }
+    ]
+  },
+  "gillette-stadium": {
+    "checked": "2026-11-02",
+    "prices": [
+      {
+        "label": "Patriots, concerts and Revolution",
+        "amount": "Free"
+      },
+      {
+        "label": "Visa card to wait 75 min after Patriots games",
+        "amount": "$50"
+      }
+    ],
+    "facts": [
+      "Open 4 hours before kickoff",
+      "Close 2 hours after day games",
+      "No re-entry",
+      "Tailgating OK, no open fires"
+    ],
+    "notes": {
+      "Be Paid to Park: Lots 45 and 55B": "$50 Visa card · leave 75 min after the game · full 30 min after kickoff",
+      "Stadium-side lots": "Prepaid only · Patriots: sold out for 2026"
+    },
+    "trains": {
+      "fare": "$20 round trip",
+      "buy": "mTicket app only. Patriots tickets go on sale at 11 AM the Monday before the game.",
+      "trips": [
+        {
+          "date": "2026-11-08",
+          "event": "Patriots vs. Packers",
+          "times": "South Station 1:55 and 2:20 PM · Providence 1:50 PM",
+          "onSale": "2026-11-02"
+        },
+        {
+          "date": "2026-12-06",
+          "event": "Patriots vs. Bills",
+          "times": "South Station 1:55 and 2:20 PM · Providence 1:50 PM",
+          "onSale": "2026-11-30"
+        },
+        {
+          "date": "2026-12-10",
+          "event": "Patriots vs. Vikings",
+          "times": "South Station 5:25 PM · Providence 5:20 PM",
+          "onSale": "2026-12-03"
+        }
+      ]
+    },
+    "verify": [
+      {
+        "url": "https://www.gillettestadium.com/parking/",
+        "confirm": [
+          "General parking across Route 1 is free for Patriots, concerts and Revolution",
+          "Be Paid to Park: Lots 45 and 55B, a $50 Visa gift card, 75-minute delayed exit, closed 30 minutes after kickoff",
+          "Stadium-side prepaid passes for Patriots games are sold out for the season (update the note to the current season or a price if they are sold)",
+          "Lots open 4 hours before kickoff and close 2 hours after day games",
+          "No re-entry; no open fires when tailgating"
+        ]
+      },
+      {
+        "url": "https://www.mbta.com/destinations/gillette-stadium",
+        "confirm": [
+          "Event trains are $20 round trip, mTicket app only",
+          "Every upcoming event with a train is in `trains.trips` with its date, Boston and Providence departure times and on-sale date; add any that are missing",
+          "Trains leave Foxboro 30 minutes after the event ends"
+        ]
+      }
+    ]
+  }
+}
