@@ -32,6 +32,7 @@ const STATIC_PAGES: { path: string; changeFrequency: ChangeFreq; priority: numbe
   { path: '/guides', changeFrequency: 'weekly', priority: 0.9 },
   { path: '/commute-advisor', changeFrequency: 'monthly', priority: 0.8 },
   { path: '/nearby', changeFrequency: 'weekly', priority: 0.8 },
+  { path: '/bike-lessons', changeFrequency: 'monthly', priority: 0.7 },
   // Programs
   { path: '/programs', changeFrequency: 'monthly', priority: 0.7 },
   { path: '/programs/walk-ride-days', changeFrequency: 'weekly', priority: 0.7 },
