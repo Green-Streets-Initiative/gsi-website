@@ -259,7 +259,7 @@ export default async function VenueParkingPage({ params }: { params: Promise<{ v
                               {t.onSale < today
                                 ? 'Tickets on sale now'
                                 : t.onSale === today
-                                  ? 'Tickets on sale from 11 AM today'
+                                  ? 'Tickets on sale today'
                                   : `Tickets from ${day(t.onSale)}, 11 AM`}
                             </span>
                           </li>

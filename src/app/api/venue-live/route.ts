@@ -51,7 +51,8 @@ export async function GET(req: Request) {
   for (const p of preds?.data ?? []) {
     const route: string = p.relationships?.route?.data?.id ?? ''
     const t = p.attributes?.departure_time
-    if (!route || !t) continue
+    // Trains only: Kenmore's busway shares the stop.
+    if (!route || !t || !/^(CR-|Red|Orange|Blue|Green-|Mattapan)/.test(route)) continue
     const mins = Math.round((new Date(t).getTime() - now) / 60000)
     if (mins < 0) continue
     if (route.startsWith('CR-')) {
