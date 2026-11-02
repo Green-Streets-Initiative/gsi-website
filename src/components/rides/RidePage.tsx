@@ -344,7 +344,7 @@ export default function RidePage({ ride, host = null, ascentFt = null, initialDa
                   )}
                   {ride.occurrences.length > 1 && (<>
                   <p className="text-[14px] font-semibold text-(--ev-ink-75)">Pick a date</p>
-                  <div className="-mx-1 mt-2 mb-4 flex gap-2 overflow-x-auto px-1 pb-1" role="group" aria-label="Ride dates">
+                  <div className="-mx-1 mt-2 mb-6 flex gap-2 overflow-x-auto px-1 pb-2" role="group" aria-label="Ride dates">
                     {ride.occurrences.map((d) => {
                       const active = d.id === selectedId
                       const answered = me.answers[d.id]
