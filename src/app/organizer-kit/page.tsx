@@ -182,7 +182,7 @@ export default async function OrganizerKitPage({ searchParams }: { searchParams:
                     </ul>
                   )}
                 </div>
-                <div className="overflow-hidden rounded-[18px] border border-navy/10 bg-white shadow-[0_10px_30px_rgba(25,26,46,0.08)]">
+                <div className="overflow-hidden rounded-[18px] border border-navy/10 bg-white shadow-[0_10px_30px_rgba(25,26,46,0.08)] print:max-h-[300px]">
                   <Image src={b.pic.src} width={b.pic.w} height={b.pic.h} alt={b.pic.alt} className="h-auto w-full" sizes="(min-width: 768px) 520px, 100vw" />
                 </div>
               </article>
@@ -261,7 +261,7 @@ export default async function OrganizerKitPage({ searchParams }: { searchParams:
                 </li>
               ))}
             </ol>
-            <figure className="overflow-hidden rounded-[18px] border border-navy/10 bg-white shadow-[0_10px_30px_rgba(25,26,46,0.08)] print:break-inside-avoid">
+            <figure className="overflow-hidden rounded-[18px] border border-navy/10 bg-white shadow-[0_10px_30px_rgba(25,26,46,0.08)] print:self-start print:break-inside-avoid">
               <Image src="/organizer-kit/feedback.jpg" width={640} height={622} alt="The rides page asking how the first date went, what to fix, and what they would tell another organizer, with a box to share it" className="h-auto w-full" sizes="(min-width: 1024px) 460px, 100vw" />
               <figcaption className="border-t border-navy/10 px-5 py-3 text-[15px] text-navy/80">With your OK, what you&rsquo;d tell another organizer goes on this page.</figcaption>
             </figure>
