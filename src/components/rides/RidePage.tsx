@@ -219,8 +219,13 @@ export default function RidePage({ ride, host = null, ascentFt = null, initialDa
     }
   }
 
-  const updates = useMemo(() => ride.updates.slice(0, 6), [ride.updates])
-  const latestFor = (occId: string) => ride.updates.find((u) => u.occurrence_id === occId)
+  // A notice the organizer has since undone (a date brought back, a break
+  // ended early) would tell visitors the opposite of what's true: leave it out.
+  const current = useMemo(() => ride.updates.filter((u) =>
+    !(u.kind === 'canceled' && ride.occurrences.some((d) => d.id === u.occurrence_id && d.status === 'scheduled'))
+    && !(u.kind === 'break' && !paused)), [ride.updates, ride.occurrences, paused])
+  const updates = useMemo(() => current.slice(0, 6), [current])
+  const latestFor = (occId: string) => current.find((u) => u.occurrence_id === occId)
   // A repeating ride reads as its pattern up top. The chosen date itself, with
   // its own time and meeting spot, lives once, in the card under the title,
   // so the date isn't said three times before the Going button.
@@ -452,7 +457,9 @@ export default function RidePage({ ride, host = null, ascentFt = null, initialDa
                                   <p className="text-[14px] leading-snug text-(--ev-ink-75)">
                                     {choice === 'not_going'
                                       ? 'We’ll let the organizer know.'
-                                      : 'We’ll email you the evening before and if the plan changes. The organizer sees your first name and last initial, never your email.'}
+                                      : choice === 'maybe'
+                                        ? 'We’ll email you if the plan changes. The organizer sees your first name and last initial, never your email.'
+                                        : 'We’ll email you the evening before and if the plan changes. The organizer sees your first name and last initial, never your email.'}
                                   </p>
                                   {error && <p role="alert" className="text-[14px] font-semibold text-(--ev-danger)">{error}</p>}
                                   <button type="submit" disabled={busy} className="min-h-[46px] w-full rounded-[10px] bg-(--ev-accent-fill) text-[15px] font-bold text-(--ev-on-accent-fill) transition-opacity hover:opacity-90 disabled:opacity-60">

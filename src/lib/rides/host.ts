@@ -36,14 +36,17 @@ export async function rideExtras(rideId: string): Promise<RideExtras> {
   const orgId = row?.org_verification_status === 'verified' ? row.event_organizer_id : null
   if (!orgId) return { host: null, ascentFt: ascent }
   const [{ data: o }, qualifies] = await Promise.all([
-    db.from('event_organizers').select('id, name, url, logo_url, social_links').eq('id', orgId).maybeSingle(),
+    db.from('event_organizers').select('id, name, url, logo_url, social_links, status').eq('id', orgId).maybeSingle(),
     hostQualifies(orgId).catch(() => false),
   ])
-  const org = o as { id: string; name: string; url: string | null; logo_url: string | null; social_links: Record<string, string> | null } | null
+  const org = o as { id: string; name: string; url: string | null; logo_url: string | null; social_links: Record<string, string> | null; status: string | null } | null
   if (!org) return { host: null, ascentFt: ascent }
   const links = Object.fromEntries(Object.entries(org.social_links ?? {}).filter(([, u]) => typeof u === 'string' && /^https:\/\/\S+$/i.test(u)))
+  // The host page only opens for an active organization (loadHostPage); an
+  // organizer's own new one is still pending_review, so no link to a 404.
+  const linkable = qualifies && org.status === 'active'
   return {
-    host: { id: org.id, name: org.name, url: org.url, logo_url: org.logo_url, social_links: links, href: qualifies ? hostPath(org.id) : null },
+    host: { id: org.id, name: org.name, url: org.url, logo_url: org.logo_url, social_links: links, href: linkable ? hostPath(org.id) : null },
     ascentFt: ascent,
   }
 }
