@@ -217,7 +217,7 @@ export interface RosterRow {
   is_you: boolean
   rsvp_status: 'going' | 'maybe' | 'not_going' | null
   attended: boolean | null
-  credit_source: 'auto' | 'organizer' | 'self_checkin' | null
+  credit_source: 'auto' | 'organizer' | 'self_checkin' | 'guest' | null
   pending_state: 'proposed' | 'claimed' | 'rejected' | null
   kids_count: number
   first_time: boolean

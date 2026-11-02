@@ -458,8 +458,8 @@ export default function RidePage({ ride, host = null, ascentFt = null, initialDa
                                     {choice === 'not_going'
                                       ? 'We’ll let the organizer know.'
                                       : choice === 'maybe'
-                                        ? 'We’ll email you if the plan changes. The organizer sees your first name and last initial, never your email.'
-                                        : 'We’ll email you the evening before and if the plan changes. The organizer sees your first name and last initial, never your email.'}
+                                        ? 'We’ll email you if the plan changes. People on this ride see your first name and last initial. Your email stays private.'
+                                        : 'We’ll email you the evening before and if the plan changes. People on this ride see your first name and last initial. Your email stays private.'}
                                   </p>
                                   {error && <p role="alert" className="text-[14px] font-semibold text-(--ev-danger)">{error}</p>}
                                   <button type="submit" disabled={busy} className="min-h-[46px] w-full rounded-[10px] bg-(--ev-accent-fill) text-[15px] font-bold text-(--ev-on-accent-fill) transition-opacity hover:opacity-90 disabled:opacity-60">

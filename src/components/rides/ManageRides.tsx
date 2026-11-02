@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { toneClass } from '@/components/events/EventsTone'
@@ -28,6 +28,14 @@ interface Overview {
   email_optout: boolean
   rides: GuestRide[]
 }
+/** The answer to "Did you make it?" (Shift 01594), from the after-ride email. */
+interface WentResult {
+  occurrence_id: string
+  date: string
+  ride_name: string
+  date_title: string | null
+  went: boolean
+}
 
 const ANSWERS: { value: RsvpStatus; label: string }[] = [
   { value: 'going', label: 'Going' },
@@ -46,6 +54,12 @@ export default function ManageRides() {
   const [confirmForget, setConfirmForget] = useState(intent === 'forget')
   // Leaving takes every answer for that ride with it, so it asks first.
   const [confirmLeave, setConfirmLeave] = useState<string | null>(null)
+  // "Yes, I was there" / "No, I missed it" in the after-ride email open this
+  // page with ?went=<date>&a=yes|no, and the answer is saved on arrival.
+  const wentDate = params.get('went')
+  const wentAnswer = params.get('a')
+  const [went, setWent] = useState<WentResult | null>(null)
+  const wentSent = useRef(false)
 
   const load = useCallback(async () => {
     if (!token) { setError('This page needs the link from your ride email.'); return }
@@ -54,8 +68,6 @@ export default function ManageRides() {
     if (!res.ok) { setError(body.error ?? 'This link has expired or was removed.'); return }
     setData(body)
   }, [token])
-
-  useEffect(() => { load() }, [load])
 
   async function act(payload: Record<string, unknown>, key: string) {
     setSaving(key)
@@ -67,13 +79,27 @@ export default function ManageRides() {
         body: JSON.stringify({ t: token, ...payload }),
       })
       const body = await res.json().catch(() => ({}))
-      if (!res.ok) { setError(body.error ?? 'Couldn’t save that. Try again.'); return }
-      if (body.forgotten) { setForgotten(true); return }
+      if (!res.ok) { setError(body.error ?? 'Couldn’t save that. Try again.'); return false }
+      if (body.forgotten) { setForgotten(true); return true }
+      if (body.went_result) setWent(body.went_result)
       if (body.rides) setData(body)
+      return true
     } finally {
       setSaving(null)
     }
   }
+
+  useEffect(() => {
+    if (token && wentDate && (wentAnswer === 'yes' || wentAnswer === 'no')) {
+      if (wentSent.current) return
+      wentSent.current = true
+      void act({ action: 'went', occurrence_id: wentDate, went: wentAnswer === 'yes' }, 'went').then((ok) => { if (!ok) void load() })
+      return
+    }
+    void load()
+    // act is recreated each render; the guard above makes this run once.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [load, token, wentDate, wentAnswer])
 
   const shell = (children: React.ReactNode) => (
     <div className={`min-h-[70vh] bg-(--ev-bg) px-4 py-10 sm:px-8 ${toneClass('light')}`}>
@@ -108,6 +134,28 @@ export default function ManageRides() {
       <p className="mt-1 text-[14px] text-(--ev-ink-75)">Opened from the link in your email to {data.email}.</p>
 
       {error && <p role="alert" className="mt-4 text-[14px] font-semibold text-(--ev-danger)">{error}</p>}
+
+      {went && (
+        <div className="mt-6 rounded-2xl border border-(--ev-line-mid) bg-(--ev-card) p-5" role="status">
+          <p className="text-[18px] font-bold text-(--ev-ink)">
+            {went.went ? 'Thanks. You’re counted.' : 'Thanks for letting us know.'}
+          </p>
+          <p className="mt-1 text-[15px] text-(--ev-ink-80)">
+            {went.ride_name}{went.date_title && went.date_title !== went.ride_name ? `: ${went.date_title}` : ''}, {dayShort(went.date)}, {dateShort(went.date)}.
+            {went.went ? ' The organizer sees you came.' : ''}
+          </p>
+          {data.rides.some((r) => r.dates.some((d) => d.status === 'scheduled')) && (
+            <p className="mt-1 text-[15px] text-(--ev-ink-80)">Coming next time? Pick your answer below.</p>
+          )}
+          <button
+            onClick={() => act({ action: 'went', occurrence_id: went.occurrence_id, went: !went.went }, 'went')}
+            disabled={saving === 'went'}
+            className="mt-3 min-h-[40px] text-[14px] font-semibold text-(--ev-accent) hover:underline disabled:opacity-60"
+          >
+            {went.went ? 'I didn’t make it' : 'Actually, I was there'}
+          </button>
+        </div>
+      )}
 
       {intent === 'optout' && !data.email_optout && (
         <div className="mt-6 rounded-2xl border border-(--ev-line-mid) bg-(--ev-card) p-5">

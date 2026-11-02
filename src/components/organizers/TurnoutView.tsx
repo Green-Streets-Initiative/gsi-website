@@ -56,7 +56,7 @@ export default function TurnoutView() {
   const file = slug(r.name)
   // The on-screen note travels with the file, so a funder reading the CSV
   // knows what "Came" counts.
-  const NOTE = ['Came counts people who ride with the Shift app, plus requests the organizer approved. People who answered on the ride page show under Said going.']
+  const NOTE = ['Came counts people the Shift app saw on the ride, requests the organizer approved, and people who answered on the ride page and then said yes when we emailed to ask if they made it.']
   const monthRows = (): (string | number)[][] => [
     ['Ride', 'Month', 'Dates run', 'Dates cancelled', 'Said going', 'Came (attendances)', 'People', 'First-timers', 'Came back'],
     ...t.months.map((m) => [r.name, m.month.slice(0, 7), m.dates_run, m.dates_canceled, m.going, m.attended, m.people, m.first_timers, m.came_back]),
@@ -74,7 +74,7 @@ export default function TurnoutView() {
     <div className="grid grid-cols-[minmax(0,1fr)] gap-5">
       <Card>
         <SectionTitle
-          hint="Came counts people who ride with the Shift app, plus requests you approve. People who answered on your ride page show under Said going."
+          hint="Came counts people the Shift app saw on the ride and requests you approve. People who answered on your ride page get an email afterwards asking if they made it, and count when they say yes."
           action={
             <div className="flex flex-wrap gap-2">
               <Button size="sm" onClick={() => { downloadCsv(`${file}-turnout-by-month.csv`, monthRows()); track('organizer_turnout_exported', { ride_id: r.id, by: 'month' }) }}><Download className="h-4 w-4" aria-hidden />Monthly CSV</Button>

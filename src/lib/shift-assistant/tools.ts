@@ -487,7 +487,7 @@ export const TOOLS: Anthropic.Tool[] = [
   },
   {
     name: 'rsvp_ride',
-    description: "Sign the person up for a date of a Shift group ride or walk (the shift_ride entries from find_rides_and_events, or a date from get_my_rides, by occurrence_id): joins the ride if they haven't, then says going, maybe or can't make it. The organizer sees their name. The person approves on a card first.",
+    description: "Sign the person up for a date of a Shift group ride or walk (the shift_ride entries from find_rides_and_events, or a date from get_my_rides, by occurrence_id): joins the ride if they haven't, then says going, maybe or can't make it. People on the ride see their first name and last initial. The person approves on a card first.",
     input_schema: {
       type: 'object',
       properties: {
@@ -1862,7 +1862,7 @@ export async function approvalCard(ctx: ToolCtx, name: string, input: Record<str
     return {
       card: {
         title: status === 'going' ? `Going to ${d.title}` : status === 'maybe' ? `Maybe for ${d.title}` : `Can't make ${d.title}`,
-        lines: [[d.day, d.time].filter(Boolean).join(', '), ...(d.meetup ? [`Meet at ${d.meetup}`] : []), d.joined ? 'The organizer sees your answer' : 'You join the ride, and the organizer sees your name'],
+        lines: [[d.day, d.time].filter(Boolean).join(', '), ...(d.meetup ? [`Meet at ${d.meetup}`] : []), d.joined ? 'People on the ride see your answer' : 'You join the ride, and people on it see your name'],
         cta: status === 'going' ? "I'm going" : status === 'maybe' ? 'Maybe' : "Can't make it", tone: 'primary',
       },
       input: { occurrence_id: id, status },
