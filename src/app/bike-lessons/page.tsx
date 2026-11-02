@@ -187,7 +187,7 @@ export default async function BikeLessonsPage() {
               <h2 className={H2}>Nervous in traffic? Take a free 1:1 lesson.</h2>
               <p className={`${BODY} mt-4 max-w-[640px]`}>
                 An instructor from the Bicycle Riding School rides with you on real streets, at your
-                own pace. Practice the turns and intersections that worry you. Green Streets pays.
+                own pace. Practice the turns and intersections that worry you. Green Streets is covering the cost.
               </p>
               <ul className="mt-6 flex max-w-[640px] flex-wrap gap-2" aria-label="Lesson details">
                 {FACTS.map((f) => (
