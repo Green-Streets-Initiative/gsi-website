@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react'
 /*
  * The page's section nav once the "Where are you starting?" choices have
  * scrolled away: a slim bar under the site header with the same three
- * places, the current one marked.
+ * places, the current one marked. The venue parking pages pass their own.
  */
 
 const LINKS = [
@@ -14,13 +14,13 @@ const LINKS = [
   { id: 'group-rides', label: 'Group rides' },
 ]
 
-export default function JumpBar({ after }: { after: string }) {
+export default function JumpBar({ after, links = LINKS }: { after: string; links?: { id: string; label: string }[] }) {
   const [shown, setShown] = useState(false)
   const [current, setCurrent] = useState<string | null>(null)
 
   useEffect(() => {
     const start = document.getElementById(after)
-    const sections = LINKS.map((l) => document.getElementById(l.id)).filter((x): x is HTMLElement => !!x)
+    const sections = links.map((l) => document.getElementById(l.id)).filter((x): x is HTMLElement => !!x)
     if (!start) return
     const startObs = new IntersectionObserver(([e]) => setShown(!e.isIntersecting && e.boundingClientRect.top < 0))
     startObs.observe(start)
@@ -35,7 +35,7 @@ export default function JumpBar({ after }: { after: string }) {
       startObs.disconnect()
       secObs.disconnect()
     }
-  }, [after])
+  }, [after, links])
 
   return (
     <nav
@@ -45,7 +45,7 @@ export default function JumpBar({ after }: { after: string }) {
       }`}
     >
       <ul className="mx-auto flex w-full max-w-[1120px] gap-2 overflow-x-auto px-4 py-2 [scrollbar-width:none] sm:px-6 lg:px-8">
-        {LINKS.map((l) => (
+        {links.map((l) => (
           <li key={l.id} className="shrink-0">
             <a
               href={`#${l.id}`}
