@@ -105,7 +105,19 @@ export const getStopPreview = (seriesId: string, until: string | null) =>
     'get_ride_stop_preview', { p_series_id: seriesId, p_until: until },
   )
 
+/** The Ride Fund season covering a point (Shift 01596): today's, or one starting within 60 days. */
+export interface RideFundHere { slug: string; funder_name: string; funder_url: string | null; coffee_cents: number; starts_on: string; ends_on: string }
+export const getRideFundFor = (lat: number, lng: number) => rpc<RideFundHere | null>('ride_fund_for_point', { p_lat: lat, p_lng: lng })
+/** Shops from the gift-card catalog near where a ride ends, nearest first. */
+export interface EndShop { location_id: string; merchant_id: string; name: string; kind: string | null; street: string | null; city: string | null; distance_m: number }
+export const getEndShops = async (lat: number, lng: number) =>
+  (await rpc<EndShop[] | null>('get_ride_end_shops', { p_lat: lat, p_lng: lng })) ?? []
+
 // ── Writes ─────────────────────────────────────────────────────────────
+
+/** The shop a ride ends at, where the Ride Fund buys the coffee. null clears it. */
+export const setEndShop = (seriesId: string, locationId: string | null) =>
+  rpc<{ ok: true }>('set_ride_end_shop', { p_series_id: seriesId, p_location_id: locationId })
 
 export interface SaveResult {
   id: string

@@ -128,6 +128,8 @@ export interface RideRow {
   break_until: string | null
   stopped_at: string | null
   stopped_note: string | null
+  /** The shop the ride ends at, for the Ride Fund's coffee (Shift 01596). */
+  end_location_id?: string | null
 }
 
 export interface DetailDate {

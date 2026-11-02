@@ -4,6 +4,7 @@ import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
 import RidePage from '@/components/rides/RidePage'
 import AppOnlyRidePage from '@/components/rides/AppOnlyRidePage'
+import type { RideCoffeeInfo } from '@/components/rides/RideCoffee'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { looksLikeRideCode, scheduleText, type PublicRide, type RideLookup } from '@/lib/rides/public'
 import { rideExtras } from '@/lib/rides/host'
@@ -78,19 +79,30 @@ export default async function Page({ params, searchParams }: { params: Promise<{
   // Who runs it (logo, channels, their calendar page) and the route's climbing;
   // the Bicycle Benefits members by any of its meeting spots or routes; and
   // what's new on each of its routes (or by each meeting spot).
-  const [extras, perks, newInfra] = ride.web
-    ? await Promise.all([rideExtras(ride.id).catch(() => null), bikePerksForPlaces(ridePlaces(ride)).catch(() => []), newInfraForPlaces(ridePlaces(ride))])
-    : [null, [], []]
+  // Plus where it ends and who buys the coffee there (Ride Fund, Shift 01596).
+  const [extras, perks, newInfra, coffee] = ride.web
+    ? await Promise.all([rideExtras(ride.id).catch(() => null), bikePerksForPlaces(ridePlaces(ride)).catch(() => []), newInfraForPlaces(ridePlaces(ride)), rideCoffee(ride.code)])
+    : [null, [], [], null]
 
   return (
     <>
       <Nav variant="light" />
       <main className="bg-cream" style={{ paddingTop: '60px' }}>
-        {ride.web ? <RidePage ride={ride} host={extras?.host ?? null} ascentFt={extras?.ascentFt ?? null} initialDate={initialDate} perks={perks} newInfra={newInfra} /> : <AppOnlyRidePage ride={ride} />}
+        {ride.web ? <RidePage ride={ride} host={extras?.host ?? null} ascentFt={extras?.ascentFt ?? null} initialDate={initialDate} perks={perks} newInfra={newInfra} coffee={coffee} /> : <AppOnlyRidePage ride={ride} />}
       </main>
       <Footer variant="light" />
     </>
   )
+}
+
+/** A missing coffee line is never worth a failed page. */
+async function rideCoffee(code: string): Promise<RideCoffeeInfo | null> {
+  try {
+    const { data, error } = await createServerSupabaseClient().rpc('get_ride_coffee', { p_code: code })
+    return error ? null : ((data as RideCoffeeInfo | null) ?? null)
+  } catch {
+    return null
+  }
 }
 
 /** Each meeting spot and route the ride page can show: the ride's own and each date's. */

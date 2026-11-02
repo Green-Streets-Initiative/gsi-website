@@ -12,6 +12,7 @@ import RideStoreBadges from '@/components/rides/RideStoreBadges'
 import OrganizerChannels from '@/components/rides/OrganizerChannels'
 import RideFacts from '@/components/rides/RideFacts'
 import RidePerks from '@/components/rides/RidePerks'
+import RideCoffee, { type RideCoffeeInfo } from '@/components/rides/RideCoffee'
 import RideNewInfra from '@/components/rides/RideNewInfra'
 import { hasNewInfra, newInfraKey, type NewInfraFor } from '@/lib/new-infra'
 import { perksAlong, type BikePerk } from '@/lib/bike-perks'
@@ -116,7 +117,7 @@ function downloadGpx(ride: PublicRide, line: { lat: number; lng: number }[], dat
   a.remove()
 }
 
-export default function RidePage({ ride, host = null, ascentFt = null, initialDate = null, perks = [], newInfra = [] }: {
+export default function RidePage({ ride, host = null, ascentFt = null, initialDate = null, perks = [], newInfra = [], coffee = null }: {
   ride: PublicRide; host?: RideHost | null; ascentFt?: number | null
   /** A date the visitor came for (?date=YYYY-MM-DD from a calendar listing). */
   initialDate?: string | null
@@ -124,6 +125,8 @@ export default function RidePage({ ride, host = null, ascentFt = null, initialDa
   perks?: BikePerk[]
   /** What's new on each of its routes, or by each meeting spot (newInfraForPlaces). */
   newInfra?: NewInfraFor[]
+  /** Where it ends and who buys the coffee there (get_ride_coffee). */
+  coffee?: RideCoffeeInfo | null
 }) {
   const hostHref = host?.href ?? null
   // The organization only once verified (Shift 01563, rideExtras); a typed-in
@@ -586,6 +589,8 @@ export default function RidePage({ ride, host = null, ascentFt = null, initialDa
                 )}
               </div>
             )}
+
+            {coffee?.shop && <RideCoffee info={coffee} />}
 
             {hasNewInfra(newHere) && <RideNewInfra info={newHere} onRoute={route.length >= 2} />}
 

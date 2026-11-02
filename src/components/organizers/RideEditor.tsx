@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ArrowLeft, ChevronDown, ImagePlus, MessageSquareText, Trash2 } from 'lucide-react'
 import AddressAutocomplete from '@/components/AddressAutocomplete'
-import { errorText, saveRide, uploadFlyer } from '@/lib/organizers/api'
+import { errorText, getRideFundFor, saveRide, setEndShop, uploadFlyer, type RideFundHere } from '@/lib/organizers/api'
 import { takePrefill } from '@/lib/organizers/first-ride'
 import { decodePlan, draftOf, routePayload } from '@/lib/organizers/saved-route'
 import { DAY_LABELS, PACE_OPTIONS, TAG_OPTIONS, WEEK_OPTIONS, dateLabel, todayKey } from '@/lib/organizers/ride-words'
@@ -13,6 +13,7 @@ import { biweeklyStarts, scheduleDates } from '@/lib/organizers/schedule'
 import type { Frequency, Pace, RideRow, RouteDraft } from '@/lib/organizers/types'
 import { ROUTE_IMPORT_KEY, openAssistant } from './AssistantPanel'
 import { useConsole } from './ConsoleContext'
+import EndShopCard from './EndShopCard'
 import OrgPicker from './OrgPicker'
 import RouteMap from './RouteMap'
 import RouteSection from './RouteSection'
@@ -47,6 +48,8 @@ interface Form {
   event_organizer_id: string
   organizer_name: string
   organizer_url: string
+  /** Where the ride ends, for the Ride Fund's coffee; saved on its own (set_ride_end_shop). */
+  end_location_id: string | null
 }
 
 const hhmm = (t: string | null | undefined) => (t ? t.slice(0, 5) : '')
@@ -61,6 +64,7 @@ function blank(): Form {
     pace: '', no_drop: false, tags: [],
     registration_url: '', contact_url: '', live_sharing: 'off',
     visibility: 'public', event_organizer_id: '', organizer_name: '', organizer_url: '',
+    end_location_id: null,
   }
 }
 
@@ -81,6 +85,7 @@ function fromRow(r: RideRow): Form {
     visibility: r.visibility === 'invite' ? 'invite' : 'public',
     event_organizer_id: r.event_organizer_id ?? '',
     organizer_name: r.organizer_name ?? '', organizer_url: r.organizer_url ?? '',
+    end_location_id: r.end_location_id ?? null,
   }
 }
 
@@ -118,13 +123,15 @@ const LINK_OK = (v: string, mail = false) => !v.trim() || (mail ? /^(https?:\/\/
 // details" on a new ride, so the form is three short cards on a phone.
 const MAIN_SECTIONS = [['sec-ride', 'The ride'], ['sec-when', 'When'], ['sec-where', 'Meeting point']] as const
 const MORE_SECTIONS = [['sec-route', 'Route'], ['sec-expect', 'What to expect'], ['sec-signup', 'Sign-ups'], ['sec-who', 'Visibility']] as const
-type SectionId = (typeof MAIN_SECTIONS)[number][0] | (typeof MORE_SECTIONS)[number][0] | 'sec-more'
+type SectionId = (typeof MAIN_SECTIONS)[number][0] | (typeof MORE_SECTIONS)[number][0] | 'sec-more' | 'sec-coffee'
 
 /** Jump links: a sticky list beside the form on wide screens; on phones a
  *  sticky picker that names the section you're in, so no section hides off
  *  the edge of a sideways-scrolling strip. A folded section opens first. */
-function SectionNav({ more, onOpenMore }: { more: boolean; onOpenMore: () => void }) {
-  const SECTIONS: readonly (readonly [SectionId, string])[] = more ? [...MAIN_SECTIONS, ...MORE_SECTIONS] : [...MAIN_SECTIONS, ['sec-more', 'More details']]
+function SectionNav({ more, coffee, onOpenMore }: { more: boolean; coffee: boolean; onOpenMore: () => void }) {
+  const SECTIONS: readonly (readonly [SectionId, string])[] = more
+    ? [...MAIN_SECTIONS, MORE_SECTIONS[0], ...(coffee ? [['sec-coffee', 'Coffee at the end'] as const] : []), ...MORE_SECTIONS.slice(1)]
+    : [...MAIN_SECTIONS, ['sec-more', 'More details']]
   const [current, setCurrent] = useState<string>(SECTIONS[0][0])
   useEffect(() => {
     const els = SECTIONS.map(([id]) => document.getElementById(id)).filter((e): e is HTMLElement => !!e)
@@ -134,7 +141,7 @@ function SectionNav({ more, onOpenMore }: { more: boolean; onOpenMore: () => voi
     }, { rootMargin: '-120px 0px -60% 0px' })
     els.forEach((e) => io.observe(e))
     return () => io.disconnect()
-  }, [more]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [more, coffee]) // eslint-disable-line react-hooks/exhaustive-deps
   const jump = (id: string) => {
     setCurrent(id)
     if (id === 'sec-more') onOpenMore()
@@ -338,6 +345,18 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
     setErr(null)
     try {
       const res = await saveRide(ride?.id ?? null, toPayload(f))
+      if ((f.end_location_id ?? null) !== (ride?.end_location_id ?? null)) {
+        try {
+          await setEndShop(res.id, f.end_location_id)
+        } catch (e) {
+          // A new ride exists now, so carry on; its coffee shop can be set on its edit page.
+          if (ride) {
+            setErr(errorText(e, "The ride saved, but the coffee shop didn't. Try again."))
+            setSaving(false)
+            return
+          }
+        }
+      }
       try { localStorage.removeItem(draftKey) } catch { /* ignore */ }
       setDirty(false)
       await onSaved?.().catch(() => {})
@@ -355,6 +374,20 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
   }
 
   const meetup = f.meetup_lat != null && f.meetup_lng != null ? { lat: f.meetup_lat, lng: f.meetup_lng, label: f.meetup_name || undefined } : null
+  // Where the ride ends: the route's last point, else the meeting point (a loop).
+  const lastPoint = f.route && f.route.waypoints.length >= 2 ? f.route.waypoints[f.route.waypoints.length - 1] : null
+  const rideEnd = lastPoint ? { lat: lastPoint.lat, lng: lastPoint.lng } : meetup ? { lat: meetup.lat, lng: meetup.lng } : null
+  // A Ride Fund season covering the meeting point (Shift 01596) opens "Coffee at the end".
+  const fundKey = meetup ? `${meetup.lat.toFixed(2)},${meetup.lng.toFixed(2)}` : ''
+  const [fundAt, setFundAt] = useState<{ key: string; fund: RideFundHere | null } | null>(null)
+  const fund = fundKey && fundAt?.key === fundKey ? fundAt.fund : null
+  useEffect(() => {
+    if (!meetup) return
+    let live = true
+    getRideFundFor(meetup.lat, meetup.lng).then((r) => { if (live) setFundAt({ key: fundKey, fund: r ?? null }) }, () => {})
+    return () => { live = false }
+  }, [fundKey]) // eslint-disable-line react-hooks/exhaustive-deps
+  const showCoffee = !!fund || !!f.end_location_id
   const toggleDay = (d: number) => set('days', f.frequency === 'monthly' ? [d] : f.days.includes(d) ? f.days.filter((x) => x !== d) : [...f.days, d].sort())
   const weekdays = f.days.length === 5 && [1, 2, 3, 4, 5].every((d) => f.days.includes(d))
 
@@ -417,7 +450,7 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
       )}
 
       <div className="mt-6 lg:grid lg:grid-cols-[176px_minmax(0,1fr)] lg:gap-8">
-      <SectionNav more={more} onOpenMore={() => setMore(true)} />
+      <SectionNav more={more} coffee={showCoffee} onOpenMore={() => setMore(true)} />
       <div className="grid grid-cols-[minmax(0,1fr)] gap-5">
         <Card id="sec-ride">
           <SectionTitle>The ride</SectionTitle>
@@ -587,7 +620,11 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
             className="flex w-full scroll-mt-[124px] items-center justify-between gap-3 rounded-2xl border border-(--ev-line-mid) bg-(--ev-card) p-5 text-left hover:bg-(--ev-panel-faint) sm:p-6 lg:scroll-mt-[80px]">
             <span>
               <span className="block font-display text-[20px] font-extrabold leading-tight text-(--ev-ink)">More details</span>
-              <span className="mt-1 block text-[14px] leading-snug text-(--ev-ink-75)">Route, pace, sign-up link, and who can find it. All optional; a new ride is public.</span>
+              <span className="mt-1 block text-[14px] leading-snug text-(--ev-ink-75)">
+                {fund
+                  ? `Route, coffee at the end (${fund.funder_name} buys it), pace, sign-up link, and who can find it. All optional; a new ride is public.`
+                  : 'Route, pace, sign-up link, and who can find it. All optional; a new ride is public.'}
+              </span>
             </span>
             <ChevronDown className="h-5 w-5 shrink-0 text-(--ev-ink-75)" aria-hidden />
           </button>
@@ -610,6 +647,8 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
             </Field>
           </div>
         </Card>
+
+        {showCoffee && <EndShopCard at={rideEnd} value={f.end_location_id} onChange={(id) => set('end_location_id', id)} fund={fund} />}
 
         <Card id="sec-expect">
           <SectionTitle>What to expect</SectionTitle>
