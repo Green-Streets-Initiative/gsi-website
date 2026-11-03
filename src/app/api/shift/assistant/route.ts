@@ -612,8 +612,16 @@ export async function POST(request: Request) {
           // Reads run side by side; a tool that saves waits on its card.
           const results: Record<string, Anthropic.Beta.BetaToolResultBlockParam> = {}
           const cards: PendingCard[] = []
+          // A plan button beside a plan save opened the plan before the save
+          // was approved, so it looked empty (Keith 2026-11-03): the save's
+          // own result brings the button.
+          const savingPlan = uses.some((u) => u.name === 'save_ride_plan_route')
           await Promise.all(uses.map(async (u) => {
             const input = (u.input ?? {}) as Record<string, unknown>
+            if (savingPlan && u.name === 'open_screen' && input.screen === 'ride_plan') {
+              results[u.id] = resultBlock(u.id, { content: { shown: false, note: 'The plan button comes with the saved plan.' } })
+              return
+            }
             if (NEEDS_APPROVAL.has(u.name)) {
               const a = await approvalCard(ctx, u.name, input)
               if ('card' in a) cards.push({ tool_use_id: u.id, name: u.name, input: a.input, card: a.card })

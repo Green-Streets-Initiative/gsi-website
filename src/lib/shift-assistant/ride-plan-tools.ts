@@ -121,7 +121,7 @@ export const RIDE_PLAN_TOOLS: Anthropic.Tool[] = [
   },
   {
     name: 'save_ride_plan_route',
-    description: "Guide only. Save a route from design_ride_plan_route to the plan with a day and time, and send it to the learner (they get a notice and say whether the time works). The person approves on a card first. Ask for the day and time if you don't have them.",
+    description: "Guide only. Put a route from design_ride_plan_route on the plan with a day and time, without sending it: the guide then opens the plan screen (the button that comes with the result), checks the route and the spots, and sends it to the learner there. The person approves on a card first. Ask for the day and time if you don't have them.",
     input_schema: {
       type: 'object',
       properties: {
@@ -362,8 +362,11 @@ export async function runRidePlanTool(ctx: Ctx, name: string, input: Record<stri
 
   if (name === 'get_ride_plan') {
     const p = v.plan
-    const shown = (p?.spots ?? []).filter((s) => s.on)
-    const trip = p?.route?.transit ?? null
+    // The guide's unsent draft (01611) is theirs until they send it.
+    const draft = p?.status === 'learner_shared'
+    const hide = draft && v.role === 'learner'
+    const shown = hide ? [] : (p?.spots ?? []).filter((s) => s.on)
+    const trip = hide ? null : p?.route?.transit ?? null
     const fmt = (iso: string) => new Date(iso).toLocaleString('en-US', { timeZone: 'America/New_York', weekday: 'long', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
     const pp = p as (typeof p & { proposed_at?: string | null; proposed_by?: string | null }) | null
     return ok({
@@ -379,9 +382,10 @@ export async function runRidePlanTool(ctx: Ctx, name: string, input: Record<stri
       learner_rides: p?.skill ?? null,
       learner_wants_help_with: p?.worries ?? [],
       meeting_spot: p?.meet_label ?? null, end_spot: p?.end_label ?? null,
-      miles: trip ? null : p?.route?.distanceMiles ?? (p?.route?.waypoints?.length ? r1(routeMiles(p.route.waypoints)) : null),
+      miles: trip || hide ? null : p?.route?.distanceMiles ?? (p?.route?.waypoints?.length ? r1(routeMiles(p.route.waypoints)) : null),
       ...(trip ? { transit_trip: { lines: tripLines(trip), minutes: trip.minutes, changes: trip.changes, walking_minutes: trip.walkMinutes, fare_each: trip.fare } } : {}),
-      ride_at: p?.ride_at ? fmt(p.ride_at) : null,
+      ride_at: p?.ride_at && !hide ? fmt(p.ride_at) : null,
+      ...(draft && !hide && p?.ride_at ? { not_sent_yet: 'The route and time are on the plan but not sent. The guide checks them on the plan screen and sends from there.' } : {}),
       ...(pp?.proposed_at ? { new_time_asked: { when: fmt(pp.proposed_at), by: pp.proposed_by, note: 'The other person says whether it works on the plan screen.' } } : {}),
       spots_in_order: shown.map((s) => ({ what: spotPhrase(s, trip), guide_note: s.note ?? null })),
       after_the_ride: p?.status === 'ridden' ? { helped: p.helped, still_hard: p.unsure, riding_alone_on: p.solo_day } : null,
@@ -499,14 +503,14 @@ export async function ridePlanCard(ctx: Ctx, name: string, input: Record<string,
     const spots = transitSpots(trip)
     return {
       card: {
-        title: `Send ${v.learner_name} the plan`,
+        title: 'Put this on your plan',
         lines: [
           `${when}`,
           `${places.meet.label} to ${places.end.label}, about ${trip.minutes} min`,
           ...tripLines(trip).slice(0, 2),
-          `${v.learner_name} gets a notice and says whether the time works.`,
+          `Nothing goes to ${v.learner_name} yet: you check it on the plan, then send it.`,
         ],
-        cta: `Send to ${v.learner_name}`,
+        cta: 'Put it on the plan',
         tone: 'primary',
       },
       input: { match_id: input.match_id, ride_at: rideAt, route: transitRoute(trip, places.meet, places.end), spots },
@@ -518,14 +522,14 @@ export async function ridePlanCard(ctx: Ctx, name: string, input: Record<string,
   const shown = spots.filter((s) => s.on)
   return {
     card: {
-      title: `Send ${v.learner_name} the plan`,
+      title: 'Put this on your plan',
       lines: [
         `${when}`,
         `${places.meet.label} to ${places.end.label}, ${r1(built.miles)} miles`,
         `${shown.length} spots shown on the way`,
-        `${v.learner_name} gets a notice and says whether the time works.`,
+        `Nothing goes to ${v.learner_name} yet: you check it on the plan, then send it.`,
       ],
-      cta: `Send to ${v.learner_name}`,
+      cta: 'Put it on the plan',
       tone: 'primary',
     },
     input: {
@@ -545,11 +549,18 @@ export async function runApprovedRidePlan(ctx: Ctx, name: string, input: Record<
     if (error || res.ok === false) return fail(res.reason === 'needs_time' ? 'That time is too soon or too far off. Pick another.' : "That didn't send. Try again in a moment.")
     return ok({ sent: true, note: 'Sent. The other person gets a notice and says whether the new time works, on the plan screen.' }, planLink(matchId, 'See the plan'))
   }
-  const { data, error } = await ctx.user.rpc('set_ride_plan_route', {
+  // A draft (01611): the route and time go on the plan, unsent; the plan
+  // screen opens on them and the guide sends from there (Keith 2026-11-03:
+  // the send card went unapproved and "See the plan" opened an empty plan).
+  const { data, error } = await ctx.user.rpc('save_ride_plan_draft', {
     p_match_id: matchId, p_route: input.route, p_spots: input.spots, p_ride_at: input.ride_at,
   })
   const res = (data ?? {}) as { ok?: boolean; reason?: string }
-  if (error || res.ok === false) return fail(res.reason === 'needs_time' ? 'That time has passed. Pick another.' : "That didn't save. Try again in a moment.")
-  return ok({ saved: true, note: 'Sent. The learner gets a notice and says whether the time works. Both see the plan on the ride plan screen.' }, planLink(matchId, 'See the plan'))
+  if (error || res.ok === false) {
+    return fail(res.reason === 'needs_time' ? 'That time has passed. Pick another.'
+      : res.reason === 'not_guides_turn' ? 'This plan was already sent. Changes are made on the plan screen.'
+      : "That didn't save. Try again in a moment.")
+  }
+  return ok({ saved: true, sent: false, note: 'On the plan, not sent yet. The button opens the plan with this route and time; they check it and send it there. Say that in a sentence. Do not add another ride_plan button.' }, planLink(matchId, 'Check and send the plan'))
 }
 
