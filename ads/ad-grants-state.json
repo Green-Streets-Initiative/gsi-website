@@ -1001,6 +1001,13 @@
       "month_end_math": "8.77% on 3,716 impr with 1 day left; October's 5% and 1-conversion rules both met.",
       "alerts": [],
       "emailed": false
+    },
+    {
+      "date": "2026-11-03",
+      "source": "scheduled quick check (ad-grants-pulse): SKIPPED, account not read. Claude in Chrome connected, but ads.google.com redirected to a Google 'Verify it's you' sign-in page for kanderson@rapidads.io (not the grant login walkrideday@gmail.com); an unattended run cannot sign in. Keith needs to sign Chrome back in to the grant account before the 11-04 weekly review.",
+      "mtd": null,
+      "alerts": [],
+      "emailed": false
     }
   ],
   "snapshots": [
