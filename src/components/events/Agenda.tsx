@@ -35,10 +35,12 @@ interface AgendaProps {
   showCount?: boolean
   /** Beside the phone count line (the "Get these by email" jump). */
   countAction?: ReactNode
+  /** Something placed after the first `after` events (or after the list, when it is shorter): the email sign-up on phones. */
+  inset?: { after: number; node: ReactNode }
 }
 
 export default function Agenda({
-  events, entries: nested, ridesTo, limit, onShowMore, paged, userLoc, saved, onToggleSave, emptyMessage, emptyAction, showCount, countAction,
+  events, entries: nested, ridesTo, limit, onShowMore, paged, userLoc, saved, onToggleSave, emptyMessage, emptyAction, showCount, countAction, inset,
 }: AgendaProps) {
   const { hrefBase } = useEventsTone()
   const entries = useMemo(() => nested ?? events.map((event) => ({ event, feeders: [] })), [nested, events])
@@ -73,6 +75,7 @@ export default function Agenda({
 
   let position = 0
   const remaining = entries.length - shown.length
+  const insetAt = inset ? Math.min(inset.after, shown.length) - 1 : -1
 
   return (
     <div>
@@ -110,6 +113,7 @@ export default function Agenda({
                     {feeders.length > 0 && (
                       <FeederTray eventId={ev.id} feeders={feeders} userLat={userLoc.lat} userLng={userLoc.lng} />
                     )}
+                    {pos === insetAt && inset!.node}
                   </div>
                 )
               })}

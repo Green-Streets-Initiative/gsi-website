@@ -26,6 +26,9 @@ import { useEventFilters } from './useEventFilters'
 import { useSavedEvents } from './useSavedEvents'
 import { eventBodyPlain } from '@/lib/event-body'
 
+/** On phones the email sign-up sits after this many events. */
+const PHONE_SIGNUP_AFTER = 5
+
 // ---------------------------------------------------------------------------
 // Viewport: phones can switch between the list and a week strip; desktop is
 // always the agenda + mini month. Read through useSyncExternalStore so the
@@ -307,7 +310,7 @@ export default function EventsPage({ events, tone = 'dark', hrefBase = '/events'
                   </div>
                 ) : (
                   <div className="flex flex-col gap-3">
-                    {(f.selectedDay ? f.entries : f.entries.slice(0, listLimit)).map(({ event: ev, feeders }) => (
+                    {(f.selectedDay ? f.entries : f.entries.slice(0, listLimit)).map(({ event: ev, feeders }, i) => (
                       <div key={ev.id}>
                         <EventCard
                           event={ev}
@@ -321,6 +324,9 @@ export default function EventsPage({ events, tone = 'dark', hrefBase = '/events'
                         />
                         {feeders.length > 0 && (
                           <FeederTray eventId={ev.id} feeders={feeders} userLat={f.userLoc.lat} userLng={f.userLoc.lng} />
+                        )}
+                        {i === Math.min(PHONE_SIGNUP_AFTER, f.entries.length) - 1 && (
+                          <EventAlertSignup filters={f} source="events_list" className="mt-3" />
                         )}
                       </div>
                     ))}
@@ -367,14 +373,19 @@ export default function EventsPage({ events, tone = 'dark', hrefBase = '/events'
                     </a>
                   )
                 }
+                // Phone: after the first five events, not below the whole
+                // list, where almost nobody scrolled (calendar growth plan
+                // bet 1). The count line jumps here. Desktop has it in the sidebar.
+                inset={{
+                  after: PHONE_SIGNUP_AFTER,
+                  node: <EventAlertSignup filters={f} source="events_list" id="event-alerts" className="mt-2.5 scroll-mt-[140px] lg:hidden" />,
+                }}
               />
-              {/* Phone: after the list (the count line jumps here). Desktop has it in the sidebar. */}
-              <EventAlertSignup filters={f} id="event-alerts" className="mt-6 scroll-mt-[140px] lg:hidden" />
             </div>
 
             <aside className="sticky top-[132px] hidden self-start lg:block">
               <MiniMonth events={f.filteredNoDay} selectedDay={f.selectedDay} onSelectDay={f.setSelectedDay} />
-              <EventAlertSignup filters={f} className="mt-4" />
+              <EventAlertSignup filters={f} source="events_sidebar" className="mt-4" />
               <div className="mt-4 rounded-2xl border border-(--ev-line) bg-(--ev-card) p-4">
                 <p className="text-[14px] font-bold text-(--ev-ink)">Hosting a ride, walk, or workshop?</p>
                 <p className="mt-1 text-[13px] leading-relaxed text-(--ev-ink-75)">

@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
-import { gaEvent } from '@/lib/ga'
-import { getTagMeta, getTypeMeta, parseStyleFilter, RIDE_STYLE_FILTER_LABEL } from '@/lib/events'
+import EmailSignup from '@/components/email/EmailSignup'
+import { type CommunityEvent, getTagMeta, getTypeMeta, parseStyleFilter, RIDE_STYLE_FILTER_LABEL } from '@/lib/events'
+import { townFromAddress } from '@/lib/events-seo'
 import type { useEventFilters } from './useEventFilters'
 
 /*
@@ -10,9 +10,12 @@ import type { useEventFilters } from './useEventFilters'
  * the calendar's current filters (type or ride level, Good for, Rides for,
  * distance from the location the calendar is measuring from) as a weekly
  * email of what's coming up that matches. The person confirms by link first;
- * nothing is sent when nothing matches. Posts to /api/email-subscribe, topic
- * event_alerts.
+ * nothing is sent when nothing matches. Topic event_alerts, through the
+ * shared EmailSignup box (one source per placement).
  */
+
+/** The event page's box: this kind of event within this many miles of its town. */
+const EVENT_PAGE_MILES = 10
 
 type Filters = ReturnType<typeof useEventFilters>
 
@@ -44,83 +47,59 @@ function payload(f: Filters) {
   }
 }
 
-export default function EventAlertSignup({ filters: f, className = '', id }: { filters: Filters; className?: string; id?: string }) {
-  const [email, setEmail] = useState('')
-  const [website, setWebsite] = useState('')
-  const [status, setStatus] = useState<'idle' | 'sending' | 'done' | 'error'>('idle')
-  const [error, setError] = useState('')
-
-  async function submit(e: React.FormEvent) {
-    e.preventDefault()
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim())) {
-      setStatus('error')
-      setError('Please enter a valid email address.')
-      return
-    }
-    setStatus('sending')
-    try {
-      const res = await fetch('/api/email-subscribe', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ topic: 'event_alerts', email: email.trim(), filters: payload(f), locale: 'en', website }),
-      })
-      if (res.ok) {
-        setStatus('done')
-        gaEvent('event_alert_signup', { type: f.typeFilter, dist: f.distance, tags: f.tags.length, audience: f.audience.length })
-        return
-      }
-      const data = await res.json().catch(() => null)
-      setStatus('error')
-      setError(data?.error === 'email' ? 'Please enter a valid email address.' : 'Something went wrong. Please try again in a few minutes.')
-    } catch {
-      setStatus('error')
-      setError('Something went wrong. Please try again in a few minutes.')
-    }
-  }
-
+/** The calendar's "Get these by email" box: its current filters, as a weekly email. */
+export default function EventAlertSignup({ filters: f, source, className = '', id }: { filters: Filters; source: 'events_list' | 'events_sidebar'; className?: string; id?: string }) {
   return (
-    <div id={id} className={`rounded-2xl border border-(--ev-line) bg-(--ev-card) p-4 ${className}`}>
-      <p className="text-[14px] font-bold text-(--ev-ink)">Get these by email</p>
-      {status === 'done' ? (
-        <p className="mt-2 text-[14px] font-semibold leading-relaxed text-(--ev-accent)" role="status">
-          Check your email and tap the link to confirm.
-        </p>
-      ) : (
-        <>
-          <p className="mt-1 text-[13px] leading-relaxed text-(--ev-ink-75)">A weekly email of what&apos;s coming up that matches:</p>
-          <p className="mt-1 text-[13px] font-semibold leading-snug text-(--ev-ink)">{summarize(f)}</p>
-          <form onSubmit={submit} noValidate className="mt-3">
-            <label className="sr-only" htmlFor="event-alert-email">Email</label>
-            <input
-              id="event-alert-email"
-              type="email"
-              value={email}
-              onChange={(e) => {
-                setEmail(e.target.value)
-                if (status === 'error') setStatus('idle')
-              }}
-              placeholder="you@email.com"
-              autoComplete="email"
-              className="min-h-[44px] w-full rounded-[10px] border border-(--ev-line-strong) bg-transparent px-3 text-[14px] text-(--ev-ink) outline-none placeholder:text-(--ev-ink-75) focus:border-(--ev-accent)"
-            />
-            {/* People never fill this in; a bot that does is ignored. */}
-            <input type="text" value={website} onChange={(e) => setWebsite(e.target.value)} tabIndex={-1} autoComplete="off" aria-hidden="true" className="hidden" name="website" />
-            <button
-              type="submit"
-              disabled={status === 'sending'}
-              className="mt-2 min-h-[44px] w-full rounded-[10px] border border-(--ev-accent-line) px-4 text-[13px] font-bold text-(--ev-accent) transition-colors hover:bg-(--ev-accent-tint-8) disabled:opacity-50"
-            >
-              Email me
-            </button>
-            {status === 'error' && (
-              <p className="mt-2 text-[13px] font-semibold text-(--ev-accent)" role="alert">{error}</p>
-            )}
-          </form>
-          <p className="mt-2 text-[12px] leading-relaxed text-(--ev-ink-75)">
-            Only when something matches. Change your filters above to change what you get.
-          </p>
-        </>
-      )}
-    </div>
+    <EmailSignup
+      topic="event_alerts"
+      source={source}
+      details={{ filters: payload(f) }}
+      title="Get these by email"
+      lede="Every Thursday, what's coming up that matches:"
+      summary={summarize(f)}
+      cta="Email me every Thursday"
+      done="Check your email and tap the link to confirm."
+      fine="Only when something matches. Change your filters above to change what you get."
+      track={{ type: f.typeFilter, dist: f.distance, tags: f.tags.length, audience: f.audience.length }}
+      id={id}
+      className={className}
+    />
+  )
+}
+
+/**
+ * The event page's box, under Register: more of this kind of event near this
+ * one's town, every Thursday. Statewide when the listing has no town or point.
+ */
+export function EventPageAlertSignup({ event, className = '' }: { event: CommunityEvent; className?: string }) {
+  const town = townFromAddress(event.location_address)
+  const near = !!town && event.location_lat != null && event.location_lng != null
+  const type = getTypeMeta(event.event_type)
+  const place = near ? `${town}, MA` : null
+  const filters = {
+    lat: near ? Number(event.location_lat!.toFixed(3)) : null,
+    lng: near ? Number(event.location_lng!.toFixed(3)) : null,
+    place,
+    dist: near ? EVENT_PAGE_MILES : null,
+    type: event.event_type,
+    level: null,
+    tags: [],
+    audience: [],
+  }
+  const summary = [type.label, near ? `within ${EVENT_PAGE_MILES} mi of ${place}` : 'statewide'].join(' · ')
+  return (
+    <EmailSignup
+      topic="event_alerts"
+      source="event_page"
+      details={{ filters }}
+      title="Get more like this by email"
+      lede="Every Thursday, what's coming up that matches:"
+      summary={summary}
+      cta="Email me every Thursday"
+      done="Check your email and tap the link to confirm."
+      fine="Only when something matches. Stop any time from any email."
+      track={{ type: event.event_type, near }}
+      className={className}
+    />
   )
 }
