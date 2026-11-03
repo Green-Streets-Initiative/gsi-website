@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Coffee } from 'lucide-react'
+import { Store } from 'lucide-react'
 import { getEndShops, type EndShop, type RideFundHere } from '@/lib/organizers/api'
 import { Card, SectionTitle, cx } from './ui'
 
@@ -15,10 +15,11 @@ function away(m: number) {
 }
 
 /**
- * "Coffee at the end" (Ride Fund, Shift 01596): the organizer picks the shop
- * where the ride ends, from the shops we buy gift cards from near the
- * route's end (or the meeting point when there's no route). When a fund
- * covers the area, everyone checked in on Shift gets a coffee code there.
+ * "The stop at the end" (Ride Fund, Shift 01596, 01604): the organizer picks
+ * the café, bakery, ice cream shop or brewery where the ride ends, from the
+ * shops we buy gift cards from near the route's end (or the meeting point when
+ * there's no route). When a fund covers the area, everyone riding with Shift
+ * gets $5 to spend there.
  * Shown only when a fund covers the ride, or a shop is already set.
  */
 export default function EndShopCard({ at, value, onChange, fund }: {
@@ -50,9 +51,9 @@ export default function EndShopCard({ at, value, onChange, fund }: {
   return (
     <Card id="sec-coffee">
       <SectionTitle hint={fund
-        ? `${fund.funder_name} buys everyone who checks in on Shift a ${money(fund.coffee_cents)} coffee at the shop where the ride ends.`
+        ? `${fund.funder_name} gives everyone who rides with Shift ${money(fund.coffee_cents)} to spend at the stop where the ride ends.`
         : 'The shop where the ride ends. It shows on your ride page.'}>
-        Coffee at the end
+        The stop at the end
       </SectionTitle>
 
       <p className="mb-2 text-[15px] font-semibold text-(--ev-ink-85)">Where does the ride end?</p>
@@ -65,7 +66,7 @@ export default function EndShopCard({ at, value, onChange, fund }: {
               onClick={() => onChange(s.location_id)}
               className={cx('flex items-start gap-3 rounded-xl border p-3 text-left transition',
                 value === s.location_id ? 'border-(--ev-accent-fill) bg-(--ev-panel) ring-1 ring-(--ev-accent-fill)' : 'border-(--ev-line-strong) bg-white hover:bg-(--ev-panel-faint)')}>
-              <Coffee className="mt-0.5 h-5 w-5 shrink-0 text-(--ev-accent)" aria-hidden />
+              <Store className="mt-0.5 h-5 w-5 shrink-0 text-(--ev-accent)" aria-hidden />
               <span className="min-w-0">
                 <span className="block text-[15px] font-semibold text-(--ev-ink)">{s.name}</span>
                 <span className="mt-0.5 block text-[14px] leading-snug text-(--ev-ink-75)">
@@ -77,7 +78,7 @@ export default function EndShopCard({ at, value, onChange, fund }: {
           <button type="button" role="radio" aria-checked={!value} onClick={() => onChange(null)}
             className={cx('rounded-xl border p-3 text-left text-[15px] font-semibold transition',
               !value ? 'border-(--ev-accent-fill) bg-(--ev-panel) text-(--ev-ink) ring-1 ring-(--ev-accent-fill)' : 'border-(--ev-line-strong) bg-white text-(--ev-ink-85) hover:bg-(--ev-panel-faint)')}>
-            No coffee stop
+            No stop at the end
           </button>
         </div>
       )}
@@ -86,14 +87,14 @@ export default function EndShopCard({ at, value, onChange, fund }: {
         <p className="mt-3 text-[14px] leading-snug text-(--ev-ink-75)">
           {failed
             ? "Couldn't load shops just now. Save the ride and try again later."
-            : <>None of the shops we buy coffee from are near where this ride ends yet.{' '}
-                <a href="mailto:info@gogreenstreets.org?subject=Coffee%20shop%20where%20our%20ride%20ends" className="font-semibold text-(--ev-accent) hover:underline">Tell us your shop</a>{' '}
+            : <>None of the shops we buy gift cards from are near where this ride ends yet.{' '}
+                <a href="mailto:info@gogreenstreets.org?subject=The%20shop%20where%20our%20ride%20ends" className="font-semibold text-(--ev-accent) hover:underline">Tell us your shop</a>{' '}
                 and we&rsquo;ll look at adding it.</>}
         </p>
       )}
       {pickedElsewhere && (
         <p className="mt-3 text-[14px] leading-snug text-(--ev-ink-75)">
-          The shop you picked before isn&rsquo;t near the new end of the ride. Pick one above, or No coffee stop.
+          The shop you picked before isn&rsquo;t near the new end of the ride. Pick one above, or No stop at the end.
         </p>
       )}
     </Card>

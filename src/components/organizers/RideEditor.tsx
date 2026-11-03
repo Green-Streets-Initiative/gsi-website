@@ -50,7 +50,7 @@ interface Form {
   event_organizer_id: string
   organizer_name: string
   organizer_url: string
-  /** Where the ride ends, for the Ride Fund's coffee; saved on its own (set_ride_end_shop). */
+  /** Where the ride ends, for the Ride Fund's $5; saved on its own (set_ride_end_shop). */
   end_location_id: string | null
 }
 
@@ -133,7 +133,7 @@ type SectionId = (typeof MAIN_SECTIONS)[number][0] | (typeof MORE_SECTIONS)[numb
  *  the edge of a sideways-scrolling strip. A folded section opens first. */
 function SectionNav({ more, coffee, onOpenMore }: { more: boolean; coffee: boolean; onOpenMore: () => void }) {
   const SECTIONS: readonly (readonly [SectionId, string])[] = more
-    ? [...MAIN_SECTIONS, MORE_SECTIONS[0], ...(coffee ? [['sec-coffee', 'Coffee at the end'] as const] : []), ...MORE_SECTIONS.slice(1)]
+    ? [...MAIN_SECTIONS, MORE_SECTIONS[0], ...(coffee ? [['sec-coffee', 'The stop at the end'] as const] : []), ...MORE_SECTIONS.slice(1)]
     : [...MAIN_SECTIONS, ['sec-more', 'More details']]
   const [current, setCurrent] = useState<string>(SECTIONS[0][0])
   useEffect(() => {
@@ -352,9 +352,9 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
         try {
           await setEndShop(res.id, f.end_location_id)
         } catch (e) {
-          // A new ride exists now, so carry on; its coffee shop can be set on its edit page.
+          // A new ride exists now, so carry on; its stop can be set on its edit page.
           if (ride) {
-            setErr(errorText(e, "The ride saved, but the coffee shop didn't. Try again."))
+            setErr(errorText(e, "The ride saved, but the stop at the end didn't. Try again."))
             setSaving(false)
             return
           }
@@ -390,7 +390,7 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
   // Where the ride ends: the route's last point, else the meeting point (a loop).
   const lastPoint = f.route && f.route.waypoints.length >= 2 ? f.route.waypoints[f.route.waypoints.length - 1] : null
   const rideEnd = lastPoint ? { lat: lastPoint.lat, lng: lastPoint.lng } : meetup ? { lat: meetup.lat, lng: meetup.lng } : null
-  // A Ride Fund season covering the meeting point (Shift 01596) opens "Coffee at the end".
+  // A Ride Fund season covering the meeting point (Shift 01596) opens "The stop at the end".
   const fundKey = meetup ? `${meetup.lat.toFixed(2)},${meetup.lng.toFixed(2)}` : ''
   const [fundAt, setFundAt] = useState<{ key: string; fund: RideFundHere | null } | null>(null)
   const fund = fundKey && fundAt?.key === fundKey ? fundAt.fund : null
@@ -635,7 +635,7 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
               <span className="block font-display text-[20px] font-extrabold leading-tight text-(--ev-ink)">More details</span>
               <span className="mt-1 block text-[14px] leading-snug text-(--ev-ink-75)">
                 {fund
-                  ? `Route, coffee at the end (${fund.funder_name} buys it), pace, sign-up link, and who can find it. All optional; a new ride is public.`
+                  ? `Route, the stop at the end (funded by ${fund.funder_name}), pace, sign-up link, and who can find it. All optional; a new ride is public.`
                   : 'Route, pace, sign-up link, and who can find it. All optional; a new ride is public.'}
               </span>
             </span>
