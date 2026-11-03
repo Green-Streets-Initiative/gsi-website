@@ -1020,6 +1020,42 @@
       "mtd": null,
       "alerts": [],
       "emailed": false
+    },
+    {
+      "date": "2026-11-03",
+      "source": "scheduled quick check (ad-grants-pulse), second run ~12:15 ET, live account via authuser=walkrideday%40gmail.com (resolved to 5; the earlier sign-in block is cleared). This month = Nov 1-3.",
+      "mtd": {
+        "window": "2026-11-01..2026-11-03",
+        "impressions": 463,
+        "clicks": 43,
+        "ctr_pct": 9.29,
+        "cost": 137.26,
+        "conversions": 3
+      },
+      "by_campaign": {
+        "How-to Guides": { "impressions": 436, "clicks": 41, "conversions": 3 },
+        "Town Walking & Biking": { "impressions": 32, "clicks": 3 },
+        "Shift App — Massachusetts": { "impressions": 2, "clicks": 0 },
+        "GSI — Brand": { "impressions": 0, "clicks": 0 },
+        "New Routes — Movers": { "impressions": 0, "clicks": 0 },
+        "Shift Your Semester — Students": { "impressions": 0, "clicks": 0 },
+        "Venue Parking": { "impressions": 0, "clicks": 0, "note": "Pending, starts 11-04 as planned" }
+      },
+      "campaign_status": "How-to Guides and Brand Eligible (Limited) Limited by search volume; Venue Parking Pending; others Eligible. Account budget $474.50/day (Venue Parking $25 added).",
+      "banners": [
+        "Apply for healthcare certification (seen since 10-30; do not apply)",
+        "Protect your account from unauthorized activity",
+        "Recommendation card: Add broad match keywords (not applied)"
+      ],
+      "ads": {
+        "disapproved_seen": 0,
+        "limited_by_policy": 0,
+        "not_eligible": "3 Venue Parking Ad 1s, 'Campaign is pending' (expected until 11-04)",
+        "poor": "5: the 2 known (How to Pay for the T, best CTR 12.3%; Walking School Bus Ideas) plus the 3 pinned Venue Parking Ad 1s (expected with pins; the weekly can judge)"
+      },
+      "search_terms": "Only ~10 named terms so far; all How-to Guides / Paying for the T transit and fare lookups (boston public transportation 1/8, charliecard 2/7 + 1/7, boston transit 0/6, charlie card 0/6, mbta monthly pass 2/6). Nothing off-target; no negatives proposed.",
+      "alerts": [],
+      "emailed": false
     }
   ],
   "snapshots": [
