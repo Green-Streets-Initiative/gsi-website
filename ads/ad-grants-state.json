@@ -2,7 +2,8 @@
   "account": {
     "id": "328-499-4589",
     "ocid": "151431556",
-    "authuser": 9,
+    "authuser": 5,
+    "authuser_note": "Indexes shift as Chrome logins change; 9 opened kanderson@rapidads.io on 2026-11-03. Use authuser=walkrideday%40gmail.com in URLs.",
     "login": "walkrideday@gmail.com"
   },
   "artifact_url": "https://claude.ai/artifact/UuoYJsktAySt3HY5KinrbF",
@@ -79,6 +80,10 @@
     {
       "date": "2026-10-28",
       "what": "Claude, on Keith's go in an interactive chat (Claude in Chrome, Keith's Ecosia). The 10-28 compliance email flagged (a) Town Walking & Biking CTR 4.3% (12/276, rolling 30d) and (b) 1 keyword with QS < 3. (b) was 'bike trails near me' (Town routes, broad, -> /shift/towns, 'Eligible (Limited) Rarely shown (low Quality Score)', Oct 2 impr / 0 clicks): paused via Keywords > tick row > Edit > Pause; row reads 'Paused'. (a) is not a grant breach (the 5% rule is account level; Oct MTD 8.7%): most of the 276 impressions are 'biking in boston' (140 impr, paused 10-21; leaves the 30-day window ~11-20); the one enabled keyword with volume is 'walking trails boston' (96 impr, 4 clicks, 4.17%) -> /shift/towns/boston-ma. Fourth Town routes keyword to hit low QS; all four are trail/bike-path searches landing on town pages. Plan (Keith 10-28): ship the /trails pages (review branch trails-review), then point the trail/path keywords at /trails and add named-trail ad groups per trail page (~19,700 MA searches/mo per the 10-14 keyword analysis). Nothing else touched."
+    },
+    {
+      "date": "2026-11-03",
+      "what": "Claude, on Keith's approval of launch venue-parking ('I approve the plan', then 'Yes, tomorrow', 2026-11-02), interactive chat, Claude in Chrome. (1) venue_trip_planned starred as a GA4 key event, then imported as a Primary conversion, category Engagement (Goals > New conversion > linked account gogreenstreets.org); /aw/conversions/all shows it under Engagements, 'Awaiting conversions', included in account-level goals. (2) New campaign 'Venue Parking' (ID 24426572849) by bulk upload (scratchpad venue-parking-upload.csv, preview 26/26/0, applied ~10:12 AM): Google Search Network only, Massachusetts, en, Maximize conversions, $25/day, start date 2026-11-04 (status 'Pending' until then). Ad groups TD Garden, Fenway Park, Gillette Stadium; 16 phrase keywords; 6 RSAs copied from ads/drafts/venue-parking-ad-groups-2026-11-02.md, landing on /parking/td-garden, /parking/fenway-park, /parking/gillette-stadium (paths parking/td-garden, parking/fenway, parking/gillette). The upload columns 'Campaign start date' (YYYY-MM-DD) and 'Headline N position' both worked: Ad 1 in each group pins the parking headline to 1 and the transit fact to 2 (TD Garden Ad 1 strength 'Poor', expected with pins). (3) 20 campaign-level broad negatives in the UI: jobs, job, hiring, careers, career, seating chart, seat map, tailgate rentals, hotel, hotels, tours, tour, stadium tour, pro shop, lost and found, parking ticket, parking tickets, towing, monthly parking, overnight parking. Left out the draft's 'tickets', 'hours' and 'address': as broad negatives they would block 'gillette train tickets', 'gillette parking hours' and similar searches the pages answer. No campaign sitelinks (account sitelinks apply). Account login note: authuser=9 now opens a different Google account; use authuser=walkrideday%40gmail.com (resolved to 5 today)."
     }
   ],
   "open_items": [
@@ -180,6 +185,13 @@
       "from": "Keith (calendar growth plan, 'Approve through March')",
       "what": "Calendar growth plan (Shift docs/programs/product/calendar-growth-plan-2026-11/plan.html): winter Local Events ad groups from the week of Nov 9 on year-round 'find an event' searches (bike repair workshop, walking group boston, winter bike ride); event-alert sign-up imported as a conversion once it fires a GA4 event; ride-season terms from Mar 1, 2027. 5% CTR rule: pause any ad group under 5% after 300 impressions; no broad 'things to do' terms. Supersedes the 10-15 note to wait for spring. Shift handoff h-calendar-20261103-ads.",
       "status": "APPROVED 2026-11-03, not started"
+    },
+    {
+      "id": "venue-parking",
+      "added": "2026-11-03",
+      "from": "Launch venue-parking (Shift docs/programs/launches/venue-parking/plan.md), Keith approved 2026-11-02",
+      "what": "Campaign 'Venue Parking' (24426572849): TD Garden, Fenway Park and Gillette Stadium ad groups -> /parking/<venue>, judged on venue_trip_planned (Primary, Engagement). Kill rules: pause any ad group under 5% CTR after 300 impressions; pause the campaign the same day if the account's month-to-date CTR falls under 6.5%; never undo a change younger than 14 days.",
+      "status": "BUILT 2026-11-03, serves from Wed 2026-11-04 at $25/day. Paid desk Wed Nov 11 (handoff h-launch-20261102-vp-ads): read search terms, add negatives (consider 'tickets' only if ticket-buyer searches show up), raise to $50/day if every ad group is >= 5% after 300 impressions, else pause the ones under. Check the six ads read 'Eligible' (policy review) once the campaign starts."
     }
   ],
   "pulse_log": [
