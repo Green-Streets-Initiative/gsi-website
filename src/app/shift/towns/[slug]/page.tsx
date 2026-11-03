@@ -196,9 +196,9 @@ export default async function TownPage({ params }: { params: Promise<{ slug: str
               {slug === 'boston-ma' && (
                 <p className="mt-4 text-[1rem] leading-[1.6] text-navy">
                   Going to a game? Parking and the T for{' '}
-                  <Link href="/parking/td-garden" className="font-semibold text-forest underline underline-offset-4 hover:opacity-80">TD Garden</Link>
+                  <Link href="/parking/td-garden" className="whitespace-nowrap font-semibold text-forest underline underline-offset-4 hover:opacity-80">TD Garden</Link>
                   {' '}and{' '}
-                  <Link href="/parking/fenway-park" className="font-semibold text-forest underline underline-offset-4 hover:opacity-80">Fenway Park</Link>
+                  <Link href="/parking/fenway-park" className="whitespace-nowrap font-semibold text-forest underline underline-offset-4 hover:opacity-80">Fenway Park</Link>
                 </p>
               )}
               {slug === 'foxborough-ma' && (
