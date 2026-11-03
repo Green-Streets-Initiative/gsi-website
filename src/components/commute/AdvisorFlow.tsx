@@ -19,6 +19,7 @@ import { useIsWide } from '@/components/commute/useIsWide'
 import LoadingMessages from '@/components/commute/LoadingMessages'
 import CommutePlanPrint from '@/components/commute/CommutePlanPrint'
 import TagAlong from '@/components/commute/TagAlong'
+import { haversineMeters } from '@/lib/geo/measure'
 import { COMFORT_COLORS, COMFORT_LABELS, comfortPieces, fetchCalmRoute, formatStretchMiles, legPhotoSpec, type CalmRoute } from '@/components/commute/calm-route'
 import { ReportRouteLink, type RouteIssueStretch, type RouteIssueSurface } from '@/components/commute/ReportRouteSheet'
 import { contentModeFor, contentModeWord, guidesByStage } from '@/components/commute/guide-topics'
@@ -464,6 +465,10 @@ export default function AdvisorFlow({
   /* ── After the plan: departures, the calm route, shuttles, bike parking ── */
   const home = homePlaceData
   const office = workPlaceData
+  // The free 1:1 street lesson (launch confidence-path, 2026-11-03): offered
+  // in the bike plan when Home is within the program's 5 miles of the
+  // Bicycle Riding School (Shift free_lesson_programs.brs_road).
+  const lessonNearby = home ? haversineMeters(home.lat, home.lng, 42.39929, -71.12049) <= 5 * 1609.34 : false
   useEffect(() => {
     if (!result || !home || !office) return
     const ctrl = new AbortController()
@@ -755,7 +760,7 @@ export default function AdvisorFlow({
       ) : mode === 'transit' ? (
         <TransitDrawer plan={plan} legsLive={legsLive} home={home} office={office} officeName={officeLabel} benefits={benefits} companyName={companyName} highlightedLeg={highlightedLeg} onLegTap={(leg) => tapLeg(mode, leg)} directionsHref={href} onDirections={onDirections} />
       ) : mode === 'bike' || mode === 'ebike' ? (
-        <BikeDrawer plan={plan} calm={calm} calmLoading={calmLoading} bikeParking={bikeParking} benefits={benefits} companyName={companyName} highlightedLeg={highlightedLeg} onLegTap={(leg) => tapLeg(mode, leg)} directionsHref={href} onDirections={onDirections} />
+        <BikeDrawer plan={plan} calm={calm} calmLoading={calmLoading} bikeParking={bikeParking} benefits={benefits} companyName={companyName} highlightedLeg={highlightedLeg} onLegTap={(leg) => tapLeg(mode, leg)} directionsHref={href} onDirections={onDirections} lessonNearby={lessonNearby} onLesson={() => track('advisor_lesson_tapped', { mode })} />
       ) : mode === 'drive' ? (
         <DriveDrawer plan={plan} benefits={benefits} onAddParking={openCosts} onNoCar={() => chooseCar('none', 'plan')} directionsHref={href} onDirections={onDirections} />
       ) : (

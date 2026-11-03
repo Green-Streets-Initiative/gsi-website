@@ -110,6 +110,22 @@ export const faqSections = [
         answer:
           'Around You on the Home screen shows the next buses and trains near you, and nearby bikes. Tap Plan a route for directions to anywhere. You can save a trip you make often, and it shows up on Home and under Profile > Your trips.',
       },
+      {
+        question: 'I can ride, but traffic makes me nervous. Can I get a lesson?',
+        answer: (
+          <p>
+            Yes. If you live near Somerville, Green Streets is covering the cost of a free 1:1 street
+            lesson with the Bicycle Riding School: 90 minutes on real streets, at your pace, one per
+            person while lessons last. Ask for one on our{' '}
+            <Link href="/bike-lessons#street-lesson" className={linkClass}>
+              bike lessons page
+            </Link>{' '}
+            (no app needed) or in the app, and an instructor emails you to pick a time. Farther away,
+            or would rather wait for spring? The same page lists classes and instructors across
+            Massachusetts and can email you when classes start again.
+          </p>
+        ),
+      },
     ],
   },
   {

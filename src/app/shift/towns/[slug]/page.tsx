@@ -192,6 +192,22 @@ export default async function TownPage({ params }: { params: Promise<{ slug: str
                 happening locally, and how the town is trending — built from real trips logged in the
                 Shift app.
               </p>
+              {/* Game-day parking pages (launch venue-parking, 2026-11-03). */}
+              {slug === 'boston-ma' && (
+                <p className="mt-4 text-[1rem] leading-[1.6] text-navy">
+                  Going to a game? Parking and the T for{' '}
+                  <Link href="/parking/td-garden" className="font-semibold text-forest underline underline-offset-4 hover:opacity-80">TD Garden</Link>
+                  {' '}and{' '}
+                  <Link href="/parking/fenway-park" className="font-semibold text-forest underline underline-offset-4 hover:opacity-80">Fenway Park</Link>
+                </p>
+              )}
+              {slug === 'foxborough-ma' && (
+                <p className="mt-4 text-[1rem] leading-[1.6] text-navy">
+                  <Link href="/parking/gillette-stadium" className="font-semibold text-forest underline underline-offset-4 hover:opacity-80">
+                    Going to Gillette? The lots, the event train and rideshare
+                  </Link>
+                </p>
+              )}
               {/* Town digest signup — E19's front door, up top where readers
                   actually are. Anchored: digest emails' forward-nudge links
                   land forwarded readers right here. */}

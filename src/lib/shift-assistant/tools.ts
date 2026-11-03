@@ -19,6 +19,7 @@ import { signedUrls } from '@/lib/shift-assistant/uploads'
 import { HELP_TOPICS, helpIndex, helpTopic } from '@/lib/help/faq'
 import { ALWAYS as FARES_FOR_EVERYONE, fareProgram, farePrograms } from '@/lib/facts/fare-programs'
 import { PRICES, usd } from '@/lib/facts/prices'
+import { VENUES } from '@/lib/venues'
 import { BORROW_RENT_BLURB, nearbyBorrowRent } from '@/lib/nearby/borrow-rent'
 import { getBikeShareDocks } from '@/lib/server/bluebikes'
 import { bikePerkPool } from '@/lib/server/bike-perks'
@@ -240,6 +241,7 @@ export const ACTIVITY: Record<string, string> = {
   get_town_info: 'Looking up your town',
   check_route_link: 'Reading the route',
   get_fare_help: 'Checking fare discounts',
+  get_venue_parking: 'Checking game-day parking',
   find_bikes_to_try: 'Looking for bikes to try',
   find_roams: 'Looking for routes to explore',
   get_roam: 'Reading the route',
@@ -566,6 +568,15 @@ export const TOOLS: Anthropic.Tool[] = [
     name: 'get_fare_help',
     description: 'MBTA and Bluebikes fare discounts and free fares: who qualifies (age 65+, 75+ and not driving, a disability or Medicare card, legally blind, SNAP or MassHealth, college or school students, children), what each gives, and how to apply. Also the fares and transfer rule everyone gets.',
     input_schema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'get_venue_parking',
+    description: "Parking and getting there for a game or show at TD Garden (Bruins, Celtics, concerts), Fenway Park (Red Sox) or Gillette Stadium (Patriots, Revolution, concerts): the official garage or lots with their published prices and the day we checked them, the station and lines, the upcoming event trains to Gillette, rideshare pick-up, and a button to our parking page with the other garages, walk times and live trains.",
+    input_schema: {
+      type: 'object',
+      properties: { venue: { type: 'string', enum: ['td-garden', 'fenway-park', 'gillette-stadium'] } },
+      required: ['venue'],
+    },
   },
   {
     name: 'find_bikes_to_try',
@@ -1606,6 +1617,34 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
           everyone: FARES_FOR_EVERYONE,
           note: 'Two or three sentences: name only the one or two they may qualify for, what each gives and how to apply, and add open_link kind fare with its id. When you can tell someone qualifies (their age, a disability, a benefit), say so; otherwise ask the one question that decides it. Never guess eligibility from a name or a trip.',
         })
+      }
+      case 'get_venue_parking': {
+        // Prices and dates come from venue-facts.json (kept current weekly), never the prompt.
+        const v = VENUES[String(input.venue)]
+        if (!v) return fail('Use td-garden, fenway-park or gillette-stadium.')
+        const today = todayKey()
+        const official = v.garages.find((g) => g.official)
+        const checked = new Date(`${v.checked}T12:00:00Z`).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
+        const trains = v.transit.eventTrains
+        return ok(
+          {
+            venue: v.name,
+            answer: v.lede,
+            official_parking: official
+              ? { name: official.name, where: official.where ?? null, walk_minutes: official.walkMin, prices: official.prices ?? [], facts: official.facts ?? [] }
+              : null,
+            prices_checked: checked,
+            price_note: v.priceNote ?? null,
+            other_garages: v.garages.filter((g) => !g.official).slice(0, 3).map((g) => ({ name: g.name, walk_minutes: g.walkMin, note: g.note ?? null })),
+            train: { headline: v.transit.headline, station: v.transit.stopName, lines: v.transit.lines, tips: v.transit.tips },
+            ...(trains
+              ? { event_trains: { fare: trains.fare, buy: trains.buy, next: trains.trips.filter((t) => t.date >= today).slice(0, 3) } }
+              : {}),
+            rideshare: v.rideshare,
+            next: 'Answer parking first, as asked: the official garage or lot, its price and "checked <prices_checked>", then the train as a plain fact in one sentence (never argue against driving). Prices only from here. The button opens the page with the other garages, walk times and live trains; for a door-to-door plan from them, check_trip to the venue.',
+          },
+          { href: `https://www.gogreenstreets.org/parking/${v.slug}?utm_source=assistant`, label: `Parking at ${v.name}`, external: true },
+        )
       }
       case 'get_lesson_offer': {
         // Their saved Home first, else where the phone is (free_lesson_origin).

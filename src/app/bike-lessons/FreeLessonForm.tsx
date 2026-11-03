@@ -230,7 +230,8 @@ export default function FreeLessonForm({
         </p>
       )}
       <p className="mt-3 text-[0.9375rem] leading-relaxed text-navy/80">
-        One free lesson per person. An instructor emails you to pick a time.
+        We send your request to the Bicycle Riding School&rsquo;s instructors. One of them emails you to pick a
+        time. One free lesson per person.
       </p>
     </form>
   )

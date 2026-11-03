@@ -121,6 +121,16 @@ export default async function BikeLessons({ locale: L = 'en' }: { locale?: Guide
   return (
     <div className="my-8 rounded-[14px] border border-forest/30 bg-forest/5 p-5 sm:p-6">
       <h2 className="mb-2 font-serif text-[1.25rem] leading-tight text-navy">{t('heading')}</h2>
+      {/* The free 1:1 street lesson (launch confidence-path, 2026-11-03); English copy only for now. */}
+      {L === 'en' && (
+        <p className="mb-4 rounded-[10px] bg-white px-4 py-3 text-[1rem] leading-relaxed text-navy">
+          Nervous in traffic? Take a free 1:1 street lesson near Somerville (Green Streets is covering the cost), or
+          find classes across Massachusetts.{' '}
+          <Link href="/bike-lessons?utm_source=guide" className="font-semibold text-forest underline underline-offset-4 hover:opacity-80">
+            See bike lessons
+          </Link>
+        </p>
+      )}
       {d.lessons.length > 0 ? (
         <>
           <p className="mb-4 text-[1rem] leading-relaxed text-navy">{t('intro')}</p>
