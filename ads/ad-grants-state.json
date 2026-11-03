@@ -173,6 +173,13 @@
       "from": "Keith (via the Social Lead's W45 review)",
       "what": "Keith asked this routine to analyze what to do with the 'New Routes — Movers' campaign. Context: Keith dropped the weekly organic New Routes social post on 11-01 ('Unless we plan to run paid ads with that post, I'd be comfortable skipping that post'). Reddit (ended Oct 19, 1 join) and Meta (ended Oct 20) are over, so Movers is the only paid line for New Routes. October: 30 impressions, 0 clicks (from the Social Lead's survey; re-read it live). New Routes offer: new Shift members, code NEWROUTES at sign-up, 10 auto-detected active trips in 30 days unlocks $15, cap 200, ends Dec 15; 6 sign-ups in the last 30 days (personas.md). The Housing /move-in page shows the $15 offer while New Routes runs. Decide and recommend one of: (a) keep as is, (b) rework (keywords movers actually search, landing page, e.g. /move-in or town pages), (c) pause and move its share of the grant to campaigns that win clicks, (d) pair it with a dated organic social post if a rework is worth testing. Show the numbers behind the call (impressions, clicks, search terms, keyword eligibility, CTR effect on the account's 5% floor) and the cost of each option. Weigh the account's CTR floor: a near-zero-click campaign drags account CTR down only if it gets impressions. If the call is (d), say so and the Social Lead will add a post the week the change goes live.",
       "status": "OPEN: first look in the 2026-11-04 weekly review; recommend as an item with 'do ad grants item N'."
+    },
+    {
+      "id": "calendar-local-events",
+      "added": "2026-11-03",
+      "from": "Keith (calendar growth plan, 'Approve through March')",
+      "what": "Calendar growth plan (Shift docs/programs/product/calendar-growth-plan-2026-11/plan.html): winter Local Events ad groups from the week of Nov 9 on year-round 'find an event' searches (bike repair workshop, walking group boston, winter bike ride); event-alert sign-up imported as a conversion once it fires a GA4 event; ride-season terms from Mar 1, 2027. 5% CTR rule: pause any ad group under 5% after 300 impressions; no broad 'things to do' terms. Supersedes the 10-15 note to wait for spring. Shift handoff h-calendar-20261103-ads.",
+      "status": "APPROVED 2026-11-03, not started"
     }
   ],
   "pulse_log": [
