@@ -316,6 +316,7 @@ export default function EventsPage({ events, tone = 'dark', hrefBase = '/events'
                           event={ev}
                           userLat={f.userLoc.lat}
                           userLng={f.userLoc.lng}
+                          showAway={f.geoStatus === 'active'}
                           showDate={!f.selectedDay}
                           saved={!!saved[ev.id]}
                           onToggleSave={handleToggleSave}
@@ -323,7 +324,7 @@ export default function EventsPage({ events, tone = 'dark', hrefBase = '/events'
                           attached={feeders.length > 0}
                         />
                         {feeders.length > 0 && (
-                          <FeederTray eventId={ev.id} feeders={feeders} userLat={f.userLoc.lat} userLng={f.userLoc.lng} />
+                          <FeederTray eventId={ev.id} feeders={feeders} userLat={f.userLoc.lat} userLng={f.userLoc.lng} showAway={f.geoStatus === 'active'} />
                         )}
                         {i === Math.min(PHONE_SIGNUP_AFTER, f.entries.length) - 1 && (
                           <EventAlertSignup filters={f} source="events_list" className="mt-3" />
@@ -356,6 +357,7 @@ export default function EventsPage({ events, tone = 'dark', hrefBase = '/events'
                 onShowMore={() => setListLimit((n) => n + AGENDA_PAGE)}
                 paged={!f.selectedDay}
                 userLoc={f.userLoc}
+                showAway={f.geoStatus === 'active'}
                 saved={saved}
                 onToggleSave={handleToggleSave}
                 emptyMessage={
