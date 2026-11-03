@@ -167,6 +167,18 @@ export function formatDistanceText(text: string | null | undefined): string | nu
 }
 
 /**
+ * A ride's stated length, worded so it never reads like the distance from
+ * you beside it (Keith 2026-11-03): "24 mi ride", "8 to 16 mi ride",
+ * "2 hr ride", "20 mi round trip". The card says "2.3 mi away" for the other.
+ */
+export function rideLengthLabel(text: string | null | undefined): string | null {
+  const t = formatDistanceText(text)?.trim()
+  if (!t) return null
+  const short = t.replace(/\bmiles?\b/gi, 'mi').replace(/\bminutes?\b/gi, 'min').replace(/\bhours?\b/gi, 'hr')
+  return /round trip|loop|ride/i.test(short) ? short : `${short} ride`
+}
+
+/**
  * The organizer's stated pace band, with the speeds the ride planner attaches
  * to it (00873). Only for a band someone set; an inferred level has no mph.
  */

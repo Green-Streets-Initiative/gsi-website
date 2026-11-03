@@ -18,11 +18,13 @@ const SHOWN = 2
  * groups riding or walking there together, nearest first. Mirrors the Shift
  * app's FeederTray. Sits flush under its EventCard (attached).
  */
-export default function FeederTray({ eventId, feeders, userLat, userLng }: {
+export default function FeederTray({ eventId, feeders, userLat, userLng, showAway }: {
   eventId: string
   feeders: CommunityEvent[]
   userLat: number
   userLng: number
+  /** The person picked a place; until then the groups are still sorted from the default point, without a distance. */
+  showAway?: boolean
 }) {
   const { hrefBase } = useEventsTone()
   const [open, setOpen] = useState(false)
@@ -50,7 +52,7 @@ export default function FeederTray({ eventId, feeders, userLat, userLng }: {
             off ? 'Cancelled' : f.event_time ? `Leaves ${formatTime(f.event_time)}` : null,
             shortOrganizer(f.organizer_name),
           ].filter(Boolean).join(' · ')
-          const away = miles !== null ? (miles < 10 ? miles.toFixed(1) : String(Math.round(miles))) : null
+          const away = showAway && miles !== null ? (miles < 10 ? miles.toFixed(1) : String(Math.round(miles))) : null
           return (
             <li key={f.id}>
               <Link
@@ -73,7 +75,7 @@ export default function FeederTray({ eventId, feeders, userLat, userLng }: {
                 {away && (
                   <span className="shrink-0 text-right">
                     <span className="block text-[15px] font-bold text-(--ev-accent)">{away} mi</span>
-                    <span className="hidden text-[13px] text-(--ev-ink-75) sm:block">from you</span>
+                    <span className="block text-[13px] text-(--ev-ink-75)">away</span>
                   </span>
                 )}
               </Link>

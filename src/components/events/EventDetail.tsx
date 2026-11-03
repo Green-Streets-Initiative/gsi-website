@@ -23,6 +23,7 @@ import {
   eventImages,
 } from '@/lib/events'
 import EventImageCarousel from './EventImageCarousel'
+import { EventPageAlertSignup } from './EventAlertSignup'
 import { parseEventBody } from '@/lib/event-body'
 import { typeInk, tagInk, rideStyleInk, TINT } from '@/lib/events-tone'
 import { EventsToneProvider, toneClass, useEventsTone, type EventsTone } from './EventsTone'
@@ -606,6 +607,12 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
                 </a>
               ))}
             </div>
+
+            {/* The weekly email, set to this event's kind and town (calendar
+                growth plan bet 1): someone who came for one ride is the person
+                most likely to want next week's. Past events too: a missed ride
+                is the best moment to offer the next one. */}
+            <EventPageAlertSignup event={event} className="mt-6 max-w-[440px]" />
 
             {/* Getting there. Event pages are the site's top organic click class.
                 The app invitation that sat here (exp-2026-09-8) reached the app
