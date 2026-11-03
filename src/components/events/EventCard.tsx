@@ -5,6 +5,7 @@ import { eventPath } from '@/lib/events-url'
 import { Calendar, Bookmark } from 'lucide-react'
 import { type CommunityEvent, getTypeMeta, getTagMeta, formatTime, formatDistance, haversine, isDeadline, dateRangeShort, eventDayKeys, isMultiDay, eventRideStyle, isNoDrop, rideLengthLabel, RIDE_STYLE_LABEL } from '@/lib/events'
 import { typeInk, tagInk, rideStyleInk, TINT } from '@/lib/events-tone'
+import { townFromAddress } from '@/lib/events-seo'
 import { EVENT_TYPE_ICONS } from './event-type-icons'
 import { useEventsTone } from './EventsTone'
 
@@ -70,6 +71,10 @@ export default function EventCard({ event, userLat, userLng, showAway, showDate,
   if (deadline && when) when = `Entry deadline: ${when}`
 
   const place = event.location_name && event.location_name !== 'See event page for details' ? event.location_name : null
+  // Until someone picks a place there is no "away", so the place line leads
+  // with the town: "16 Park Street" alone doesn't say it's in Topsfield.
+  const town = away ? null : townFromAddress(event.location_address)
+  const placeLead = away ?? (town && !place?.includes(town) ? town : null)
 
   // Desktop: the time lives in its own column and the distance in its own, so date · organizer · place
   const whenLg = datePart ? (deadline ? `Entry deadline: ${datePart}` : datePart) : ''
@@ -105,30 +110,30 @@ export default function EventCard({ event, userLat, userLng, showAway, showDate,
       {/* Flyer thumbnail when the event has one; the type tile otherwise */}
       {event.image_url ? (
         <div
-          className="h-16 w-16 shrink-0 overflow-hidden rounded-[13px] border sm:h-14 sm:w-14 lg:h-11 lg:w-11 lg:rounded-[10px]"
+          className="h-12 w-12 shrink-0 overflow-hidden rounded-[12px] border sm:h-14 sm:w-14 lg:h-11 lg:w-11 lg:rounded-[10px]"
           style={{ borderColor: ink + tint.spotLine, backgroundColor: ink + tint.thumb }}
         >
           <img src={event.image_url} alt="" className="h-full w-full object-cover" loading="lazy" />
         </div>
       ) : (
         <div
-          className="flex h-16 w-16 shrink-0 items-center justify-center rounded-[13px] sm:h-14 sm:w-14 lg:h-11 lg:w-11 lg:rounded-[10px]"
+          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[12px] sm:h-14 sm:w-14 lg:h-11 lg:w-11 lg:rounded-[10px]"
           style={{ backgroundColor: ink + tint.tile }}
         >
-          <Icon size={24} className="lg:hidden" style={{ color: ink }} />
+          <Icon size={22} className="lg:hidden" style={{ color: ink }} />
           <Icon size={18} className="hidden lg:block" style={{ color: ink }} />
         </div>
       )}
 
       {/* Body */}
       <div className="min-w-0 flex-1">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] lg:hidden" style={{ color: ink }}>
+        <p className="text-[14px] font-semibold leading-snug lg:hidden" style={{ color: ink }}>
           {meta.label}
           {level && (
             <>
               <span className="text-(--ev-ink-75)"> · </span>
               <span style={{ color: rideStyleInk(level, tone) }}>{RIDE_STYLE_LABEL[level]}</span>
-              {rideLength && <span className="text-(--ev-ink-75)"> · {rideLength}</span>}
+              {rideLength && <span className="text-(--ev-ink-75)"> · <span className="whitespace-nowrap">{rideLength}</span></span>}
             </>
           )}
         </p>
@@ -139,10 +144,12 @@ export default function EventCard({ event, userLat, userLng, showAway, showDate,
         <p className={`mt-1 text-[14px] leading-snug text-(--ev-ink-75) lg:hidden ${off ? 'line-through' : ''}`}>
           {metaLine(when, null)}
         </p>
-        {(place || away) && (
-          <p className="mt-0.5 flex min-w-0 text-[14px] leading-snug text-(--ev-ink-75) lg:hidden">
-            {place && <span className="truncate">{place}</span>}
-            {away && <span className="shrink-0 whitespace-pre font-semibold text-(--ev-ink-85)">{place ? ' · ' : ''}{away}</span>}
+        {(place || placeLead) && (
+          // How far away leads, so it is never the part that gets cut off; the place may take two lines.
+          <p className="mt-0.5 line-clamp-2 text-[14px] leading-snug text-(--ev-ink-75) lg:hidden">
+            {placeLead && <span className="font-semibold text-(--ev-ink-85)">{placeLead}</span>}
+            {placeLead && place && ' · '}
+            {place}
           </p>
         )}
         {/* Desktop: the type, level and ride length never truncate; the place does. */}
@@ -158,7 +165,7 @@ export default function EventCard({ event, userLat, userLng, showAway, showDate,
             )}
             {(whenLg || organizer || place) && ' · '}
           </span>
-          <span className="truncate">{metaLine(whenLg, place)}</span>
+          <span className="truncate">{metaLine(whenLg, [town && !place?.includes(town) ? town : null, place].filter(Boolean).join(' · ') || null)}</span>
         </p>
         {ridesTo && (
           <p className="mt-1 truncate text-[14px] font-semibold text-(--ev-accent)">
