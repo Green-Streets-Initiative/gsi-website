@@ -27,12 +27,13 @@ export default function FilterBar({ filters: f, savedCount, resultCount }: Filte
   const close = () => setOpen(null)
 
   const whenLabel = f.dateRange === 'upcoming' ? 'When' : WHEN_OPTIONS.find((o) => o.value === f.dateRange)?.label ?? 'When'
+  // "Near <town>" only when the list is narrowed to it; a place at Statewide says so.
   const nearLabel =
-    f.geoStatus === 'active'
-      ? `Near ${f.userLoc.label}${f.distance !== 'all' ? ` · ${f.distance} mi` : ''}`
-      : f.distance !== 'all'
-        ? `Within ${f.distance} mi`
-        : 'Near'
+    f.distance === 'all'
+      ? f.geoStatus === 'active' ? 'Statewide' : 'Near'
+      : f.geoStatus === 'active'
+        ? `Near ${f.userLoc.label} · ${f.distance} mi`
+        : `Within ${f.distance} mi`
   const typeLabel = f.typeFilter === 'All' ? 'Type' : typeFilterLabel(f.typeFilter)
   // One pill holds Good for and Rides for, so the bar doesn't grow.
   const picked = [...f.tags, ...f.audience]

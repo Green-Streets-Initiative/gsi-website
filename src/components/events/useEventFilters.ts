@@ -22,6 +22,12 @@ export const DISTANCE_OPTIONS = [
   { value: 'all', label: 'Statewide' },
 ] as const
 export type DistanceValue = (typeof DISTANCE_OPTIONS)[number]['value']
+/**
+ * Picking a place narrows to this distance unless one is already picked, so
+ * "Near Somerville" shows what's near Somerville (Keith 2026-11-03: it was
+ * still statewide). Statewide stays one tap away under How far.
+ */
+const NEAR_DEFAULT_DISTANCE: DistanceValue = '10'
 
 export const WHEN_OPTIONS = [
   { value: 'upcoming', label: 'All upcoming' },
@@ -110,7 +116,8 @@ export function useEventFilters(events: CommunityEvent[], { saved, applyDateRang
   const [query, setQuery] = useState(() => params.get('q') ?? '')
   const [distance, setDistanceState] = useState<DistanceValue>(() => {
     const v = params.get('dist') ?? ''
-    return DISTANCE_VALUES.includes(v) ? (v as DistanceValue) : 'all'
+    if (DISTANCE_VALUES.includes(v)) return v as DistanceValue
+    return parseNear(params.get('near')) ? NEAR_DEFAULT_DISTANCE : 'all'
   })
   const [typeFilter, setTypeState] = useState(() => {
     const level = params.get('level')
@@ -190,6 +197,7 @@ export function useEventFilters(events: CommunityEvent[], { saved, applyDateRang
         const { latitude: lat, longitude: lng } = pos.coords
         setUserLoc({ lat, lng, label: 'Your location' })
         setGeoStatus('active')
+        setDistanceState((d) => (d === 'all' ? NEAR_DEFAULT_DISTANCE : d))
         trackEvents('events_filter_changed', { dimension: 'near', value: 'geolocation' })
         try {
           const res = await fetch(
@@ -212,6 +220,7 @@ export function useEventFilters(events: CommunityEvent[], { saved, applyDateRang
   const selectCity = useCallback((loc: UserLoc) => {
     setUserLoc(loc)
     setGeoStatus('active')
+    setDistanceState((d) => (d === 'all' ? NEAR_DEFAULT_DISTANCE : d))
     notify?.(`Near ${loc.label}`)
     trackEvents('events_filter_changed', { dimension: 'near', value: loc.label })
   }, [notify])
@@ -352,7 +361,8 @@ export function useEventFilters(events: CommunityEvent[], { saved, applyDateRang
       else if (typeFilter !== 'All') next.set('type', typeFilter)
       if (selectedDay) next.set('day', selectedDay)
       if (geoStatus === 'active') next.set('near', `${userLoc.lat.toFixed(4)},${userLoc.lng.toFixed(4)},${userLoc.label}`)
-      if (distance !== 'all') next.set('dist', distance)
+      // A place with no dist reads as the near default, so Statewide is written out.
+      if (distance !== 'all' || geoStatus === 'active') next.set('dist', distance)
       if (tags.length) next.set('tags', tags.join(','))
       if (audience.length) next.set('for', audience.join(','))
       if (savedOnly) next.set('saved', '1')
