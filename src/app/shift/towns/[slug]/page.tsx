@@ -27,6 +27,8 @@ import {
   MIN_RANKED_TRIPS,
 } from '@/lib/towns/queries'
 import { getEventPicks } from '@/lib/towns/event-picks'
+import TownTrails from '@/components/towns/TownTrails'
+import { getTownTrails } from '@/lib/trails/town'
 import {
   EventsRoamsPanels,
   GetInvolved,
@@ -103,7 +105,7 @@ export default async function TownPage({ params }: { params: Promise<{ slug: str
 
   // Centroid first (events + roams both need it), then the rest in parallel.
   const centroid = await getTownCentroid(town.group_id)
-  const [stats, roams, partners, heatmapLayers, events, resources, civicEvents, newInfra] = await Promise.all([
+  const [stats, roams, partners, heatmapLayers, events, resources, civicEvents, newInfra, townTrails] = await Promise.all([
     getTownPageStats(town.group_id),
     getTownRoams(centroid),
     getTownPartners(name, town.state),
@@ -113,6 +115,8 @@ export default async function TownPage({ params }: { params: Promise<{ slug: str
     getTownCivicEvents(name),
     // MassDOT and the town boundaries cover Massachusetts only.
     town.state === 'MA' ? newInfraInTown(name, town.state) : Promise.resolve(NO_NEW_INFRA),
+    // Trails only cover Massachusetts so far.
+    town.state === 'MA' ? getTownTrails(name, centroid) : Promise.resolve([]),
   ])
 
   if (!stats) notFound()
@@ -225,6 +229,7 @@ export default async function TownPage({ params }: { params: Promise<{ slug: str
             ...(resources.length > 0 || civicEvents.length > 0 ? [['#involved', 'Get Involved'] as [string, string]] : []),
             ...(newInfra.opened.length > 0 ? [['#new', "What's new"] as [string, string]] : []),
             ...(events.length > 0 || roams.length > 0 ? [['#events', 'Events & Roams'] as [string, string]] : []),
+            ...(townTrails.length > 0 ? [['#trails', 'Trails'] as [string, string]] : []),
             ['#stats', 'Stats'],
             ...(heatmapLayers.length > 0 ? [['#moves', 'Where we move'] as [string, string]] : []),
             ['#momentum', 'Momentum'],
@@ -256,6 +261,13 @@ export default async function TownPage({ params }: { params: Promise<{ slug: str
         {(events.length > 0 || roams.length > 0) && (
           <Section id="events" shape="wanderRight" className="scroll-mt-28">
             <EventsRoamsPanels events={events} roams={roams} townName={name} tone="light" />
+          </Section>
+        )}
+
+        {/* Trails in and near the town (2026-11-04): each links to its trail page. */}
+        {townTrails.length > 0 && (
+          <Section id="trails" shape="straight" className="scroll-mt-28">
+            <TownTrails trails={townTrails} townName={name} />
           </Section>
         )}
 
