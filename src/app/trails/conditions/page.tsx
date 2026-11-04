@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { ArrowRight, Snowflake, Download } from 'lucide-react'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
+import JsonLd from '@/components/JsonLd'
 import ConditionsMap, { type ConditionsLane, type ConditionsTrail } from '@/components/trails/ConditionsMap'
 import { getTrails, type TrailSummary } from '@/lib/trails/queries'
 import { getNetworkLines } from '@/lib/trails/geometry'
@@ -134,20 +135,56 @@ export default async function ConditionsPage() {
   )
   const anyReported = reported.length + reportedLanes.length > 0
 
+
+  // The open feed described for search engines and dataset search (Google
+  // Dataset Search reads this), so people and tools can find and reuse it.
+  const datasetJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Dataset',
+    name: 'Path and bike lane conditions in Massachusetts',
+    description:
+      'After snow, how rail trails, river paths and protected bike lanes across Massachusetts are, from people who used them in the last day, with recent snow at each and who clears each trail. Updated every 10 minutes. No personal data.',
+    url: `${SITE_URL}/trails/conditions`,
+    license: 'https://creativecommons.org/licenses/by/4.0/',
+    isAccessibleForFree: true,
+    creator: { '@type': 'Organization', name: 'Green Streets Initiative', url: SITE_URL },
+    spatialCoverage: { '@type': 'Place', name: 'Massachusetts, United States' },
+    distribution: { '@type': 'DataDownload', encodingFormat: 'application/geo+json', contentUrl: `${SITE_URL}/trails/conditions.json` },
+  }
+
   return (
     <>
+      <JsonLd data={datasetJsonLd} />
       <Nav variant="light" />
       <main style={{ paddingTop: '60px' }} className="bg-cream">
         <section className="px-6 pb-20 pt-6 lg:px-8 lg:pb-24 lg:pt-10">
           <div className="mx-auto max-w-[1120px]">
             <p className="text-[0.9375rem]">
-              <Link href="/trails" className="font-semibold text-forest underline-offset-4 hover:underline">Trails and paths</Link>
+              <Link href="/trails" className="font-semibold text-forest underline-offset-4 hover:underline">Trails</Link>
             </p>
             <h1 className="mt-1 font-serif text-[clamp(2.25rem,5vw,3.5rem)] font-normal leading-[1.04] tracking-[-0.01em] text-navy">Path and bike lane conditions</h1>
             <p className="mt-2.5 flex max-w-[62ch] items-start gap-2 text-[1.0625rem] leading-[1.55] text-navy">
               {most && <Snowflake size={17} className="mt-[5px] shrink-0 text-ink-soft" aria-hidden />}
               <span>{lede}</span>
             </p>
+
+            {/* Jump links: the lists run about six phone screens (polish 2026-11-04). */}
+            <nav aria-label="Sections" className="-mx-6 mt-4 flex gap-2 overflow-x-auto px-6 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 [&::-webkit-scrollbar]:hidden">
+              {[
+                ...groups.filter((g) => g.rows.length > 0).map((g) => ({ href: `#w-${g.key}`, label: g.label, n: g.rows.length })),
+                ...(!failed && unknown.length > 0 ? [{ href: '#w-unknown', label: 'Not known yet', n: unknown.length }] : []),
+                ...(lanes.length > 0 ? [{ href: '#w-lanes', label: 'Bike lanes', n: null as number | null }] : []),
+              ].map((x) => (
+                <a
+                  key={x.href}
+                  href={x.href}
+                  className="inline-flex min-h-[44px] shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-navy/15 bg-white px-4 text-[0.9375rem] font-semibold text-navy transition-colors hover:border-navy/40"
+                >
+                  {x.label}
+                  {x.n != null && <span className="text-[0.875rem] font-medium text-ink-soft">{x.n}</span>}
+                </a>
+              ))}
+            </nav>
 
             {anyReported && <div className="mt-6 lg:hidden">{reportedList}</div>}
 
@@ -160,7 +197,7 @@ export default async function ConditionsPage() {
                 {anyReported && <div className="hidden lg:block">{reportedList}</div>}
 
                 {groups.filter((g) => g.rows.length > 0).map((g) => (
-                  <div key={g.key}>
+                  <div key={g.key} id={`w-${g.key}`} className="scroll-mt-24">
                     <h2 className="text-[1.125rem] font-semibold text-navy">{g.label} in winter</h2>
                     <ul className={`mt-2 ${card}`}>
                       {g.rows.map(({ t, c }) => (
@@ -179,25 +216,29 @@ export default async function ConditionsPage() {
                 ))}
 
                 {!failed && unknown.length > 0 && (
-                  <div>
+                  <div id="w-unknown" className="scroll-mt-24">
                     <h2 className="text-[1.125rem] font-semibold text-navy">Not known yet</h2>
-                    <p className="mt-1 text-[0.9375rem] leading-relaxed text-ink-soft">
-                      No town or agency says whether these are cleared:{' '}
-                      {unknown.map(({ t }, i) => (
-                        <span key={t.id}>
-                          <Link href={`/trails/${t.id}`} className="font-semibold text-forest underline-offset-4 hover:underline">{t.name}</Link>
-                          {i < unknown.length - 1 ? ', ' : '.'}
-                        </span>
+                    <p className="mt-1 text-[0.9375rem] leading-relaxed text-ink-soft">No town or agency says yet whether these are cleared.</p>
+                    <ul className="mt-2.5 flex flex-wrap gap-2">
+                      {unknown.map(({ t }) => (
+                        <li key={t.id}>
+                          <Link
+                            href={`/trails/${t.id}`}
+                            className="inline-flex min-h-[40px] items-center rounded-full bg-white px-3.5 text-[0.875rem] font-semibold text-navy ring-1 ring-navy/10 transition-colors hover:ring-navy/30"
+                          >
+                            {t.name}
+                          </Link>
+                        </li>
                       ))}
-                    </p>
+                    </ul>
                   </div>
                 )}
 
                 {lanes.length > 0 && (
-                  <div>
+                  <div id="w-lanes" className="scroll-mt-24">
                     <h2 className="text-[1.125rem] font-semibold text-navy">Protected bike lanes</h2>
                     <p className="mt-1 text-[0.9375rem] leading-relaxed text-ink-soft">
-                      The {laneMiles} miles of protected bike lanes on the state&rsquo;s bike map, in {laneTowns.length} {laneTowns.length === 1 ? 'town' : 'towns'}, are on the map in violet. After snow, people who bike them say how they were, and their reports show here for a day. Towns don&rsquo;t publish plowing plans lane by lane, so a lane without a report has nothing to show yet.
+                      {laneMiles} miles in {laneTowns.length} {laneTowns.length === 1 ? 'town' : 'towns'}, in violet on the map. After snow, reports from people who bike them show here for a day.
                     </p>
                   </div>
                 )}

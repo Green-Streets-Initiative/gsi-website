@@ -108,7 +108,7 @@ export async function GET() {
     L.push('## Trails')
     for (const t of trails) {
       const facts = [
-        t.full_miles ? `${Math.round(t.full_miles * 10) / 10} miles` : null,
+        t.full_miles ? `${Math.round(t.full_miles * 10) / 10} ${Math.round(t.full_miles * 10) / 10 === 1 ? 'mile' : 'miles'}` : null,
         t.from_label && t.to_label ? `${t.from_label} to ${t.to_label}` : t.towns.length > 0 ? t.towns.join(', ') : null,
       ]
         .filter(Boolean)

@@ -25,7 +25,7 @@ interface Answer {
 function clock(iso: string): string {
   // Schedule times arrive in Eastern time with an offset; read them as written.
   const [h, m] = iso.slice(11, 16).split(':').map(Number)
-  const suffix = h >= 12 ? 'pm' : 'am'
+  const suffix = h >= 12 ? 'PM' : 'AM'
   return `${h % 12 || 12}:${String(m).padStart(2, '0')} ${suffix}`
 }
 

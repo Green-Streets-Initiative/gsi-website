@@ -87,7 +87,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   if (!data) return { title: 'Trail not found' }
   const t = data.trail
   const pts = t.access_points
-  const title = searchTitle(t.name, t.full_miles, pts.some((p) => !!p.parking))
+  const title = searchTitle(t.name, t.full_miles, pts.some((p) => !!p.parking) || !!t.parking_note)
   const description = searchDescription(t.summary, t.name)
   return {
     title,
@@ -121,6 +121,31 @@ function searchDescription(summary: string | null, name: string): string {
   }
   out = out.trim() || summary.slice(0, 150).replace(/\s+\S*$/, '') + '…'
   return out.length + tail.length + 1 <= 160 ? `${out} ${tail}` : out
+}
+
+/**
+ * A long fact note as its first sentence, with the rest one tap away: the
+ * Getting there notes run 7 to 10 lines on a phone (polish 2026-11-04, one
+ * sentence per card). Plain <details>, so it works without JavaScript and
+ * the full text stays in the page for search.
+ */
+function Brief({ text }: { text: string }) {
+  const m = text.match(/^.+?[.!?](?=\s+[A-Z(])/)
+  const head = m ? m[0] : text
+  const rest = m ? text.slice(head.length).trim() : ''
+  if (!rest || head.length < 40) return <dd className="m-0 mt-1 text-[0.9375rem] leading-relaxed text-ink-soft">{text}</dd>
+  return (
+    <dd className="m-0 mt-1 text-[0.9375rem] leading-relaxed text-ink-soft">
+      {head}
+      <details className="group/more mt-1">
+        <summary className="inline-flex min-h-[32px] cursor-pointer list-none items-center text-[0.875rem] font-semibold text-forest [&::-webkit-details-marker]:hidden">
+          <span className="group-open/more:hidden">More</span>
+          <span className="hidden group-open/more:inline">Less</span>
+        </summary>
+        <p className="m-0">{rest}</p>
+      </details>
+    </dd>
+  )
 }
 
 function NoticeList({ items }: { items: TrailNotice[] }) {
@@ -458,7 +483,7 @@ export default async function TrailPage({ params }: { params: Promise<{ slug: st
                     rel="noopener noreferrer"
                     className={`inline-flex min-h-[48px] items-center justify-center gap-2 rounded-full px-6 text-[0.9375rem] font-semibold transition-colors ${tour ? 'bg-white text-navy ring-1 ring-navy/15 hover:bg-navy/[0.04]' : 'bg-navy text-white hover:bg-navy/90'}`}
                   >
-                    <Navigation size={16} aria-hidden /> {place(first.name).length <= 24 ? `Directions to ${place(first.name)}` : 'Directions to the trail'}
+                    <Navigation size={16} aria-hidden /> {place(first.name).length <= 18 ? `Directions to ${place(first.name)}` : 'Directions to the trail'}
                   </a>
                 )}
               </div>
@@ -541,14 +566,14 @@ export default async function TrailPage({ params }: { params: Promise<{ slug: st
                 {t.transit_note && (
                   <div className="bg-white px-5 py-4">
                     <dt className="flex items-center gap-2 text-[0.9375rem] font-semibold text-navy"><TrainFront size={15} className="text-forest" aria-hidden /> By transit</dt>
-                    <dd className="m-0 mt-1 text-[0.9375rem] leading-relaxed text-ink-soft">{t.transit_note}</dd>
+                    <Brief text={t.transit_note} />
                   </div>
                 )}
                 {(t.bike_share_note || dockGroups.length > 0) && (
                   <div className="bg-white px-5 py-4">
                     <dt className="flex items-center gap-2 text-[0.9375rem] font-semibold text-navy"><Bike size={15} className="text-forest" aria-hidden /> Bike share</dt>
                     {/* The live docks at each end say it better; the note is for trails with none nearby. */}
-                    {t.bike_share_note && dockGroups.length === 0 && <dd className="m-0 mt-1 text-[0.9375rem] leading-relaxed text-ink-soft">{t.bike_share_note}</dd>}
+                    {t.bike_share_note && dockGroups.length === 0 && <Brief text={t.bike_share_note} />}
                     {dockGroups.length > 0 && (
                       <dd className="m-0 mt-3 space-y-3">
                         {dockGroups.map((g) => (
@@ -573,7 +598,7 @@ export default async function TrailPage({ params }: { params: Promise<{ slug: st
                 {t.parking_note && (
                   <div className="bg-white px-5 py-4">
                     <dt className="flex items-center gap-2 text-[0.9375rem] font-semibold text-navy"><ParkingCircle size={15} className="text-forest" aria-hidden /> Parking</dt>
-                    <dd className="m-0 mt-1 text-[0.9375rem] leading-relaxed text-ink-soft">{t.parking_note}</dd>
+                    <Brief text={t.parking_note} />
                   </div>
                 )}
               </dl>
@@ -614,7 +639,7 @@ export default async function TrailPage({ params }: { params: Promise<{ slug: st
                     key={r.id}
                     className={`group relative flex flex-col overflow-hidden rounded-[16px] bg-white shadow-[0_1px_2px_rgba(25,26,46,0.05),0_0_0_1px_rgba(25,26,46,0.06)] ${href ? 'transition-shadow hover:shadow-[0_4px_14px_rgba(25,26,46,0.08),0_0_0_1px_rgba(25,26,46,0.08)]' : ''}`}
                   >
-                    {r.hero_image_url ? (
+                    {r.hero_image_url && r.hero_image_url !== photoUrl ? (
                       <div className="relative">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src={r.hero_image_url} alt="" className="aspect-[16/9] w-full object-cover" />
