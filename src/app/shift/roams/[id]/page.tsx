@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { notFound } from 'next/navigation'
+import { notFound, permanentRedirect } from 'next/navigation'
+import { getTourTrails } from '@/lib/trails/tours'
 import { Award, MapPin, Navigation, MapPinned, BadgeCheck, Ruler, Clock, Flag, Bike, ExternalLink, Users, ArrowRight } from 'lucide-react'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
@@ -67,8 +68,15 @@ function duration(min: number): string {
   return rest ? `about ${h} hr ${rest} min` : `about ${h} hr`
 }
 
+/** A roam that tours a whole trail lives on that trail's page now (Keith 2026-11-04). */
+async function forwardTour(id: string): Promise<void> {
+  const trail = (await getTourTrails()).get(decodeURIComponent(id))
+  if (trail) permanentRedirect(`/trails/${trail}`)
+}
+
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params
+  await forwardTour(id)
   const roam = await getRoamDetail(decodeURIComponent(id))
   if (!roam) return { title: 'Roam not found' }
   const dist = distancePhrase(roam.distance_miles)
@@ -153,6 +161,7 @@ function glance(roam: RoamDetail, isLoop: boolean, stops: number, bonus: number)
 
 export default async function RoamDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
+  await forwardTour(id)
   const roam = await getRoamDetail(decodeURIComponent(id))
   if (!roam) notFound()
 

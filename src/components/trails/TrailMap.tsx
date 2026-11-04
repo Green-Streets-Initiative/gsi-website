@@ -56,11 +56,19 @@ export default function TrailMap({ name, lines, points, closed = [], places = []
         if (lat > maxLat) maxLat = lat
       }
       const bounds: [LngLat, LngLat] = [[minLng, minLat], [maxLng, maxLat]]
+      // Room for the pins and place labels at the edges, as a share of the map's
+      // width: fixed 90/110 px sides left a phone-width map a third of its width,
+      // so a short path opened as a small line in a big map (Keith 2026-11-04).
+      const el = containerRef.current
+      const padding = () => {
+        const w = el.clientWidth || 360
+        return { top: 36, bottom: 36, left: Math.round(Math.min(90, w * 0.12)), right: Math.round(Math.min(110, w * 0.15)) }
+      }
       const map = new maplibregl.Map({
-        container: containerRef.current,
+        container: el,
         style: QUIET_STYLE,
         bounds,
-        fitBoundsOptions: { padding: { top: 40, bottom: 40, left: 90, right: 110 } },
+        fitBoundsOptions: { padding: padding() },
         attributionControl: false,
         cooperativeGestures: true,
       })
@@ -69,7 +77,7 @@ export default function TrailMap({ name, lines, points, closed = [], places = []
       mapRef.current = map
       const fit = () => {
         map.resize()
-        map.fitBounds(bounds, { padding: { top: 40, bottom: 40, left: 90, right: 110 }, maxZoom: 15, animate: false })
+        map.fitBounds(bounds, { padding: padding(), maxZoom: 15, animate: false })
       }
       requestAnimationFrame(fit)
 

@@ -242,15 +242,7 @@ export default function RoamKeepGoing({
                         >
                           {r.link_label ?? 'See the trail'} →
                         </Link>
-                        {r.linked_roam_id && (
-                          <Link
-                            href={`/shift/roams/${r.linked_roam_id}`}
-                            onClick={() => gaEvent('roam_keep_going_roam_link', { roam_id: roamId, to: r.linked_roam_id })}
-                            className="inline-flex min-h-[44px] items-center text-[0.9375rem] font-semibold text-forest underline-offset-4 hover:underline"
-                          >
-                            or ride it as a roam
-                          </Link>
-                        )}
+                        {/* No "or ride it as a roam": the linked trail's roam lives on its trail page now (2026-11-04). */}
                       </div>
                     )}
                     {!r.linked_trail_id && r.linked_roam_id && r.link_label && (

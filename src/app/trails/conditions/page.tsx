@@ -18,8 +18,6 @@ export const metadata: Metadata = {
   description:
     'After snow, how rail trails, river paths and protected bike lanes across Massachusetts are, from people who used them, and who clears the snow on each trail.',
   alternates: { canonical: `${SITE_URL}/trails/conditions` },
-  // Staged with /trails until launch.
-  robots: { index: false, follow: false },
 }
 
 function firstSentence(s: string): string {

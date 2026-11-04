@@ -20,6 +20,7 @@ import { getPathConditions } from '@/lib/trails/conditions'
 import { CLEARED_SHORT, CONDITION_COLOR, headline, isWintry, reportLine, snowLine, timeOf } from '@/lib/trails/conditionText'
 import { getBluebikesDocks } from '@/lib/server/bluebikes'
 import { withUtm } from '@/lib/utm'
+import { getTourTrails, roamHref } from '@/lib/trails/tours'
 
 // Ten minutes: path conditions after snow change through the morning.
 export const revalidate = 600
@@ -86,19 +87,40 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   if (!data) return { title: 'Trail not found' }
   const t = data.trail
   const pts = t.access_points
-  const span = pts.length > 1 && !isLoopLike(pts) ? ` from ${place(pts[0].name)} to ${place(pts[pts.length - 1].name)}` : t.towns.length > 0 ? ` in ${t.towns.join(', ')}` : ''
-  const len = t.full_miles ? miles(t.full_miles) : null
-  const title = `${t.name}: ${len ? `${len} ${len === '1' ? 'mile' : 'miles'}${span}` : t.kind ?? 'trail'}, where to get on and how to get there`
-  const description = t.summary ?? `${t.name}: length, surface, access points, parking and transit.`
+  const title = searchTitle(t.name, t.full_miles, pts.some((p) => !!p.parking))
+  const description = searchDescription(t.summary, t.name)
   return {
     title,
     description,
     alternates: { canonical: `${SITE_URL}/trails/${t.id}` },
-    // Staged until the roam page title test ends (2026-10-26); then these go
-    // into the sitemap and the trail-tour roam pages forward here.
-    robots: { index: false, follow: false },
     openGraph: { title, description, url: `${SITE_URL}/trails/${t.id}`, siteName: 'Green Streets Initiative', type: 'website' },
   }
+}
+
+/**
+ * The search title: the trail's name first, then what people look a trail up
+ * for (the map, parking, where to get on), kept near Google's ~60 characters.
+ * The length rides along in brackets only when it fits; the roam title test
+ * (exp-2026-09-5) found a distance in the title bought no clicks.
+ */
+function searchTitle(name: string, fullMiles: number | null, hasParking: boolean): string {
+  const what = hasParking ? 'map, parking and where to get on' : 'map and where to get on'
+  const withLen = fullMiles ? `${name} (${miles(fullMiles)} mi): ${what}` : null
+  return withLen && withLen.length <= 62 ? withLen : `${name}: ${what}`
+}
+
+/** The summary's opening sentences up to ~155 characters, then what only the page has. */
+function searchDescription(summary: string | null, name: string): string {
+  const tail = 'Map, places to get on, parking, transit and closures.'
+  if (!summary) return `${name}: ${tail.charAt(0).toLowerCase()}${tail.slice(1)}`
+  const sentences = summary.match(/[^.!?]+[.!?]+(\s|$)/g) ?? [summary]
+  let out = ''
+  for (const x of sentences) {
+    if ((out + x).trim().length > 155) break
+    out += x
+  }
+  out = out.trim() || summary.slice(0, 150).replace(/\s+\S*$/, '') + '…'
+  return out.length + tail.length + 1 <= 160 ? `${out} ${tail}` : out
 }
 
 function NoticeList({ items }: { items: TrailNotice[] }) {
@@ -148,6 +170,7 @@ export default async function TrailPage({ params }: { params: Promise<{ slug: st
   const data = await getTrail(decodeURIComponent(slug))
   if (!data) notFound()
   const { trail: t, disruptions, roams, keepGoing } = data
+  const tours = await getTourTrails()
 
   const pts = t.access_points
   const first = pts[0] ?? null
@@ -248,6 +271,46 @@ export default async function TrailPage({ params }: { params: Promise<{ slug: st
     ],
   }
 
+  // The trail as a place, for search engines and answer engines: where it is,
+  // how long, the surface, each place to get on (with parking), and when the
+  // facts were last checked. Everything here is on the page too.
+  const placeJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'WebPage',
+    url: `${SITE_URL}/trails/${t.id}`,
+    name: t.name,
+    ...(t.facts_checked_on ? { dateModified: t.facts_checked_on } : {}),
+    isPartOf: { '@type': 'WebSite', name: 'Green Streets Initiative', url: SITE_URL },
+    mainEntity: {
+      '@type': 'TouristAttraction',
+      name: t.name,
+      ...(t.aka.length > 0 ? { alternateName: t.aka } : {}),
+      ...(t.summary ? { description: t.summary } : {}),
+      ...(photoUrl ? { image: photoUrl } : {}),
+      isAccessibleForFree: true,
+      publicAccess: true,
+      ...(first ? { geo: { '@type': 'GeoCoordinates', latitude: first.lat, longitude: first.lng } } : {}),
+      ...(t.towns.length > 0
+        ? {
+            address: { '@type': 'PostalAddress', addressLocality: t.towns[0], addressRegion: 'MA', addressCountry: 'US' },
+            containedInPlace: t.towns.map((n) => ({ '@type': 'City', name: `${n}, Massachusetts` })),
+          }
+        : {}),
+      additionalProperty: [
+        t.full_miles ? { '@type': 'PropertyValue', name: 'Length', value: t.full_miles, unitCode: 'SMI' } : null,
+        t.surface ? { '@type': 'PropertyValue', name: 'Surface', value: t.surface } : null,
+        t.agency ? { '@type': 'PropertyValue', name: 'Managed by', value: t.agency } : null,
+      ].filter(Boolean),
+      ...([t.official_url, t.friends_url].filter(Boolean).length > 0 ? { sameAs: [t.official_url, t.friends_url].filter(Boolean) } : {}),
+      containsPlace: pts.map((p) => ({
+        '@type': 'Place',
+        name: p.name,
+        geo: { '@type': 'GeoCoordinates', latitude: p.lat, longitude: p.lng },
+        ...(p.parking ? { amenityFeature: { '@type': 'LocationFeatureSpecification', name: 'Parking', value: true, description: p.parking } } : {}),
+      })),
+    },
+  }
+
   const statusRow =
     disruptions.length > 0 ? null : t.notices.length > 0 ? (
       <a href="#notices" className="group flex min-h-[48px] items-center gap-3 rounded-[14px] bg-[#FFFAEB] px-4 py-2.5 text-[0.9375rem] text-navy ring-1 ring-[#8A6D1F]/20 transition-colors hover:bg-[#FFF4D6]">
@@ -275,6 +338,7 @@ export default async function TrailPage({ params }: { params: Promise<{ slug: st
     <>
       <Nav variant="light" />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(placeJsonLd) }} />
       <main style={{ paddingTop: '60px' }} className="bg-cream">
         {/* ── Overview: how long, what it's like, where to get on, is it open ── */}
         <section className="px-6 pt-5 lg:px-8 lg:pt-10">
@@ -381,7 +445,7 @@ export default async function TrailPage({ params }: { params: Promise<{ slug: st
               <div className="mt-5 flex flex-col gap-2.5 sm:flex-row sm:flex-wrap">
                 {tour ? (
                   <Link
-                    href={`/shift/roams/${tour.id}`}
+                    href="#roams"
                     className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-full bg-navy px-6 text-[0.9375rem] font-semibold text-white transition-colors hover:bg-navy/90"
                   >
                     {tour.mode === 'walk' ? 'Walk' : 'Ride'} it as a roam <ArrowRight size={16} aria-hidden />
@@ -540,10 +604,15 @@ export default async function TrailPage({ params }: { params: Promise<{ slug: st
                 A roam is a self-guided route with stops along the way. The free Shift app checks you in at each stop, and you unlock a badge at the end.
               </p>
               <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {[...(tour ? [tour] : []), ...otherRoams, ...connectRoams].map((r) => (
+                {[...(tour ? [tour] : []), ...otherRoams, ...connectRoams].map((r) => {
+                  // This trail's own tour roams live on this page (their roam pages forward
+                  // here), so their cards point at the app; a roam that tours another
+                  // trail goes to that trail's page.
+                  const href = tours.get(r.id) === t.id ? null : roamHref(r.id, tours)
+                  return (
                   <div
                     key={r.id}
-                    className="group relative flex flex-col overflow-hidden rounded-[16px] bg-white shadow-[0_1px_2px_rgba(25,26,46,0.05),0_0_0_1px_rgba(25,26,46,0.06)] transition-shadow hover:shadow-[0_4px_14px_rgba(25,26,46,0.08),0_0_0_1px_rgba(25,26,46,0.08)]"
+                    className={`group relative flex flex-col overflow-hidden rounded-[16px] bg-white shadow-[0_1px_2px_rgba(25,26,46,0.05),0_0_0_1px_rgba(25,26,46,0.06)] ${href ? 'transition-shadow hover:shadow-[0_4px_14px_rgba(25,26,46,0.08),0_0_0_1px_rgba(25,26,46,0.08)]' : ''}`}
                   >
                     {r.hero_image_url ? (
                       <div className="relative">
@@ -564,17 +633,22 @@ export default async function TrailPage({ params }: { params: Promise<{ slug: st
                         {r.is_tour ? 'The whole trail' : r.relation === 'connects' ? 'Starts nearby' : r.miles_on_trail ? `${miles(r.miles_on_trail)} mi on this trail` : 'Uses this trail'}
                       </p>
                       <h3 className="mt-0.5 text-[1.0625rem] font-semibold leading-snug text-navy">
-                        <Link href={`/shift/roams/${r.id}`} className="after:absolute after:inset-0 after:content-['']">{r.name}</Link>
+                        {href ? <Link href={href} className="after:absolute after:inset-0 after:content-['']">{r.name}</Link> : r.name}
                       </h3>
                       {r.hook && <p className="mt-1 line-clamp-2 text-[0.875rem] leading-relaxed text-ink-soft">{r.hook}</p>}
                       <p className="mt-auto flex items-center gap-3 pt-3 text-[0.8125rem] tabular-nums text-ink-soft">
                         {r.distance_miles ? <span className="inline-flex items-center gap-1"><Ruler size={12} aria-hidden /> {miles(r.distance_miles)} mi</span> : null}
                         {r.estimated_minutes ? <span className="inline-flex items-center gap-1"><Clock size={12} aria-hidden /> {duration(r.estimated_minutes)}</span> : null}
-                        <ArrowRight size={14} className="ml-auto text-forest transition-transform group-hover:translate-x-0.5" aria-hidden />
+                        {href ? (
+                          <ArrowRight size={14} className="ml-auto text-forest transition-transform group-hover:translate-x-0.5" aria-hidden />
+                        ) : (
+                          <span className="ml-auto font-semibold text-forest">In the Shift app</span>
+                        )}
                       </p>
                     </div>
                   </div>
-                ))}
+                  )
+                })}
               </div>
               <div className="mt-5 flex flex-col gap-4 rounded-[14px] border border-navy/10 bg-white px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
                 <p className="max-w-[52ch] text-[0.9375rem] text-navy">
