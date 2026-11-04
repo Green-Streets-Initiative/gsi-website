@@ -23,22 +23,22 @@ const ANDROID_URL = process.env.NEXT_PUBLIC_ANDROID_URL || ''
 const IS_LIVE = !!(IOS_URL && ANDROID_URL)
 
 export const metadata: Metadata = {
-  title: 'Shift — Move better. Every trip. | Green Streets Initiative',
-  description: 'Turn everyday trips into local perks, status, and friendly competition.',
+  title: 'Shift — Find better ways to get around | Green Streets Initiative',
+  description: 'Find better ways to get around Massachusetts, and get rewarded when you try them. A free app from Green Streets Initiative.',
   alternates: { canonical: 'https://www.gogreenstreets.org/shift' },
   openGraph: {
-    title: 'Shift — Move better. Every trip.',
-    description: 'Turn everyday trips into local perks, status, and friendly competition.',
+    title: 'Shift — Find better ways to get around',
+    description: 'Find better ways to get around Massachusetts, and get rewarded when you try them. A free app from Green Streets Initiative.',
     url: 'https://www.gogreenstreets.org/shift',
     siteName: 'Green Streets Initiative',
-    images: [{ url: '/og/shift-og.png', width: 1200, height: 630, alt: 'Shift by Green Streets Initiative — Move better. Every trip.' }],
+    images: [{ url: '/og/shift-og.png', width: 1200, height: 630, alt: 'Shift by Green Streets Initiative — Find better ways to get around.' }],
     locale: 'en_US',
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Shift — Move better. Every trip.',
-    description: 'Turn everyday trips into local perks, status, and friendly competition.',
+    title: 'Shift — Find better ways to get around',
+    description: 'Find better ways to get around Massachusetts, and get rewarded when you try them. A free app from Green Streets Initiative.',
     images: ['/og/shift-og.png'],
   },
 }
@@ -79,11 +79,11 @@ export default function ShiftPage() {
                 {CHEV} The Shift app &middot; now on iOS &amp; Android
               </span>
               <h1 className="mt-4 font-serif text-[clamp(44px,7.2vw,86px)] font-normal leading-[1.04] text-navy">
-                Move better.<br />
-                <em className="text-green-deep">Every trip.</em>
+                Find better ways<br />
+                <em className="text-green-deep">to get around.</em>
               </h1>
               <p className="mt-5 max-w-[46ch] text-[clamp(18px,1.6vw,21px)] leading-[1.6] text-navy">
-                Shift helps you make more of your trips on foot, by bike, and on transit, and turns each one into status, streaks, local perks, and a little friendly competition with your neighborhood.
+                Get rewarded when you try them. Shift shows when the next bus or train is coming, where the nearest bike share is and the calm way to ride, and it counts your trips on its own.
               </p>
 
               {IS_LIVE ? (

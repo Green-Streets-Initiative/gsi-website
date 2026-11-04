@@ -254,7 +254,7 @@ function InviteCard({ firstName, referralCode }: { firstName: string; referralCo
           Join me on Shift!
         </span>
         <span style={{ display: 'flex', color: 'rgba(255,255,255,0.85)', fontSize: 30, fontWeight: 400, marginTop: 20, textAlign: 'center', justifyContent: 'center', maxWidth: 1072 }}>
-          Track your walks, bike rides, and transit trips — and get rewarded for it.
+          Find better ways to get around. Get rewarded when you try them.
         </span>
 
         <div
