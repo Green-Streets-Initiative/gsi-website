@@ -1,4 +1,5 @@
 import { createServerSupabaseClient } from '@/lib/supabase-server'
+import { todayEt } from '@/lib/events-next'
 import { Resend } from 'resend'
 import { createHmac } from 'crypto'
 
@@ -179,6 +180,9 @@ export async function POST(req: Request) {
     )
     .eq('slug', slug)
     .eq('status', 'active')
+    // Same date window as the offer page and the table's public policy (00365).
+    .or(`valid_from.is.null,valid_from.lte.${todayEt()}`)
+    .or(`valid_through.is.null,valid_through.gte.${todayEt()}`)
     .maybeSingle()
 
   if (offerError || !offer) {

@@ -3,7 +3,7 @@ import 'server-only'
 import type { Metadata } from 'next'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import type { CommunityEvent, NextUp } from '@/lib/events'
-import { findNextUp } from '@/lib/events-next'
+import { findNextUp, todayEt } from '@/lib/events-next'
 import { buildEventTitle, buildEventDescription } from '@/lib/events-seo'
 import { SITE_URL } from '@/lib/seo'
 import { eventUrl } from '@/lib/events-url'
@@ -171,7 +171,7 @@ function bySoonest(a: CommunityEvent, b: CommunityEvent): number {
  */
 export async function loadEventsListing({ withCancelled = false }: { withCancelled?: boolean } = {}): Promise<CommunityEvent[]> {
   const supabase = createServerSupabaseClient()
-  const today = new Date().toISOString().slice(0, 10)
+  const today = todayEt()
 
   const [{ data }, cancelled] = await Promise.all([
     supabase
@@ -199,7 +199,7 @@ export async function loadOrganizerEvents(
   limit = 60,
 ): Promise<CommunityEvent[]> {
   const supabase = createServerSupabaseClient()
-  const today = new Date().toISOString().slice(0, 10)
+  const today = todayEt()
   let q = supabase
     .from('event_details')
     .select(LISTING_SELECT)
@@ -226,7 +226,7 @@ export async function loadOrganizerEvents(
 export async function countUpcomingEvents(): Promise<number | null> {
   try {
     const supabase = createServerSupabaseClient()
-    const today = new Date().toISOString().slice(0, 10)
+    const today = todayEt()
 
     const { count } = await supabase
       .from('event_details')

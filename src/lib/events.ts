@@ -315,12 +315,25 @@ export function todayKey(): string {
 // Built in event-calendar.ts, which the Node test runner can load on its own.
 export { buildIcs, gcalUrl } from './event-calendar'
 
+/** The way people most likely get to this event, for the Directions link.
+ *  Without a travel mode Google opens driving directions; the app asks walk,
+ *  bike or transit (Shift lib/event-directions.ts, parity map: maps-handoff).
+ *  Rides and bike repair open biking, walks open walking, the rest transit;
+ *  Google lets people switch from there. */
+export function directionsMode(ev: Pick<CommunityEvent, 'event_type' | 'ride_series_id'>): 'bicycling' | 'walking' | 'transit' {
+  const t = ev.event_type
+  if (t === 'walking_tour' || t === 'group_walk') return 'walking'
+  if (t === 'group_ride' || t === 'guided_ride' || t === 'bike_repair' || ev.ride_series_id) return 'bicycling'
+  return 'transit'
+}
+
 export function directionsUrl(ev: CommunityEvent): string {
+  const mode = `&travelmode=${directionsMode(ev)}`
   if (ev.location_lat && ev.location_lng) {
-    return `https://www.google.com/maps/dir/?api=1&destination=${ev.location_lat},${ev.location_lng}`
+    return `https://www.google.com/maps/dir/?api=1&destination=${ev.location_lat},${ev.location_lng}${mode}`
   }
   const q = [ev.location_name, ev.location_address].filter(Boolean).join(', ') + ', MA'
-  return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(q)}`
+  return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(q)}${mode}`
 }
 
 // Default reference location

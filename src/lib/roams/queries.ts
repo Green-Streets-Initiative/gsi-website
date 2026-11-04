@@ -1,5 +1,6 @@
 import 'server-only'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
+import { todayEt } from '@/lib/events-next'
 
 /**
  * Data layer for the public roam pages (/shift/roams). Strictly READ-ONLY —
@@ -176,7 +177,7 @@ export function normalizeRouteGeometry(raw: unknown): [number, number][] | null 
 
 export async function getActiveRoams(): Promise<RoamSummary[]> {
   const supabase = createServerSupabaseClient()
-  const today = new Date().toISOString().slice(0, 10)
+  const today = todayEt()
   const { data } = await supabase
     .from('roams')
     .select('id, name, mode, distance_miles, estimated_minutes, hook, tagline, hero_image_url, hero_image_attribution, hero_image_attribution_url, region, featured, completion_count, vibe_tags')
@@ -208,7 +209,7 @@ export async function getActiveRoams(): Promise<RoamSummary[]> {
 export async function getRoamDetail(id: string): Promise<RoamDetail | null> {
   const supabase = createServerSupabaseClient()
 
-  const today = new Date().toISOString().slice(0, 10)
+  const today = todayEt()
   const [roamRes, checkpointsRes, legsRes] = await Promise.all([
     supabase
       .from('roams')

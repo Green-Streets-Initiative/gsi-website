@@ -46,12 +46,18 @@ const CARGOB_HUBS: BorrowRentPoint[] = [
   { id: 'cargob-raymond', org: 'cargob', name: 'CargoB — Raymond St (Cambridge)', lat: 42.3883, lng: -71.1278, approximate: false, url: CARGOB_URL },
 ]
 
-/** Community Pedal Power's three pickup areas (free one-week e-bike loans;
- *  exact addresses shared at booking, so these mark the neighborhood). */
+/** Community Pedal Power's four pickup areas (free one-week e-bike loans;
+ *  exact addresses shared at booking, so these mark the neighborhood).
+ *  Checked against communitypedalpower.org/library 2026-10-12: Porter Sq
+ *  (Saturdays), Roslindale Village (Tuesdays), Newton Corner (Sat/Sun,
+ *  limited models), Brookline Hills (Tuesdays, limited models). South End
+ *  is no longer listed. Same list as the app's lib/nearby/borrow-rent.ts
+ *  (parity map twin): change both together. */
 const PEDAL_POWER_PICKUPS: BorrowRentPoint[] = [
   { id: 'cpp-porter', org: 'pedal_power', name: 'Community Pedal Power — near Porter Sq (Saturdays)', lat: 42.3884, lng: -71.1191, approximate: true, url: PEDAL_POWER_URL },
   { id: 'cpp-roslindale', org: 'pedal_power', name: 'Community Pedal Power — Roslindale Village (Tuesdays)', lat: 42.2871, lng: -71.1305, approximate: true, url: PEDAL_POWER_URL },
-  { id: 'cpp-southend', org: 'pedal_power', name: 'Community Pedal Power — South End (Blackstone Sq)', lat: 42.3396, lng: -71.0723, approximate: true, url: PEDAL_POWER_URL },
+  { id: 'cpp-newton-corner', org: 'pedal_power', name: 'Community Pedal Power — Newton Corner (weekends)', lat: 42.3529, lng: -71.1866, approximate: true, url: PEDAL_POWER_URL },
+  { id: 'cpp-brookline-hills', org: 'pedal_power', name: 'Community Pedal Power — Brookline Hills (Tuesdays)', lat: 42.3313, lng: -71.127, approximate: true, url: PEDAL_POWER_URL },
 ]
 
 const RADIUS_MILES = 2
