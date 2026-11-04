@@ -152,7 +152,7 @@ export default function TrailMap({ name, lines, points, closed = [], places = []
       points.forEach((p, i) => {
         const el = document.createElement('div')
         el.style.cssText =
-          'position:relative;width:26px;height:26px;border-radius:50%;background:#191A2E;border:2px solid #FFFFFF;display:flex;align-items:center;justify-content:center;font:700 12px system-ui;color:#FFFFFF;box-shadow:0 1px 4px rgba(25,26,46,0.35);cursor:pointer'
+          'width:26px;height:26px;border-radius:50%;background:#191A2E;border:2px solid #FFFFFF;display:flex;align-items:center;justify-content:center;font:700 12px system-ui;color:#FFFFFF;box-shadow:0 1px 4px rgba(25,26,46,0.35);cursor:pointer'
         el.textContent = String(i + 1)
         el.setAttribute('aria-label', `${i + 1}. ${p.name}${p.parking ? ', parking' : ''}`)
         if (p.parking) {
