@@ -169,7 +169,7 @@
     },
     {
       "id": "t-closures-adgroup",
-      "status": "LIVE 2026-10-17, read after the Oct 31 Green Line closure 10-21: 2 impressions so far. Has only 1 RSA, which breaks the 2-ads-per-ad-group rule; weekly item 1 adds a second. 10-28 weekly: still 1 RSA, 2 impressions MTD; recommended again as item 1 (draft headlines in the 10-28 report).",
+      "status": "LIVE 2026-10-17, read after the Oct 31 Green Line closure 10-21: 2 impressions so far. Has only 1 RSA, which breaks the 2-ads-per-ad-group rule; weekly item 1 adds a second. 10-28 weekly: still 1 RSA, 2 impressions MTD; recommended again as item 1 (draft headlines in the 10-28 report). 11-04 weekly: still 1 RSA (third week failing), 1 impression Nov MTD; recommended as item 2 with new draft headlines before the Nov 7 Green Line closure.",
       "what": "Check impressions/CTR/search terms of How-to Guides > T closures after the Oct 31 and Nov 7 Green Line suspensions. Pause any keyword under 5% CTR after 300 impressions. Consider a conversion for guide_tool_used (trip planner use) if volume is real."
     },
     {
@@ -177,7 +177,7 @@
       "added": "2026-11-01",
       "from": "Keith (via the Social Lead's W45 review)",
       "what": "Keith asked this routine to analyze what to do with the 'New Routes — Movers' campaign. Context: Keith dropped the weekly organic New Routes social post on 11-01 ('Unless we plan to run paid ads with that post, I'd be comfortable skipping that post'). Reddit (ended Oct 19, 1 join) and Meta (ended Oct 20) are over, so Movers is the only paid line for New Routes. October: 30 impressions, 0 clicks (from the Social Lead's survey; re-read it live). New Routes offer: new Shift members, code NEWROUTES at sign-up, 10 auto-detected active trips in 30 days unlocks $15, cap 200, ends Dec 15; 6 sign-ups in the last 30 days (personas.md). The Housing /move-in page shows the $15 offer while New Routes runs. Decide and recommend one of: (a) keep as is, (b) rework (keywords movers actually search, landing page, e.g. /move-in or town pages), (c) pause and move its share of the grant to campaigns that win clicks, (d) pair it with a dated organic social post if a rework is worth testing. Show the numbers behind the call (impressions, clicks, search terms, keyword eligibility, CTR effect on the account's 5% floor) and the cost of each option. Weigh the account's CTR floor: a near-zero-click campaign drags account CTR down only if it gets impressions. If the call is (d), say so and the Social Lead will add a post the week the change goes live.",
-      "status": "OPEN: first look in the 2026-11-04 weekly review; recommend as an item with 'do ad grants item N'."
+      "status": "RECOMMENDED 2026-11-04 weekly as item 3: option (c) pause the campaign, no social post. Numbers: Oct 30 impr / 0 clicks; Nov 1-4 0 impr; script rolling 30d 17 impr / 0 clicks; kill condition met 10-27; mover searches < 150/mo MA. CTR effect: October 8.77% with Movers vs 8.84% without (negligible). Options costed in the report: (a) keep, free, no effect; (b) rework toward /move-in, ~1 hour, best case a handful of clicks before the offer ends Dec 15; (c) pause, 2 minutes; (d) rework + dated social post, not worth it at this volume. Waiting on Keith's 'do ad grants item 3'."
     },
     {
       "id": "calendar-local-events",
@@ -191,7 +191,7 @@
       "added": "2026-11-03",
       "from": "Launch venue-parking (Shift docs/programs/launches/venue-parking/plan.md), Keith approved 2026-11-02",
       "what": "Campaign 'Venue Parking' (24426572849): TD Garden, Fenway Park and Gillette Stadium ad groups -> /parking/<venue>, judged on venue_trip_planned (Primary, Engagement). Kill rules: pause any ad group under 5% CTR after 300 impressions; pause the campaign the same day if the account's month-to-date CTR falls under 6.5%; never undo a change younger than 14 days.",
-      "status": "BUILT 2026-11-03, serves from Wed 2026-11-04 at $25/day. Paid desk Wed Nov 11 (handoff h-launch-20261102-vp-ads): read search terms, add negatives (consider 'tickets' only if ticket-buyer searches show up), raise to $50/day if every ad group is >= 5% after 300 impressions, else pause the ones under. Check the six ads read 'Eligible' (policy review) once the campaign starts."
+      "status": "BUILT 2026-11-03, serves from Wed 2026-11-04 at $25/day. Paid desk Wed Nov 11 (handoff h-launch-20261102-vp-ads): read search terms, add negatives (consider 'tickets' only if ticket-buyer searches show up), raise to $50/day if every ad group is >= 5% after 300 impressions, else pause the ones under. Check the six ads read 'Eligible' (policy review) once the campaign starts. 11-04 weekly: started, 'Eligible (Learning)', 9 impr / 0 clicks on day one; all 6 ads Eligible (3 pinned Ad 1s rated Poor, expected); 16 keywords eligible; venue_trip_planned Awaiting conversions."
     }
   ],
   "pulse_log": [
@@ -2221,6 +2221,110 @@
       "not_recommended": "Semester (1 impr) and New Routes (30 impr, 0 clicks) met their kill conditions at their 10-28 / 10-27 judging dates; no account change recommended (they cost nothing). 10-28 bike lessons groups and the 'bike trails near me' pause are under 14 days; untouched. Trails keywords wait on /trails shipping (Keith's 10-28 plan).",
       "emailed": true,
       "verdict": "Act this week (one small rule fix): October 8.75% (303/3,464), 31 conversions; fail: T closures ad group still has 1 ad."
+    },
+    {
+      "date": "2026-11-04",
+      "source": "scheduled weekly run: live account via Claude in Chrome (authuser=walkrideday%40gmail.com resolved to 5; This month = Nov 1-4; campaigns, all 260 keywords across 3 pages, all 47 ads, conversions/all, search terms at /aw/keywords/searchterms sorted by impressions) + 11-04 script email (rolling 30d: 4,491 impr, 401 clicks, 8.9%, $1,760.37, 42 conv; warnings: Town 5.0%, Venue Parking 0 impr, QS 2 on 'walking trails quincy') + GSC weekly-2026-10-30.",
+      "window": "2026-11-01..2026-11-04",
+      "impressions": 684,
+      "clicks": 59,
+      "ctr_pct": 8.63,
+      "cost": 179.86,
+      "conversions": 4,
+      "avg_cpc": 3.05,
+      "rolling_30d_script": { "impressions": 4491, "clicks": 401, "ctr_pct": 8.9, "cost": 1760.37, "conversions": 42 },
+      "october_close": "not re-read; last read Oct 30: 326 clicks / 3,716 impr (8.77%), 34 conv. October passes 5% and 1-conversion rules.",
+      "by_campaign": {
+        "How-to Guides": { "impressions": 621, "clicks": 56, "cost": 142.61, "conversions": 4 },
+        "Town Walking & Biking": { "impressions": 50, "clicks": 3, "cost": 37.25, "conversions": 0 },
+        "Venue Parking": { "impressions": 9, "clicks": 0, "cost": 0, "conversions": 0, "note": "started 11-04, Eligible (Learning)" },
+        "Shift App — Massachusetts": { "impressions": 4, "clicks": 0, "cost": 0, "conversions": 0 },
+        "GSI — Brand": { "impressions": 0, "clicks": 0, "cost": 0, "conversions": 0 },
+        "New Routes — Movers": { "impressions": 0, "clicks": 0, "cost": 0, "conversions": 0 },
+        "Shift Your Semester — Students": { "impressions": 0, "clicks": 0, "cost": 0, "conversions": 0 }
+      },
+      "keywords": {
+        "total": 260,
+        "status": "195 eligible, 59 low search volume, 5 paused, 1 Eligible (Limited) Rarely shown (low Quality Score)",
+        "match": "185 broad, 73 phrase, 2 exact",
+        "single_word": ["\"gogreenstreets\" (brand, allowed)"],
+        "low_quality_score": ["walking trails quincy (Town Walking & Biking / Town routes, broad, QS 2 per script email, ENABLED, 0 impr Nov) -> /shift/towns/quincy-ma"],
+        "paused_list": [
+          "biking in worcester (Town, QS 1)",
+          "boston bike paths (Town, QS<3)",
+          "biking in boston (Town, QS 1)",
+          "biking in boston (New Routes)",
+          "bike trails near me (Town, QS 2)"
+        ]
+      },
+      "ads": {
+        "total": 47,
+        "ad_groups": 24,
+        "all_eligible": true,
+        "disapproved_seen": 0,
+        "limited_by_policy": 0,
+        "strength": "28 Average, 12 Good, 1 Excellent, 6 Poor",
+        "poor": [
+          "Venue Parking: TD Garden, Fenway Park, Gillette Stadium Ad 1s (pinned; expected)",
+          "How-to Guides / Paying for the T: How to Pay for the T | MBTA Fares, Explained (strong performer; leave)",
+          "Town Walking & Biking / Walk and bike to school: Walking School Bus Ideas",
+          "Shift App — Massachusetts / Active challenges: Walk More, Win More (0 impr; new to the Poor list)"
+        ],
+        "under_two_ads": ["How-to Guides / T closures (1 RSA since 10-17; third week failing)"]
+      },
+      "sitelinks": 16,
+      "sitelinks_source": "script email",
+      "campaign_status": "How-to Guides and Brand 'Eligible (Limited) Limited by search volume'; Venue Parking 'Eligible (Learning)'; others Eligible; all Maximize conversions. Account budget $474.50/day.",
+      "conversion_tracking_status": "cheat_sheet_download Active (2 Nov); shift_store_click Active (2 Nov); newsletter_signup, event_register_click, event_calendar_save, venue_trip_planned Awaiting conversions; donate_page_view not in goals. free_lesson_code_requested not yet imported.",
+      "account_banners": [
+        "Apply for healthcare certification (since 10-30; do not apply)",
+        "Protect your account from unauthorized activity",
+        "Recommendation card: Add broad match keywords (not applied)"
+      ],
+      "brand_search_gsc_week": {
+        "range": "2026-10-24..2026-10-30",
+        "impressions": 10,
+        "clicks": 3,
+        "note": "green streets initiative 7/3 (pos 1), green streets 2/0, go shift app 1/0; lower bound (file stores top queries only)"
+      },
+      "month_end_math": "8.63% on 684 impr after 4 days. Pace ~171 impr/day -> ~5,100 for November; 5% needs ~257 clicks, on course for ~440. With zero further clicks the account stays >= 5% until ~1,180 impressions. October passed, so no two-month risk.",
+      "grant_utilization": "$179.86 of $10,000 (~1.8%) through Nov 4",
+      "search_terms": [
+        { "term": "boston public transportation", "impressions": 14, "clicks": 2, "conversions": 0 },
+        { "term": "charliecard", "impressions": 16, "clicks": 4, "conversions": 1 },
+        { "term": "charlie card", "impressions": 9, "clicks": 0, "conversions": 0 },
+        { "term": "mbta monthly pass", "impressions": 9, "clicks": 2, "conversions": 0 },
+        { "term": "boston transit", "impressions": 8, "clicks": 0, "conversions": 0 },
+        { "term": "the t boston", "impressions": 7, "clicks": 1, "conversions": 0 },
+        { "term": "mbta passes", "impressions": 7, "clicks": 1, "conversions": 0 },
+        { "term": "public transportation in boston", "impressions": 6, "clicks": 1, "conversions": 0 },
+        { "term": "public transportation boston", "impressions": 5, "clicks": 0, "conversions": 0 },
+        { "term": "boston mass transit", "impressions": 4, "clicks": 1, "conversions": 0 },
+        { "term": "boston metro", "impressions": 4, "clicks": 1, "conversions": 0 },
+        { "term": "boston t", "impressions": 4, "clicks": 0, "conversions": 0 },
+        { "term": "boston train system", "impressions": 4, "clicks": 0, "conversions": 0 },
+        { "term": "how much is the commuter rail in boston", "impressions": 4, "clicks": 0, "conversions": 0 },
+        { "term": "boston mbta fares", "impressions": 4, "clicks": 2, "conversions": 0 },
+        { "term": "how to pay for public transport in boston", "impressions": 4, "clicks": 0, "conversions": 0 },
+        { "term": "how to use boston public transportation", "impressions": 3, "clicks": 0, "conversions": 0 },
+        { "term": "보스턴 지하철", "impressions": 3, "clicks": 0, "conversions": 0 },
+        { "term": "boston t fares", "impressions": 3, "clicks": 1, "conversions": 0 },
+        { "term": "how to buy tickets for the t in boston", "impressions": 3, "clicks": 0, "conversions": 0 },
+        { "term": "how to pay for commuter rail mbta", "impressions": 3, "clicks": 0, "conversions": 0 },
+        { "term": "mbta fares", "impressions": 3, "clicks": 2, "conversions": 0 },
+        { "term": "boston commuter rail ticket", "impressions": 2, "clicks": 1, "conversions": 0 },
+        { "term": "boston mbta", "impressions": 2, "clicks": 1, "conversions": 0 },
+        { "term": "boston metro fare", "impressions": 2, "clicks": 1, "conversions": 1 }
+      ],
+      "search_terms_note": "195 terms Nov 1-4. 'charliecard' merged from phrase-close-variant (9/2/1) and broad (7/2/0); 'mbta monthly pass' merged from two rows (6/2/0 + 3/0/0). All top 30 are How-to Guides / Paying for the T transit and fare lookups (one Korean 'Boston subway' query, on-topic). No negatives proposed.",
+      "recommended": [
+        "1 pause 'walking trails quincy' (QS 2, enabled, 0 impr)",
+        "2 add a second RSA to How-to Guides / T closures (third week at 1 ad; Green Line closure Nov 7); draft headlines in the report",
+        "3 pause New Routes — Movers (Keith's requested call: option c)"
+      ],
+      "not_recommended": "Fares and passes ad group and events sitelink still open from earlier weeks (in the report note, not numbered). Venue Parking (11-03) and bike lessons (10-28) under 14 days; untouched. Town 5.0% (script warning) is not a grant breach.",
+      "emailed": true,
+      "verdict": "Act this week (two small rule fixes): November MTD 8.63% (59/684), 4 conversions; fail: QS 2 keyword 'walking trails quincy' enabled; T closures ad group still has 1 ad."
     }
   ]
 }

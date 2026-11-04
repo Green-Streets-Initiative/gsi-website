@@ -1,0 +1,9 @@
+Act this week: two small grant-rule fixes (about 10 minutes). November click rate is 8.6% (59 clicks on 684 impressions), well above the 5% floor, with 4 conversions.
+
+1. Pause "walking trails quincy": quality score 2, which the grant forbids (0 impressions, so no loss). Say "do ad grants item 1".
+2. Add a second ad to T closures: still 1 ad, third week failing; the Green Line closure is Nov 7. Say "do ad grants item 2".
+3. Pause New Routes, Movers: 30 impressions and 0 clicks in October, 0 in November; mover searches are too rare to rework. Say "do ad grants item 3".
+
+Venue Parking started today: 9 impressions, all 6 ads approved.
+
+Full report: https://claude.ai/artifact/UuoYJsktAySt3HY5KinrbF
