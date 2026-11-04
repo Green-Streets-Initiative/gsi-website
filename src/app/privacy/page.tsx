@@ -18,7 +18,7 @@ export default function PrivacyPage() {
             Privacy Policy
           </h1>
           <p className="mt-4 text-[15px] text-ink-soft">
-            Shift by Green Streets Initiative &middot; Last updated October 2026
+            Shift by Green Streets Initiative &middot; Last updated November 2026
           </p>
           <p className="mt-1 text-[15px] text-ink-soft">
             Contact: <a href="mailto:info@gogreenstreets.org" className="font-semibold text-forest underline-offset-4 hover:underline">info@gogreenstreets.org</a>
@@ -304,6 +304,44 @@ export default function PrivacyPage() {
                 Saved locations are deleted when you delete your account, subject to ordinary
                 backup cycles, legal obligations, security needs, or other limited retention
                 permitted by applicable law.
+              </P>
+            </Section>
+
+            <Section title="Finding Someone to Go With">
+              <P>
+                If you sign up to go with someone who knows the way, to show someone the way, to
+                find someone to walk with, or to find a carpool partner, we use your saved Home and
+                Work (or the trip you tell us about), the times you give us and your recent trips
+                between those places to suggest people who make a similar trip. We use your Home
+                only to find people near you: we never show your address to anyone. We only do
+                this after you sign up, and you can stop at any time.
+              </P>
+              <P>
+                Before you both say yes, the other person sees your first name, how far apart your
+                trips start and end, the ways you get around and the one you use most, your usual
+                days and times, the languages you said you speak, when you joined Shift, your Shift
+                status, and any workplace, school or neighborhood group you both belong to. If your profile is public, they also see
+                your profile photo. If you offered to show the way, they see how many trips you
+                made that way recently. For a carpool, they see whether you&apos;d drive or ride
+                along, when you get to work, and how many extra minutes picking up and dropping
+                off would add to the drive. They never see your address. Only if you both say yes
+                do you each see the other&apos;s email and, if you belong to a workplace in Shift,
+                its name.
+              </P>
+              <P>
+                When you plan a first trip with someone who is showing you the way, Shift suggests
+                public places to meet and to finish, like the nearest T station, so neither of you
+                has to share a home or work address.
+              </P>
+              <P>
+                To help people find each other, Shift may tell someone nearby who makes a similar
+                trip how many people near them asked to be shown the way, or offered to show it.
+                That message is a number only: it never includes your name, photo or where you
+                live.
+              </P>
+              <P>
+                Your feedback after a trip and any problem you report go only to the Green Streets
+                team. Employers never see who signed up or who was matched.
               </P>
             </Section>
 

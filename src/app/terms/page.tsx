@@ -18,7 +18,7 @@ export default function TermsPage() {
             Terms of Service
           </h1>
           <p className="mt-4 text-[15px] text-ink-soft">
-            Shift by Green Streets Initiative &middot; Last updated October 2026
+            Shift by Green Streets Initiative &middot; Last updated November 2026
           </p>
           <p className="mt-1 text-[15px] text-ink-soft">
             Contact: <a href="mailto:info@gogreenstreets.org" className="font-semibold text-forest underline-offset-4 hover:underline">info@gogreenstreets.org</a>
@@ -373,6 +373,34 @@ export default function TermsPage() {
               <P>
                 GSI may remove you from a school, employer, or other group if we determine that
                 you are not eligible or authorized to participate in that group.
+              </P>
+            </Section>
+
+            <Section title="Meeting Other People Through Shift">
+              <P>
+                Shift can suggest other people who make a trip like yours: someone who already bikes
+                or takes transit on that trip and can show you the way, someone who would like you
+                to show them, someone near you to walk with, or someone who lives near you and works
+                near your work and could share the drive. You only see each other&apos;s email if
+                you both say yes.
+              </P>
+              <P>
+                These features are for people 18 and older. GSI introduces people; it does not
+                check, screen, train, supervise, or employ anyone you meet through Shift, and people
+                who offer to show the way are not GSI staff, volunteers, or agents. Any trip you
+                take with someone you meet through Shift is arranged by the two of you, and you
+                take it on your own and at your own risk.
+              </P>
+              <P>
+                To the fullest extent permitted by law, you release GSI from any claim arising from
+                a meeting or trip with someone you met through Shift, and GSI is not liable for the
+                conduct of any user, on or off Shift.
+              </P>
+              <P>
+                Meet somewhere public the first time, and tell someone where you are going. If
+                something goes wrong, use &ldquo;Something wrong?&rdquo; in Your matches to end the
+                match or report it, or write to info@gogreenstreets.org. GSI may pause or remove
+                anyone from these features at any time. If you are in danger, call 911.
               </P>
             </Section>
 
