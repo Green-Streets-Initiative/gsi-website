@@ -2,6 +2,8 @@ import type { MetadataRoute } from 'next'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { getQualifyingTowns } from '@/lib/towns/queries'
 import { getActiveRoams } from '@/lib/roams/queries'
+import { getTrails } from '@/lib/trails/queries'
+import { getTourTrails } from '@/lib/trails/tours'
 import { SCHOOLS } from '@/lib/semester/schools'
 import { loadEventsListing } from '@/app/events/_lib/load'
 import { listQualifiedHosts, hostPath } from '@/lib/hosts'
@@ -89,15 +91,37 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }
 
   // Roam pages — evergreen curated routes.
+  // A roam that tours a whole trail forwards to its trail page (2026-11-04),
+  // so the trail page is listed instead.
   let roamEntries: MetadataRoute.Sitemap = []
   try {
-    const roams = await getActiveRoams()
-    roamEntries = roams.map((r) => ({
+    const [roams, tours] = await Promise.all([getActiveRoams(), getTourTrails()])
+    roamEntries = roams.filter((r) => !tours.has(r.id)).map((r) => ({
       url: `${SITE_URL}/shift/roams/${encodeURIComponent(r.id)}`,
       lastModified: now,
       changeFrequency: 'monthly' as const,
       priority: 0.7,
     }))
+  } catch {
+    // DB unreachable — ship the rest.
+  }
+
+  // Trail pages (launched 2026-11-04): the index, the snow conditions map, each trail.
+  let trailEntries: MetadataRoute.Sitemap = []
+  try {
+    const trails = await getTrails()
+    if (trails.length > 0) {
+      trailEntries = [
+        { url: `${SITE_URL}/trails`, lastModified: now, changeFrequency: 'weekly' as const, priority: 0.8 },
+        { url: `${SITE_URL}/trails/conditions`, lastModified: now, changeFrequency: 'daily' as const, priority: 0.6 },
+        ...trails.map((t) => ({
+          url: `${SITE_URL}/trails/${t.id}`,
+          lastModified: now,
+          changeFrequency: 'weekly' as const,
+          priority: 0.8,
+        })),
+      ]
+    }
   } catch {
     // DB unreachable — ship the rest.
   }
@@ -195,6 +219,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...staticEntries,
     ...townEntries,
     ...roamEntries,
+    ...trailEntries,
     ...guideEntries,
     ...schoolEntries,
     ...eventEntries,

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { notFound } from 'next/navigation'
+import { notFound, permanentRedirect } from 'next/navigation'
+import { getTourTrails } from '@/lib/trails/tours'
 import { Award, MapPin, Navigation, MapPinned, BadgeCheck, Ruler, Clock, Flag, Bike, ExternalLink, Users, ArrowRight } from 'lucide-react'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
@@ -67,8 +68,15 @@ function duration(min: number): string {
   return rest ? `about ${h} hr ${rest} min` : `about ${h} hr`
 }
 
+/** A roam that tours a whole trail lives on that trail's page now (Keith 2026-11-04). */
+async function forwardTour(id: string): Promise<void> {
+  const trail = (await getTourTrails()).get(decodeURIComponent(id))
+  if (trail) permanentRedirect(`/trails/${trail}`)
+}
+
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params
+  await forwardTour(id)
   const roam = await getRoamDetail(decodeURIComponent(id))
   if (!roam) return { title: 'Roam not found' }
   const dist = distancePhrase(roam.distance_miles)
@@ -153,6 +161,7 @@ function glance(roam: RoamDetail, isLoop: boolean, stops: number, bonus: number)
 
 export default async function RoamDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
+  await forwardTour(id)
   const roam = await getRoamDetail(decodeURIComponent(id))
   if (!roam) notFound()
 
@@ -418,10 +427,10 @@ export default async function RoamDetailPage({ params }: { params: Promise<{ id:
                 <p className="mt-3 flex flex-wrap items-center gap-2 text-[0.875rem]">
                   <span className="text-ink-soft">On this route:</span>
                   {trailsUsed.map((x) => (
-                    <span key={x.id} className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 font-semibold ${x.closed ? 'bg-[#FFF4EC] text-[#9A3412]' : 'bg-forest/[0.08] text-forest'}`}>
+                    <Link key={x.id} href={`/trails/${x.id}`} className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 font-semibold underline-offset-4 hover:underline ${x.closed ? 'bg-[#FFF4EC] text-[#9A3412]' : 'bg-forest/[0.08] text-forest'}`}>
                       {x.name}
                       {x.miles != null ? <span className="font-medium opacity-80">· {miles(Number(x.miles))} mi</span> : null}
-                    </span>
+                    </Link>
                   ))}
                 </p>
               )}
@@ -478,10 +487,10 @@ export default async function RoamDetailPage({ params }: { params: Promise<{ id:
                     <p className="mt-4 flex flex-wrap items-center gap-2 text-[0.875rem]">
                       <span className="text-ink-soft">Connects to:</span>
                       {trailsConnect.map((x) => (
-                        <span key={x.id} className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 font-semibold ${x.closed ? 'bg-[#FFF4EC] text-[#9A3412]' : 'bg-forest/[0.08] text-forest'}`}>
+                        <Link key={x.id} href={`/trails/${x.id}`} className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 font-semibold underline-offset-4 hover:underline ${x.closed ? 'bg-[#FFF4EC] text-[#9A3412]' : 'bg-forest/[0.08] text-forest'}`}>
                           {x.name}
                           {x.closed ? <span className="font-medium">· closed</span> : null}
-                        </span>
+                        </Link>
                       ))}
                     </p>
                   )}

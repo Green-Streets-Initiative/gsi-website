@@ -5,23 +5,26 @@ import Footer from '@/components/Footer'
 import RoamCard from '@/components/roams/RoamCard'
 import RoamHubFilters from '@/components/roams/RoamHubFilters'
 import JsonLd from '@/components/JsonLd'
+import Link from 'next/link'
+import { ArrowRight } from 'lucide-react'
 import { getRoamsInSeason, getUpcomingRoamEvents } from '@/lib/roams/queries'
+import { getTourTrails, roamHref } from '@/lib/trails/tours'
 
 export const revalidate = 3600
 
 const SITE_URL = 'https://www.gogreenstreets.org'
 
-// The hub's search title names what people search for (bike paths, rail
-// trails, walking loops), not the product. It had ~0 impressions under
-// "Shift Roams — Self-Guided ..." while the Roam pages themselves get clicked.
-// Experiment exp-2026-10-4 (seo/reports/2026-11-01.md, item 2).
-const SEARCH_TITLE = 'Bike paths, rail trails and walking loops around Boston'
+// /trails owns the general trail searches ("bike paths boston", "rail
+// trails massachusetts") since the trail pages launched (Keith 2026-11-04),
+// so this hub is titled for what a roam is: a self-guided route in the app.
+// exp-2026-10-4 (the bike-paths title here) was withdrawn for it.
+const SEARCH_TITLE = 'Self-guided bike rides, walks and day trips around Boston'
 
 const roamsOnce = cache(getRoamsInSeason)
 
 export async function generateMetadata(): Promise<Metadata> {
   const roams = await roamsOnce()
-  const description = `${roams.length} mapped bike paths, rail trails, walks and transit day trips around Boston and across Massachusetts, each with its distance, time and stops. Follow any of them in the free Shift app.`
+  const description = `${roams.length} self-guided rides, walks and transit day trips around Boston and across Massachusetts, each with its distance, time and stops. Follow any of them in the free Shift app.`
   return {
     title: SEARCH_TITLE,
     description,
@@ -45,7 +48,7 @@ const GROUPS = [
 ] as const
 
 export default async function RoamsIndexPage() {
-  const [roams, upcoming] = await Promise.all([roamsOnce(), getUpcomingRoamEvents()])
+  const [roams, upcoming, tours] = await Promise.all([roamsOnce(), getUpcomingRoamEvents(), getTourTrails()])
   const known = new Set<string>(GROUPS.flatMap((g) => [...g.modes]))
   const groups = GROUPS.map((g, i) => ({
     ...g,
@@ -64,7 +67,7 @@ export default async function RoamsIndexPage() {
       '@type': 'ListItem',
       position: i + 1,
       name: r.name,
-      url: `${SITE_URL}/shift/roams/${encodeURIComponent(r.id)}`,
+      url: `${SITE_URL}${roamHref(r.id, tours)}`,
     })),
   }
 
@@ -87,6 +90,12 @@ export default async function RoamsIndexPage() {
               the free Shift app, which checks you in at each stop. Finish the route to unlock its
               badge.
             </p>
+            <Link
+              href="/trails"
+              className="mt-4 inline-flex items-center gap-1.5 text-[0.9375rem] font-semibold text-forest underline-offset-4 hover:underline"
+            >
+              Bike paths and rail trails: maps, parking, closures <ArrowRight size={15} aria-hidden />
+            </Link>
             {/* Jump links: 25 routes is a long scroll on a phone. */}
             <nav aria-label="Route types" className="mt-7 flex flex-wrap justify-center gap-2.5">
               {groups.map((g) => (
@@ -118,6 +127,7 @@ export default async function RoamsIndexPage() {
                     roam={r}
                     tone="light"
                     filterable
+                    href={roamHref(r.id, tours)}
                     // upcoming covers preview roams too (service role); r is public by construction.
                     nextGroupDate={upcoming.get(r.id)?.event_date ?? null}
                   />

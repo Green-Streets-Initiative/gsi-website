@@ -105,6 +105,7 @@ export default function RoamCard({
   start,
   nextGroupDate,
   filterable = false,
+  href,
 }: {
   roam: RoamCardData
   tone?: Tone
@@ -113,6 +114,8 @@ export default function RoamCard({
   nextGroupDate?: string | null
   /** Adds the data the roams hub filters read (RoamHubFilters). */
   filterable?: boolean
+  /** Where the card goes; defaults to the roam page. Tour roams pass their trail page. */
+  href?: string
 }) {
   const t = THEME[tone]
   const meta = roamMetaLine(roam)
@@ -150,7 +153,7 @@ export default function RoamCard({
       )}
       <div className="p-4">
         <p className={t.name}>
-          <Link href={`/shift/roams/${encodeURIComponent(roam.id)}`} className="after:absolute after:inset-0 after:content-[''] focus-visible:outline-none focus-visible:after:rounded-[14px] focus-visible:after:ring-2 focus-visible:after:ring-forest">
+          <Link href={href ?? `/shift/roams/${encodeURIComponent(roam.id)}`} className="after:absolute after:inset-0 after:content-[''] focus-visible:outline-none focus-visible:after:rounded-[14px] focus-visible:after:ring-2 focus-visible:after:ring-forest">
             {roam.name}
           </Link>
         </p>

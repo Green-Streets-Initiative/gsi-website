@@ -1,6 +1,8 @@
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { getQualifyingTowns } from '@/lib/towns/queries'
 import { getActiveRoams } from '@/lib/roams/queries'
+import { getTrails, type TrailSummary } from '@/lib/trails/queries'
+import { getTourTrails } from '@/lib/trails/tours'
 import { SCHOOLS } from '@/lib/semester/schools'
 import { loadEventsListing } from '@/app/events/_lib/load'
 import { SITE_URL } from '@/lib/seo'
@@ -53,10 +55,18 @@ export async function GET() {
   }
 
   let roams: Awaited<ReturnType<typeof getActiveRoams>> = []
+  let trails: TrailSummary[] = []
   try {
-    roams = await getActiveRoams()
+    // Roams that tour a whole trail forward to its trail page, listed under Trails.
+    const [all, tours] = await Promise.all([getActiveRoams(), getTourTrails()])
+    roams = all.filter((r) => !tours.has(r.id))
   } catch {
     // DB unreachable — skip the roams section.
+  }
+  try {
+    trails = await getTrails()
+  } catch {
+    // DB unreachable — skip the trails section.
   }
 
   const L: string[] = []
@@ -72,6 +82,8 @@ export async function GET() {
   L.push(`- [What's near you](${SITE_URL}/nearby): A live snapshot of the T stops, buses, and Bluebikes docks near any Greater Boston address, with bike-lane comfort and nearby destinations.`)
   L.push(`- [Guides](${SITE_URL}/guides): Practical how-to guides for getting around by bike, on foot, and by transit in the Boston area.`)
   L.push(`- [Town pages](${SITE_URL}/shift/towns): Live community stats on how each town walks, bikes, and rides transit.`)
+  L.push(`- [Trails](${SITE_URL}/trails): Bike paths, rail trails and greenways around Boston and across Massachusetts, each with its length, surface, places to get on, parking, transit and current closures.`)
+  L.push(`- [Path and bike lane conditions](${SITE_URL}/trails/conditions): After snow, how each trail and protected bike lane is, from people who used it today, and who clears it. Open data: [conditions.json](${SITE_URL}/trails/conditions.json) (GeoJSON, CC BY).`)
   L.push(`- [Roams](${SITE_URL}/shift/roams): Self-guided walking, biking and transit routes around Massachusetts, each with its distance, time, and stops.`)
   L.push('')
 
@@ -88,6 +100,21 @@ export async function GET() {
     L.push('## Town pages')
     for (const t of towns) {
       L.push(`- [Walking, biking & transit in ${t.town_name}](${SITE_URL}/shift/towns/${t.slug})`)
+    }
+    L.push('')
+  }
+
+  if (trails.length > 0) {
+    L.push('## Trails')
+    for (const t of trails) {
+      const facts = [
+        t.full_miles ? `${Math.round(t.full_miles * 10) / 10} ${Math.round(t.full_miles * 10) / 10 === 1 ? 'mile' : 'miles'}` : null,
+        t.from_label && t.to_label ? `${t.from_label} to ${t.to_label}` : t.towns.length > 0 ? t.towns.join(', ') : null,
+      ]
+        .filter(Boolean)
+        .join(', ')
+      const detail = [facts, t.summary].filter(Boolean).join(' — ')
+      L.push(`- [${t.name}](${SITE_URL}/trails/${t.id})${detail ? `: ${detail}` : ''}`)
     }
     L.push('')
   }

@@ -22,6 +22,8 @@ export type Placement =
   // the map; a new tag so the before/after is readable in PostHog.
   | 'roam_after_map'
   | 'roam_bottom'
+  // /trails/<id>: the app box under "Roams on this trail"
+  | 'trail_roams'
   | 'event_detail'
 
 export type Audience =

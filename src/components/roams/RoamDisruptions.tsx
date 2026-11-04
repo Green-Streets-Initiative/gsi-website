@@ -27,27 +27,27 @@ function day(d: string): string {
  * (Keith 2026-10-29: "It may or may not be 'on the way here' depending on
  * where someone is coming from").
  */
-function who(d: RoamDisruption): string {
-  if (d.affects === 'route') return 'Closed on this route'
+function who(d: RoamDisruption, subject: 'route' | 'trail'): string {
+  if (d.affects === 'route') return subject === 'trail' ? 'Closed on this trail' : 'Closed on this route'
   return d.from_label ? `Coming from ${d.from_label}?` : `If you come in on ${d.trail_name}`
 }
 
-function Notice({ d }: { d: RoamDisruption }) {
+function Notice({ d, subject }: { d: RoamDisruption; subject: 'route' | 'trail' }) {
   const [open, setOpen] = useState(false)
   const hasDetour = !!(d.detours && d.detours.length > 0)
   return (
     <section
-      aria-label={d.affects === 'route' ? 'Closure on this route' : `Closure on ${d.trail_name}, a path that connects to this route`}
+      aria-label={d.affects === 'route' ? `Closure on this ${subject}` : `Closure on ${d.trail_name}, a path that connects to this ${subject}`}
       className="rounded-[14px] border border-[#C2410C]/25 bg-[#FFF6F0] px-4 py-3 sm:px-5"
     >
       <div className="flex gap-3">
         <TriangleAlert size={18} className="mt-[3px] shrink-0 text-[#B4410C]" aria-hidden />
         <div className="min-w-0 flex-1">
           <p className="text-[0.875rem] font-semibold text-[#9A3412]">
-            {who(d)}
+            {who(d, subject)}
           </p>
           <h2 className="text-[1rem] font-semibold leading-snug text-navy">{d.title}</h2>
-          {d.affects === 'access' ? <p className="text-[0.9375rem] leading-snug text-ink-soft">This route is open.</p> : null}
+          {d.affects === 'access' ? <p className="text-[0.9375rem] leading-snug text-ink-soft">This {subject} is open.</p> : null}
           <button
             type="button"
             aria-expanded={open}
@@ -82,12 +82,13 @@ function Notice({ d }: { d: RoamDisruption }) {
   )
 }
 
-export default function RoamDisruptions({ items }: { items: RoamDisruption[] }) {
+/** subject: 'trail' on the /trails pages; roam pages keep 'route'. */
+export default function RoamDisruptions({ items, subject = 'route' }: { items: RoamDisruption[]; subject?: 'route' | 'trail' }) {
   if (items.length === 0) return null
   return (
     <div className="space-y-3">
       {items.map((d) => (
-        <Notice key={d.id} d={d} />
+        <Notice key={d.id} d={d} subject={subject} />
       ))}
     </div>
   )

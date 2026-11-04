@@ -108,7 +108,7 @@ export function openedMeta(o: OpenedItem, onRoute: boolean): string {
 
 /** Trail pages are built (gsi-website branch trails-review) but not public
  *  yet; until they are, a path links to the roam that rides its trail. */
-const TRAIL_PAGES_LIVE = false
+const TRAIL_PAGES_LIVE = true
 
 /** "On the Mystic River and Alewife Brook paths, near Medford Square", or "In Medford". */
 export function openedPlace(o: OpenedItem, showTown: boolean): string | null {
