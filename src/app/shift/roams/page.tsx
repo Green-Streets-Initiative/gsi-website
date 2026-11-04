@@ -5,7 +5,7 @@ import Footer from '@/components/Footer'
 import RoamCard from '@/components/roams/RoamCard'
 import RoamHubFilters from '@/components/roams/RoamHubFilters'
 import JsonLd from '@/components/JsonLd'
-import { getActiveRoams, getUpcomingRoamEvents } from '@/lib/roams/queries'
+import { getRoamsInSeason, getUpcomingRoamEvents } from '@/lib/roams/queries'
 
 export const revalidate = 3600
 
@@ -17,7 +17,7 @@ const SITE_URL = 'https://www.gogreenstreets.org'
 // Experiment exp-2026-10-4 (seo/reports/2026-11-01.md, item 2).
 const SEARCH_TITLE = 'Bike paths, rail trails and walking loops around Boston'
 
-const roamsOnce = cache(getActiveRoams)
+const roamsOnce = cache(getRoamsInSeason)
 
 export async function generateMetadata(): Promise<Metadata> {
   const roams = await roamsOnce()

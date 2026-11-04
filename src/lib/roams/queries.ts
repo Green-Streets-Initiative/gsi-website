@@ -175,12 +175,36 @@ export function normalizeRouteGeometry(raw: unknown): [number, number][] | null 
   return null
 }
 
+/**
+ * On offer today (Boston date)? The app's isInSeason (Shift lib/roam.ts,
+ * parity map: roams): an event roam only inside its event window, a seasonal
+ * roam only inside its MM-DD window, the rest always. Since Shift 01615 only
+ * roams whose service stops (the Harbor Islands ferries) carry a season.
+ */
+export function roamInSeason(
+  r: { seasonal_start?: unknown; seasonal_end?: unknown; event_start?: unknown; event_end?: unknown },
+  today: string,
+): boolean {
+  const s = (v: unknown) => (typeof v === 'string' && v ? v : null)
+  const es = s(r.event_start), ee = s(r.event_end), ss = s(r.seasonal_start), se = s(r.seasonal_end)
+  if (es && ee) return today >= es.slice(0, 10) && today <= ee.slice(0, 10)
+  if (ss && se) return today.slice(5) >= ss && today.slice(5) <= se
+  return true
+}
+
+/** The roams people can go on today: the hub and the assistant's find_roams.
+ *  The sitemap keeps every roam page (getActiveRoams) so links keep working. */
+export async function getRoamsInSeason(): Promise<RoamSummary[]> {
+  const today = todayEt()
+  return (await getActiveRoams()).filter((r) => roamInSeason(r as unknown as Record<string, unknown>, today))
+}
+
 export async function getActiveRoams(): Promise<RoamSummary[]> {
   const supabase = createServerSupabaseClient()
   const today = todayEt()
   const { data } = await supabase
     .from('roams')
-    .select('id, name, mode, distance_miles, estimated_minutes, hook, tagline, hero_image_url, hero_image_attribution, hero_image_attribution_url, region, featured, completion_count, vibe_tags')
+    .select('id, name, mode, distance_miles, estimated_minutes, hook, tagline, hero_image_url, hero_image_attribution, hero_image_attribution_url, region, featured, completion_count, vibe_tags, seasonal_start, seasonal_end, event_start, event_end')
     .eq('active', true)
     // Preview roams (preview_user_ids set) are for their testers in the app only (Shift 01214).
     .is('preview_user_ids', null)

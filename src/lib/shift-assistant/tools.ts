@@ -26,7 +26,7 @@ import { bikePerkPool } from '@/lib/server/bike-perks'
 import { PERK_KIND_LABEL, perksAlong, perksNear, perkWhere, type PerkStop } from '@/lib/bike-perks'
 import { newInfraInTown, newInfraNear, newInfraOnRoute } from '@/lib/server/new-infra'
 import { newInfraForAssistant } from '@/lib/new-infra'
-import { getActiveRoams, getNextRoamEvent, getRoamDetail, getRoamKeepGoing, getRoamTrailInfo } from '@/lib/roams/queries'
+import { getActiveRoams, getNextRoamEvent, getRoamDetail, getRoamKeepGoing, getRoamTrailInfo, getRoamsInSeason } from '@/lib/roams/queries'
 import { ACCESS_LINKS, accessibleNear, ebikeMath, myRides, rsvpRide, shiftRideDates } from '@/lib/shift-assistant/audit-data'
 import { RIDE_PLAN_ACTIVITY, RIDE_PLAN_NEEDS_APPROVAL, RIDE_PLAN_TOOLS, ridePlanCard, runApprovedRidePlan, runRidePlanTool, type RidePlanCard } from '@/lib/shift-assistant/ride-plan-tools'
 
@@ -1681,7 +1681,7 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
         })
       }
       case 'find_roams': {
-        const all = await getActiveRoams()
+        const all = await getRoamsInSeason()
         const region = regionIn(input.query)
         const query = region ? region.rest : input.query
         const words = typeof query === 'string' ? query.toLowerCase().split(/[^a-z0-9]+/).filter((w) => w.length > 2 && !['the', 'loop', 'path', 'trail', 'trails', 'route', 'rail', 'rails', 'easy', 'flat', 'beginner'].includes(w)) : []
