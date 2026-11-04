@@ -109,7 +109,7 @@ export default function ProgramsPage() {
                   For commuters
                 </h3>
                 <p className="text-[0.9375rem] leading-[1.6] text-ink-soft">
-                  Share your story, shape your streets, and earn bonus XP in Shift. Your commute experience matters — and it can change how your city moves.
+                  Share your story, shape your streets, and get bonus points in Shift. Your commute experience matters — and it can change how your city moves.
                 </p>
               </div>
             </div>
@@ -241,7 +241,7 @@ export default function ProgramsPage() {
               Every program runs on Shift.
             </h2>
             <p className="mb-8 text-[1.0625rem] leading-[1.65] text-ink-soft">
-              Walk/Ride Days, What Moves Us, Corporate Challenge, and Shift for Schools all connect through the Shift app — one platform that tracks trips, rewards active commuters, and generates the data communities need.
+              Walk/Ride Days, What Moves Us, Corporate Challenge and Shift for Schools all connect through Shift, our free app for finding better ways to get around. It also gives communities the numbers they need.
             </p>
             <Link
               href="/shift"

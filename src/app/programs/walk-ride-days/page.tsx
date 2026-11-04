@@ -27,7 +27,7 @@ export const metadata: Metadata = {
 }
 
 const STEPS: { title: string; body: string }[] = [
-  { title: 'Get Shift', body: 'Free on iOS and Android. Sign up once and it quietly recognizes your walks, rides, and transit trips from then on.' },
+  { title: 'Get Shift', body: 'Free on iOS and Android. Make an account once, and Shift counts your trips on its own.' },
   { title: 'Make a trip on the day', body: 'Walk to the store, bike to work, take the bus to class. One trip is enough; more trips are more chances.' },
   { title: 'You’re in the drawing', body: 'Each trip that day enters you automatically. Winners are drawn the next morning and claim their gift card in the app.' },
 ]
@@ -110,7 +110,7 @@ export default async function WalkRideDayPage() {
         <Ledger d={d} />
 
         <Section shape="wanderRight" id="how" className="scroll-mt-28">
-          <SectionHeading title="How it works" lede="Three steps, and the last one happens on its own." />
+          <SectionHeading title="How it works" lede="Three steps, and Shift handles the last one." />
           <ol className="grid gap-8 md:grid-cols-3 md:gap-10">
             {STEPS.map((s, i) => (
               <li key={s.title} className="flex gap-4">

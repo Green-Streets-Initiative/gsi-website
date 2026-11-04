@@ -33,7 +33,7 @@ import { useEffect, useRef, useState } from 'react'
 
 type Variant = 'dark' | 'light'
 
-type NavItem = [href: string, label: string]
+type NavItem = [href: string, label: string, wideOnly?: boolean]
 
 const TOP_ITEMS: NavItem[] = [
   ['/challenges', 'Challenges'],
@@ -42,6 +42,10 @@ const TOP_ITEMS: NavItem[] = [
   // directly so crawlers and people skip the hop. /nearby's canonical is
   // param-free, so this URL never competes with it in search.
   ['/nearby?plan=1', 'Plan a route'],
+  // Trail seekers are one of the strongest search audiences (personas.md);
+  // /trails had no way in from the menu (site review 2026-11-04).
+  // Top bar from xl up only: at lg it crowds the wordmark. Always in the menu.
+  ['/trails', 'Trails', true],
   ['/guides', 'Guides'],
   ['/shift/towns', 'Towns'],
 ]
@@ -190,8 +194,8 @@ export default function Nav({ variant = 'dark', street = false }: { variant?: Va
 
         {/* Desktop nav */}
         <div ref={barRef} className="hidden items-center gap-4 xl:gap-5 lg:flex">
-          {TOP_ITEMS.map(([href, label]) => (
-            <Link key={href} href={href} className={linkCls}>
+          {TOP_ITEMS.map(([href, label, wideOnly]) => (
+            <Link key={href} href={href} className={wideOnly ? `${linkCls} hidden xl:inline` : linkCls}>
               {label}
             </Link>
           ))}

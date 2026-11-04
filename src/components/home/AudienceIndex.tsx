@@ -3,16 +3,22 @@ import TrackedLink from '@/components/TrackedLink'
 import type { Audience } from './tracking'
 import { LANE, RouteSegment } from './RouteLine'
 
-const ROWS: { label: string; body: string; href: string; audience: Audience }[] = [
+// `until` hides a dated row by itself once its campaign ends (ISO date, last
+// day shown). Shift Your Semester takes sign-ups through Dec 15, 2026.
+const ALL_ROWS: { label: string; body: string; href: string; audience: Audience; until?: string }[] = [
+  { label: 'For you', body: 'Plan a trip, find a group ride or walk, or try a new way.', href: '/nearby?plan=1', audience: 'individual' },
+  { label: 'For students', body: 'Shift Your Semester: try ten trips a new way this fall.', href: '/shift-your-semester', audience: 'individual', until: '2026-12-15' },
   { label: 'For employers', body: 'Run a workplace challenge with real participation data.', href: '/shift/employers', audience: 'employer' },
-  { label: 'For schools', body: 'Bring walking and biking programs to your district, K–12 through campus.', href: '/shift/schools', audience: 'school' },
+  { label: 'For schools', body: 'Bring walking and biking programs to your school.', href: '/shift/schools', audience: 'school' },
   { label: 'For towns and planners', body: 'See how your community moves, neighborhood by neighborhood.', href: '/shift/towns', audience: 'town' },
-  { label: 'For local businesses', body: 'Offer a perk to the people already walking past your door.', href: '/shift/rewards-partners', audience: 'business' },
+  { label: 'For local businesses', body: 'Welcome new customers who arrive on foot, by bike or by transit.', href: '/shift/rewards-partners', audience: 'business' },
   { label: 'For partners and sponsors', body: 'Back a flagship event or a season of Walk/Ride Days.', href: '/contact', audience: 'partner' },
   { label: 'For donors', body: 'Fund the app, the data, and the next twenty years. Tax-deductible.', href: '/donate', audience: 'donor' },
 ]
 
 export default function AudienceIndex() {
+  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' })
+  const ROWS = ALL_ROWS.filter((r) => !r.until || today <= r.until)
   return (
     <section className="relative overflow-x-clip bg-cream">
       <div className={`relative mx-auto grid max-w-[1120px] ${LANE} px-6 lg:px-8`}>
@@ -25,8 +31,8 @@ export default function AudienceIndex() {
               Which one <em className="text-green-deep">are you?</em>
             </h2>
             <p className="mt-5 max-w-[380px] text-[1.0625rem] leading-[1.65] text-ink-soft">
-              Walkers, bikers, and riders get the app. Employers, schools, towns, and local businesses get a
-              program. Sponsors and donors keep it all going.
+              People get the app, the events calendar and the guides. Employers, schools, towns and local
+              businesses get a program. Sponsors and donors keep it all going.
             </p>
           </div>
 

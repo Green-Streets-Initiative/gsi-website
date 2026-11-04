@@ -7,8 +7,8 @@ const TIERS: {
 }[] = [
   { name: 'Starter', chevrons: 1, color: '#B6BBC9' },
   { name: 'Mover', chevrons: 1, color: '#2966E5', tag: 'Perks unlock here' },
-  { name: 'Shifter', chevrons: 2, color: '#BAF14D', current: true },
-  { name: 'Pacesetter', chevrons: 3, color: '#E8A93C' },
+  { name: 'Shifter', chevrons: 2, color: '#BAF14D' },
+  { name: 'Pacesetter', chevrons: 3, color: '#E8A93C', current: true },
   { name: 'Trailblazer', chevrons: 3, color: 'url(#tbGrad)' },
 ]
 

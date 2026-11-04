@@ -29,14 +29,14 @@ const CHALLENGE_STEPS = [
   },
   {
     title: 'You see the results',
-    body: 'The week after, we send you how many took part, how many trips they made and the mix of ways they got there. Team totals only: nobody at your company sees where an individual goes.',
+    body: 'The week after, we send you how many took part, how many trips they made and the mix of ways they got there, as team totals.',
   },
 ]
 
 export const metadata = {
   title: 'Shift for Employers — Green Streets Initiative',
   description:
-    'Help your people try walking, biking and transit for more of their trips to work. One flat annual price, automatic trip detection, monthly GSI-funded drawings, and the numbers for your wellness, climate and commute reporting. Start with a free commuter challenge on Walk/Ride Day.',
+    'Help your people try walking, biking and transit for more of their trips to work. One flat annual price, monthly GSI-funded drawings, and the numbers for your wellness, climate and commute reporting. Start with a free commuter challenge on Walk/Ride Day.',
 }
 
 const employerFaqItems = [
@@ -48,7 +48,7 @@ const employerFaqItems = [
   {
     question: 'What does an employer challenge look like?',
     answer:
-      'Employees download the Shift app and join your group via an invite code. Shift detects walks, bike rides, bus and subway trips automatically, so there is nothing to log. You see each member\'s name and trip numbers (trips, Shift Rate, miles and CO₂ saved), team totals, and never anyone\'s routes or where they go. Joining is each person\'s choice.',
+      'Employees download the Shift app and join your group via an invite code. Shift counts walks, bike rides, bus and subway trips on its own. On a subscription, you see each member\'s name and trip numbers (trips, Shift Rate, miles and CO₂ saved), and team totals. Routes stay private to each person, and joining is their choice.',
   },
   {
     question: 'Can we run an ongoing program, not just a one-time challenge?',
@@ -68,7 +68,7 @@ const employerFaqItems = [
   {
     question: 'How is individual employee privacy protected?',
     answer:
-      'You see each member\'s name and trip numbers (trips, Shift Rate, miles and CO₂ saved), team totals, and never anyone\'s routes or where they go. Your dashboard, weekly email and impact reports are team totals: active members, trips, mode share and CO₂ avoided. The team leaderboard shows the same view members see in the app. Joining is each person\'s choice: employees join by downloading the app and entering your invite code, and can leave the group at any time.',
+      'You see each member\'s name and trip numbers (trips, Shift Rate, miles and CO₂ saved) and team totals. Routes stay private to each person. Your dashboard, weekly email and impact reports are team totals: active members, trips, mode share and CO₂ avoided. The team leaderboard shows the same view members see in the app. Joining is each person\'s choice: employees join by downloading the app and entering your invite code, and can leave the group at any time.',
   },
   {
     question: 'How does this connect to our ESG reporting?',
@@ -203,7 +203,7 @@ export default async function ShiftEmployersPage() {
                 },
                 {
                   title: 'Nothing to run',
-                  body: 'No forms, no spreadsheets, no logging. The app picks up walking, biking and transit trips on its own, the weekly email comes to you, and we hand you the invite note, flyer and launch date.',
+                  body: 'We hand you the invite note, flyer and launch date, the weekly email comes to you, and Shift counts the trips.',
                 },
                 {
                   title: 'Numbers for whatever you report',
@@ -211,7 +211,7 @@ export default async function ShiftEmployersPage() {
                 },
                 {
                   title: 'Private by design',
-                  body: 'You see each member’s name and trip numbers (trips, Shift Rate, miles and CO₂ saved), team totals, and never anyone’s routes or where they go. Joining is each person’s choice.',
+                  body: 'On a subscription, you see each member’s name and trip numbers (trips, Shift Rate, miles and CO₂ saved), and team totals. Routes stay private to each person, and joining is their choice.',
                 },
                 {
                   title: 'Built by a Massachusetts nonprofit',
@@ -250,7 +250,7 @@ export default async function ShiftEmployersPage() {
                 <ul className="flex flex-col gap-4">
                   {[
                     'Help finding a walking, biking or transit route that works for their trip to the office',
-                    'Prize drawings and rewards from local businesses, unlocked by active trips',
+                    'Prize drawings funded by GSI, and rewards for trying a new way',
                     'Curated content: commuter benefits, transit pass info, bike parking near your office',
                   ].map((item) => (
                     <li key={item} className="flex gap-3 text-[0.9375rem] leading-[1.6] text-ink-soft">
@@ -269,7 +269,7 @@ export default async function ShiftEmployersPage() {
                   {[
                     'Private team leaderboard: see how you stack up against colleagues',
                     'Tier status and badges that reward consistency over time',
-                    'Flagship events like Shift Your Summer, a statewide challenge',
+                    'Statewide days like Walk/Ride Day, one Friday a month',
                   ].map((item) => (
                     <li key={item} className="flex gap-3 text-[0.9375rem] leading-[1.6] text-ink-soft">
                       <span className="mt-1.5 block h-2 w-2 shrink-0 rounded-full bg-blue" />

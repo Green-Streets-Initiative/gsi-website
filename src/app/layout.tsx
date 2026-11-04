@@ -20,12 +20,12 @@ const PRELOAD_FONTS = [
 ]
 
 export const metadata: Metadata = {
-  title: 'Green Streets Initiative — Shift how you move',
-  description: 'Green Streets Initiative helps people shift trips to healthier, more affordable, more fun alternatives — and measures the impact, trip by trip, community by community.',
+  title: 'Green Streets Initiative — Walking, biking and transit in Massachusetts',
+  description: 'A Somerville nonprofit since 2006. Walk/Ride Day, group rides and walks, route planning, town pages, guides and Shift, the free app for finding better ways to get around.',
   metadataBase: new URL('https://www.gogreenstreets.org'),
   openGraph: {
     title: 'Green Streets Initiative',
-    description: 'Shift how you move. Walk it. Bike it. Take the bus.',
+    description: 'Helping people find better ways to get around, on foot, by bike and by transit, since 2006.',
     url: 'https://www.gogreenstreets.org',
     siteName: 'Green Streets Initiative',
     locale: 'en_US',
@@ -37,7 +37,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'Green Streets Initiative',
-    description: 'Shift how you move. Walk it. Bike it. Take the bus.',
+    description: 'Helping people find better ways to get around, on foot, by bike and by transit, since 2006.',
   },
 }
 

@@ -113,6 +113,11 @@ export default function Footer({ variant = 'dark' }: { variant?: Variant } = {})
                 </Link>
               </li>
               <li>
+                <Link href="/trails" className={`text-sm transition-colors ${t.link}`}>
+                  Bike paths and rail trails
+                </Link>
+              </li>
+              <li>
                 <Link href="/events" className={`text-sm transition-colors ${t.link}`}>
                   Community events
                 </Link>

@@ -78,7 +78,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   // The trip total stays, one clause later, as supporting proof.
   // Kept under ~155 chars so Google doesn't truncate it mid-sentence; the
   // longest town name in the directory still lands inside the budget.
-  const description = `How ${town.town_name} gets around without driving — walking, biking and transit routes neighbors use, plus local rides, events and community stats.`
+  const description = `Walking, biking and transit in ${town.town_name}: the routes neighbors use, local rides and events, and community stats.`
   return {
     title,
     description,
@@ -133,7 +133,7 @@ export default async function TownPage({ params }: { params: Promise<{ slug: str
         '@type': 'WebPage',
         name: `Walking, Biking & Transit in ${name}, ${town.state}`,
         url: `${SITE_URL}/shift/towns/${slug}`,
-        description: `How ${name}, ${stateLabel(town.state)} gets around without driving — walking, biking and transit routes, local rides and events, and live community stats from the Shift app by Green Streets Initiative.`,
+        description: `Walking, biking and transit in ${name}, ${stateLabel(town.state)}: routes, local rides and events, and live community stats from the Shift app by Green Streets Initiative.`,
         isPartOf: { '@type': 'WebSite', name: 'Green Streets Initiative', url: SITE_URL },
         about: { '@type': 'City', name, address: { '@type': 'PostalAddress', addressLocality: name, addressRegion: town.state, addressCountry: 'US' } },
       },

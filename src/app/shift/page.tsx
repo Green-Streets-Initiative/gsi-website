@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { NewRoutesStrip, RecentTripsCard, StatusBar } from '@/components/shift-mockup'
 import { TownsTeaserBand } from '@/components/towns/TownsCrossLink'
 import Link from 'next/link'
 import Nav from '@/components/Nav'
@@ -137,7 +138,7 @@ export default function ShiftPage() {
               </span>
               <span className="h-[5px] w-[5px] rounded-full bg-white" />
               <span className="font-display text-[15px] font-semibold text-navy">
-                Real perks from <b className="font-extrabold text-forest">local</b> businesses
+                Rewards when you try a <b className="font-extrabold text-forest">new</b> way
               </span>
             </div>
           </div>
@@ -239,15 +240,16 @@ export default function ShiftPage() {
               eyebrow="Status · streaks · badges"
               heading="Watch your status climb as you move."
               media={
-                <PhoneFrame
-                  src="/images/shift-app/home-streak-detail.png"
-                  alt="Shift home screen showing a 52-day streak, Shifter tier, and 71% shift rate"
-                  className="w-[268px]"
-                />
+                // Coded at native scale from the app's current Home (the May
+                // capture showed a retired layout; site review 2026-11-04).
+                <div className="flex w-full max-w-[402px] flex-col gap-3 justify-self-center font-display">
+                  <StatusBar />
+                  <RecentTripsCard />
+                </div>
               }
             >
               <p className="text-[18px] leading-[1.6] text-white/80">
-                Every active trip nudges you up a ladder of five status tiers. Your standing reflects how you actually get around — not how much you grind.
+                Every active trip moves you up a ladder of five status tiers, based on your trips and the share of them on foot, by bike or by transit.
               </p>
               <div className="mt-6">
                 <TierLadder />
@@ -340,7 +342,7 @@ export default function ShiftPage() {
               </p>
               <ul className="mt-6 flex flex-col gap-3.5">
                 <Bullet tone="light"><b className="font-display font-bold text-navy">Town vs. town, block vs. block.</b> Cambridge, Somerville, Union Square — pick your home turf.</Bullet>
-                <Bullet tone="light"><b className="font-display font-bold text-navy">Places you&apos;ve been.</b> Trips you take automatically surface new groups to join.</Bullet>
+                <Bullet tone="light"><b className="font-display font-bold text-navy">Places you&apos;ve been.</b> Shift suggests groups for the places you go.</Bullet>
               </ul>
             </FeatureRow>
           </FadeIn>
@@ -353,11 +355,10 @@ export default function ShiftPage() {
               eyebrowColor="#52B788"
               heading="Shift Your Semester, New Routes, and seasonal challenges."
               media={
-                <PhoneFrame
-                  src="/images/shift-app/home-streak-detail.png"
-                  alt="Shift home screen with a streak and challenge progress"
-                  className="w-[268px]"
-                />
+                <div className="flex w-full max-w-[402px] flex-col gap-3 justify-self-center rounded-[28px] bg-navy p-4 font-display">
+                  <NewRoutesStrip />
+                  <StatusBar />
+                </div>
               }
             >
               <p className="text-[18px] leading-[1.6] text-ink-soft">
@@ -369,7 +370,7 @@ export default function ShiftPage() {
                 <span className="rounded-full border border-navy/10 bg-white px-3.5 py-[7px] font-display text-[13px] font-semibold text-navy">First 200 to finish</span>
               </div>
               <ul className="mt-6 flex flex-col gap-3.5">
-                <Bullet tone="light"><b className="font-display font-bold text-navy">No extra effort.</b> Your walks, rides, and transit trips are your entries.</Bullet>
+                <Bullet tone="light"><b className="font-display font-bold text-navy">Counted for you.</b> Shift counts each walk, ride and transit trip on its own.</Bullet>
                 <Bullet tone="light"><b className="font-display font-bold text-navy">Town vs. town.</b> Climb the standings while you close in on the reward.</Bullet>
                 <Bullet tone="light"><b className="font-display font-bold text-navy">See what&apos;s on.</b> <Link href="/challenges" className="font-semibold text-forest underline-offset-4 hover:underline">Every challenge running now or coming up &rarr;</Link></Bullet>
               </ul>
@@ -432,7 +433,7 @@ export default function ShiftPage() {
               }
             >
               <p className="text-[18px] leading-[1.6] text-ink-soft">
-                Hand-picked greenways, trails, and loops across Massachusetts. Each Roam comes with a suggested route, leg-by-leg stops, live transit and Bluebikes availability, and nearby points of interest worth the detour — plus a one-tap handoff to Maps. Earn badges as you explore.
+                Hand-picked greenways, trails, and loops across Massachusetts. Each Roam comes with a suggested route, leg-by-leg stops, live transit and Bluebikes availability, and nearby points of interest worth the detour — plus a one-tap handoff to Maps. Collect badges as you explore.
               </p>
               <div className="mt-5 flex flex-wrap gap-2.5">
                 <span className="rounded-full border border-forest/40 bg-forest/10 px-3.5 py-[7px] font-display text-[13px] font-semibold text-green-deep">~30 Roams and growing</span>
@@ -455,7 +456,7 @@ export default function ShiftPage() {
           <FadeIn>
             <FeatureRow
               eyebrow="Rewards"
-              heading="Local perks that unlock as you move."
+              heading="Perks from shops near you."
               reverse
               media={
                 <PhoneFrame
@@ -467,12 +468,12 @@ export default function ShiftPage() {
               }
             >
               <p className="text-[18px] leading-[1.6] text-white/80">
-                Reach Mover status and a neighborhood of real perks opens up — coffee, ice cream, and bagels — from the independent businesses right around you. Just rewards that appear because you&apos;re an active commuter.
+                Make more of your trips on foot, by bike or by transit and you reach Mover status. That opens perks at independent shops near you: coffee, ice cream and bagels.
               </p>
               <ul className="mt-6 flex flex-col gap-3.5">
-                <Bullet><b className="font-display font-bold text-white">Unlocked by your status.</b> Hit Mover tier and qualifying perks turn on automatically.</Bullet>
+                <Bullet><b className="font-display font-bold text-white">Unlocked by your status.</b> Reach Mover and qualifying perks turn on.</Bullet>
                 <Bullet><b className="font-display font-bold text-white">Right around the corner.</b> Sorted by distance, from businesses in your neighborhood.</Bullet>
-                <Bullet><b className="font-display font-bold text-white">Plus partner drawings.</b> Automatic and prize-drawing rewards from GSI, your employer, and partners.</Bullet>
+                <Bullet><b className="font-display font-bold text-white">Plus partner drawings.</b> Prize drawings from GSI, your employer and partners.</Bullet>
               </ul>
             </FeatureRow>
           </FadeIn>

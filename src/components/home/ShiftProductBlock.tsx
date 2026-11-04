@@ -14,13 +14,13 @@ const STOPS: { icon: Icon; title: string; body: string }[] = [
   },
   {
     icon: Compass,
-    title: 'Nothing to log',
-    body: 'Shift records the trip on its own and only asks you when it can\u2019t tell walking from the bus.',
+    title: 'Plan a trip',
+    body: 'Say where you\u2019re going and compare walking, biking and transit, door to door.',
   },
   {
     icon: Trophy,
-    title: 'Every trip is worth something',
-    body: 'Money back in your pocket, a streak worth keeping, and perks from businesses down the street.',
+    title: 'Get rewarded when you try',
+    body: 'Challenges, Walk/Ride Day drawings and prizes for trying a new way. Shift counts your trips on its own.',
   },
 ]
 
@@ -44,11 +44,11 @@ export default function ShiftProductBlock({ iosUrl, androidUrl }: { iosUrl: stri
               <ShiftWordmark tone="white" height={26} />
             </div>
             <h2 className="font-serif text-[clamp(2.25rem,4.5vw,3.5rem)] font-normal leading-[1.05] text-white">
-              The better trip, <em className="text-teal">made easy.</em>
+              Find the better trip, <em className="text-teal">then try it.</em>
             </h2>
             <p className="mt-6 max-w-[540px] text-[1.0625rem] leading-[1.65] text-white">
-              Shift shows you what&rsquo;s moving near you right now, counts the trip without you touching anything,
-              and turns it into money saved and perks worth having.
+              Shift is a free app for finding better ways to get around, with live departures, bike share and
+              routes for the trips you make.
             </p>
 
             <ol className="mt-8 flex flex-col gap-5">

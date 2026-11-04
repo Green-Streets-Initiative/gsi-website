@@ -222,10 +222,9 @@ export function WhatIsShift({ townName }: { townName: string }) {
         <Link href="/" className="font-semibold text-forest underline-offset-4 hover:underline">
           Green Streets Initiative
         </Link>
-        , a nonprofit that has celebrated walking, biking, and transit since 2006. Shift
-        automatically counts your walks, rides, and transit trips — every trip adds to{' '}
-        {townName}&apos;s totals on this page, earns you rewards at local businesses, and enters
-        you into seasonal prize drawings.
+        , a Somerville nonprofit since 2006, for finding better ways to get around. Every
+        walk, bike ride and transit trip people take with Shift adds to {townName}&apos;s totals
+        on this page. Shift counts trips on its own.
       </p>
     </div>
   )
@@ -546,7 +545,7 @@ export function RewardsPartners({ partners, townName }: { partners: TownPartner[
   if (partners.length === 0) return null
   return (
     <div>
-      <SectionHeading title={`Shift Rewards in ${townName}`} lede="Local businesses that reward people for moving actively." />
+      <SectionHeading title={`Shift Rewards in ${townName}`} lede="Perks at local shops for Shift members." />
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         {partners.map((p) => {
           const card = (

@@ -194,7 +194,7 @@ export function NewRoutesStrip() {
       <Gift size={20} color={LIME} />
       <span className="flex-1">
         <span className="font-ui text-[14px] font-bold text-[#F4F8EE]">
-          Your $10 gift card <span className="font-normal text-white/75">· 6 of 10 trips</span>
+          Your $15 gift card <span className="font-normal text-white/75">· 6 of 10 trips</span>
         </span>
         <span className="mt-2 block h-[5px] overflow-hidden rounded-[3px] bg-white/[0.12]">
           <span className="block h-full w-[60%] rounded-[3px] bg-[#BAF14D]" />
