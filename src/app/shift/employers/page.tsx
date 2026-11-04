@@ -109,7 +109,7 @@ export default async function ShiftEmployersPage() {
               Help your people try walking, biking and transit for more of their trips to work.
             </h1>
             <p className="mb-10 max-w-[640px] text-[1.0625rem] leading-[1.65] text-ink-soft">
-              Staff join with a private code and the free Shift app notices their walking, biking and transit trips on its own. You get a commute people choose, less pressure on parking, more use of the commuter benefits you already pay for, and the numbers to show it, with nothing to run. One flat annual price from $500. Start with a free commuter challenge on Walk/Ride Day.
+              Staff join with a private code and the free Shift app counts their walking, biking and transit trips on its own. You get a commute people choose, less pressure on parking, more use of the commuter benefits you already pay for, and the numbers to show it, with nothing to run. One flat annual price from $500. Start with a free commuter challenge on Walk/Ride Day.
             </p>
             <div className="flex flex-wrap items-center gap-x-6 gap-y-4">
               <a
