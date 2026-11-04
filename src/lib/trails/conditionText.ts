@@ -43,6 +43,23 @@ export interface TrailConditions {
   reports: ConditionReport[]
 }
 
+/** A protected (separated) bike lane, from MassDOT's bike inventory (Shift
+ *  01614, get_lane_conditions). No clearing policy: towns don't publish one
+ *  lane by lane, so a lane shows only snow and what riders said. */
+export interface LaneConditions {
+  lane_id: string
+  /** The street, as OpenStreetMap names it. */
+  name: string
+  town: string
+  lines: [number, number][][]
+  miles: number
+  weather: TrailWeather | null
+  reports: ConditionReport[]
+}
+
+/** Protected lanes on the conditions map: thin and violet, under the report colors. */
+export const LANE_STYLE = { color: '#6D4AC9', width: 2.6, label: 'Protected bike lane' } as const
+
 export const CONDITION_LABEL: Record<Condition, string> = {
   clear: 'Clear',
   snowy: 'Some snow or slush',

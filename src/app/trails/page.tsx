@@ -68,7 +68,7 @@ export default async function TrailsPage() {
             </p>
             <p className="mt-2 text-[0.9375rem]">
               <Link href="/trails/conditions" className="inline-flex items-center gap-1.5 font-semibold text-forest underline-offset-4 hover:underline">
-                <Snowflake size={14} aria-hidden /> Path conditions after snow
+                <Snowflake size={14} aria-hidden /> Path and bike lane conditions after snow
               </Link>
             </p>
             <div className="mt-6">

@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { QUIET_STYLE, LABEL_FONT_BOLD, quietBasemap } from '@/lib/maps/quietBasemap'
-import { CLEARED_STYLE, CONDITION_COLOR, CONDITION_LABEL, type ClearedKey, type Condition } from '@/lib/trails/conditionText'
+import { CLEARED_STYLE, CONDITION_COLOR, CONDITION_LABEL, LANE_STYLE, type ClearedKey, type Condition } from '@/lib/trails/conditionText'
 
 let maplibrePromise: Promise<typeof import('maplibre-gl')> | null = null
 function loadMaplibre() {
@@ -25,6 +25,16 @@ export interface ConditionsTrail {
   reports: Array<{ line: LngLat[]; condition: Condition }>
 }
 
+/** A protected bike lane: no page of its own, so the hover card is all it says. */
+export interface ConditionsLane {
+  id: string
+  /** "Cambridge Street, Cambridge" */
+  name: string
+  lines: LngLat[][]
+  status: string
+  reports: Array<{ line: LngLat[]; condition: Condition }>
+}
+
 const NAVY = '#191A2E'
 const CLOSED = '#C2410C'
 const GREATER_BOSTON: [LngLat, LngLat] = [[-71.29, 42.25], [-70.94, 42.49]]
@@ -36,10 +46,11 @@ function esc(s: string) {
 /**
  * /trails/conditions: every trail styled by who clears it, the stretches
  * people reported in the last day drawn over it in their condition's color,
- * closures dotted orange (Keith 2026-10-31). Opens on Greater Boston, where
- * most trails and riders are; tapping a trail opens its page.
+ * closures dotted orange (Keith 2026-10-31). Protected bike lanes thin and
+ * violet underneath (Keith 2026-11-04: "Yes, add lanes"). Opens on Greater
+ * Boston, where most trails, lanes and riders are; tapping a trail opens its page.
  */
-export default function ConditionsMap({ trails }: { trails: ConditionsTrail[] }) {
+export default function ConditionsMap({ trails, lanes = [] }: { trails: ConditionsTrail[]; lanes?: ConditionsLane[] }) {
   const router = useRouter()
   const mapEl = useRef<HTMLDivElement>(null)
   const mapRef = useRef<maplibregl.Map | null>(null)
@@ -66,6 +77,23 @@ export default function ConditionsMap({ trails }: { trails: ConditionsTrail[] })
         map.resize()
         map.fitBounds(GREATER_BOSTON, { padding: 24, animate: false })
 
+        if (lanes.length > 0) {
+          map.addSource('lanes', {
+            type: 'geojson',
+            data: {
+              type: 'FeatureCollection',
+              features: lanes.map((l) => ({
+                type: 'Feature' as const,
+                properties: { id: l.id, name: l.name, status: l.status },
+                geometry: { type: 'MultiLineString' as const, coordinates: l.lines },
+              })),
+            },
+          })
+          map.addLayer({ id: 'lanes-hit', type: 'line', source: 'lanes', paint: { 'line-color': LANE_STYLE.color, 'line-width': 14, 'line-opacity': 0 } })
+          map.addLayer({ id: 'lanes-casing', type: 'line', source: 'lanes', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#FFFFFF', 'line-width': 5, 'line-opacity': 0.9 } })
+          map.addLayer({ id: 'lanes', type: 'line', source: 'lanes', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': LANE_STYLE.color, 'line-width': LANE_STYLE.width } })
+        }
+
         const features = trails.map((t) => ({
           type: 'Feature' as const,
           properties: { id: t.id, name: t.name, status: t.status, cleared: t.cleared },
@@ -85,7 +113,7 @@ export default function ConditionsMap({ trails }: { trails: ConditionsTrail[] })
           })
         }
 
-        const reports = trails.flatMap((t) => t.reports.map((r) => ({
+        const reports = [...trails, ...lanes].flatMap((t) => t.reports.map((r) => ({
           type: 'Feature' as const,
           properties: { color: CONDITION_COLOR[r.condition] },
           geometry: { type: 'LineString' as const, coordinates: r.line },
@@ -126,19 +154,21 @@ export default function ConditionsMap({ trails }: { trails: ConditionsTrail[] })
         })
 
         const popup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 8 })
-        map.on('mousemove', 'trails-hit', (e) => {
-          const f = e.features?.[0]
-          if (!f) return
-          map.getCanvas().style.cursor = 'pointer'
-          popup
-            .setLngLat(e.lngLat)
-            .setHTML(`<div style="padding:2px 4px;max-width:220px"><div style="font-size:13px;font-weight:700;color:${NAVY}">${esc(String(f.properties?.name ?? ''))}</div><div style="font-size:13px;color:${NAVY};margin-top:2px">${esc(String(f.properties?.status ?? ''))}</div></div>`)
-            .addTo(map)
-        })
-        map.on('mouseleave', 'trails-hit', () => {
-          map.getCanvas().style.cursor = ''
-          popup.remove()
-        })
+        for (const layer of lanes.length > 0 ? ['trails-hit', 'lanes-hit'] : ['trails-hit']) {
+          map.on('mousemove', layer, (e) => {
+            const f = e.features?.[0]
+            if (!f) return
+            map.getCanvas().style.cursor = layer === 'trails-hit' ? 'pointer' : ''
+            popup
+              .setLngLat(e.lngLat)
+              .setHTML(`<div style="padding:2px 4px;max-width:220px"><div style="font-size:13px;font-weight:700;color:${NAVY}">${esc(String(f.properties?.name ?? ''))}</div><div style="font-size:13px;color:${NAVY};margin-top:2px">${esc(String(f.properties?.status ?? ''))}</div></div>`)
+              .addTo(map)
+          })
+          map.on('mouseleave', layer, () => {
+            map.getCanvas().style.cursor = ''
+            popup.remove()
+          })
+        }
         map.on('click', 'trails-hit', (e) => {
           const id = e.features?.[0]?.properties?.id as string | undefined
           if (id) router.push(`/trails/${id}#winter`)
@@ -154,12 +184,12 @@ export default function ConditionsMap({ trails }: { trails: ConditionsTrail[] })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const reportKinds = [...new Set(trails.flatMap((t) => t.reports.map((r) => r.condition)))]
+  const reportKinds = [...new Set([...trails, ...lanes].flatMap((t) => t.reports.map((r) => r.condition)))]
   const hasClosed = trails.some((t) => t.closed_lines.length > 0)
 
   return (
     <div className="overflow-hidden rounded-[18px] bg-white shadow-[0_1px_2px_rgba(25,26,46,0.05),0_0_0_1px_rgba(25,26,46,0.06)]">
-      <div ref={mapEl} className="h-[300px] w-full sm:h-[440px] lg:h-[clamp(420px,calc(100vh-220px),620px)]" role="img" aria-label="Map of path conditions in Massachusetts" />
+      <div ref={mapEl} className="h-[300px] w-full sm:h-[440px] lg:h-[clamp(420px,calc(100vh-220px),620px)]" role="img" aria-label="Map of path and protected bike lane conditions in Massachusetts" />
       <div className="space-y-1.5 border-t border-navy/[0.07] px-4 py-3 text-[0.8125rem] text-navy">
         {reportKinds.length > 0 && (
           <p className="flex flex-wrap gap-x-4 gap-y-1">
@@ -184,6 +214,12 @@ export default function ConditionsMap({ trails }: { trails: ConditionsTrail[] })
               </span>
             )
           })}
+          {lanes.length > 0 && (
+            <span className="inline-flex items-center gap-1.5">
+              <svg width="22" height="6" aria-hidden><line x1="1" y1="3" x2="21" y2="3" stroke={LANE_STYLE.color} strokeWidth="2.6" strokeLinecap="round" /></svg>
+              {LANE_STYLE.label}
+            </span>
+          )}
           {hasClosed && (
             <span className="inline-flex items-center gap-1.5">
               <svg width="22" height="6" aria-hidden><line x1="2" y1="3" x2="21" y2="3" stroke={CLOSED} strokeWidth="3.5" strokeDasharray="1 5" strokeLinecap="round" /></svg>
