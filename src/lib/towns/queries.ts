@@ -101,7 +101,8 @@ export interface TownPageStats {
     co2_lbs: number
     active_users: number
   }
-  mode_split: Array<{ mode_group: 'walk' | 'bike' | 'bus' | 'train'; trips: number; miles: number }>
+  // carpool and drive from Shift 01493; older responses stop at train.
+  mode_split: Array<{ mode_group: 'walk' | 'bike' | 'bus' | 'train' | 'carpool' | 'drive'; trips: number; miles: number }>
   momentum: Array<{ week_start: string; active_trips: number }>
 }
 
@@ -346,6 +347,12 @@ export async function fetchEventPool(
   // Selection window: the next 30 days. The section is "a few picks", not the
   // calendar — an event four months out doesn't belong here.
   const horizon = new Date(today.getTime() + 30 * 24 * 3600 * 1000).toISOString().slice(0, 10)
+  // The box around the radius goes in the query: .limit(200) below used to cut
+  // a statewide, date-ordered list before distance was measured, so once the
+  // calendar passed 200 events a month the nearby ones late in the window
+  // would have dropped out unseen (70 statewide on 2026-11-02).
+  const dLat = radiusMiles / 69
+  const dLng = radiusMiles / (69 * Math.cos((centroid.lat * Math.PI) / 180))
   const { data } = await supabase
     .from('event_details')
     .select(`
@@ -365,6 +372,10 @@ export async function fetchEventPool(
     .contains('content_items.surfaces', ['home_feed'])
     .gte('event_date', todayStr)
     .lte('event_date', horizon)
+    .gte('location_lat', centroid.lat - dLat)
+    .lte('location_lat', centroid.lat + dLat)
+    .gte('location_lng', centroid.lng - dLng)
+    .lte('location_lng', centroid.lng + dLng)
     .order('event_date', { ascending: true })
     .limit(200)
 

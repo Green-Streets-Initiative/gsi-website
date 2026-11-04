@@ -95,7 +95,7 @@ export default function EmployerLoginPage() {
               for Employers
             </span>
           </div>
-          <p className="text-[13px] text-[#4A4D68]">
+          <p className="text-[14px] text-[#4A4D68]">
             by{' '}
             <span className="font-semibold text-[#2D6A4F]">Green Streets</span>{' '}
             Initiative
@@ -115,16 +115,16 @@ export default function EmployerLoginPage() {
               <h1 className="mb-2 text-[20px] font-bold tracking-[-0.01em] text-[#191A2E]">
                 Check your inbox
               </h1>
-              <p className="text-[14.5px] leading-[1.5] text-[#4A4D68]">
+              <p className="text-[15px] leading-[1.5] text-[#4A4D68]">
                 We sent a login link to{' '}
                 <strong className="font-semibold text-[#191A2E]">{email}</strong>.
               </p>
-              <p className="mt-2 text-[13px] text-[#5B6075]">
+              <p className="mt-2 text-[14px] text-[#5B6075]">
                 The link expires in 1 hour. Don&apos;t see it? Check your spam folder.
               </p>
               <button
                 type="button"
-                className="mt-5 text-[13px] font-semibold text-[#2D6A4F] hover:underline"
+                className="mt-5 text-[14px] font-semibold text-[#2D6A4F] hover:underline"
                 onClick={() => setSent(false)}
               >
                 Try a different email
@@ -135,19 +135,19 @@ export default function EmployerLoginPage() {
               <h1 className="mb-1.5 text-center text-[20px] font-bold tracking-[-0.01em] text-[#191A2E]">
                 Sign in to your portal
               </h1>
-              <p className="mb-6 text-center text-[14px] text-[#4A4D68]">
-                Enter your admin email and we&apos;ll send you a login link.
+              <p className="mb-6 text-center text-[15px] text-[#4A4D68]">
+                Enter your work email and we&apos;ll send you a login link.
               </p>
               {notice && (
                 <p
                   role="status"
-                  className="mb-4 rounded-[10px] border border-[#E3C48C] bg-[#FBF4E6] px-3.5 py-2.5 text-[13.5px] leading-[1.45] text-[#191A2E]"
+                  className="mb-4 rounded-[10px] border border-[#E3C48C] bg-[#FBF4E6] px-3.5 py-2.5 text-[14px] leading-[1.45] text-[#191A2E]"
                 >
                   {notice}
                 </p>
               )}
               <form onSubmit={handleSubmit}>
-                <label htmlFor="employer-login-email" className="mb-1.5 block text-[12.5px] font-semibold text-[#4A4D68]">
+                <label htmlFor="employer-login-email" className="mb-1.5 block text-[14px] font-semibold text-[#4A4D68]">
                   Email address
                 </label>
                 <input
@@ -158,7 +158,7 @@ export default function EmployerLoginPage() {
                   placeholder="admin@yourcompany.com"
                   required
                   autoFocus
-                  className="mb-4 w-full rounded-[10px] border border-[rgba(25,26,46,0.09)] bg-white px-3.5 py-3 text-[14.5px] text-[#191A2E] outline-none placeholder:text-[#5B6075] focus:border-[#2D6A4F]"
+                  className="mb-4 w-full rounded-[10px] border border-[rgba(25,26,46,0.09)] bg-white px-3.5 py-3 text-[15px] text-[#191A2E] outline-none placeholder:text-[#5B6075] focus:border-[#2D6A4F]"
                 />
                 <button
                   type="submit"
@@ -168,7 +168,7 @@ export default function EmployerLoginPage() {
                   {loading ? 'Sending…' : 'Send login link'}
                 </button>
                 {error && (
-                  <p role="alert" className="mt-3 text-[13.5px] leading-[1.45] text-[#B3361F]">
+                  <p role="alert" className="mt-3 text-[14px] leading-[1.45] text-[#B3361F]">
                     {error}
                   </p>
                 )}
@@ -178,7 +178,7 @@ export default function EmployerLoginPage() {
         </div>
 
         {/* Footer links */}
-        <div className="mt-6 text-center text-[13px] text-[#4A4D68]">
+        <div className="mt-6 text-center text-[14px] text-[#4A4D68]">
           Not an employer partner yet?{' '}
           <Link
             href="/shift/employers"

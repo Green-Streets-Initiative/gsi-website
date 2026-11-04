@@ -29,6 +29,11 @@ export interface BikeFriendlyPlace {
   round: string | null
   current: boolean
   url: string | null
+  /** Bicycle Benefits: street address, whether the place sells the helmet
+   *  sticker, and whether it has an air pump riders can use. */
+  address?: string | null
+  stickers?: boolean
+  pump?: boolean
 }
 
 const AREA = { s: 41.15, w: -73.6, n: 42.9, e: -69.8 }
@@ -38,7 +43,7 @@ const UA = { 'User-Agent': 'GreenStreetsInitiative-Website/1.0 (info@gogreenstre
 async function bicycleBenefits(): Promise<BikeFriendlyPlace[]> {
   const res = await fetch('https://bicyclebenefits.org/members', { headers: UA, signal: AbortSignal.timeout(20_000), cache: 'no-store' })
   if (!res.ok) throw new Error(`Bicycle Benefits ${res.status}`)
-  const json = await res.json() as { members?: { name: string; status: number; discount: string | null; latitude: string; longitude: string; web: string | null; category?: { name?: string } | null }[] }
+  const json = await res.json() as { members?: { name: string; status: number; discount: string | null; latitude: string; longitude: string; web: string | null; address?: string | null; stickers_available?: number | null; air_pump?: number | null; category?: { name?: string } | null }[] }
   return (json.members ?? []).flatMap((m) => {
     const lat = parseFloat(m.latitude)
     const lng = parseFloat(m.longitude)
@@ -48,6 +53,9 @@ async function bicycleBenefits(): Promise<BikeFriendlyPlace[]> {
       category: m.category?.name ?? null,
       perk: m.discount.replace(/\s*\(Program stickers available HERE!?\)/i, '').trim(),
       level: null, round: null, current: true, url: m.web,
+      address: m.address?.trim() || null,
+      stickers: m.stickers_available === 1 || /stickers available/i.test(m.discount),
+      pump: m.air_pump === 1,
     }]
   })
 }
@@ -76,7 +84,7 @@ const cached = unstable_cache(
     if (bfb.status === 'rejected') console.warn('[bike-friendly] League:', bfb.reason)
     return [...(bb.status === 'fulfilled' ? bb.value : []), ...(bfb.status === 'fulfilled' ? bfb.value : [])]
   },
-  ['bike-friendly-places-v1'],
+  ['bike-friendly-places-v2'],
   { revalidate: 24 * 60 * 60 },
 )
 

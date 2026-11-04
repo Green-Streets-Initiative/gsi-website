@@ -19,7 +19,7 @@ import { bricolageFonts } from '@/lib/og-fonts'
 import { CREAM, NAVY, FOREST, INK_SOFT } from '@/lib/semester/og-card'
 import { townFromAddress } from '@/lib/events-seo'
 import {
-  parseEventDate, dateMedium, formatTime, isDeadline, getTypeMeta,
+  dateMedium, dateRangeShort, formatTime, isDeadline, getTypeMeta,
   eventRideStyle, formatDistanceText, getTagMeta, RIDE_STYLE_LABEL,
   type CommunityEvent,
 } from '@/lib/events'
@@ -52,9 +52,9 @@ function trimToWord(text: string, max: number): string {
   return `${(space > max * 0.6 ? cut.slice(0, space) : cut).trimEnd()}…`
 }
 
-/** "Wed, Sep 23 · 11 AM–2 PM", or "Entries due Wed, Oct 4" for a deadline. */
+/** "Wed, Sep 23 · 11 AM–2 PM", "Nov 1 to 30" for a multi-day event, or "Entries due Wed, Oct 4" for a deadline. */
 function whenLine(event: CommunityEvent): string {
-  const day = dateMedium(parseEventDate(event.event_date))
+  const day = dateRangeShort(event, dateMedium)
   if (isDeadline(event.event_type)) return `Entries due ${day}`
   if (!event.event_time) return day
   const start = formatTime(event.event_time)

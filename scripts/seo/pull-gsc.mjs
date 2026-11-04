@@ -211,7 +211,9 @@ async function main() {
   }
 
   if (mode === 'weekly') {
-    const snap = await weeklySnapshot(client, siteUrl, clusters, 3)
+    // --end-lag keeps the series contiguous when a run lands off its usual day
+    // (2026-11-01: a Sunday run after a missed Monday would overlap by one day).
+    const snap = await weeklySnapshot(client, siteUrl, clusters, Number(arg('end-lag', '3')))
     writeOut(`weekly-${snap.range.endDate}.json`, snap)
     return
   }

@@ -234,7 +234,9 @@ const answerEngineQuery = `
 const OUTCOME_TRACKING_START = '2026-09-14'
 // event_outbound_click (Register / Event info on an event page) arrives with
 // seo/2026-09-app-invites; until that ships it simply never matches.
-const ACTIVATION_EVENTS = `'advisor_results_shown', 'snapshot_viewed', 'event_outbound_click'`
+// venue_trip_planned ("Plan your trip" on a /parking page, exp-2026-11-3)
+// likewise matches nothing until those pages ship.
+const ACTIVATION_EVENTS = `'advisor_results_shown', 'snapshot_viewed', 'event_outbound_click', 'event_town_click', 'venue_trip_planned'`
 const APP_INTENT_EVENTS = `'shift_store_click', 'snapshot_app_cta_clicked', 'advisor_app_cta_clicked'`
 
 const channelSessionsQuery = `
@@ -342,14 +344,16 @@ async function main() {
   }
   if (mode !== 'weekly') die(`unknown --mode "${mode}" (expected check or weekly)`)
 
-  const [sessionRows, landingRows, answerRows, channelRows, paidLandingRows, landingOutcomeRows] = await Promise.all([
-    hogql(cred, projectId, weeklySessionsQuery),
-    hogql(cred, projectId, landingPagesQuery),
-    hogql(cred, projectId, answerEngineQuery),
-    hogql(cred, projectId, channelSessionsQuery),
-    hogql(cred, projectId, paidLandingQuery),
-    hogql(cred, projectId, landingOutcomesQuery),
-  ])
+  // One query at a time (2026-11-01). Run in parallel, the six together hit
+  // PostHog's max execution time on every attempt once paid traffic grew; the
+  // 12-week session scan is the heavy one.
+  const queries = [
+    weeklySessionsQuery, landingPagesQuery, answerEngineQuery,
+    channelSessionsQuery, paidLandingQuery, landingOutcomesQuery,
+  ]
+  const results = []
+  for (const q of queries) results.push(await hogql(cred, projectId, q))
+  const [sessionRows, landingRows, answerRows, channelRows, paidLandingRows, landingOutcomeRows] = results
 
   // { 'YYYY-MM-DD': { organic_search: {sessions, activated, app_intent}, ... } }
   const byWeek = {}

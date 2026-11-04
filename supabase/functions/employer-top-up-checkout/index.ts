@@ -85,7 +85,7 @@ serve(async (req: Request) => {
     return jsonResponse({ error: "Missing bearer token" }, 401);
   }
 
-  let body: { amount_cents?: unknown; origin?: unknown; draft_id?: unknown; confirm_cents?: unknown; mode?: unknown };
+  let body: { amount_cents?: unknown; origin?: unknown; draft_id?: unknown; confirm_cents?: unknown; mode?: unknown; group_id?: unknown };
   try {
     body = await req.json();
   } catch {
@@ -154,7 +154,12 @@ serve(async (req: Request) => {
     .from("group_admins")
     .select("group_id, role, groups!inner(id, name, tier, stripe_customer_id, admin_email)")
     .eq("email", email);
+  // A plain top-up names the workplace on screen (group_id); without it the
+  // caller's first team row is used, as before.
+  const askedGroupId =
+    typeof body.group_id === "string" && /^[0-9a-f-]{36}$/i.test(body.group_id) ? body.group_id : null;
   if (draftGroupId) adminQuery = adminQuery.eq("group_id", draftGroupId);
+  else if (askedGroupId) adminQuery = adminQuery.eq("group_id", askedGroupId);
   const { data: adminRow, error: adminErr } = await adminQuery.limit(1).maybeSingle();
   if (adminErr) {
     console.error("[TopUpCheckout] group lookup failed:", adminErr);

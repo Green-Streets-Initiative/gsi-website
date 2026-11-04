@@ -191,11 +191,14 @@ export interface NearbyModelInput {
   /** The start dock's pill on a bike route ("6 bikes"), in the page's
    *  language. Short on purpose: the start sits at the map's edge. */
   startDockLabel?: (dock: BluebikeStationLive) => string
+  /** Cargo bike and repair pins (Around You v2 keeps them behind a layer).
+   *  Default on, as on the original page. */
+  extrasVisible?: boolean
 }
 
 export function useNearbyModel({
   center, transitCorridors, bikeCorridors, rail, bus, railFar, busFar, shuttles, docks,
-  modeFilter, paintedVisible, onRequestCorridorShape, startDockLabel,
+  modeFilter, paintedVisible, onRequestCorridorShape, startDockLabel, extrasVisible = true,
 }: NearbyModelInput) {
   const mode = modeFilter ?? MODE_FILTER_DEFAULT
   const painted = paintedVisible ?? PAINTED_DEFAULT
@@ -435,10 +438,11 @@ export function useNearbyModel({
     return best?.station_id ?? null
   }, [docks])
   const showBikePins = showBike && (!routeFocused || bikePinsDuringRoute)
+  const showExtraPins = showBikePins && extrasVisible
 
   const markers = useMemo<NearbyMarker[]>(() => [
     { id: 'user', lat: center.lat, lng: center.lng, html: userDotHtml(), zIndex: 10 },
-    ...(showBikePins ? borrowRent.map(p => ({
+    ...(showExtraPins ? borrowRent.map(p => ({
       id: `borrow-${p.id}`,
       lat: p.lat,
       lng: p.lng,
@@ -452,7 +456,7 @@ export function useNearbyModel({
       dimmed: (anyPointActive && !borrowActive(p.id)) || bikePinsDuringRoute,
       zIndex: borrowActive(p.id) ? 6 : 1,
     })) : []),
-    ...(showBikePins ? repairPlaces.map(p => ({
+    ...(showExtraPins ? repairPlaces.map(p => ({
       id: `repair-${p.id}`,
       lat: p.lat,
       lng: p.lng,
@@ -533,7 +537,7 @@ export function useNearbyModel({
       zIndex: bikePinsDuringRoute && d.station_id === startDockId ? 11 : dockActive(d.station_id) ? 6 : 1,
     })) : []),
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  ], [center, families, docks, borrowRent, repairPlaces, showBike, showBikePins, bikePinsDuringRoute, routeFocused, selection, stationActive, anyPointActive, focusedStationKey, startDockId, startDockLabel])
+  ], [center, families, docks, borrowRent, repairPlaces, showBike, showBikePins, showExtraPins, bikePinsDuringRoute, routeFocused, selection, stationActive, anyPointActive, focusedStationKey, startDockId, startDockLabel])
 
   // Where the camera should ease when a point-like thing is tapped, so the
   // tapped marker stays visible above the detail card / sheet. Corridor-driven

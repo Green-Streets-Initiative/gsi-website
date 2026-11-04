@@ -1,0 +1,11 @@
+Act this week (one small rule fix before Saturday). October is locked in at 8.75% click rate (303 clicks / 3,464 impressions), well over the 5% floor after September's 3.0%, with 31 conversions. Best week yet: 128 clicks at 12.6%, 21 conversions. Today's script email flags (Town Walking & Biking 4.3%, one low-quality keyword) were already handled this afternoon.
+
+1. Add a second ad to the T closures ad group (grant wants 2 ads per group; still 1) before the Oct 31 Green Line closure.
+2. Add a "Fares and passes" ad group to How-to Guides: it runs out of searches, not money, and October used only $1,453 of the $10,000 grant.
+3. Add an "Events near you" sitelink to How-to Guides so ad visitors can reach the events calendar.
+
+To do any of them, open Claude Code and say "do ad grants item N".
+
+Also: Shift Your Semester (1 impression) and New Routes (30, no clicks) hit their judging dates and failed as expected. They cost nothing; leave them on and stop spending effort there.
+
+Full report: https://claude.ai/artifact/UuoYJsktAySt3HY5KinrbF

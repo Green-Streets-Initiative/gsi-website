@@ -50,8 +50,8 @@ export default function NextSteps({ kind, ways, source }: { kind: PartnerKind; w
             sub={copied
               ? 'Link copied. Send it to them.'
               : kind === 'guide'
-                ? 'Send them this page. If they live near you and work near your work, Shift can match you so you can show them how.'
-                : 'Send them this page. If they live near you and work near your work, Shift can match you so they can show you how.'}
+                ? 'Send them this page. If they live near you, Shift can match you so you can show them how.'
+                : 'Send them this page. If they live near you, Shift can match you so they can show you how.'}
             onClick={() => void invite()}
           />
         ) : null}
@@ -113,7 +113,7 @@ export function LessonCard() {
         ) : (
           <>
             <p className="mt-3 text-[16px] leading-relaxed text-(--ev-ink-85)">
-              Tell the {offer.school} when you’re usually free, and an instructor will email you to pick a time. Green Streets pays for the lesson.
+              Tell the {offer.school} when you’re usually free, and an instructor will email you to pick a time. Green Streets is covering the cost.
             </p>
             <Link href={LESSON_FORM} onClick={() => track('together_lesson_request_link', { state: 'has_code' })} className={`${LESSON_LINK} mt-3`}>
               Send my request
@@ -130,7 +130,7 @@ export function LessonCard() {
           <h3 className="font-display text-[22px] font-extrabold">Book a free 1:1 lesson</h3>
           {offer.left != null && <Badge tone="good">{offer.left} left</Badge>}
         </div>
-        <p className="mt-1 text-[16px] text-(--ev-ink-85)">Ride in traffic with an instructor from the {offer.school}. Green Streets pays.</p>
+        <p className="mt-1 text-[16px] text-(--ev-ink-85)">Ride in traffic with an instructor from the {offer.school}. Green Streets is covering the cost.</p>
       </div>
       <Link href={LESSON_FORM} onClick={() => track('together_lesson_request_link', { state: 'offer' })} className={LESSON_LINK}>
         Ask for your free lesson

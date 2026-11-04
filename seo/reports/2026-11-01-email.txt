@@ -1,0 +1,53 @@
+SEO monthly deep-dive, 2026-11-01
+
+HEADLINE
+Search set another record (146 clicks, 10,439 impressions in the week to 10-30, more than three times the 12-week average), and event listings carry it. Putting events in the sitemap is called a win. The app buttons on event and Roam pages lost: event visitors click Register (11%), not the app (0.6%). Item 3 sends them to their town page instead, where search visitors reach the app at 6.3%.
+
+SCOREBOARD (vs 4-week average)
+- North star, app-intent sessions: 23 in the week of 10-19 (17.0, +35%). This week has 24 after six days.
+- Organic search: 146 clicks (+59%), 10,439 impressions (+94%), CTR 1.40%, position 6.6.
+- Sessions by channel: organic 173 (+56%, 1.7% app intent); Ad Grants 129 (1.6%); other paid 404 (4.5%); answer engines 0.
+- Ad Grants Oct 1-28 (snapshot 10-28): CTR 8.75%, above the 5% floor, 31 conversions. October is compliant.
+- Non-brand discovery impressions: 1,863 (4-week trend +265%, not stagnant).
+
+DECISIONS FOR KEITH
+
+1. Drive-time guide: a description that earns the click. Recommendation: ship.
+This replaces last report's item 1. That item would have redirected "How far is a 10-minute drive on foot", which had 0 impressions for seven weeks and now gets 732 a week (plus 815 in its translations) at position 6.6. It gets almost no clicks because its search snippet gives the whole answer away. The new description: "Walk and bike times for a 5, 10, 15 or 20-minute drive around Boston, and the door-to-door minutes that change the answer." Title and page stay as they are.
+Cost of waiting: about 700 impressions a week at 0.27% CTR.
+To ship: open Claude Code and say "ship SEO item 1" (or "decline SEO item 1").
+
+2. Title the Roams hub for trail searches. Recommendation: ship.
+Same as on 10-19. The hub is still titled "Shift Roams — Self-Guided Walking, Biking & Transit Routes" and gets about 0 impressions. The new title would be "Bike paths, rail trails and walking loops around Boston", plus a list of the routes for search engines. Since your rebuild, the Roam pages themselves get clicked almost twice as often (0.88% to 1.56%), so the hub is the missing piece.
+Cost of waiting: the last weeks of fall trail season.
+To ship: open Claude Code and say "ship SEO item 2" (or "decline SEO item 2").
+
+3. Event pages link to the town page instead of the app-store card. Recommendation: ship.
+One line on each event page, "Getting there: walking, biking and transit around <town>", linking to that town's page, where Shift is pitched in context. Events with no town keep today's card. Register tracking stays.
+Cost of waiting: about 130 event visitors a week from search, with 1 in 170 reaching the app.
+To ship: open Claude Code and say "ship SEO item 3" (or "decline SEO item 3").
+
+EXPERIMENT BOARD
+Verdicts this run:
+- Events in the sitemap: won. /events grew from 299 to 4,159 impressions a week and still gets clicked at 2.5%. Learning: event listings are the growth engine. Getting each one found fast beats any title tweak.
+- Event app invite: lost for the app (0.6%), but 11% clicked Register. Learning: people who search for an event want to go to it.
+- Roam app invite: lost, 0 of 66. Your rebuild already replaced it.
+- Roam distance titles: lost. The page rebuild lifted clicks; the title didn't.
+Running:
+- Cargo e-bike cost guide (11-09): 4 impressions. Leaning lost.
+- "How to pay for the T" title (11-23): the English page still has 0 search impressions, while Ad Grants sends it 93 visits a week. Leaning lost.
+- Boston winter guide (12-14): 67 impressions at position 4.2, already above target as the season starts.
+
+NEXT HYPOTHESES
+1. Put "Boston" and "MBTA" in the translated guides' titles. The 84 translations get 2,200 impressions a week and 3 clicks, mostly from people searching outside Boston.
+2. Answer the Brandeis shuttle-to-Boston question on the Brandeis page, including the Thanksgiving shuttle people are searching for now.
+3. The Boston parking costs page has 380 impressions and 0 clicks at position 7.5. Retitle it for the places people search.
+
+DEEP-DIVE NOTES
+Search results: GSI doesn't appear on any of the six checked queries. Winter biking goes to boston.gov, Streetsblog and the Cyclists Union; "do you need a car in Boston" goes to a rental agency's blog and forums. Portfolio: added this month's recurring event series (SomerStreets, Tour de Streets, Critical Mass), Brandeis shuttle, and the Portuguese and Spanish transit queries; coverage 81% to 97%.
+Skipped (they need you or a browser): the monthly AI answer sample, the answer-page refresh, and building branches. Say "run the AI answer sample" in a chat whenever you like.
+One thing for whoever owns Reddit ads: 119 visits from the "semester" Reddit campaign in the last 7 days, though it was recorded as stopped Oct 1.
+
+HEALTH
+All 200. The sitemap has 438 URLs (more town pages, a rise, not a drop), and IndexNow accepted them all. Last week's run never finished because PostHog timed out; I changed the puller to run its queries one at a time, and it now works.
+Full report: https://github.com/Green-Streets-Initiative/gsi-website/blob/main/seo/reports/2026-11-01.md

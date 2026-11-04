@@ -2,14 +2,14 @@
 
 import Link from 'next/link'
 import { useCallback, useEffect, useState } from 'react'
-import { Briefcase, Car, Clock, GraduationCap, House, Languages, Mail, Medal, Route, Sprout } from 'lucide-react'
+import { Briefcase, CalendarDays, Car, Clock, GraduationCap, House, Languages, Mail, MapPin, Medal, MessageSquare, Route, Sprout } from 'lucide-react'
 import NextSteps from '@/components/together/NextSteps'
 import { Avatar, Chip, ChipRow, FitMeter, WAY_ICON } from '@/components/together/bits'
 import { Journey } from '@/components/together/TogetherShell'
-import { Button, Card, Notice, Spinner, Textarea, cx } from '@/components/organizers/ui'
+import { Button, Card, Input, Notice, Spinner, Textarea, cx } from '@/components/organizers/ui'
 import {
   LANGUAGES, TIMES, WAYS, answerMatch, answerWent, arriveGap, clock, endMatch, experienceFit, isWay, myMatches, myRequests,
-  overallFit, rateMatch, reportMatch, routeFit, timingDaysKnown, timingFit, track,
+  overallFit, phoneLabel, rateMatch, reportMatch, routeFit, setMatchPhone, timingDaysKnown, timingFit, track,
   type Match, type PartnerRequest, type Rating, type ReportReason,
 } from '@/lib/together'
 
@@ -32,7 +32,9 @@ const REASONS: { id: ReportReason; label: string }[] = [
 ]
 // Plain words, as in the match notice (01462; Keith 2026-10-27: "too euphemistic").
 const DO: Record<string, string> = { bike: 'bike', walk: 'walk', transit: 'take the bus or train', micro: 'ride a scooter' }
+const SLOTS: Record<string, string> = { weekend_morning: 'Weekend mornings', weekend_afternoon: 'Weekend afternoons', weekday_evening: 'Weekday evenings' }
 function shortLine(m: Match): string {
+  if (m.kind === 'practice') return m.my_kind === 'guide' ? 'Would like company on a practice ride' : 'Can go on a practice ride with you'
   if (m.my_kind === 'carpool') return 'Could share your drive'
   const way = DO[m.other.shared_modes?.[0] ?? (m.my_kind === 'guide' ? m.other.modes[0] : '') ?? ''] ?? null
   if (m.my_kind === 'newcomer') return way ? `Can show you how to ${way}` : 'Makes a trip like yours'
@@ -150,6 +152,53 @@ export default function MatchesPage() {
   )
 }
 
+/** Your number for this one match, so they can text you on the day (01502). Optional. */
+function MyPhone({ m, name }: { m: Match; name: string }) {
+  const [mine, setMine] = useState<string | null>(m.my_phone ?? null)
+  const [open, setOpen] = useState(false)
+  const [draft, setDraft] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [problem, setProblem] = useState<string | null>(null)
+
+  async function save(value: string) {
+    setSaving(true)
+    setProblem(null)
+    const r = await setMatchPhone(m.id, value)
+    setSaving(false)
+    if (!r.ok) return setProblem(r.reason === 'bad_phone' ? 'That doesn’t look like a phone number. Try it with the area code.' : 'That didn’t save. Try again.')
+    setMine(r.phone ?? null)
+    setOpen(false)
+    track(r.phone ? 'together_phone_added' : 'together_phone_removed', { kind: m.kind })
+  }
+
+  if (!open) {
+    return mine ? (
+      <p className="text-[15px] text-(--ev-ink-80)">
+        {name} can text you at {phoneLabel(mine)}.{' '}
+        <button type="button" className="font-semibold underline" onClick={() => { setDraft(phoneLabel(mine)); setOpen(true) }}>Change</button>
+      </p>
+    ) : (
+      <button type="button" className="w-fit text-left text-[15px] font-semibold underline" onClick={() => setOpen(true)}>
+        Add your number so {name} can text you on the day
+      </button>
+    )
+  }
+  return (
+    <div className="grid grid-cols-1 gap-2">
+      <Input type="tel" autoComplete="tel" inputMode="tel" maxLength={20} autoFocus value={draft} onChange={(e) => setDraft(e.target.value)}
+        placeholder="(617) 555-0123" aria-label={`Your number for ${name}`} />
+      <p className="text-[15px] text-(--ev-ink-80)">Optional. Only {name} sees it, and only until this match ends.</p>
+      {problem ? <p role="alert" className="text-[15px] font-semibold text-(--ev-danger)">{problem}</p> : null}
+      <div className="flex flex-wrap items-center gap-3">
+        <Button variant="primary" busy={saving} disabled={!draft.trim()} onClick={() => save(draft)}>Save my number</Button>
+        {mine
+          ? <Button disabled={saving} onClick={() => save('')}>Remove</Button>
+          : <Button disabled={saving} onClick={() => setOpen(false)}>Cancel</Button>}
+      </div>
+    </div>
+  )
+}
+
 function MatchCard({ m, busy, myArrive, onAnswer, onWent, onRate, onEnd, onReport }: {
   m: Match
   busy: boolean
@@ -174,6 +223,7 @@ function MatchCard({ m, busy, myArrive, onAnswer, onWent, onRate, onEnd, onRepor
   const fullName = connected && m.other.last_initial ? `${name} ${m.other.last_initial}.` : name
   const askWent = m.status === 'connected' && !!m.connected_at && now - new Date(m.connected_at).getTime() > 24 * 3600_000
   const carpool = m.my_kind === 'carpool'
+  const practice = m.kind === 'practice' ? m.practice ?? null : null
   const eyebrow = m.status === 'went_together' ? 'You went together' : connected ? 'You both said yes' : shortLine(m)
   const overall = m.status === 'proposed' ? overallFit(m, myArrive) : null
   const since = m.other.member_since ? new Date(m.other.member_since).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : null
@@ -248,7 +298,25 @@ function MatchCard({ m, busy, myArrive, onAnswer, onWent, onRate, onEnd, onRepor
         </div>
       ) : null}
 
-      {m.status === 'proposed' || (carpool && connected) ? (
+      {practice ? (
+        <div className="grid grid-cols-1 gap-2 rounded-xl bg-(--ev-panel) px-4 py-3 text-[16px]">
+          <p className="flex items-center gap-2">
+            <MapPin className="h-[18px] w-[18px] shrink-0 text-(--ev-accent)" aria-hidden />
+            {practice.near_home || !practice.trail
+              ? `Quiet streets near ${m.my_kind === 'guide' ? 'their' : 'your'} home`
+              : `${practice.trail}, ${practice.point} entrance`}
+            {m.my_kind === 'guide' && m.home_miles != null ? ` · ${Math.max(0.1, Math.round(m.home_miles * 10) / 10)} mi from you` : ''}
+          </p>
+          {practice.slots.length ? (
+            <p className="flex items-center gap-2">
+              <CalendarDays className="h-[18px] w-[18px] shrink-0 text-(--ev-accent)" aria-hidden />
+              {practice.slots.map((x) => SLOTS[x] ?? x).join(', ')}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
+
+      {!practice && (m.status === 'proposed' || (carpool && connected)) ? (
         <div className="grid grid-cols-1 gap-1 rounded-xl bg-(--ev-panel) px-4 py-3">
           {m.status === 'proposed' && timing != null ? (
             <FitMeter icon={<Clock className="h-[18px] w-[18px]" />} label="Timing" level={timing} value={timingValue} />
@@ -315,12 +383,12 @@ function MatchCard({ m, busy, myArrive, onAnswer, onWent, onRate, onEnd, onRepor
         <div className="grid grid-cols-1 gap-3">
           <p className="text-[16px] font-semibold">
             {m.status === 'went_together'
-              ? (carpool ? 'Next: agree on the days you’ll keep sharing the drive.' : 'Next: try the same trip on your own this week, while the route is fresh.')
-              : (carpool ? `Email ${name} to settle who drives, where to meet and your first day.` : `Email ${name} to pick a day for your first trip together.`)}
+              ? (carpool ? 'Next: agree on the days you’ll keep sharing the drive.' : practice ? 'Next: another easy ride, or a short trip you’d make anyway.' : 'Next: try the same trip on your own this week, while the route is fresh.')
+              : (carpool ? `Email ${name} to settle who drives, where to meet and your first day.` : practice ? `Email ${name} to pick a day and where to meet for your practice ride.` : `Email ${name} to pick a day for your first trip together.`)}
           </p>
           <div className="flex flex-wrap gap-3">
             <a
-              href={`mailto:${m.other.email}?subject=${encodeURIComponent(carpool ? 'Sharing the drive' : 'Our first trip together')}`}
+              href={`mailto:${m.other.email}?subject=${encodeURIComponent(carpool ? 'Sharing the drive' : practice ? 'Our practice ride' : 'Our first trip together')}`}
               onClick={() => track('together_email_tapped', { kind: m.kind })}
               className={cx(
                 'inline-flex min-h-[44px] items-center gap-2 rounded-[10px] px-4 text-[15px] font-semibold',
@@ -340,6 +408,17 @@ function MatchCard({ m, busy, myArrive, onAnswer, onWent, onRate, onEnd, onRepor
             ) : null}
           </div>
           <p className="select-all break-all text-[15px] text-(--ev-ink-85)">{m.other.email}</p>
+          {/* Trip-day texts: only if they added a number (01502). */}
+          {m.other.phone ? (
+            <a
+              href={`sms:${m.other.phone}`}
+              onClick={() => track('together_text_tapped', { kind: m.kind })}
+              className="inline-flex min-h-[44px] w-fit items-center gap-2 rounded-[10px] border border-(--ev-line-strong) bg-white px-4 text-[15px] font-semibold"
+            >
+              <MessageSquare className="h-4 w-4" aria-hidden /> Text {name} at {phoneLabel(m.other.phone)}
+            </a>
+          ) : null}
+          <MyPhone m={m} name={name} />
           {m.status === 'connected' ? (
             <p className="text-[15px] text-(--ev-ink-80)">
               {carpool

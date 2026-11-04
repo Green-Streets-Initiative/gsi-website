@@ -6,6 +6,7 @@ import { ToastProvider, useToast } from '@/components/employer/Toast'
 import { ConfirmProvider } from '@/components/employer/ConfirmDialog'
 import Sidebar from './_components/Sidebar'
 import Topbar from './_components/Topbar'
+import StaffBar from './_components/StaffBar'
 import AgreementGate from './_components/AgreementGate'
 import SetupProgressBanner from './_components/SetupProgressBanner'
 import AccessLapsedNotice from './_components/AccessLapsedNotice'
@@ -71,6 +72,7 @@ function PortalFrame({ children }: { children: React.ReactNode }) {
           under the portal on long pages (Keith 2026-09-30). */}
       <div className="flex h-dvh min-h-0 overflow-hidden">
       <div className="flex min-w-0 flex-1 flex-col">
+        <StaffBar />
         <Topbar onMenu={openNav} />
         <SetupProgressBanner />
         <main data-portal-main className="relative min-h-0 flex-1 overflow-y-auto">

@@ -93,6 +93,11 @@ export async function POST(req: Request) {
   const name = typeof nameRaw === 'string' ? nameRaw.trim() : ''
   const emailRaw = form.get('contact_email')
   const contactEmail = typeof emailRaw === 'string' ? emailRaw.trim() : ''
+  // The building's street address, when given. The link the form hands back
+  // already carries its coordinates; this is only for Keith's heads-up, so
+  // he can tell which building signed up.
+  const addressRaw = form.get('address')
+  const address = typeof addressRaw === 'string' ? addressRaw.trim().slice(0, 200) : ''
   const roleRaw = form.get('role')
   const role = (typeof roleRaw === 'string' && (ROLES as readonly string[]).includes(roleRaw) ? roleRaw : null) as Role | null
 
@@ -211,6 +216,7 @@ export async function POST(req: Request) {
       html: [
         `<h2>New self-service partner signup</h2>`,
         `<p><strong>${esc(name)}</strong> (status: pending)</p>`,
+        address ? `<p>Building: ${esc(address)}</p>` : '',
         `<p>Live link: <a href="${liveUrl}">${liveUrl}</a></p>`,
         logoUrl
           ? `<p>Logo: <a href="${logoUrl}">${logoUrl}</a><br/><img src="${logoUrl}" alt="" style="max-height:60px;background:#fff;padding:8px;border-radius:6px"/></p>`

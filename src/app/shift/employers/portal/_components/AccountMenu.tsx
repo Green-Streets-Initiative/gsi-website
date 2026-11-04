@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { ChevronDown, LogOut, Settings, ShieldCheck } from 'lucide-react'
 import { usePortal } from '../_lib/portal-context'
+import { ROLE_LABEL, ROLE_SUMMARY } from '../_lib/portal-roles'
 
 function initialsFor(name: string | null, email: string | null): string {
   const source = (name ?? '').trim() || (email ?? '').split('@')[0]
@@ -50,16 +51,9 @@ export default function AccountMenu() {
   const me = admins.find((a) => a.email.toLowerCase() === (sessionEmail ?? ''))
   const name = me?.name ?? null
   const initials = initialsFor(name, sessionEmail)
-  const roleWords =
-    role === 'admin'
-      ? isOwner
-        ? 'Account owner · Can change settings'
-        : 'Can change settings'
-      : role === 'manager'
-        ? 'Manager · Can run challenges and invites'
-        : role === 'viewer'
-          ? 'Can view'
-          : null
+  // The role and its one-line summary, the same words Team settings use
+  // ("Viewer. Can see everything and change nothing.").
+  const roleWords = role ? `${role === 'admin' && isOwner ? 'Account owner' : ROLE_LABEL[role]}. ${ROLE_SUMMARY[role]}` : null
 
   async function handleSignOut() {
     setSigningOut(true)
@@ -97,9 +91,14 @@ export default function AccountMenu() {
               {sessionEmail ?? ''}
             </div>
             {(roleWords || isGsiAdmin) && (
-              <div className="mt-1 text-[14px] text-ink-muted">
+              <div className="mt-1 text-[14px] leading-[1.45] text-ink-muted">
                 {isGsiAdmin ? 'Green Streets staff' : roleWords}
               </div>
+            )}
+            {!isGsiAdmin && role && (
+              <Link href="/shift/employers/portal/settings#team" className="mt-1.5 inline-block text-[14px] font-medium text-accent no-underline hover:underline">
+                What each role can do
+              </Link>
             )}
           </div>
           <div className="py-1.5">

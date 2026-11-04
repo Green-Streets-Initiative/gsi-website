@@ -1,10 +1,11 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { toneClass } from '@/components/events/EventsTone'
-import { FUNCTIONS_BASE, clock, dateShort, dayShort, type RsvpStatus } from '@/lib/rides/public'
+import { MessageCircle } from 'lucide-react'
+import { FUNCTIONS_BASE, clock, dateShort, dayShort, type RideChat, type RsvpStatus } from '@/lib/rides/public'
 import '@/components/events/events-tone.css'
 
 interface GuestDate {
@@ -20,6 +21,11 @@ interface GuestRide {
   code: string
   name: string
   status: string
+  /** Going on every date (Shift 01598), and how that reads ("every Saturday"). */
+  every_date: boolean
+  every: string | null
+  /** The organizer's group chat or email link, for people on the ride. */
+  chat: RideChat | null
   dates: GuestDate[]
 }
 interface Overview {
@@ -27,6 +33,14 @@ interface Overview {
   email: string
   email_optout: boolean
   rides: GuestRide[]
+}
+/** The answer to "Did you make it?" (Shift 01594), from the after-ride email. */
+interface WentResult {
+  occurrence_id: string
+  date: string
+  ride_name: string
+  date_title: string | null
+  went: boolean
 }
 
 const ANSWERS: { value: RsvpStatus; label: string }[] = [
@@ -44,6 +58,16 @@ export default function ManageRides() {
   const [saving, setSaving] = useState<string | null>(null)
   const [forgotten, setForgotten] = useState(false)
   const [confirmForget, setConfirmForget] = useState(intent === 'forget')
+  // Leaving takes every answer for that ride with it, so it asks first.
+  const [confirmLeave, setConfirmLeave] = useState<string | null>(null)
+  // "Yes, I was there" / "No, I missed it" in the after-ride email open this
+  // page with ?went=<date>&a=yes|no, and the answer is saved on arrival.
+  const wentDate = params.get('went')
+  const wentAnswer = params.get('a')
+  const [went, setWent] = useState<WentResult | null>(null)
+  const wentSent = useRef(false)
+  // The date they just answered sits in the card above, not in the list again.
+  const shown = (r: GuestRide) => r.dates.filter((d) => d.id !== went?.occurrence_id)
 
   const load = useCallback(async () => {
     if (!token) { setError('This page needs the link from your ride email.'); return }
@@ -52,8 +76,6 @@ export default function ManageRides() {
     if (!res.ok) { setError(body.error ?? 'This link has expired or was removed.'); return }
     setData(body)
   }, [token])
-
-  useEffect(() => { load() }, [load])
 
   async function act(payload: Record<string, unknown>, key: string) {
     setSaving(key)
@@ -65,13 +87,27 @@ export default function ManageRides() {
         body: JSON.stringify({ t: token, ...payload }),
       })
       const body = await res.json().catch(() => ({}))
-      if (!res.ok) { setError(body.error ?? 'Couldn’t save that. Try again.'); return }
-      if (body.forgotten) { setForgotten(true); return }
+      if (!res.ok) { setError(body.error ?? 'Couldn’t save that. Try again.'); return false }
+      if (body.forgotten) { setForgotten(true); return true }
+      if (body.went_result) setWent(body.went_result)
       if (body.rides) setData(body)
+      return true
     } finally {
       setSaving(null)
     }
   }
+
+  useEffect(() => {
+    if (token && wentDate && (wentAnswer === 'yes' || wentAnswer === 'no')) {
+      if (wentSent.current) return
+      wentSent.current = true
+      void act({ action: 'went', occurrence_id: wentDate, went: wentAnswer === 'yes' }, 'went').then((ok) => { if (!ok) void load() })
+      return
+    }
+    void load()
+    // act is recreated each render; the guard above makes this run once.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [load, token, wentDate, wentAnswer])
 
   const shell = (children: React.ReactNode) => (
     <div className={`min-h-[70vh] bg-(--ev-bg) px-4 py-10 sm:px-8 ${toneClass('light')}`}>
@@ -107,6 +143,28 @@ export default function ManageRides() {
 
       {error && <p role="alert" className="mt-4 text-[14px] font-semibold text-(--ev-danger)">{error}</p>}
 
+      {went && (
+        <div className="mt-6 rounded-2xl border border-(--ev-line-mid) bg-(--ev-card) p-5" role="status">
+          <p className="text-[18px] font-bold text-(--ev-ink)">
+            {went.went ? 'Thanks. You’re counted.' : 'Thanks for letting us know.'}
+          </p>
+          <p className="mt-1 text-[15px] text-(--ev-ink-80)">
+            {went.ride_name}{went.date_title && went.date_title !== went.ride_name ? `: ${went.date_title}` : ''}, {dayShort(went.date)}, {dateShort(went.date)}.
+            {went.went ? ' The organizer sees you came.' : ''}
+          </p>
+          {data.rides.some((r) => r.dates.some((d) => d.status === 'scheduled' && d.date > went.date)) && (
+            <p className="mt-1 text-[15px] text-(--ev-ink-80)">Coming next time? Pick your answer below.</p>
+          )}
+          <button
+            onClick={() => act({ action: 'went', occurrence_id: went.occurrence_id, went: !went.went }, 'went')}
+            disabled={saving === 'went'}
+            className="mt-3 min-h-[40px] text-[14px] font-semibold text-(--ev-accent) hover:underline disabled:opacity-60"
+          >
+            {went.went ? 'I didn’t make it' : 'Actually, I was there'}
+          </button>
+        </div>
+      )}
+
       {intent === 'optout' && !data.email_optout && (
         <div className="mt-6 rounded-2xl border border-(--ev-line-mid) bg-(--ev-card) p-5">
           <p className="text-[15px] font-semibold text-(--ev-ink)">Stop ride emails?</p>
@@ -125,15 +183,53 @@ export default function ManageRides() {
               <h2 className="text-[18px] font-bold text-(--ev-ink)">
                 <Link href={`/rides/${r.code}`} className="hover:underline">{r.name}</Link>
               </h2>
-              <button onClick={() => act({ action: 'leave', series_id: r.series_id }, `leave-${r.series_id}`)} className="text-[13px] font-semibold text-(--ev-ink-75) hover:text-(--ev-ink) hover:underline">
-                Leave this ride
-              </button>
+              {confirmLeave !== r.series_id && (
+                <button onClick={() => setConfirmLeave(r.series_id)} className="min-h-[40px] text-[14px] font-semibold text-(--ev-ink-75) hover:text-(--ev-ink) hover:underline">
+                  Leave this ride
+                </button>
+              )}
             </div>
-            {r.dates.length === 0 ? (
+            {confirmLeave === r.series_id && (
+              <div className="mt-3 rounded-xl border border-(--ev-line-mid) bg-(--ev-panel) p-4">
+                <p className="text-[15px] font-semibold text-(--ev-ink)">Leave {r.name}?</p>
+                <p className="mt-1 text-[14px] text-(--ev-ink-80)">Your answers for its dates go, and you won&rsquo;t get its emails.</p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <button onClick={() => { setConfirmLeave(null); void act({ action: 'leave', series_id: r.series_id }, `leave-${r.series_id}`) }}
+                    disabled={saving === `leave-${r.series_id}`}
+                    className="min-h-[40px] rounded-[10px] bg-(--ev-danger) px-4 text-[14px] font-bold text-white disabled:opacity-60">Leave the ride</button>
+                  <button onClick={() => setConfirmLeave(null)} className="min-h-[40px] rounded-[10px] border border-(--ev-line-strong) px-4 text-[14px] font-semibold text-(--ev-ink)">Stay on it</button>
+                </div>
+              </div>
+            )}
+            {(r.every || r.chat) && (
+              <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+                {r.every && (r.every_date ? (
+                  <p className="text-[15px] text-(--ev-ink-85)">
+                    <b className="text-(--ev-ink)">You&rsquo;re in {r.every}.</b>{' '}
+                    <button onClick={() => act({ action: 'every', series_id: r.series_id, on: false }, `every-${r.series_id}`)}
+                      disabled={saving === `every-${r.series_id}`}
+                      className="min-h-[40px] font-semibold text-(--ev-accent) hover:underline disabled:opacity-60">Stop</button>
+                  </p>
+                ) : r.dates.some((d) => d.status === 'scheduled') && (
+                  <button onClick={() => act({ action: 'every', series_id: r.series_id, on: true }, `every-${r.series_id}`)}
+                    disabled={saving === `every-${r.series_id}`}
+                    className="min-h-[40px] text-[15px] font-semibold text-(--ev-accent) hover:underline disabled:opacity-60">
+                    Count me in {r.every}
+                  </button>
+                ))}
+                {r.chat && (
+                  <a href={r.chat.url} target="_blank" rel="noopener noreferrer"
+                    className="inline-flex min-h-[40px] items-center gap-1.5 rounded-[10px] border border-(--ev-line-strong) px-3 text-[14px] font-semibold text-(--ev-ink) hover:bg-(--ev-panel)">
+                    <MessageCircle size={15} /> {r.chat.label}
+                  </a>
+                )}
+              </div>
+            )}
+            {shown(r).length === 0 ? (
               <p className="mt-2 text-[14px] text-(--ev-ink-75)">No upcoming dates.</p>
             ) : (
               <ul className="mt-3 divide-y divide-(--ev-line)">
-                {r.dates.map((d) => (
+                {shown(r).map((d) => (
                   <li key={d.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
                     <div>
                       <p className="text-[15px] font-semibold text-(--ev-ink)">{dayShort(d.date)}, {dateShort(d.date)}</p>

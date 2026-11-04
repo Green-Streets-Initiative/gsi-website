@@ -109,6 +109,8 @@ export interface RideRow {
   frequency: Frequency
   week_of_month: number | null
   org_verification_status: 'verified' | 'pending_verification' | null
+  /** When the ride was made; an every-other-week ride counts its weeks from it when no season start is set. */
+  created_at?: string
   flyer_url: string | null
   comfort_segments: ComfortSegment[] | null
   comfort_rating: string | null
@@ -117,6 +119,8 @@ export interface RideRow {
   calendar_status: 'pending' | 'approved' | 'rejected'
   registration_url: string | null
   contact_url: string | null
+  /** Update emails carry Reply-To with the organizer's address (Shift 01598). */
+  replies_to_organizer?: boolean
   route_risk: 'high' | null
   live_sharing: 'off' | 'members' | 'link'
   pace: Pace | null
@@ -126,6 +130,8 @@ export interface RideRow {
   break_until: string | null
   stopped_at: string | null
   stopped_note: string | null
+  /** The shop the ride ends at, for the Ride Fund's coffee (Shift 01596). */
+  end_location_id?: string | null
 }
 
 export interface DetailDate {
@@ -215,11 +221,13 @@ export interface RosterRow {
   is_you: boolean
   rsvp_status: 'going' | 'maybe' | 'not_going' | null
   attended: boolean | null
-  credit_source: 'auto' | 'organizer' | 'self_checkin' | null
+  credit_source: 'auto' | 'organizer' | 'self_checkin' | 'guest' | null
   pending_state: 'proposed' | 'claimed' | 'rejected' | null
   kids_count: number
   first_time: boolean
   joined_at: string
+  /** Going on every date until they stop (Shift 01598). */
+  every_date?: boolean
 }
 
 export interface CreditRequest {

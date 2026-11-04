@@ -4,8 +4,9 @@ import { useEffect, useRef, useState } from 'react'
 import { EnvelopeSimple } from '@phosphor-icons/react'
 import { gaEvent } from '@/lib/ga'
 import { EMAIL_RE, isPersonalEmail } from '@/lib/employer/team-challenge'
+import { websiteUrl } from '@/lib/employer/team-challenge-domain'
 
-type Field = 'company' | 'name' | 'email' | 'headcount'
+type Field = 'company' | 'website' | 'name' | 'email' | 'headcount'
 
 const INPUT =
   'w-full min-h-[48px] rounded-[10px] border-2 border-navy/[0.16] bg-white px-3.5 text-[16px] text-navy placeholder:text-ink-tertiary focus:border-forest focus:outline-none'
@@ -13,8 +14,9 @@ const LABEL = 'mb-1.5 block text-[15px] font-bold text-navy'
 const ERROR = 'mt-1.5 text-[14px] font-bold text-[#B3361F]'
 
 export default function SignupForm() {
-  const [values, setValues] = useState({ company: '', name: '', email: '', headcount: '' })
-  const [website, setWebsite] = useState('')
+  const [values, setValues] = useState({ company: '', website: '', name: '', email: '', headcount: '' })
+  // Honeypot: hidden from people, filled in by bots. Named so a browser never autofills it.
+  const [fax, setFax] = useState('')
   const [errors, setErrors] = useState<Partial<Record<Field, string>>>({})
   const [formError, setFormError] = useState<string | null>(null)
   const [sending, setSending] = useState(false)
@@ -33,6 +35,7 @@ export default function SignupForm() {
   function check(): Partial<Record<Field, string>> {
     const e: Partial<Record<Field, string>> = {}
     if (values.company.trim().length < 2) e.company = 'Enter your company’s name.'
+    if (!websiteUrl(values.website)) e.website = 'Enter your company’s website, like acme.com.'
     if (!values.name.trim()) e.name = 'Enter your name.'
     const email = values.email.trim()
     if (!EMAIL_RE.test(email)) e.email = 'Enter your work email.'
@@ -56,7 +59,7 @@ export default function SignupForm() {
       const res = await fetch('/api/employer/team-challenge', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...values, website }),
+        body: JSON.stringify({ ...values, fax }),
       })
       const data = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string; field?: Field }
       if (!res.ok || !data.ok) {
@@ -79,7 +82,7 @@ export default function SignupForm() {
         <EnvelopeSimple size={36} weight="duotone" className="text-forest" aria-hidden />
         <h2 className="mt-3 font-headline text-[1.6rem] font-extrabold leading-tight text-navy">Check your email</h2>
         <p className="mt-3 text-[1.0625rem] leading-[1.6] text-ink-soft">
-          We sent a link to <b className="text-navy">{sentTo}</b>. Click it and your team code is ready.
+          We sent a link to <b className="text-navy">{sentTo}</b>. Click it and your invite code is ready.
         </p>
         <p className="mt-3 text-[15px] leading-[1.6] text-ink-soft">
           Nothing there in a few minutes? Check your spam folder, or{' '}
@@ -94,7 +97,7 @@ export default function SignupForm() {
 
   return (
     <form onSubmit={submit} noValidate className="relative rounded-[16px] border-2 border-navy/[0.12] bg-white p-6 sm:p-8">
-      <h2 className="font-headline text-[1.6rem] font-extrabold leading-tight text-navy">Get your team code</h2>
+      <h2 className="font-headline text-[1.6rem] font-extrabold leading-tight text-navy">Get your invite code</h2>
       <p className="mt-2 text-[15px] leading-[1.55] text-ink-soft">Free, with nothing to sign. We email you a link to confirm, and your code is ready.</p>
 
       <div className="mt-6 flex flex-col gap-4">
@@ -102,6 +105,11 @@ export default function SignupForm() {
           <label htmlFor="tc-company" className={LABEL}>Company</label>
           <input id="tc-company" className={INPUT} value={values.company} onChange={set('company')} autoComplete="organization" aria-invalid={!!errors.company} aria-describedby={errors.company ? 'tc-company-err' : undefined} />
           {errors.company && <p id="tc-company-err" className={ERROR}>{errors.company}</p>}
+        </div>
+        <div>
+          <label htmlFor="tc-website" className={LABEL}>Company website</label>
+          <input id="tc-website" type="url" inputMode="url" className={INPUT} value={values.website} onChange={set('website')} autoComplete="url" placeholder="yourcompany.com" aria-invalid={!!errors.website} aria-describedby={errors.website ? 'tc-website-err' : undefined} />
+          {errors.website && <p id="tc-website-err" className={ERROR}>{errors.website}</p>}
         </div>
         <div>
           <label htmlFor="tc-name" className={LABEL}>Your name</label>
@@ -120,8 +128,8 @@ export default function SignupForm() {
         </div>
         {/* Honeypot: hidden from people, filled in by bots. */}
         <div className="absolute -left-[9999px] h-px w-px overflow-hidden" aria-hidden>
-          <label htmlFor="tc-website">Website</label>
-          <input id="tc-website" tabIndex={-1} autoComplete="off" value={website} onChange={(e) => setWebsite(e.target.value)} />
+          <label htmlFor="tc-fax">Fax</label>
+          <input id="tc-fax" tabIndex={-1} autoComplete="off" value={fax} onChange={(e) => setFax(e.target.value)} />
         </div>
       </div>
 
@@ -132,7 +140,7 @@ export default function SignupForm() {
         disabled={sending}
         className="mt-6 inline-flex min-h-[52px] w-full items-center justify-center rounded-full bg-navy px-7 text-[17px] font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
       >
-        {sending ? 'Sending…' : 'Get our team code'}
+        {sending ? 'Sending…' : 'Get our invite code'}
       </button>
       <p className="mt-3 text-[14px] leading-[1.5] text-ink-soft">
         No work email? Write to <a href="mailto:info@gogreenstreets.org" className="font-bold text-forest underline-offset-4 hover:underline">info@gogreenstreets.org</a>.

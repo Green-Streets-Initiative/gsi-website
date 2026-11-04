@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { eventPath } from '@/lib/events-url'
 import { ArrowRight, Calendar as CalendarIcon, List, Search, SlidersHorizontal } from 'lucide-react'
 import {
-  type CommunityEvent, getTypeMeta, parseEventDate, dateLong, formatTime, isDeadline,
+  type CommunityEvent, getTypeMeta, parseEventDate, dateLong, dateRangeLong, eventLastDay, formatTime, isDeadline,
 } from '@/lib/events'
 import { typeInk, TINT } from '@/lib/events-tone'
 import { PILL } from '@/components/org/Section'
@@ -13,6 +13,7 @@ import { EVENT_TYPE_ICONS } from './event-type-icons'
 import { EventsToneProvider, toneClass, useEventsTone, type EventsTone } from './EventsTone'
 import './events-tone.css'
 import EventCard from './EventCard'
+import FeederTray from './FeederTray'
 import WeekStrip from './WeekStrip'
 import FiltersSheet from './FiltersSheet'
 import FilterBar from './FilterBar'
@@ -23,6 +24,10 @@ import EventAlertSignup from './EventAlertSignup'
 import { TypePills, LevelPills, LocationControl, DistancePills, WhenPills, TagToggles, AudienceToggles, hasAudienceChoices } from './FilterControls'
 import { useEventFilters } from './useEventFilters'
 import { useSavedEvents } from './useSavedEvents'
+import { eventBodyPlain } from '@/lib/event-body'
+
+/** On phones the email sign-up sits after this many events. */
+const PHONE_SIGNUP_AFTER = 5
 
 // ---------------------------------------------------------------------------
 // Viewport: phones can switch between the list and a week strip; desktop is
@@ -52,13 +57,14 @@ function SpotlightCard({ event, compact }: { event: CommunityEvent; compact: boo
   const ink = typeInk(meta, tone)
   const tint = TINT[tone]
   const Icon = EVENT_TYPE_ICONS[meta.icon] ?? CalendarIcon
-  const evDate = parseEventDate(event.event_date)
   const timeStr = event.event_time ? formatTime(event.event_time) : null
+  // "November 1 to 30, 2026" for a multi-day event (Shift 01557).
   const dateLine =
     (isDeadline(event.event_type) ? 'Entry deadline: ' : '') +
-    dateLong(evDate) +
+    dateRangeLong(event) +
     (timeStr ? ` · ${timeStr}` : '')
-  const summary = event.body?.split('\n').find((line) => line.trim()) ?? null
+  const firstLine = event.body?.split('\n').find((line) => line.trim())
+  const summary = firstLine ? eventBodyPlain(firstLine) : null
 
   return (
     <Link
@@ -164,7 +170,8 @@ export default function EventsPage({ events, tone = 'dark', hrefBase = '/events'
   const today = new Date()
   today.setHours(0, 0, 0, 0)
   const spotlightEvents = events
-    .filter((ev) => ev.featured && parseEventDate(ev.event_date) >= today)
+    // Still running: a featured month-long campaign stays up through its last day.
+    .filter((ev) => ev.featured && parseEventDate(eventLastDay(ev)) >= today)
     .sort((a, b) => a.event_date.localeCompare(b.event_date))
     .slice(0, SPOTLIGHT_MAX)
 
@@ -303,25 +310,35 @@ export default function EventsPage({ events, tone = 'dark', hrefBase = '/events'
                   </div>
                 ) : (
                   <div className="flex flex-col gap-3">
-                    {(f.selectedDay ? f.filtered : f.filtered.slice(0, listLimit)).map((ev) => (
-                      <EventCard
-                        key={ev.id}
-                        event={ev}
-                        userLat={f.userLoc.lat}
-                        userLng={f.userLoc.lng}
-                        showDate={!f.selectedDay}
-                        saved={!!saved[ev.id]}
-                        onToggleSave={handleToggleSave}
-                      />
+                    {(f.selectedDay ? f.entries : f.entries.slice(0, listLimit)).map(({ event: ev, feeders }, i) => (
+                      <div key={ev.id}>
+                        <EventCard
+                          event={ev}
+                          userLat={f.userLoc.lat}
+                          userLng={f.userLoc.lng}
+                          showAway={f.geoStatus === 'active'}
+                          showDate={!f.selectedDay}
+                          saved={!!saved[ev.id]}
+                          onToggleSave={handleToggleSave}
+                          ridesTo={f.ridesTo(ev)}
+                          attached={feeders.length > 0}
+                        />
+                        {feeders.length > 0 && (
+                          <FeederTray eventId={ev.id} feeders={feeders} userLat={f.userLoc.lat} userLng={f.userLoc.lng} showAway={f.geoStatus === 'active'} />
+                        )}
+                        {i === Math.min(PHONE_SIGNUP_AFTER, f.entries.length) - 1 && (
+                          <EventAlertSignup filters={f} source="events_list" className="mt-3" />
+                        )}
+                      </div>
                     ))}
                   </div>
                 )}
-                {!f.selectedDay && f.filtered.length > listLimit && (
+                {!f.selectedDay && f.entries.length > listLimit && (
                   <button
                     onClick={() => setListLimit((n) => n + AGENDA_PAGE)}
                     className="mx-auto mt-5 block rounded-[10px] border border-(--ev-line-strong) px-6 py-3 text-[14px] font-semibold text-(--ev-ink) transition-colors hover:bg-(--ev-panel)"
                   >
-                    Show more · {f.filtered.length - listLimit} remaining
+                    Show more · {f.entries.length - listLimit} remaining
                   </button>
                 )}
               </div>
@@ -334,10 +351,13 @@ export default function EventsPage({ events, tone = 'dark', hrefBase = '/events'
               <AppliedFilters filters={f.activeFilters} onClearAll={f.clearAll} className="mb-4 hidden lg:flex" />
               <Agenda
                 events={f.filtered}
+                entries={f.entries}
+                ridesTo={f.ridesTo}
                 limit={listLimit}
                 onShowMore={() => setListLimit((n) => n + AGENDA_PAGE)}
                 paged={!f.selectedDay}
                 userLoc={f.userLoc}
+                showAway={f.geoStatus === 'active'}
                 saved={saved}
                 onToggleSave={handleToggleSave}
                 emptyMessage={
@@ -355,14 +375,19 @@ export default function EventsPage({ events, tone = 'dark', hrefBase = '/events'
                     </a>
                   )
                 }
+                // Phone: after the first five events, not below the whole
+                // list, where almost nobody scrolled (calendar growth plan
+                // bet 1). The count line jumps here. Desktop has it in the sidebar.
+                inset={{
+                  after: PHONE_SIGNUP_AFTER,
+                  node: <EventAlertSignup filters={f} source="events_list" id="event-alerts" className="mt-2.5 scroll-mt-[140px] lg:hidden" />,
+                }}
               />
-              {/* Phone: after the list (the count line jumps here). Desktop has it in the sidebar. */}
-              <EventAlertSignup filters={f} id="event-alerts" className="mt-6 scroll-mt-[140px] lg:hidden" />
             </div>
 
             <aside className="sticky top-[132px] hidden self-start lg:block">
               <MiniMonth events={f.filteredNoDay} selectedDay={f.selectedDay} onSelectDay={f.setSelectedDay} />
-              <EventAlertSignup filters={f} className="mt-4" />
+              <EventAlertSignup filters={f} source="events_sidebar" className="mt-4" />
               <div className="mt-4 rounded-2xl border border-(--ev-line) bg-(--ev-card) p-4">
                 <p className="text-[14px] font-bold text-(--ev-ink)">Hosting a ride, walk, or workshop?</p>
                 <p className="mt-1 text-[13px] leading-relaxed text-(--ev-ink-75)">

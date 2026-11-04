@@ -30,6 +30,7 @@ function Person({ p, past }: { p: RosterRow; past: boolean }) {
         {p.is_guest && <Badge tone="info">Ride page</Badge>}
         {p.kids_count > 0 && <Badge>+{plural(p.kids_count, 'kid')}</Badge>}
         {p.first_time && p.role === 'rider' && <Badge tone="good">First time</Badge>}
+        {p.every_date && <Badge tone="info">Every date</Badge>}
         {past && p.attended && <Badge tone="good"><Check className="h-3 w-3" aria-hidden />Came</Badge>}
         {past && p.pending_state === 'claimed' && <Badge tone="warn">Asked for credit</Badge>}
       </span>
@@ -108,7 +109,7 @@ export default function Roster() {
   const came = (rows ?? []).filter((p) => p.attended)
 
   if (dates.length === 0) {
-    return <Empty title="No dates yet">Dates appear here within a day of saving the ride.</Empty>
+    return <Empty title="No dates yet">Dates appear here as soon as the ride is saved. If none show, check When in Edit ride.</Empty>
   }
 
   return (
@@ -173,7 +174,7 @@ export default function Roster() {
       {msg && !(canReview && requests.length > 0) && <Notice tone="good" onClose={() => setMsg(null)}>{msg}</Notice>}
 
       <Card>
-        <SectionTitle hint="First names only. Shift messages everyone for you.">
+        <SectionTitle hint="First name and last initial. Shift messages everyone for you.">
           {past ? 'Who was on the list' : "Who's coming"}
         </SectionTitle>
         {err && <Notice tone="off">{err} <button type="button" className="font-semibold underline" onClick={() => void load()}>Try again</button></Notice>}
@@ -193,7 +194,7 @@ export default function Roster() {
         )}
         {past && (
           <p className="mt-5 border-t border-(--ev-line) pt-3 text-[14px] leading-snug text-(--ev-ink-75)">
-            &ldquo;Came&rdquo; comes from people&rsquo;s trips in the Shift app and the requests you approve.
+            &ldquo;Came&rdquo; comes from people&rsquo;s trips in the Shift app, the requests you approve, and people from your ride page who tell us they made it.
           </p>
         )}
       </Card>

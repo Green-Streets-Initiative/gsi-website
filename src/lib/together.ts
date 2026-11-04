@@ -97,12 +97,97 @@ export type PartnerRequest = {
   source: 'app' | 'event_signup' | 'admin'
   note: string | null
   languages?: PartnerLanguage[]
+  /** Other times for a first trip (newcomer) or other times free (guide) (Shift 01503/01504). */
+  practice_slots?: PracticeSlot[] | null
+  /** The longest trip a guide would go on with someone; null means 5 (Shift 01504). */
+  guide_max_miles?: number | null
 }
 
-export async function myRequests(): Promise<PartnerRequest[]> {
+/**
+ * Weekend and evening times, outside the usual commute (Shift 01503): a
+ * newcomer's quieter first trip, the times a guide is free, a practice ride.
+ */
+export type PracticeSlot = 'weekend_morning' | 'weekend_afternoon' | 'weekday_evening'
+export const SLOTS: { id: PracticeSlot; label: string }[] = [
+  { id: 'weekend_morning', label: 'Weekend mornings' },
+  { id: 'weekend_afternoon', label: 'Weekend afternoons' },
+  { id: 'weekday_evening', label: 'Weekday evenings' },
+]
+export const isSlot = (s: string): s is PracticeSlot => s === 'weekend_morning' || s === 'weekend_afternoon' || s === 'weekday_evening'
+/** "Weekend mornings", "Weekend mornings or weekday evenings". */
+export function slotsText(slots: PracticeSlot[]): string {
+  const words = SLOTS.filter((s) => slots.includes(s.id)).map((s, i) => (i === 0 ? s.label : s.label.toLowerCase()))
+  return words.length <= 1 ? words.join('') : `${words.slice(0, -1).join(', ')} or ${words[words.length - 1]}`
+}
+
+/** A practice-ride sign-up (Shift 01503): an easy bike ride near home with a guide within 2 miles. */
+export type PracticeRequest = {
+  id: string
+  kind: 'practice'
+  status: 'open' | 'matched' | 'paused' | 'closed'
+  practice_slots: PracticeSlot[] | null
+  practice_trail_id: string | null
+  practice_label: string | null
+  practice_point: string | null
+  note: string | null
+  languages?: PartnerLanguage[]
+}
+
+/** Every sign-up in one call: the trip ones (the /together forms) and the practice ride, if any. */
+export async function mySignUps(): Promise<{ trips: PartnerRequest[]; practice: PracticeRequest | null }> {
   const { data, error } = await supabase.rpc('get_my_partner_requests')
   if (error) throw new Error(error.message)
-  return (data ?? []) as PartnerRequest[]
+  const rows = (data ?? []) as { kind: string }[]
+  return {
+    trips: rows.filter((r) => r.kind !== 'practice') as PartnerRequest[],
+    practice: (rows.find((r) => r.kind === 'practice') as PracticeRequest | undefined) ?? null,
+  }
+}
+
+/** The trip sign-ups only; a practice ride has its own page (/together/practice). */
+export async function myRequests(): Promise<PartnerRequest[]> {
+  return (await mySignUps()).trips
+}
+
+/**
+ * The answers set_partner_request doesn't take (Shift 01504): other times
+ * (newcomer and guide) and how far a guide would go. Call after the sign-up
+ * saves; null leaves an answer as it is. Matching runs again.
+ */
+export async function saveExtras(kind: 'newcomer' | 'guide', slots: PracticeSlot[] | null, maxMiles: number | null): Promise<{ ok: true; matches: number } | { ok: false; reason: string }> {
+  const { data, error } = await supabase.rpc('set_partner_extras', { p_kind: kind, p_slots: slots, p_max_miles: kind === 'guide' ? maxMiles : null })
+  if (error) return { ok: false, reason: 'network' }
+  const r = (data ?? null) as { ok?: boolean; reason?: string; matches?: number } | null
+  return r?.ok ? { ok: true, matches: r.matches ?? 0 } : { ok: false, reason: r?.reason ?? 'failed' }
+}
+
+/** A path entrance near their Home (practice_places_near): pass trail_id and point back exactly as given. */
+export type PracticePlace = { trail_id: string; trail: string; point: string; lat: number; lng: number; miles: number }
+
+/** Paths near their saved Home, nearest first (at most 4, within 4 miles). home false: no Home saved yet. */
+export async function practicePlaces(): Promise<{ home: boolean; places: PracticePlace[] }> {
+  const { data, error } = await supabase.rpc('practice_places_near', { p_lat: null, p_lng: null })
+  if (error) throw new Error(error.message)
+  const r = (data ?? null) as { home?: boolean; places?: PracticePlace[] } | null
+  return { home: r?.home === true, places: r?.places ?? [] }
+}
+
+export type PracticeSignUp = {
+  trailId: string | null
+  point: string | null
+  slots: PracticeSlot[]
+  note: string | null
+  languages: PartnerLanguage[] | null
+}
+
+/** Ask for a practice ride (set_partner_request's practice twin). Both trailId and point null: the quiet streets near home. */
+export async function savePractice(s: PracticeSignUp): Promise<{ ok: true; matches: number } | { ok: false; reason: string }> {
+  const { data, error } = await supabase.rpc('set_practice_request', {
+    p_trail_id: s.trailId, p_point: s.trailId ? s.point : null, p_slots: s.slots, p_note: s.note, p_languages: s.languages,
+  })
+  if (error) return { ok: false, reason: 'network' }
+  const r = (data ?? null) as { ok?: boolean; reason?: string; matches?: number } | null
+  return r?.ok ? { ok: true, matches: r.matches ?? 0 } : { ok: false, reason: r?.reason ?? 'failed' }
 }
 
 export type Place = { label: 'Home' | 'Work'; address: string; lat: number; lng: number; placeId?: string | null }
@@ -149,7 +234,8 @@ export type SignUp = {
   kind: PartnerKind
   modes: PartnerWay[]
   homeId: string
-  workId: string
+  /** Optional for a guide (Shift 01504): they need only to live nearby. */
+  workId: string | null
   days: PartnerDay[]
   times: PartnerTime[]
   carpoolRole: CarpoolRole | null
@@ -182,7 +268,7 @@ export async function saveSignUp(s: SignUp): Promise<{ ok: true; matches: number
   return r?.ok ? { ok: true, matches: r.matches ?? 0 } : { ok: false, reason: r?.reason ?? 'failed' }
 }
 
-export async function stopSignUp(kind: PartnerKind): Promise<boolean> {
+export async function stopSignUp(kind: PartnerKind | 'practice'): Promise<boolean> {
   const { data, error } = await supabase.rpc('stop_partner_request', { p_kind: kind })
   return !error && !!(data as { ok?: boolean } | null)?.ok
 }
@@ -190,16 +276,21 @@ export async function stopSignUp(kind: PartnerKind): Promise<boolean> {
 /** A match as the person sees it (get_my_partner_matches; Shift lib/commute-partners.ts PartnerMatch). */
 export type Match = {
   id: string
-  kind: 'guide' | 'carpool'
+  kind: 'guide' | 'carpool' | 'practice'
   status: 'proposed' | 'connected' | 'went_together'
-  my_kind: PartnerKind
+  /** 'practice': they asked for a practice ride (Shift 01503). */
+  my_kind: PartnerKind | 'practice'
   my_answer: 'yes' | 'no' | null
   their_answer: 'yes' | 'waiting' | null
   my_rating: Rating | null
+  /** The number this person added for trip-day texts, while the match is live (01502). */
+  my_phone?: string | null
   home_miles: number | null
   dest_miles: number | null
   detour_minutes?: number | null
   i_drive?: boolean | null
+  /** A practice ride (Shift 01503): where it starts and the times you're both free. */
+  practice?: { trail: string | null; point: string | null; near_home: boolean; slots: string[] } | null
   created_at: string
   connected_at: string | null
   other: {
@@ -223,6 +314,8 @@ export type Match = {
     my_times: PartnerTime[]
     email: string | null
     last_initial: string | null
+    /** Their number, if they chose to add one for this match (01502). */
+    phone?: string | null
     languages?: PartnerLanguage[]
     shared_languages?: PartnerLanguage[]
   }
@@ -250,6 +343,19 @@ export async function answerWent(matchId: string, went: boolean): Promise<boolea
 export async function rateMatch(matchId: string, rating: Rating, comment: string | null): Promise<boolean> {
   const { data, error } = await supabase.rpc('rate_partner_match', { p_match_id: matchId, p_rating: rating, p_comment: comment })
   return !error && !!(data as { ok?: boolean } | null)?.ok
+}
+
+/** Add, change or (empty) remove your number on one live match (01502). */
+export async function setMatchPhone(matchId: string, phone: string): Promise<{ ok: boolean; reason?: string; phone?: string | null }> {
+  const { data, error } = await supabase.rpc('set_partner_match_phone', { p_match: matchId, p_phone: phone })
+  if (error || !data) return { ok: false, reason: 'failed' }
+  return data as { ok: boolean; reason?: string; phone?: string | null }
+}
+
+/** "+16175550123" -> "(617) 555-0123"; other countries as stored. */
+export function phoneLabel(phone: string): string {
+  const m = /^\+1(\d{3})(\d{3})(\d{4})$/.exec(phone)
+  return m ? `(${m[1]}) ${m[2]}-${m[3]}` : phone
 }
 
 export async function endMatch(matchId: string): Promise<boolean> {

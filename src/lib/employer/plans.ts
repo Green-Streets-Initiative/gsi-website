@@ -13,6 +13,10 @@ export type Plan = {
   features: string[]
 }
 
+/** Keith 2026-10-31: the first survey is free at any tier; after that it is included in Standard and Premium. */
+const SURVEY_FEATURE =
+  'Workforce commute survey: your first one is free; after that, included in Standard and Premium'
+
 export const PLANS: Plan[] = [
   {
     id: 'starter',
@@ -28,6 +32,7 @@ export const PLANS: Plan[] = [
       'Weekly email report on your team',
       'Branded Commute Advisor page for your office',
       'Branded Nearby page: live transit, Bluebikes and bike paths around your office',
+      'Team challenges (gift-card rewards from Standard)',
       'Optional public leaderboard for flagship events',
     ],
   },
@@ -35,7 +40,7 @@ export const PLANS: Plan[] = [
     id: 'basic',
     name: 'Basic',
     annualPrice: 1000,
-    tagline: 'Everything you need to launch a workplace challenge.',
+    tagline: 'Reports for the dates you choose',
     features: [
       'Everything in Starter',
       'Impact reports for any dates you choose',
@@ -49,9 +54,9 @@ export const PLANS: Plan[] = [
     tagline: 'For employers ready to actively drive participation.',
     features: [
       'Everything in Basic',
-      'Create your own branded team challenges',
+      'Gift-card rewards for your challenges, from a company-funded pool',
       'Join flagship events like Shift Your Summer',
-      'Company-funded rewards pool: gift cards for challenge winners',
+      SURVEY_FEATURE,
     ],
   },
   {
@@ -61,7 +66,7 @@ export const PLANS: Plan[] = [
     tagline: 'For employers who file a commute report with the state or their city.',
     features: [
       'Everything in Standard',
-      'Workforce commute survey, ready to file with MassDEP, Cambridge or Boston',
+      SURVEY_FEATURE,
     ],
   },
 ]

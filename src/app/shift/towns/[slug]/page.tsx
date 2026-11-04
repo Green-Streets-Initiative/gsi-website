@@ -6,6 +6,9 @@ import Footer from '@/components/Footer'
 import StoreButtons from '@/components/StoreButtons'
 import TownDigestSignup from '@/components/towns/TownDigestSignup'
 import TownToc from '@/components/towns/TownToc'
+import NewInTown from '@/components/towns/NewInTown'
+import { newInfraInTown } from '@/lib/server/new-infra'
+import { NO_NEW_INFRA } from '@/lib/new-infra'
 import { Section } from '@/components/org/Section'
 import { Eyebrow, LANE, RouteSegment } from '@/components/home/RouteLine'
 import { withUtm } from '@/lib/utm'
@@ -100,14 +103,16 @@ export default async function TownPage({ params }: { params: Promise<{ slug: str
 
   // Centroid first (events + roams both need it), then the rest in parallel.
   const centroid = await getTownCentroid(town.group_id)
-  const [stats, roams, partners, heatmapLayers, events, resources, civicEvents] = await Promise.all([
+  const [stats, roams, partners, heatmapLayers, events, resources, civicEvents, newInfra] = await Promise.all([
     getTownPageStats(town.group_id),
     getTownRoams(centroid),
     getTownPartners(name, town.state),
     getTownHeatmap(town.group_id),
-    getEventPicks(centroid, 8, { recRidesAsFill: true }),
+    getEventPicks(centroid, 8, { recRidesAsFill: true, town: { name, state: town.state } }),
     getTownResources(town.group_id),
     getTownCivicEvents(name),
+    // MassDOT and the town boundaries cover Massachusetts only.
+    town.state === 'MA' ? newInfraInTown(name, town.state) : Promise.resolve(NO_NEW_INFRA),
   ])
 
   if (!stats) notFound()
@@ -187,6 +192,22 @@ export default async function TownPage({ params }: { params: Promise<{ slug: str
                 happening locally, and how the town is trending — built from real trips logged in the
                 Shift app.
               </p>
+              {/* Game-day parking pages (launch venue-parking, 2026-11-03). */}
+              {slug === 'boston-ma' && (
+                <p className="mt-4 text-[1rem] leading-[1.6] text-navy">
+                  Going to a game? Parking and the T for{' '}
+                  <Link href="/parking/td-garden" className="whitespace-nowrap font-semibold text-forest underline underline-offset-4 hover:opacity-80">TD Garden</Link>
+                  {' '}and{' '}
+                  <Link href="/parking/fenway-park" className="whitespace-nowrap font-semibold text-forest underline underline-offset-4 hover:opacity-80">Fenway Park</Link>
+                </p>
+              )}
+              {slug === 'foxborough-ma' && (
+                <p className="mt-4 text-[1rem] leading-[1.6] text-navy">
+                  <Link href="/parking/gillette-stadium" className="font-semibold text-forest underline underline-offset-4 hover:opacity-80">
+                    Going to Gillette? The lots, the event train and rideshare
+                  </Link>
+                </p>
+              )}
               {/* Town digest signup — E19's front door, up top where readers
                   actually are. Anchored: digest emails' forward-nudge links
                   land forwarded readers right here. */}
@@ -202,6 +223,7 @@ export default async function TownPage({ params }: { params: Promise<{ slug: str
           tone="light"
           sections={[
             ...(resources.length > 0 || civicEvents.length > 0 ? [['#involved', 'Get Involved'] as [string, string]] : []),
+            ...(newInfra.opened.length > 0 ? [['#new', "What's new"] as [string, string]] : []),
             ...(events.length > 0 || roams.length > 0 ? [['#events', 'Events & Roams'] as [string, string]] : []),
             ['#stats', 'Stats'],
             ...(heatmapLayers.length > 0 ? [['#moves', 'Where we move'] as [string, string]] : []),
@@ -218,6 +240,14 @@ export default async function TownPage({ params }: { params: Promise<{ slug: str
         {(resources.length > 0 || civicEvents.length > 0) && (
           <Section id="involved" shape="straight" tone="white" width="read" className="scroll-mt-28">
             <GetInvolved resources={resources} civicEvents={civicEvents} townName={name} townSlug={slug} />
+          </Section>
+        )}
+
+        {/* New this season (Shift 01577): lanes and paths opened here lately.
+            After Get involved, which already lists what's coming. */}
+        {newInfra.opened.length > 0 && (
+          <Section id="new" shape="straight" width="read" className="scroll-mt-28">
+            <NewInTown info={newInfra} townName={name} hasInvolved={resources.length > 0 || civicEvents.length > 0} />
           </Section>
         )}
 

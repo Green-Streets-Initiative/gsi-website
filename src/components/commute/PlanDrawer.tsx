@@ -251,7 +251,7 @@ export function TransitDrawer({
 /* ── Bike ── */
 
 export function BikeDrawer({
-  plan, calm, calmLoading, bikeParking, benefits, companyName, highlightedLeg, onLegTap, directionsHref, onDirections,
+  plan, calm, calmLoading, bikeParking, benefits, companyName, highlightedLeg, onLegTap, directionsHref, onDirections, lessonNearby = false, onLesson,
 }: {
   plan: AdvisorResult
   calm: CalmRoute | null
@@ -263,6 +263,9 @@ export function BikeDrawer({
   onLegTap: (key: string) => void
   directionsHref: string
   onDirections: () => void
+  /** Home is near the free 1:1 street lesson (AdvisorFlow decides). */
+  lessonNearby?: boolean
+  onLesson?: () => void
 }) {
   const b = plan.modes.bike ?? plan.modes.ebike
   const employerParking = benefits.bike_parking
@@ -342,6 +345,14 @@ export function BikeDrawer({
       <DrawerActions>
         <ActionLink href={directionsHref} onClick={onDirections} primary>{calm ? 'Directions on these streets' : 'Directions'}</ActionLink>
       </DrawerActions>
+      {lessonNearby && (
+        <div className="mt-3 rounded-[10px] bg-[#E7F0EA] px-4 py-3">
+          <P>Not confident biking in traffic? Take a free 1:1 street lesson near Somerville. Green Streets is covering the cost.</P>
+          <DrawerActions>
+            <ActionLink href="/bike-lessons?utm_source=advisor#street-lesson" onClick={onLesson}>Ask for a lesson</ActionLink>
+          </DrawerActions>
+        </div>
+      )}
     </>
   )
 }
@@ -573,7 +584,11 @@ export function ShuttleTransferDrawer({ s, plan, officeName, companyName }: {
     ? 'Open to everyone, free.'
     : s.eligible_because === 'public_fare'
       ? 'Open to everyone; there is a fare, free at member employers.'
-      : `${companyName ?? 'Your employer'} lists this shuttle among its benefits.`
+      : s.eligible_because === 'school'
+        ? `Free with your ${s.operator.id_name ?? s.operator.label} ID.`
+        : s.eligible_because === 'self_reported'
+          ? 'You said you can ride it.'
+          : `${companyName ?? 'Your employer'} lists this shuttle among its benefits.`
   const runBy = s.operator.run_by || s.operator.name
   return (
     <>

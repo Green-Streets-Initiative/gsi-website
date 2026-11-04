@@ -17,6 +17,7 @@ import type {
   TownResource,
   TownSummary,
 } from '@/lib/towns/queries'
+import { openedLink, openedMeta, openedPlace, openedTitle, type OpenedItem } from '@/lib/new-infra'
 
 /**
  * Town digest email — "the town page, delivered."
@@ -62,6 +63,8 @@ export interface TownDigestContent {
   htmlAppAuto: string
   /** infrastructure_hearings ids included — the send-log idempotency set. */
   itemIds: string[]
+  /** infraKey() of each new stretch included — so a town hears about each one once. */
+  infraKeys: string[]
   /** Featured project's location, when it has one — drives per-recipient proximity lines. */
   featuredLat: number | null
   featuredLng: number | null
@@ -163,6 +166,11 @@ function eventDateLabel(e: TownEvent): string {
   return dateOnlyChip(e.event_date)
 }
 
+/** A new stretch's identity in town_digest_sends.infra_keys (the answer has no stable id). */
+export function infraKey(o: OpenedItem): string {
+  return `${o.source}:${o.name ?? ''}:${o.opened}:${o.lat.toFixed(3)},${o.lng.toFixed(3)}`
+}
+
 function hostLabel(url: string | null): string | null {
   if (!url) return null
   try {
@@ -180,6 +188,9 @@ export function buildTownDigest(opts: {
   resources: TownResource[]
   events: TownEvent[]
   partners: TownPartner[]
+  /** Bike lanes and paths opened in town that this town hasn't been told about.
+   *  They ride along with a civic item; they never make an email on their own. */
+  newInfra?: OpenedItem[]
   /** Prior send count for this town — drives partner rotation. */
   priorSendCount: number
   /** Selection clock — dry-run rewinds it so a just-passed item still renders. */
@@ -187,7 +198,7 @@ export function buildTownDigest(opts: {
   /** Selection window — dry-run widens it so the rewound clock still covers upcoming items. */
   horizonDays?: number
 }): TownDigestContent | null {
-  const { town, qualifyingCount, civic, resources, events, partners, priorSendCount, now = Date.now(), horizonDays = 30 } = opts
+  const { town, qualifyingCount, civic, resources, events, partners, newInfra = [], priorSendCount, now = Date.now(), horizonDays = 30 } = opts
   const townName = town.town_name
   const slug = town.slug
 
@@ -410,6 +421,35 @@ export function buildTownDigest(opts: {
       </td></tr>`
     : ''
 
+  // New this season (Keith 2026-11-02): lanes and paths that opened in town,
+  // in the town page's own words (lib/new-infra.ts). The link is the route
+  // that rides it or MassDOT's project page, else a map pin.
+  // One row per street or path: Cummins Hwy came back as a 1.6 mi protected
+  // stretch and a 0.1 mi painted one. The longest stands for the name, and
+  // every stretch under a shown name is logged as told.
+  const longestFirst = [...newInfra].sort((a, b) => b.miles - a.miles)
+  const infraPicks = longestFirst
+    .filter((o, i) => !o.name || longestFirst.findIndex((p) => p.name === o.name) === i)
+    .sort((a, b) => b.opened.localeCompare(a.opened))
+    .slice(0, 3)
+  const infraTold = newInfra.filter((o) => infraPicks.includes(o) || (o.name && infraPicks.some((p) => p.name === o.name)))
+  const infraRow = (o: OpenedItem): string => {
+    const link = openedLink(o)
+    const href = link
+      ? linkFor('new_infra')(link.external ? link.href : `${SITE}${link.href}`)
+      : `https://www.google.com/maps?q=${o.lat},${o.lng}`
+    const meta = openedMeta(o, false).replace(/^./, (c) => c.toLowerCase())
+    const place = openedPlace(o, false)
+    return `<p style="margin:0 0 6px;font-size:14px;line-height:1.5;color:#5A5C6E;"><a href="${href}" style="color:#191A2E;font-weight:700;">${escapeHtml(openedTitle(o))}</a> — ${escapeHtml(meta)}${place ? ` · ${escapeHtml(place)}` : ''}</p>`
+  }
+  const infraSection = infraPicks.length
+    ? `<tr><td style="padding:0 32px 24px;">
+        <p style="margin:0 0 8px;font-family:${FONT_DISPLAY};font-size:12px;font-weight:700;letter-spacing:0.1em;color:#5A5C6E;">NEW IN ${escapeHtml(townName.toUpperCase())}</p>
+        ${infraPicks.map(infraRow).join('\n')}
+        <p style="margin:8px 0 0;font-size:13px;"><a href="${townUrl('infra_more', '#new')}" style="color:#2966E5;font-weight:700;text-decoration:none;">See what&rsquo;s new in ${escapeHtml(townName)} &rarr;</a></p>
+      </td></tr>`
+    : ''
+
   const eventsSection = eventPicks.length
     ? `<tr><td style="padding:0 32px 24px;">
         <p style="margin:0 0 10px;font-family:${FONT_DISPLAY};font-size:16px;font-weight:700;color:#191A2E;">Happening around ${escapeHtml(townName)}</p>
@@ -462,14 +502,14 @@ export function buildTownDigest(opts: {
 <div style="display:none;max-height:0;overflow:hidden;mso-hide:all;">${escapeHtml(preheader)}</div>
 <table width="100%" cellpadding="0" cellspacing="0" style="background:#f3f4f6;padding:32px 0;">
 <tr><td align="center">
-<table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;">
-  <!-- Header: GSI wordmark on navy, lime accent rule -->
+<table width="600" cellpadding="0" cellspacing="0" style="width:100%;max-width:600px;background:#ffffff;border-radius:12px;overflow:hidden;">
+  <!-- Header: GSI wordmark on navy, lime accent rule. The label sits under
+       the wordmark, not beside it: side by side, a phone's mail app squeezed
+       it against "Initiative" (Keith 2026-11-02). -->
   <tr>
     <td style="background:#191A2E;padding:20px 32px 18px;border-bottom:3px solid #BAF14D;">
-      <table width="100%" cellpadding="0" cellspacing="0"><tr>
-        <td><img src="${GSI_WORDMARK_URL}" alt="Green Streets Initiative" width="215" style="display:block;" /></td>
-        <td align="right" style="font-family:${FONT_DISPLAY};font-size:11px;font-weight:700;letter-spacing:0.14em;color:rgba(255,255,255,0.78);vertical-align:middle;">YOUR ${escapeHtml(townName.toUpperCase())} UPDATE</td>
-      </tr></table>
+      <img src="${GSI_WORDMARK_URL}" alt="Green Streets Initiative" width="215" style="display:block;max-width:100%;height:auto;" />
+      <p style="margin:8px 0 0;font-family:${FONT_DISPLAY};font-size:11px;font-weight:700;letter-spacing:0.14em;color:rgba(255,255,255,0.78);">YOUR ${escapeHtml(townName.toUpperCase())} UPDATE</p>
     </td>
   </tr>
   <!-- Lede -->
@@ -495,6 +535,7 @@ export function buildTownDigest(opts: {
     </td>
   </tr>
   ${alsoSection}
+  ${infraSection}
   ${eventsSection}
   ${perkSection}
   <!-- Pulse -->
@@ -528,6 +569,7 @@ export function buildTownDigest(opts: {
     html: renderFor('town_page'),
     htmlAppAuto: renderFor('app_auto'),
     itemIds,
+    infraKeys: infraTold.map(infraKey),
     featuredLat: item.lat,
     featuredLng: item.lng,
     itemLocations,

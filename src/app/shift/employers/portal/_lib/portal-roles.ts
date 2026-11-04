@@ -57,3 +57,15 @@ export function isOwnerRow(a: GroupAdmin, adminEmail: string | null | undefined)
 export function ownerColumnPresent(admins: GroupAdmin[]): boolean {
   return admins.some((a) => typeof a.is_owner === 'boolean')
 }
+
+/**
+ * The admins, named for a sentence that asks a non-admin to go to them:
+ * "Pat Lee", "Pat Lee or Sam Diaz", "Pat, Sam or Lee", or "your workplace
+ * admin" when none is listed. The same join AgreementGate uses.
+ */
+export function adminNamesForAsk(admins: GroupAdmin[]): string {
+  const names = admins.filter((a) => a.role === 'admin').map((a) => a.name?.trim() || a.email)
+  if (names.length === 0) return 'your workplace admin'
+  if (names.length === 1) return names[0]
+  return `${names.slice(0, -1).join(', ')} or ${names[names.length - 1]}`
+}

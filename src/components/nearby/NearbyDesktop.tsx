@@ -5,7 +5,8 @@ import posthog from 'posthog-js'
 import type { BluebikeStationLive, MBTAStopLive } from '@/lib/wayfinding/types'
 import type { TransitCorridor, BikeCorridor } from '@/lib/nearby/corridors'
 import type { TripDest } from '@/lib/nearby/share'
-import type { SectionData, SectionStatus, CommunityData, GuideItem, ReachRow } from './types'
+import type { SectionData, SectionStatus, CommunityData, GuideItem, ReachRow, BikeComfortData } from './types'
+import { useAvoidStreets } from './useAvoidStreets'
 import NearbyMap, { TrafficToggle, TrafficLegend, useTrafficPreference, type FitPadding, type RouteLegTapInfo } from './NearbyMap'
 import { useInitialFocus } from './useInitialFocus'
 import type { InitialFocus } from '@/lib/nearby/focus'
@@ -22,6 +23,7 @@ import { ReachList } from './ReachSection'
 import TripPlanner from './TripPlanner'
 import { defaultRouteMode, reachModeFor } from '@/lib/nearby/reach-ui'
 import { ExploreBody } from './ExploreBody'
+import { ExplorePerks, isPerkMarker, useNearbyPerks, usePerkMarkers } from './NearbyPerks'
 import PartnerCobrand from './PartnerCobrand'
 import NewRoutesOffer from './NewRoutesOffer'
 import type { NearbyPartner } from '@/lib/nearby/partner'
@@ -29,6 +31,8 @@ import GuideLinks from './GuideLinks'
 import { SkeletonRows, ErrorCard } from './SectionShell'
 import { useNearbyT } from './NearbyI18n'
 import NearbyLanguagePill from './NearbyLanguagePill'
+import { useNearbyV2, wantsSignIn } from './useNearbyV2'
+import { NearbySignIn, V2Blocks, V2LayersButton, V2PlaceChips, type V2Layers } from './NearbyV2'
 
 /**
  * The desktop (≥ lg) experience: a two-pane app layout. The map is a sticky
@@ -130,11 +134,22 @@ export default function NearbyDesktop({
     if (m === 'bike') setPaintedOn(true)
   }, [])
 
+  // Around You v2 (on for Keith and Meghan only): same as the mobile shell,
+  // the tabs and chips give way to answer-first blocks and a Layers button
+  const v2 = useNearbyV2()
+  const isV2 = v2.on
+  const [extrasLayer, setExtrasLayer] = useState(false)
+  const [perksLayer, setPerksLayer] = useState(false)
+  const [moreBikeOpen, setMoreBikeOpen] = useState(false)
+  const [moreNearbyOpen, setMoreNearbyOpen] = useState(false)
+  const [morePlacesOpen, setMorePlacesOpen] = useState(false)
+
   const startDockLabel = useCallback(
     (d: BluebikeStationLive) => tr('dock.pin_bikes', { count: d.num_bikes_available }), [tr])
   const model = useNearbyModel({
     center, transitCorridors, bikeCorridors, rail, bus, railFar, busFar, shuttles, docks,
-    modeFilter, paintedVisible: paintedOn, onRequestCorridorShape, startDockLabel,
+    modeFilter: isV2 ? 'all' : modeFilter, paintedVisible: paintedOn, onRequestCorridorShape, startDockLabel,
+    extrasVisible: !isV2 || extrasLayer || moreBikeOpen,
   })
   const {
     selection, select, handleMarkerTap,
@@ -148,7 +163,11 @@ export default function NearbyDesktop({
   // it renders, draws and selects exactly like a curated one — the planner
   // needed no new detail UI because a planned trip IS a reach row.
   const [plannedRows, setPlannedRows] = useState<ReachRow[]>([])
-  const reachRows = useMemo(() => [...plannedRows, ...reach.data], [plannedRows, reach.data])
+  // Around You v2: a trip re-planned around a street swaps in its new route
+  // here, so the map, the times and the rows all draw it.
+  const { apply: applyAvoid, avoid: avoidStreet, undo: undoAvoid, stateFor: avoidState } = useAvoidStreets(center)
+  const reachRows = useMemo(
+    () => [...plannedRows, ...reach.data].map(applyAvoid), [plannedRows, reach.data, applyAvoid])
 
   // Which of the two bike routes is being described. Cleared with the
   // selection — a choice made about one destination means nothing about the
@@ -210,6 +229,37 @@ export default function NearbyDesktop({
     posthog.capture('nearby_tab_changed', { tab: next, surface: 'desktop' })
   }, [selection, select])
 
+  // Bicycle Benefits members: pins and rows on Explore, where a tap plans the
+  // bike trip there. A trip opens in the Destinations pane like any planned
+  // one, so the rail moves there with it (not through changeRailTab, which
+  // would close the trip it just opened). The one or two on the way pin while
+  // a bike trip is drawn.
+  const destPaneRef = useRef<HTMLDivElement>(null)
+  const v2TripRef = useRef<HTMLDivElement>(null)
+  const railHeadRef = useRef<HTMLDivElement>(null)
+  const onPerkPlanned = useCallback((row: ReachRow, prefer?: 'transit' | 'bike') => {
+    setRailTab('destinations')
+    onPlanned(row, prefer)
+    // The page is still scrolled to Explore's list: land on the trip that
+    // just opened, under the sticky tabs, once the pane has rendered.
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      const open = (isV2 ? v2TripRef : destPaneRef).current?.querySelector('[aria-expanded="true"]')
+      if (!open) return
+      const under = railHeadRef.current?.getBoundingClientRect().bottom ?? 0
+      const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      window.scrollTo({ top: window.scrollY + open.getBoundingClientRect().top - under - 8, behavior: reduce ? 'auto' : 'smooth' })
+    }))
+  }, [onPlanned, isV2])
+  const nearbyPerks = useNearbyPerks({ center, onPlanned: onPerkPlanned })
+  const routeSel = model.routeSelection
+  const perkMarkers = usePerkMarkers({
+    perks: nearbyPerks.perks,
+    showNearby: !selection && (isV2 ? perksLayer || moreNearbyOpen : railTab === 'explore'),
+    route: routeSel?.mode === 'bike' ? reachRows.find(r => r.id === routeSel.id) ?? null : null,
+  })
+  const mapMarkers = useMemo(
+    () => (perkMarkers.length ? [...overlay.markers, ...perkMarkers] : overlay.markers), [overlay.markers, perkMarkers])
+
   // The floating detail card covers the bottom of the map — measure the map
   // box so the point-focus ease can land the tapped marker in the uncovered
   // area above the card (same pattern as the mobile shell's fitPadding).
@@ -248,6 +298,19 @@ export default function NearbyDesktop({
   // Which street bullet the reader is pointing at. Lives here so the list and
   // the map share one answer; cleared whenever the selection moves.
   const [highlightedStreetKey, setHighlightedStreetKey] = useState<string | null>(null)
+
+  const avoidFor = useCallback((row: ReachRow, comfort: BikeComfortData, minutes: number) => ({
+    state: avoidState(row.id),
+    onAvoid: (key: string, label: string) => {
+      void avoidStreet(row, comfort, minutes, key, label).then(ok => {
+        if (!ok) return
+        // The lit street is gone from the new route, which is the calm one
+        setHighlightedStreetKey(null)
+        setBikeAlt(false)
+      })
+    },
+    onUndo: () => undoAvoid(row.id),
+  }), [avoidState, avoidStreet, undoAvoid, setHighlightedStreetKey, setBikeAlt])
 
   // Section-collapse state for the bike-side shelves, owned here so it
   // survives the sheet's snap changes and tab hops (the app hoists it into
@@ -289,6 +352,21 @@ export default function NearbyDesktop({
     setLegInfo(info)
     posthog.capture('reach_leg_tapped', { leg: info.leg, surface: 'desktop' })
   }, [])
+
+  const v2Layers: V2Layers = { painted: paintedOn, traffic: trafficOn, extras: extrasLayer, perks: perksLayer }
+  const toggleV2Layer = (key: keyof V2Layers) => {
+    if (key === 'painted') setPaintedOn(p => !p)
+    else if (key === 'traffic') toggleTraffic()
+    else if (key === 'extras') setExtrasLayer(x => !x)
+    else setPerksLayer(x => !x)
+  }
+  // v2 has no Destinations tab: an open trip (a chip, a search, a perk) shows
+  // at the top of the rail, with the rest of the places under "More places"
+  const v2TripRows = morePlacesOpen
+    ? reachRows
+    : reachRows.filter(r => routeSelection && r.id === routeSelection.id)
+  const visibleRouteIds = new Set(stations.flatMap(st => st.routes.map(r => r.id)))
+  const routeNames = new Map(stations.flatMap(st => st.routes.map(r => [r.id, r.name] as const)))
 
   return (
     <div className="pb-20">
@@ -375,7 +453,7 @@ export default function NearbyDesktop({
             <div ref={mapBoxRef} className="relative min-h-0 flex-1 overflow-hidden rounded-2xl border border-(--nb-line)">
               <NearbyMap
                 center={center}
-                markers={overlay.markers}
+                markers={mapMarkers}
                 lines={backgroundLines}
                 paintedVisible={showBike && paintedOn}
                 separatedVisible={showBike}
@@ -388,7 +466,7 @@ export default function NearbyDesktop({
                   if (id) select({ type: 'corridor', id }, source)
                   else select(null, source)
                 }}
-                onMarkerTap={handleMarkerTap}
+                onMarkerTap={(id) => (isPerkMarker(id) ? nearbyPerks.planById(id) : handleMarkerTap(id))}
                 onLaneTap={(info) => select({ type: 'lane', info }, 'map')}
                 onReachLegTap={handleLegTap}
                 fitCount={7}
@@ -398,6 +476,13 @@ export default function NearbyDesktop({
                 controls={{ attribution: 'top-left' }}
                 heightClass="h-full"
               />
+
+              {/* Left of the map's own recenter and zoom buttons */}
+              {isV2 && (
+                <div className="absolute right-[52px] top-2.5 z-10">
+                  <V2LayersButton layers={v2Layers} onToggle={toggleV2Layer} />
+                </div>
+              )}
 
               {/* Detail card — everything tapped lands HERE, floating over the
                   map bottom, always in view. (Reach selections render in their
@@ -438,7 +523,103 @@ export default function NearbyDesktop({
               mobile sheet header. Both stick just under the top bar
               (60+52=112). */}
           <div className="min-w-0">
-            <div className="sticky top-[112px] z-10 bg-(--nb-bg) pb-2.5 pt-1">
+            {isV2 && (
+              <div ref={railHeadRef} className="sticky top-[112px] z-10 bg-(--nb-bg) pb-2.5 pt-1">
+                {/* The original planner (always mounted, hidden) plans a ?to=
+                    link on arrival, so this one never does */}
+                <TripPlanner bare center={center} onPlanned={onPlanned} partnerSlug={partnerSlug} autoFocus={planFirst && !planTo} />
+                <V2PlaceChips
+                  rows={reach.data}
+                  onPick={(row) => onRouteSelect({ id: row.id, mode: defaultRouteMode(row) })}
+                  morePlacesOpen={morePlacesOpen}
+                  onMorePlaces={() => setMorePlacesOpen(o => !o)}
+                />
+                {trafficOn && <TrafficLegend className="mt-2" />}
+              </div>
+            )}
+            {v2.checked && !v2.signedIn && wantsSignIn() && <NearbySignIn />}
+
+            {isV2 && (
+              <div>
+                {v2TripRows.length > 0 && (
+                  <div ref={v2TripRef} className="mb-5">
+                    <ReachList
+                      center={center}
+                      rows={v2TripRows}
+                      modeFilter="all"
+                      routeSelection={routeSelection}
+                      onRouteSelect={onRouteSelect}
+                      legInfo={legInfo}
+                      highlightedStreetKey={highlightedStreetKey}
+                      onHighlightStreet={setHighlightedStreetKey}
+                      bikeAlt={bikeAlt}
+                      onPickRoute={setBikeAlt}
+                      onPlanCommute={onPlanCommute}
+                      partnerSlug={partnerSlug}
+                      avoidFor={avoidFor}
+                    />
+                  </div>
+                )}
+                {transitStatus === 'loading' && stations.length === 0 && <SkeletonRows count={3} />}
+                <V2Blocks
+                  stations={stations}
+                  alerts={nearbyAlerts(alerts, visibleRouteIds)}
+                  routeNames={routeNames}
+                  docks={docks}
+                  bikeCorridors={bikeCorridors}
+                  events={community.data?.events ?? []}
+                  eventsLoading={community.status === 'loading'}
+                  onLine={(row) => corridorById.has(`transit:${row.routeId}`)
+                    ? selectShowing({ type: 'corridor', id: `transit:${row.routeId}` }, 'board')
+                    : selectShowing({ type: 'station', key: row.stationKey }, 'board')}
+                  onDock={(id) => selectShowing({ type: 'dock', id }, 'board')}
+                  onBikeRoute={(id) => selectShowing({ type: 'corridor', id }, 'board')}
+                  renderAllStops={() => (
+                    <StationList
+                      stations={stations}
+                      corridorById={corridorById}
+                      highlightedCorridorId={highlightedCorridorId}
+                      status={transitStatus}
+                      onRetry={onRetry}
+                      onSelectRoute={(id) => selectShowing({ type: 'corridor', id }, 'list')}
+                      onFocusStation={model.focusStation}
+                      focusedStationKey={model.focusedStationKey}
+                      alerts={alerts}
+                      mode="all"
+                      crossModeNearest={null}
+                      onSwitchMode={handleModeChange}
+                    />
+                  )}
+                  moreBikeOpen={moreBikeOpen}
+                  onMoreBike={() => setMoreBikeOpen(o => !o)}
+                  renderMoreBike={() => (
+                    <>
+                      <BikeRouteList
+                        bikeCorridors={bikeCorridors}
+                        popularStreetKeys={popularBikeStreetKeys}
+                        highlightedCorridorId={highlightedCorridorId}
+                        onSelect={(id) => selectShowing({ type: 'corridor', id }, 'list')}
+                        isSectionOpen={isSectionOpen}
+                        onToggleSection={toggleSection}
+                      />
+                      <DockList docks={docks} onSelect={(id) => selectShowing({ type: 'dock', id }, 'list')} selectedId={selection?.type === 'dock' ? selection.id : null} isSectionOpen={isSectionOpen} onToggleSection={toggleSection} />
+                      <BorrowRentList points={model.borrowRent} onSelect={(id) => selectShowing({ type: 'borrow', id }, 'list')} selectedId={selection?.type === 'borrow' ? selection.id : null} isSectionOpen={isSectionOpen} onToggleSection={toggleSection} />
+                      <RepairList places={model.repairPlaces} onSelect={(id) => selectShowing({ type: 'repair', id }, 'list')} selectedId={selection?.type === 'repair' ? selection.id : null} isSectionOpen={isSectionOpen} onToggleSection={toggleSection} />
+                    </>
+                  )}
+                  moreNearbyOpen={moreNearbyOpen}
+                  onMoreNearby={() => setMoreNearbyOpen(o => !o)}
+                  renderMoreNearby={() => (
+                    <>
+                      <ExploreBody community={community} compact />
+                      <ExplorePerks perks={nearbyPerks.perks} planning={nearbyPerks.planning} failed={nearbyPerks.failed} onPlan={nearbyPerks.plan} />
+                    </>
+                  )}
+                />
+              </div>
+            )}
+
+            <div ref={isV2 ? undefined : railHeadRef} className={isV2 ? 'hidden' : 'sticky top-[112px] z-10 bg-(--nb-bg) pb-2.5 pt-1'}>
               <div className="flex gap-1 rounded-xl bg-(--nb-panel) p-1">
                 {RAIL_TABS.map(t => (
                   <button
@@ -465,7 +646,7 @@ export default function NearbyDesktop({
               {trafficOn && <TrafficLegend className="mt-1.5" />}
             </div>
 
-            <div className={railTab === 'transit' ? '' : 'hidden'}>
+            <div className={!isV2 && railTab === 'transit' ? '' : 'hidden'}>
               {(showRail || showBus) && (() => {
                 const visibleRouteIds = new Set(stations.flatMap(st => st.routes.map(r => r.id)))
                 const routeNames = new Map(stations.flatMap(st => st.routes.map(r => [r.id, r.name] as const)))
@@ -524,7 +705,7 @@ export default function NearbyDesktop({
               )}
             </div>
 
-            <div className={railTab === 'destinations' ? '' : 'hidden'}>
+            <div ref={destPaneRef} className={!isV2 && railTab === 'destinations' ? '' : 'hidden'}>
               {/* Planning a specific trip leads — most people arrive wanting
                   their own destination, not our curated set. It answers here,
                   in a row like any other; the Advisor's full cost comparison
@@ -559,8 +740,9 @@ export default function NearbyDesktop({
               )}
             </div>
 
-            <div className={railTab === 'explore' ? '' : 'hidden'}>
+            <div className={!isV2 && railTab === 'explore' ? '' : 'hidden'}>
               <ExploreBody community={community} compact />
+              <ExplorePerks perks={nearbyPerks.perks} planning={nearbyPerks.planning} failed={nearbyPerks.failed} onPlan={nearbyPerks.plan} />
             </div>
 
             {/* Get-Shift hook — persistent at the bottom of the rail on EVERY

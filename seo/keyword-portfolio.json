@@ -3,6 +3,41 @@
   "version": 1,
   "clusters": [
     {
+      "id": "venue-parking",
+      "audience": "People going to a game or show at TD Garden, Fenway Park or Gillette Stadium who are searching where to park. Added 2026-11-02 for exp-2026-11-3: about 12,400 Massachusetts searches a month, and the results are parking sellers.",
+      "intent": "transactional",
+      "priority": 2,
+      "queries": [
+        "gillette stadium parking",
+        "td garden parking",
+        "fenway park parking",
+        "parking near fenway park",
+        "gillette stadium train",
+        "north station garage td garden"
+      ],
+      "gsc_patterns": [
+        "(td ?garden|fenway|gillette|foxboro(ugh)?|patriots|red sox|bruins|celtics).*(parking|\\blots?\\b|garage)",
+        "(parking|garage).*(td ?garden|fenway|gillette|foxboro(ugh)?)",
+        "(gillette|patriots|foxboro(ugh)?).*(train|commuter rail|event train)",
+        "north station garage"
+      ],
+      "target_urls": [
+        "/parking/td-garden",
+        "/parking/fenway-park",
+        "/parking/gillette-stadium"
+      ],
+      "proposed_assets": [
+        "The three /parking pages (branch parking, noindex until Keith approves); Logan parking waits for this read"
+      ],
+      "aeo_questions": [
+        "Where do I park for a Celtics game at TD Garden?",
+        "How much is parking at Fenway Park?",
+        "Is parking free at Gillette Stadium?",
+        "Is there a train to Gillette Stadium?"
+      ],
+      "messaging_notes": "Answer the parking question first: which garage or lot, what it charges with the date we checked, how far it is on foot. Then state the alternative as a plain fact (the station under the arena, the event train). Never argue against driving; these people have decided to drive and the page earns trust by helping them. Placed first in this file because bucketing takes the first match and these venue names collide with nothing else, while 'foxborough parking' would otherwise read as town demand."
+    },
+    {
       "id": "used-car-to-ebike",
       "audience": "People shopping for a car (especially a used car) who could be won over to an e-bike on cost and practicality.",
       "intent": "consideration",
@@ -56,7 +91,8 @@
         "(need|without|no).*car.*(boston|cambridge|somerville)",
         "get(ting)? around.*(boston|cambridge|somerville)",
         "charliecard",
-        "walkable.*(boston|cambridge|somerville)"
+        "walkable.*(boston|cambridge|somerville)",
+        "baldea[cç][aãoõ]|transbordo"
       ],
       "target_urls": [
         "/nearby",
@@ -154,7 +190,8 @@
         "(bike|bikes|blue ?bike|bluebike|t.?pass|tpass|mbta|charlie|shuttle|safe ?ride|cycle kitchen|bike kitchen|quad bikes|parking).*\\b(bu|mit|tufts|harvard|northeastern|neu|suffolk|simmons|berklee|lesley|emerson|umass|bc)\\b",
         "(student|campus|semester|dorm|grad school).*(pass|bike|transit|shuttle|parking|commut|mbta|blue ?bike)",
         "(cycle kitchen|bike kitchen|quad bikes|safe ?ride|red ?eye shuttle)",
-        "(college|university).*(mbta|t.?pass|blue ?bike|bike|shuttle|commut|semester pass)"
+        "(college|university).*(mbta|t.?pass|blue ?bike|bike|shuttle|commut|semester pass)",
+        "brandeis.*(shuttle|tripshot|boston|commuter rail)"
       ],
       "target_urls": [
         "/shift-your-semester",
@@ -231,7 +268,8 @@
         "\\b20\\d\\d (schedule|dates?|lineup)\\b",
         "\\bconference\\b",
         "\\bcentury\\b",
-        "slow ?roll|block party|ride ?out\\b|\\bride for\\b"
+        "slow ?roll|block party|ride ?out\\b|\\bride for\\b",
+        "somerstreets|monster mash|tour de streets|critical mass|moving together|bike to the sea|halloween (parade|ride)|trick.or.treat ride"
       ],
       "target_urls": [
         "/events",
@@ -303,7 +341,8 @@
         "(drive|driving).*(in|to|vs|versus).*(walk|walking|bike|biking)",
         "(walk|walking|bike|biking).*(in|to|vs|versus).*(drive|driving)",
         "^commute times?$",
-        "how (far|long).*(walk|walking|bike|biking).*(mile|minute|min)"
+        "how (far|long).*(walk|walking|bike|biking).*(mile|minute|min)",
+        "minutos (de carro|en (auto|coche|carro))"
       ],
       "target_urls": [
         "/commute-advisor",

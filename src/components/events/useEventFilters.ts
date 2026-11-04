@@ -5,10 +5,11 @@ import { useSearchParams } from 'next/navigation'
 import {
   type CommunityEvent, type RideStyle, EVENT_TYPES, TAG_META, TYPE_FILTER_ORDER, DEFAULT_LOCATION,
   RIDE_STYLE_ORDER, RIDE_STYLE_LABEL, RIDE_STYLE_FILTER_LABEL,
-  haversine, parseEventDate, todayKey, getTypeMeta, getTagMeta, dateMedium,
+  haversine, parseEventDate, todayKey, getTypeMeta, getTagMeta, dateMedium, eventLastDay,
   eventRideStyle, isNoDrop, styleFilterValue, parseStyleFilter,
 } from '@/lib/events'
 import { trackEvents } from './events-analytics'
+import { nestFeeders } from '@/lib/go-together'
 
 // ---------------------------------------------------------------------------
 // Options
@@ -21,6 +22,12 @@ export const DISTANCE_OPTIONS = [
   { value: 'all', label: 'Statewide' },
 ] as const
 export type DistanceValue = (typeof DISTANCE_OPTIONS)[number]['value']
+/**
+ * Picking a place narrows to this distance unless one is already picked, so
+ * "Near Somerville" shows what's near Somerville (Keith 2026-11-03: it was
+ * still statewide). Statewide stays one tap away under How far.
+ */
+const NEAR_DEFAULT_DISTANCE: DistanceValue = '10'
 
 export const WHEN_OPTIONS = [
   { value: 'upcoming', label: 'All upcoming' },
@@ -87,7 +94,7 @@ function inDateRange(evDate: Date, range: WhenValue, today: Date): boolean {
   return evDate <= end
 }
 
-type Ignore = 'type' | 'tags' | 'audience' | 'day'
+type Ignore = 'type' | 'tags' | 'audience' | 'day' | 'distance'
 
 interface Options {
   saved: Record<string, boolean>
@@ -109,7 +116,8 @@ export function useEventFilters(events: CommunityEvent[], { saved, applyDateRang
   const [query, setQuery] = useState(() => params.get('q') ?? '')
   const [distance, setDistanceState] = useState<DistanceValue>(() => {
     const v = params.get('dist') ?? ''
-    return DISTANCE_VALUES.includes(v) ? (v as DistanceValue) : 'all'
+    if (DISTANCE_VALUES.includes(v)) return v as DistanceValue
+    return parseNear(params.get('near')) ? NEAR_DEFAULT_DISTANCE : 'all'
   })
   const [typeFilter, setTypeState] = useState(() => {
     const level = params.get('level')
@@ -189,6 +197,7 @@ export function useEventFilters(events: CommunityEvent[], { saved, applyDateRang
         const { latitude: lat, longitude: lng } = pos.coords
         setUserLoc({ lat, lng, label: 'Your location' })
         setGeoStatus('active')
+        setDistanceState((d) => (d === 'all' ? NEAR_DEFAULT_DISTANCE : d))
         trackEvents('events_filter_changed', { dimension: 'near', value: 'geolocation' })
         try {
           const res = await fetch(
@@ -211,6 +220,7 @@ export function useEventFilters(events: CommunityEvent[], { saved, applyDateRang
   const selectCity = useCallback((loc: UserLoc) => {
     setUserLoc(loc)
     setGeoStatus('active')
+    setDistanceState((d) => (d === 'all' ? NEAR_DEFAULT_DISTANCE : d))
     notify?.(`Near ${loc.label}`)
     trackEvents('events_filter_changed', { dimension: 'near', value: loc.label })
   }, [notify])
@@ -220,7 +230,8 @@ export function useEventFilters(events: CommunityEvent[], { saved, applyDateRang
   const q = query.trim().toLowerCase()
 
   const matches = useCallback((ev: CommunityEvent, ignore?: Ignore): boolean => {
-    if (ev.event_date < today) return false
+    // A multi-day event (Shift 01557) stays until its last day.
+    if (eventLastDay(ev) < today) return false
     if (ignore !== 'type' && typeFilter !== 'All') {
       const level = parseStyleFilter(typeFilter)
       if (level ? eventRideStyle(ev) !== level : ev.event_type !== typeFilter) return false
@@ -234,11 +245,12 @@ export function useEventFilters(events: CommunityEvent[], { saved, applyDateRang
         .filter(Boolean).join(' ').toLowerCase()
       if (!haystack.includes(q)) return false
     }
-    if (distance !== 'all') {
+    if (ignore !== 'distance' && distance !== 'all') {
       if (!ev.location_lat || !ev.location_lng) return false
       if (haversine(userLoc.lat, userLoc.lng, ev.location_lat, ev.location_lng) > Number(distance)) return false
     }
-    if (ignore !== 'day' && selectedDay) return ev.event_date === selectedDay
+    // A picked day shows what is on that day, including a multi-day event in progress.
+    if (ignore !== 'day' && selectedDay) return ev.event_date <= selectedDay && selectedDay <= eventLastDay(ev)
     if (applyDateRange && !inDateRange(parseEventDate(ev.event_date), dateRange, todayDate)) return false
     return true
   }, [today, typeFilter, tags, audience, savedOnly, saved, q, distance, userLoc, selectedDay, applyDateRange, dateRange, todayDate])
@@ -247,6 +259,18 @@ export function useEventFilters(events: CommunityEvent[], { saved, applyDateRang
     list.sort((a, b) => a.event_date.localeCompare(b.event_date) || (a.event_time ?? '').localeCompare(b.event_time ?? ''))
 
   const filtered = useMemo(() => sortEvents(events.filter((ev) => matches(ev))), [events, matches])
+
+  // Go Together: feeder rides sit in their event's tray, and a feeder within
+  // the distance brings in its event from past it (Keith 2026-10-29).
+  const entries = useMemo(
+    () => nestFeeders(filtered, sortEvents([...events]), (ev) => matches(ev, 'distance')),
+    [filtered, events, matches],
+  )
+  /** A feeder that is a card of its own says where it goes. */
+  const ridesTo = useMemo(() => {
+    const titles = new Map(events.map((ev) => [ev.id, ev.title]))
+    return (ev: CommunityEvent) => (ev.feeds_content_id ? titles.get(ev.feeds_content_id) ?? null : null)
+  }, [events])
 
   /** Same filters minus the picked day; feeds the mini month so its dots stay put. */
   const filteredNoDay = useMemo(
@@ -337,7 +361,8 @@ export function useEventFilters(events: CommunityEvent[], { saved, applyDateRang
       else if (typeFilter !== 'All') next.set('type', typeFilter)
       if (selectedDay) next.set('day', selectedDay)
       if (geoStatus === 'active') next.set('near', `${userLoc.lat.toFixed(4)},${userLoc.lng.toFixed(4)},${userLoc.label}`)
-      if (distance !== 'all') next.set('dist', distance)
+      // A place with no dist reads as the near default, so Statewide is written out.
+      if (distance !== 'all' || geoStatus === 'active') next.set('dist', distance)
       if (tags.length) next.set('tags', tags.join(','))
       if (audience.length) next.set('for', audience.join(','))
       if (savedOnly) next.set('saved', '1')
@@ -358,7 +383,7 @@ export function useEventFilters(events: CommunityEvent[], { saved, applyDateRang
     setQuery, setDistance, setTypeFilter, setDateRange, setSelectedDay, toggleTag, toggleAudience, setSavedOnly,
     useMyLocation, selectCity,
     // derived
-    filtered, filteredNoDay, typeCounts, typesByCount, tagCounts, audienceCounts,
+    filtered, filteredNoDay, entries, ridesTo, typeCounts, typesByCount, tagCounts, audienceCounts,
     activeFilters, activeFilterCount, clearAll, pageKey,
   }
 }

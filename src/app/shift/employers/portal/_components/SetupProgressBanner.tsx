@@ -4,27 +4,29 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { ArrowRight } from 'lucide-react'
 import { usePortal } from '../_lib/portal-context'
-import { computeSetupSteps, nextSetupStep } from '../_lib/setup-steps'
+import { computeSetupSteps, nextDoableStep } from '../_lib/setup-steps'
 import { assistantAvailable } from './AssistantPanel'
 
 // Portal-wide onboarding thread: while setup is incomplete, a slim bar under
 // the Topbar keeps the next task present wherever the person is. It stays
 // out of the way on the Setup page itself, while the agreement gate is up
-// (nothing behind it can be done yet) and for viewers, who cannot act on it.
+// (nothing behind it can be done yet) and for anyone who cannot act on a
+// step: admins and managers see it, and the step it names is one they can
+// do (a manager is pointed past the profile and logo, which are an admin's).
 export default function SetupProgressBanner() {
   const pathname = usePathname()
-  const { group, benefitsForm, memberCount, challenges, loading, agreementGated, isAdmin, isGsiAdmin } =
+  const { group, benefitsForm, memberCount, challenges, loading, agreementGated, isGsiAdmin, canManageAccount, canManageChallenges } =
     usePortal()
 
   if (loading || !group) return null
   if (agreementGated) return null
-  if (!isAdmin && !isGsiAdmin) return null
+  if (!canManageAccount && !canManageChallenges) return null
   if (pathname.startsWith('/shift/employers/portal/setup')) return null
   // Home with the assistant lists the next steps itself.
   if (pathname.startsWith('/shift/employers/portal/dashboard') && assistantAvailable(group, isGsiAdmin)) return null
 
   const steps = computeSetupSteps({ group, benefitsForm, memberCount, challenges })
-  const next = nextSetupStep(steps)
+  const next = nextDoableStep(steps, { canManageAccount, canManageChallenges })
   if (!next) return null
   const done = steps.filter((s) => s.done).length
 

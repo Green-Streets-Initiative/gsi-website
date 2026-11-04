@@ -1,5 +1,6 @@
 'use client'
 
+import type { ComponentProps } from 'react'
 import Link from 'next/link'
 import posthog from 'posthog-js'
 import ModeIcon from '@/components/commute/ModeIcon'
@@ -10,6 +11,7 @@ import type { RouteLegTapInfo } from './NearbyMap'
 import BikeComfortBlock, { NEARBY_COMFORT_COLORS } from './BikeComfortBlock'
 import type { ReachRow, ReachStep, ReachSegment, BikeComfortTier, BikeComfortData } from './types'
 import { useNearbyT, useNearbyLocale } from './NearbyI18n'
+import { TripPerks } from './NearbyPerks'
 
 /** Comfort-tier → i18n key, so a tapped bike leg's tier reads in the page
  *  language (matches BikeComfortBlock's localized labels). */
@@ -301,7 +303,7 @@ export function TransitLegs({ steps, segments }: { steps: ReachStep[]; segments?
  *  - `routeSelection`/`onRouteSelect` (desktop two-pane): rows expand in
  *    place, following the PAGE selection — the parent owns the state and
  *    fires the reach_route_viewed analytics. */
-export function ReachList({ center, rows, onRowTap, modeFilter, routeSelection, onRouteSelect, legInfo, highlightedStreetKey, onHighlightStreet, bikeAlt = false, onPickRoute = () => {}, onPlanCommute, partnerSlug }: {
+export function ReachList({ center, rows, onRowTap, modeFilter, routeSelection, onRouteSelect, legInfo, highlightedStreetKey, onHighlightStreet, bikeAlt = false, onPickRoute = () => {}, onPlanCommute, partnerSlug, avoidFor }: {
   center: { lat: number; lng: number }
   rows: ReachRow[]
   onRowTap?: (row: ReachRow) => void
@@ -320,6 +322,9 @@ export function ReachList({ center, rows, onRowTap, modeFilter, routeSelection, 
   onPlanCommute?: (row: ReachRow) => void
   /** Co-brand slug — rides the advisor handoff link when present */
   partnerSlug?: string | null
+  /** Around You v2: "Avoid this street" on a lit street (useAvoidStreets).
+   *  Gets the bike route on screen: its comfort and its minutes. */
+  avoidFor?: (row: ReachRow, comfort: BikeComfortData, minutes: number) => ComponentProps<typeof BikeComfortBlock>['avoid']
 }) {
   const tr = useNearbyT()
   const expanded = routeSelection ?? null
@@ -476,14 +481,22 @@ export function ReachList({ center, rows, onRowTap, modeFilter, routeSelection, 
                           comfort={(bikeAlt ? row.bike_alt?.comfort : row.bike_comfort) ?? row.bike_comfort}
                           highlightedStreetKey={highlightedStreetKey}
                           onHighlightStreet={onHighlightStreet}
+                          avoid={avoidFor?.(
+                            row,
+                            (bikeAlt ? row.bike_alt?.comfort : row.bike_comfort) ?? row.bike_comfort,
+                            bikeAlt && row.bike_alt ? row.bike_alt.minutes : row.bike_minutes,
+                          )}
                         />
                       </>
                     )}
+                    {expanded.mode === 'bike' && <TripPerks row={row} />}
                     {/* Hand off to their maps app for the actual trip — turn-by-turn is its job */}
                     <a
                       href={directionsUrl(row.lat, row.lng, {
                         mode: expanded.mode === 'bike' ? 'bicycling' : 'transit',
                         origin: center,
+                        // v2 (the only place avoidFor is passed): Maps rides our line
+                        route: avoidFor ? (bikeAlt ? row.bike_alt?.polyline : row.bike_polyline) : null,
                       })}
                       target="_blank"
                       rel="noopener noreferrer"

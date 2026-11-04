@@ -52,7 +52,7 @@ export interface GuideRow {
 // Search titles for guides whose library title is written for the app and
 // leaves out the words people search with. The page heading keeps the library
 // title. Evidence for each entry is in seo/reports/.
-export const searchMeta: Record<string, { title: string; description: string; heading?: string }> = {
+export const searchMeta: Record<string, { title?: string; description: string; heading?: string }> = {
   // 2026-10-12: Ad Grants search terms are "how to pay for the t in boston" and
   // siblings; the organic page had 0 impressions with no "Boston" or "MBTA".
   // 2026-10-14: the heading says the same thing the search title does, so an ad
@@ -62,6 +62,13 @@ export const searchMeta: Record<string, { title: string; description: string; he
     description:
       'Tap your phone or a contactless card, or load a CharlieCard pass if you ride most workdays. MBTA transfers, Commuter Rail and reduced fares in plain language.',
     heading: 'How to pay for the T in Boston',
+  },
+  // 2026-11-01: 732 impressions a week at position 6.6 and 0.27% CTR, because
+  // the summary gave the whole answer away in the snippet. Description only;
+  // the title already matches the search. Experiment exp-2026-11-2.
+  'how-far-is-a-ten-minute-drive-on-foot': {
+    description:
+      'Walk and bike times for a 5, 10, 15 or 20-minute drive around Boston, and the door-to-door minutes that change the answer.',
   },
 }
 
@@ -133,61 +140,72 @@ function modeLabel(mode: string, L: GuideLocale = 'en'): string {
 const appStrip: Record<string, { headline: string; line: string }> = {
   transit: {
     headline: 'Next, see when your bus or train is coming.',
-    line: 'Shift shows live arrivals at the stops near you. Take more trips by transit and you can unlock gift cards from local shops. Free.',
+    line: 'Shift shows live arrivals at the stops near you. Find better ways to get around, and get rewarded when you try them. Free.',
   },
   cycling: {
     headline: 'Find the calm way to ride there.',
-    line: 'Shift maps low-stress bike routes and the nearest Bluebikes. Ride more and you can unlock gift cards from local shops. Free.',
+    line: 'Shift maps low-stress bike routes and the nearest Bluebikes. Find better ways to get around, and get rewarded when you try them. Free.',
   },
   walking: {
     headline: 'Find the easy way there on foot.',
-    line: 'Shift shows what you can reach on foot and the closest bus or train. Walk more and you can unlock gift cards from local shops. Free.',
+    line: 'Shift shows what you can reach on foot and the closest bus or train. Find better ways to get around, and get rewarded when you try them. Free.',
   },
 }
 // Answer pages (seo/answer-pages.md) get a strip that matches the question the
 // page answers. Every claim is something the app does today.
 const appStripBySlug: Record<string, { headline: string; line: string }> = {
+  'how-to-pay-for-the-t': {
+    // Campaign t-trips-count-2026 (docs/programs/marketing/campaigns.json):
+    // started with the one-line pick, Keith 2026-11-04. Baseline Oct 7-Nov 3:
+    // 331 visitors, 3 tapped a store button.
+    headline: 'Your T trips count in Shift.',
+    line: 'Shift counts your T trips on its own and shows when the next bus or train is coming. Find better ways to get around, and get rewarded when you try them. Free.',
+  },
   'boston-traffic': {
     headline: 'See when the next train or bus is coming.',
-    line: 'Shift shows live arrivals at the stops near you and the calmest bike routes, so you can plan around the traffic. Make more trips this way and you can unlock gift cards from local shops. Free.',
+    line: 'Shift shows live arrivals at the stops near you and the calmest bike routes, so you can plan around the traffic. Find better ways to get around, and get rewarded when you try them. Free.',
   },
   'boston-parking-costs': {
     headline: 'Find the station and bike route nearest you.',
-    line: 'Shift shows the closest stations, live arrivals and the Bluebikes docks with bikes right now. Make more trips this way and you can unlock gift cards from local shops. Free.',
+    line: 'Shift shows the closest stations, live arrivals and the Bluebikes docks with bikes right now. Find better ways to get around, and get rewarded when you try them. Free.',
   },
   'keeping-a-car-in-boston': {
     headline: 'See how often you really drive.',
-    line: 'Shift records your trips on its own, so you can count your driving days, and shows the bus, train and bike options near you. Make more trips this way and you can unlock gift cards from local shops. Free.',
+    line: 'Shift records your trips on its own, so you can count your driving days, and shows the bus, train and bike options near you. Find better ways to get around, and get rewarded when you try them. Free.',
   },
   'backup-plans-for-the-t': {
     headline: 'Have your backup ready before you need it.',
-    line: 'Shift shows live bus arrivals and the Bluebikes docks with bikes near you, so you can switch fast when a line is down. Make more trips this way and you can unlock gift cards from local shops. Free.',
+    line: 'Shift shows live bus arrivals and the Bluebikes docks with bikes near you, so you can switch fast when a line is down. Find better ways to get around, and get rewarded when you try them. Free.',
   },
   'getting-around-boston': {
     headline: 'Plan your first trips from a new address.',
-    line: 'Shift shows what you can reach on foot, the closest bus or train and low-stress bike routes. Make more trips this way and you can unlock gift cards from local shops. Free.',
+    line: 'Shift shows what you can reach on foot, the closest bus or train and low-stress bike routes. Find better ways to get around, and get rewarded when you try them. Free.',
   },
 }
 const appStripBySlugEs: Record<string, { headline: string; line: string }> = {
+  'how-to-pay-for-the-t': {
+    headline: 'Tus viajes en la T cuentan en Shift.',
+    line: 'Shift cuenta tus viajes en la T por sí solo y te muestra cuándo llega el próximo autobús o tren. Encuentra mejores formas de moverte y recibe recompensas cuando las pruebes. Gratis.',
+  },
   'boston-traffic': {
     headline: 'Mira cuándo llega el próximo tren o autobús.',
-    line: 'Shift te muestra las llegadas en vivo en las paradas cerca de ti y las rutas en bici más tranquilas, para que planees sin el tráfico. Haz más viajes así y puedes desbloquear tarjetas de regalo de comercios locales. Gratis.',
+    line: 'Shift te muestra las llegadas en vivo en las paradas cerca de ti y las rutas en bici más tranquilas, para que planees sin el tráfico. Encuentra mejores formas de moverte y recibe recompensas cuando las pruebes. Gratis.',
   },
   'boston-parking-costs': {
     headline: 'Encuentra la estación y la ruta en bici más cercanas.',
-    line: 'Shift te muestra las estaciones más cercanas, las llegadas en vivo y las estaciones de Bluebikes con bicis disponibles ahora. Haz más viajes así y puedes desbloquear tarjetas de regalo de comercios locales. Gratis.',
+    line: 'Shift te muestra las estaciones más cercanas, las llegadas en vivo y las estaciones de Bluebikes con bicis disponibles ahora. Encuentra mejores formas de moverte y recibe recompensas cuando las pruebes. Gratis.',
   },
   'keeping-a-car-in-boston': {
     headline: 'Mira cuántas veces manejas de verdad.',
-    line: 'Shift registra tus viajes solo, para que cuentes tus días en auto, y te muestra las opciones de autobús, tren y bici cerca de ti. Haz más viajes así y puedes desbloquear tarjetas de regalo de comercios locales. Gratis.',
+    line: 'Shift registra tus viajes solo, para que cuentes tus días en auto, y te muestra las opciones de autobús, tren y bici cerca de ti. Encuentra mejores formas de moverte y recibe recompensas cuando las pruebes. Gratis.',
   },
   'backup-plans-for-the-t': {
     headline: 'Ten tu plan B listo antes de necesitarlo.',
-    line: 'Shift te muestra las llegadas de autobuses en vivo y las estaciones de Bluebikes con bicis cerca de ti, para que cambies rápido cuando una línea no funciona. Haz más viajes así y puedes desbloquear tarjetas de regalo de comercios locales. Gratis.',
+    line: 'Shift te muestra las llegadas de autobuses en vivo y las estaciones de Bluebikes con bicis cerca de ti, para que cambies rápido cuando una línea no funciona. Encuentra mejores formas de moverte y recibe recompensas cuando las pruebes. Gratis.',
   },
   'getting-around-boston': {
     headline: 'Planea tus primeros viajes desde una dirección nueva.',
-    line: 'Shift te muestra a dónde puedes llegar a pie, el autobús o tren más cercano y rutas en bici tranquilas. Haz más viajes así y puedes desbloquear tarjetas de regalo de comercios locales. Gratis.',
+    line: 'Shift te muestra a dónde puedes llegar a pie, el autobús o tren más cercano y rutas en bici tranquilas. Encuentra mejores formas de moverte y recibe recompensas cuando las pruebes. Gratis.',
   },
 }
 // Our own tools and live offers, placed after the section they serve
@@ -310,63 +328,71 @@ const toolsAfter: Record<string, Record<string, (slug: string, L: GuideLocale) =
 
 const appStripDefault = {
   headline: 'Find the easy way there.',
-  line: 'Shift shows live bus and train arrivals, low-stress bike routes and the nearest Bluebikes. Make more trips this way and you can unlock gift cards from local shops. Free.',
+  line: 'Shift shows live bus and train arrivals, low-stress bike routes and the nearest Bluebikes. Find better ways to get around, and get rewarded when you try them. Free.',
 }
 const appStripBySlugPt: Record<string, { headline: string; line: string }> = {
+  'how-to-pay-for-the-t': {
+    headline: 'Suas viagens na T contam no Shift.',
+    line: 'O Shift conta suas viagens na T sozinho e mostra quando chega o próximo ônibus ou trem. Encontre jeitos melhores de se locomover e seja recompensado quando experimentar. Grátis.',
+  },
   'boston-traffic': {
     headline: 'Veja quando chega o próximo trem ou ônibus.',
-    line: 'O Shift mostra as chegadas ao vivo nas paradas perto de você e as rotas de bicicleta mais tranquilas, para você se planejar sem o trânsito. Faça mais viagens assim e você pode desbloquear vale-presentes de comércios locais. Grátis.',
+    line: 'O Shift mostra as chegadas ao vivo nas paradas perto de você e as rotas de bicicleta mais tranquilas, para você se planejar sem o trânsito. Encontre jeitos melhores de se locomover e seja recompensado quando experimentar. Grátis.',
   },
   'boston-parking-costs': {
     headline: 'Encontre a estação e a rota de bicicleta mais perto de você.',
-    line: 'O Shift mostra as estações mais próximas, as chegadas ao vivo e as estações da Bluebikes com bicicletas disponíveis agora. Faça mais viagens assim e você pode desbloquear vale-presentes de comércios locais. Grátis.',
+    line: 'O Shift mostra as estações mais próximas, as chegadas ao vivo e as estações da Bluebikes com bicicletas disponíveis agora. Encontre jeitos melhores de se locomover e seja recompensado quando experimentar. Grátis.',
   },
   'keeping-a-car-in-boston': {
     headline: 'Veja quantas vezes você realmente dirige.',
-    line: 'O Shift registra suas viagens sozinho, para você contar seus dias de carro, e mostra as opções de ônibus, trem e bicicleta perto de você. Faça mais viagens assim e você pode desbloquear vale-presentes de comércios locais. Grátis.',
+    line: 'O Shift registra suas viagens sozinho, para você contar seus dias de carro, e mostra as opções de ônibus, trem e bicicleta perto de você. Encontre jeitos melhores de se locomover e seja recompensado quando experimentar. Grátis.',
   },
   'backup-plans-for-the-t': {
     headline: 'Tenha seu plano B pronto antes de precisar.',
-    line: 'O Shift mostra as chegadas de ônibus ao vivo e as estações da Bluebikes com bicicletas perto de você, para você trocar rápido quando uma linha para. Faça mais viagens assim e você pode desbloquear vale-presentes de comércios locais. Grátis.',
+    line: 'O Shift mostra as chegadas de ônibus ao vivo e as estações da Bluebikes com bicicletas perto de você, para você trocar rápido quando uma linha para. Encontre jeitos melhores de se locomover e seja recompensado quando experimentar. Grátis.',
   },
   'getting-around-boston': {
     headline: 'Planeje suas primeiras viagens a partir de um endereço novo.',
-    line: 'O Shift mostra aonde você chega a pé, o ônibus ou trem mais próximo e rotas de bicicleta tranquilas. Faça mais viagens assim e você pode desbloquear vale-presentes de comércios locais. Grátis.',
+    line: 'O Shift mostra aonde você chega a pé, o ônibus ou trem mais próximo e rotas de bicicleta tranquilas. Encontre jeitos melhores de se locomover e seja recompensado quando experimentar. Grátis.',
   },
 }
 const appStripBySlugZh: Record<string, { headline: string; line: string }> = {
+  'how-to-pay-for-the-t': {
+    headline: '你乘坐 T 的行程会记入 Shift。',
+    line: 'Shift 会自动记录你乘坐 T 的行程，并显示下一班公交车或列车什么时候到。找到更好的出行方式，尝试时还能获得奖励。免费。',
+  },
   'boston-traffic': {
     headline: '看看下一班列车或公交车什么时候到。',
-    line: 'Shift 显示你附近站点的实时到站信息和最轻松的骑行路线，帮你避开拥堵来安排出行。这样出行的次数多了，还能解锁本地商家的礼品卡。免费。',
+    line: 'Shift 显示你附近站点的实时到站信息和最轻松的骑行路线，帮你避开拥堵来安排出行。找到更好的出行方式，尝试时还能获得奖励。免费。',
   },
   'boston-parking-costs': {
     headline: '找到离你最近的车站和骑行路线。',
-    line: 'Shift 显示最近的车站、实时到站信息，以及现在有车可借的 Bluebikes 站点。这样出行的次数多了，还能解锁本地商家的礼品卡。免费。',
+    line: 'Shift 显示最近的车站、实时到站信息，以及现在有车可借的 Bluebikes 站点。找到更好的出行方式，尝试时还能获得奖励。免费。',
   },
   'keeping-a-car-in-boston': {
     headline: '看看你到底多常开车。',
-    line: 'Shift 会自动记录你的行程，帮你算出开车的天数，并显示你附近的公交车、列车和骑行选择。这样出行的次数多了，还能解锁本地商家的礼品卡。免费。',
+    line: 'Shift 会自动记录你的行程，帮你算出开车的天数，并显示你附近的公交车、列车和骑行选择。找到更好的出行方式，尝试时还能获得奖励。免费。',
   },
   'backup-plans-for-the-t': {
     headline: '提前准备好你的备用方案。',
-    line: 'Shift 显示你附近的公交车实时到站信息和有车可借的 Bluebikes 站点，线路停运时你能马上换方式。这样出行的次数多了，还能解锁本地商家的礼品卡。免费。',
+    line: 'Shift 显示你附近的公交车实时到站信息和有车可借的 Bluebikes 站点，线路停运时你能马上换方式。找到更好的出行方式，尝试时还能获得奖励。免费。',
   },
   'getting-around-boston': {
     headline: '从新住址规划你的头几次出行。',
-    line: 'Shift 显示步行能到哪里、最近的公交车或列车，以及轻松的骑行路线。这样出行的次数多了，还能解锁本地商家的礼品卡。免费。',
+    line: 'Shift 显示步行能到哪里、最近的公交车或列车，以及轻松的骑行路线。找到更好的出行方式，尝试时还能获得奖励。免费。',
   },
 }
 const appStripDefaultZh = {
   headline: '找到最轻松的出行方式。',
-  line: 'Shift 显示公交车和列车的实时到站信息、轻松的骑行路线和最近的 Bluebikes。这样出行的次数多了，还能解锁本地商家的礼品卡。免费。',
+  line: 'Shift 显示公交车和列车的实时到站信息、轻松的骑行路线和最近的 Bluebikes。找到更好的出行方式，尝试时还能获得奖励。免费。',
 }
 const appStripDefaultPt = {
   headline: 'Encontre o jeito fácil de chegar.',
-  line: 'O Shift mostra as chegadas de ônibus e trens ao vivo, rotas de bicicleta tranquilas e as Bluebikes mais próximas. Faça mais viagens assim e você pode desbloquear vale-presentes de comércios locais. Grátis.',
+  line: 'O Shift mostra as chegadas de ônibus e trens ao vivo, rotas de bicicleta tranquilas e as Bluebikes mais próximas. Encontre jeitos melhores de se locomover e seja recompensado quando experimentar. Grátis.',
 }
 const appStripDefaultEs = {
   headline: 'Encuentra la forma fácil de llegar.',
-  line: 'Shift te muestra las llegadas de autobuses y trenes en vivo, rutas en bici tranquilas y las Bluebikes más cercanas. Haz más viajes así y puedes desbloquear tarjetas de regalo de comercios locales. Gratis.',
+  line: 'Shift te muestra las llegadas de autobuses y trenes en vivo, rutas en bici tranquilas y las Bluebikes más cercanas. Encuentra mejores formas de moverte y recibe recompensas cuando las pruebes. Gratis.',
 }
 
 // Printable one-page sheets, offered right under the app strip. A download

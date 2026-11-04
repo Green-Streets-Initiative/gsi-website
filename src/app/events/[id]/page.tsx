@@ -4,11 +4,12 @@ import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
 import EventDetail from '@/components/events/EventDetail'
 import { isPastEvent } from '@/lib/events-next'
-import { buildEventJsonLd } from '@/lib/events-seo'
+import { buildEventJsonLd, townFromAddress } from '@/lib/events-seo'
 import { loadEvent, buildEventPageMetadata } from '../_lib/load'
 import { getEventRoams } from '@/lib/roams/queries'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { hostPath, hostQualifies } from '@/lib/hosts'
+import { getQualifyingTowns } from '@/lib/towns/queries'
 
 export const dynamic = 'force-dynamic'
 
@@ -28,11 +29,19 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
   // Old links carry the internal id; send them to the readable address for good.
   if (event.slug && decodeURIComponent(id) !== event.slug) permanentRedirect(eventPath(event))
   const jsonLd = buildEventJsonLd(event, { timeZone: timezone })
-  const [roamLinks, hasHostPage] = await Promise.all([
+  // The town in the address, when it has a published town page. Event visitors
+  // from search reach the app at 0.6% from the event page and 6.3% from a town
+  // page, so the page sends them there (exp-2026-11-1). Only Massachusetts
+  // towns publish, so a same-named town elsewhere never matches.
+  const townName = townFromAddress(event.location_address)
+  const [roamLinks, hasHostPage, towns] = await Promise.all([
     getEventRoams(event.id),
     organizerId ? hostQualifies(organizerId) : Promise.resolve(false),
+    townName ? getQualifyingTowns() : Promise.resolve([]),
   ])
   const hostHref = hasHostPage && organizerId ? hostPath(organizerId) : null
+  const townMatch = townName ? towns.find((t) => t.town_name.toLowerCase() === townName.toLowerCase()) : undefined
+  const town = townMatch ? { name: townMatch.town_name, href: `/shift/towns/${townMatch.slug}` } : null
   // A ride planned in Shift takes RSVPs on its own page (/rides/<code>).
   let rideCode: string | null = null
   if (event.ride_series_id) {
@@ -52,7 +61,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
-        <EventDetail event={event} nextUp={nextUp} isPast={isPastEvent(event.event_date)} tone="light" sponsorLinks={sponsorLinks} roamLinks={roamLinks} rideCode={rideCode} hostHref={hostHref} />
+        <EventDetail event={event} nextUp={nextUp} isPast={isPastEvent(event.event_date, event.event_end_date)} tone="light" sponsorLinks={sponsorLinks} roamLinks={roamLinks} rideCode={rideCode} hostHref={hostHref} town={town} />
       </main>
       <Footer variant="light" />
     </>

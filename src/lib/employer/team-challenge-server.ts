@@ -1,7 +1,8 @@
 import 'server-only'
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { TEAM_CHALLENGE, type TeamResult } from './team-challenge'
+import { TEAM_CHALLENGE, emailDomain, type TeamResult } from './team-challenge'
 import { findCompanyMatch, type CompanyForMatch } from './team-challenge-match'
+import { verifyDomain, websiteUrl } from './team-challenge-domain'
 import type { TeamChallengeSignup } from './team-challenge-token'
 import { etEndOfDayIso, etStartOfDayIso } from '@/app/shift/employers/portal/_lib/portal-utils'
 
@@ -71,11 +72,20 @@ export async function lookupTeam(db: SupabaseClient, s: TeamChallengeSignup): Pr
     .limit(10)
   const myGroups = ((mine ?? []) as unknown as { groups: GroupRow }[]).map((r) => r.groups).filter((g) => g.type === 'workplace')
   for (const g of myGroups) {
-    const signup = (g.onboarding?.signup ?? null) as { key?: string } | null
+    const signup = (g.onboarding?.signup ?? null) as { key?: string; domain_verified?: boolean } | null
     if (signup?.key === TEAM_CHALLENGE.key) {
       return {
         kind: 'mine',
-        team: { groupId: g.id, company: g.name, slug: g.slug, code: g.invite_code ?? '', challengeId: await teamChallengeId(db, g.id) },
+        team: {
+          groupId: g.id,
+          company: g.name,
+          slug: g.slug,
+          code: g.invite_code ?? '',
+          challengeId: await teamChallengeId(db, g.id),
+          domain: emailDomain(email),
+          // Teams made before the check carry no flag; only an explicit false is a mismatch.
+          domainVerified: signup.domain_verified !== false,
+        },
       }
     }
   }
@@ -112,18 +122,26 @@ async function freeSlug(db: SupabaseClient, base: string): Promise<string | null
 }
 
 /**
- * Makes the team. Returns the team and a one-time sign-in token for the
- * portal (the same token the portal's emailed links carry), or throws.
- * On a failure part-way, the group is removed so a retry starts clean.
+ * Makes the team. Returns the team, or throws. On a failure part-way, the
+ * group is removed so a retry starts clean. Signing in is separate: the
+ * confirm route asks the portal's own magic-link function to email a link
+ * (sendPortalSignInLink), the same one the login page sends.
  */
-export async function createTeam(db: SupabaseClient, s: TeamChallengeSignup): Promise<{ team: TeamResult; tokenHash: string | null }> {
+export async function createTeam(db: SupabaseClient, s: TeamChallengeSignup): Promise<{ team: TeamResult }> {
   const email = s.email.toLowerCase()
 
   // The portal signs people in as a Shift account; this makes it if needed.
+  // The link itself is not used: the person gets a normal sign-in email.
   const { data: link, error: linkErr } = await db.auth.admin.generateLink({ type: 'magiclink', email })
   if (linkErr || !link?.user?.id) throw new Error(`generateLink: ${linkErr?.message ?? 'no user'}`)
   const userId = link.user.id
-  const tokenHash = link.properties?.hashed_token ?? null
+
+  // Does the email belong to the company whose website was given? A failed
+  // homepage fetch is a plain "no", never a failed sign-up.
+  const domain = emailDomain(email)
+  const domainVerified = await verifyDomain({ email, website: s.website })
+  // Stored as a URL when it parses as one, else as typed (links signed before the field was required carry '').
+  const website: string | null = websiteUrl(s.website) ?? (s.website.trim() || null)
 
   const now = new Date()
   const yearOn = new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000)
@@ -150,7 +168,13 @@ export async function createTeam(db: SupabaseClient, s: TeamChallengeSignup): Pr
       access_ends_at: yearOn.toISOString(),
       onboarding: {
         headcount: s.headcount,
-        signup: { key: TEAM_CHALLENGE.key, at: now.toISOString(), source: 'challenge_page' },
+        signup: {
+          key: TEAM_CHALLENGE.key,
+          at: now.toISOString(),
+          source: 'challenge_page',
+          website,
+          domain_verified: domainVerified,
+        },
       },
     })
     .select('id, name, slug, invite_code')
@@ -171,7 +195,6 @@ export async function createTeam(db: SupabaseClient, s: TeamChallengeSignup): Pr
     // The organizer's work domain (personal addresses are refused at step 1),
     // so the app can offer the team to coworkers who sign in with it (Shift
     // 01461). Not worth failing the sign-up over.
-    const domain = email.split('@')[1]
     if (domain && domain !== 'gogreenstreets.org') {
       const { error: dErr } = await db.from('employer_email_domains').insert({ group_id: group.id, domain, created_by: userId })
       if (dErr) console.error('[team-challenge] domain insert failed:', dErr)
@@ -200,13 +223,37 @@ export async function createTeam(db: SupabaseClient, s: TeamChallengeSignup): Pr
     if (cErr || !comp) throw new Error(`competition insert: ${cErr?.message ?? 'no row'}`)
 
     return {
-      team: { groupId: group.id, company: group.name, slug: group.slug, code: group.invite_code ?? '', challengeId: comp.id },
-      tokenHash,
+      team: { groupId: group.id, company: group.name, slug: group.slug, code: group.invite_code ?? '', challengeId: comp.id, domain, domainVerified },
     }
   } catch (err) {
     await db.from('competitions').delete().eq('group_id', group.id)
     await db.from('group_admins').delete().eq('group_id', group.id)
     await db.from('groups').delete().eq('id', group.id)
     throw err
+  }
+}
+
+/**
+ * Emails the organizer a normal portal sign-in link, through the same
+ * function the login page calls (employer-magic-link, which checks the
+ * address is a portal admin and builds the link itself). True when the
+ * function accepted the request; it always answers success once the
+ * address is known, so a false here means the call itself failed.
+ */
+export async function sendPortalSignInLink(email: string, origin: string): Promise<boolean> {
+  const base = process.env.NEXT_PUBLIC_SUPABASE_URL
+  if (!base) return false
+  try {
+    const res = await fetch(`${base}/functions/v1/employer-magic-link`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, redirect_to: `${origin}/shift/employers/portal/dashboard` }),
+      signal: AbortSignal.timeout(10_000),
+    })
+    if (!res.ok) console.error(`[team-challenge] employer-magic-link ${res.status}`)
+    return res.ok
+  } catch (err) {
+    console.error('[team-challenge] employer-magic-link failed:', err)
+    return false
   }
 }

@@ -23,22 +23,22 @@ const ANDROID_URL = process.env.NEXT_PUBLIC_ANDROID_URL || ''
 const IS_LIVE = !!(IOS_URL && ANDROID_URL)
 
 export const metadata: Metadata = {
-  title: 'Shift — Move better. Every trip. | Green Streets Initiative',
-  description: 'Turn everyday trips into local perks, status, and friendly competition.',
+  title: 'Shift — Find better ways to get around | Green Streets Initiative',
+  description: 'Find better ways to get around Massachusetts, and get rewarded when you try them. A free app from Green Streets Initiative.',
   alternates: { canonical: 'https://www.gogreenstreets.org/shift' },
   openGraph: {
-    title: 'Shift — Move better. Every trip.',
-    description: 'Turn everyday trips into local perks, status, and friendly competition.',
+    title: 'Shift — Find better ways to get around',
+    description: 'Find better ways to get around Massachusetts, and get rewarded when you try them. A free app from Green Streets Initiative.',
     url: 'https://www.gogreenstreets.org/shift',
     siteName: 'Green Streets Initiative',
-    images: [{ url: '/og/shift-og.png', width: 1200, height: 630, alt: 'Shift by Green Streets Initiative — Move better. Every trip.' }],
+    images: [{ url: '/og/shift-og.png', width: 1200, height: 630, alt: 'Shift by Green Streets Initiative — Find better ways to get around.' }],
     locale: 'en_US',
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Shift — Move better. Every trip.',
-    description: 'Turn everyday trips into local perks, status, and friendly competition.',
+    title: 'Shift — Find better ways to get around',
+    description: 'Find better ways to get around Massachusetts, and get rewarded when you try them. A free app from Green Streets Initiative.',
     images: ['/og/shift-og.png'],
   },
 }
@@ -79,11 +79,11 @@ export default function ShiftPage() {
                 {CHEV} The Shift app &middot; now on iOS &amp; Android
               </span>
               <h1 className="mt-4 font-serif text-[clamp(44px,7.2vw,86px)] font-normal leading-[1.04] text-navy">
-                Move better.<br />
-                <em className="text-green-deep">Every trip.</em>
+                Find better ways<br />
+                <em className="text-green-deep">to get around.</em>
               </h1>
               <p className="mt-5 max-w-[46ch] text-[clamp(18px,1.6vw,21px)] leading-[1.6] text-navy">
-                Shift helps you make more of your trips on foot, by bike, and on transit, and turns each one into status, streaks, local perks, and a little friendly competition with your neighborhood.
+                Get rewarded when you try them. Shift shows when the next bus or train is coming, where the nearest bike share is and the calm way to ride, and it counts your trips on its own.
               </p>
 
               {IS_LIVE ? (
@@ -110,15 +110,15 @@ export default function ShiftPage() {
               <div className="absolute left-1/2 top-1/2 z-[-1] h-[80%] w-[80%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(41,102,229,0.22),transparent_70%)] blur-xl" />
               {/* Left phone */}
               <div className="absolute left-1/2 top-1/2 z-[1] hidden w-[268px] -translate-x-[92%] -translate-y-[52%] -rotate-[9deg] scale-[0.82] brightness-[0.86] transition-transform duration-500 ease-[cubic-bezier(0.2,0.8,0.2,1)] group-hover:-translate-x-[104%] group-hover:-rotate-[12deg] group-hover:scale-[0.83] md:block">
-                <PhoneFrame src="/images/shift-app/rewards-screen.png" alt="Shift rewards screen" />
+                <PhoneFrame src="/images/shift-app/around-you-home.png" alt="Shift Home with the Around You card: next departures nearby" />
               </div>
               {/* Right phone */}
               <div className="absolute left-1/2 top-1/2 z-[1] hidden w-[268px] -translate-x-[8%] -translate-y-[46%] rotate-[9deg] scale-[0.82] brightness-[0.86] transition-transform duration-500 ease-[cubic-bezier(0.2,0.8,0.2,1)] group-hover:-translate-x-[-4%] group-hover:rotate-[12deg] group-hover:scale-[0.83] md:block">
-                <PhoneFrame src="/images/shift-app/roam-adventures.png" alt="Shift Roam adventures screen" />
+                <PhoneFrame src="/images/shift-app/rewards-perks-current.png" alt="Shift local perks from nearby businesses" />
               </div>
               {/* Center phone */}
               <div className="absolute left-1/2 top-1/2 z-[3] w-[268px] -translate-x-1/2 -translate-y-1/2 scale-[0.98] transition-transform duration-500">
-                <PhoneFrame src="/images/shift-app/home-streak.png" alt="Shift home screen with streak and status tier" priority />
+                <PhoneFrame src="/images/shift-app/around-you.png" alt="Shift Around You: live transit and bike share near you" priority />
               </div>
             </div>
           </div>
@@ -127,13 +127,13 @@ export default function ShiftPage() {
           <div className="mt-[34px] border-b border-t border-navy/10 bg-white py-[18px]">
             <div className="mx-auto flex max-w-[1120px] flex-wrap items-center justify-center gap-x-[46px] gap-y-3 px-8">
               <span className="inline-flex items-center gap-2.5 font-display text-[15px] font-semibold text-navy">
-                {CHEV} Auto-detects every trip
+                {CHEV} Live transit and bike share near you
               </span>
               <span className="h-[5px] w-[5px] rounded-full bg-white" />
               <span className="font-display text-[15px] font-semibold text-navy">Walk &middot; Bike &middot; Transit</span>
               <span className="h-[5px] w-[5px] rounded-full bg-white" />
               <span className="font-display text-[15px] font-semibold text-navy">
-                <b className="text-[20px] font-extrabold text-forest">5</b> status tiers to climb
+                A commute plan for your routes
               </span>
               <span className="h-[5px] w-[5px] rounded-full bg-white" />
               <span className="font-display text-[15px] font-semibold text-navy">
@@ -144,47 +144,43 @@ export default function ShiftPage() {
         </section>
 
         {/* ═══════════════════════════════════════════════════════
-            2 · STATUS / STREAKS / BADGES
+            2 · AROUND YOU (Keith 2026-10-06: real-world utility first)
         ═══════════════════════════════════════════════════════ */}
         <section className="bg-[#191A2E]" id="the-app">
           <FadeIn>
             <FeatureRow
-              eyebrow="Status · streaks · badges"
-              heading="Watch your status climb as you move."
+              eyebrow="Around You"
+              heading="What's near you, and when it's coming."
               media={
                 <PhoneFrame
-                  src="/images/shift-app/home-streak-detail.png"
-                  alt="Shift home screen showing a 52-day streak, Shifter tier, and 71% shift rate"
+                  src="/images/shift-app/around-you-home.png"
+                  alt="Shift Around You card on Home: the next bus and train nearby, with bikes available"
                   className="w-[268px]"
                 />
               }
             >
               <p className="text-[18px] leading-[1.6] text-white/80">
-                Every active trip nudges you up a ladder of five status tiers. Your standing reflects how you actually get around — not how much you grind.
+                Open Around You wherever you are and see the transit, bike share and bike routes nearby, with live departures. It works across Massachusetts, not just in Boston.
               </p>
-              <div className="mt-6">
-                <TierLadder />
-              </div>
               <ul className="mt-6 flex flex-col gap-3.5">
-                <Bullet><b className="font-display font-bold text-white">Tiers track real behavior.</b> You advance on active trips plus your trailing 60-day Shift Rate — the share of your trips that are active.</Bullet>
-                <Bullet><b className="font-display font-bold text-white">Streaks keep momentum.</b> Make an active trip a day and watch the streak grow.</Bullet>
-                <Bullet><b className="font-display font-bold text-white">XP is for bragging rights.</b> Rack it up and compare with friends.</Bullet>
+                <Bullet><b className="font-display font-bold text-white">Live departures.</b> The next MBTA and regional bus or train from the stops around you.</Bullet>
+                <Bullet><b className="font-display font-bold text-white">Bikes and docks.</b> Bluebikes availability and the comfortable bike routes nearby.</Bullet>
+                <Bullet><b className="font-display font-bold text-white">How far you can get.</b> See what&apos;s within a short walk, ride or transit trip.</Bullet>
+                <Bullet><b className="font-display font-bold text-white">Plan a route.</b> Type where you&apos;re going and compare the ways there for that one trip.</Bullet>
               </ul>
             </FeatureRow>
           </FadeIn>
         </section>
 
-        <TownsTeaserBand />
-
         {/* ═══════════════════════════════════════════════════════
-            3 · COMMUTE ADVISOR
+            3 · COMMUTE ADVISOR (moved ahead of status, Keith 2026-10-06)
         ═══════════════════════════════════════════════════════ */}
         <section className="bg-[#121320]">
           <FadeIn>
             <FeatureRow
               eyebrow="Commute Advisor"
               eyebrowColor="#2966E5"
-              heading="A coach for the way you actually travel."
+              heading="Your regular trips, compared."
               reverse
               media={
                 <div className="flex w-[340px] max-w-full flex-col gap-4">
@@ -223,16 +219,49 @@ export default function ShiftPage() {
               }
             >
               <p className="text-[18px] leading-[1.6] text-white/80">
-                Shift learns your real routes and surfaces active and transit options worth trying — connecting your home, work, and the places you go. Practical, personal, and matched to your trips.
+                Tell Shift where you go regularly, like home to work, and Commute Advisor lays out the ways to get there side by side, with what each one costs over a year. When your trips start going somewhere new, it offers a fresh look.
               </p>
               <ul className="mt-6 flex flex-col gap-3.5">
-                <Bullet><b className="font-display font-bold text-white">Routes you&apos;d never have found.</b> Bike-share legs, transfers, and shortcuts tuned to where you go.</Bullet>
-                <Bullet><b className="font-display font-bold text-white">Nudges, not nagging.</b> One suggestion at a time, always relevant, always easy to dismiss.</Bullet>
-                <Bullet><b className="font-display font-bold text-white">Built for Massachusetts.</b> Real MBTA, Bluebikes, and neighborhood knowledge baked in.</Bullet>
+                <Bullet><b className="font-display font-bold text-white">Every realistic way there.</b> Transit, bike and walking options for your actual route, not a generic map.</Bullet>
+                <Bullet><b className="font-display font-bold text-white">The yearly cost, in dollars.</b> Fuel, maintenance and parking against a transit pass, down to a net savings figure.</Bullet>
+                <Bullet><b className="font-display font-bold text-white">Checks back when life changes.</b> New job or new apartment? When your trips change, it suggests another look.</Bullet>
               </ul>
             </FeatureRow>
           </FadeIn>
         </section>
+
+        {/* ═══════════════════════════════════════════════════════
+            3b · STATUS / STREAKS / BADGES (after the utility features)
+        ═══════════════════════════════════════════════════════ */}
+        <section className="bg-[#191A2E]">
+          <FadeIn>
+            <FeatureRow
+              eyebrow="Status · streaks · badges"
+              heading="Watch your status climb as you move."
+              media={
+                <PhoneFrame
+                  src="/images/shift-app/home-streak-detail.png"
+                  alt="Shift home screen showing a 52-day streak, Shifter tier, and 71% shift rate"
+                  className="w-[268px]"
+                />
+              }
+            >
+              <p className="text-[18px] leading-[1.6] text-white/80">
+                Every active trip nudges you up a ladder of five status tiers. Your standing reflects how you actually get around — not how much you grind.
+              </p>
+              <div className="mt-6">
+                <TierLadder />
+              </div>
+              <ul className="mt-6 flex flex-col gap-3.5">
+                <Bullet><b className="font-display font-bold text-white">Tiers track real behavior.</b> You advance on active trips plus your trailing 60-day Shift Rate — the share of your trips that are active.</Bullet>
+                <Bullet><b className="font-display font-bold text-white">Streaks keep momentum.</b> Make an active trip a day and watch the streak grow.</Bullet>
+                <Bullet><b className="font-display font-bold text-white">XP is for bragging rights.</b> Rack it up and compare with friends.</Bullet>
+              </ul>
+            </FeatureRow>
+          </FadeIn>
+        </section>
+
+        <TownsTeaserBand />
 
         {/* ═══════════════════════════════════════════════════════
             4 · MICRO-GUIDES
@@ -298,8 +327,10 @@ export default function ShiftPage() {
               reverse
               media={
                 <PhoneFrame
-                  src="/images/shift-app/leaderboard.png"
-                  alt="Shift leaderboard: Somerville ranked #3 of 9 by shift rate"
+                  src="/images/shift-app/community-groups.png"
+                  alt="Shift Community tab: Somerville third among Massachusetts towns this month; Cambridge 253 members, Somerville 214"
+                  width={640}
+                  height={1067}
                   className="w-[268px]"
                 />
               }
@@ -428,7 +459,7 @@ export default function ShiftPage() {
               reverse
               media={
                 <PhoneFrame
-                  src="/images/shift-app/rewards-perks.png"
+                  src="/images/shift-app/rewards-perks-current.png"
                   alt="Shift rewards: local perks from Gracie's Ice Cream, Juliet, Remnant Brewing, Bagel Guild"
                   className="w-[268px]"
                   glow
@@ -506,7 +537,7 @@ export default function ShiftPage() {
                 {CHEV} Find your shift
               </span>
               <h2 className="mt-4 font-serif text-[clamp(40px,6vw,72px)] font-normal leading-[1.04] text-navy">
-                Your trips are already happening.<br />Start counting them.
+                Try a better way<br />on your next trip.
               </h2>
               <p className="mt-4 text-[19px] text-ink-soft">
                 Free to download. Available on iOS and Android.

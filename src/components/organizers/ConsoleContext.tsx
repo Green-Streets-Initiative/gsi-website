@@ -1,8 +1,11 @@
 'use client'
 
+import { useRouter } from 'next/navigation'
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import { supabase } from '@/lib/supabase'
-import { errorText, getMe } from '@/lib/organizers/api'
+import { errorText, getMe, redeemLink } from '@/lib/organizers/api'
+import { LINK_KEY, type LinkProblem } from '@/lib/organizers/first-ride'
+import { track } from '@/lib/organizers/track'
 import type { ConsoleMe } from '@/lib/organizers/types'
 
 /**
@@ -16,6 +19,11 @@ import type { ConsoleMe } from '@/lib/organizers/types'
  *
  * Access is organizer_console_me (Shift 01377): admins, invited or verified
  * organizers, and anyone who already organizes or leads a group ride.
+ *
+ * A personal console link (?link=, Shift 01588) is kept in this browser
+ * until the person is signed in, redeemed once, and opens "Make your first
+ * ride". It also rides in the sign-in email's return address, so a link
+ * opened on the laptop and signed in on the phone still lands.
  */
 type Phase = 'checking' | 'signed_out' | 'no_access' | 'ready' | 'error'
 
@@ -26,6 +34,10 @@ interface ConsoleState {
   assistant: boolean
   notice: string | null
   error: string | null
+  /** A personal link waiting for sign-in. */
+  linkToken: string | null
+  /** Why a personal link didn't open. */
+  linkProblem: LinkProblem | null
   clearNotice: () => void
   refreshMe: () => Promise<void>
   retry: () => void
@@ -47,7 +59,10 @@ export function ConsoleProvider({ children }: { children: ReactNode }) {
   const [notice, setNotice] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [attempt, setAttempt] = useState(0)
+  const [linkToken, setLinkToken] = useState<string | null>(null)
+  const [linkProblem, setLinkProblem] = useState<LinkProblem | null>(null)
   const ran = useRef(-1)
+  const router = useRouter()
 
   const loadMe = useCallback(async () => {
     const [m, a] = await Promise.all([getMe(), supabase.rpc('organizer_assistant_available')])
@@ -62,6 +77,19 @@ export function ConsoleProvider({ children }: { children: ReactNode }) {
     ;(async () => {
       try {
         const params = new URLSearchParams(window.location.search)
+        const link = params.get('link')
+        if (link) {
+          if (/^[A-Za-z0-9_-]{16,64}$/.test(link)) {
+            try { localStorage.setItem(LINK_KEY, link) } catch { /* kept below for this visit */ }
+            setLinkToken(link)
+            setLinkProblem(null)
+          }
+          params.delete('link')
+          const rest = params.toString()
+          window.history.replaceState({}, '', window.location.pathname + (rest ? `?${rest}` : ''))
+        }
+        let token = link && /^[A-Za-z0-9_-]{16,64}$/.test(link) ? link : null
+        try { token = token ?? localStorage.getItem(LINK_KEY) } catch { /* storage blocked */ }
         const tokenHash = params.get('token_hash')
         const type = params.get('type')
         if (tokenHash && (type === 'email' || type === 'magiclink')) {
@@ -76,6 +104,7 @@ export function ConsoleProvider({ children }: { children: ReactNode }) {
             const { data: { session } } = await supabase.auth.getSession()
             if (!session) {
               setNotice('That sign-in link has expired or was already used. Send yourself a new one.')
+              setLinkToken(token)
               setPhase('signed_out')
               return
             }
@@ -83,8 +112,23 @@ export function ConsoleProvider({ children }: { children: ReactNode }) {
         }
         const { data: { session } } = await supabase.auth.getSession()
         if (!session) {
+          setLinkToken(token)
           setPhase('signed_out')
           return
+        }
+        if (token) {
+          const r = await redeemLink(token)
+          try { localStorage.removeItem(LINK_KEY) } catch { /* ignore */ }
+          setLinkToken(null)
+          if (r.ok) {
+            track('organizer_link_redeemed', { again: !!r.already })
+            // Go first, so the rides list doesn't flash before the landing.
+            router.replace('/organizers/start')
+            await loadMe()
+            return
+          }
+          setLinkProblem(r.reason ?? 'not_found')
+          track('organizer_link_refused', { reason: r.reason ?? 'not_found' })
         }
         await loadMe()
       } catch (e) {
@@ -92,7 +136,7 @@ export function ConsoleProvider({ children }: { children: ReactNode }) {
         setPhase('error')
       }
     })()
-  }, [attempt, loadMe])
+  }, [attempt, loadMe, router])
 
   // Signing out in another tab, or the session ending, returns here.
   useEffect(() => {
@@ -122,7 +166,7 @@ export function ConsoleProvider({ children }: { children: ReactNode }) {
   }, [])
 
   return (
-    <Ctx.Provider value={{ phase, me, assistant, notice, error, clearNotice: () => setNotice(null), refreshMe, retry, signOut }}>
+    <Ctx.Provider value={{ phase, me, assistant, notice, error, linkToken, linkProblem, clearNotice: () => setNotice(null), refreshMe, retry, signOut }}>
       {children}
     </Ctx.Provider>
   )

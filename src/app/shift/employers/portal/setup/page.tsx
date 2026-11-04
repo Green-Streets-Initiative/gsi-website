@@ -11,7 +11,7 @@ import { SETUP_PROMPTS } from '../_lib/assistant-prompts'
 import { participation } from '../_lib/participation'
 import { supabase } from '@/lib/supabase'
 import type { EmployerOnboarding, EmployerChampion, EmployerGoalType, Group } from '../_lib/portal-types'
-import { computeSetupSteps, nextSetupStep, type SetupStepDef } from '../_lib/setup-steps'
+import { canDoStep, computeSetupSteps, nextSetupStep, type SetupStepDef } from '../_lib/setup-steps'
 import { Card, CardBody } from '@/components/employer/Card'
 import Badge from '@/components/employer/Badge'
 import ProgressBar from '@/components/employer/ProgressBar'
@@ -33,8 +33,11 @@ const STEP_BUTTON: Record<string, { todo: string; done: string }> = {
 }
 
 export default function SetupPage() {
-  const { group, challenges, memberCount, benefitsForm, loading, admins, isGsiAdmin } = usePortal()
+  const { group, challenges, memberCount, benefitsForm, loading, admins, isGsiAdmin, canManageAccount, canManageChallenges } = usePortal()
   const withAssistant = assistantAvailable(group, isGsiAdmin)
+  // Profile and logo are an admin's; the rest a manager can do too. A step
+  // the person can't do shows who can, instead of its buttons.
+  const perms = { canManageAccount, canManageChallenges }
   const router = useRouter()
   const searchParams = useSearchParams()
 
@@ -164,7 +167,8 @@ export default function SetupPage() {
               onGo={() => s.route && router.push(s.route)}
               onSaved={() => advanceFrom(s.id)}
               adminNames={adminNames}
-              onAsk={withAssistant && !s.done && SETUP_PROMPTS[s.id] ? () => openAssistant(SETUP_PROMPTS[s.id]) : undefined}
+              canDo={canDoStep(s.id, perms)}
+              onAsk={withAssistant && !s.done && canDoStep(s.id, perms) && SETUP_PROMPTS[s.id] ? () => openAssistant(SETUP_PROMPTS[s.id]) : undefined}
               meter={s.id === 'employees' ? <TeamMeter group={group} joined={memberCount} /> : undefined}
               stageBadge={s.id === 'employees' && teamStage ? <Badge tone={teamStage.tone}>{teamStage.label}</Badge> : undefined}
             />
@@ -252,6 +256,7 @@ function StepRow({
   onGo,
   onSaved,
   adminNames,
+  canDo,
   onAsk,
   meter,
   stageBadge,
@@ -265,6 +270,8 @@ function StepRow({
   onGo: () => void
   onSaved: () => void
   adminNames: string
+  /** The signed-in person can do this step; otherwise the row says who can. */
+  canDo: boolean
   /** With the assistant: "Do it with the assistant" beside the step's own button. */
   onAsk?: () => void
   /** A step on a continuum (people joined) shows where it stands, not just done/to do. */
@@ -337,18 +344,22 @@ function StepRow({
           ) : (
             <CardBody className="flex flex-wrap items-center justify-between gap-3.5">
               <p className="max-w-[48ch] text-[15px] leading-[1.5] text-ink-muted">{s.desc}</p>
-              <span className="flex flex-wrap gap-2">
-                {onAsk && (
-                  <Button variant="primary" size="sm" icon={MessageSquareText} onClick={onAsk}>
-                    Do it with the assistant
-                  </Button>
-                )}
-                {s.route && (
-                  <Button variant="secondary" size="sm" iconRight={ChevronRight} onClick={onGo}>
-                    {s.done ? buttonCopy?.done : buttonCopy?.todo}
-                  </Button>
-                )}
-              </span>
+              {canDo ? (
+                <span className="flex flex-wrap gap-2">
+                  {onAsk && (
+                    <Button variant="primary" size="sm" icon={MessageSquareText} onClick={onAsk}>
+                      Do it with the assistant
+                    </Button>
+                  )}
+                  {s.route && (
+                    <Button variant="secondary" size="sm" iconRight={ChevronRight} onClick={onGo}>
+                      {s.done ? buttonCopy?.done : buttonCopy?.todo}
+                    </Button>
+                  )}
+                </span>
+              ) : (
+                <p className="text-[15px] text-ink-muted">Ask an admin{adminNames ? `: ${adminNames}` : '.'}</p>
+              )}
             </CardBody>
           )}
         </div>

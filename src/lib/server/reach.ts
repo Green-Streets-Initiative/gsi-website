@@ -5,6 +5,7 @@ import { resolveRegion } from '@/lib/nearby/regions'
 import { getBikeNetwork, haversineMeters, type BikeNetworkResponse } from '@/lib/server/bike-network'
 import { canonicalStreetKey, displayStreetName } from '@/lib/nearby/street-names'
 import { decodePolyline, encodePolyline } from '@/lib/geo/polyline'
+import { avoidsAll, detourVias } from '@/lib/nearby/avoid-stretch'
 import { getCrashClusters, type CrashCluster } from './crash-clusters'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { mbtaPilotFare } from '@/lib/nearby/mbta-fare'
@@ -1360,6 +1361,175 @@ export async function buildReachRow(
           comfort: chosen.alt.scored?.comfort ?? null,
         }
       : null,
+  }
+}
+
+/** A bike route re-planned around streets someone asked to avoid. */
+export interface AvoidingRoute {
+  minutes: number
+  polyline: string
+  comfort: BikeComfort | null
+  steps: ReachStep[]
+}
+
+/** The longest a way around may take: past this it's not a way around, it's
+ *  a different trip. */
+const AVOID_EXTRA_MAX_MIN = 20
+const AVOID_EXTRA_MAX_RATIO = 2
+
+/**
+ * "Avoid this street" (Around You v2): the calmest ride from origin to dest
+ * that stays off every street in `avoid` (each a street's stretches, as
+ * encoded polylines; the last one is the street just tapped).
+ *
+ * The plain alternates first: when one of them already gets around, that's
+ * one Google call. Only if none does, one more via each side of the new
+ * street (lib/nearby/avoid-stretch), so three at most. Every route is checked
+ * against ALL the streets, then ranked exactly as the first answer was.
+ * `route` is null when none of them gets around; null overall when Google
+ * didn't answer, so a failure is never mistaken for "no way around".
+ *
+ * `names` are the avoided streets' names, same order. When the new route
+ * rides a street of the same name in another town, both get their town
+ * ("Cambridge Street, Cambridge" in the list, Boston in the Avoiding line),
+ * so it doesn't read as the street just avoided.
+ *
+ * `through` is "go through a place" (Keith 2026-11-04, parity with the ride
+ * planner): every route is asked to pass that point, `avoid` may then be
+ * empty, and there's no detour search (Google takes the one via). `route`
+ * is null when no route through it stays off the avoided streets.
+ */
+export async function buildAvoidingRoute(
+  origin: { lat: number; lng: number },
+  dest: { lat: number; lng: number },
+  avoid: string[][],
+  laneIndex: LaneVertex[],
+  crashes: CrashCluster[] = [],
+  names: string[] = [],
+  through: { lat: number; lng: number } | null = null,
+): Promise<{ route: AvoidingRoute | null; avoided_towns?: (string | null)[] } | null> {
+  const streets = avoid.map(group => group.map(decodePolyline))
+  const ends: [number, number][] = [
+    [origin.lat, origin.lng],
+    [dest.lat, dest.lng],
+    // A spot chosen on an avoided street can't be avoided either
+    ...(through ? [[through.lat, through.lng] as [number, number]] : []),
+  ]
+  const pick = (routes: { minutes: number; encodedPolyline: string | null }[]) => {
+    const fastest = Math.min(...routes.map(r => r.minutes))
+    const cap = Math.max(fastest + AVOID_EXTRA_MAX_MIN, fastest * AVOID_EXTRA_MAX_RATIO)
+    return chooseBikeRoute(
+      routes.filter(r =>
+        !!r.encodedPolyline &&
+        r.minutes <= cap &&
+        avoidsAll(streets, decodePolyline(r.encodedPolyline), ends)),
+      laneIndex,
+      crashes,
+    )
+  }
+
+  const plain = await queryBikeRoutes(origin, dest, through ?? undefined)
+  let chosen = plain.length > 0 ? pick(plain) : null
+  if (!chosen && through) {
+    if (plain.length === 0) return null
+    return { route: null }
+  }
+  if (!chosen) {
+    const vias = detourVias(streets[streets.length - 1] ?? [], laneIndex)
+    const detours = (await Promise.all(
+      vias.map(([lat, lng]) => queryBikeRoutes(origin, dest, { lat, lng })),
+    )).flat()
+    const routes = [...plain, ...detours]
+    if (routes.length === 0) return null
+    chosen = pick(routes)
+  }
+  if (!chosen) return { route: null }
+  const r = chosen.primary
+  const named = await nameSameStreetTowns(r.scored?.comfort ?? null, streets, names)
+  // The chip naming the ride takes the town too, or it reads as the street
+  // just avoided
+  const townNamed = new Map(
+    (named.comfort?.streets ?? []).filter(st => st.label.includes(',')).map(st => [baseStreetName(st.label), st.label]),
+  )
+  return {
+    route: {
+      minutes: r.minutes,
+      polyline: r.encodedPolyline,
+      comfort: named.comfort,
+      steps: matchBikeCorridors(r.encodedPolyline, laneIndex).map(step =>
+        townNamed.has(baseStreetName(step.label)) ? { ...step, label: townNamed.get(baseStreetName(step.label))! } : step),
+    },
+    ...(named.avoidedTowns ? { avoided_towns: named.avoidedTowns } : {}),
+  }
+}
+
+/** "Cambridge Street, Boston" → "cambridge street": a name already carrying
+ *  its town (from an earlier answer) still matches. */
+const baseStreetName = (s: string) => s.split(',')[0].trim().toLowerCase()
+
+/** Town lines are stored as MassGIS writes them ("BOSTON"). */
+const townLabel = (s: string) =>
+  s === s.toUpperCase() ? s.toLowerCase().replace(/\b\w/g, c => c.toUpperCase()) : s
+
+/**
+ * The towns of the route's streets that share a name with an avoided one,
+ * and of those avoided ones, only where the two differ. Nothing is looked
+ * up unless a name repeats, which is rare. A failed lookup leaves the names
+ * as they were.
+ */
+async function nameSameStreetTowns(
+  comfort: BikeComfort | null,
+  avoided: [number, number][][][],
+  names: string[],
+): Promise<{ comfort: BikeComfort | null; avoidedTowns: (string | null)[] | null }> {
+  const none = { comfort, avoidedTowns: null }
+  if (!comfort || names.length === 0) return none
+  const wanted = names.map(baseStreetName)
+  const clashes = comfort.streets.filter(st => wanted.includes(baseStreetName(st.label)))
+  if (clashes.length === 0) return none
+
+  const middle = (line: [number, number][]) => line[Math.floor(line.length / 2)] ?? null
+  const routePoint = (key: string) => {
+    const seg = comfort.segments.find(s => s.street_key === key) ?? comfort.segments.find(s => s.street_keys.includes(key))
+    return seg ? middle(decodePolyline(seg.polyline)) : null
+  }
+  const avoidedIdx = wanted.map((n, i) => (clashes.some(st => baseStreetName(st.label) === n) ? i : -1)).filter(i => i >= 0)
+  const points = [
+    ...clashes.map(st => routePoint(st.key)),
+    ...avoidedIdx.map(i => middle(avoided[i]?.[0] ?? [])),
+  ]
+  try {
+    const db = createServerSupabaseClient()
+    const ids = await Promise.all(points.map(async p => {
+      if (!p) return null
+      const { data, error } = await db.rpc('town_boundary_at', { p_lat: p[0], p_lng: p[1] })
+      return error ? null : ((data as string | null) ?? null)
+    }))
+    const known = [...new Set(ids.filter((x): x is string => !!x))]
+    if (known.length === 0) return none
+    const { data: rows, error } = await db.from('town_boundaries').select('id, name').in('id', known)
+    if (error || !rows) return none
+    const nameOf = new Map(rows.map(row => [row.id as string, townLabel(row.name as string)]))
+    const townAt = (k: number) => (ids[k] ? nameOf.get(ids[k]!) ?? null : null)
+
+    const avoidedTown = new Map<string, string | null>()
+    avoidedIdx.forEach((i, k) => avoidedTown.set(wanted[i], townAt(clashes.length + k)))
+    const avoidedTowns: (string | null)[] = wanted.map(() => null)
+    const relabel = new Map<string, string>()
+    clashes.forEach((st, k) => {
+      const mine = townAt(k)
+      const theirs = avoidedTown.get(baseStreetName(st.label)) ?? null
+      if (!mine || !theirs || mine === theirs) return
+      relabel.set(st.key, `${st.label.split(',')[0].trim()}, ${mine}`)
+      wanted.forEach((n, i) => { if (n === baseStreetName(st.label)) avoidedTowns[i] = theirs })
+    })
+    if (relabel.size === 0) return none
+    return {
+      comfort: { ...comfort, streets: comfort.streets.map(st => (relabel.has(st.key) ? { ...st, label: relabel.get(st.key)! } : st)) },
+      avoidedTowns,
+    }
+  } catch {
+    return none
   }
 }
 

@@ -37,6 +37,8 @@ export function assistantAvailable(
 }
 
 const STARTERS = ['Help me set up my first challenge', 'What should I do next?', 'How do rewards work?']
+/** A viewer changes nothing (Keith 2026-10-31 assistant review): starters that read, never set up. */
+const VIEWER_STARTERS = ['How are we doing this month?', 'How did our last challenge go?', 'What can I see about each employee?']
 const CHANGES = new Set(['Saving the draft', 'Launching', 'Saving the changes', 'Removing the draft', 'Sending invitations', 'Updating email domains', 'Updating who can join', 'Updating the year plan'])
 
 type Card = { title: string; lines: string[]; cta: string; tone: 'primary' | 'danger'; image?: string; mapUrl?: string; confirmText?: string; staffNote?: string }
@@ -204,6 +206,7 @@ function RateReply({ rated, onRate }: { rated?: 'up' | 'down'; onRate: (up: bool
 }
 
 function AssistantPanel({ groupId, seed, onSeedUsed, onClose }: { groupId: string; seed: { prompt: string } | null; onSeedUsed: () => void; onClose: () => void }) {
+  const { canManageChallenges } = usePortal()
   const [items, setItems] = useState<Item[]>([])
   const [threadId, setThreadId] = useState<string | null>(null)
   /** A customer's name when GSI staff are using the assistant in its account. */
@@ -576,7 +579,9 @@ function AssistantPanel({ groupId, seed, onSeedUsed, onClose }: { groupId: strin
           {staffIn ? (
             <p className="text-[14px] font-medium text-[#8A5418]">Green Streets staff in {staffIn}&apos;s account. What you approve changes it.</p>
           ) : (
-            <p className="text-[14px] text-ink-muted">Sets things up with you. Asks before anything your team sees.</p>
+            <p className="text-[14px] text-ink-muted">
+              {canManageChallenges ? 'Sets things up with you. Asks before anything your team sees.' : 'Answers questions about your program and its numbers.'}
+            </p>
           )}
         </div>
         <div className="flex items-center gap-1">
@@ -662,12 +667,13 @@ function AssistantPanel({ groupId, seed, onSeedUsed, onClose }: { groupId: strin
         {!loaded && <Loader2 size={18} className="mx-auto mt-8 animate-spin text-ink-muted" aria-label="Loading" />}
         {empty && (
           <div className="mt-2">
-            <p className="text-[14px] leading-[1.55] text-ink">
-              I can set up your Shift program with you: your first challenge, rewards, inviting your team, and what to do next. I&apos;ll ask a few
-              questions and do the setting up. Nothing your team can see happens until you approve it.
+            <p className="text-[15px] leading-[1.55] text-ink">
+              {canManageChallenges
+                ? "I can set up your Shift program with you: your first challenge, rewards, inviting your team, and what to do next. I'll ask a few questions and do the setting up. Nothing your team can see happens until you approve it."
+                : "Ask me how your program is doing: who joined, trips, Shift Rate, challenges and their winners. Your role can see everything and change nothing, so for a change I'll tell you who on your team can make it."}
             </p>
             <div className="mt-4 flex flex-col items-start gap-2">
-              {STARTERS.map((s) => (
+              {(canManageChallenges ? STARTERS : VIEWER_STARTERS).map((s) => (
                 <button
                   key={s}
                   type="button"
@@ -685,7 +691,7 @@ function AssistantPanel({ groupId, seed, onSeedUsed, onClose }: { groupId: strin
           {items.map((it, i) => {
             if (it.kind === 'user')
               return (
-                <div key={i} className="ml-8 self-end rounded-2xl rounded-br-md bg-accent px-3.5 py-2 text-[14px] leading-[1.5] text-white">
+                <div key={i} className="ml-8 self-end rounded-2xl rounded-br-md bg-accent px-3.5 py-2 text-[15px] leading-[1.5] text-white">
                   {it.text}
                 </div>
               )
@@ -713,7 +719,7 @@ function AssistantPanel({ groupId, seed, onSeedUsed, onClose }: { groupId: strin
               const next = items.slice(i + 1).find((x) => x.kind !== 'tool')
               const endOfTurn = !next || next.kind !== 'assistant'
               return (
-                <div key={i} className="mr-4 text-[14px] leading-[1.55] text-ink">
+                <div key={i} className="mr-4 text-[15px] leading-[1.55] text-ink">
                   <Rich text={it.text} />
                   {it.msgId != null && endOfTurn && !busy && <RateReply key={it.msgId} rated={it.rated} onRate={(up, note) => rateReply(it.msgId!, up, note)} />}
                 </div>

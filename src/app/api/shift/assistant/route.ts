@@ -11,7 +11,7 @@
 //      streams newline-delimited JSON events while the assistant works:
 //      {type:'thread', id} {type:'text', delta} {type:'tool', id, label}
 //      {type:'tool_done', id, ok, link?} {type:'choices', options}
-//      {type:'approval', tool_use_id, card} {type:'long'} {type:'error', message} {type:'done'}
+//      {type:'approval', tool_use_id, card} {type:'long'} {type:'error', message, code} {type:'ping'} {type:'done'}
 //      match_id: opened from a Shift Together ride plan; checked as the person.
 //      here: where the phone is, sent with each question when the person has
 //      allowed location (Keith 2026-10-25). Used for that answer: it reaches the
@@ -30,9 +30,10 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
-import { choicesFilter, splitChoices } from '@/lib/assistant/choices'
+import { choicesBesideButtons, choicesFilter, splitChoices } from '@/lib/assistant/choices'
 import { SYSTEM_PROMPT, contextBlock, screenLabel } from '@/lib/shift-assistant/prompt'
-import { ACTIVITY, NEEDS_APPROVAL, approvalCard, toolsFor, runApproved, runTool, type ApprovalCard, type ToolCtx, type ToolResult, type TripCard } from '@/lib/shift-assistant/tools'
+import { DAILY_PERSON_CAP, MONTHLY_CAP } from '@/lib/shift-assistant/caps'
+import { ACTIVITY, NEEDS_APPROVAL, approvalCard, roamsNamedIn, roamsOffered, toolsFor, runApproved, runTool, type ApprovalCard, type ToolCtx, type ToolResult, type TrailCard, type TripCard } from '@/lib/shift-assistant/tools'
 import { inServiceArea } from '@/lib/server/trip'
 import { claimUpload, foldersIn, imageMark, inboxPath, lastImage, markedPath, removeFolders, signedUrls, withImages } from '@/lib/shift-assistant/uploads'
 
@@ -43,14 +44,20 @@ export const maxDuration = 300
 const MODEL = process.env.SHIFT_ASSISTANT_MODEL || 'claude-sonnet-5-5'
 const SUMMARY_MODEL = 'claude-haiku-5-5'
 const MAX_STEPS = 8
-/** Questions per person per Boston day, and for everyone per calendar
- *  month, so a loop or a runaway can't run costs up. Counted in
- *  member_assistant_usage (Shift 01440), which deleting a conversation
- *  doesn't touch; a question costs about 1.5 cents. */
-// A local server can raise it for the stress test (scripts/member-assistant-eval).
-const DAILY_PERSON_CAP = Number(process.env.SHIFT_ASSISTANT_DAILY_CAP) || 30
-const MONTHLY_CAP = Number(process.env.SHIFT_ASSISTANT_MONTHLY_CAP) || 3000
+/** A step whose answer hasn't started within a minute is retried once, then
+ *  the turn fails with its error, instead of holding the conversation (and
+ *  the function) until the platform's 300 s limit. (The SDK's timeout covers
+ *  the wait for the answer to start, not the stream after it.) */
+const anthropic = () => new Anthropic({ timeout: 60_000, maxRetries: 1 })
 const SOFT_CONTEXT = 50_000
+/** A step that goes on to look something up can open with a working note
+ *  ("Let me try some specific trail names."), though the prompt says not to.
+ *  Words up to this long before a lookup are kept from the screen. */
+const NOTE_MAX = 280
+/** Tools that only add a button or a note: words before them are the reply. */
+const BUTTON_TOOLS = new Set(['open_screen', 'note_feedback'])
+const isNote = (text: string, blocks: Record<string, unknown>[]) =>
+  text.trim().length <= NOTE_MAX && blocks.some((b) => b.type === 'tool_use' && !BUTTON_TOOLS.has(String(b.name)))
 const HARD_CONTEXT = 120_000
 
 type PendingCard = { tool_use_id: string; name: string; input: Record<string, unknown>; card: ApprovalCard; decided?: boolean }
@@ -63,18 +70,18 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 async function authorize(request: Request, opts: { ownDataOnly?: boolean } = {}) {
   const token = request.headers.get('authorization')?.replace(/^Bearer\s+/i, '')
-  if (!token) return { error: Response.json({ error: 'Sign in again to continue.' }, { status: 401 }) }
+  if (!token) return { error: Response.json({ error: 'Sign in again to continue.', code: 'signed_out' }, { status: 401 }) }
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL!
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   const { data: { user } } = await createClient(url, anonKey, { auth: { persistSession: false } }).auth.getUser(token)
-  if (!user) return { error: Response.json({ error: 'Sign in again to continue.' }, { status: 401 }) }
+  if (!user) return { error: Response.json({ error: 'Sign in again to continue.', code: 'signed_out' }, { status: 401 }) }
   const userClient = createClient(url, anonKey, {
     global: { headers: { Authorization: `Bearer ${token}` } },
     auth: { persistSession: false, autoRefreshToken: false },
   })
   if (!opts.ownDataOnly) {
     const { data: available } = await userClient.rpc('shift_assistant_available')
-    if (available !== true) return { error: Response.json({ error: 'The assistant is not on for your account yet.' }, { status: 403 }) }
+    if (available !== true) return { error: Response.json({ error: 'The assistant is not on for your account yet.', code: 'not_on' }, { status: 403 }) }
   }
   return { token, user, userClient, admin: createServerSupabaseClient() }
 }
@@ -109,7 +116,7 @@ async function summarizeThread(admin: SupabaseClient, threadId: string): Promise
   const text = lines.join('\n\n').slice(-40_000)
   if (!text) return null
   try {
-    const msg = await new Anthropic().messages.create({
+    const msg = await anthropic().messages.create({
       model: SUMMARY_MODEL,
       max_tokens: 2000,
       messages: [{
@@ -122,6 +129,29 @@ async function summarizeThread(admin: SupabaseClient, threadId: string): Promise
   } catch (e) {
     console.error('[shift-assistant] summary failed', e)
     return null
+  }
+}
+
+/** Of the Roams a reply names, the ones it suggests going to: one named only
+ *  to rule it out ("Wachusett has no train or bus") gets no card. On any
+ *  failure, none. */
+async function suggestedRoams(admin: SupabaseClient, reply: string, named: { id: string; name: string }[]): Promise<string[]> {
+  try {
+    const msg = await anthropic().messages.create({
+      model: SUMMARY_MODEL,
+      max_tokens: 1000,
+      messages: [{
+        role: 'user',
+        content: `A trail assistant wrote this reply:\n<reply>\n${reply}\n</reply>\n\nWhich of these does the reply suggest the person go to, as a pick or another choice? Leave out any it names only to rule out or warn off.\n${named.map((n) => `${n.id}: ${n.name}`).join('\n')}\n\nAnswer with only the ids, comma-separated, or "none".`,
+      }],
+    })
+    await logUsage(admin, 'cards', msg.model, msg.usage)
+    const said = msg.content.filter((b): b is Anthropic.TextBlock => b.type === 'text').map((b) => b.text).join('')
+    const ids = new Set(said.split(/[^A-Za-z0-9_-]+/))
+    return named.map((n) => n.id).filter((id) => ids.has(id))
+  } catch (e) {
+    console.error('[shift-assistant] card check failed', e)
+    return []
   }
 }
 
@@ -141,7 +171,7 @@ type Item =
   | { kind: 'user_image'; url: string }
   | { kind: 'carried' }
   | { kind: 'assistant'; text: string; msgId?: number; rated?: 'up' | 'down' }
-  | { kind: 'tool'; id: string; label: string; ok?: boolean; link?: ToolResult['link']; trip?: TripCard; card?: { title: string; decision: 'approved' | 'declined' } }
+  | { kind: 'tool'; id: string; label: string; ok?: boolean; link?: ToolResult['link']; trip?: TripCard; trail?: TrailCard; card?: { title: string; decision: 'approved' | 'declined' } }
   | { kind: 'choices'; options: string[] }
   | { kind: 'approval'; tool_use_id: string; card: ApprovalCard }
 
@@ -150,8 +180,11 @@ function transcript(messages: { id?: number; role: string; content: unknown }[],
   const byId = new Map<string, Extract<Item, { kind: 'tool' }>>()
   for (const m of messages) {
     const blocks = (Array.isArray(m.content) ? m.content : [{ type: 'text', text: String(m.content) }]) as Record<string, unknown>[]
+    const said = blocks.filter((b) => b.type === 'text').map((b) => String(b.text ?? '')).join('')
+    const note = m.role === 'assistant' && isNote(said, blocks)
     for (const b of blocks) {
       if (b.type === 'text' && typeof b.text === 'string' && b.text.trim()) {
+        if (note) continue
         if (m.role === 'user' && b.text.startsWith('[Carried over')) { items.push({ kind: 'carried' }); continue }
         const pic = m.role === 'user' ? markedPath(b.text) : null
         if (pic) { items.push({ kind: 'user_image', url: images.get(pic) ?? '' }); continue }
@@ -164,7 +197,8 @@ function transcript(messages: { id?: number; role: string; content: unknown }[],
         if (sp.options.length) items.push({ kind: 'choices', options: sp.options })
       } else if (b.type === 'tool_use') {
         const name = String(b.name)
-        const it: Extract<Item, { kind: 'tool' }> = { kind: 'tool', id: String(b.id), label: ACTIVITY[name] ?? '' }
+        // A card added after the reply (toolu_card_) shows no step line.
+        const it: Extract<Item, { kind: 'tool' }> = { kind: 'tool', id: String(b.id), label: String(b.id).startsWith('toolu_card_') ? '' : ACTIVITY[name] ?? '' }
         byId.set(String(b.id), it)
         items.push(it)
       } else if (b.type === 'tool_result') {
@@ -175,6 +209,7 @@ function transcript(messages: { id?: number; role: string; content: unknown }[],
         it.ok = !b.is_error
         if (parsed._link) it.link = parsed._link as ToolResult['link']
         if (parsed._trip) it.trip = parsed._trip as TripCard
+        if (parsed._trail) it.trail = parsed._trail as TrailCard
         if (parsed._card) it.card = parsed._card as { title: string; decision: 'approved' | 'declined' }
       }
     }
@@ -182,15 +217,31 @@ function transcript(messages: { id?: number; role: string; content: unknown }[],
   const waiting = new Set((pending?.cards ?? []).filter((c) => !c.decided).map((c) => c.tool_use_id))
   const lastUser = Math.max(items.map((i) => i.kind).lastIndexOf('user'), items.map((i) => i.kind).lastIndexOf('user_image'))
   const cleaned = items.filter((i, idx) => i.kind !== 'choices' || idx > lastUser)
+  // The live stream's rules, so a reopened conversation looks the same: one
+  // step line per label in a turn, and no tap answer that repeats a button.
+  let steps = new Set<string>()
+  let buttons: string[] = []
+  for (const i of cleaned) {
+    if (i.kind === 'user' || i.kind === 'user_image') { steps = new Set(); buttons = [] }
+    else if (i.kind === 'tool') {
+      if (i.label && steps.has(i.label)) i.label = ''
+      else if (i.label) steps.add(i.label)
+      if (i.link) buttons.push(i.link.label)
+      if (i.trail) buttons.push(i.trail.open_label)
+    } else if (i.kind === 'choices') i.options = choicesBesideButtons(i.options, buttons)
+  }
+  // Tap answers go last, under any cards, as they arrive live.
+  const tail = cleaned.findIndex((i, idx) => i.kind === 'choices' && idx > lastUser)
+  if (tail >= 0) cleaned.push(...cleaned.splice(tail, 1))
   for (const c of pending?.cards ?? []) if (!c.decided) cleaned.push({ kind: 'approval', tool_use_id: c.tool_use_id, card: c.card })
-  return cleaned.filter((i) => i.kind !== 'tool' || ((i.label || i.link || i.trip || i.card) && !waiting.has(i.id)))
+  return cleaned.filter((i) => i.kind !== 'tool' || ((i.label || i.link || i.trip || i.trail || i.card) && !waiting.has(i.id)))
 }
 
 function resultBlock(id: string, r: ToolResult, extra?: Record<string, unknown>): Anthropic.Beta.BetaToolResultBlockParam {
   return {
     type: 'tool_result',
     tool_use_id: id,
-    content: JSON.stringify({ ...r.content, ...(r.link ? { _link: r.link } : {}), ...(r.trip ? { _trip: r.trip } : {}), ...(extra ?? {}) }),
+    content: JSON.stringify({ ...r.content, ...(r.link ? { _link: r.link } : {}), ...(r.trip ? { _trip: r.trip } : {}), ...(r.trail ? { _trail: r.trail } : {}), ...(extra ?? {}) }),
     ...(r.isError ? { is_error: true } : {}),
   }
 }
@@ -308,7 +359,7 @@ export async function POST(request: Request) {
 
   const text = (body?.message ?? '').trim().slice(0, 2000)
   const upload = Array.isArray(body?.attachments) ? inboxPath(user.id, body.attachments[0]?.path) : null
-  if (!text && !upload && !body?.decision) return Response.json({ error: 'Say something first.' }, { status: 400 })
+  if (!text && !upload && !body?.decision) return Response.json({ error: 'Say something first.', code: 'empty' }, { status: 400 })
 
   // Opened from a Shift Together ride plan: only the id travels, checked as
   // the person (get_ride_plan returns nothing for a match that isn't theirs).
@@ -322,14 +373,14 @@ export async function POST(request: Request) {
   const lockUntil = new Date(Date.now() + 3 * 60_000).toISOString()
   let thread = body?.new_thread ? null : await loadThread(admin, user.id, body?.thread_id)
   if (thread && !body?.decision && (await contextSize(admin, thread.id)) > HARD_CONTEXT) {
-    return Response.json({ error: 'This conversation has got too long to continue. Start a fresh one; the assistant brings a summary.', long: true }, { status: 409 })
+    return Response.json({ error: 'This conversation has got too long to continue. Start a fresh one; the assistant brings a summary.', code: 'too_long', long: true }, { status: 409 })
   }
   // A new question takes one from the caps; approving a card answers one already asked.
   if (!body?.decision) {
     const { data: took, error: capError } = await admin.rpc('take_member_assistant_question', { p_user_id: user.id, p_daily: DAILY_PERSON_CAP, p_monthly: MONTHLY_CAP })
-    if (capError) return Response.json({ error: 'The assistant is unavailable right now. Every screen of the app works as usual.' }, { status: 503 })
-    if (took === 'monthly') return Response.json({ error: "The assistant has reached this month's limit. Every screen of the app works as usual." }, { status: 429 })
-    if (took === 'daily') return Response.json({ error: "You've used the assistant a lot today. It'll be ready again tomorrow; every screen works as usual." }, { status: 429 })
+    if (capError) return Response.json({ error: 'The assistant is unavailable right now. Every screen of the app works as usual.', code: 'unavailable' }, { status: 503 })
+    if (took === 'monthly') return Response.json({ error: "The assistant has reached this month's limit. Every screen of the app works as usual.", code: 'monthly_cap' }, { status: 429 })
+    if (took === 'daily') return Response.json({ error: "You've used the assistant a lot today. It'll be ready again tomorrow; every screen works as usual.", code: 'daily_cap' }, { status: 429 })
   }
   let carryNote: string | null = null
   if (!thread && body?.carry_from) {
@@ -340,12 +391,12 @@ export async function POST(request: Request) {
   if (thread) {
     const { data: claimed } = await admin.from('member_assistant_threads').update({ busy_until: lockUntil }).eq('id', thread.id)
       .or(`busy_until.is.null,busy_until.lt."${new Date().toISOString()}"`).select('id, pending').maybeSingle()
-    if (!claimed) return Response.json({ error: "I'm still working on your last question. Give it a moment." }, { status: 409 })
+    if (!claimed) return Response.json({ error: "I'm still working on your last question. Give it a moment.", code: 'busy' }, { status: 409 })
     thread = claimed as Thread
   } else {
     const { data, error } = await admin.from('member_assistant_threads')
       .insert({ user_id: user.id, title: text.slice(0, 80) || (upload ? 'Picture' : 'Conversation'), busy_until: lockUntil }).select('id, pending').single()
-    if (error || !data) return Response.json({ error: 'Could not start a conversation.' }, { status: 500 })
+    if (error || !data) return Response.json({ error: 'Could not start a conversation.', code: 'start_failed' }, { status: 500 })
     thread = data as Thread
   }
   const threadId = thread.id
@@ -358,7 +409,7 @@ export async function POST(request: Request) {
     // About 100 m: enough to plan from, not a doorstep.
     ? { lat: Math.round(hereLat * 1e3) / 1e3, lng: Math.round(hereLng * 1e3) / 1e3 }
     : null
-  const screens = new Set(Array.isArray(body?.screens) ? body.screens.filter((x): x is string => typeof x === 'string').slice(0, 30) : [])
+  const screens = new Set(Array.isArray(body?.screens) ? body.screens.filter((x): x is string => typeof x === 'string').slice(0, 60) : [])
   const ctx: ToolCtx = { user: userClient, admin, token, userId: user.id, email: user.email ?? user.id, here, screens, threadId }
 
   const encoder = new TextEncoder()
@@ -371,6 +422,10 @@ export async function POST(request: Request) {
         if (!open) return
         try { controller.enqueue(encoder.encode(JSON.stringify(e) + '\n')) } catch { open = false }
       }
+      // A line every 15 s while the turn runs, so the app (which gives up
+      // after a silent minute) can tell thinking from a dropped connection.
+      // Apps ignore event types they don't know.
+      const ping = setInterval(() => emit({ type: 'ping' }), 15_000)
       const append = async (r: 'user' | 'assistant', content: unknown, extra?: Record<string, unknown>) => {
         await admin.from('member_assistant_messages').insert({ thread_id: threadId, role: r, content, ...(extra ?? {}) })
         await admin.from('member_assistant_threads').update({ updated_at: new Date().toISOString() }).eq('id', threadId)
@@ -381,13 +436,24 @@ export async function POST(request: Request) {
       // button whatever its params: a trip's card already opens it, and a
       // bare open_screen beside it was a second "See it on the map".
       const shown = new Set<string>()
+      const buttons: string[] = []
       const once = (r: ToolResult): ToolResult => {
         if (!r.link) return r
         const l = r.link
         const key = 'href' in l ? l.href : l.screen === 'around_you' ? 'around_you' : JSON.stringify([l.screen, l.params ?? null])
         if (shown.has(key)) return { ...r, link: undefined }
         shown.add(key)
+        buttons.push(l.label)
         return r
+      }
+      // One step line per label in a turn: two Roams read side by side were
+      // two "Reading the route" lines. The app hides a step with no label.
+      const stepsShown = new Set<string>()
+      const stepLabel = (name: string) => {
+        const l = ACTIVITY[name] ?? ''
+        if (!l || stepsShown.has(l)) return ''
+        stepsShown.add(l)
+        return l
       }
       let picture: string | null = null
       const userBlocks = (): unknown[] => [
@@ -401,7 +467,7 @@ export async function POST(request: Request) {
         if (upload) {
           picture = await claimUpload(admin, user.id, threadId, upload)
           if (!picture) {
-            emit({ type: 'error', message: "That picture didn't come through. Try attaching it again." })
+            emit({ type: 'error', code: 'picture', message: "That picture didn't come through. Try attaching it again." })
             emit({ type: 'done' })
             return
           }
@@ -413,7 +479,7 @@ export async function POST(request: Request) {
           if (body?.decision) {
             const c = pending.cards.find((x) => x.tool_use_id === body.decision!.tool_use_id && !x.decided)
             if (c && body.decision.approve && c.card.confirmText && !sameText(body.decision.confirm_text, c.card.confirmText)) {
-              emit({ type: 'error', message: `Type "${c.card.confirmText}" to confirm.` })
+              emit({ type: 'error', code: 'confirm', confirm: c.card.confirmText, message: `Type "${c.card.confirmText}" to confirm.` })
               emit({ type: 'done' })
               return
             }
@@ -423,7 +489,7 @@ export async function POST(request: Request) {
               if (body.decision.approve) {
                 emit({ type: 'tool', id: c.tool_use_id, label: ACTIVITY[c.name] ?? c.name })
                 r = once(await runApproved(ctx, c.name, c.input))
-                emit({ type: 'tool_done', id: c.tool_use_id, ok: !r.isError, link: r.link, trip: r.trip })
+                emit({ type: 'tool_done', id: c.tool_use_id, ok: !r.isError, link: r.link, trip: r.trip, trail: r.trail })
               } else {
                 r = { content: { declined: true, note: 'They chose not to do this. Ask what they would like instead.' } }
               }
@@ -452,7 +518,7 @@ export async function POST(request: Request) {
           await append('user', userBlocks())
         }
 
-        const client = new Anthropic()
+        const client = anthropic()
         // With the time, so "today at 11 AM" can be seen to be over at 4 PM.
         const today = new Date().toLocaleString('en-US', { timeZone: 'America/New_York', weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })
         const offered = toolsFor(ctx)
@@ -469,6 +535,13 @@ export async function POST(request: Request) {
         // Text from a later step starts a new paragraph, not the end of the last sentence.
         let wroteBefore = false
         let retriedEmpty = false
+        // Roams the lookups offered and the ones already carded, so a Roam the
+        // reply names without get_roam still gets its card (2026-10-29).
+        const roamsSeen: { id: string; names: string[] }[] = []
+        const carded = new Set<string>()
+        let said = ''
+        let finished = false
+        let choices: string[] = []
         const pictures = new Map<string, { media_type: string; data: string } | null>()
         for (let step = 0; step < MAX_STEPS; step++) {
           const stored = await loadMessages(admin, threadId)
@@ -495,13 +568,22 @@ export async function POST(request: Request) {
             if (delta.trim()) stepStarted = true
             emit({ type: 'text', delta })
           })
-          s.on('text', (delta) => visible.push(delta))
+          // A step's first words wait until it is clear whether a lookup follows.
+          let opener = ''
+          let released = false
+          s.on('text', (delta) => {
+            if (released) return visible.push(delta)
+            opener += delta
+            if (opener.length > NOTE_MAX) { released = true; visible.push(opener) }
+          })
           const msg = await s.finalMessage()
+          if (!released && opener && !isNote(opener, msg.content as unknown as Record<string, unknown>[])) visible.push(opener)
           visible.flush()
+          said += msg.content.filter((b): b is Anthropic.Beta.BetaTextBlock => b.type === 'text').map((b) => b.text).join('\n')
           if (stepStarted) wroteBefore = true
           await logUsage(admin, 'chat', msg.model, msg.usage)
-          const options = splitChoices(msg.content.filter((b): b is Anthropic.Beta.BetaTextBlock => b.type === 'text').map((b) => b.text).join('')).options
-          if (options.length) emit({ type: 'choices', options })
+          const options = choicesBesideButtons(splitChoices(msg.content.filter((b): b is Anthropic.Beta.BetaTextBlock => b.type === 'text').map((b) => b.text).join('')).options, buttons)
+          if (options.length) choices = options
           if (msg.content.length === 0) break
           // A last step can come back with only its thinking and no words
           // (2026-10-27: a reply that was just "Weekend is Oct 31 to Nov 1.").
@@ -512,14 +594,14 @@ export async function POST(request: Request) {
           }
           await append('assistant', msg.content, { model: msg.model, usage: msg.usage })
           if (msg.stop_reason === 'refusal') {
-            emit({ type: 'error', message: "I can't help with that one. Try asking another way." })
+            emit({ type: 'error', code: 'refused', message: "I can't help with that one. Try asking another way." })
             break
           }
           if (msg.stop_reason === 'pause_turn') continue
           const uses = msg.content.filter((b): b is Anthropic.Beta.BetaToolUseBlock => b.type === 'tool_use')
-          if (uses.length === 0) break
+          if (uses.length === 0) { finished = true; break }
           if (msg.stop_reason === 'max_tokens') {
-            emit({ type: 'error', message: 'That got too long. Ask again in a smaller piece.' })
+            emit({ type: 'error', code: 'reply_too_long', message: 'That got too long. Ask again in a smaller piece.' })
             break
           }
           // A reply written before its tools is already on screen (see the
@@ -530,17 +612,27 @@ export async function POST(request: Request) {
           // Reads run side by side; a tool that saves waits on its card.
           const results: Record<string, Anthropic.Beta.BetaToolResultBlockParam> = {}
           const cards: PendingCard[] = []
+          // A plan button beside a plan save opened the plan before the save
+          // was approved, so it looked empty (Keith 2026-11-03): the save's
+          // own result brings the button.
+          const savingPlan = uses.some((u) => u.name === 'save_ride_plan_route')
           await Promise.all(uses.map(async (u) => {
             const input = (u.input ?? {}) as Record<string, unknown>
+            if (savingPlan && u.name === 'open_screen' && input.screen === 'ride_plan') {
+              results[u.id] = resultBlock(u.id, { content: { shown: false, note: 'The plan button comes with the saved plan.' } })
+              return
+            }
             if (NEEDS_APPROVAL.has(u.name)) {
               const a = await approvalCard(ctx, u.name, input)
               if ('card' in a) cards.push({ tool_use_id: u.id, name: u.name, input: a.input, card: a.card })
               else results[u.id] = resultBlock(u.id, a.result)
               return
             }
-            if (ACTIVITY[u.name]) emit({ type: 'tool', id: u.id, label: ACTIVITY[u.name] })
+            if (ACTIVITY[u.name]) emit({ type: 'tool', id: u.id, label: stepLabel(u.name) })
             const r = once(await runTool(ctx, u.name, input))
-            emit({ type: 'tool_done', id: u.id, ok: !r.isError, link: r.link, trip: r.trip })
+            if (r.trail) { buttons.push(r.trail.open_label); carded.add(r.trail.roam_id) }
+            if (!r.isError) roamsSeen.push(...roamsOffered(u.name, r.content))
+            emit({ type: 'tool_done', id: u.id, ok: !r.isError, link: r.link, trip: r.trip, trail: r.trail })
             results[u.id] = resultBlock(u.id, r)
           }))
           if (cards.length) {
@@ -554,19 +646,41 @@ export async function POST(request: Request) {
           // model again (it repeated itself even when told not to). The
           // next question's user turn follows these results; the API
           // combines the two.
-          if (wrote && uses.every((u) => u.name === 'open_screen' || u.name === 'note_feedback')) break
+          if (wrote && uses.every((u) => BUTTON_TOOLS.has(u.name))) { finished = true; break }
         }
+        // Cards for Roams the reply names but didn't open, stored as a lookup
+        // after the reply so a reopened conversation shows them too.
+        const named = finished && ctx.screens?.has('trail_card') ? roamsNamedIn(said, roamsSeen, carded) : []
+        const unopened = named.length
+          ? await suggestedRoams(admin, said, named.map((id) => ({ id, name: roamsSeen.find((r) => r.id === id)?.names[0] ?? id })))
+          : []
+        if (unopened.length) {
+          const uses = unopened.map((id) => ({ type: 'tool_use' as const, id: `toolu_card_${crypto.randomUUID().replace(/-/g, '').slice(0, 20)}`, name: 'get_roam', input: { id } }))
+          const read = await Promise.all(uses.map((u) => runTool(ctx, 'get_roam', u.input)))
+          read.forEach((r, i) => {
+            if (!r.trail) return
+            buttons.push(r.trail.open_label)
+            emit({ type: 'tool', id: uses[i].id, label: '' })
+            emit({ type: 'tool_done', id: uses[i].id, ok: true, trail: r.trail })
+          })
+          await append('assistant', uses)
+          await append('user', read.map((r, i) => resultBlock(uses[i].id, once(r))))
+        }
+        choices = choicesBesideButtons(choices, buttons)
+        if (choices.length) emit({ type: 'choices', options: choices })
         if ((await contextSize(admin, threadId)) > SOFT_CONTEXT) emit({ type: 'long' })
         emit({ type: 'done' })
       } catch (e) {
         console.error('[shift-assistant] turn failed', e)
-        const message = e instanceof Anthropic.RateLimitError
+        const code = e instanceof Anthropic.RateLimitError ? 'model_busy' : e instanceof Anthropic.APIError ? 'model_error' : 'failed'
+        const message = code === 'model_busy'
           ? 'The assistant is busy right now. Try again in a minute.'
-          : e instanceof Anthropic.APIError
+          : code === 'model_error'
             ? 'The assistant had a problem answering. Try again in a moment.'
             : 'Something went wrong. Try again in a moment.'
-        emit({ type: 'error', message })
+        emit({ type: 'error', code, message })
       } finally {
+        clearInterval(ping)
         await admin.from('member_assistant_threads').update({ busy_until: null }).eq('id', threadId)
         try { controller.close() } catch { /* already closed */ }
       }

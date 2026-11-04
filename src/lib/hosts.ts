@@ -8,8 +8,10 @@ import type { CommunityEvent } from '@/lib/events'
  * calendar (event_organizers, one row per group since Shift 01405).
  *
  * A host gets a page once it runs often enough to be worth following: at
- * least 2 upcoming events, or 6 in the past year. Everyone else stays a name
- * on their event pages, so one-off hosts never produce thin pages.
+ * least 2 upcoming events, or 6 in the past year, or a public Shift ride of
+ * its own (a monthly ride has one date on the calendar at a time, and its
+ * organizer still needs the page and feed). Everyone else stays a name on
+ * their event pages, so one-off hosts never produce thin pages.
  *
  * The page needs no account and no claim. It is built from the group's own
  * public posts, which is why it carries a "fix this listing" link.
@@ -60,15 +62,34 @@ async function countEvents(organizerId: string, from: string, to?: string): Prom
   return count ?? 0
 }
 
-/** Does this host run often enough for a page? Cheap: two counts. */
+/** Does this organization run a public Shift ride (running or on a break), as a verified organizer? */
+async function hasShiftRide(organizerId: string): Promise<boolean> {
+  const { count } = await createServerSupabaseClient()
+    .from('ride_series')
+    .select('id', { count: 'exact', head: true })
+    .eq('event_organizer_id', organizerId)
+    .eq('org_verification_status', 'verified')
+    .eq('visibility', 'public')
+    .in('status', ['active', 'paused'])
+  return (count ?? 0) > 0
+}
+
+/** Does this host run often enough for a page? Cheap: a few counts. */
 export async function hostQualifies(organizerId: string): Promise<boolean> {
   const today = new Date().toISOString().slice(0, 10)
   const upcoming = await countEvents(organizerId, today)
   if (upcoming >= MIN_UPCOMING) return true
+  if (await hasShiftRide(organizerId)) return true
   return (await countEvents(organizerId, yearAgo(), today)) >= MIN_PAST_YEAR
 }
 
-export async function loadHostPage(id: string): Promise<HostPage | null> {
+/**
+ * A host's page, or null when there's no such host or it doesn't qualify.
+ * `evenIfThin` skips the qualifying test, for the calendar feed and the
+ * embed: a subscribed calendar or a group's own site should show an empty
+ * list between seasons, not break on a 404.
+ */
+export async function loadHostPage(id: string, { evenIfThin = false }: { evenIfThin?: boolean } = {}): Promise<HostPage | null> {
   if (!/^[a-z0-9_-]{1,120}$/i.test(id)) return null
   const supabase = createServerSupabaseClient()
   const { data } = await supabase
@@ -79,12 +100,15 @@ export async function loadHostPage(id: string): Promise<HostPage | null> {
   if (!data || data.status !== 'active') return null
 
   const today = new Date().toISOString().slice(0, 10)
-  const [upcoming, recent, pastYearCount] = await Promise.all([
+  const [upcoming, recent, pastYearCount, shiftRide] = await Promise.all([
     loadOrganizerEvents(id, 'upcoming', 60),
     loadOrganizerEvents(id, 'past', 6),
     countEvents(id, yearAgo(), today),
+    evenIfThin ? Promise.resolve(true) : hasShiftRide(id),
   ])
-  if (upcoming.length < MIN_UPCOMING && pastYearCount < MIN_PAST_YEAR) return null
+  // A cancelled date (listed, marked) doesn't count toward a page.
+  const live = upcoming.filter((e) => e.schedule_status !== 'cancelled').length
+  if (!evenIfThin && !shiftRide && live < MIN_UPCOMING && pastYearCount < MIN_PAST_YEAR) return null
 
   return {
     host: {
@@ -123,9 +147,22 @@ export async function listQualifiedHosts(): Promise<string[]> {
     else t.past++
     tally.set(r.organizer_id, t)
   }
-  return [...tally.entries()]
-    .filter(([, t]) => t.up >= MIN_UPCOMING || t.past >= MIN_PAST_YEAR)
-    .map(([id]) => id)
+  // Organizations running a public Shift ride qualify too (see hasShiftRide).
+  const { data: rides } = await supabase
+    .from('ride_series')
+    .select('event_organizer_id')
+    .not('event_organizer_id', 'is', null)
+    .eq('org_verification_status', 'verified')
+    .eq('visibility', 'public')
+    .in('status', ['active', 'paused'])
+    .limit(1000)
+  const withRides = new Set(((rides ?? []) as { event_organizer_id: string }[]).map((r) => r.event_organizer_id))
+  const byCount = [...tally.entries()].filter(([, t]) => t.up >= MIN_UPCOMING || t.past >= MIN_PAST_YEAR).map(([id]) => id)
+  const rideOnly = [...withRides].filter((id) => !byCount.includes(id))
+  if (rideOnly.length === 0) return byCount
+  // Only an active organization has a page (loadHostPage).
+  const { data: active } = await supabase.from('event_organizers').select('id').in('id', rideOnly).eq('status', 'active')
+  return [...byCount, ...((active ?? []) as { id: string }[]).map((o) => o.id)]
 }
 
 /** Social networks we label by name; anything else shows as its host name. */

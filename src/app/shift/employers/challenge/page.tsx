@@ -19,11 +19,11 @@ import {
 } from '@phosphor-icons/react/dist/ssr'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
-import { TEAM_CHALLENGE, signupOpen } from '@/lib/employer/team-challenge'
+import { TEAM_CHALLENGE, roundEnded, signupOpen } from '@/lib/employer/team-challenge'
 import SignupForm from './SignupForm'
 
 // The landing page for the self-serve team challenge (Keith 2026-10-22):
-// one ask, "get your team code", for people arriving from the November
+// one ask, "get your invite code", for people arriving from the November
 // outreach emails and the LinkedIn ad. Round two (Keith, same day): the
 // reasons are the ones a VP already buys (office days, parking, commuter
 // benefits, reporting), every way of getting around is named, "no manual
@@ -37,9 +37,8 @@ import SignupForm from './SignupForm'
 export const revalidate = 3600
 
 export const metadata: Metadata = {
-  title: 'A free team commute challenge, November 2 to 20 — Green Streets Initiative',
-  description:
-    'Bring your team to Green Streets Initiative’s statewide November commute challenge. Free for Massachusetts workplaces: staff join the free Shift app with your team code, and walking, biking, scooters, transit, ferries and carpools all count, with nothing to log by hand.',
+  title: `A free team commute challenge, ${TEAM_CHALLENGE.label.range} — Green Streets Initiative`,
+  description: `Bring your team to Green Streets Initiative’s statewide ${TEAM_CHALLENGE.label.monthName} commute challenge. Free for Massachusetts workplaces: staff join the free Shift app with your invite code, and walking, biking, scooters, transit, ferries and carpools all count, with nothing to log by hand.`,
   robots: { index: false, follow: false },
 }
 
@@ -73,7 +72,7 @@ const OUTCOMES = [
 const STEPS = [
   {
     title: 'Get your code',
-    body: 'Sign up here and confirm your email. You get a team code, a note to send your staff and a flyer to print.',
+    body: 'Sign up here and confirm your email. You get an invite code, a note to send your staff and a flyer to print.',
   },
   {
     title: 'Staff join the free app',
@@ -81,12 +80,13 @@ const STEPS = [
   },
   {
     title: 'See the results',
-    body: 'Staff follow the team standings in the app. After November 20, you get your team’s numbers.',
+    body: `Staff follow the team standings in the app. ${TEAM_CHALLENGE.label.afterEnd}, you get your team’s numbers.`,
   },
 ]
 
 export default function TeamChallengePage() {
   const open = signupOpen()
+  const ended = roundEnded()
   const c = TEAM_CHALLENGE
 
   return (
@@ -103,11 +103,16 @@ export default function TeamChallengePage() {
                   <span className="sm:ml-3">Free for Massachusetts workplaces</span>
                 </p>
                 <h1 className="mt-3 max-w-[620px] font-headline text-[clamp(2.1rem,5vw,3.4rem)] font-extrabold leading-[1.04] tracking-[-0.01em]">
-                  A three-week commute challenge for your team
+                  {ended ? 'This round has ended' : 'A three-week commute challenge for your team'}
                 </h1>
+                {ended && (
+                  <Link href="/shift/employers" className="mt-4 inline-flex min-h-[48px] w-fit items-center rounded-full bg-white px-6 text-[16px] font-bold text-navy hover:opacity-90">
+                    See Shift for Employers &rarr;
+                  </Link>
+                )}
               </div>
               <p className={`mt-7 max-w-[620px] ${BODY}`}>
-                Your team joins Green Streets Initiative&rsquo;s statewide November challenge, which ends on Walk/Ride Day, {c.label.wrd}. Staff download the free Shift app and join with your team code. The app records their trips by itself, so nobody logs anything by hand.
+                Your team joins Green Streets Initiative&rsquo;s statewide {c.label.monthName} challenge, which ends on Walk/Ride Day, {c.label.wrd}. Staff download the free Shift app and join with your invite code. The app records their trips by itself, so nobody logs anything by hand.
               </p>
 
               {open && (
@@ -115,7 +120,7 @@ export default function TeamChallengePage() {
                   href="#sign-up"
                   className="mt-5 inline-flex min-h-[52px] w-full items-center justify-center rounded-full bg-navy px-7 text-[17px] font-bold text-white hover:opacity-90 sm:w-auto lg:hidden"
                 >
-                  Get your team code &rarr;
+                  Get your invite code &rarr;
                 </a>
               )}
 
@@ -145,7 +150,7 @@ export default function TeamChallengePage() {
                 <SignupForm />
               ) : (
                 <div className="rounded-[16px] border-2 border-navy/[0.12] bg-white p-6 sm:p-8">
-                  <h2 className={H3}>Sign-ups for November have closed</h2>
+                  <h2 className={H3}>Sign-ups for {c.label.monthName} have closed</h2>
                   <p className={`mt-3 ${BODY}`}>
                     Walk/Ride Day happens every month. Tell us you&rsquo;d like your team in the next one and we&rsquo;ll send a code.
                   </p>
@@ -184,11 +189,11 @@ export default function TeamChallengePage() {
         {/* What comes with the code: the challenge is the way in, not the whole program. */}
         <section className="px-4 py-12 sm:px-6 lg:px-8 lg:py-14">
           <div className="mx-auto max-w-[1120px]">
-            <h2 className={H2}>What comes with your team code</h2>
-            <p className={`mt-3 max-w-[680px] ${BODY}`}>The challenge is the start. Your team code also opens these, at no cost. Add your office address in your portal and the office tools are set up for you.</p>
+            <h2 className={H2}>What comes with your invite code</h2>
+            <p className={`mt-3 max-w-[680px] ${BODY}`}>The challenge is the start. Your invite code also opens these, at no cost. Add your office address in your portal and the office tools are set up for you.</p>
             <div className="mt-8 grid gap-5 md:grid-cols-3">
               <Tool icon={ChartLineUp} title="Your team’s numbers">
-                After November 20: how many took part, the trips they made, how they got there and the emissions they saved. Each person&rsquo;s trips stay private.
+                {c.label.afterEnd}: how many took part, the trips they made, how they got there and the emissions they saved. Each person&rsquo;s trips stay private.
               </Tool>
               <Tool icon={Signpost} title="Commute Advisor for your office" href="/commute-advisor/demo" linkLabel="See an example">
                 Each person compares ways to get to work, with the time and cost of each.
@@ -229,7 +234,7 @@ export default function TeamChallengePage() {
                 href="#sign-up"
                 className="inline-flex min-h-[48px] shrink-0 items-center justify-center rounded-full bg-navy px-7 text-[16px] font-bold text-white hover:opacity-90"
               >
-                Get your team code &rarr;
+                Get your invite code &rarr;
               </a>
             )}
           </div>

@@ -9,6 +9,7 @@ import { UPDATE_KIND_LABEL, dateLabel, plural, todayKey } from '@/lib/organizers
 import type { DashboardRide, NextDate } from '@/lib/organizers/types'
 import { ASSISTANT_CHANGED_EVENT, openAssistant } from './AssistantPanel'
 import { useConsole } from './ConsoleContext'
+import { FeedbackDueCard, FeedbackLink } from './Feedback'
 import { Badge, Button, Card, Empty, Notice, Spinner, cx, type Tone } from './ui'
 
 export function rideStateBadges(r: Pick<DashboardRide, 'status' | 'visibility' | 'calendar_status' | 'break_until' | 'my_role'>) {
@@ -98,7 +99,7 @@ function RideCard({ r }: { r: DashboardRide }) {
           </div>
         ) : (
           <p className="mt-4 text-[14px] text-(--ev-ink-75)">
-            {r.break_until ? 'No dates until the break ends.' : r.ride_date ? 'This one-off ride has happened.' : 'No upcoming dates yet. They appear within a day of saving.'}
+            {r.break_until ? 'No dates until the break ends.' : r.ride_date ? 'This one-off ride has happened.' : 'No upcoming dates. Check When and the season dates in Edit ride.'}
           </p>
         )
       )}
@@ -204,11 +205,13 @@ export default function Dashboard() {
     <div>
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-[14px] font-semibold text-(--ev-ink-75)">{me?.first_name ? `Hi, ${me.first_name}` : 'Welcome back'}</p>
+          <p className="text-[14px] font-semibold text-(--ev-ink-75)">{me?.first_name ? `Hi, ${me.first_name}` : 'Welcome'}</p>
           <h1 className="font-display text-[clamp(28px,3.6vw,38px)] font-extrabold leading-tight">Your rides</h1>
         </div>
         {newRide}
       </div>
+
+      <FeedbackDueCard />
 
       {assistant && <AskBox rides={groups.mine} canCreate={!!me?.can_create} />}
 
@@ -259,6 +262,8 @@ export default function Dashboard() {
           {showEnded && <ul className="mt-3 space-y-4">{groups.ended.map((r) => <RideCard key={r.id} r={r} />)}</ul>}
         </section>
       )}
+
+      {rides && <FeedbackLink />}
     </div>
   )
 }

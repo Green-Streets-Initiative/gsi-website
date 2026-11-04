@@ -129,6 +129,24 @@ bed.
 One line per verdict or hard-won observation, newest first. Next hypotheses
 come from here.
 
+- 2026-11-01 (verdict, events in sitemap, won): /events grew from 299 to
+  4,159 impressions a week and its CTR held at ~2.5%. Event listings are the
+  site's growth engine. Getting each one found fast is worth more than any
+  title tweak elsewhere.
+- 2026-11-01 (verdict, event + Roam app invites, lost): store buttons beside an
+  event or a route reach the app 0–0.6% of the time, while 11% of event
+  visitors click Register. People who search for a thing to do want to do it.
+  Point them at the next useful step (the town page), not the app stores.
+- 2026-11-01 (verdict, Roam distance titles, lost): the title alone didn't
+  move CTR. The page rebuild (app-shaped first screen, hills) did: cohort CTR
+  0.88% → 1.56%. On Roams, what's on the page beats what's in the title.
+- 2026-11-01 (observed): a guide can sit at 0 impressions for seven weeks and
+  then take 700 a week (the drive-time guide, plus 815 across its
+  translations). Don't redirect or merge a page on an early zero; recheck
+  before shipping a consolidation.
+- 2026-11-01 (observed): when the meta description states the whole answer
+  (a 10-minute drive is about 2.5 miles), the page ranks at 6.6 and gets
+  0.27% CTR. The search result answers the question for us.
 - 2026-10-19 (verdict, campus titles, won small): retitling pages from the
   campaign name to the campus fact took /shift-your-semester from 0 clicks on
   917 impressions to 0.78% CTR. The September volume was seasonal; what lasts is

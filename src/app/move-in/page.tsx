@@ -4,6 +4,7 @@ import Footer from '@/components/Footer'
 import { CONTAINER, GSI_FONT, SignHero, SignTop } from './sign'
 import { PartnerSignupForm, SignupProvider } from './PartnerSignupForm'
 import ResidentPreview from './ResidentPreview'
+import { loadNewRoutesOffer } from '@/lib/nearby/newroutes-offer-server'
 
 /**
  * Self-serve co-branding for New Routes outreach partners (property managers,
@@ -29,7 +30,12 @@ export const metadata: Metadata = {
   alternates: { canonical: '/move-in' },
 }
 
-export default function MoveInPage() {
+// The welcome-offer line follows the New Routes row, so re-read it every ten
+// minutes rather than freezing whatever was true at build time.
+export const revalidate = 600
+
+export default async function MoveInPage() {
+  const offer = await loadNewRoutesOffer()
   return (
     <div className="street min-h-screen bg-cream text-navy" style={{ fontFamily: GSI_FONT }}>
       <Nav variant="light" street />
@@ -50,8 +56,8 @@ export default function MoveInPage() {
           <p className="mt-5 max-w-[780px] text-[1.0625rem] leading-[1.6] text-navy">
             Green Streets Initiative is a Massachusetts nonprofit that has helped people walk, bike
             and take transit more since 2006. A move is a great time to start, so your page also
-            invites residents to try Shift, our free app for planning and tracking those trips,
-            with a $15 welcome offer.
+            invites residents to try Shift, our free app for planning and tracking those trips
+            {offer ? `, with a ${offer.dollars} welcome offer` : ''}.
           </p>
         }
       />
@@ -63,7 +69,7 @@ export default function MoveInPage() {
               <div className="min-w-0">
                 <PartnerSignupForm />
               </div>
-              <ResidentPreview />
+              <ResidentPreview offerDollars={offer?.dollars ?? null} />
             </div>
           </div>
         </section>

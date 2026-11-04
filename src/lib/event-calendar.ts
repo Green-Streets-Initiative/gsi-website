@@ -8,9 +8,11 @@
  * host, and a link back to this event's page. The Shift app builds the same
  * note in lib/eventCalendar.ts; keep the two in step.
  *
- * Times are floating local wall-clock in the .ics (no TZID): event_date and
- * event_time are the event's own Massachusetts time. The Google link names
- * America/New_York outright.
+ * Times are the event's own Massachusetts wall-clock time: the .ics names
+ * them TZID=America/New_York and carries that zone's VTIMEZONE (Outlook and
+ * some Android calendars read a floating time as the phone's own zone, so a
+ * traveler saw the wrong hour). The Google link names America/New_York too.
+ * Every event carries a DTSTAMP, which RFC 5545 requires.
  *
  * Run the tests with: node --test src/lib/event-calendar.test.ts
  */
@@ -22,7 +24,12 @@ type CalendarEvent = Pick<
   | 'id' | 'slug' | 'title' | 'body' | 'event_date' | 'event_time' | 'event_end_time'
   | 'location_name' | 'location_address' | 'location_lat' | 'location_lng'
   | 'organizer_name' | 'organizer_url' | 'event_url' | 'registration_url' | 'tags'
-> & { registration_notes?: string | null }
+> & { registration_notes?: string | null; event_end_date?: string | null; schedule_status?: CommunityEvent['schedule_status'] }
+
+/** The last day of a multi-day event (Shift 01557), else the event's own day. */
+function lastDay(ev: Pick<CalendarEvent, 'event_date' | 'event_end_date'>): string {
+  return ev.event_end_date && ev.event_end_date > ev.event_date ? ev.event_end_date : ev.event_date
+}
 
 const DEFAULT_EVENT_MINUTES = 120 // a typical community event
 /** Long enough for any real description; calendar apps truncate past this. */
@@ -111,7 +118,13 @@ function nextDay(date: string): string {
 
 /** Start and end, or an all-day day when the listing has no start time. */
 function span(ev: CalendarEvent): { allDay: true; start: string; end: string } | { allDay: false; start: string; end: string } {
-  if (!ev.event_time) return { allDay: true, start: ev.event_date.replace(/-/g, ''), end: nextDay(ev.event_date) }
+  const last = lastDay(ev)
+  // All-day end is exclusive: the day after the last day.
+  if (!ev.event_time) return { allDay: true, start: ev.event_date.replace(/-/g, ''), end: nextDay(last) }
+  if (last !== ev.event_date) {
+    // Multi-day and timed: ends on the last day, at the end time if there is one.
+    return { allDay: false, start: stamp(ev.event_date, ev.event_time), end: stamp(last, ev.event_end_time ?? ev.event_time) }
+  }
   const end = ev.event_end_time && ev.event_end_time > ev.event_time
     ? ev.event_end_time
     : plusMinutes(ev.event_time, DEFAULT_EVENT_MINUTES)
@@ -119,6 +132,34 @@ function span(ev: CalendarEvent): { allDay: true; start: string; end: string } |
 }
 
 // ── .ics ───────────────────────────────────────────────────────────────
+
+const TZID = 'America/New_York'
+
+/** Eastern time's rules (US, since 2007), for calendars that don't know the zone by name. */
+const VTIMEZONE = [
+  'BEGIN:VTIMEZONE',
+  `TZID:${TZID}`,
+  'BEGIN:DAYLIGHT',
+  'TZOFFSETFROM:-0500',
+  'TZOFFSETTO:-0400',
+  'TZNAME:EDT',
+  'DTSTART:19700308T020000',
+  'RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=2SU',
+  'END:DAYLIGHT',
+  'BEGIN:STANDARD',
+  'TZOFFSETFROM:-0400',
+  'TZOFFSETTO:-0500',
+  'TZNAME:EST',
+  'DTSTART:19701101T020000',
+  'RRULE:FREQ=YEARLY;BYMONTH=11;BYDAY=1SU',
+  'END:STANDARD',
+  'END:VTIMEZONE',
+]
+
+/** When the file was made, in UTC: "20261101T153000Z". */
+function dtstamp(now = new Date()): string {
+  return now.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '')
+}
 
 function icsEscape(text: string): string {
   return String(text).replace(/\\/g, '\\\\').replace(/,/g, '\\,').replace(/;/g, '\\;').replace(/\r?\n/g, '\\n')
@@ -134,15 +175,18 @@ function icsFold(line: string): string {
 }
 
 /** One event's VEVENT lines, for a single-event file or a feed. */
-function icsEventLines(ev: CalendarEvent): string[] {
+function icsEventLines(ev: CalendarEvent, stamp: string): string[] {
   const s = span(ev)
   const location = calendarLocation(ev.location_name, ev.location_address)
   return [
     'BEGIN:VEVENT',
     `UID:${ev.id}@gogreenstreets.org`,
-    s.allDay ? `DTSTART;VALUE=DATE:${s.start}` : `DTSTART:${s.start}`,
-    s.allDay ? `DTEND;VALUE=DATE:${s.end}` : `DTEND:${s.end}`,
-    `SUMMARY:${icsEscape(ev.title)}`,
+    `DTSTAMP:${stamp}`,
+    s.allDay ? `DTSTART;VALUE=DATE:${s.start}` : `DTSTART;TZID=${TZID}:${s.start}`,
+    s.allDay ? `DTEND;VALUE=DATE:${s.end}` : `DTEND;TZID=${TZID}:${s.end}`,
+    // A cancelled date stays in a subscribed feed, marked, so calendars show it as off.
+    ...(ev.schedule_status === 'cancelled' ? ['STATUS:CANCELLED'] : []),
+    `SUMMARY:${icsEscape(ev.schedule_status === 'cancelled' ? `Cancelled: ${ev.title}` : ev.title)}`,
     `DESCRIPTION:${icsEscape(calendarNotes(ev))}`,
     ...(location ? [`LOCATION:${icsEscape(location)}`] : []),
     ...(ev.location_lat && ev.location_lng ? [`GEO:${ev.location_lat};${ev.location_lng}`] : []),
@@ -156,7 +200,9 @@ export function buildIcs(ev: CalendarEvent): string {
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
     'PRODID:-//Green Streets Initiative//Events//EN',
-    ...icsEventLines(ev),
+    'CALSCALE:GREGORIAN',
+    ...(ev.event_time ? VTIMEZONE : []),
+    ...icsEventLines(ev, dtstamp()),
     'END:VCALENDAR',
   ].map(icsFold).join('\r\n')
 }
@@ -168,6 +214,7 @@ export function buildIcs(ev: CalendarEvent): string {
  * ask for twice a day.
  */
 export function buildIcsFeed(events: CalendarEvent[], name: string): string {
+  const stamp = dtstamp()
   return [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
@@ -178,7 +225,8 @@ export function buildIcsFeed(events: CalendarEvent[], name: string): string {
     'X-WR-TIMEZONE:America/New_York',
     'REFRESH-INTERVAL;VALUE=DURATION:PT12H',
     'X-PUBLISHED-TTL:PT12H',
-    ...events.flatMap(icsEventLines),
+    ...(events.some((e) => e.event_time) ? VTIMEZONE : []),
+    ...events.flatMap((e) => icsEventLines(e, stamp)),
     'END:VCALENDAR',
   ].map(icsFold).join('\r\n')
 }

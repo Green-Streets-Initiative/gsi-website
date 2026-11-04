@@ -27,6 +27,8 @@ export async function POST(req: Request) {
         filters: body.filters,
         town: body.town,
         locale: body.locale,
+        // The placement (EmailSignup's `source`); the function keeps only known ones.
+        source: body.source,
         website: body.website,
       }),
     })

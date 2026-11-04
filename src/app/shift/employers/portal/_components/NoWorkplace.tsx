@@ -6,14 +6,30 @@ import { LogOut } from 'lucide-react'
 import { Card } from '@/components/employer/Card'
 import Button from '@/components/employer/Button'
 import { usePortal } from '../_lib/portal-context'
+import { StaffWorkplaceList } from './StaffWorkplacePicker'
 
 /**
  * The signed-in email is on no workplace portal. Before this the person was
  * sent to the marketing page without a word (Keith 2026-09-30).
  */
 export default function NoWorkplace() {
-  const { sessionEmail, signOut } = usePortal()
+  const { sessionEmail, signOut, isGsiAdmin } = usePortal()
   const [signingOut, setSigningOut] = useState(false)
+
+  // Green Streets staff on no team pick a workplace to open instead.
+  if (isGsiAdmin) {
+    return (
+      <div className="flex min-h-dvh items-start justify-center bg-canvas px-4 py-10 sm:items-center">
+        <Card className="w-full max-w-[560px] overflow-hidden">
+          <div className="px-4 pb-1 pt-5">
+            <h1 className="font-headline text-[22px] font-extrabold text-ink">Open a workplace</h1>
+            <p className="mt-1 text-[15px] text-ink-muted">You see it as Green Streets staff.</p>
+          </div>
+          <StaffWorkplaceList autoFocus />
+        </Card>
+      </div>
+    )
+  }
 
   async function handleSignOut() {
     setSigningOut(true)
@@ -37,8 +53,8 @@ export default function NoWorkplace() {
         </p>
         <ul className="mt-4 list-disc space-y-2 pl-5 text-[14px] leading-[1.55] text-ink-muted">
           <li>
-            If a colleague runs your workplace&apos;s portal, ask them to add this email on their
-            Team page. Your access opens the moment they do.
+            If a colleague runs your workplace&apos;s portal, ask them to add this email in
+            Settings, under Team. Your access opens the moment they do.
           </li>
           <li>
             If your workplace uses a different email for you, sign out and sign in with that one.

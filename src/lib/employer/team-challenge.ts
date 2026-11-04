@@ -1,6 +1,6 @@
 // The self-serve team challenge (Keith 2026-10-22): a company signs up on
-// /shift/employers/challenge, confirms its work email, and gets a team code
-// and its own team challenge built on GSI's statewide challenge for the
+// /shift/employers/challenge, confirms its work email, and gets an invite
+// code and its own team challenge built on GSI's statewide challenge for the
 // month. One object per round; the page, the API and the emails read it, so
 // the next round is a change here (and a new template run id).
 //
@@ -28,6 +28,10 @@ export const TEAM_CHALLENGE = {
     range: 'November 2 to 20',
     wrd: 'Friday, November 20',
     lastJoin: 'Friday, November 13',
+    /** The round's month, for "Sign-ups for November have closed". */
+    monthName: 'November',
+    /** "After November 20", for what happens once the round ends. */
+    afterEnd: 'After November 20',
   },
   rulesPath: '/events/walk-ride-day/rules',
 } as const
@@ -40,6 +44,21 @@ export function todayEt(now = new Date()): string {
 /** Sign-ups are open through the last join day (Eastern). */
 export function signupOpen(now = new Date()): boolean {
   return todayEt(now) <= TEAM_CHALLENGE.lastJoinOn
+}
+
+/** The round is over: today (Eastern) is past its last day. */
+export function roundEnded(now = new Date()): boolean {
+  return todayEt(now) > TEAM_CHALLENGE.endsOn
+}
+
+/** The challenge's own rules page on this site, when the team has one. */
+export function challengeRulesPath(challengeId: string | null): string | null {
+  return challengeId ? `/shift/challenge/${challengeId}` : null
+}
+
+/** The printable flyer for a team, with its challenge when there is one. */
+export function flyerPath(team: { slug: string | null; code: string; challengeId: string | null }): string {
+  return `/shift/employers/flyer?group=${encodeURIComponent(team.slug ?? team.code)}${team.challengeId ? `&challenge=${team.challengeId}` : ''}`
 }
 
 // Free mail providers. The team belongs to a company, so the person signing
@@ -65,6 +84,15 @@ export type TeamResult = {
   slug: string | null
   code: string
   challengeId: string | null
+  /** The organizer's work email domain. */
+  domain: string
+  /**
+   * Whether the sign-up email's domain matched the company website at
+   * sign-up (team-challenge-domain.ts). When it did not, the Shift server
+   * limits the team's invitations to its own domain until an admin adds
+   * more in Settings, and the ready screen says so.
+   */
+  domainVerified: boolean
 }
 
 export const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/

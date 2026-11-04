@@ -277,7 +277,7 @@ export default function ProgramsPage() {
                 Just want to participate?
               </h3>
               <p className="mb-6 text-[0.9375rem] leading-[1.6] text-ink-soft">
-                Walk/Ride Days are open to everyone, every month. Download Shift to track your trips, earn rewards, and join your neighborhood leaderboard.
+                Walk/Ride Days are open to everyone, every month. Download Shift to find better ways to get around, get rewarded when you try them, and join your neighborhood leaderboard.
               </p>
               <Link
                 href="/shift"

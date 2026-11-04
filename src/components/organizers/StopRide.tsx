@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { errorText, getStopPreview, resumeRide, stopRide } from '@/lib/organizers/api'
+import { useRouter } from 'next/navigation'
+import { deleteRide, errorText, getStopPreview, resumeRide, sendStopNotice, stopRide, type Sent } from '@/lib/organizers/api'
 import { dateLabel, plural, todayKey } from '@/lib/organizers/ride-words'
 import type { RideRow } from '@/lib/organizers/types'
 import { sentLine } from './PostUpdate'
@@ -35,6 +36,7 @@ export function restartChoices(r: Pick<RideRow, 'ride_date' | 'days' | 'frequenc
 type Preview = { notify: number; notify_guests: number; upcoming: number; past: number; can_delete: boolean }
 
 export function StopRideDialog({ ride, open, onClose, onDone }: { ride: RideRow; open: boolean; onClose: () => void; onDone: (msg: string) => void }) {
+  const router = useRouter()
   const choices = useMemo(() => restartChoices(ride), [ride])
   const [mode, setMode] = useState<'break' | 'end'>(choices.length ? 'break' : 'end')
   const [until, setUntil] = useState(choices[1] ?? choices[0] ?? '')
@@ -42,6 +44,8 @@ export function StopRideDialog({ ride, open, onClose, onDone }: { ride: RideRow;
   const [preview, setPreview] = useState<Preview | null>(null)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
+  // Stopped, but the notice didn't go out: offer to send it again.
+  const [failed, setFailed] = useState(false)
 
   useEffect(() => {
     if (!open) return
@@ -52,32 +56,73 @@ export function StopRideDialog({ ride, open, onClose, onDone }: { ride: RideRow;
     return () => { live = false }
   }, [open, ride.id, mode, until])
 
+  // A ride nobody has joined or ridden yet (made by mistake, or a test) can
+  // go completely, as in the app; ending it would leave it in the list.
+  const deleting = mode === 'end' && !!preview?.can_delete
+
   async function go() {
+    if (deleting) {
+      setBusy(true)
+      setErr(null)
+      try {
+        await deleteRide(ride.id)
+        router.push('/organizers')
+      } catch (e) {
+        setErr(errorText(e))
+        setBusy(false)
+      }
+      return
+    }
     if (mode === 'break' && (!until || until <= todayKey())) { setErr('Pick a restart date after today'); return }
     setBusy(true)
     setErr(null)
     try {
-      const sent = await stopRide(ride.id, mode, until, note, (preview?.notify ?? 0) > 0)
-      onDone(mode === 'end'
-        ? `The ride has ended. ${sentLine(sent)}`
-        : `The ride is on a break until ${dateLabel(until)}. ${sentLine(sent)}`)
+      // Skip the notice only when the count is known to be zero: a count that
+      // failed to load must not mean nobody hears the ride has stopped.
+      finish(await stopRide(ride.id, mode, until, note, preview ? preview.notify > 0 : true), false)
     } catch (e) {
       setErr(errorText(e))
       setBusy(false)
     }
   }
 
+  const stoppedLine = mode === 'end' ? 'The ride has ended.' : `The ride is on a break until ${dateLabel(until)}.`
+  function finish(r: Sent, again: boolean) {
+    if (!r.noticeFailed) { onDone(`${stoppedLine} ${sentLine(r.sent)}`); return }
+    setFailed(true)
+    if (again) setErr("It still didn't go out. Check your connection and try again.")
+    setBusy(false)
+  }
+  async function resend() {
+    setBusy(true)
+    setErr(null)
+    finish(await sendStopNotice(ride.id, mode), true)
+  }
+
+  if (failed) {
+    const close = () => onDone(`${stoppedLine} The notice didn't go out.`)
+    return (
+      <Dialog open={open} onClose={close} title={mode === 'end' ? 'The ride has ended' : 'The ride is on a break'}
+        footer={<>
+          <Button variant="ghost" onClick={close}>Close</Button>
+          <Button variant="primary" onClick={() => void resend()} busy={busy}>Send it again</Button>
+        </>}>
+        <Notice tone="off">{err ?? `${stoppedLine.replace(/\.$/, '')}, but the notice didn't go out. Send it again so people hear about it.`}</Notice>
+      </Dialog>
+    )
+  }
+
   return (
-    <Dialog open={open} onClose={onClose} title="Pause or end the ride"
+    <Dialog open={open} onClose={onClose} title={preview?.can_delete ? 'Pause, end or delete the ride' : 'Pause or end the ride'}
       footer={<>
         <Button variant="ghost" onClick={onClose}>Keep it running</Button>
         <Button variant={mode === 'end' ? 'danger' : 'primary'} onClick={() => void go()} busy={busy}>
-          {mode === 'end' ? 'End the ride' : 'Take the break'}
+          {deleting ? 'Delete this ride' : mode === 'end' ? 'End the ride' : 'Take the break'}
         </Button>
       </>}>
       <div className="flex flex-wrap gap-2" role="group" aria-label="Pause or end">
         {choices.length > 0 && <Toggle on={mode === 'break'} onClick={() => setMode('break')}>Take a break</Toggle>}
-        <Toggle on={mode === 'end'} onClick={() => setMode('end')}>End the ride</Toggle>
+        <Toggle on={mode === 'end'} onClick={() => setMode('end')}>{preview?.can_delete ? 'Delete this ride' : 'End the ride'}</Toggle>
       </div>
 
       {mode === 'break' ? (
@@ -91,20 +136,24 @@ export function StopRideDialog({ ride, open, onClose, onDone }: { ride: RideRow;
             <Input id="until" type="date" min={addDays(todayKey(), 1)} value={until} onChange={(e) => setUntil(e.target.value)} className="max-w-[220px]" />
           </Field>
         </div>
+      ) : deleting ? (
+        <p className="mt-4 text-[15px] leading-relaxed text-(--ev-ink-85)">
+          Nobody has joined or ridden yet, so it goes completely: its page, its dates and its calendar listings.
+        </p>
       ) : (
         <p className="mt-4 text-[15px] leading-relaxed text-(--ev-ink-85)">
           Upcoming dates are cancelled and the ride page says it has ended. Its history and turnout stay.
         </p>
       )}
 
-      <div className="mt-4">
+      {!deleting && <div className="mt-4">
         <Field label="A word to everyone" htmlFor="stop-note" optional hint="Shown on the ride page and in the notice.">
           <Textarea id="stop-note" value={note} maxLength={500} rows={3} onChange={(e) => setNote(e.target.value)}
             placeholder={mode === 'end' ? 'Thanks for a great season. Watch for spring dates.' : 'Taking December off. See you in the new year.'} />
         </Field>
-      </div>
+      </div>}
 
-      {preview && (
+      {preview && !deleting && (
         <p className="mt-3 text-[14px] text-(--ev-ink-80)">
           {preview.upcoming > 0 ? `${plural(preview.upcoming, 'upcoming date')} will be cancelled. ` : ''}
           {preview.notify > 0 ? `${plural(preview.notify, 'person', 'people')} will hear about it.` : 'Nobody needs a notice yet.'}

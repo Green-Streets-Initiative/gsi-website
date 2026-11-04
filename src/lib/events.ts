@@ -12,6 +12,8 @@ export interface CommunityEvent {
   body: string | null
   status: string
   event_date: string        // YYYY-MM-DD
+  /** Last day of a multi-day event, inclusive (Shift 01557). Null means one day: event_date. */
+  event_end_date: string | null
   event_time: string | null // HH:MM:SS
   event_end_time: string | null
   location_name: string
@@ -37,13 +39,18 @@ export interface CommunityEvent {
   featured: boolean
   /** Set when this event came from a ride planned in the Shift app (00817). */
   ride_series_id: string | null
+  /** That ride's page code (/rides/<code>), for an active group ride; set by the list loaders. */
+  ride_code?: string | null
+  /** A feeder ride's destination: the same-date event it goes to (Shift 01460). */
+  feeds_content_id?: string | null
   /** Free text as listed: "21 miles", "20-25 miles", "90 minutes". */
   distance_text: string | null
   /** Organizer's stated pace band (kids | relaxed | moderate | brisk | fast); null on scraped listings. */
   pace: string | null
   /** True when the organizer promises nobody gets dropped; set on Shift-planned rides or by hand. */
   no_drop: boolean | null
-  /** Organizer changed the plan (Shift 01013). Cancelled/postponed rows are archived but keep their page. */
+  /** Organizer changed the plan (Shift 01013). Cancelled/postponed rows are archived but keep their page;
+   *  a Shift ride's cancelled date stays listed with 'cancelled' and shows as Cancelled. */
   schedule_status?: 'cancelled' | 'postponed' | 'moved' | null
   schedule_note?: string | null
   previous_event_date?: string | null
@@ -157,6 +164,18 @@ export function eventImages(ev: Pick<CommunityEvent, 'image_url' | 'extra_image_
 export function formatDistanceText(text: string | null | undefined): string | null {
   if (!text) return null
   return text.replace(/\s*-\s*/g, '–')
+}
+
+/**
+ * A ride's stated length, worded so it never reads like the distance from
+ * you beside it (Keith 2026-11-03): "24 mi ride", "8 to 16 mi ride",
+ * "2 hr ride", "20 mi round trip". The card says "2.3 mi away" for the other.
+ */
+export function rideLengthLabel(text: string | null | undefined): string | null {
+  const t = formatDistanceText(text)?.trim()
+  if (!t) return null
+  const short = t.replace(/\bmiles?\b/gi, 'mi').replace(/\bminutes?\b/gi, 'min').replace(/\bhours?\b/gi, 'hr')
+  return /round trip|loop|ride/i.test(short) ? short : `${short} ride`
 }
 
 /**
@@ -276,6 +295,11 @@ export function dateShort(d: Date): string {
   return `${MONTHS_SHORT[d.getMonth()]} ${d.getDate()}`
 }
 
+// Multi-day events (Shift 01557) live in event-days.ts; re-exported here so
+// every events reader imports from one place.
+import { eventDayKeys } from './event-days'
+export { eventLastDay, isMultiDay, eventDayKeys, dateRangeShort, dateRangeLong } from './event-days'
+
 export function groupLabel(d: Date): string {
   return `${WEEKDAYS_LONG[d.getDay()]} · ${MONTHS[d.getMonth()]} ${d.getDate()}`
 }
@@ -291,12 +315,25 @@ export function todayKey(): string {
 // Built in event-calendar.ts, which the Node test runner can load on its own.
 export { buildIcs, gcalUrl } from './event-calendar'
 
+/** The way people most likely get to this event, for the Directions link.
+ *  Without a travel mode Google opens driving directions; the app asks walk,
+ *  bike or transit (Shift lib/event-directions.ts, parity map: maps-handoff).
+ *  Rides and bike repair open biking, walks open walking, the rest transit;
+ *  Google lets people switch from there. */
+export function directionsMode(ev: Pick<CommunityEvent, 'event_type' | 'ride_series_id'>): 'bicycling' | 'walking' | 'transit' {
+  const t = ev.event_type
+  if (t === 'walking_tour' || t === 'group_walk') return 'walking'
+  if (t === 'group_ride' || t === 'guided_ride' || t === 'bike_repair' || ev.ride_series_id) return 'bicycling'
+  return 'transit'
+}
+
 export function directionsUrl(ev: CommunityEvent): string {
+  const mode = `&travelmode=${directionsMode(ev)}`
   if (ev.location_lat && ev.location_lng) {
-    return `https://www.google.com/maps/dir/?api=1&destination=${ev.location_lat},${ev.location_lng}`
+    return `https://www.google.com/maps/dir/?api=1&destination=${ev.location_lat},${ev.location_lng}${mode}`
   }
   const q = [ev.location_name, ev.location_address].filter(Boolean).join(', ') + ', MA'
-  return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(q)}`
+  return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(q)}${mode}`
 }
 
 // Default reference location
@@ -317,17 +354,22 @@ export function dateMedium(d: Date): string {
 export function eventDotsByDay(events: CommunityEvent[], max = 3, tone: 'dark' | 'light' = 'dark'): Map<string, string[]> {
   const map = new Map<string, string[]>()
   for (const ev of events) {
-    const colors = map.get(ev.event_date) ?? []
     const meta = getTypeMeta(ev.event_type)
     const c = tone === 'light' ? meta.ink : meta.color
-    if (!colors.includes(c) && colors.length < max) colors.push(c)
-    map.set(ev.event_date, colors)
+    // A multi-day event marks every day it runs (Shift 01557).
+    for (const day of eventDayKeys(ev)) {
+      const colors = map.get(day) ?? []
+      if (!colors.includes(c) && colors.length < max) colors.push(c)
+      map.set(day, colors)
+    }
   }
   return map
 }
 
 export function eventCountByDay(events: CommunityEvent[]): Map<string, number> {
   const map = new Map<string, number>()
-  for (const ev of events) map.set(ev.event_date, (map.get(ev.event_date) ?? 0) + 1)
+  for (const ev of events) {
+    for (const day of eventDayKeys(ev)) map.set(day, (map.get(day) ?? 0) + 1)
+  }
   return map
 }

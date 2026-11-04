@@ -582,7 +582,7 @@ export default function ImpactPage() {
           <ProgressBar pct={goalCard.pct} />
           <p className="mt-1.5 text-[14px] leading-[1.5] text-ink-tertiary">
             {goalCard.reached ? 'Goal reached. ' : ''}
-            {goalCard.launch ? `Launch date ${goalCard.launch}. ` : ''}
+            {goalCard.launch ? `Launch date ${formatGoalDate(goalCard.launch)}. ` : ''}
             <Link href={`${PORTAL}/setup?step=success`} className="font-medium text-accent no-underline hover:underline">
               Change the goal on the Setup page
             </Link>

@@ -21,13 +21,13 @@ const SECTIONS: { heading: string; body: string[]; list?: string[] }[] = [
   {
     heading: 'What it is',
     body: [
-      'The assistant is an optional part of the Shift app. You ask about getting around in your own words, and it answers with what Shift knows.',
+      'The assistant is an optional part of the Shift app, for people 18 and older. You ask about getting around in your own words, and it answers with what Shift knows.',
       'It saves a place, changes a setting, sets a trip reminder, signs you up for a Shift group ride or remembers something about you only after you tap the button on its card.',
     ],
     list: [
       'Trip comparisons', 'Group rides and walks', 'Fares', 'Weather', 'Service changes', 'Shuttles',
       'Live MBTA times', 'Station parking', 'Bikes on the T', 'Step-free stations and The RIDE',
-      'What an e-bike would cost you', 'Streets Shift members bike', 'Rewards Partners nearby',
+      'What an e-bike would cost you', 'Streets Shift members bike', 'How members get around a town', 'Rewards Partners nearby',
       'Your closure plans', 'Your challenges', 'Your workplace’s commute benefits', 'What your drives cost',
       'Your activity and progress',
     ],
@@ -40,9 +40,9 @@ const SECTIONS: { heading: string; body: string[]; list?: string[] }[] = [
       'The plans Shift made for MBTA closures on your trips, and the way you picked. The drives Shift found you make often, with the walk, bike or transit trips it found to compare, and the answers you gave in the app about your car (such as what insurance costs you), to estimate what the car costs a month. Your switch plan, streaks, personal bests and Shift level, from your own trips.',
       'A picture you attach. It is stored privately with that conversation and deleted with it. If you report a problem, the Green Streets team sees the picture with your report.',
       'Notes you asked it to remember, such as “I have an e-bike” or “I’d rather avoid busy streets”. Every new conversation starts with them, so you don’t have to say them again.',
-      'When it signs you up for a Shift group ride or walk, you join that ride and your answer for the date is saved, as when you tap Going in the app. The ride’s organizer sees your name and your answer.',
+      'When it signs you up for a Shift group ride or walk, you join that ride and your answer for the date is saved, as when you tap Going in the app. People on the ride see your name and your answer.',
       'A trip reminder you set keeps that trip’s start, destination and time. After the trip, Shift looks at your trips from around then for one that starts or ends near those places, to tell you it counted.',
-      'The streets Shift members bike and walk come from Shift’s town maps, which combine many people’s trips and show a street only where 3 or more different people went; nobody’s own trips can be picked out.',
+      'The streets Shift members bike and walk, and how members get around a town, combine many people’s trips: a street or a way of getting around shows only when 3 or more different people used it, and a town only when 10 or more travel there, so nobody’s own trips can be picked out.',
       'To answer, it looks up places and directions with Google Maps, the forecast with the National Weather Service, service changes, live times, station parking and step-free access with the MBTA, and a Ride with GPS route when you share its link. These receive the places involved, not your name or email.',
     ],
   },
@@ -77,7 +77,7 @@ export default function ShiftAssistantDataPage() {
           <h1 className="font-serif text-[clamp(2.25rem,5vw,3.5rem)] font-normal leading-[1.05] tracking-[-0.01em] text-navy">
             The Shift assistant and your data
           </h1>
-          <p className="mt-4 text-[15px] text-ink-soft">Updated October 28, 2026</p>
+          <p className="mt-4 text-[15px] text-ink-soft">Updated October 30, 2026</p>
 
           <div className="mt-10 space-y-10">
             {SECTIONS.map((s) => (

@@ -3,7 +3,7 @@ import 'server-only'
 import type { Metadata } from 'next'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import type { CommunityEvent, NextUp } from '@/lib/events'
-import { findNextUp } from '@/lib/events-next'
+import { findNextUp, todayEt } from '@/lib/events-next'
 import { buildEventTitle, buildEventDescription } from '@/lib/events-seo'
 import { SITE_URL } from '@/lib/seo'
 import { eventUrl } from '@/lib/events-url'
@@ -17,6 +17,7 @@ import { eventUrl } from '@/lib/events-url'
 const EVENT_FIELDS = `
       content_id,
       event_date,
+      event_end_date,
       event_time,
       event_end_time,
       location_name,
@@ -35,6 +36,7 @@ const EVENT_FIELDS = `
       tags,
       featured,
       ride_series_id,
+      feeds_content_id,
       distance_text,
       pace,
       no_drop,
@@ -58,6 +60,19 @@ type EventRow = Record<string, unknown> & {
   content_items: Record<string, unknown>
 }
 
+/**
+ * PostgREST filter for "today or later", counting a multi-day event as
+ * upcoming until its last day (Shift 01557). Null end date means one day.
+ */
+function stillRunning(today: string): string {
+  return `event_date.gte.${today},event_end_date.gte.${today}`
+}
+
+/** The opposite: one-day events before today, multi-day events whose last day has passed. */
+function finished(today: string): string {
+  return `and(event_end_date.is.null,event_date.lt.${today}),event_end_date.lt.${today}`
+}
+
 function toCommunityEvent(row: EventRow): CommunityEvent {
   const ci = row.content_items as unknown as Record<string, unknown>
   return {
@@ -67,6 +82,7 @@ function toCommunityEvent(row: EventRow): CommunityEvent {
     body: ci.body as string | null,
     status: ci.status as string,
     event_date: row.event_date as string,
+    event_end_date: (row.event_end_date as string | null) ?? null,
     event_time: row.event_time as string | null,
     event_end_time: row.event_end_time as string | null,
     location_name: row.location_name as string,
@@ -86,6 +102,7 @@ function toCommunityEvent(row: EventRow): CommunityEvent {
     tags: (row.tags as string[] | null) ?? [],
     featured: (row.featured as boolean | null) ?? false,
     ride_series_id: (row.ride_series_id as string | null) ?? null,
+    feeds_content_id: (row.feeds_content_id as string | null) ?? null,
     distance_text: (row.distance_text as string | null) ?? null,
     pace: (row.pace as string | null) ?? null,
     no_drop: (row.no_drop as boolean | null) ?? null,
@@ -96,21 +113,80 @@ function toCommunityEvent(row: EventRow): CommunityEvent {
   }
 }
 
-/** Every approved upcoming event, soonest first. */
-export async function loadEventsListing(): Promise<CommunityEvent[]> {
-  const supabase = createServerSupabaseClient()
-  const today = new Date().toISOString().slice(0, 10)
-
+/**
+ * The ride page code for listings that come from a Shift group ride, so a
+ * list can link straight to /rides/<code>?date= (where people RSVP) instead
+ * of the calendar page that only links on to it. One read for the whole list.
+ */
+async function withRideCodes(
+  supabase: ReturnType<typeof createServerSupabaseClient>,
+  events: CommunityEvent[],
+): Promise<CommunityEvent[]> {
+  const ids = [...new Set(events.map((e) => e.ride_series_id).filter((x): x is string => !!x))]
+  if (ids.length === 0) return events
   const { data } = await supabase
+    .from('ride_series')
+    .select('id, invite_code')
+    .in('id', ids)
+    .eq('kind', 'group_ride')
+    .eq('status', 'active')
+  const codes = new Map(((data ?? []) as { id: string; invite_code: string | null }[]).map((r) => [r.id, r.invite_code]))
+  return events.map((e) => (e.ride_series_id && codes.get(e.ride_series_id) ? { ...e, ride_code: codes.get(e.ride_series_id)! } : e))
+}
+
+/**
+ * A Shift ride's cancelled dates that are still ahead: their listing comes
+ * off the approved list (Shift 01576 archives it) but keeps
+ * schedule_status 'cancelled', so lists can show it struck through as
+ * Cancelled instead of it vanishing for someone planning on it. Rides only;
+ * a synced source's cancelled events stay off lists as before.
+ */
+async function cancelledRideDates(
+  supabase: ReturnType<typeof createServerSupabaseClient>,
+  today: string,
+  organizerId?: string,
+): Promise<CommunityEvent[]> {
+  let q = supabase
     .from('event_details')
     .select(LISTING_SELECT)
-    .eq('content_items.status', 'approved')
+    .eq('content_items.status', 'archived')
     .eq('content_items.content_type', 'community_event')
-    .gte('event_date', today)
-    .order('event_date', { ascending: true })
-    .limit(500)
-
+    .eq('schedule_status', 'cancelled')
+    .not('ride_series_id', 'is', null)
+    .or(stillRunning(today))
+  if (organizerId) q = q.eq('organizer_id', organizerId)
+  const { data } = await q.order('event_date', { ascending: true }).limit(100)
   return ((data ?? []) as unknown as EventRow[]).map(toCommunityEvent)
+}
+
+/** Soonest first, then by start time; the merge keeps a list in calendar order. */
+function bySoonest(a: CommunityEvent, b: CommunityEvent): number {
+  return a.event_date.localeCompare(b.event_date) || (a.event_time ?? '').localeCompare(b.event_time ?? '')
+}
+
+/**
+ * Every approved upcoming event, soonest first. With `withCancelled`, a
+ * Shift ride's cancelled dates too, marked by schedule_status (the events
+ * page shows them as Cancelled).
+ */
+export async function loadEventsListing({ withCancelled = false }: { withCancelled?: boolean } = {}): Promise<CommunityEvent[]> {
+  const supabase = createServerSupabaseClient()
+  const today = todayEt()
+
+  const [{ data }, cancelled] = await Promise.all([
+    supabase
+      .from('event_details')
+      .select(LISTING_SELECT)
+      .eq('content_items.status', 'approved')
+      .eq('content_items.content_type', 'community_event')
+      .or(stillRunning(today))
+      .order('event_date', { ascending: true })
+      .limit(500),
+    withCancelled ? cancelledRideDates(supabase, today) : Promise.resolve([] as CommunityEvent[]),
+  ])
+
+  const events = ((data ?? []) as unknown as EventRow[]).map(toCommunityEvent)
+  return withRideCodes(supabase, cancelled.length ? [...events, ...cancelled].sort(bySoonest) : events)
 }
 
 /**
@@ -123,7 +199,7 @@ export async function loadOrganizerEvents(
   limit = 60,
 ): Promise<CommunityEvent[]> {
   const supabase = createServerSupabaseClient()
-  const today = new Date().toISOString().slice(0, 10)
+  const today = todayEt()
   let q = supabase
     .from('event_details')
     .select(LISTING_SELECT)
@@ -131,10 +207,15 @@ export async function loadOrganizerEvents(
     .eq('content_items.status', 'approved')
     .eq('content_items.content_type', 'community_event')
   q = when === 'upcoming'
-    ? q.gte('event_date', today).order('event_date', { ascending: true })
-    : q.lt('event_date', today).order('event_date', { ascending: false })
-  const { data } = await q.limit(limit)
-  return ((data ?? []) as unknown as EventRow[]).map(toCommunityEvent)
+    ? q.or(stillRunning(today)).order('event_date', { ascending: true })
+    : q.or(finished(today)).order('event_date', { ascending: false })
+  // Upcoming lists (host page, embed, calendar feed) keep a ride's cancelled dates, marked.
+  const [{ data }, cancelled] = await Promise.all([
+    q.limit(limit),
+    when === 'upcoming' ? cancelledRideDates(supabase, today, organizerId) : Promise.resolve([] as CommunityEvent[]),
+  ])
+  const events = ((data ?? []) as unknown as EventRow[]).map(toCommunityEvent)
+  return withRideCodes(supabase, cancelled.length ? [...events, ...cancelled].sort(bySoonest).slice(0, limit) : events)
 }
 
 /**
@@ -145,14 +226,14 @@ export async function loadOrganizerEvents(
 export async function countUpcomingEvents(): Promise<number | null> {
   try {
     const supabase = createServerSupabaseClient()
-    const today = new Date().toISOString().slice(0, 10)
+    const today = todayEt()
 
     const { count } = await supabase
       .from('event_details')
       .select('content_id, content_items!inner(id)', { count: 'exact', head: true })
       .eq('content_items.status', 'approved')
       .eq('content_items.content_type', 'community_event')
-      .gte('event_date', today)
+      .or(stillRunning(today))
 
     return count ?? null
   } catch {

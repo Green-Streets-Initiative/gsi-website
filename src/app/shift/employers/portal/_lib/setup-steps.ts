@@ -105,3 +105,21 @@ export function computeSetupSteps(args: {
 export function nextSetupStep(steps: SetupStepDef[]): SetupStepDef | null {
   return steps.find((s) => !s.done) ?? null
 }
+
+/** What the signed-in person may change, from the portal context's flags. */
+export type SetupPermissions = {
+  /** Account details and branding: the profile and logo steps. */
+  canManageAccount: boolean
+  /** Programs: the success plan, the Commute Advisor, inviting and challenges. */
+  canManageChallenges: boolean
+}
+
+/** Whether this person can do a step themselves (Keith 2026-10-31: viewers and managers see only what they can act on). */
+export function canDoStep(stepId: string, p: SetupPermissions): boolean {
+  return stepId === 'profile' || stepId === 'logo' ? p.canManageAccount : p.canManageChallenges
+}
+
+/** The first unfinished step this person can do, or null. */
+export function nextDoableStep(steps: SetupStepDef[], p: SetupPermissions): SetupStepDef | null {
+  return steps.find((s) => !s.done && canDoStep(s.id, p)) ?? null
+}

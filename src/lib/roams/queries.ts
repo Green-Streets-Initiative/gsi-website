@@ -1,5 +1,6 @@
 import 'server-only'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
+import { todayEt } from '@/lib/events-next'
 
 /**
  * Data layer for the public roam pages (/shift/roams). Strictly READ-ONLY —
@@ -129,8 +130,20 @@ export interface RoamDetail extends RoamSummary {
   collection: RoamCollection | null
   /** GeoJSON-order coordinates for the full route, or null if unusable */
   route_coordinates: [number, number][] | null
+  /** Hills along the route (Google Elevation, Shift 01485 and the hourly
+   *  trail-elevation job, 01487); null for transit Roams and until measured. */
+  elevation: RoamElevation | null
   checkpoints: RoamCheckpoint[]
   legs: RoamLeg[]
+}
+
+export interface RoamElevation {
+  ascent_ft: number
+  descent_ft: number
+  max_grade_pct: number
+  route_miles: number
+  /** [miles from start, feet above sea level], up to 120 points. */
+  profile: [number, number][]
 }
 
 /** Fold both stored route_geometry shapes into GeoJSON [lng, lat][]. */
@@ -162,12 +175,36 @@ export function normalizeRouteGeometry(raw: unknown): [number, number][] | null 
   return null
 }
 
+/**
+ * On offer today (Boston date)? The app's isInSeason (Shift lib/roam.ts,
+ * parity map: roams): an event roam only inside its event window, a seasonal
+ * roam only inside its MM-DD window, the rest always. Since Shift 01615 only
+ * roams whose service stops (the Harbor Islands ferries) carry a season.
+ */
+export function roamInSeason(
+  r: { seasonal_start?: unknown; seasonal_end?: unknown; event_start?: unknown; event_end?: unknown },
+  today: string,
+): boolean {
+  const s = (v: unknown) => (typeof v === 'string' && v ? v : null)
+  const es = s(r.event_start), ee = s(r.event_end), ss = s(r.seasonal_start), se = s(r.seasonal_end)
+  if (es && ee) return today >= es.slice(0, 10) && today <= ee.slice(0, 10)
+  if (ss && se) return today.slice(5) >= ss && today.slice(5) <= se
+  return true
+}
+
+/** The roams people can go on today: the hub and the assistant's find_roams.
+ *  The sitemap keeps every roam page (getActiveRoams) so links keep working. */
+export async function getRoamsInSeason(): Promise<RoamSummary[]> {
+  const today = todayEt()
+  return (await getActiveRoams()).filter((r) => roamInSeason(r as unknown as Record<string, unknown>, today))
+}
+
 export async function getActiveRoams(): Promise<RoamSummary[]> {
   const supabase = createServerSupabaseClient()
-  const today = new Date().toISOString().slice(0, 10)
+  const today = todayEt()
   const { data } = await supabase
     .from('roams')
-    .select('id, name, mode, distance_miles, estimated_minutes, hook, tagline, hero_image_url, hero_image_attribution, hero_image_attribution_url, region, featured, completion_count, vibe_tags')
+    .select('id, name, mode, distance_miles, estimated_minutes, hook, tagline, hero_image_url, hero_image_attribution, hero_image_attribution_url, region, featured, completion_count, vibe_tags, seasonal_start, seasonal_end, event_start, event_end')
     .eq('active', true)
     // Preview roams (preview_user_ids set) are for their testers in the app only (Shift 01214).
     .is('preview_user_ids', null)
@@ -196,12 +233,12 @@ export async function getActiveRoams(): Promise<RoamSummary[]> {
 export async function getRoamDetail(id: string): Promise<RoamDetail | null> {
   const supabase = createServerSupabaseClient()
 
-  const today = new Date().toISOString().slice(0, 10)
+  const today = todayEt()
   const [roamRes, checkpointsRes, legsRes] = await Promise.all([
     supabase
       .from('roams')
       .select(
-        'id, name, mode, distance_miles, estimated_minutes, hook, hero_image_url, region, featured, description, tagline, badge_name, xp_bonus, hero_image_attribution, hero_image_attribution_url, route_url, route_geometry, completion_count, vibe_tags, collection_id, completion_threshold, full_trail_miles, surface, access_note, parking_note, hero_video_url, hero_video_credit, hero_video_credit_url, credit_role, credit_name, rail_home_stop_id, rail_home_route_id, rail_home_direction_id',
+        'id, name, mode, distance_miles, estimated_minutes, hook, hero_image_url, region, featured, description, tagline, badge_name, xp_bonus, hero_image_attribution, hero_image_attribution_url, route_url, route_geometry, completion_count, vibe_tags, collection_id, completion_threshold, full_trail_miles, surface, access_note, parking_note, hero_video_url, hero_video_credit, hero_video_credit_url, credit_role, credit_name, rail_home_stop_id, rail_home_route_id, rail_home_direction_id, elevation',
       )
       .eq('id', id)
       .eq('active', true)
@@ -353,8 +390,21 @@ export async function getRoamDetail(id: string): Promise<RoamDetail | null> {
     completion_threshold: (roam.completion_threshold as number) ?? 1.0,
     collection,
     route_coordinates: normalizeRouteGeometry(roam.route_geometry),
+    elevation: elevationOf(roam.elevation),
     checkpoints,
     legs,
+  }
+}
+
+function elevationOf(raw: unknown): RoamElevation | null {
+  const e = raw as Partial<RoamElevation> | null
+  if (!e || typeof e.ascent_ft !== 'number' || typeof e.descent_ft !== 'number' || !(Number(e.route_miles) > 0)) return null
+  return {
+    ascent_ft: e.ascent_ft,
+    descent_ft: e.descent_ft,
+    max_grade_pct: Number(e.max_grade_pct ?? 0),
+    route_miles: Number(e.route_miles),
+    profile: Array.isArray(e.profile) ? e.profile.filter((p) => Array.isArray(p) && p.length >= 2) : [],
   }
 }
 
@@ -491,6 +541,8 @@ export interface RoamDisruption {
   trail_name: string
   /** route = a trail this roam uses; access = one it connects to. */
   affects: 'route' | 'access'
+  /** access only: where the connecting path comes from ("Davis Square"), Shift 01490. */
+  from_label?: string | null
   title: string
   summary: string
   detours: TrailDetour[] | null

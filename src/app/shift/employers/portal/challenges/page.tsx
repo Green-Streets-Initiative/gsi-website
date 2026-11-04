@@ -56,7 +56,7 @@ import TellYourTeam, { type TeamPrize } from './TellYourTeam'
 import { useEmployerLocations } from '../_lib/use-employer-locations'
 import { useChallengeTemplates, type SeasonalOption } from '../_lib/use-challenge-templates'
 import YearPlanCard from './YearPlanCard'
-import { ASSISTANT_CHANGED_EVENT, openAssistant } from '../_components/AssistantPanel'
+import { ASSISTANT_CHANGED_EVENT, assistantAvailable, openAssistant } from '../_components/AssistantPanel'
 import AwardsRecap from './AwardsRecap'
 import TeamHearsPanel from './TeamHearsPanel'
 import { useYearPlan, runRange, templatePrizeLine } from '../_lib/use-year-plan'
@@ -69,6 +69,7 @@ import type {
   ChallengePrize,
   PrizeWinner,
 } from '../_lib/portal-types'
+import { PRIZE_WINNER_COLUMNS } from '../_lib/portal-types'
 
 // Shift 01040: drawing and leaderboard winners get a catalog gift card at the
 // draw (catalog_reward_id), the sweep can draw on its own (auto_draw_*), and
@@ -315,6 +316,7 @@ export default function ChallengesPage() {
         counting_rules: c.counting_rules ?? null,
         contact_name: c.contact_name ?? '',
         contact_email: c.contact_email ?? '',
+        description: c.description ?? null,
       })
       setPrizeForms(
         prizes.map((p) => ({
@@ -531,7 +533,7 @@ export default function ChallengesPage() {
     async (competitionId: string) => {
       const { data } = await supabase
         .from('competitions')
-        .select('id, name, metric, starts_at, ends_at, prize_description, counting_rules, contact_name, contact_email')
+        .select('id, name, metric, starts_at, ends_at, description, prize_description, counting_rules, contact_name, contact_email')
         .eq('id', competitionId)
         .maybeSingle()
       if (data) {
@@ -714,7 +716,7 @@ export default function ChallengesPage() {
       const [comps, prizes] = await Promise.all([
         supabase
           .from('competitions')
-          .select('id, name, metric, starts_at, ends_at, prize_description, counting_rules, contact_name, contact_email')
+          .select('id, name, metric, starts_at, ends_at, description, prize_description, counting_rules, contact_name, contact_email')
           .eq('group_id', group.id)
           .order('starts_at', { ascending: false }),
         supabase.from('employer_challenge_prizes').select('*').eq('group_id', group.id).order('display_order'),
@@ -892,7 +894,7 @@ export default function ChallengesPage() {
       }
       const [{ data: updated }, { data: winners }] = await Promise.all([
         supabase.from('employer_challenge_prizes').select('*').eq('id', p.id).single(),
-        supabase.from('employer_prize_winners').select('*').eq('prize_id', p.id),
+        supabase.from('employer_prize_winners').select(PRIZE_WINNER_COLUMNS).eq('prize_id', p.id),
       ])
       if (updated) {
         setChallengePrizes(
@@ -1399,6 +1401,7 @@ export default function ChallengesPage() {
       {builderOpen && group && (
         <ChallengeWizard
           group={{ id: group.id, name: group.name }}
+          assistantOn={assistantAvailable(group, isGsiAdmin)}
           editMode={editMode}
           form={form}
           setForm={(u) => setForm((p) => u(p))}
@@ -1507,7 +1510,7 @@ function PrizeCard({
 
   async function reloadWinners() {
     const [{ data: updatedWinners }, { data: updatedPrize }] = await Promise.all([
-      supabase.from('employer_prize_winners').select('*').eq('prize_id', p.id),
+      supabase.from('employer_prize_winners').select(PRIZE_WINNER_COLUMNS).eq('prize_id', p.id),
       supabase.from('employer_challenge_prizes').select('*').eq('id', p.id).single(),
     ])
     if (updatedWinners) onWinnersUpdated(updatedWinners as PrizeWinner[])
@@ -1773,9 +1776,9 @@ function PrizeCard({
                       <td className="py-2 text-right text-ink-muted">
                         {p.metric === 'pct_non_car'
                           ? `${Number(w.metric_value).toFixed(1)}%`
-                          : p.metric === 'tried_new'
-                            ? String(Math.round(Number(w.metric_value)))
-                            : Number(w.metric_value).toFixed(1)}
+                          : p.metric === 'miles'
+                            ? Number(w.metric_value).toFixed(1)
+                            : Math.round(Number(w.metric_value)).toLocaleString('en-US')}
                       </td>
                       {p.funded_from_pool && (
                         <td className="py-2 text-right text-ink-muted">

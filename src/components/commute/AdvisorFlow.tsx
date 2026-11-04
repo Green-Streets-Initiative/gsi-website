@@ -19,6 +19,7 @@ import { useIsWide } from '@/components/commute/useIsWide'
 import LoadingMessages from '@/components/commute/LoadingMessages'
 import CommutePlanPrint from '@/components/commute/CommutePlanPrint'
 import TagAlong from '@/components/commute/TagAlong'
+import { haversineMeters } from '@/lib/geo/measure'
 import { COMFORT_COLORS, COMFORT_LABELS, comfortPieces, fetchCalmRoute, formatStretchMiles, legPhotoSpec, type CalmRoute } from '@/components/commute/calm-route'
 import { ReportRouteLink, type RouteIssueStretch, type RouteIssueSurface } from '@/components/commute/ReportRouteSheet'
 import { contentModeFor, contentModeWord, guidesByStage } from '@/components/commute/guide-topics'
@@ -464,6 +465,10 @@ export default function AdvisorFlow({
   /* ── After the plan: departures, the calm route, shuttles, bike parking ── */
   const home = homePlaceData
   const office = workPlaceData
+  // The free 1:1 street lesson (launch confidence-path, 2026-11-03): offered
+  // in the bike plan when Home is within the program's 5 miles of the
+  // Bicycle Riding School (Shift free_lesson_programs.brs_road).
+  const lessonNearby = home ? haversineMeters(home.lat, home.lng, 42.39929, -71.12049) <= 5 * 1609.34 : false
   useEffect(() => {
     if (!result || !home || !office) return
     const ctrl = new AbortController()
@@ -755,7 +760,7 @@ export default function AdvisorFlow({
       ) : mode === 'transit' ? (
         <TransitDrawer plan={plan} legsLive={legsLive} home={home} office={office} officeName={officeLabel} benefits={benefits} companyName={companyName} highlightedLeg={highlightedLeg} onLegTap={(leg) => tapLeg(mode, leg)} directionsHref={href} onDirections={onDirections} />
       ) : mode === 'bike' || mode === 'ebike' ? (
-        <BikeDrawer plan={plan} calm={calm} calmLoading={calmLoading} bikeParking={bikeParking} benefits={benefits} companyName={companyName} highlightedLeg={highlightedLeg} onLegTap={(leg) => tapLeg(mode, leg)} directionsHref={href} onDirections={onDirections} />
+        <BikeDrawer plan={plan} calm={calm} calmLoading={calmLoading} bikeParking={bikeParking} benefits={benefits} companyName={companyName} highlightedLeg={highlightedLeg} onLegTap={(leg) => tapLeg(mode, leg)} directionsHref={href} onDirections={onDirections} lessonNearby={lessonNearby} onLesson={() => track('advisor_lesson_tapped', { mode })} />
       ) : mode === 'drive' ? (
         <DriveDrawer plan={plan} benefits={benefits} onAddParking={openCosts} onNoCar={() => chooseCar('none', 'plan')} directionsHref={href} onDirections={onDirections} />
       ) : (
@@ -817,11 +822,14 @@ export default function AdvisorFlow({
         drawer: <ShuttleDrawer line={s} officeName={officeLabel} highlightedLeg={highlightedLeg} onLegTap={(leg) => tapLeg(s.key, leg)} />,
       })
     }
-    // The T plus a shuttle Google leaves out, when faster than the T alone
-    // and open to this reader (the engine's call: Shift advisor-shuttle.ts).
+    // The T plus a shuttle Google leaves out, when about as quick as the T
+    // alone (within 5 minutes) and open to this reader (the engine's call:
+    // Shift advisor-shuttle.ts). Placed by minutes after the pick, so a
+    // slower seat sits under the faster ways, never above them.
     for (const s of plan.shuttle_transfers ?? []) {
       const w = weatherAt(s.leave_by)
-      out.push({
+      const at = out.findIndex((r, i) => i > 0 && r.minutes != null && r.minutes > s.minutes_total)
+      out.splice(at < 0 ? out.length : at, 0, {
         key: `shuttle-transfer-${s.route_id}-${s.shape}`,
         mode: 'shuttle',
         // The shuttle is the name ("The Grid A5"); the T part is the line under it.

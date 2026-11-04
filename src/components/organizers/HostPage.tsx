@@ -28,6 +28,11 @@ const MORE_LINKS: { key: string; label: string; placeholder: string }[] = [
 ]
 const ALL_LINKS = [...LINKS, ...MORE_LINKS]
 
+/** "yourgroup.org" from a website address. */
+function domainOf(url: string | null | undefined): string | null {
+  try { return url ? new URL(url).hostname.replace(/^www\./, '') : null } catch { return null }
+}
+
 const isLink = (v: string) => !v.trim() || /^https?:\/\/\S+$/i.test(v.trim())
 
 function Editor({ org, onSaved }: { org: OrgClaim; onSaved: () => void }) {
@@ -159,11 +164,12 @@ export default function HostPage() {
   // The public page exists once a group runs often enough (lib/hosts.ts);
   // link to it only when it's there.
   const publicPath = org ? `/events/organizers/${encodeURIComponent(org.id)}` : null
-  const [live, setLive] = useState(false)
+  // Which page answered: a different organization starts out not live.
+  const [livePath, setLivePath] = useState<string | null>(null)
+  const live = !!publicPath && livePath === publicPath
   useEffect(() => {
     let on = true
-    setLive(false)
-    if (publicPath) fetch(publicPath, { method: 'HEAD' }).then((r) => { if (on) setLive(r.ok) }).catch(() => {})
+    if (publicPath) fetch(publicPath, { method: 'HEAD' }).then((r) => { if (on && r.ok) setLivePath(publicPath) }).catch(() => {})
     return () => { on = false }
   }, [publicPath])
 
@@ -194,8 +200,8 @@ export default function HostPage() {
         {org ? <Editor key={org.id} org={org} onSaved={() => void refreshMe()} /> : (
           <Empty title="No verified organization yet">
             {pending.length > 0
-              ? `GSI is checking that you run ${pending.map((p) => p.name).join(' and ')}. Once that's done, you can edit its host page here.`
-              : 'When you set up a ride under your organization, GSI checks that you run it. After that, its host page is yours to edit here.'}
+              ? `${pending.map((p) => p.name).join(' and ')} ${pending.length > 1 ? 'are' : 'is'} verified automatically when your sign-in email is at ${pending.length > 1 ? 'their websites\u2019 domains' : (domainOf(pending[0].url) ?? 'its website\u2019s domain')}. Then its host page is yours to edit here.`
+              : 'Set up a ride under your organization. It\u2019s verified automatically when your sign-in email is at its website\u2019s domain, and then its host page is yours to edit here.'}
           </Empty>
         )}
       </div>

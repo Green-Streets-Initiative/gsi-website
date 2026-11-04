@@ -94,6 +94,13 @@ type SponsorLocation = {
   state: string | null
   zip: string | null
   is_active: boolean
+  /** Off only because the listing is paused; back on when it resumes (Shift 01522). */
+  paused_with_sponsor: boolean
+}
+
+/** On as the partner set it, counting locations held while the listing is paused. */
+function locationOn(loc: SponsorLocation) {
+  return loc.is_active || loc.paused_with_sponsor
 }
 
 // ── Page wrapper ──────────────────────────────────────────
@@ -198,7 +205,7 @@ function DashboardPage() {
         .from('rewards')
         .select('id, name, description, redemption_frequency')
         .eq('sponsor_id', sponsorData.id)
-        .eq('status', 'active')
+        .in('status', ['active', 'paused'])
         .order('created_at', { ascending: false })
         .limit(1)
         .single(),
@@ -210,7 +217,7 @@ function DashboardPage() {
         .limit(200),
       supabase
         .from('sponsor_locations')
-        .select('id, label, address, city, state, zip, is_active')
+        .select('id, label, address, city, state, zip, is_active, paused_with_sponsor')
         .eq('sponsor_id', sponsorData.id)
         .order('created_at', { ascending: true }),
     ])
@@ -423,13 +430,17 @@ function DashboardPage() {
 
   async function toggleLocation(loc: SponsorLocation) {
     setTogglingLocationId(loc.id)
-    const newActive = !loc.is_active
+    // While the listing is paused the database holds a location switched on
+    // until it resumes; switching one off clears its hold.
+    const newActive = !locationOn(loc)
     await supabase
       .from('sponsor_locations')
-      .update({ is_active: newActive })
+      .update({ is_active: newActive, paused_with_sponsor: false })
       .eq('id', loc.id)
     setLocations((prev) =>
-      prev.map((l) => (l.id === loc.id ? { ...l, is_active: newActive } : l)),
+      prev.map((l) =>
+        l.id === loc.id ? { ...l, is_active: newActive, paused_with_sponsor: false } : l,
+      ),
     )
     setTogglingLocationId(null)
   }
@@ -817,7 +828,7 @@ function DashboardPage() {
               <h2 className="mb-5 font-display text-base font-bold text-white">
                 Locations
               </h2>
-              <p className="mb-4 text-sm text-white/50">
+              <p className="mb-4 text-sm text-white/75">
                 Toggle locations on or off. Inactive locations won&apos;t appear in the Shift app.
               </p>
               <div className="space-y-3">
@@ -825,14 +836,14 @@ function DashboardPage() {
                   <div
                     key={loc.id}
                     className={`flex items-center justify-between rounded-xl bg-white/[0.06] px-4 py-3 ${
-                      !loc.is_active ? 'opacity-50' : ''
+                      !locationOn(loc) ? 'opacity-50' : ''
                     }`}
                   >
                     <div className="min-w-0 flex-1">
                       {loc.label && (
                         <p className="text-sm font-semibold text-white">{loc.label}</p>
                       )}
-                      <p className={`text-sm ${loc.label ? 'text-white/60' : 'text-white'}`}>
+                      <p className={`text-sm ${loc.label ? 'text-white/75' : 'text-white'}`}>
                         {loc.address}
                         {loc.city ? `, ${loc.city}` : ''}
                         {loc.state ? `, ${loc.state}` : ''}
@@ -843,14 +854,14 @@ function DashboardPage() {
                       onClick={() => toggleLocation(loc)}
                       disabled={togglingLocationId === loc.id}
                       className={`ml-4 shrink-0 rounded-full px-4 py-1.5 text-xs font-medium transition-colors disabled:opacity-40 ${
-                        loc.is_active
+                        locationOn(loc)
                           ? 'bg-[#BAF14D]/15 text-[#BAF14D]'
-                          : 'border border-white/[0.12] text-white/60'
+                          : 'border border-white/[0.12] text-white/75'
                       }`}
                     >
                       {togglingLocationId === loc.id
                         ? '\u2026'
-                        : loc.is_active
+                        : locationOn(loc)
                           ? 'Active'
                           : 'Inactive'}
                     </button>
@@ -1135,9 +1146,9 @@ function DashboardPage() {
               </div>
             ) : (
               <div>
-                <p className="mb-4 text-sm text-white/60">
-                  Your listing is paused. Shift users won&apos;t see your offer until you
-                  reactivate.
+                <p className="mb-4 text-sm text-white/75">
+                  Your listing is paused. Shift users won&apos;t see your offer or your
+                  locations until you reactivate.
                 </p>
                 <div className="flex flex-wrap gap-3">
                   <button

@@ -10,6 +10,7 @@
  */
 import { supabase } from '@/lib/supabase'
 import { track } from './track'
+import type { FirstRideStart, LinkProblem } from './first-ride'
 import type {
   ConsoleMe, CreditRequest, DashboardRide, PromoStats, RideDetail, RosterRow, Turnout,
 } from './types'
@@ -68,7 +69,25 @@ async function siteApi<T>(path: string, body: Record<string, unknown>): Promise<
 // ── Reads ──────────────────────────────────────────────────────────────
 
 export const getMe = () => rpc<ConsoleMe>('organizer_console_me')
+
+/** A personal console link (Shift 01588); reason says why it didn't open. */
+export const redeemLink = (token: string) =>
+  rpc<{ ok: boolean; already?: boolean; reason?: LinkProblem }>('redeem_ride_organizer_link', { p_token: token })
+
+/** The calendar host and its listings, for "Make your first ride". */
+export const getFirstRideStart = () => rpc<FirstRideStart>('organizer_first_ride_start')
 export const getRides = () => rpc<DashboardRide[]>('organizer_console_rides')
+
+/** The ride of mine whose first date just went by and that I haven't told us about (01595). */
+export type FeedbackDue = { series_id: string; ride_name: string; ride_date: string } | null
+export const getFeedbackDue = () => rpc<FeedbackDue>('organizer_feedback_due')
+export const sendFeedback = (f: {
+  seriesId: string | null; rideDate: string | null; how: 'great' | 'okay' | 'rough' | null
+  fix: string; quote: string; mayQuote: boolean; shownName: string
+}) => rpc<{ ok: true }>('submit_organizer_feedback', {
+  p_series_id: f.seriesId, p_ride_date: f.rideDate, p_how: f.how, p_fix: f.fix,
+  p_quote: f.quote, p_may_quote: f.mayQuote, p_shown_name: f.shownName,
+})
 export const getRide = (seriesId: string) => rpc<RideDetail>('organizer_ride_detail', { p_series_id: seriesId })
 export const getRoster = async (occurrenceId: string) =>
   (await rpc<RosterRow[] | null>('organizer_date_roster', { p_occurrence_id: occurrenceId })) ?? []
@@ -86,7 +105,19 @@ export const getStopPreview = (seriesId: string, until: string | null) =>
     'get_ride_stop_preview', { p_series_id: seriesId, p_until: until },
   )
 
+/** The Ride Fund season covering a point (Shift 01596): today's, or one starting within 60 days. */
+export interface RideFundHere { slug: string; funder_name: string; funder_url: string | null; coffee_cents: number; starts_on: string; ends_on: string }
+export const getRideFundFor = (lat: number, lng: number) => rpc<RideFundHere | null>('ride_fund_for_point', { p_lat: lat, p_lng: lng })
+/** Shops from the gift-card catalog near where a ride ends, nearest first. */
+export interface EndShop { location_id: string; merchant_id: string; name: string; kind: string | null; street: string | null; city: string | null; distance_m: number }
+export const getEndShops = async (lat: number, lng: number) =>
+  (await rpc<EndShop[] | null>('get_ride_end_shops', { p_lat: lat, p_lng: lng })) ?? []
+
 // ── Writes ─────────────────────────────────────────────────────────────
+
+/** The shop a ride ends at, where the Ride Fund buys the coffee. null clears it. */
+export const setEndShop = (seriesId: string, locationId: string | null) =>
+  rpc<{ ok: true }>('set_ride_end_shop', { p_series_id: seriesId, p_location_id: locationId })
 
 export interface SaveResult {
   id: string
@@ -140,12 +171,46 @@ export async function postUpdate(args: {
   return r
 }
 
+/**
+ * A change that went through, and whether its notice did. `noticeFailed`
+ * means the change stands but nobody was told: the console says so and
+ * offers to send it again, instead of claiming it was posted.
+ */
+export interface Sent {
+  sent: SendResult | null
+  noticeFailed: boolean
+}
+
+async function notice(body: Record<string, unknown>): Promise<Sent> {
+  try {
+    return { sent: await shiftFunction<SendResult>('notify-ride-canceled', body), noticeFailed: false }
+  } catch {
+    return { sent: null, noticeFailed: true }
+  }
+}
+
+/** The "date is off" notice; also how the console sends it again. */
+export const sendCancelNotice = (occurrenceId: string) => notice({ occurrence_id: occurrenceId })
+/** The "date has changed" notice; also how the console sends it again. */
+export const sendChangeNotice = (occurrenceId: string) => notice({ occurrence_id: occurrenceId, change: true })
+/** The "ride has ended / is on a break" notice; also how the console sends it again. */
+export const sendStopNotice = (seriesId: string, mode: 'end' | 'break') =>
+  notice({ series_id: seriesId, stop: mode === 'end' ? 'ended' : 'break' })
+
+/** How many a cancel or change notice for this date would reach (a dry run; null if unknown). */
+export async function noticeReach(occurrenceId: string, kind: 'cancel' | 'change'): Promise<number | null> {
+  const r = await shiftFunction<SendResult>('notify-ride-canceled', {
+    occurrence_id: occurrenceId, dry_run: true, ...(kind === 'change' ? { change: true } : {}),
+  }).catch(() => null)
+  return r?.would_notify ?? null
+}
+
 /** Cancel or bring back one date; a cancel tells everyone on it. */
-export async function setDateCanceled(occurrenceId: string, canceled: boolean): Promise<SendResult | null> {
+export async function setDateCanceled(occurrenceId: string, canceled: boolean): Promise<Sent> {
   await rpc('set_ride_occurrence_canceled', { p_occurrence_id: occurrenceId, p_canceled: canceled })
   track(canceled ? 'organizer_date_canceled' : 'organizer_date_restored', { occurrence_id: occurrenceId })
-  if (!canceled) return null
-  return shiftFunction<SendResult>('notify-ride-canceled', { occurrence_id: occurrenceId }).catch(() => null)
+  if (!canceled) return { sent: null, noticeFailed: false }
+  return sendCancelNotice(occurrenceId)
 }
 
 /** Move one date's time or meeting point; tells everyone on it if it changed. */
@@ -154,7 +219,7 @@ export async function changeDate(occurrenceId: string, args: {
   meetup?: { name: string | null; address: string | null; lat: number; lng: number } | null
   resetTime?: boolean
   resetMeetup?: boolean
-}): Promise<{ changed: boolean; sent: SendResult | null }> {
+}): Promise<Sent & { changed: boolean }> {
   const data = await rpc<{ changed?: boolean }>('change_ride_occurrence', {
     p_occurrence_id: occurrenceId,
     p_start_time: args.startTime ?? null,
@@ -165,11 +230,9 @@ export async function changeDate(occurrenceId: string, args: {
     p_reset_time: !!args.resetTime,
     p_reset_meetup: !!args.resetMeetup,
   })
-  if (!data?.changed) return { changed: false, sent: null }
+  if (!data?.changed) return { changed: false, sent: null, noticeFailed: false }
   track('organizer_date_changed', { occurrence_id: occurrenceId, time: args.startTime !== undefined || !!args.resetTime, meetup: args.meetup !== undefined || !!args.resetMeetup })
-  const sent = await shiftFunction<SendResult>('notify-ride-canceled', { occurrence_id: occurrenceId, change: true })
-    .catch(() => null)
-  return { changed: true, sent }
+  return { changed: true, ...(await sendChangeNotice(occurrenceId)) }
 }
 
 /**
@@ -195,12 +258,38 @@ export async function saveDateDetails(occurrenceId: string, details: {
 }
 
 /** End the ride or take a break, then tell everyone, as the app's stop screen does. */
-export async function stopRide(seriesId: string, mode: 'end' | 'break', until: string | null, note: string, notify: boolean) {
+export async function stopRide(seriesId: string, mode: 'end' | 'break', until: string | null, note: string, notify: boolean): Promise<Sent> {
   await rpc('stop_ride_series', { p_series_id: seriesId, p_mode: mode, p_until: mode === 'break' ? until : null, p_note: note.trim() || null })
   track('organizer_ride_stopped', { ride_id: seriesId, mode, notify })
-  if (!notify) return null
-  return shiftFunction<SendResult>('notify-ride-canceled', { series_id: seriesId, stop: mode === 'end' ? 'ended' : 'break' })
-    .catch(() => null)
+  if (!notify) return { sent: null, noticeFailed: false }
+  return sendStopNotice(seriesId, mode)
+}
+
+/** Delete a ride nobody has joined or ridden yet (the server refuses otherwise), as the app's stop screen does. */
+export async function deleteRide(seriesId: string) {
+  await rpc<void>('delete_ride_series', { p_series_id: seriesId })
+  track('organizer_ride_deleted', { ride_id: seriesId })
+}
+
+/**
+ * Skip dates ahead of time, before they're on the schedule (more than four
+ * weeks out). A date already on the schedule is cancelled on its own, so the
+ * people on it hear about it. Only the ride's organizer can do this (the
+ * table's own rule); skip_dates isn't one of the fields whose change sends
+ * a notice.
+ */
+export async function setSkipDates(seriesId: string, skipDates: string[]) {
+  const { error } = await supabase.from('ride_series').update({ skip_dates: [...new Set(skipDates)].sort() }).eq('id', seriesId)
+  if (error) throw new Error(error.message)
+  track('organizer_skip_dates_saved', { ride_id: seriesId, count: skipDates.length })
+  await generateDates(seriesId).catch(() => {})
+}
+
+/** Update emails carry Reply-To with the organizer's sign-in address (Shift 01598). Organizer only (the table's own rule). */
+export async function setRepliesToOrganizer(seriesId: string, on: boolean) {
+  const { error } = await supabase.from('ride_series').update({ replies_to_organizer: on }).eq('id', seriesId)
+  if (error) throw new Error(error.message)
+  track('organizer_replies_set', { ride_id: seriesId, on })
 }
 
 export async function resumeRide(seriesId: string) {
@@ -219,7 +308,7 @@ export async function settleCredit(occurrenceId: string, memberId: string, appro
 }
 
 export async function inviteLeader(seriesId: string, email: string) {
-  const r = await siteApi<{ status: 'invited' | 'made_leader' | 'already_leader' | 'already_organizer'; emailed?: boolean }>(
+  const r = await siteApi<{ status: 'invited' | 'made_leader' | 'already_leader' | 'already_organizer'; emailed?: boolean; already_emailed?: boolean }>(
     '/api/organizers/invite-leader', { series_id: seriesId, email },
   )
   track('organizer_leader_invited', { ride_id: seriesId, status: r.status })
@@ -231,6 +320,55 @@ export const revokeLeaderInvite = (inviteId: string) =>
 
 export const setMemberRole = (seriesId: string, userId: string, role: 'leader' | 'rider') =>
   rpc<{ ok: boolean }>('set_ride_member_role', { p_series_id: seriesId, p_user_id: userId, p_role: role })
+
+// ── Organizations (the same writes as the app's ride form) ─────────────
+
+export interface OrgMatch { id: string; name: string; url: string | null }
+
+/** Organizations on the calendar whose name matches, for "Find your organization". */
+export async function searchOrgs(text: string): Promise<OrgMatch[]> {
+  const q = text.trim().replace(/[%_,()]/g, ' ')
+  if (q.length < 2) return []
+  const { data, error } = await supabase.from('event_organizers').select('id, name, url').ilike('name', `%${q}%`).limit(6)
+  if (error) throw new Error(error.message)
+  return (data ?? []) as OrgMatch[]
+}
+
+/**
+ * Say you run an organization. The server verifies the claim on the spot
+ * when your sign-in email is at its website's domain (Shift 01563);
+ * otherwise it stays pending. Returns the claim's status. An existing claim
+ * keeps its status.
+ */
+export async function claimOrg(organizerId: string): Promise<'verified' | 'pending'> {
+  const { data: s } = await supabase.auth.getSession()
+  const uid = s.session?.user.id
+  if (!uid) throw new Error('Not signed in')
+  const { data: had } = await supabase.from('event_organizer_admins').select('status').eq('organizer_id', organizerId).eq('user_id', uid).maybeSingle()
+  if (had) return had.status === 'verified' ? 'verified' : 'pending'
+  const { data, error } = await supabase.from('event_organizer_admins')
+    .insert({ organizer_id: organizerId, user_id: uid, status: 'pending' }).select('status').single()
+  if (error && error.code !== '23505') throw new Error(error.message)
+  track('organizer_org_claimed', { organizer_id: organizerId, status: data?.status ?? 'pending' })
+  return data?.status === 'verified' ? 'verified' : 'pending'
+}
+
+/** Add an organization that isn't on the calendar yet, and claim it. */
+export async function createOrg(name: string, url: string): Promise<{ id: string; status: 'verified' | 'pending' }> {
+  const { data: s } = await supabase.auth.getSession()
+  const uid = s.session?.user.id
+  if (!uid) throw new Error('Not signed in')
+  const id = name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 80)
+  if (!id) throw new Error('Give the organization a name')
+  const { error } = await supabase.from('event_organizers')
+    .insert({ id, name: name.trim(), url: url.trim() || null, created_by: uid, status: 'pending_review' })
+  if (error) {
+    if (error.code === '23505') throw new Error(`${name.trim()} is already listed. Search for it above.`)
+    throw new Error(error.message)
+  }
+  track('organizer_org_created', { organizer_id: id })
+  return { id, status: await claimOrg(id) }
+}
 
 export async function saveHostPage(organizerId: string, profile: Record<string, unknown>) {
   const r = await rpc<Record<string, unknown>>('update_event_organizer_profile', { p_organizer_id: organizerId, p_profile: profile })

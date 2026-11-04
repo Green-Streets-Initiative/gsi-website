@@ -17,7 +17,7 @@ export function sentLine(r: SendResult | null | undefined): string {
   if (r.emailed) parts.push(`${r.emailed} by email`)
   return r.notified > 0
     ? `Sent to ${plural(r.notified, 'person', 'people')}${parts.length ? ` (${parts.join(', ')})` : ''}, and posted on the ride page.`
-    : 'Posted on the ride page. Nobody had answered for this date yet, so no one was notified.'
+    : 'Posted on the ride page. Nobody else is on the ride yet, so no one was notified.'
 }
 
 /**
@@ -25,19 +25,24 @@ export function sentLine(r: SendResult | null | undefined): string {
  * ride-update function, so it reaches app members by push and web guests by
  * email, and shows on the ride page. A dry run first says how many it reaches.
  */
-export default function PostUpdate({ seriesId, dates, onPosted, autoFocus }: {
+export default function PostUpdate({ seriesId, dates, onPosted, autoFocus, initialKind, initialNote = '' }: {
   seriesId: string
   dates: DetailDate[]
   onPosted: () => void
   autoFocus?: boolean
+  /** A ready-made message, as after a break ends ("Tell everyone it's back?"). */
+  initialKind?: Kind
+  initialNote?: string
 }) {
   const today = todayKey()
   const open = useMemo(() => dates.filter((d) => d.status === 'scheduled' && d.date >= today), [dates, today])
-  const [kind, setKind] = useState<Kind>('on')
-  const [picked, setDateId] = useState<string>(open[0]?.id ?? '')
+  // With no open date, "It's on" can't be picked: start on a note.
+  const [kind, setKind] = useState<Kind>(initialKind ?? (open.length ? 'on' : 'note'))
+  // A whole-ride note starts on "The whole ride"; a date update on the next date.
+  const [picked, setDateId] = useState<string>(initialKind === 'note' ? '' : (open[0]?.id ?? ''))
   // A picked date that has since been cancelled falls back to the next open one.
   const dateId = picked === '' || open.some((d) => d.id === picked) ? picked : (open[0]?.id ?? '')
-  const [note, setNote] = useState('')
+  const [note, setNote] = useState(initialNote)
   const [reach, setReach] = useState<number | null>(null)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
@@ -109,8 +114,8 @@ export default function PostUpdate({ seriesId, dates, onPosted, autoFocus }: {
           <Megaphone className="h-4 w-4" aria-hidden />Post update
         </Button>
         <span className="text-[14px] text-(--ev-ink-75)">
-          {reach == null ? 'Goes to everyone who said Going or Maybe, and onto the ride page.'
-            : reach === 0 ? 'Nobody has answered yet; it goes on the ride page.'
+          {reach == null ? "Goes to everyone on the ride, except people who said they can't make it, and onto the ride page."
+            : reach === 0 ? 'Nobody else is on the ride yet; it goes on the ride page.'
               : `Reaches ${plural(reach, 'person', 'people')} by app or email, and the ride page.`}
         </span>
       </div>

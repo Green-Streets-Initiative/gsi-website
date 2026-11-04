@@ -2,6 +2,7 @@ import 'server-only'
 
 import { unstable_cache } from 'next/cache'
 import {
+  buildAvoidingRoute,
   buildReachRow,
   laneIndexAlong,
   crashesFor,
@@ -9,8 +10,12 @@ import {
   nextMonday830,
   queryWalkRoute,
   REACH_ROW_VERSION,
+  type AvoidingRoute,
   type ReachRow,
 } from './reach'
+import { bikePerkPool } from './bike-perks'
+import { decodePolyline } from '@/lib/geo/polyline'
+import { perksAlong, type PerkStop } from '@/lib/bike-perks'
 
 /**
  * "Where do you want to go?" — one destination the visitor picked, answered
@@ -54,7 +59,7 @@ export async function getTrip(
    *  morning (next Monday 8:30), the comparison the web map has always shown;
    *  the Shift assistant passes the time someone asked about. */
   departAt?: string,
-): Promise<ReachRow> {
+): Promise<TripRow> {
   // Round to ~110 m so a neighborhood's first visitor pays for everyone,
   // matching the reach cache's convention.
   const f = { lat: round3(from.lat), lng: round3(from.lng) }
@@ -66,7 +71,7 @@ export async function getTrip(
   const key = `${REACH_ROW_VERSION}:${f.lat},${f.lng}|${t.lat},${t.lng}${depart ? `@${depart}` : ''}`
 
   const cached = cache.get(key)
-  if (cached && cached.expires > Date.now()) return { ...cached.row, name }
+  if (cached && cached.expires > Date.now()) return { ...cached.row, name, bike_perks: await perksOnTheWay(cached.row) }
 
   const row = await durableTrip(f, t, depart)
 
@@ -77,7 +82,22 @@ export async function getTrip(
   cache.set(key, { row, expires: Date.now() + CACHE_TTL_MS })
   // The place NAME is the visitor's own text; it never enters the cache key
   // or the cached row, so one person's search can't relabel another's.
-  return { ...row, name }
+  return { ...row, name, bike_perks: await perksOnTheWay(row) }
+}
+
+/** A planned trip plus the Bicycle Benefits members within a block of its
+ *  bike route (Keith 2026-11-01), riding order. Matched outside the trip's
+ *  cache so the day's member list applies to every trip. */
+export type TripRow = ReachRow & { bike_perks: PerkStop[] }
+
+async function perksOnTheWay(row: ReachRow): Promise<PerkStop[]> {
+  if (!row.bike_polyline) return []
+  try {
+    const line = decodePolyline(row.bike_polyline).map(([lat, lng]) => ({ lat, lng }))
+    return perksAlong(await bikePerkPool(), line, null, { cap: 3 })
+  } catch {
+    return []
+  }
 }
 
 const durableTrip = unstable_cache(computeTrip, [`nearby-trip-${REACH_ROW_VERSION}`], {
@@ -113,6 +133,49 @@ async function computeTrip(
   )
 }
 
+const avoidCache = new Map<string, { result: { route: AvoidingRoute | null }; expires: number }>()
+
+/**
+ * A trip's bike route re-planned around the streets someone asked to avoid
+ * (Around You v2), and/or sent through one place they picked. Cached a day
+ * per instance, keyed on the streets' geometry and the place; a Google
+ * failure (null) is never kept.
+ */
+export async function getTripAvoiding(
+  from: { lat: number; lng: number },
+  to: { lat: number; lng: number },
+  avoid: string[][],
+  names: string[] = [],
+  through: { lat: number; lng: number } | null = null,
+): Promise<{ route: AvoidingRoute | null; avoided_towns?: (string | null)[] } | null> {
+  const f = { lat: round3(from.lat), lng: round3(from.lng) }
+  const t = { lat: round3(to.lat), lng: round3(to.lng) }
+  // The place to the nearest ~10 m: a street corner, not a neighborhood
+  const via = through ? { lat: round4(through.lat), lng: round4(through.lng) } : null
+  const key = `${REACH_ROW_VERSION}:${f.lat},${f.lng}|${t.lat},${t.lng}|${fnv(avoid.map(g => g.join(' ')).join('|') + '#' + names.join('|'))}${via ? `|via:${via.lat},${via.lng}` : ''}`
+  const cached = avoidCache.get(key)
+  if (cached && cached.expires > Date.now()) return cached.result
+
+  const [laneIndex, crashes] = await Promise.all([
+    laneIndexAlong(f, via ? [via, t] : [t]),
+    crashesFor(f.lat, f.lng),
+  ])
+  const result = await buildAvoidingRoute(f, t, avoid, laneIndex, crashes, names, via)
+  if (!result) return null
+  if (avoidCache.size >= CACHE_MAX_ENTRIES) {
+    const oldest = avoidCache.keys().next().value
+    if (oldest) avoidCache.delete(oldest)
+  }
+  avoidCache.set(key, { result, expires: Date.now() + CACHE_TTL_MS })
+  return result
+}
+
+function fnv(s: string): string {
+  let h = 2166136261
+  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = (h * 16777619) >>> 0 }
+  return h.toString(36)
+}
+
 /** The walking route between two points, cached a day like the trip itself.
  *  A failed lookup throws inside the cache so it isn't kept, and reads as null. */
 const durableWalk = unstable_cache(
@@ -139,4 +202,8 @@ function quarterHour(iso: string): string {
 
 function round3(n: number): number {
   return Math.round(n * 1000) / 1000
+}
+
+function round4(n: number): number {
+  return Math.round(n * 10000) / 10000
 }

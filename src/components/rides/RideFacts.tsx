@@ -74,12 +74,12 @@ export function rideFacts(ride: PublicRide, miles: number | null, ascentFt: numb
   return { stats, level, policies, audience }
 }
 
-export default function RideFacts({ ride, miles, ascentFt }: { ride: PublicRide; miles: number | null; ascentFt: number | null }) {
+export default function RideFacts({ ride, miles, ascentFt, className = 'mt-5' }: { ride: PublicRide; miles: number | null; ascentFt: number | null; className?: string }) {
   const { stats, level, policies, audience } = rideFacts(ride, miles, ascentFt)
   if (stats.length === 0 && !level && policies.length === 0 && audience.length === 0) return null
 
   return (
-    <div className="mt-5 overflow-hidden rounded-2xl border border-(--ev-line) bg-(--ev-card)">
+    <div className={`${className} overflow-hidden rounded-2xl border border-(--ev-line) bg-(--ev-card)`}>
       {stats.length > 0 && (
         <dl className="grid grid-cols-2 sm:grid-cols-4">
           {stats.map((s, i) => (

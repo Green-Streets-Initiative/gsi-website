@@ -11,7 +11,6 @@ import {
   type GoalOnboardingLike,
   type ParticipationPace,
 } from '@/lib/employer/goal-pace'
-import { formatCo2 } from '@/lib/impact-range'
 
 export const runtime = 'nodejs'
 export const maxDuration = 120
@@ -50,6 +49,12 @@ type DashboardRow = {
   /** The portal's CO₂e figure (per-mode factors and the rider's car). The
    * legacy co2_avoided_kg above is a flat 0.404 kg a mile, about 3x higher. */
   co2_avoided_kg_v2?: number
+  /** Share of ground travel emissions shifted (Shift migration 01591): CO₂
+   * avoided over CO₂ had every ground mile been driven alone. The same figure
+   * the portal and the app show. Null with no ground miles. */
+  emissions_shifted_pct?: number | null
+  /** The 7 days before this window, from the same call. */
+  prior_period?: { emissions_shifted_pct?: number | null }
   mode_breakdown: Array<{ mode: string; trip_count: number }>
   shift_rate_trip_pct: number
   /** Trips not driven alone (carpools count; Shift migration 01160). Absent
@@ -73,10 +78,9 @@ function escapeHtml(str: string): string {
     .replace(/"/g, '&quot;')
 }
 
-/** CO₂e avoided, the same figure the portal's Impact page shows (UX-E1).
- *  null when the RPC didn't send it: the email says "—", never a made-up 0. */
-function co2Kg(row: DashboardRow | null): number | null {
-  const v = row?.co2_avoided_kg_v2
+/** A share in percent, or null when the RPC didn't send one: the email
+ *  says "—", never a made-up 0. */
+function pctOrNull(v: number | null | undefined): number | null {
   return typeof v === 'number' && Number.isFinite(v) ? v : null
 }
 
@@ -171,8 +175,8 @@ function guaranteedPrizeLines(p: GuaranteedDigestPrize): string[] {
 
 /**
  * Every employer challenge running now or ended this week: who's counting,
- * this week vs last, the top three, and each reward's standing. Admins see
- * names here (the portal shows members anyway).
+ * this week vs last, and each reward's standing. No member names in the
+ * email; the portal's standings page has them.
  */
 function buildChallengeSection(challenges: DigestChallenge[]): string {
   const cards = challenges.flatMap((c) => {
@@ -187,9 +191,7 @@ function buildChallengeSection(challenges: DigestChallenge[]): string {
         `<strong>${t.counting} of ${t.members}</strong> ${t.members === 1 ? 'colleague' : 'colleagues'} counting, ${plural(t.total_counted, 'active trip', 'active trips')} so far.`,
       )
       lines.push(`${plural(t.this_week, 'active trip', 'active trips')} this week, ${t.last_week} last week ${delta(t.this_week, t.last_week)}.`)
-      if (t.top.length > 0) {
-        lines.push(`Top so far: ${t.top.map((m) => `${escapeHtml(m.name)} (${m.counted})`).join(', ')}.`)
-      }
+      // No names here (Keith 2026-10-31): the portal's standings page has them.
       for (const p of e.other_prizes) {
         const kind = p.award_mode === 'drawing' ? 'drawing' : 'leaderboard reward'
         lines.push(
@@ -261,7 +263,7 @@ function buildDigestHtml(opts: {
   groupName: string
   groupLogoUrl: string | null
   thisWeek: DashboardRow
-  priorWeek: { active_trips: number; miles: number; co2: number | null; shift_rate: number }
+  priorWeek: { active_trips: number; miles: number; emissions_pct: number | null; shift_rate: number }
   newMemberCount: number
   showNewMembers: boolean
   milestone: number | null
@@ -273,6 +275,7 @@ function buildDigestHtml(opts: {
   goalSection?: string
 }): string {
   const { groupName, groupLogoUrl, thisWeek, priorWeek, newMemberCount, showNewMembers, milestone, showMilestone } = opts
+  const emissionsPct = pctOrNull(thisWeek.emissions_shifted_pct)
 
   const newMembersSection = showNewMembers && newMemberCount > 0
     ? `<tr><td style="padding:0 32px 24px;">
@@ -327,9 +330,9 @@ function buildDigestHtml(opts: {
           ${statCell('Active trips', String(thisWeek.active_trips_this_period), delta(thisWeek.active_trips_this_period, priorWeek.active_trips))}
           ${statCell('Miles shifted', thisWeek.miles_shifted.toFixed(1), delta(thisWeek.miles_shifted, priorWeek.miles))}
           ${statCell(
-            'CO&#8322;e avoided',
-            co2Kg(thisWeek) == null ? '—' : formatCo2(co2Kg(thisWeek)!),
-            co2Kg(thisWeek) == null || priorWeek.co2 == null ? '—' : delta(co2Kg(thisWeek)!, priorWeek.co2),
+            'Ground travel emissions shifted',
+            emissionsPct == null ? '—' : Math.round(emissionsPct) + '%',
+            emissionsPct == null || priorWeek.emissions_pct == null ? '—' : deltaPts(emissionsPct, priorWeek.emissions_pct),
           )}
           ${statCell('Shift Rate', Math.round(thisWeek.shift_rate_trip_pct) + '%', deltaPts(thisWeek.shift_rate_trip_pct, priorWeek.shift_rate))}
         </tr>
@@ -382,8 +385,12 @@ function buildLaunchProgressHtml(opts: {
   launchDate: string | null
   /** Pace verdict and next step under the progress line (goalPaceHtml). */
   paceHtml?: string
+  /** The group's next or running challenge, when it has one. */
+  challenge: { name: string; starts_at: string; ends_at: string } | null
+  /** Plan tier (src/lib/employer/plans.ts); the challenge step shows only where rewards are included. */
+  tier: string | null
 }): string {
-  const { groupName, groupLogoUrl, memberCount, inviteCode, headcount, targetSignupPct, launchDate } = opts
+  const { groupName, groupLogoUrl, memberCount, inviteCode, headcount, targetSignupPct, launchDate, challenge, tier } = opts
 
   const goalCount =
     headcount && targetSignupPct ? Math.ceil((headcount * targetSignupPct) / 100) : null
@@ -394,12 +401,19 @@ function buildLaunchProgressHtml(opts: {
     ? `<p style="margin:8px 0 0;font-size:13px;color:#5A5C6E;">Your launch date: <strong>${escapeHtml(launchDate)}</strong></p>`
     : ''
 
+  const shortDate = (iso: string) =>
+    new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'America/New_York' })
+  const challengeStep = challenge
+    ? `Your <strong>${escapeHtml(challenge.name)}</strong> runs ${shortDate(challenge.starts_at)} to ${shortDate(challenge.ends_at)}.`
+    : tier === 'standard' || tier === 'premium'
+      ? `Line up a launch challenge with weekly prize drawings in <a href="${PORTAL_URL}/challenges" style="color:#2D6A4F;">Challenges</a>.`
+      : null
   const steps = [
     inviteCode
-      ? `Share your invite code <span style="font-family:monospace;font-weight:700;">${escapeHtml(inviteCode)}</span> — the <a href="${PORTAL_URL}/employees?view=share" style="color:#2D6A4F;">Invite &amp; share</a> page has a QR poster, email templates, and a printable flyer.`
+      ? `Share your invite code <span style="font-family:monospace;font-weight:700;">${escapeHtml(inviteCode)}</span>: the <a href="${PORTAL_URL}/employees?view=share" style="color:#2D6A4F;">Invite &amp; share</a> page has a QR poster, email templates, and a printable flyer.`
       : `Open the <a href="${PORTAL_URL}/employees?view=share" style="color:#2D6A4F;">Invite &amp; share</a> page for a QR poster, email templates, and a printable flyer.`,
-    `Ask a leader (not HR) to send the announcement email — it's the single biggest driver of sign-ups.`,
-    `Line up a launch challenge with weekly prize drawings in <a href="${PORTAL_URL}/challenges" style="color:#2D6A4F;">Challenges</a>.`,
+    `Ask a leader (not HR) to send the announcement email.`,
+    ...(challengeStep ? [challengeStep] : []),
   ]
 
   return `<!DOCTYPE html>
@@ -441,7 +455,7 @@ function buildLaunchProgressHtml(opts: {
   <tr>
     <td style="padding:0 32px 24px;">
       <p style="margin:0;font-size:13px;color:#5A5C6E;line-height:1.6;">
-        Want a hand planning your launch? Just reply — we help every new team get going.
+        Want a hand planning your launch? Just reply. We help every new team get going.
       </p>
     </td>
   </tr>
@@ -504,12 +518,12 @@ function buildRenewalReminderHtml(opts: {
       <p style="margin:0 0 16px;font-size:14px;color:#374151;line-height:1.6;">
         ${escapeHtml(groupName)}'s <strong>${escapeHtml(tierLabel)}</strong> subscription
         (${price}/year) renews on <strong>${escapeHtml(renewalDate)}</strong>. For
-        invoice-billed accounts, we'll send the renewal invoice with Net-30 terms —
+        invoice-billed accounts, we'll send the renewal invoice with Net-30 terms;
         no card will be charged automatically.
       </p>
       <p style="margin:0 0 16px;font-size:14px;color:#374151;line-height:1.6;">
         Nothing to do if you'd like to continue. To make changes or decline renewal,
-        use your portal's Rewards &amp; billing page or just reply to this email
+        use your portal's Billing &amp; rewards page or just reply to this email
         before the renewal date.
       </p>
       <p style="margin:0;font-size:13px;color:#5A5C6E;line-height:1.6;">
@@ -698,6 +712,19 @@ export async function GET(req: Request) {
         skipped.push(group.name)
         continue
       }
+      // The group's next or running challenge, so the checklist names it
+      // instead of asking them to line one up.
+      const { data: nextChallengeRows } = await sb
+        .from('competitions')
+        .select('name, starts_at, ends_at')
+        .eq('group_id', group.id)
+        .eq('event_type', 'employer')
+        .gte('ends_at', new Date().toISOString())
+        .order('starts_at', { ascending: true })
+        .limit(1)
+      const nextChallenge = nextChallengeRows?.[0]
+        ? { name: nextChallengeRows[0].name as string, starts_at: nextChallengeRows[0].starts_at as string, ends_at: nextChallengeRows[0].ends_at as string }
+        : null
       const launchHtml = buildLaunchProgressHtml({
         groupName: group.name,
         groupLogoUrl: group.logo_url ?? null,
@@ -708,6 +735,8 @@ export async function GET(req: Request) {
         targetSignupPct: goal?.type === 'participation' ? goal.targetPct : (onboarding.target_signup_pct ?? null),
         launchDate: onboarding.launch_date ?? null,
         paceHtml,
+        challenge: nextChallenge,
+        tier: (group.tier as string | null) ?? null,
       })
 
       for (const admin of digestRecipients) {
@@ -758,10 +787,10 @@ export async function GET(req: Request) {
       ? {
           active_trips: priorActiveTrips,
           miles: twoWeek.miles_shifted - thisWeek.miles_shifted,
-          co2: co2Kg(twoWeek) == null || co2Kg(thisWeek) == null ? null : co2Kg(twoWeek)! - co2Kg(thisWeek)!,
+          emissions_pct: pctOrNull(thisWeek.prior_period?.emissions_shifted_pct),
           shift_rate: priorTrips > 0 ? (priorShiftedTrips / priorTrips) * 100 : 0,
         }
-      : { active_trips: 0, miles: 0, co2: 0, shift_rate: 0 }
+      : { active_trips: 0, miles: 0, emissions_pct: null, shift_rate: 0 }
 
     // Milestone check (total enrolled members)
     const lastNotified = group.milestone_last_notified ?? 0
@@ -927,7 +956,7 @@ export async function GET(req: Request) {
           prior_week: priorWeek,
           tip: tip?.key ?? null,
           html_bytes: html.length,
-          ...(includeHtml ? { subject: `Your weekly Shift report — ${group.name}`, html } : {}),
+          ...(includeHtml ? { subject: `Your weekly Shift report: ${group.name}`, html } : {}),
         })
         continue
       }
@@ -936,7 +965,7 @@ export async function GET(req: Request) {
         const ok = await sendOrRecord(resend, group.id, 'weekly digest', {
           from: FROM,
           to: admin.email,
-          subject: `Your weekly Shift report — ${group.name}`,
+          subject: `Your weekly Shift report: ${group.name}`,
           html,
           headers: {
             'List-Unsubscribe': `<${PORTAL_URL}/settings>`,
@@ -1009,7 +1038,7 @@ export async function GET(req: Request) {
       if (!allAdmins?.length) continue
 
       const renewalDate = new Date(group.access_ends_at).toLocaleDateString('en-US', {
-        month: 'long', day: 'numeric', year: 'numeric',
+        month: 'long', day: 'numeric', year: 'numeric', timeZone: 'America/New_York',
       })
       const tierLabel =
         (group.tier as string).charAt(0).toUpperCase() + (group.tier as string).slice(1)

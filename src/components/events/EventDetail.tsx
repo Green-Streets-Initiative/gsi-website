@@ -17,12 +17,14 @@ import { withUtm as appUtm } from '@/lib/utm'
 import { EVENT_TYPE_ICONS } from './event-type-icons'
 import {
   type CommunityEvent, type NextUp,
-  getTypeMeta, getTagMeta, formatTime, dateLong, isDeadline, parseEventDate,
+  getTypeMeta, getTagMeta, formatTime, dateLong, dateRangeLong, isDeadline, parseEventDate,
   buildIcs, gcalUrl, directionsUrl,
   eventRideStyle, isNoDrop, isRideEvent, PACE_BAND_LABEL, RIDE_STYLE_LABEL, RIDE_STYLE_BLURB,
   eventImages,
 } from '@/lib/events'
 import EventImageCarousel from './EventImageCarousel'
+import { EventPageAlertSignup } from './EventAlertSignup'
+import { parseEventBody } from '@/lib/event-body'
 import { typeInk, tagInk, rideStyleInk, TINT } from '@/lib/events-tone'
 import { EventsToneProvider, toneClass, useEventsTone, type EventsTone } from './EventsTone'
 import './events-tone.css'
@@ -138,9 +140,11 @@ interface EventDetailProps {
   rideCode?: string | null
   /** The host's page on this site, when they run often enough to have one. */
   hostHref?: string | null
+  /** The town page for the event's address, when that town has one. */
+  town?: { name: string; href: string } | null
 }
 
-export default function EventDetail({ event, nextUp = null, isPast = false, tone = 'dark', hrefBase = '/events', sponsorLinks = {}, roamLinks = [], rideCode = null, hostHref = null }: EventDetailProps) {
+export default function EventDetail({ event, nextUp = null, isPast = false, tone = 'dark', hrefBase = '/events', sponsorLinks = {}, roamLinks = [], rideCode = null, hostHref = null, town = null }: EventDetailProps) {
   const meta = getTypeMeta(event.event_type)
   const Icon = EVENT_TYPE_ICONS[meta.icon] ?? Calendar
   // The type's color for this surface: the navy-tuned one, or its ink on cream.
@@ -154,7 +158,8 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
     if (event.pace && PACE_BAND_LABEL[event.pace]) rideFacts.push(PACE_BAND_LABEL[event.pace])
     if (event.distance_text) rideFacts.push(event.distance_text)
   }
-  const evDate = parseEventDate(event.event_date)
+  // "November 1 to 30, 2026" for a multi-day event (Shift 01557).
+  const dateText = dateRangeLong(event)
   // Deadline-style events (contests) are places to enter, not places to go —
   // no map, no directions.
   const deadline = isDeadline(event.event_type)
@@ -232,7 +237,11 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
 
   const timeStr = event.event_time ? formatTime(event.event_time) : null
   const endTimeStr = event.event_end_time ? formatTime(event.event_end_time) : null
-  const location = [event.location_name, event.location_address].filter(Boolean).join(', ')
+  // Some listings carry the street address as the place name too; print it once.
+  const sameAsName = (a: string | null) =>
+    !!a && !!event.location_name && a.trim().toLowerCase() === event.location_name.trim().toLowerCase()
+  const address = sameAsName(event.location_address) ? null : event.location_address
+  const location = [event.location_name, address].filter(Boolean).join(', ')
 
   return (
     <EventsToneProvider tone={tone} hrefBase={hrefBase}>
@@ -260,8 +269,8 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
                   </div>
                   <div className="p-4">
                     <p className="text-[14px] font-semibold text-(--ev-ink)">{event.location_name}</p>
-                    {event.location_address && (
-                      <p className="mt-0.5 text-[13px] text-(--ev-ink-75)">{event.location_address}</p>
+                    {address && (
+                      <p className="mt-0.5 text-[13px] text-(--ev-ink-75)">{address}</p>
                     )}
                     <a
                       href={directionsUrl(event)}
@@ -301,7 +310,7 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
                 </p>
                 <p className="text-[13px] text-(--ev-ink-75)">
                   {deadline && 'Entry deadline: '}
-                  {dateLong(evDate)}
+                  {dateText}
                   {timeStr && ` · ${timeStr}`}
                   {!deadline && endTimeStr && ` – ${endTimeStr}`}
                 </p>
@@ -378,7 +387,7 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
                   onClick={() => trackDirections('details')}
                 >
                   <MapPin size={15} />
-                  Getting there
+                  Directions
                 </a>
               )}
 
@@ -433,8 +442,21 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
 
             {/* Description */}
             {event.body && (
-              <div className="mb-8 text-[15px] leading-relaxed text-(--ev-ink-75) whitespace-pre-line">
-                {event.body}
+              <div className="mb-8 text-[15px] leading-relaxed text-(--ev-ink-75)">
+                {parseEventBody(event.body).map((line, i) =>
+                  line.kind === 'blank' ? (
+                    <div key={i} className="h-3" aria-hidden />
+                  ) : line.kind === 'heading' ? (
+                    <p key={i} className="font-semibold text-(--ev-ink)">{line.text}</p>
+                  ) : (
+                    <p key={i} className={line.kind === 'bullet' ? 'pl-4 -indent-4' : undefined}>
+                      {line.kind === 'bullet' && '•\u00a0\u00a0'}
+                      {line.parts.map((part, j) =>
+                        part.bold ? <strong key={j} className="font-semibold text-(--ev-ink)">{part.text}</strong> : part.text,
+                      )}
+                    </p>
+                  ),
+                )}
               </div>
             )}
 
@@ -462,7 +484,7 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
                 <Calendar size={16} className="mt-0.5 shrink-0 text-(--ev-ink-40)" />
                 <div>
                   <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-(--ev-ink-70)">{deadline ? 'Entry deadline' : 'Date'}</p>
-                  <p className="text-[14px] text-(--ev-ink-80)">{dateLong(evDate)}</p>
+                  <p className="text-[14px] text-(--ev-ink-80)">{dateText}</p>
                 </div>
               </div>
               {timeStr && (
@@ -586,12 +608,30 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
               ))}
             </div>
 
-            {/* App invitation. Event pages are the site's top organic click class
-                and, until 2026-09, the only major landing class with no way into
-                Shift (0 of 36 organic event visits reached the app). Contests are
-                places to enter, not to travel to, so they skip it.
-                Experiment exp-2026-09-8. */}
-            {!deadline && STORE_LIVE && (
+            {/* The weekly email, set to this event's kind and town (calendar
+                growth plan bet 1): someone who came for one ride is the person
+                most likely to want next week's. Past events too: a missed ride
+                is the best moment to offer the next one. */}
+            <EventPageAlertSignup event={event} className="mt-6 max-w-[440px]" />
+
+            {/* Getting there. Event pages are the site's top organic click class.
+                The app invitation that sat here (exp-2026-09-8) reached the app
+                for 0.6% of search visitors, against 6.3% from town pages, so an
+                event in a town with a page links there instead, where Shift is
+                pitched in context (exp-2026-11-1). Other events keep the card.
+                Contests are places to enter, not to travel to, so they skip both.
+                The map buttons say "Directions" so this is the page's only "Getting there". */}
+            {!deadline && town ? (
+              <p className="mt-6 text-[14px] text-(--ev-ink-80)">
+                <Link
+                  href={town.href}
+                  className="font-semibold text-(--ev-accent) hover:underline"
+                  onClick={() => posthog.capture('event_town_click', eventProps({ town: town.name }))}
+                >
+                  Getting there: walking, biking and transit around {town.name}
+                </Link>
+              </p>
+            ) : !deadline && STORE_LIVE ? (
               <div className="mt-6 rounded-[14px] border border-(--ev-line-strong) px-5 py-4">
                 <p className="text-[14px] font-semibold text-(--ev-ink)">Walking, biking or taking transit there?</p>
                 <p className="mt-1 text-[13px] leading-relaxed text-(--ev-ink-80)">
@@ -606,7 +646,7 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
                   className="mt-3.5 [&>a]:max-[420px]:basis-full"
                 />
               </div>
-            )}
+            ) : null}
 
             <div className="mt-8 border-t border-(--ev-line) pt-5">
               {/* A ride planned in Shift is the organizer's own listing, not one built from public posts. */}
@@ -671,7 +711,7 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
             onClick={() => trackDirections('phone_bar')}
           >
             <MapPin size={16} />
-            Getting there
+            Directions
           </a>
         ) : null}
         <div className="relative">

@@ -32,8 +32,10 @@ export function todayEt(): string {
   return new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' })
 }
 
-export function isPastEvent(eventDate: string): boolean {
-  return eventDate < todayEt()
+/** Past once its last day has gone by: a multi-day event (Shift 01557) is current until event_end_date. */
+export function isPastEvent(eventDate: string, eventEndDate?: string | null): boolean {
+  const lastDay = eventEndDate && eventEndDate > eventDate ? eventEndDate : eventDate
+  return lastDay < todayEt()
 }
 
 interface NextRow {

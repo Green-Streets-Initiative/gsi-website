@@ -22,7 +22,19 @@ import { useNearbyTone } from './NearbyTone'
  * turn-by-turn. The Advisor is still one tap away inside that result, where
  * it belongs: for the trips you actually repeat.
  */
-export default function TripPlanner({ center, onPlanned, partnerSlug, autoFocus = false, initialDest = null }: {
+/** One planned trip from /api/nearby/trip, as a reach row. Also used by a
+ *  tapped bike perk (NearbyPerks), which plans the trip there in place. */
+export async function fetchTripRow(center: { lat: number; lng: number }, to: { lat: number; lng: number }, name: string): Promise<ReachRow> {
+  const res = await fetch(
+    `/api/nearby/trip?from=${center.lat},${center.lng}&to=${to.lat},${to.lng}&name=${encodeURIComponent(name)}`
+  )
+  if (!res.ok) throw new Error(`trip ${res.status}`)
+  const { row } = await res.json()
+  if (!row) throw new Error('trip empty')
+  return row as ReachRow
+}
+
+export default function TripPlanner({ center, onPlanned, partnerSlug, autoFocus = false, initialDest = null, bare = false }: {
   center: { lat: number; lng: number }
   /** The planned row, ready to be prepended to the list and selected. */
   onPlanned: (row: ReachRow, prefer?: 'transit' | 'bike') => void
@@ -31,6 +43,8 @@ export default function TripPlanner({ center, onPlanned, partnerSlug, autoFocus 
   autoFocus?: boolean
   /** ?to=&toName= in the page link: plan this trip once, on arrival. */
   initialDest?: { lat: number; lng: number; name: string; mode?: 'transit' | 'bike' } | null
+  /** Around You v2: just the search box ("Where to?"), no card or intro. */
+  bare?: boolean
 }) {
   const tr = useNearbyT()
   const tone = useNearbyTone()
@@ -43,20 +57,16 @@ export default function TripPlanner({ center, onPlanned, partnerSlug, autoFocus 
     // address — "Porter Square", not "Porter Square, Cambridge, MA 02140".
     const name = place.address.split(',')[0]?.trim() || place.address
     try {
-      const res = await fetch(
-        `/api/nearby/trip?from=${center.lat},${center.lng}&to=${place.lat},${place.lng}&name=${encodeURIComponent(name)}`
-      )
-      if (!res.ok) throw new Error(`trip ${res.status}`)
-      const { row } = await res.json()
+      const row = await fetchTripRow(center, place, name)
       posthog.capture('snapshot_trip_planned', {
-        transit: row?.transit_minutes ?? null,
-        bike: row?.bike_minutes ?? null,
+        transit: row.transit_minutes ?? null,
+        bike: row.bike_minutes ?? null,
         via,
         ...(partnerSlug ? { partner: partnerSlug } : {}),
       })
       setStatus('idle')
       setAddress('')
-      onPlanned(row as ReachRow, via === 'link' ? initialDest?.mode : undefined)
+      onPlanned(row, via === 'link' ? initialDest?.mode : undefined)
     } catch {
       setStatus('error')
     }
@@ -70,6 +80,24 @@ export default function TripPlanner({ center, onPlanned, partnerSlug, autoFocus 
   // Once per page load — the link names one trip
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialDest])
+
+  if (bare) {
+    return (
+      <div>
+        <AddressAutocomplete
+          value={address}
+          onChange={(a) => { setAddress(a); if (status === 'error') setStatus('idle') }}
+          onPlaceSelected={(p) => plan(p)}
+          variant={tone === 'dark' ? 'dark' : 'light'}
+          label={null}
+          placeholder={tr('v2.where_to')}
+          autoFocus={autoFocus}
+        />
+        {status === 'loading' && <p className="mt-1.5 text-[0.875rem] text-(--nb-ink-80)">{tr('trip.working')}</p>}
+        {status === 'error' && <p className="mt-1.5 text-[0.875rem] text-(--nb-ink-80)">{tr('trip.error')}</p>}
+      </div>
+    )
+  }
 
   return (
     <div className="mt-2 rounded-xl border border-(--nb-accent-line) bg-[image:var(--nb-promo-bg)] px-4 py-4">

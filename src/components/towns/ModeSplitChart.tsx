@@ -1,6 +1,6 @@
 'use client'
 
-import { Bicycle, Bus, PersonSimpleWalk, Train } from '@phosphor-icons/react'
+import { Bicycle, Bus, Car, PersonSimpleWalk, Train, UsersThree } from '@phosphor-icons/react'
 import { SectionHeading } from '@/components/org/Section'
 import type { TownPageStats } from '@/lib/towns/queries'
 
@@ -10,8 +10,13 @@ import type { TownPageStats } from '@/lib/towns/queries'
  * trips-vs-distance contrast should read directly from the chart, no legend
  * decoding. Percent labels render inside segments wide enough to hold them.
  *
- * Palette on cream: forest, teal, navy, gold. Percent labels are white on the
- * dark fills and navy on teal and gold; teal and gold are only ever fills.
+ * Palette on cream: forest, teal, navy, gold, blue, slate. Percent labels are
+ * white on the dark fills and navy on teal, gold and slate; those three are
+ * only ever fills.
+ *
+ * Carpool and driving sit after the active modes (Keith 2026-10-29) so people
+ * who drive see themselves in the picture; the page's headline stats and
+ * Shift Rate stay active-only.
  */
 
 const MODE_META: Record<string, { label: string; color: string; ink: string; Icon: typeof Bicycle }> = {
@@ -19,6 +24,8 @@ const MODE_META: Record<string, { label: string; color: string; ink: string; Ico
   bike: { label: 'Biking & scooting', color: '#52B788', ink: '#191A2E', Icon: Bicycle },
   bus: { label: 'Bus', color: '#EDB93C', ink: '#191A2E', Icon: Bus },
   train: { label: 'Train', color: '#191A2E', ink: '#FFFFFF', Icon: Train },
+  carpool: { label: 'Carpool', color: '#2966E5', ink: '#FFFFFF', Icon: UsersThree },
+  drive: { label: 'Driving', color: '#B4B7C9', ink: '#191A2E', Icon: Car },
 }
 
 function StackedBar({
@@ -34,7 +41,7 @@ function StackedBar({
   if (total === 0) return null
   return (
     <div>
-      <p className="mb-2 text-[12px] font-semibold uppercase tracking-[0.14em] text-forest">{label}</p>
+      <p className="mb-2 text-[13px] font-semibold uppercase tracking-[0.14em] text-forest">{label}</p>
       <div className="flex h-10 overflow-hidden rounded-[8px]">
         {rows.map((r) => {
           const share = r[field] / total
@@ -70,14 +77,14 @@ export default function ModeSplitChart({ stats, townName }: { stats: TownPageSta
     <div>
       <SectionHeading
         title={`How ${townName} moves`}
-        lede={`Active trips and miles so far in ${new Date().toLocaleDateString('en-US', { month: 'long' })}, by mode.`}
+        lede={`Trips and miles neighbors logged so far in ${new Date().toLocaleDateString('en-US', { month: 'long' })}, by mode.`}
       />
       <div className="space-y-6">
         <StackedBar label="Share of trips" rows={rows} field="trips" />
         <StackedBar label="Share of miles" rows={rows} field="miles" />
 
         {/* Per-mode key with raw numbers — doubles as the color key */}
-        <dl className="grid grid-cols-2 gap-x-6 gap-y-4 border-t border-navy/15 pt-5 md:grid-cols-4">
+        <dl className="grid grid-cols-2 gap-x-6 gap-y-4 border-t border-navy/15 pt-5 md:grid-cols-3">
           {rows.map((r) => {
             const meta = MODE_META[r.mode_group]
             if (!meta) return null
@@ -88,8 +95,9 @@ export default function ModeSplitChart({ stats, townName }: { stats: TownPageSta
                 </span>
                 <span className="min-w-0">
                   <dt className="text-[14px] font-semibold text-navy">{meta.label}</dt>
-                  <dd className="text-[13px] tabular-nums text-ink-soft">
-                    {r.trips.toLocaleString()} trips · {r.miles.toLocaleString()} mi
+                  <dd className="text-[14px] tabular-nums text-ink-soft">
+                    <span className="whitespace-nowrap">{r.trips.toLocaleString()} trips</span> ·{' '}
+                    <span className="whitespace-nowrap">{r.miles.toLocaleString()} mi</span>
                   </dd>
                 </span>
               </div>

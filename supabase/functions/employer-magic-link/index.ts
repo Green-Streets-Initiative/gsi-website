@@ -160,7 +160,7 @@ serve(async (req: Request) => {
     .from("group_admins")
     .select("group_id, groups!inner(id, name, status)")
     .eq("email", email)
-    .in("groups.status", ["active", "cancelled"])
+    .in("groups.status", ["active", "cancelled", "paused"])
     .limit(1)
     .maybeSingle();
 

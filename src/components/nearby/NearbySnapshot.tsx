@@ -9,7 +9,7 @@ import type { BluebikeStationLive, MBTAStopLive } from '@/lib/wayfinding/types'
 import { fetchBikeShareDocks, fetchMBTAStops, fetchTrainStops, fetchShuttleStops } from '@/lib/nearby/live-data'
 import { fetchNearbyAlertsAndClosures, type SurfacedAlert, type NearbyPromo } from '@/lib/nearby/alerts'
 import { round3, parseSnapshotParams, parseTripDest, buildShareUrl, stickyParams, isOutsideArea } from '@/lib/nearby/share'
-import { buildAppHref, isNewRoutesContext } from '@/lib/nearby/campaign'
+import { buildAppHref, fetchNewRoutesOpen, isNewRoutesContext } from '@/lib/nearby/campaign'
 import { parsePartnerSlug, fetchPartnerClient, type NearbyPartner } from '@/lib/nearby/partner'
 import { resolvePlaceLabel, combinePlaceLabel, splitPlaceLabel } from '@/lib/nearby/neighborhood'
 import { fetchPopularBikeStreets } from '@/lib/nearby/popularity'
@@ -177,10 +177,16 @@ export default function NearbySnapshot({ tone = 'dark' }: { tone?: NearbyTone } 
   // partner's community. SSR renders the plain page; this enhances in.
   const [newRoutes, setNewRoutes] = useState(false)
   const [appHref, setAppHref] = useState('/shift')
+  // A context alone is not enough: partner links outlive the sign-up window
+  // in welcome emails and packets, so the offer also has to still be open.
   useEffect(() => {
     if (!partnerResolved) return
-    setNewRoutes(isNewRoutesContext(window.location.search, partner?.campaign))
-    setAppHref(buildAppHref(window.location.search, partner?.campaign))
+    const search = window.location.search
+    setAppHref(buildAppHref(search, partner?.campaign))
+    if (!isNewRoutesContext(search, partner?.campaign)) return
+    let cancelled = false
+    fetchNewRoutesOpen().then(open => { if (!cancelled) setNewRoutes(open) })
+    return () => { cancelled = true }
   }, [partnerResolved, partner])
 
   /** Single entry point for a chosen location — rounds coords, updates the

@@ -409,8 +409,9 @@ export interface AdvisorResult {
   /** The engine's answer, untouched, so nothing it adds is lost on the way through. */
   engine: Record<string, unknown>
   /** T plus a shuttle Google leaves out (the Grid from Alewife, the LINK to
-   *  Sullivan): ones this reader may ride and faster than the T alone. The
-   *  page times shuttle-only rows itself (fetchShuttleLines). */
+   *  Sullivan): ones this reader may ride, on a timetable, and no more than
+   *  5 minutes slower than the T alone. The page times shuttle-only rows
+   *  itself (fetchShuttleLines). */
   shuttle_transfers?: AdvisorShuttleTransfer[]
 }
 

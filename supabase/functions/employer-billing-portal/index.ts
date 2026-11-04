@@ -32,7 +32,7 @@ serve(async (req: Request) => {
     return jsonResponse({ error: "Missing bearer token" }, 401);
   }
 
-  let body: { return_url?: unknown; flow?: unknown };
+  let body: { return_url?: unknown; flow?: unknown; group_id?: unknown };
   try {
     body = await req.json();
   } catch {
@@ -50,12 +50,17 @@ serve(async (req: Request) => {
   }
   const email = userData.user.email.toLowerCase();
 
-  const { data: adminRow, error: adminErr } = await userSupabase
+  // The portal names the workplace on screen; without it (older pages) the
+  // caller's first team row is used, as before. Either way the caller must
+  // be an admin on that team: a different group_id finds no row.
+  const askedGroupId =
+    typeof body.group_id === "string" && /^[0-9a-f-]{36}$/i.test(body.group_id) ? body.group_id : null;
+  let adminQuery = userSupabase
     .from("group_admins")
     .select("group_id, role, groups!inner(id, name, tier, stripe_customer_id, stripe_subscription_id, admin_email)")
-    .eq("email", email)
-    .limit(1)
-    .maybeSingle();
+    .eq("email", email);
+  if (askedGroupId) adminQuery = adminQuery.eq("group_id", askedGroupId);
+  const { data: adminRow, error: adminErr } = await adminQuery.limit(1).maybeSingle();
   if (adminErr) {
     console.error("[BillingPortal] group lookup failed:", adminErr);
     return jsonResponse({ error: "Lookup failed" }, 500);

@@ -750,8 +750,11 @@ export async function GET(req: NextRequest) {
       walk_ride_day: tryIt.walk_ride_day,
       nearby_url: nearbyUrl,
       engine: edge,
-      shuttle_transfers: (Array.isArray(edge.shuttle_options) ? edge.shuttle_options as (AdvisorShuttleTransfer & { eligible?: boolean })[] : [])
-        .filter((s) => s && s.eligible && (s.shape === 'transit_then_shuttle' || s.shape === 'shuttle_then_transit')),
+      // The engine returns shuttles within 5 minutes of the T (Keith
+      // 2026-10-28: a seat about as quick as the train is a real choice);
+      // a row needs one this reader may ride, on a timetable.
+      shuttle_transfers: (Array.isArray(edge.shuttle_options) ? edge.shuttle_options as (AdvisorShuttleTransfer & { eligible?: boolean; timetable?: boolean })[] : [])
+        .filter((s) => s && s.eligible && s.timetable !== false && (s.shape === 'transit_then_shuttle' || s.shape === 'shuttle_then_transit')),
     }
 
     if (groupSlug) {

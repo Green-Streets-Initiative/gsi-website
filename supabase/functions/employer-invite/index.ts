@@ -43,12 +43,15 @@ function escapeHtml(str: string): string {
 function buildInviteHtml(opts: {
   companyName: string;
   inviterEmail: string;
+  /** group_admins.name of the person inviting; the email stands in when they have none. */
+  inviterName: string | null;
   role: "admin" | "manager" | "viewer";
   magicLink: string;
   variant: "invite" | "welcome";
   inviteCode: string | null;
 }): string {
-  const { companyName, inviterEmail, role, magicLink, variant, inviteCode } = opts;
+  const { companyName, inviterEmail, inviterName, role, magicLink, variant, inviteCode } = opts;
+  const inviter = inviterName?.trim() || inviterEmail;
   const roleLine =
     role === "admin"
       ? "As an <strong>admin</strong> you can manage settings, challenges, prizes, and the team."
@@ -57,15 +60,15 @@ function buildInviteHtml(opts: {
         : "As a <strong>viewer</strong> you can see the dashboard, impact data, and reports.";
   const heading =
     variant === "welcome"
-      ? `Welcome to Shift — ${escapeHtml(companyName)}`
+      ? `Welcome to Shift: ${escapeHtml(companyName)}`
       : `You've been added to the ${escapeHtml(companyName)} portal`;
   const intro =
     variant === "welcome"
       ? `Your ${escapeHtml(companyName)} employer account is ready. Use the portal to
          set up your company profile, invite your team, and launch your first
          commute challenge.`
-      : `${escapeHtml(inviterEmail)} invited you to ${escapeHtml(companyName)}'s employer
-         portal on Shift — the place to help your team walk, bike, and take transit
+      : `${escapeHtml(inviter)} invited you to ${escapeHtml(companyName)}'s employer
+         portal on Shift: the place to help your team walk, bike, and take transit
          to work more often, and see what it adds up to.`;
   const inviteCodeSection =
     variant === "welcome" && inviteCode
@@ -105,8 +108,8 @@ function buildInviteHtml(opts: {
       </table>
       <p style="font-size:13px;color:#9CA3AF;line-height:1.6;">
         This sign-in link expires in 1 hour. After that, get a fresh one any time at
-        <a href="${LOGIN_URL}" style="color:#2D6A4F;">${LOGIN_URL.replace("https://", "")}</a>
-        — no password needed.
+        <a href="${LOGIN_URL}" style="color:#2D6A4F;">${LOGIN_URL.replace("https://", "")}</a>,
+        no password needed.
       </p>
     </td>
   </tr>
@@ -170,7 +173,7 @@ serve(async (req: Request) => {
   const [{ data: callerAdmin }, { data: gsiRole }] = await Promise.all([
     userSupabase
       .from("group_admins")
-      .select("role")
+      .select("role, name")
       .eq("group_id", groupId)
       .eq("email", callerEmail)
       .maybeSingle(),
@@ -255,11 +258,12 @@ serve(async (req: Request) => {
         to: [inviteeEmail],
         subject:
           variant === "welcome"
-            ? `Welcome to Shift — ${group.name}`
+            ? `Welcome to Shift: ${group.name}`
             : `You've been added to ${group.name}'s Shift portal`,
         html: buildInviteHtml({
           companyName: group.name,
           inviterEmail: callerEmail,
+          inviterName: (callerAdmin as { name?: string | null } | null)?.name ?? null,
           role,
           magicLink,
           variant,

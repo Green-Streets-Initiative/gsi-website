@@ -237,7 +237,7 @@ export async function POST(request: Request) {
       return Response.json({ error: 'Failed to send email' }, { status: 500 })
     }
   } catch (err) {
-    console.error(`Nudge email failed for ${userRes.data.email}:`, err)
+    console.error(`Nudge email failed for user ${userId} in group ${groupId}:`, err)
     return Response.json({ error: 'Failed to send email' }, { status: 500 })
   }
 
@@ -247,7 +247,8 @@ export async function POST(request: Request) {
     .eq('group_id', groupId)
     .eq('user_id', userId)
 
-  return Response.json({ ok: true, email: userRes.data.email })
+  // No address in the response: the portal only needs to know it went.
+  return Response.json({ ok: true })
 }
 
 function escapeHtml(str: string): string {
@@ -260,15 +261,18 @@ function escapeHtml(str: string): string {
 
 function formatDateShort(iso: string): string {
   const d = new Date(iso)
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'America/New_York' })
 }
 
 function buildNudgeHtml(opts: NudgeData) {
-  const { employeeName, groupName, inviteCode, activeChallenges, teamSize, unsubscribeUrl } = opts
-  const greeting = employeeName ? `Hi ${employeeName},` : 'Hi there,'
-  const deepLink = inviteCode
-    ? `https://shift.gogreenstreets.org/join/${inviteCode}`
-    : 'https://shift.gogreenstreets.org'
+  const { employeeName, groupName, activeChallenges, teamSize, unsubscribeUrl } = opts
+  const greeting = employeeName ? `Hi ${escapeHtml(employeeName)},` : 'Hi there,'
+  // The Worker (Shift docs/cloudflare-worker-refer.js) opens /go/challenge?id=
+  // in the app when it is installed and falls back to the store; /get is the
+  // smart store link. The member is already in the group, so no join link.
+  const deepLink = activeChallenges[0]
+    ? `https://shift.gogreenstreets.org/go/challenge?id=${encodeURIComponent(activeChallenges[0].id)}`
+    : 'https://shift.gogreenstreets.org/get'
 
   let challengeSection = ''
   if (activeChallenges.length > 0) {
@@ -281,7 +285,7 @@ function buildNudgeHtml(opts: NudgeData) {
         const totalStr = c.prize_total >= 100
           ? `$${Math.round(c.prize_total / 100).toLocaleString('en-US')}`
           : ''
-        prizeText = `<br/><span style="color:#2D6A4F;font-weight:600;">Win ${escapeHtml(c.prize_headline)} and more${totalStr ? ` &mdash; ${totalStr}+ in prizes` : ''}</span>`
+        prizeText = `<br/><span style="color:#2D6A4F;font-weight:600;">Win ${escapeHtml(c.prize_headline)} and more${totalStr ? `: ${totalStr}+ in prizes` : ''}</span>`
       } else if (c.prize_headline) {
         prizeText = `<br/><span style="color:#2D6A4F;font-weight:600;">Win ${escapeHtml(c.prize_headline)}</span>`
       } else if (c.prize_description) {
@@ -297,7 +301,7 @@ function buildNudgeHtml(opts: NudgeData) {
 
     challengeSection = `
       <div style="background:#E7F0EA;border-radius:10px;padding:16px 20px;margin-bottom:16px;">
-        <div style="font-size:13px;font-weight:700;color:#2D6A4F;margin-bottom:8px;">&#127942; Active challenge${activeChallenges.length > 1 ? 's' : ''} you can join</div>
+        <div style="font-size:13px;font-weight:700;color:#2D6A4F;margin-bottom:8px;">&#127942; Active challenges</div>
         <table cellpadding="0" cellspacing="0" style="width:100%;">${items}</table>
         <p style="margin:8px 0 0;font-size:13px;color:#2D6A4F;">Get on the board before ${activeChallenges.length > 1 ? 'they end' : 'it ends'}!</p>
       </div>`
@@ -338,7 +342,7 @@ function buildNudgeHtml(opts: NudgeData) {
       ${challengeSection}
       ${leaderboardSection}
       <p style="margin:0 0 16px;font-size:15px;line-height:1.55;color:#1a1a2e;">
-        Walks, bike rides, and bus and train trips all count. Shift tracks your trips automatically, so all you have to do is choose how you get around.
+        Walks, bike rides, transit trips and carpools all count toward the team.
       </p>
       <p style="margin:0 0 24px;font-size:15px;line-height:1.55;color:#1a1a2e;">
         Your participation helps ${escapeHtml(groupName)} track its impact and unlock rewards for the whole team.
@@ -351,7 +355,7 @@ function buildNudgeHtml(opts: NudgeData) {
         </tr>
       </table>
       <p style="margin:0;font-size:13px;line-height:1.5;color:#6b7280;">
-        If you need to reinstall the app, the link above will get you set up and connected to your team automatically.
+        If the app isn't on your phone, the link above takes you to the store.
       </p>
     </td>
   </tr>

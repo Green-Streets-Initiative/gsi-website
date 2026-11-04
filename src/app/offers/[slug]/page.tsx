@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
+import { todayEt } from '@/lib/events-next'
 import OfferForm from './OfferForm'
 
 export const dynamic = 'force-dynamic'
@@ -30,6 +31,10 @@ async function getOffer(slug: string): Promise<OfferRow | null> {
     )
     .eq('slug', slug)
     .eq('status', 'active')
+    // The service key skips the table's public policy (Shift 00365), so apply
+    // its date window here, as the app's pick_spotlight_offer does.
+    .or(`valid_from.is.null,valid_from.lte.${todayEt()}`)
+    .or(`valid_through.is.null,valid_through.gte.${todayEt()}`)
     .maybeSingle()
 
   if (error || !data) return null

@@ -14,13 +14,12 @@ export default function HomeHero({ iosUrl, androidUrl }: { iosUrl: string; andro
           <div className="relative pb-8 lg:pb-10">
             <Eyebrow>A Massachusetts nonprofit since 2006</Eyebrow>
             <h1 className="font-serif text-[clamp(2.75rem,7vw,5rem)] font-normal leading-[1.0] tracking-[-0.01em] text-navy">
-              Every trip counts.
+              Find better ways
               <br />
-              <em className="text-green-deep">Now it adds up.</em>
+              <em className="text-green-deep">to get around.</em>
             </h1>
             <p className="mt-7 max-w-[520px] text-[1.125rem] leading-[1.6] text-ink-soft">
-              Walk it, bike it, take the bus. Shift counts the trip for you, and it adds up &mdash; money saved,
-              a streak worth keeping, and perks from businesses down the street.
+              Get rewarded when you try them. Shift, our free app, shows the next bus or train near you, where the nearest bike share is and the calm way to ride.
             </p>
             <StoreButtons iosUrl={iosUrl} androidUrl={androidUrl} placement="hero" tone="light" className="mt-9 [&>a]:max-[420px]:basis-full" />
             <p className="mt-4 text-[13px] text-ink-soft">

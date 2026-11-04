@@ -6,8 +6,10 @@ import { parkAndRideNear } from '@/lib/server/park-and-ride'
 
 // Round 3 of "give the assistant all the data it needs" (Keith 2026-10-28):
 //   town_corridor_heatmap (Shift 00557)            streets Shift people actually bike and walk
+//   assistant_town_mix (Shift 01489)               how Shift members get around a town
 //   catalog_merchant_locations, sponsors (00789)   Rewards Partner shops and discounts near a place
 //   get_switch_progress, streaks, user_tiers       their switch, streaks, personal bests and tier
+//   assistant_badge_catalog (Shift 01589)          every badge, how rare it is, and theirs
 //   MBTA V3 predictions and trips                  live departures, with bikes allowed per train
 //   MBTA V3 facilities (lib/server/park-and-ride)  station parking
 //   mbta.com/bikes                                 which trains take a bike, and when
@@ -45,7 +47,7 @@ function metersToSegment(p: Point, a: Point, b: Point): number {
 
 // ── Popular streets ────────────────────────────────────────────────────
 
-async function townAt(ctx: Ctx, p: Point): Promise<{ id: string; name: string } | null> {
+export async function townAt(ctx: Ctx, p: Point): Promise<{ id: string; name: string } | null> {
   const { data: nid } = await ctx.admin.rpc('find_neighborhood_for_point', { p_lat: p.lat, p_lng: p.lng })
   if (!nid) return null
   const { data: nb } = await ctx.admin.from('neighborhoods').select('town').eq('id', nid as string).maybeSingle()
@@ -106,6 +108,33 @@ export async function popularStreets(ctx: Ctx, from: Point, to: Point | null, wa
     })),
     ...(ranked.length ? {} : { none: to ? 'No street Shift members use runs along this trip yet.' : 'No street Shift members use within a 10-minute walk of here yet.' }),
     note: 'Popular is not the same as calm: a well-used street can still be busy with cars. check_trip says how calm each street on a route is. "newer_members_use_it" means people new to Shift ride it too, a good sign for someone starting out.',
+  }
+}
+
+const WAY_NAMES: Record<string, string> = { walk: 'Walking', bike: 'Biking or scooting', bus: 'Bus', train: 'Train, commuter rail or ferry', carpool: 'Carpool', drive: 'Driving alone' }
+
+/**
+ * How Shift members get around a town: their trips to, from or within it over
+ * the last 90 days, by way of travel (Shift 01489). Under 10 different people
+ * it shares nothing but the count, and a way shows only when 3 or more
+ * different people used it, so nobody's own trips can be picked out.
+ */
+export async function townMix(ctx: Ctx, town: { id: string; name: string }) {
+  const { data, error } = await ctx.admin.rpc('assistant_town_mix', { p_group_id: town.id })
+  if (error || !data) return { town: town.name, none: "Couldn't read how people get around there just now." }
+  type Mix = { people: number; too_few?: boolean; trips?: number; ways?: { way: string; trips: number; people: number }[]; combined?: { trips: number; people: number } | null }
+  const mix = data as Mix
+  if (mix.too_few || !mix.trips) return { town: town.name, none: `Too few Shift members travel in ${town.name} yet to say how they get around.` }
+  const pct = (n: number) => `${Math.round((n / mix.trips!) * 100)}%`
+  const ways = mix.ways ?? []
+  const drive = ways.find((w) => w.way === 'drive')
+  return {
+    town: town.name,
+    based_on: `${mix.people} Shift members, from their trips to, from or within ${town.name} over the last 90 days. A way shows only when 3 or more different people used it.`,
+    ways: ways.map((w) => ({ way: WAY_NAMES[w.way] ?? w.way, people: w.people, share_of_trips: pct(w.trips) })),
+    ...(drive ? { trips_not_driven_alone: pct(mix.trips - drive.trips) } : {}),
+    ...(mix.combined ? { people_who_combine_ways: mix.combined.people } : {}),
+    note: "Say \"Shift members\" in the sentence that gives a count; add no separate line about who is counted. One person can use several ways, so the people add up to more than the total. Lead with people who walk, bike or take transit, as a count: \"17 of the 35 Shift members who travel in Lexington bike there.\" A way that isn't listed had too few people to share; say nothing about it. Mention driving only when they ask about it, and never as something to beat. People who combine ways use more than one in a trip, like biking to the train.",
   }
 }
 
@@ -277,6 +306,81 @@ export async function myProgress(ctx: Ctx) {
       } : null,
       unlocks: 'Higher levels unlock Rewards Partner offers.',
     } : { unknown: 'Shift has no level on file for them yet; the app shows it on their profile.' },
+  }
+}
+
+// ── Badges: every one, how rare, and theirs ────────────────────────────
+
+// assistant_badge_catalog (Shift 01589): every badge, whether it can still be
+// unlocked, and its share of people who have logged a trip. get_badge_progress
+// (the Progress tab's) says which they have, how far along they are, and which
+// they can see: a higher tier stays hidden until the one before is unlocked,
+// so hidden ones show only as a count.
+const BADGE_GROUPS: Record<string, string> = { special: 'Trips and milestones', streak: 'Streaks', distance: 'Distance', weather: 'Weather', roam: 'Roams and trails', event: 'Events', tier: 'Levels' }
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+const monthDay = (md: string) => `${MONTHS[+md.slice(0, 2) - 1]} ${+md.slice(3, 5)}`
+
+/** "in season until Nov 30" or "back Jun 20", from a Roam's "MM-DD to MM-DD". */
+function seasonNow(season: string | null): string | null {
+  const m = season?.match(/^(\d\d-\d\d) to (\d\d-\d\d)$/)
+  if (!m) return null
+  const today = new Date().toLocaleDateString('en-CA', { timeZone: ET }).slice(5)
+  const [from, to] = [m[1], m[2]]
+  const inSeason = from <= to ? today >= from && today <= to : today >= from || today <= to
+  return inSeason ? `in season until ${monthDay(to)}` : `off season, back ${monthDay(from)}`
+}
+
+const rarity = (pct: number) => (pct === 0 ? 'nobody has it yet' : pct < 1 ? 'under 1%' : `${Math.round(pct)}%`)
+
+export async function badgeCatalog(ctx: Ctx) {
+  const [catQ, mineQ] = await Promise.all([
+    ctx.admin.rpc('assistant_badge_catalog'),
+    ctx.user.rpc('get_badge_progress', { p_user_id: ctx.userId }),
+  ])
+  if (catQ.error) throw new Error(catQ.error.message)
+  type B = { id: string; name: string; category: string; how: string; after: string | null; share_pct: number; open: boolean; season: string | null }
+  type P = { badge_id: string; progress_type: string; progress_target: number | null; progress_current: number; is_earned: boolean }
+  const all = (catQ.data ?? []) as B[]
+  const mine = new Map(((mineQ.data ?? []) as P[]).map((p) => [p.badge_id, p]))
+
+  // Open tiers after this one that they can't see yet.
+  const hiddenAfter = (id: string): number => {
+    const next = all.find((b) => b.after === id && b.open && !mine.has(b.id))
+    return next ? 1 + hiddenAfter(next.id) : 0
+  }
+  const show = (b: B) => {
+    const p = mine.get(b.id)
+    const have = !!p?.is_earned
+    const progress = !have && p?.progress_target && p.progress_type !== 'boolean' && p.progress_type !== 'roam'
+      ? `${Math.min(p.progress_current, p.progress_target)} of ${p.progress_target}` : undefined
+    const more = hiddenAfter(b.id)
+    return {
+      name: b.name, how: b.how, have, progress,
+      share_who_have_it: rarity(b.share_pct),
+      season: b.category === 'roam' ? seasonNow(b.season) ?? undefined : undefined,
+      more_tiers_after: more || undefined,
+    }
+  }
+
+  const visible = all.filter((b) => b.open && mine.has(b.id))
+  const groups: Record<string, ReturnType<typeof show>[]> = {}
+  for (const b of visible) (groups[BADGE_GROUPS[b.category] ?? b.category] ??= []).push(show(b))
+  // Roam badges are rare because few people walk a Roam yet, not because they're hard: the
+  // rarest list is the milestones, and Roams get one line.
+  const rarest = visible.filter((b) => b.category !== 'roam').sort((x, y) => x.share_pct - y.share_pct).slice(0, 6)
+    .map((b) => ({ name: b.name, how: b.how, share_who_have_it: rarity(b.share_pct), have: !!mine.get(b.id)?.is_earned }))
+  const roams = visible.filter((b) => b.category === 'roam')
+  const roamsNobody = roams.filter((b) => b.share_pct === 0).length
+  const retiredTheyHave = all.filter((b) => !b.open && mine.get(b.id)?.is_earned).map((b) => b.name)
+
+  return {
+    rule: 'share_who_have_it is the share of people who have logged a trip on Shift. Say it as a share or "1 in N", never as a number of people. Tiers after one they can see stay hidden in the app until they unlock it: say more tiers follow, never name them.',
+    they_have: visible.filter((b) => mine.get(b.id)?.is_earned).length,
+    can_still_unlock: visible.filter((b) => !mine.get(b.id)?.is_earned).length + visible.reduce((n, b) => n + hiddenAfter(b.id), 0),
+    rarest,
+    roam_badges: roams.length ? `${roams.length} Roam and trail badges, one for each Roam; the most common is held by ${rarity(Math.max(...roams.map((b) => b.share_pct)))}, and nobody has ${roamsNobody} of them yet.` : undefined,
+    badges: groups,
+    no_longer_offered_but_theirs: retiredTheyHave.length ? retiredTheyHave : undefined,
   }
 }
 

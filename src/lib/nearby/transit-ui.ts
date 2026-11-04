@@ -1,3 +1,4 @@
+import { decodePolyline } from '@/lib/geo/polyline'
 import { isShuttleRouteId, SHUTTLE_COLOR } from '@/lib/nearby/shuttle-agencies'
 /**
  * One spine line a transit route meets, and where — the "Connects to" block.
@@ -65,18 +66,30 @@ export type DirectionsMode = 'walking' | 'bicycling' | 'transit'
 const APPLE_DIRFLG: Record<DirectionsMode, string> = { walking: 'w', bicycling: 'cy', transit: 'r' }
 
 /** Directions deep link — Apple Maps on iOS, Google Maps elsewhere.
- *  Walking by default; pass mode/origin for door-to-door trips. */
+ *  Walking by default; pass mode/origin for door-to-door trips.
+ *
+ *  `route` (a bike trip's encoded line, Around You v2) makes Maps ride the
+ *  route we showed: three points along it go to Google Maps as stops, on
+ *  every platform, because Apple Maps links take none and it plans its own
+ *  way. Same rule as the app's getDirectionsUrl (Shift lib/maps-link.ts). */
 export function directionsUrl(
   lat: number,
   lng: number,
-  opts?: { mode?: DirectionsMode; origin?: { lat: number; lng: number } },
+  opts?: { mode?: DirectionsMode; origin?: { lat: number; lng: number }; route?: string | null },
 ): string {
   const mode = opts?.mode ?? 'walking'
+  const pts = mode === 'bicycling' && opts?.route ? decodePolyline(opts.route) : []
+  const waypoints = pts.length > 3
+    ? `&waypoints=${[0.25, 0.5, 0.75]
+      .map(f => pts[Math.round(f * (pts.length - 1))])
+      .map(([a, b]) => `${a.toFixed(5)},${b.toFixed(5)}`)
+      .join('%7C')}`
+    : ''
   const isIOS = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent)
-  if (isIOS) {
+  if (isIOS && !waypoints) {
     const saddr = opts?.origin ? `&saddr=${opts.origin.lat},${opts.origin.lng}` : ''
     return `maps://maps.apple.com/?daddr=${lat},${lng}${saddr}&dirflg=${APPLE_DIRFLG[mode]}`
   }
   const origin = opts?.origin ? `&origin=${opts.origin.lat},${opts.origin.lng}` : ''
-  return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}${origin}&travelmode=${mode}`
+  return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}${origin}${waypoints}&travelmode=${mode}`
 }

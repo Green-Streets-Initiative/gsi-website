@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Check, Copy, PauseCircle, PlayCircle, Route as RouteIcon } from 'lucide-react'
+import { CalendarX, Check, Copy, PauseCircle, PlayCircle, Route as RouteIcon } from 'lucide-react'
 import { ago, clock } from '@/lib/rides/public'
 import { errorText, setDateCanceled } from '@/lib/organizers/api'
 import { UPDATE_KIND_LABEL, dateLabel, plural, todayKey } from '@/lib/organizers/ride-words'
@@ -11,6 +11,7 @@ import type { DetailDate } from '@/lib/organizers/types'
 import { CancelDateDialog, ChangeDateDialog } from './DateDialogs'
 import PostUpdate from './PostUpdate'
 import { ridePageUrl, useRide } from './RideFrame'
+import { SkipDatesDialog } from './SkipDates'
 import { StopRideDialog, resume } from './StopRide'
 import { Badge, Button, Card, Empty, Notice, SectionTitle, Toast, copyText, cx } from './ui'
 
@@ -77,20 +78,22 @@ function DateRow({ d, canManage, canEdit, rideId, usualMiles, hasUsual, onCancel
           </>
         )}
       </div>
-      <div className="flex flex-wrap gap-1.5">
+      {/* Pulled left by the buttons' own padding so the labels line up with the
+          date, with tighter padding so all four fit on one line at phone width. */}
+      <div className="-ml-2 flex flex-wrap">
         {!off && (
-          <Link href={`/organizers/rides/${rideId}/roster?date=${d.id}`} className="inline-flex min-h-[36px] items-center rounded-[10px] px-3 text-[14px] font-semibold text-(--ev-ink-85) hover:bg-(--ev-panel)">
+          <Link href={`/organizers/rides/${rideId}/roster?date=${d.id}`} className="inline-flex min-h-[36px] items-center rounded-[10px] px-2 text-[14px] font-semibold text-(--ev-ink-85) hover:bg-(--ev-panel)">
             {past ? 'Who came' : "Who's coming"}
           </Link>
         )}
         {canEdit && !past && !off && (
-          <Link href={`/organizers/rides/${rideId}/dates/${d.id}`} className="inline-flex min-h-[36px] items-center rounded-[10px] px-3 text-[14px] font-semibold text-(--ev-ink-85) hover:bg-(--ev-panel)">
+          <Link href={`/organizers/rides/${rideId}/dates/${d.id}`} className="inline-flex min-h-[36px] items-center rounded-[10px] px-2 text-[14px] font-semibold text-(--ev-ink-85) hover:bg-(--ev-panel)">
             Plan
           </Link>
         )}
-        {canManage && !past && !off && <Button size="sm" variant="ghost" onClick={onChange}>Change</Button>}
-        {canManage && !past && !off && <Button size="sm" variant="ghost" onClick={onCancel}>Cancel</Button>}
-        {canManage && !past && off && !d.canceled_by_stop && <Button size="sm" variant="ghost" onClick={onRestore}>Bring back</Button>}
+        {canManage && !past && !off && <Button size="sm" variant="ghost" className="px-2!" onClick={onChange}>Change</Button>}
+        {canManage && !past && !off && <Button size="sm" variant="ghost" className="px-2!" onClick={onCancel}>Cancel</Button>}
+        {canManage && !past && off && !d.canceled_by_stop && <Button size="sm" variant="ghost" className="px-2!" onClick={onRestore}>Bring back</Button>}
       </div>
     </li>
   )
@@ -112,6 +115,9 @@ export default function RideOverview() {
   const [showPast, setShowPast] = useState(false)
   const [busy, setBusy] = useState(false)
   const [posting, setPosting] = useState(!!params.get('post'))
+  const [skipping, setSkipping] = useState(false)
+  // Just back from a break: offer the "it's back" note, ready to send.
+  const [backOffer, setBackOffer] = useState(false)
 
   const upcoming = useMemo(() => detail.occurrences.filter((d) => d.date >= today), [detail.occurrences, today])
   const past = useMemo(() => detail.occurrences.filter((d) => d.date < today).reverse(), [detail.occurrences, today])
@@ -133,6 +139,7 @@ export default function RideOverview() {
     setCancelling(null)
     setChanging(null)
     setStopping(false)
+    setSkipping(false)
     void reload()
   }
 
@@ -147,7 +154,11 @@ export default function RideOverview() {
 
   async function doResume() {
     setBusy(true)
-    try { done(await resume(r.id)) } catch (e) { setMsg({ tone: 'off', text: errorText(e) }) } finally { setBusy(false) }
+    try {
+      done(await resume(r.id))
+      // Nobody else on the ride: nobody to tell.
+      if (detail.members > 0) setBackOffer(true)
+    } catch (e) { setMsg({ tone: 'off', text: errorText(e) }) } finally { setBusy(false) }
   }
 
   // The weather for the next date, by the same rule as the evening check-in
@@ -218,7 +229,22 @@ export default function RideOverview() {
         </Card>
       )}
 
-      {!ended && (posting || !nextDate) && (
+      {backOffer && !ended && (
+        <Card className="border-(--ev-accent-line) ring-1 ring-(--ev-accent-line-30)">
+          <SectionTitle hint="Edit it if you like. It goes to everyone on the ride, by app or email."
+            action={<Button size="sm" variant="ghost" onClick={() => setBackOffer(false)}>Not now</Button>}>
+            Tell everyone it&rsquo;s back?
+          </SectionTitle>
+          {/* Keyed on the next date so the note names it once the dates reload. */}
+          <PostUpdate key={nextDate?.id ?? 'none'} seriesId={r.id} dates={detail.occurrences} initialKind="note"
+            initialNote={nextDate ? `We're back! Next ride: ${dateLabel(nextDate.date)} at ${clock(nextDate.start_time)}${nextDate.meetup_name ?? r.meetup_name ? `, ${nextDate.meetup_name ?? r.meetup_name}` : ''}. See you there.` : "We're back! Watch for the next date."}
+            onPosted={() => { setBackOffer(false); void reload() }} />
+        </Card>
+      )}
+
+      {/* The update box only when there's someone to tell: with no open date,
+          a ride nobody else is on has no one to post to. */}
+      {!ended && !backOffer && (posting || (!nextDate && detail.members > 0)) && (
         <Card id="post-update">
           <SectionTitle hint="One message to everyone on the ride, by app or email.">Post an update</SectionTitle>
           <PostUpdate seriesId={r.id} dates={detail.occurrences} onPosted={() => void reload()} autoFocus={posting} />
@@ -229,9 +255,15 @@ export default function RideOverview() {
         <SectionTitle
           hint={detail.can_manage ? 'Plan, change or cancel one date; the rest stays as it is.' : undefined}
           action={detail.can_manage && !ended ? (
-            onBreak
-              ? <Button size="sm" onClick={() => void doResume()} busy={busy}><PlayCircle className="h-4 w-4" aria-hidden />End the break now</Button>
-              : <Button size="sm" variant="ghost" onClick={() => setStopping(true)}><PauseCircle className="h-4 w-4" aria-hidden />Pause or end</Button>
+            <div className="flex flex-wrap gap-1.5">
+              {/* Skip dates beyond the ones listed: writes the ride itself, so its organizer only. */}
+              {detail.my_role === 'organizer' && !r.ride_date && (
+                <Button size="sm" variant="ghost" onClick={() => setSkipping(true)}><CalendarX className="h-4 w-4" aria-hidden />Skip dates further out</Button>
+              )}
+              {onBreak
+                ? <Button size="sm" onClick={() => void doResume()} busy={busy}><PlayCircle className="h-4 w-4" aria-hidden />End the break now</Button>
+                : <Button size="sm" variant="ghost" onClick={() => setStopping(true)}><PauseCircle className="h-4 w-4" aria-hidden />Pause or end</Button>}
+            </div>
           ) : ended && detail.can_manage ? (
             <Button size="sm" onClick={() => void doResume()} busy={busy}><PlayCircle className="h-4 w-4" aria-hidden />Start it again</Button>
           ) : undefined}
@@ -243,7 +275,7 @@ export default function RideOverview() {
           <p className="text-[15px] text-(--ev-ink-85)">No later dates yet.</p>
         ) : later.length === 0 ? (
           <Empty title={ended ? 'This ride has ended' : 'No upcoming dates'}>
-            {ended ? 'Its history and turnout are still here.' : r.ride_date ? 'This one-off ride has happened. Set up a new ride for the next one.' : "Dates appear here within a day of saving. If it's been longer, check the season dates in Edit ride."}
+            {ended ? 'Its history and turnout are still here.' : r.ride_date ? 'This one-off ride has happened. Set up a new ride for the next one.' : 'No upcoming dates. Check When and the season dates in Edit ride.'}
           </Empty>
         ) : (
           <ul>
@@ -296,6 +328,7 @@ export default function RideOverview() {
       {cancelling && <CancelDateDialog key={cancelling.id} date={cancelling} onClose={() => setCancelling(null)} onDone={done} />}
       {changing && <ChangeDateDialog key={changing.id} date={changing} ride={r} onClose={() => setChanging(null)} onDone={done} />}
       {detail.can_manage && <StopRideDialog ride={r} open={stopping} onClose={() => setStopping(false)} onDone={done} />}
+      {skipping && <SkipDatesDialog ride={r} dates={detail.occurrences} open={skipping} onClose={() => setSkipping(false)} onDone={done} />}
     </div>
   )
 }

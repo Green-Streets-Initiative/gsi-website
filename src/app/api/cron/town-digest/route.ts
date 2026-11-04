@@ -10,6 +10,10 @@ import {
   type TownCivicEvent,
 } from '@/lib/towns/queries'
 import { getEventPicks } from '@/lib/towns/event-picks'
+import { itemProblem, sameMeeting } from '@/lib/towns/digest-preflight'
+import { infraKey } from '@/lib/towns/digest'
+import { newInfraInTown } from '@/lib/server/new-infra'
+import { NO_NEW_INFRA } from '@/lib/new-infra'
 
 export const runtime = 'nodejs'
 export const maxDuration = 120
@@ -50,6 +54,8 @@ const MAX_SENDS_PER_30D = 3
 
 interface SendRow {
   item_ids: string[] | null
+  /** New stretches already shown to this town (Shift 01586). */
+  infra_keys: string[] | null
   sent_at: string
   /** 'announcement' (first mention) or 'reminder' (the ~3-days-out second send). */
   kind: string | null
@@ -57,6 +63,9 @@ interface SendRow {
 
 /** Meeting/deadline this many days out triggers the reminder send. */
 const REMINDER_LEAD_DAYS = 3
+
+/** A lane or path counts as news for this long after it opens. */
+const NEW_INFRA_MONTHS = 6
 
 /** Show "near your home" only when it's meaningfully close. */
 const PROXIMITY_MAX_MILES = 2.5
@@ -120,9 +129,10 @@ export async function GET(req: Request) {
     try {
       const { data: sends } = await sb
         .from('town_digest_sends')
-        .select('item_ids, sent_at, kind')
+        .select('item_ids, infra_keys, sent_at, kind')
         .eq('town_slug', slug)
       const sentItemIds = new Set(((sends ?? []) as SendRow[]).flatMap((s) => s.item_ids ?? []))
+      const sentInfraKeys = new Set(((sends ?? []) as SendRow[]).flatMap((s) => s.infra_keys ?? []))
       const recentSends = ((sends ?? []) as SendRow[]).filter((s) => s.sent_at >= cutoff30).length
       if (!dryRun && recentSends >= MAX_SENDS_PER_30D) {
         results.push({ town: slug, skipped: `cap: ${recentSends} sends in last 30d` })
@@ -137,7 +147,13 @@ export async function GET(req: Request) {
       // fall back to a rewound "recently published" window for copy review,
       // clearly labeled in the subject.
       const allCivic: TownCivicEvent[] = await getTownCivicEvents(town.town_name)
-      const civic: TownCivicEvent[] = allCivic.filter((c) => !sentItemIds.has(c.id))
+      // A meeting this town already heard about under another record counts
+      // as sent (digest-preflight.ts sameMeeting): it is not news again, and
+      // its reminder belongs to the record that was sent.
+      const townNames = [town.town_name]
+      const twinOfSent = (c: TownCivicEvent) =>
+        allCivic.some((s) => sentItemIds.has(s.id) && sameMeeting(c, s, townNames))
+      const civic: TownCivicEvent[] = allCivic.filter((c) => !sentItemIds.has(c.id) && !twinOfSent(c))
 
       // Reminder pass (Keith 2026-08-04): an item announced weeks ago whose
       // meeting (or comment deadline) is now REMINDER_LEAD_DAYS out gets one
@@ -160,34 +176,66 @@ export async function GET(req: Request) {
       // would otherwise skip an item permanently, and items already inside
       // the window when this shipped would never remind at all.
       const inWindow = (d: string | null) => !!d && d > todayEt && d <= reminderTarget
+      const twinIn = (ids: Set<string>, c: TownCivicEvent) =>
+        allCivic.some((s) => ids.has(s.id) && sameMeeting(c, s, townNames))
       const reminders = allCivic.filter((c) =>
         sentItemIds.has(c.id) &&
         c.digest_can_trigger !== false &&
         !remindedIds.has(c.id) &&
         !recentIds.has(c.id) &&
+        !twinIn(remindedIds, c) &&
+        !twinIn(recentIds, c) &&
         (inWindow(c.hearing_date) || (!c.hearing_date && inWindow(c.comment_deadline))),
       )
       const isReminder = reminders.length > 0
 
       const centroid = await getTownCentroid(town.group_id)
-      const [events, partners, resources] = await Promise.all([
-        getEventPicks(centroid, 3),
+      const [events, partners, resources, infra] = await Promise.all([
+        getEventPicks(centroid, 3, { town: { name: town.town_name, state: town.state } }),
         getTownPartners(town.town_name, town.state),
         getTownResources(town.group_id),
+        town.state === 'MA' ? newInfraInTown(town.town_name, town.state) : Promise.resolve(NO_NEW_INFRA),
       ])
+      // Lanes and paths opened in the last NEW_INFRA_MONTHS that this town
+      // hasn't been shown, newest first.
+      const sinceYm = new Date(Date.now() - NEW_INFRA_MONTHS * 31 * 86400000).toISOString().slice(0, 7)
+      const newInfra = infra.opened
+        .filter((o) => o.opened >= sinceYm && !sentInfraKeys.has(infraKey(o)))
+        .sort((a, b) => b.opened.localeCompare(a.opened))
 
-      let content = buildTownDigest({
+      // Pre-send check: build, check every included item's links, and
+      // rebuild without any that fail (digest-preflight.ts). Three passes
+      // cover a featured item and both "also" rows failing in turn.
+      const dropped: string[] = []
+      const failed = new Set<string>()
+      const build = () => buildTownDigest({
         town,
         qualifyingCount,
         // Reminder items lead; unsent items may ride along (both get logged
         // as sent). Soonest-first selection naturally features the ~3-days-out
         // reminder unless something even sooner is brand new — also correct.
-        civic: isReminder ? [...reminders, ...civic] : civic,
+        civic: (isReminder ? [...reminders, ...civic] : civic).filter((c) => !failed.has(c.id)),
         resources,
         events,
         partners,
+        newInfra,
         priorSendCount: (sends ?? []).length,
       })
+      let content = build()
+      for (let pass = 0; content && pass < 3; pass++) {
+        const included = content.itemIds
+          .map((id) => allCivic.find((c) => c.id === id))
+          .filter((c): c is TownCivicEvent => !!c)
+        const problems = await Promise.all(included.map(async (c) => ({ c, why: await itemProblem(c) })))
+        const bad = problems.filter((p) => p.why)
+        if (bad.length === 0) break
+        for (const { c, why } of bad) {
+          failed.add(c.id)
+          dropped.push(`${c.title.slice(0, 70)}: ${why}`)
+        }
+        content = build()
+      }
+      if (dropped.length) console.warn(`town-digest preflight (${slug}) left out:`, dropped)
       // Copy-review fallback: nothing due today, so preview recent past
       // items with a rewound clock — labeled so it can't be mistaken for a
       // real upcoming send.
@@ -207,7 +255,7 @@ export async function GET(req: Request) {
         })
       }
       if (!content) {
-        results.push({ town: slug, skipped: 'no new published items' })
+        results.push({ town: slug, skipped: dropped.length ? 'every item failed the pre-send check' : 'no new published items', ...(dropped.length ? { dropped } : {}) })
         continue
       }
 
@@ -300,6 +348,7 @@ export async function GET(req: Request) {
         await sb.from('town_digest_sends').insert({
           town_slug: slug,
           item_ids: content.itemIds,
+          infra_keys: content.infraKeys,
           subscriber_count: sent,
           error_count: errors,
           subject: content.subject,
@@ -307,7 +356,7 @@ export async function GET(req: Request) {
         })
       }
 
-      results.push({ town: slug, sent, errors, subject: content.subject, item_ids: content.itemIds, kind: isReminder ? 'reminder' : 'announcement', dry_run: dryRun })
+      results.push({ town: slug, sent, errors, subject: content.subject, item_ids: content.itemIds, infra_keys: content.infraKeys, kind: isReminder ? 'reminder' : 'announcement', dry_run: dryRun, ...(dropped.length ? { dropped } : {}) })
     } catch (err) {
       results.push({ town: slug, error: String(err) })
     }
@@ -324,7 +373,8 @@ export async function GET(req: Request) {
       p_status: results.length === 0 ? 'no-op' : errorCount === 0 ? 'success' : 'partial',
       p_sent: sentCount,
       p_errors: errorCount,
-      p_message: null,
+      // Items the pre-send check left out, so the cron health page shows them.
+      p_message: results.flatMap((r) => (r.dropped as string[] | undefined) ?? []).join(' | ').slice(0, 500) || null,
     }).then(({ error }) => {
       if (error) console.error('town-digest heartbeat failed:', error.message)
     })

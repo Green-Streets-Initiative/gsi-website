@@ -2,7 +2,8 @@
   "account": {
     "id": "328-499-4589",
     "ocid": "151431556",
-    "authuser": 9,
+    "authuser": 5,
+    "authuser_note": "Indexes shift as Chrome logins change; 9 opened kanderson@rapidads.io on 2026-11-03. Use authuser=walkrideday%40gmail.com in URLs.",
     "login": "walkrideday@gmail.com"
   },
   "artifact_url": "https://claude.ai/artifact/UuoYJsktAySt3HY5KinrbF",
@@ -75,6 +76,14 @@
     {
       "date": "2026-10-28",
       "what": "Claude, on Keith's 'Yes, add them' in an interactive chat (Claude in Chrome, Keith's Ecosia). Bike lessons test: bulk upload ~/Downloads/ad-grants-oct28-bike-lessons-v2.csv into How-to Guides (24306480410), preview 32/32/0, applied 11:37 AM: ad group 'Bike lessons' (18 phrase keywords, 2 RSAs -> /bike-lessons, paths bike-lessons/adults) and ad group 'Riding in traffic' (8 phrase keywords, 2 RSAs -> /bike-lessons#street-lesson, paths bike-lessons/street-lesson). Copy as drafted in ads/drafts/bike-lessons-ad-groups-2026-10-27.md except one headline: 'Book a lesson any time' became 'Ask for a lesson online' (booking is by email through the form). Then 26 ad-group-level broad negatives on EACH group through Keywords > Negative keywords (kid/kids, child/children, toddler(s), son, daughter, training wheels, balance bike(s), spin, spinning, spin class(es), peloton, indoor cycling, motorcycle(s), dirt bike(s), mountain bike, mountain biking, certification, become an instructor, instructor jobs); account negatives 8 -> 60. The first file (v1, with negatives and keyword-level final URLs, 84 rows) previewed 6 ok / 78 'An internal error occurred' on every keyword row and was discarded, not applied. Verified on the Ads page: 4 new RSAs 'Eligible', strength 'Pending'; account ads 37 -> 41. NOT yet done: free_lesson_code_requested as a conversion (GA4 lists an event only after its first real firing; star it, then import as Primary, same path as cheat_sheet_download 10-14). Judge in April: pause an ad group under 5% CTR after 300 impressions."
+    },
+    {
+      "date": "2026-10-28",
+      "what": "Claude, on Keith's go in an interactive chat (Claude in Chrome, Keith's Ecosia). The 10-28 compliance email flagged (a) Town Walking & Biking CTR 4.3% (12/276, rolling 30d) and (b) 1 keyword with QS < 3. (b) was 'bike trails near me' (Town routes, broad, -> /shift/towns, 'Eligible (Limited) Rarely shown (low Quality Score)', Oct 2 impr / 0 clicks): paused via Keywords > tick row > Edit > Pause; row reads 'Paused'. (a) is not a grant breach (the 5% rule is account level; Oct MTD 8.7%): most of the 276 impressions are 'biking in boston' (140 impr, paused 10-21; leaves the 30-day window ~11-20); the one enabled keyword with volume is 'walking trails boston' (96 impr, 4 clicks, 4.17%) -> /shift/towns/boston-ma. Fourth Town routes keyword to hit low QS; all four are trail/bike-path searches landing on town pages. Plan (Keith 10-28): ship the /trails pages (review branch trails-review), then point the trail/path keywords at /trails and add named-trail ad groups per trail page (~19,700 MA searches/mo per the 10-14 keyword analysis). Nothing else touched."
+    },
+    {
+      "date": "2026-11-03",
+      "what": "Claude, on Keith's approval of launch venue-parking ('I approve the plan', then 'Yes, tomorrow', 2026-11-02), interactive chat, Claude in Chrome. (1) venue_trip_planned starred as a GA4 key event, then imported as a Primary conversion, category Engagement (Goals > New conversion > linked account gogreenstreets.org); /aw/conversions/all shows it under Engagements, 'Awaiting conversions', included in account-level goals. (2) New campaign 'Venue Parking' (ID 24426572849) by bulk upload (scratchpad venue-parking-upload.csv, preview 26/26/0, applied ~10:12 AM): Google Search Network only, Massachusetts, en, Maximize conversions, $25/day, start date 2026-11-04 (status 'Pending' until then). Ad groups TD Garden, Fenway Park, Gillette Stadium; 16 phrase keywords; 6 RSAs copied from ads/drafts/venue-parking-ad-groups-2026-11-02.md, landing on /parking/td-garden, /parking/fenway-park, /parking/gillette-stadium (paths parking/td-garden, parking/fenway, parking/gillette). The upload columns 'Campaign start date' (YYYY-MM-DD) and 'Headline N position' both worked: Ad 1 in each group pins the parking headline to 1 and the transit fact to 2 (TD Garden Ad 1 strength 'Poor', expected with pins). (3) 20 campaign-level broad negatives in the UI: jobs, job, hiring, careers, career, seating chart, seat map, tailgate rentals, hotel, hotels, tours, tour, stadium tour, pro shop, lost and found, parking ticket, parking tickets, towing, monthly parking, overnight parking. Left out the draft's 'tickets', 'hours' and 'address': as broad negatives they would block 'gillette train tickets', 'gillette parking hours' and similar searches the pages answer. No campaign sitelinks (account sitelinks apply). Account login note: authuser=9 now opens a different Google account; use authuser=walkrideday%40gmail.com (resolved to 5 today)."
     }
   ],
   "open_items": [
@@ -141,7 +150,7 @@
     {
       "id": "offer-landing-pages",
       "what": "Point Ad Grants traffic at pages that already convert. GA4 since Sep 1: Shift Your Semester school pages from the non-Google student cpc campaign ~500 sessions / 34 key events (~7%); /shift New Routes offer page 19 / 5; guides (Ad Grant traffic) 20 / 0. (1) Shift Your Semester campaign: final URLs -> /shift-your-semester/<school> pages; ADD broader student keywords with volume (mbta student pass, student charliecard, bluebikes student discount and similar); do not remove the 10-05 campus keywords (14-day rule until 10-19). (2) New Routes: 'just moved / moving to Boston' ad group final URL -> /shift New Routes offer. Keep How-to Guides as the CTR engine with the new guide app strip.",
-      "status": "APPROVED by Keith 2026-10-07 ('OK, let's do it'). Ads changes must run from an interactive chat in 'Ask permissions' mode (see memory feedback-claude-operates-google-ads); Keith to say 'do ad grants: semester and movers landing pages'. Win: >= 1 conversion by 10-21 and Semester > ~100 impressions; kill: if Semester still ~0 impressions by 10-21, the student search volume isn't there for grant ads; move that effort to the student cpc channel. 2026-10-13 interactive run ('do ad grants: semester and movers landing pages'): (1) Semester ALREADY DONE by the 10-05 upload: all 6 Semester ads have final URL /shift-your-semester (hub, StoreButtons placement semester_hub near top) and every school keyword (bu mbta pass, tufts bluebikes discount, etc.) has a keyword-level final URL /shift-your-semester/<school>. No change needed. (2) Movers NOT YET SAVED: both 'Just moved' ads still land on /nearby?utm_source=googleads&utm_campaign=newroutes; new URL is https://www.gogreenstreets.org/shift?utm_source=googleads&utm_campaign=newroutes (utm_campaign=newroutes triggers NewRoutesShiftBanner). Typed into the first ad's editor, Save ad refused by the auto-mode classifier. (3) Broader student keywords NOT YET ADDED (Students ad group, broad, hub landing): student charliecard, mbta student charliecard, mbta student discount, mbta student fare, mbta college pass, mbta semester pass, college student t pass boston, bluebikes student discount, bluebikes student membership, student bike share boston. Existing: student mbta pass, college student mbta pass, student bluebikes discount boston, semester t pass boston. Needs Keith to set the chat to 'Ask permissions' and say go. UPDATE 2026-10-13 afternoon (Keith's 'go' in an interactive chat, after he cleared Google's 'Confirm it's you' dialog): (2) DONE: both New Routes / Just moved RSAs now have final URL /shift?utm_source=googleads&utm_campaign=newroutes; both saved, 'no policy issues', Eligible (Getting around Boston stays on /nearby). (3) STILL NOT ADDED: the 10 student keywords; clicking 'Create keywords' was refused by the session's permission check ('Real-World Transactions') even after Keith changed the permission mode. Judge Movers from 10-27 (14 days). 10-14: Semester 1 impression MTD; the 10 student keywords recommended again as weekly item 3. DONE 2026-10-14 (same day, Claude in the Ads UI): all 10 added to Students, broad match, 7 under review + 3 low search volume at save (see the 10-14 change entry). Item fully closed. Win: Semester > 100 impr by 10-28; kill: still ~0 then, move the effort to the paid student channel. 10-21 weekly: Semester still 1 impression a week after the 10 student keywords (10 eligible, 17 of 52 low search volume). Judge 10-28; kill condition on track."
+      "status": "APPROVED by Keith 2026-10-07 ('OK, let's do it'). Ads changes must run from an interactive chat in 'Ask permissions' mode (see memory feedback-claude-operates-google-ads); Keith to say 'do ad grants: semester and movers landing pages'. Win: >= 1 conversion by 10-21 and Semester > ~100 impressions; kill: if Semester still ~0 impressions by 10-21, the student search volume isn't there for grant ads; move that effort to the student cpc channel. 2026-10-13 interactive run ('do ad grants: semester and movers landing pages'): (1) Semester ALREADY DONE by the 10-05 upload: all 6 Semester ads have final URL /shift-your-semester (hub, StoreButtons placement semester_hub near top) and every school keyword (bu mbta pass, tufts bluebikes discount, etc.) has a keyword-level final URL /shift-your-semester/<school>. No change needed. (2) Movers NOT YET SAVED: both 'Just moved' ads still land on /nearby?utm_source=googleads&utm_campaign=newroutes; new URL is https://www.gogreenstreets.org/shift?utm_source=googleads&utm_campaign=newroutes (utm_campaign=newroutes triggers NewRoutesShiftBanner). Typed into the first ad's editor, Save ad refused by the auto-mode classifier. (3) Broader student keywords NOT YET ADDED (Students ad group, broad, hub landing): student charliecard, mbta student charliecard, mbta student discount, mbta student fare, mbta college pass, mbta semester pass, college student t pass boston, bluebikes student discount, bluebikes student membership, student bike share boston. Existing: student mbta pass, college student mbta pass, student bluebikes discount boston, semester t pass boston. Needs Keith to set the chat to 'Ask permissions' and say go. UPDATE 2026-10-13 afternoon (Keith's 'go' in an interactive chat, after he cleared Google's 'Confirm it's you' dialog): (2) DONE: both New Routes / Just moved RSAs now have final URL /shift?utm_source=googleads&utm_campaign=newroutes; both saved, 'no policy issues', Eligible (Getting around Boston stays on /nearby). (3) STILL NOT ADDED: the 10 student keywords; clicking 'Create keywords' was refused by the session's permission check ('Real-World Transactions') even after Keith changed the permission mode. Judge Movers from 10-27 (14 days). 10-14: Semester 1 impression MTD; the 10 student keywords recommended again as weekly item 3. DONE 2026-10-14 (same day, Claude in the Ads UI): all 10 added to Students, broad match, 7 under review + 3 low search volume at save (see the 10-14 change entry). Item fully closed. Win: Semester > 100 impr by 10-28; kill: still ~0 then, move the effort to the paid student channel. 10-21 weekly: Semester still 1 impression a week after the 10 student keywords (10 eligible, 17 of 52 low search volume). Judge 10-28; kill condition on track. JUDGED 10-28 weekly: Semester 1 impression all October; kill condition met, student effort belongs in the paid student channel. Movers (judged 10-27): 30 impr, 0 clicks; same verdict. Both left enabled (cost $0); no further grant work recommended on them."
     },
     {
       "id": "keyword-analysis",
@@ -160,8 +169,29 @@
     },
     {
       "id": "t-closures-adgroup",
-      "status": "LIVE 2026-10-17, read after the Oct 31 Green Line closure 10-21: 2 impressions so far. Has only 1 RSA, which breaks the 2-ads-per-ad-group rule; weekly item 1 adds a second.",
+      "status": "LIVE 2026-10-17, read after the Oct 31 Green Line closure 10-21: 2 impressions so far. Has only 1 RSA, which breaks the 2-ads-per-ad-group rule; weekly item 1 adds a second. 10-28 weekly: still 1 RSA, 2 impressions MTD; recommended again as item 1 (draft headlines in the 10-28 report).",
       "what": "Check impressions/CTR/search terms of How-to Guides > T closures after the Oct 31 and Nov 7 Green Line suspensions. Pause any keyword under 5% CTR after 300 impressions. Consider a conversion for guide_tool_used (trip planner use) if volume is real."
+    },
+    {
+      "id": "newroutes-movers-decision",
+      "added": "2026-11-01",
+      "from": "Keith (via the Social Lead's W45 review)",
+      "what": "Keith asked this routine to analyze what to do with the 'New Routes — Movers' campaign. Context: Keith dropped the weekly organic New Routes social post on 11-01 ('Unless we plan to run paid ads with that post, I'd be comfortable skipping that post'). Reddit (ended Oct 19, 1 join) and Meta (ended Oct 20) are over, so Movers is the only paid line for New Routes. October: 30 impressions, 0 clicks (from the Social Lead's survey; re-read it live). New Routes offer: new Shift members, code NEWROUTES at sign-up, 10 auto-detected active trips in 30 days unlocks $15, cap 200, ends Dec 15; 6 sign-ups in the last 30 days (personas.md). The Housing /move-in page shows the $15 offer while New Routes runs. Decide and recommend one of: (a) keep as is, (b) rework (keywords movers actually search, landing page, e.g. /move-in or town pages), (c) pause and move its share of the grant to campaigns that win clicks, (d) pair it with a dated organic social post if a rework is worth testing. Show the numbers behind the call (impressions, clicks, search terms, keyword eligibility, CTR effect on the account's 5% floor) and the cost of each option. Weigh the account's CTR floor: a near-zero-click campaign drags account CTR down only if it gets impressions. If the call is (d), say so and the Social Lead will add a post the week the change goes live.",
+      "status": "OPEN: first look in the 2026-11-04 weekly review; recommend as an item with 'do ad grants item N'."
+    },
+    {
+      "id": "calendar-local-events",
+      "added": "2026-11-03",
+      "from": "Keith (calendar growth plan, 'Approve through March')",
+      "what": "Calendar growth plan (Shift docs/programs/product/calendar-growth-plan-2026-11/plan.html): winter Local Events ad groups from the week of Nov 9 on year-round 'find an event' searches (bike repair workshop, walking group boston, winter bike ride); event-alert sign-up imported as a conversion once it fires a GA4 event; ride-season terms from Mar 1, 2027. 5% CTR rule: pause any ad group under 5% after 300 impressions; no broad 'things to do' terms. Supersedes the 10-15 note to wait for spring. Shift handoff h-calendar-20261103-ads.",
+      "status": "APPROVED 2026-11-03, not started"
+    },
+    {
+      "id": "venue-parking",
+      "added": "2026-11-03",
+      "from": "Launch venue-parking (Shift docs/programs/launches/venue-parking/plan.md), Keith approved 2026-11-02",
+      "what": "Campaign 'Venue Parking' (24426572849): TD Garden, Fenway Park and Gillette Stadium ad groups -> /parking/<venue>, judged on venue_trip_planned (Primary, Engagement). Kill rules: pause any ad group under 5% CTR after 300 impressions; pause the campaign the same day if the account's month-to-date CTR falls under 6.5%; never undo a change younger than 14 days.",
+      "status": "BUILT 2026-11-03, serves from Wed 2026-11-04 at $25/day. Paid desk Wed Nov 11 (handoff h-launch-20261102-vp-ads): read search terms, add negatives (consider 'tickets' only if ticket-buyer searches show up), raise to $50/day if every ad group is >= 5% after 300 impressions, else pause the ones under. Check the six ads read 'Eligible' (policy review) once the campaign starts."
     }
   ],
   "pulse_log": [
@@ -909,6 +939,121 @@
       },
       "search_terms": "Named rows 171 clicks / 1,643 impr, 16 conv. Top ~30 by impressions all How-to Guides / Paying for the T transit lookups (boston public transportation 8/78, how to pay for the t in boston 2/25 with 1 conv, boston t 2/24, how to take the t in boston 1/24, charlie card 6/24, what is the t in boston 0/21, how to ride the t in boston 1/20). Nothing off-target; no negatives proposed.",
       "month_end_math": "CTR 8.57% on 3,268 impr with 4 days left; October's 5% is secured. 27 conversions vs the 1 required.",
+      "alerts": [],
+      "emailed": false
+    },
+    {
+      "date": "2026-10-29",
+      "source": "scheduled quick check (ad-grants-pulse), live account, This month = Oct 1-29 (authuser=9 redirected to 5)",
+      "mtd": {
+        "window": "2026-10-01..2026-10-29",
+        "impressions": 3534,
+        "clicks": 311,
+        "ctr_pct": 8.8,
+        "cost": 1475.12,
+        "conversions": 34
+      },
+      "by_campaign": {
+        "How-to Guides": { "impressions": 3196, "clicks": 296, "conversions": 34 },
+        "Town Walking & Biking": { "impressions": 298, "clicks": 13 },
+        "GSI — Brand": { "impressions": 14, "clicks": 2 },
+        "New Routes — Movers": { "impressions": 30, "clicks": 0 },
+        "Shift App — Massachusetts": { "impressions": 9, "clicks": 0 },
+        "Shift Your Semester — Students": { "impressions": 1, "clicks": 0 }
+      },
+      "campaign_status": "How-to Guides and Brand Eligible (Limited) Limited by search volume; others Eligible. Budgets unchanged ($449.50/day).",
+      "banners": [
+        "Recommendation card: Add broad match keywords (not applied)"
+      ],
+      "ads": {
+        "rows_read": "all (table total 3,548 impr / 311 clicks)",
+        "disapproved_seen": 0,
+        "limited_by_policy": 0,
+        "not_eligible": 0,
+        "poor": "2, both already known (How to Pay for the T RSA; Walking School Bus Ideas)"
+      },
+      "search_terms": "Named rows 193 clicks / 1,782 impr, 23 conv. Top ~45 by impressions all How-to Guides / Paying for the T transit and fare lookups (boston public transportation 9/87, boston t 2/27, how to take the t in boston 1/25, boston transit 3/21, what is the t in boston 0/21). 'www paybyplatema com' now 0/7 (was 6 at 10-20; the broad negative went in 10-20, so likely one impression that day; watch, not alerted). No new negatives proposed.",
+      "month_end_math": "8.8% on 3,534 impr with 2 days left; October's 5% and 1-conversion rules both met.",
+      "alerts": [],
+      "emailed": false
+    },
+    {
+      "date": "2026-10-30",
+      "source": "scheduled quick check (ad-grants-pulse), live account, This month = Oct 1-30 (authuser=9 redirected to 5)",
+      "mtd": {
+        "window": "2026-10-01..2026-10-30",
+        "impressions": 3716,
+        "clicks": 326,
+        "ctr_pct": 8.77,
+        "cost": 1525.07,
+        "conversions": 34
+      },
+      "by_campaign": {
+        "How-to Guides": { "impressions": 3356, "clicks": 313, "conversions": 34 },
+        "Town Walking & Biking": { "impressions": 311, "clicks": 13 },
+        "GSI — Brand": { "impressions": 14, "clicks": 2 },
+        "New Routes — Movers": { "impressions": 30, "clicks": 0 },
+        "Shift App — Massachusetts": { "impressions": 11, "clicks": 0 },
+        "Shift Your Semester — Students": { "impressions": 1, "clicks": 0 }
+      },
+      "campaign_status": "How-to Guides and Brand Eligible (Limited) Limited by search volume; others Eligible. Budgets unchanged ($449.50/day).",
+      "banners": [
+        "NEW: Apply for healthcare certification (replaces the financial-services certification prompt seen since 10-12; same kind of prompt, no ad is Limited by policy, so not serving-threatening; do not apply)",
+        "Protect your account from unauthorized activity",
+        "Recommendation card: Add broad match keywords (not applied)"
+      ],
+      "ads": {
+        "rows_read": "all 41",
+        "disapproved_seen": 0,
+        "limited_by_policy": 0,
+        "not_eligible": 0,
+        "poor": "2, both already known (How to Pay for the T RSA; Walking School Bus Ideas)"
+      },
+      "search_terms": "773 terms; named rows 205 clicks / 1,876 impr, 23 conv. Top 25 by impressions all How-to Guides / Paying for the T transit and fare lookups (boston public transportation 11/95, boston t 2/27, how to pay for the t in boston 2/27, charlie card 6/25). Zero-click terms at 3+ impr are on-target fare/transit lookups; 'www paybyplatema com' still 0/7 (no new impressions since 10-29); 'boston öffentliche verkehrsmittel' 0/5 is on-topic (German). Town 'bike path near me' 0/5 (keyword paused 10-28, <14 days). No negatives proposed.",
+      "month_end_math": "8.77% on 3,716 impr with 1 day left; October's 5% and 1-conversion rules both met.",
+      "alerts": [],
+      "emailed": false
+    },
+    {
+      "date": "2026-11-03",
+      "source": "scheduled quick check (ad-grants-pulse): SKIPPED, account not read. Claude in Chrome connected, but ads.google.com redirected to a Google 'Verify it's you' sign-in page for kanderson@rapidads.io (not the grant login walkrideday@gmail.com); an unattended run cannot sign in. Keith needs to sign Chrome back in to the grant account before the 11-04 weekly review.",
+      "mtd": null,
+      "alerts": [],
+      "emailed": false
+    },
+    {
+      "date": "2026-11-03",
+      "source": "scheduled quick check (ad-grants-pulse), second run ~12:15 ET, live account via authuser=walkrideday%40gmail.com (resolved to 5; the earlier sign-in block is cleared). This month = Nov 1-3.",
+      "mtd": {
+        "window": "2026-11-01..2026-11-03",
+        "impressions": 463,
+        "clicks": 43,
+        "ctr_pct": 9.29,
+        "cost": 137.26,
+        "conversions": 3
+      },
+      "by_campaign": {
+        "How-to Guides": { "impressions": 436, "clicks": 41, "conversions": 3 },
+        "Town Walking & Biking": { "impressions": 32, "clicks": 3 },
+        "Shift App — Massachusetts": { "impressions": 2, "clicks": 0 },
+        "GSI — Brand": { "impressions": 0, "clicks": 0 },
+        "New Routes — Movers": { "impressions": 0, "clicks": 0 },
+        "Shift Your Semester — Students": { "impressions": 0, "clicks": 0 },
+        "Venue Parking": { "impressions": 0, "clicks": 0, "note": "Pending, starts 11-04 as planned" }
+      },
+      "campaign_status": "How-to Guides and Brand Eligible (Limited) Limited by search volume; Venue Parking Pending; others Eligible. Account budget $474.50/day (Venue Parking $25 added).",
+      "banners": [
+        "Apply for healthcare certification (seen since 10-30; do not apply)",
+        "Protect your account from unauthorized activity",
+        "Recommendation card: Add broad match keywords (not applied)"
+      ],
+      "ads": {
+        "disapproved_seen": 0,
+        "limited_by_policy": 0,
+        "not_eligible": "3 Venue Parking Ad 1s, 'Campaign is pending' (expected until 11-04)",
+        "poor": "5: the 2 known (How to Pay for the T, best CTR 12.3%; Walking School Bus Ideas) plus the 3 pinned Venue Parking Ad 1s (expected with pins; the weekly can judge)"
+      },
+      "search_terms": "Only ~10 named terms so far; all How-to Guides / Paying for the T transit and fare lookups (boston public transportation 1/8, charliecard 2/7 + 1/7, boston transit 0/6, charlie card 0/6, mbta monthly pass 2/6). Nothing off-target; no negatives proposed.",
       "alerts": [],
       "emailed": false
     }
@@ -1934,6 +2079,148 @@
       "not_recommended": "New Routes: did NOT re-enable 'biking in boston' despite the 10-07 kill condition (still 27 impr) because its Town twin was paused 10-21 at QS 1 and the movers landing changed 10-13 (judge 10-27). employer_inquiry event now fires from /shift/employers (EmployerInquiry.tsx); importing it is the next step toward an employer campaign, mentioned in the report note only.",
       "emailed": true,
       "verdict": "Act this week (one small rule fix): October 7.14% (175/2,451), 10 conversions; fail: T closures ad group has 1 ad."
+    },
+    {
+      "date": "2026-10-28",
+      "source": "scheduled weekly run: live account via Claude in Chrome (This month = Oct 1-28; campaigns, keywords page 1 of 3 (100 of 244 rows, sorted by clicks), ads (41, all read), conversions/all, search terms at /aw/keywords/searchterms (the /aw/searchterms URL in the task 404s), sorted by impressions) + 10-28 script email (rolling 30d: 3,397 impr, 294 clicks, 8.7%, $1,432.48, 31 conv; flagged Town Walking & Biking 4.3% and QS<3 on 'bike trails near me', both handled earlier today) + GSC weekly-2026-10-23. Ads redirected authuser=9 to authuser=5.",
+      "window": "2026-10-01..2026-10-28",
+      "impressions": 3464,
+      "clicks": 303,
+      "ctr_pct": 8.75,
+      "cost": 1452.95,
+      "conversions": 31,
+      "avg_cpc": 4.80,
+      "week": {
+        "window": "2026-10-22..2026-10-28",
+        "impressions": 1013,
+        "clicks": 128,
+        "ctr_pct": 12.64,
+        "cost": 379.14,
+        "conversions": 21
+      },
+      "by_campaign": {
+        "How-to Guides": {
+          "impressions": 3126,
+          "clicks": 289,
+          "cost": 1377.09,
+          "conversions": 31
+        },
+        "Town Walking & Biking": {
+          "impressions": 284,
+          "clicks": 12,
+          "cost": 61.12,
+          "conversions": 0
+        },
+        "GSI — Brand": {
+          "impressions": 14,
+          "clicks": 2,
+          "cost": 14.74,
+          "conversions": 0
+        },
+        "New Routes — Movers": {
+          "impressions": 30,
+          "clicks": 0,
+          "cost": 0,
+          "conversions": 0
+        },
+        "Shift App — Massachusetts": {
+          "impressions": 9,
+          "clicks": 0,
+          "cost": 0,
+          "conversions": 0
+        },
+        "Shift Your Semester — Students": {
+          "impressions": 1,
+          "clicks": 0,
+          "cost": 0,
+          "conversions": 0
+        }
+      },
+      "concentration": "Top keywords Oct 1-28: 'how to pay for the t' 208/2,353 (8.84%, 17 conv), 'how to use charliecard' 58/520 (11.15%, 13 conv), 'how to pay mbta fare' 15/178, 'walking trails boston' 4/97 (Town, 4.12%, the one enabled Town keyword with volume). Ads: Paying for the MBTA RSA 193/2,212 (23 conv), How to Pay for the T RSA 94/900 (8 conv, still rated Poor).",
+      "keywords": {
+        "total": 244,
+        "read": "page 1 of 3 (100 rows by clicks): 78 eligible, 19 low search volume, 5 paused",
+        "match_page1": "89 broad, 9 phrase, 2 exact",
+        "single_word": [
+          "\"gogreenstreets\" (brand, allowed; per last full read 10-21, bike-lesson keywords added 10-28 are multi-word phrase)"
+        ],
+        "low_quality_score": [],
+        "paused_list": [
+          "biking in worcester (Town, QS 1, paused 10-07)",
+          "boston bike paths (Town, QS<3, paused 10-14)",
+          "biking in boston (Town, QS 1, paused 10-21)",
+          "biking in boston (New Routes, paused 10-07)",
+          "bike trails near me (Town, QS 2, paused 10-28)"
+        ]
+      },
+      "ads": {
+        "total": 41,
+        "ad_groups": 21,
+        "all_eligible": true,
+        "disapproved_seen": 0,
+        "limited_by_policy": 0,
+        "strength": "29 Average, 9 Good, 1 Excellent, 2 Poor",
+        "poor": [
+          "How-to Guides / Paying for the T: How to Pay for the T | MBTA Fares, Explained (best ad by CTR; leave)",
+          "Town Walking & Biking / Walk and bike to school: Walking School Bus Ideas"
+        ],
+        "under_two_ads": [
+          "How-to Guides / T closures (1 RSA since 10-17; second week failing)"
+        ]
+      },
+      "sitelinks": 16,
+      "sitelinks_source": "script email",
+      "campaign_status": "How-to Guides and Brand 'Eligible (Limited) Limited by search volume'; others Eligible; all Maximize conversions. Budgets unchanged ($449.50/day).",
+      "conversion_tracking_status": "cheat_sheet_download Active (28); shift_store_click Active (3); newsletter_signup, event_register_click, event_calendar_save Awaiting conversions; donate_page_view not in goals. free_lesson_code_requested not yet imported.",
+      "account_banners": [
+        "Apply for financial products & services certification (since 10-12; do not apply)",
+        "Protect your account from unauthorized activity",
+        "Recommendation card: Add broad match keywords (not applied)"
+      ],
+      "brand_search_gsc_week": {
+        "range": "2026-10-17..2026-10-23",
+        "impressions": 14,
+        "clicks": 4,
+        "note": "green streets 6/1, greenstreets 4/2, green streets initiative 4/1 (avg position 12); lower bound (file stores top queries only)"
+      },
+      "month_end_math": "October locked: 303 clicks already; even ~450 more impressions with 0 clicks ends near 7.7%. September closed 3.0%, so October clearing 5% removes the two-month pause risk.",
+      "grant_utilization": "$1,452.95 of $10,000 (~15%) through Oct 28",
+      "search_terms": [
+        { "term": "boston public transportation", "impressions": 81, "clicks": 9, "conversions": 0 },
+        { "term": "how to pay for the t in boston", "impressions": 37, "clicks": 3, "conversions": 1 },
+        { "term": "charlie card", "impressions": 31, "clicks": 6, "conversions": 0 },
+        { "term": "boston t", "impressions": 27, "clicks": 2, "conversions": 0 },
+        { "term": "how to take the t in boston", "impressions": 24, "clicks": 1, "conversions": 0 },
+        { "term": "what is the t in boston", "impressions": 21, "clicks": 0, "conversions": 0 },
+        { "term": "boston transit", "impressions": 20, "clicks": 3, "conversions": 0 },
+        { "term": "how to ride the t in boston", "impressions": 20, "clicks": 1, "conversions": 0 },
+        { "term": "public transportation in boston", "impressions": 18, "clicks": 2, "conversions": 0 },
+        { "term": "the t boston", "impressions": 18, "clicks": 1, "conversions": 1 },
+        { "term": "the t in boston", "impressions": 15, "clicks": 1, "conversions": 1 },
+        { "term": "boston subway", "impressions": 14, "clicks": 1, "conversions": 0 },
+        { "term": "boston t tickets", "impressions": 13, "clicks": 3, "conversions": 1 },
+        { "term": "boston public transit", "impressions": 12, "clicks": 3, "conversions": 1 },
+        { "term": "public transportation boston", "impressions": 12, "clicks": 0, "conversions": 0 },
+        { "term": "boston subway system", "impressions": 11, "clicks": 0, "conversions": 0 },
+        { "term": "boston the t", "impressions": 11, "clicks": 1, "conversions": 0 },
+        { "term": "t train boston", "impressions": 11, "clicks": 2, "conversions": 0 },
+        { "term": "how to pay for bus in boston", "impressions": 11, "clicks": 2, "conversions": 0 },
+        { "term": "boston public transport", "impressions": 10, "clicks": 1, "conversions": 0 },
+        { "term": "boston t pass", "impressions": 10, "clicks": 3, "conversions": 0 },
+        { "term": "charliecard", "impressions": 9, "clicks": 0, "conversions": 0 },
+        { "term": "boston mbta passes", "impressions": 9, "clicks": 3, "conversions": 0 },
+        { "term": "t pass boston", "impressions": 9, "clicks": 0, "conversions": 0 },
+        { "term": "boston transportation", "impressions": 8, "clicks": 0, "conversions": 0 }
+      ],
+      "search_terms_note": "733 terms this month. 'how to pay for the t in boston' merged from exact (25/2/1) and phrase (12/1/0) rows; 'charlie card' merged from phrase (24/6/0) and broad (7/0/0). All top 30 are How-to Guides / Paying for the T. Pass/fare terms (boston t pass, boston mbta passes, boston transit pass 8/4) click at 30%+, supporting the Fares and passes ad group. No new negatives proposed.",
+      "recommended": [
+        "1 add a second RSA to How-to Guides / T closures (still 1 ad; second week failing) before the Oct 31 Green Line closure",
+        "2 'Fares and passes' ad group in How-to Guides (keyword item 1; How-to limited by search volume; grant ~15% used)",
+        "3 'Events near you' sitelink on How-to Guides"
+      ],
+      "not_recommended": "Semester (1 impr) and New Routes (30 impr, 0 clicks) met their kill conditions at their 10-28 / 10-27 judging dates; no account change recommended (they cost nothing). 10-28 bike lessons groups and the 'bike trails near me' pause are under 14 days; untouched. Trails keywords wait on /trails shipping (Keith's 10-28 plan).",
+      "emailed": true,
+      "verdict": "Act this week (one small rule fix): October 8.75% (303/3,464), 31 conversions; fail: T closures ad group still has 1 ad."
     }
   ]
 }

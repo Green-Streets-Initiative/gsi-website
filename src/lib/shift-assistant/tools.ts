@@ -14,14 +14,20 @@ import { fetchRideWithGps } from '@/lib/organizers/rwgps'
 import { bikeParkingNear, summarizeRoute } from '@/lib/organizer-assistant/route-designer'
 import { myChallenges, myWorkplace, officeAt, workplaceFacts } from '@/lib/shift-assistant/my-challenges'
 import { myClosurePlans, myDrives, shuttlesFor } from '@/lib/shift-assistant/trip-data'
-import { BIKE_RULES, bikeOk, departuresNear, myProgress, parkAndRide, popularStreets, rewardsPartnersNear } from '@/lib/shift-assistant/more-data'
+import { BIKE_RULES, badgeCatalog, bikeOk, departuresNear, myProgress,parkAndRide, popularStreets, rewardsPartnersNear, townAt, townMix } from '@/lib/shift-assistant/more-data'
 import { signedUrls } from '@/lib/shift-assistant/uploads'
+import { HELP_TOPICS, helpIndex, helpTopic } from '@/lib/help/faq'
 import { ALWAYS as FARES_FOR_EVERYONE, fareProgram, farePrograms } from '@/lib/facts/fare-programs'
 import { PRICES, usd } from '@/lib/facts/prices'
+import { VENUES } from '@/lib/venues'
 import { BORROW_RENT_BLURB, nearbyBorrowRent } from '@/lib/nearby/borrow-rent'
 import { getBikeShareDocks } from '@/lib/server/bluebikes'
-import { getActiveRoams, getNextRoamEvent, getRoamDetail, getRoamTrailInfo } from '@/lib/roams/queries'
-import { ACCESS_LINKS, accessibleNear, ebikeMath, rsvpRide, shiftRideDates } from '@/lib/shift-assistant/audit-data'
+import { bikePerkPool } from '@/lib/server/bike-perks'
+import { PERK_KIND_LABEL, perksAlong, perksNear, perkWhere, type PerkStop } from '@/lib/bike-perks'
+import { newInfraInTown, newInfraNear, newInfraOnRoute } from '@/lib/server/new-infra'
+import { newInfraForAssistant } from '@/lib/new-infra'
+import { getActiveRoams, getNextRoamEvent, getRoamDetail, getRoamKeepGoing, getRoamTrailInfo, getRoamsInSeason } from '@/lib/roams/queries'
+import { ACCESS_LINKS, accessibleNear, ebikeMath, myRides, rsvpRide, shiftRideDates } from '@/lib/shift-assistant/audit-data'
 import { RIDE_PLAN_ACTIVITY, RIDE_PLAN_NEEDS_APPROVAL, RIDE_PLAN_TOOLS, ridePlanCard, runApprovedRidePlan, runRidePlanTool, type RidePlanCard } from '@/lib/shift-assistant/ride-plan-tools'
 
 // The Shift assistant's tools, for everyone in the app (Keith 2026-10-24).
@@ -59,6 +65,36 @@ export type ToolResult = {
   isError?: boolean
   link?: ScreenLink
   trip?: TripCard
+  trail?: TrailCard
+}
+
+/** A Roam at a glance, drawn by the app under the reply (Keith 2026-10-28:
+ *  "convert some of the trail basics into a visual card"): length, time,
+ *  surface and hills as chips, the hills as bars, and how to get there. The
+ *  card carries its own Open button, so get_roam sends no separate link. */
+export type TrailCard = {
+  roam_id: string
+  name: string
+  area: string | null
+  kind: string
+  miles: number | null
+  minutes: number | null
+  surface: 'paved' | 'stone_dust' | 'dirt' | 'mixed' | null
+  hills: 'flat' | 'gentle' | 'rolling' | 'hilly' | null
+  climb_ft: number | null
+  climb_ft_back: number | null
+  loop: boolean
+  /** [miles, feet], thinned to about 40 points. */
+  profile: [number, number][]
+  start: string | null
+  end: string | null
+  getting_there: { mode: 'train' | 'bus' | 'bikeshare' | 'drive'; text: string } | null
+  closure: string | null
+  /** false: the closure is on a path it connects to, not on the route. */
+  closure_on_route: boolean
+  /** Where the connecting path with the closure comes from ("Davis Square"). */
+  closure_from: string | null
+  open_label: string
 }
 
 /** A planned trip, drawn by the app as a card under the reply: a small map,
@@ -68,6 +104,9 @@ export type ToolResult = {
  *  points, small enough to keep in the conversation the model reads. */
 export type TripCard = {
   from: { name: string; lat: number; lng: number }
+  /** The trip starts where the phone is, so the app can say so in its own
+   *  language instead of matching the English "Your location". */
+  from_here?: boolean
   to: { name: string; lat: number; lng: number }
   bike_minutes: number | null
   bike_miles: number | null
@@ -97,12 +136,20 @@ export type TripCard = {
  *  list this with their screens (Shift lib/assistant.ts). Older builds draw
  *  only the bike card, so they get no card when it would lead with another way. */
 const CARD_WAYS = 'card_ways'
+const CARD_TRAIL = 'trail_card'
+/** Builds whose route card has "Save this trip" (Shift 01491, Keith 2026-10-29). */
+const CARD_SAVE = 'save_trip'
+
+/** When someone is free for a practice ride (Shift 01503). */
+const PRACTICE_SLOTS = ['weekend_morning', 'weekend_afternoon', 'weekday_evening']
 
 /** Screens added after the first release: offered only to builds that list them. */
-const NEWER_SCREENS = new Set(['trip', 'trip_history', 'my_rewards', 'notifications', 'vacation', 'partner_request', 'partner_matches', 'bike_confidence', 'roam', 'closure_plan', 'memories'])
+/** The Settings area's screens (Shift 2026-10-30): the index and one per row. */
+const SETTINGS_SCREENS = ['settings', 'tracking', 'language', 'car', 'privacy', 'assistant_settings', 'account', 'places', 'go_together', 'invite', 'help'] as const
+const NEWER_SCREENS = new Set(['trip', 'trip_history', 'my_rewards', 'notifications', 'vacation', 'partner_request', 'partner_matches', 'bike_confidence', 'roam', 'closure_plan', 'memories', 'partner_practice', ...SETTINGS_SCREENS])
 const canOpen = (ctx: ToolCtx, screen: string) => !NEWER_SCREENS.has(screen) || !!ctx.screens?.has(screen)
 
-const SCREENS = ['commute', 'commute_setup', 'around_you', 'rides', 'event', 'ride', 'rewards', 'log_trip', 'ride_plan', 'trip', 'trip_history', 'my_rewards', 'notifications', 'vacation', 'partner_request', 'partner_matches', 'bike_confidence', 'roam', 'closure_plan', 'memories'] as const
+const SCREENS = ['commute', 'commute_setup', 'around_you', 'rides', 'event', 'ride', 'rewards', 'log_trip', 'ride_plan', 'trip', 'trip_history', 'my_rewards', 'notifications', 'vacation', 'partner_request', 'partner_matches', 'bike_confidence', 'roam', 'closure_plan', 'memories', 'partner_practice', ...SETTINGS_SCREENS] as const
 type Screen = (typeof SCREENS)[number]
 
 const FUNCTIONS = `${(process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').replace(/\/$/, '')}/functions/v1`
@@ -122,6 +169,20 @@ function thinLine(encoded: string | null | undefined, max = 60): string | null {
 }
 const fail = (error: string): ToolResult => ({ content: { error }, isError: true })
 
+/** Their home town, lowercased; else the town their saved Home, or their phone, is in. */
+async function homeTownName(ctx: ToolCtx): Promise<string> {
+  const { data } = await ctx.user.from('users').select('home_town').eq('id', ctx.userId).single()
+  const home = ((data as { home_town?: string | null } | null)?.home_town ?? '').toLowerCase()
+  if (home) return home
+  const { data: h } = await ctx.user.from('saved_locations').select('lat, lng').eq('user_id', ctx.userId).ilike('label', 'home').limit(1)
+  const at = ((h ?? [])[0] as { lat: number | null; lng: number | null } | undefined)
+  const point = at?.lat != null && at?.lng != null ? { lat: at.lat, lng: at.lng } : ctx.here ?? null
+  if (!point) return ''
+  const { data: nid } = await ctx.admin.rpc('find_neighborhood_for_point', { p_lat: point.lat, p_lng: point.lng })
+  const { data: nb } = nid ? await ctx.admin.from('neighborhoods').select('town').eq('id', nid as string).maybeSingle() : { data: null }
+  return ((nb as { town?: string } | null)?.town ?? '').toLowerCase()
+}
+
 /** Reminders need a build whose notice opens the conversation (Shift lib/assistant.ts "plans"). */
 const PLAN_TOOLS = new Set(['set_reminder', 'cancel_reminder'])
 export function toolsFor(ctx: ToolCtx): Anthropic.Tool[] {
@@ -140,6 +201,12 @@ const placeSchema = {
   required: ['lat', 'lng'],
 } as const
 
+/** Whether a place is where the phone is (within about 50 m), or the model named it so. */
+function isHere(ctx: ToolCtx, p: { name?: string | null; lat: number; lng: number }): boolean {
+  if ((p.name ?? '').trim() === 'Your location') return true
+  return !!ctx.here && Math.abs(ctx.here.lat - p.lat) < 0.0005 && Math.abs(ctx.here.lng - p.lng) < 0.0006
+}
+
 /** Label shown while a tool runs. Tools missing here run without a line. */
 export const ACTIVITY: Record<string, string> = {
   get_my_places: 'Reading your places',
@@ -150,6 +217,7 @@ export const ACTIVITY: Record<string, string> = {
   get_weather: 'Checking the forecast',
   find_place: 'Looking up the place',
   find_rides_and_events: 'Looking for rides and events',
+  get_my_rides: 'Checking your rides',
   get_service_alerts: 'Checking service alerts',
   get_my_activity: 'Reading your trips and rewards',
   get_my_challenges: 'Checking your challenges',
@@ -158,8 +226,12 @@ export const ACTIVITY: Record<string, string> = {
   get_my_drives: 'Looking at your drives',
   find_shuttles: 'Checking shuttles',
   get_popular_streets: 'Finding the streets people use',
+  get_town_travel_mix: 'Seeing how people get around',
   find_rewards_partners: 'Looking for Rewards Partners',
+  find_bike_perks: 'Looking for bike perks',
+  get_whats_new: 'Looking for new bike lanes',
   get_my_progress: 'Checking your progress',
+  get_badges: 'Looking at the badges',
   get_departures: 'Checking live departures',
   find_park_and_ride: 'Finding station parking',
   get_bike_rules: 'Checking bikes on the T',
@@ -169,10 +241,15 @@ export const ACTIVITY: Record<string, string> = {
   get_town_info: 'Looking up your town',
   check_route_link: 'Reading the route',
   get_fare_help: 'Checking fare discounts',
+  get_venue_parking: 'Checking game-day parking',
   find_bikes_to_try: 'Looking for bikes to try',
   find_roams: 'Looking for routes to explore',
   get_roam: 'Reading the route',
+  find_trails: 'Looking up trails',
+  get_lesson_offer: 'Checking the free lesson',
   // Shown once they approve the card.
+  join_shift_together: 'Signing you up',
+  join_practice_ride: 'Signing you up',
   save_place: 'Saving the place',
   change_settings: 'Saving your settings',
   set_reminder: 'Setting your reminder',
@@ -182,9 +259,10 @@ export const ACTIVITY: Record<string, string> = {
 }
 
 /** Tools that save something: the turn pauses on a card until the person approves. */
-export const NEEDS_APPROVAL = new Set([...RIDE_PLAN_NEEDS_APPROVAL, 'save_place', 'change_settings', 'set_reminder', 'remember', 'rsvp_ride'])
+export const NEEDS_APPROVAL = new Set([...RIDE_PLAN_NEEDS_APPROVAL, 'save_place', 'change_settings', 'set_reminder', 'remember', 'rsvp_ride', 'join_shift_together', 'join_practice_ride'])
 
-export type ApprovalCard = RidePlanCard & { confirmText?: string }
+/** tone danger: a red button, for turning the assistant itself off (the app draws both). */
+export type ApprovalCard = Omit<RidePlanCard, 'tone'> & { tone: 'primary' | 'danger'; confirmText?: string }
 
 export const TOOLS: Anthropic.Tool[] = [
   {
@@ -262,6 +340,11 @@ export const TOOLS: Anthropic.Tool[] = [
     },
   },
   {
+    name: 'get_my_rides',
+    description: "The Shift group rides and walks this person is on (as rider, leader or organizer, invite-only ones included): each with its next dates in the next 60 days, any canceled date, and their answer (going, maybe, can't make it, or not answered yet). Use for \"which rides am I on\", \"when's my next ride\", \"is Saturday's ride still on\" or \"did I say I'm going\".",
+    input_schema: { type: 'object', properties: {} },
+  },
+  {
     name: 'get_service_alerts',
     description: "MBTA service changes on some lines, happening now or coming up: shuttle buses, suspensions and station closures, with dates; and elevators out of service right now. check_trip already includes them for its own lines, so use this when someone asks about a line or a station directly (\"is the Red Line running?\", \"any elevators out at Park Street?\").",
     input_schema: {
@@ -320,13 +403,55 @@ export const TOOLS: Anthropic.Tool[] = [
     },
   },
   {
+    name: 'get_town_travel_mix',
+    description: "How Shift members get around a town, from their trips to, from or within it over the last 90 days: how many people walk, bike, take the bus or train, carpool or drive there, each way's share of trips, and how many combine ways (bike to the train). Shared only for towns with enough people that nobody can be picked out. Use for \"how do people get to Kendall\", \"does anyone bike in Lexington\", \"how do people get around here\". Their home town unless they name a town or a place.",
+    input_schema: {
+      type: 'object',
+      properties: {
+        town: nullable('string', 'A town or city name ("Lexington"). Leave empty for their home town or a place.'),
+        near: { ...placeSchema, description: 'A place from find_place, for the town it is in ("Kendall" is in Cambridge).' },
+      },
+    },
+  },
+  {
     name: 'find_rewards_partners',
     description: "Rewards Partners near a place: local shops in Shift's rewards catalog (where a gift card they win can be spent), with the nearest stop and Bluebikes dock, and Rewards Partner offers (what each gives, the Shift level that unlocks it, and whether they have that level). Use for \"where can I use my reward\", \"any partners near work\", \"what does Shift get me around here\". Near their location unless you pass a place.",
     input_schema: { type: 'object', properties: { near: { ...placeSchema, description: 'Where to look. Leave out for their location, else their Home.' } } },
   },
   {
+    name: 'find_bike_perks',
+    description: "Bicycle Benefits members: local businesses that give a perk (a discount, a free drink) to anyone with the program's helmet sticker, from the program's own published list. Near a place, or along the bike route between two places (within about a block of it). Each has its perk, what kind of place it is, whether it sells the sticker and whether it has an air pump. Use for \"a café on the way that gives a bike perk\", \"where can I use my Bicycle Benefits sticker\", \"bike-friendly coffee near the ride start\". Not Shift's Rewards Partners (find_rewards_partners).",
+    input_schema: {
+      type: 'object',
+      properties: {
+        near: { ...placeSchema, description: 'Where to look. Leave out for their location, else their Home. Ignored when from and to are given.' },
+        from: { ...placeSchema, description: 'With to: look along the bike route of this trip.' },
+        to: { ...placeSchema, description: 'With from: look along the bike route of this trip.' },
+        kind: nullable('string', 'cafe, bakery, food, bar, sweets, market, bike_shop or shop, when they asked for one kind. Empty for any.'),
+      },
+    },
+  },
+  {
+    name: 'get_whats_new',
+    description: "New bike infrastructure: lanes and paths that opened in the last six months (MassDOT's bike inventory, plus OpenStreetMap changes only when a second source backs them), and street, path and intersection projects with a public hearing or comment period coming. Near a place, in a town, or along the bike route between two places. Use for \"what's new near me\", \"any new bike lanes on my way to work\", \"what's changing on Broadway\".",
+    input_schema: {
+      type: 'object',
+      properties: {
+        near: { ...placeSchema, description: 'Where to look. Leave out for their location, else their Home. Ignored when town or from and to are given.' },
+        town: nullable('string', 'A Massachusetts town or city ("Cambridge") when they ask about a whole town.'),
+        from: { ...placeSchema, description: 'With to: look along the bike route of this trip.' },
+        to: { ...placeSchema, description: 'With from: look along the bike route of this trip.' },
+      },
+    },
+  },
+  {
     name: 'get_my_progress',
     description: "Their progress over time: the switch plan they said yes to (the trip, the new way, the first try, days so far of the 5 that make it a switch, the reward), their daily and weekly streaks, personal bests (longest walk, longest bike ride, most trips in a week and in a month), the last 12 months in trips and miles, and their Shift level with what the next one takes. Use for \"how's my switch going\", \"what's my streak\", \"what's my longest ride\", \"how do I get to the next level\".",
+    input_schema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'get_badges',
+    description: "Every badge they can unlock, grouped as the Progress tab groups them (trips and milestones, streaks, distance, weather, Roams and trails): what each takes, whether they have it, how far along they are, how rare it is (the share of people on Shift who have it), the rarest ones, and when a Roam's badge is in season. Use for \"what badges are there\", \"which are the rarest\", \"what's the hardest badge\", \"how do I get <badge>\".",
     input_schema: { type: 'object', properties: {} },
   },
   {
@@ -364,7 +489,7 @@ export const TOOLS: Anthropic.Tool[] = [
   },
   {
     name: 'rsvp_ride',
-    description: "Sign the person up for a date of a Shift group ride or walk (the shift_ride entries from find_rides_and_events, by occurrence_id): joins the ride if they haven't, then says going, maybe or can't make it. The organizer sees their name. The person approves on a card first.",
+    description: "Sign the person up for a date of a Shift group ride or walk (the shift_ride entries from find_rides_and_events, or a date from get_my_rides, by occurrence_id): joins the ride if they haven't, then says going, maybe or can't make it. People on the ride see their first name and last initial. The person approves on a card first.",
     input_schema: {
       type: 'object',
       properties: {
@@ -388,6 +513,47 @@ export const TOOLS: Anthropic.Tool[] = [
     },
   },
   {
+    name: 'get_lesson_offer',
+    description: "Whether Green Streets' free one-on-one road riding lesson is open to them: for someone who can ride but is rusty after years away or nervous in traffic. Says the school, how far it is from their home, how many lessons are left, or that they already have a code, live too far, or have no home saved. Call it before you mention the free lesson, and say exactly what it found.",
+    input_schema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'join_shift_together',
+    description: "Sign the person up for Shift Together: kind newcomer (go with someone the first time on a trip between two of their saved places, Home to Work, School...), guide (go with a neighbor the first time they try a trip: a guide needs only their Home, and is matched with newcomers who live within 2 miles and whose trip is no longer than max_miles, whether or not it's the guide's own trip), or carpool (share the drive between two saved places). Shift then suggests someone nearby; both say yes before either sees the other's email. Saving again changes their existing sign-up of that kind. Leave days and times empty unless they told you: Shift reads them from their own trips between the two places, and asks you only if it can't. Ask only what their trips can't say: the way they want to go (newcomer), or for a carpool whether they'd drive, ride or either. The card shows the agreement they accept (18 or older, meeting in public by their own choice, their own safety), and they approve it there.",
+    input_schema: {
+      type: 'object',
+      properties: {
+        kind: { type: 'string', enum: ['newcomer', 'guide', 'carpool'] },
+        modes: { type: ['array', 'null'], items: { type: 'string', enum: ['walk', 'bike', 'transit', 'micro'] }, description: 'newcomer and guide: the ways (micro = scooter). Empty for a carpool.' },
+        from: nullable('string', 'The name of a saved place where the trip starts, as get_my_places has it. Empty means Home.'),
+        to: nullable('string', 'The name of a saved place where it ends. Empty means Work, or School when they have no Work. A guide needs none.'),
+        days: { type: ['array', 'null'], items: { type: 'string', enum: ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] }, description: 'The days they make the trip. Empty means any.' },
+        times: { type: ['array', 'null'], items: { type: 'string', enum: ['morning', 'midday', 'evening'] }, description: 'newcomer and guide: when. Empty means any.' },
+        carpool_role: nullable('string', 'carpool only: driver, rider or either.'),
+        arrive_by: nullable('string', 'carpool only: HH:MM, 24-hour, when they need to get there.'),
+        leave_at: nullable('string', 'carpool only: HH:MM, 24-hour, when they head home.'),
+        note: nullable('string', "A short note their match sees, in their words (\"Back on a bike after years, I'd like a calm route\")."),
+        contact_email: nullable('string', "Only when the result told you their sign-in email is Apple's Hide My Email: an email they gave you that their match can write to."),
+        other_times: { type: ['array', 'null'], items: { type: 'string', enum: PRACTICE_SLOTS }, description: "newcomer: quieter times they'd also do the first trip (a calm weekend or evening run-through). guide: other times they're free, which also offers easy practice rides near home when they bike. Only what they said." },
+        max_miles: { type: ['number', 'null'], enum: [2, 3, 5, 8, null], description: 'guide only: the longest trip they would go on with someone. Empty means 5.' },
+      },
+      required: ['kind'],
+    },
+  },
+  {
+    name: 'join_practice_ride',
+    description: "Sign the person up for a practice ride: an easy bike ride near their home, on a quiet path or the streets around it, with a Shift Together guide who lives nearby. For someone who can ride but is out of practice or nervous, and wants to get comfortable before riding a real trip. No saved Work needed. Shift picks the nearest path entrance to their Home unless they name a path or want the quiet streets near home. Shift then suggests a guide; both say yes before either sees the other's email. The card shows the place, the times and the agreement, and they approve it there.",
+    input_schema: {
+      type: 'object',
+      properties: {
+        path: nullable('string', 'Words from the name of a path they want ("Minuteman", "Charles River"). Leave empty for the nearest.'),
+        near_home: { type: ['boolean', 'null'], description: 'True for the quiet streets near their home instead of a path.' },
+        slots: { type: ['array', 'null'], items: { type: 'string', enum: PRACTICE_SLOTS }, description: 'When they are free. Empty means weekend mornings.' },
+        contact_email: nullable('string', "Only when the result told you their sign-in email is Apple's Hide My Email: an email they gave you that their guide can write to."),
+      },
+    },
+  },
+  {
     name: 'get_town_info',
     description: "What Green Streets knows about a town, from its town page: where to report a problem (a broken signal, a pothole, a blocked bike lane), the transportation and public works departments, construction updates, bike and pedestrian committees, advocacy and community groups, bike repair, commuter services, public meetings; and upcoming hearings and comment periods on street and transit projects there, with what's being decided and how to weigh in. Their home town unless they name another.",
     input_schema: {
@@ -404,6 +570,15 @@ export const TOOLS: Anthropic.Tool[] = [
     input_schema: { type: 'object', properties: {} },
   },
   {
+    name: 'get_venue_parking',
+    description: "Parking and getting there for a game or show at TD Garden (Bruins, Celtics, concerts), Fenway Park (Red Sox) or Gillette Stadium (Patriots, Revolution, concerts): the official garage or lots with their published prices and the day we checked them, the station and lines, the upcoming event trains to Gillette, rideshare pick-up, and a button to our parking page with the other garages, walk times and live trains.",
+    input_schema: {
+      type: 'object',
+      properties: { venue: { type: 'string', enum: ['td-garden', 'fenway-park', 'gillette-stadium'] } },
+      required: ['venue'],
+    },
+  },
+  {
     name: 'find_bikes_to_try',
     description: 'Ways to try a bike near a place without buying one: CargoB e-cargo bikes rented by the minute (fixed hubs), Community Pedal Power free one-week e-bike loans (pickup areas), and Bluebikes stations with e-bikes there right now, with e-bike prices. For someone weighing an e-bike, getting back on a bike, or carrying groceries or kids.',
     input_schema: {
@@ -417,7 +592,7 @@ export const TOOLS: Anthropic.Tool[] = [
   },
   {
     name: 'find_roams',
-    description: "Roams: Shift's guided routes to explore on foot, by bike, or with transit (named trails and loops such as Fresh Pond, the Minuteman, the Charles River, the Emerald Necklace, and themed tours). Each with its length, time, kind and how far its start is. Find by name words, or nearest to a place.",
+    description: "Roams: Shift's self-guided routes to explore on foot, by bike, or with transit (named trails and loops such as Fresh Pond, the Minuteman, the Charles River, the Emerald Necklace, and themed tours). Each with its length, time, kind and how far its start is. Find by name words, or nearest to a place.",
     input_schema: {
       type: 'object',
       properties: {
@@ -429,8 +604,19 @@ export const TOOLS: Anthropic.Tool[] = [
   },
   {
     name: 'get_roam',
-    description: 'One Roam in full, by its id from find_roams (it adds the button to the Roam itself, so no open_screen): the full trail length and surface, where it starts and ends (or that it loops), how to get in, parking, trail closures and detours now, the stops along it, and its next group outing. To get them to the start, pass start to check_trip. Adds a button to the Roam.',
+    description: 'One Roam in full, by its id from find_roams (it adds the button to the Roam itself, so no open_screen): the town, the full trail length and surface, the hills (flat, a gentle grade, rolling or hilly, with the feet of climbing each way), where it starts and ends (or that it loops), how to get in, parking, the trails it rides or connects to and where you can keep riding from its ends, trail closures and detours now, the stops along it, and its next group outing. Adds a button to the Roam.',
     input_schema: { type: 'object', properties: { id: { type: 'string' } }, required: ['id'] },
+  },
+  {
+    name: 'find_trails',
+    description: "Rail trails and paths across Massachusetts from Shift's trail records, including ones with no Roam (the Bruce Freeman, the Assabet River, the Nashua River, the Cape Cod Rail Trail): the towns, length, surface, what it's like, how to get there by train or bus, parking, where it meets other trails, and any Roams on it. Find by name or town words, a part of the state (\"central mass\", \"north shore\", \"metrowest\"), or nearest to a place.",
+    input_schema: {
+      type: 'object',
+      properties: {
+        query: nullable('string', 'Words from the name, a town or a part of the state ("bruce freeman", "sudbury", "central mass"). Leave empty to list the nearest.'),
+        near: { ...placeSchema, type: ['object', 'null'] },
+      },
+    },
   },
   {
     name: 'open_link',
@@ -447,24 +633,30 @@ export const TOOLS: Anthropic.Tool[] = [
   },
   {
     name: 'get_my_settings',
-    description: "The person's notification settings (which kinds of phone notices are on) and their email lists.",
+    description: "The person's settings, as the app's Settings screen shows them: which kinds of phone notices are on, their email lists, trip tracking (automatic or manual), vacation mode (off, or on until a date), the app's language, the car they'd otherwise drive (for CO₂ estimates), whether their profile is public, and the AI assistant switch. Each comes with a summary line in the screen's own words. Read this before changing any setting, and whenever a message reads like a settings request (the Settings search box can send one, like \"stop the morning weather\").",
     input_schema: { type: 'object', properties: {} },
   },
   {
     name: 'change_settings',
-    description: "Turn phone notices or email lists on or off for the person, using the keys and ids from get_my_settings. The person approves on a card first.",
+    description: "Change the person's settings: phone notices and email lists (keys and ids from get_my_settings), vacation mode, trip tracking, the app's language, their car, their public profile, or turning the AI assistant off. Pass only what changes; leave the rest out or null. A card lists every change in plain words and the person approves it first; nothing is saved before that. Trip tracking, language and the assistant switch need a recent app (the tool says so when it can't). The assistant can turn itself off, never on. Email address, sign out and delete account can't be changed here: open_screen account instead.",
     input_schema: {
       type: 'object',
       properties: {
         notifications: nullable('object', 'Notification keys to set, e.g. {"weekly_summary": false}.'),
         emails: nullable('array', 'Email lists to set: [{"id": "...", "on": false}].'),
+        vacation: nullable('object', 'Vacation mode (tracking pauses, streak freezes, notices go quiet): {"until": "YYYY-MM-DD"} turns it on through that day (within 30 days, in the future), {"end": true} ends it now.'),
+        tracking_mode: nullable('string', 'Trip tracking: "auto" (Shift records trips by itself) or "manual" (they log trips by hand).'),
+        language: nullable('string', 'The app\'s language: "en", "es", "pt-BR" or "zh-Hans".'),
+        vehicle_type: nullable('string', 'The car they would otherwise drive, for CO₂ estimates: "gas", "hybrid", "ev" or "none".'),
+        profile_public: nullable('boolean', 'Whether other members can see their profile.'),
+        assistant_on: nullable('boolean', 'false turns the AI assistant off (the Ask button goes away). Only false; it can\'t be turned on from here.'),
       },
     },
   },
   ...RIDE_PLAN_TOOLS,
   {
     name: 'open_screen',
-    description: "A button to a screen of the Shift app, for things done there: commute (their saved commute), commute_setup (set home and work), around_you (the map of what's near them), rides (group rides and events), event or ride (one of them, by id; event also opens a challenge by its id from get_my_challenges), rewards (rewards they've won), log_trip (log a trip by hand), ride_plan (a Shift Together first ride plan, by its match_id), trip (one recorded trip, by its id from get_my_activity, where they can change how they traveled), trip_history (all their trips), my_rewards (rewards they've won), notifications (notification settings), vacation (pause tracking while away), partner_request (Shift Together sign-up: kind newcomer = go with someone who knows the way, guide = show someone the way, carpool = share the drive to work; mode bike, walk or transit, not for carpool), partner_matches (their Shift Together matches, where they also end a match or report a problem), closure_plan (their plan for an MBTA closure, by its plan_id from get_my_closure_plan), memories (what you remember about them, where they can delete any of it). Also bike_confidence: \"How do you feel about biking there?\", which sends them to the first step that fits (go, a guide, a free road riding lesson near Somerville, or learn-to-ride classes).",
+    description: "A button to a screen of the Shift app, for things done there: commute (their saved commute), commute_setup (set home and work), around_you (the map of what's near them), rides (group rides and events), event or ride (one of them, by id; event also opens a challenge by its id from get_my_challenges), rewards (rewards they've won), log_trip (log a trip by hand), ride_plan (a Shift Together first ride plan, by its match_id), trip (one recorded trip, by its id from get_my_activity, where they can change how they traveled), trip_history (all their trips), my_rewards (rewards they've won), notifications (notification settings), vacation (pause tracking while away), partner_request (Shift Together sign-up: kind newcomer = go with someone who knows the way, guide = show someone the way, carpool = share the drive to work; mode bike, walk or transit, not for carpool), partner_matches (their Shift Together matches, where they also end a match or report a problem), partner_practice (the practice ride sign-up: an easy bike ride near home with a guide, off the commute), closure_plan (their plan for an MBTA closure, by its plan_id from get_my_closure_plan), memories (what you remember about them, where they can delete any of it). The Settings area: settings (the Settings screen itself), tracking (trip tracking: automatic or manual, location permission, Apple Health import), language (the app's language), car (which car they'd otherwise drive, for CO₂ estimates), privacy (their public profile), assistant_settings (the AI assistant switch, what it remembers, their conversations), account (their email, sign out, delete account), places (saved places: Home, Work, School), go_together (their Go together sign-ups and matches), invite (invite friends, their referral code), help (help and contact). An older app can't open the Settings screens; the tool says so, and then you say where it lives (\"Profile tab, then Settings\"). Also bike_confidence: \"How do you feel about biking there?\", which sends them to the first step that fits (go, a guide, a free road riding lesson near Somerville, or learn-to-ride classes).",
     input_schema: {
       type: 'object',
       properties: {
@@ -518,6 +710,11 @@ export const TOOLS: Anthropic.Tool[] = [
     },
   },
   {
+    name: 'get_help',
+    description: `Shift's help page (gogreenstreets.org/help): the same answers people read there, one topic at a time. Call it before answering how Shift works: tracking and what to do when it stops, battery, being signed out, adding or fixing a trip, what counts, XP, tiers, streaks, badges, Roams, drawings and how winners are picked, rewards, privacy, deleting an account, languages, updates. Their own trips, points and rewards come from get_my_activity instead. Topics and their questions:\n${helpIndex()}`,
+    input_schema: { type: 'object', properties: { topic: { type: 'string', enum: HELP_TOPICS } }, required: ['topic'] },
+  },
+  {
     name: 'note_feedback',
     description: 'Pass something to the Green Streets team: a gap (something they want Shift to do), an idea, a problem, something confusing, or praise. Summarize the need, not a guessed solution.',
     input_schema: {
@@ -542,6 +739,132 @@ function asPlace(v: unknown): Place | null {
 
 const round1 = (n: number) => Math.round(n * 10) / 10
 
+type Hills = { feel: 'flat' | 'a gentle grade' | 'rolling' | 'hilly'; climb_ft: number; climb_ft_coming_back?: number; steepest_grade_pct: number }
+
+/** Hills on each Roam from roams.elevation (Shift 01485), in the app's words:
+ *  feet of climbing per mile, as Shift lib/elevation.ts counts them. A steady
+ *  rail-trail rise is "a gentle grade", not "rolling". */
+/** Feet climbed per mile and the steepest stretch, in a word. */
+function hillsFeel(perMile: number, grade: number): Hills['feel'] {
+  return perMile < 30 ? 'flat' : perMile < 80 ? (grade < 4 ? 'a gentle grade' : 'rolling') : 'hilly'
+}
+
+async function roamHills(ctx: ToolCtx, ids: string[], loops: Set<string> = new Set()): Promise<Map<string, Hills>> {
+  const out = new Map<string, Hills>()
+  if (!ids.length) return out
+  const { data } = await ctx.admin.from('roams')
+    .select('id, up:elevation->ascent_ft, down:elevation->descent_ft, grade:elevation->max_grade_pct, mi:elevation->route_miles')
+    .in('id', ids).not('elevation', 'is', null)
+  for (const r of (data ?? []) as { id: string; up: number; down: number; grade: number; mi: number }[]) {
+    if (!(r.mi > 0)) continue
+    const feel = hillsFeel(Math.max(r.up, r.down) / r.mi, r.grade)
+    const loop = loops.has(r.id)
+    out.set(r.id, { feel, climb_ft: Math.round(r.up), ...(loop ? {} : { climb_ft_coming_back: Math.round(r.down) }), steepest_grade_pct: r.grade })
+  }
+  return out
+}
+
+/** Trail records are written for this: whole sentences up to `max`, not
+ *  only the first (excerptOf stops at one, and "It meets the Mass Central
+ *  Rail Trail here" is the second). */
+function clip(text: string | null | undefined, max: number): string | null {
+  const t = (text ?? '').replace(/\s+/g, ' ').trim()
+  if (!t) return null
+  if (t.length <= max) return t
+  const cut = t.slice(0, max)
+  const end = cut.search(/[.!?][^.!?]*$/)
+  return end > max / 3 ? cut.slice(0, end + 1) : `${cut.replace(/\s+\S*$/, '')}…`
+}
+
+/** A part of the state in a trail search ("rail trails in Central Mass"):
+ *  trail records list towns, not regions, so the words matched nothing
+ *  (2026-10-28). The region becomes a place to sort by, and the rest of the
+ *  query still has to match. */
+const REGIONS: { re: RegExp; lat: number; lng: number }[] = [
+  { re: /\bcentral\s+(mass(achusetts)?|ma)\b|\bworcester\s+(county|area)\b|\bworcester\b/, lat: 42.2626, lng: -71.8023 },
+  { re: /\bwestern\s+(mass(achusetts)?|ma)\b|\bpioneer\s+valley\b/, lat: 42.325, lng: -72.641 },
+  { re: /\bberkshires?\b/, lat: 42.45, lng: -73.25 },
+  { re: /\bnorth\s+shore\b/, lat: 42.519, lng: -70.896 },
+  { re: /\bsouth\s+shore\b/, lat: 42.155, lng: -70.85 },
+  { re: /\bmetro\s*west\b/, lat: 42.279, lng: -71.416 },
+  { re: /\bmerrimack\s+valley\b/, lat: 42.633, lng: -71.316 },
+]
+function regionIn(query: unknown): { at: { lat: number; lng: number }; rest: string } | null {
+  const q = typeof query === 'string' ? query.toLowerCase() : ''
+  const hit = REGIONS.find((r) => r.re.test(q))
+  if (!hit) return null
+  return { at: { lat: hit.lat, lng: hit.lng }, rest: q.replace(hit.re, ' ').replace(/\b(mass(achusetts)?|ma|county|area|region)\b/g, ' ') }
+}
+
+/** A Roam's name for its button: "Wachusett Greenways", not the trail it's
+ *  on in brackets; "Sudbury to Hudson" when the trail name makes it long. */
+function roamButtonName(name: string): string {
+  const bare = name.replace(/\s*\([^)]*\)\s*/g, ' ').trim()
+  if (bare.length <= 28) return bare
+  const after = bare.split(':').pop()?.trim() ?? bare
+  return after.length <= 28 ? after : bare.slice(0, 28).replace(/\s+\S*$/, '')
+}
+
+/** The Roams a find_roams or find_trails result offered, with the names a
+ *  reply might call each by: its own, its button name ("Sudbury to Hudson"),
+ *  and its trail's when it is that trail's only Roam. */
+export function roamsOffered(tool: string, content: Record<string, unknown>): { id: string; names: string[] }[] {
+  type Offered = { id?: unknown; name?: unknown; this_roam?: unknown }
+  const named = (r: Offered, extra: string[] = []) => {
+    const name = typeof r.name === 'string' ? r.name : ''
+    return { id: String(r.id ?? ''), names: [name, roamButtonName(name), ...extra].filter((n) => n.length >= 6) }
+  }
+  if (tool === 'find_roams') return ((content.roams ?? []) as Offered[]).filter((r) => r.id).map((r) => named(r))
+  if (tool !== 'find_trails') return []
+  return ((content.trails ?? []) as { name?: unknown; roams?: Offered[] }[]).flatMap((t) => {
+    const rides = (t.roams ?? []).filter((r) => r.id && r.this_roam === 'rides it')
+    return rides.map((r) => named(r, rides.length === 1 && typeof t.name === 'string' ? [t.name] : []))
+  })
+}
+
+/** Roams the reply names, in the order it names them (2026-10-29: a reply
+ *  recommended Roams from find_trails without get_roam, so no cards drew). */
+export function roamsNamedIn(text: string, offered: { id: string; names: string[] }[], skip: Set<string>, max = 3): string[] {
+  const norm = (s: string) => s.toLowerCase().replace(/[’']/g, "'").replace(/\s+/g, ' ')
+  const t = norm(text)
+  const at = new Map<string, number>()
+  for (const o of offered) {
+    if (skip.has(o.id)) continue
+    const hits = o.names.map((n) => t.indexOf(norm(n))).filter((i) => i >= 0)
+    if (hits.length) at.set(o.id, Math.min(at.get(o.id) ?? Infinity, ...hits))
+  }
+  return [...at.entries()].sort((a, b) => a[1] - b[1]).slice(0, max).map(([id]) => id)
+}
+
+/** One word for the card from a surface note ("Stone dust (packed fine
+ *  gravel), with a few road crossings." is stone dust). */
+function surfaceKind(note: string | null | undefined): TrailCard['surface'] {
+  const n = (note ?? '').toLowerCase()
+  if (!n) return null
+  if (n.startsWith('mixed')) return 'mixed'
+  if (/^(paved|asphalt)/.test(n)) return 'paved'
+  if (/^mostly .*(dirt|stone dust|gravel)/.test(n)) return 'mixed'
+  if (/stone dust|gravel|crushed stone/.test(n)) return 'stone_dust'
+  if (/dirt|packed sand|clay/.test(n)) return 'dirt'
+  return /paved|asphalt/.test(n) ? 'paved' : null
+}
+
+/** The way in, as an icon and its first sentence: a train when the note names
+ *  one, else the drive and where to park. */
+function wayIn(access: string | null | undefined, parking: string | null | undefined): TrailCard['getting_there'] {
+  const firstOf = (x: string | null | undefined) => {
+    const t = (x ?? '').replace(/\s+/g, ' ').trim()
+    return t ? (t.match(/^.*?[.!?](\s|$)/)?.[0] ?? t).trim() : null
+  }
+  const a = firstOf(access)
+  if (a && !/^no (train|bus)/i.test(a)) {
+    const mode = /commuter rail|\bline\b|\btrain\b|station/i.test(a) ? 'train' : /\bbus/i.test(a) ? 'bus' : /bluebikes|bike share/i.test(a) ? 'bikeshare' : 'drive'
+    return { mode, text: clip(a, 170)! }
+  }
+  const p = firstOf(parking)
+  return p ? { mode: 'drive', text: clip(p, 170)! } : null
+}
+
 const SUBWAY = ['Red', 'Orange', 'Blue', 'Mattapan', 'Green-B', 'Green-C', 'Green-D', 'Green-E']
 
 /** Phone notices, by the names the Notifications screen shows. */
@@ -556,6 +879,41 @@ const NOTICES: Record<string, string> = {
   did_you_know: 'Tips & insights',
   campaign_emails: 'Shift updates (email)',
 }
+
+/** Where each Settings screen lives, for apps that can't open it from a button. */
+const SETTINGS_WHERE: Record<string, string> = {
+  settings: 'the Profile tab, then Settings',
+  tracking: 'the Profile tab, then Settings, then Trip tracking',
+  language: 'the Profile tab, then Settings, then Language',
+  car: 'the Profile tab, then Settings, then My car',
+  privacy: 'the Profile tab, then Settings, then Public profile',
+  assistant_settings: 'the Profile tab, then Settings, then AI assistant',
+  account: 'the Profile tab, then Settings, then Account',
+  places: 'the Profile tab, then Settings, then My places',
+  go_together: 'the Profile tab, then Go together',
+  invite: 'the Profile tab, then Invite friends',
+  help: 'the Profile tab, then Settings, then Help',
+}
+
+/** The settings beyond notices, in the words the app's Settings rows use. */
+const LANGUAGE_WORDS: Record<string, string> = { en: 'English', es: 'Spanish', 'pt-BR': 'Portuguese', 'zh-Hans': 'Chinese' }
+const CAR_WORDS: Record<string, string> = { gas: 'gas', hybrid: 'hybrid', ev: 'electric', none: 'no car' }
+const TRACKING_WORDS: Record<string, string> = { auto: 'automatic', manual: 'manual' }
+type SettingsRow = { tracking_mode?: string | null; vacation_until?: string | null; locale?: string | null; vehicle_type?: string | null; profile_public?: boolean | null; notification_preferences?: Record<string, boolean> | null }
+const SETTINGS_COLUMNS = 'notification_preferences, tracking_mode, vacation_until, locale, vehicle_type, profile_public'
+const VACATION_MAX_DAYS = 30
+
+/** Today in Boston as YYYY-MM-DD (vacation dates are calendar days). */
+const bostonToday = () => new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' })
+const plusDays = (ymd: string, n: number) => {
+  const d = new Date(`${ymd}T12:00:00Z`)
+  d.setUTCDate(d.getUTCDate() + n)
+  return d.toISOString().slice(0, 10)
+}
+/** "Nov 12" from YYYY-MM-DD. */
+const dayWord = (ymd: string) => new Date(`${ymd}T12:00:00Z`).toLocaleDateString('en-US', { timeZone: 'UTC', month: 'short', day: 'numeric' })
+/** The vacation that is on today, else null. */
+const vacationOn = (until: string | null | undefined) => until && until >= bostonToday() ? { until } : null
 
 const MODE_WORDS: Record<string, string> = {
   walk: 'walk', bike: 'bike', transit_bus: 'bus', transit_train: 'train', transit_commuter_rail: 'Commuter Rail',
@@ -671,16 +1029,18 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
         const ways = (e.modes ?? []).filter((m) => m.viable)
         const twoPart = (e.combos ?? []).filter((c) => c.qualifies !== false)
         // Shuttles Google leaves out (TMA, campus, employer). The engine
-        // only returns ones faster than the T; `eligible` says whether this
-        // person can ride it (a public route, or a school or employer Shift
-        // knows they belong to).
+        // returns ones within 5 minutes of the T; `eligible` says whether
+        // this person can ride it (a public route, a school or employer Shift
+        // knows they belong to, or one they said they can ride), and
+        // `qualifies` marks the one that earns a row on the plan.
         const shuttles = e.shuttle_options ?? []
-        const rideable = shuttles.find((s) => s.eligible)
+        const rideable = shuttles.find((s) => s.qualifies) ?? shuttles.find((s) => s.eligible && s.timetable)
         const recommended = e.recommended_with_combos || e.recommended_mode || null
         // The card: one row per way, two-part trips priced by the month the
         // way the app's commute screen does (cost_per_day × 20 workdays).
         const card: TripCard | undefined = ctx.screens?.has(CARD_WAYS) && ways.length >= 2 ? {
           from: { name: ((from.name ?? '').trim() || 'Start').slice(0, 80), lat: from.lat, lng: from.lng },
+          from_here: isHere(ctx, from),
           to: { name: ((to.name ?? '').trim() || 'Destination').slice(0, 80), lat: to.lat, lng: to.lng },
           bike_minutes: null, bike_miles: null, comfort: [], polyline: null, transit_minutes: null,
           compare: {
@@ -723,12 +1083,13 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
                 : s.eligible_because === 'public_fare' ? 'anyone; a fare, free at member employers'
                 : s.eligible_because === 'school' ? `them, with their ${s.operator.id_name ?? s.operator.name} ID`
                 : s.eligible_because === 'employer' ? 'them: their employer lists this shuttle'
+                : s.eligible_because === 'self_reported' ? 'them: they told Shift they can ride it'
                 : s.operator.access === 'unstated' ? `may need a ${s.operator.id_name ?? s.operator.name} ID`
                 : `${s.operator.id_name ?? s.operator.name} ID holders only`,
               they_can_ride: s.eligible,
               ...(s.timetable ? {} : { ride_time_estimated: true }),
             })),
-            shuttle_note: 'Shuttles maps apps leave out. Name who runs it, and say who can ride it as given. Never suggest one they cannot ride as their way; mention it only as "if you have a ... ID".',
+            shuttle_note: 'Shuttles maps apps leave out. Name who runs it, and say who can ride it as given. One a few minutes slower than the bike or the T is still worth naming for someone who would rather sit than ride or would rather not wait outside. Never suggest one they cannot ride as their way; mention it only as "if you have a ... ID".',
           } : {}),
           transit_route: e.transit_route_summary ?? null,
           bike_route_calm: e.bike_comfort_rating ?? null,
@@ -779,6 +1140,7 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
         const newCards = !!ctx.screens?.has(CARD_WAYS)
         const trip: TripCard = {
           from: { name: fromName.slice(0, 80), lat: from.lat, lng: from.lng },
+          from_here: isHere(ctx, from),
           to: { name: toName.slice(0, 80), lat: to.lat, lng: to.lng },
           bike_minutes: r.bike_minutes ?? null,
           bike_miles: bikeMiles,
@@ -807,6 +1169,7 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
         return {
           content: {
             ...(showCard ? { card: CARD_NOTE } : {}),
+            ...(showCard && ctx.screens?.has(CARD_SAVE) ? { saving: 'The card has Save this trip: it keeps where from, where to and which way in Your trips under Plan a route on Home and in Around You, and opens it again with live times. You cannot save it yourself. Mention it only when they ask to save or keep a plan, or say they will make this trip again.' } : {}),
             miles: round1(r.distance_miles),
             walk: walk ? { minutes: walk.minutes, miles: walk.miles } : null,
             transit: r.transit_minutes == null ? { none: `No transit found leaving ${bostonWhen(departAt)}.` } : {
@@ -822,6 +1185,9 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
               named_paths: r.bike_steps.map((s) => s.label),
               streets: (r.bike_comfort?.streets ?? []).slice(0, 8).map((s) => ({ street: s.label, kind: s.rating, miles: round1(s.distance_mi) })),
               calmer_or_quicker_option: r.bike_alt ? { minutes: r.bike_alt.minutes, overall: r.bike_alt.comfort?.rating ?? null } : null,
+              perks_on_the_way: r.bike_perks.length
+                ? r.bike_perks.map((p) => ({ name: p.name, perk: p.perk, kind: PERK_KIND_LABEL[p.kind], sells_the_sticker: p.stickers }))
+                : null,
               parking_at_the_end: racks == null ? null : racks.length === 0
                 ? 'No public bike racks mapped within a block. A sign post or railing may do; worth asking there.'
                 : { racks_within_a_block: racks.length, spaces: racks.reduce((a, s) => a + (s.capacity ?? 2), 0), covered: racks.filter((s) => s.covered).length },
@@ -902,6 +1268,8 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
         return ok({ within_miles: miles, days_ahead: days, events: found, ...(found.length ? {} : { note: 'Nothing that close in that window. Offer a wider radius or more days.' }) },
           found.length ? { screen: 'rides', label: 'See all rides and events' } : undefined)
       }
+      case 'get_my_rides':
+        return ok(await myRides(ctx))
       case 'open_screen': {
         const screen = SCREENS.find((s) => s === input.screen)
         if (!screen) return fail('Unknown screen.')
@@ -909,7 +1277,7 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
         if (screen === 'roam' && !canOpen(ctx, 'roam') && typeof input.id === 'string' && /^[A-Za-z0-9_-]{1,100}$/.test(input.id)) {
           return ok({ shown: true, next: 'The button shows under your reply. Now write the reply itself. Do not mention the button.' }, { href: `/shift/roams/${input.id}`, label: String(input.label || 'See the Roam').slice(0, 40) })
         }
-        if (!canOpen(ctx, screen)) return ok({ shown: false, note: "Their version of the app can't open that screen from here yet. Tell them where it is in a few words instead (a trip: Recent trips on the Home tab, then tap the trip; rewards they've won: the Rewards tab; notifications or vacation: Profile; a closure plan: the Around You card on Home)." })
+        if (!canOpen(ctx, screen)) return ok({ shown: false, note: `Their version of the app can't open that screen from here yet. Tell them where it is in a few words instead (${(SETTINGS_SCREENS as readonly string[]).includes(screen) ? SETTINGS_WHERE[screen] ?? 'the Profile tab, then Settings' : "a trip: Recent trips on the Home tab, then tap the trip; rewards they've won: the Rewards tab; notifications or vacation: Profile; a closure plan: the Around You card on Home"}).` })
         const id = typeof input.id === 'string' && /^[A-Za-z0-9_-]{1,100}$/.test(input.id) ? input.id : null
         if ((screen === 'event' || screen === 'ride' || screen === 'ride_plan' || screen === 'trip' || screen === 'roam' || screen === 'closure_plan') && !id) return fail(`A ${screen} button needs its id.`)
         const params: Record<string, string> | null = screen === 'partner_request'
@@ -1014,6 +1382,76 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
         if (!from) return fail('The place needs coordinates. Look it up with find_place first.')
         return ok(await popularStreets(ctx, from, asPlace(input.to), input.way === 'walk' ? 'walk' : 'bike'))
       }
+      case 'get_town_travel_mix': {
+        const asked = typeof input.town === 'string' ? input.town.trim().toLowerCase() : ''
+        const near = asked ? null : asPlace(input.near)
+        let town: { id: string; name: string } | null = null
+        if (near) town = await townAt(ctx, near)
+        else {
+          const name = asked || await homeTownName(ctx)
+          const t = name ? (await getTownDirectory()).find((x) => x.town_name.toLowerCase() === name) : undefined
+          town = t ? { id: t.group_id, name: t.town_name } : null
+        }
+        if (!town) return ok({ found: false, note: asked ? `No town named ${input.town} in Shift. Check the spelling or ask for the nearest one.` : "Their town isn't known. Ask which town they mean." })
+        return ok(await townMix(ctx, town))
+      }
+      case 'find_bike_perks': {
+        const kind = typeof input.kind === 'string' && input.kind in PERK_KIND_LABEL ? input.kind : null
+        const from = asPlace(input.from)
+        const to = asPlace(input.to)
+        const pool = (await bikePerkPool()).filter((x) => !kind || x.kind === kind || (kind === 'cafe' && x.kind === 'bakery'))
+        const facts = (stops: PerkStop[]) => stops.map((p) => ({
+          name: p.name, perk: p.perk, kind: PERK_KIND_LABEL[p.kind], where: perkWhere(p), address: p.address,
+          sells_the_sticker: p.stickers, air_pump: p.pump,
+        }))
+        const about = 'Bicycle Benefits (bicyclebenefits.org): the perk needs the program\'s helmet sticker, sold at many members (sells_the_sticker). Name the program when you mention one. Shift has no deal with these businesses; it shows their published list.'
+        if (from && to) {
+          if (!inServiceArea(from.lat, from.lng) || !inServiceArea(to.lat, to.lng)) return ok({ found: false, note: 'This covers Massachusetts and nearby.' })
+          const r = await getTrip(from, to, to.name ?? '')
+          const line = r.bike_polyline ? decodePolyline(r.bike_polyline).map(([lat, lng]) => ({ lat, lng })) : []
+          const along = perksAlong(pool, line, null, { cap: 5 })
+          return ok(along.length
+            ? { along_the_bike_route: facts(along), about }
+            : { along_the_bike_route: [], note: 'No Bicycle Benefits member within a block of this bike route. Offer ones near either end instead (find_bike_perks with near).', about })
+        }
+        let near = asPlace(input.near) ?? ctx.here ?? null
+        if (!near) {
+          const { data: h } = await ctx.user.from('saved_locations').select('lat, lng').eq('user_id', ctx.userId).ilike('label', 'home').limit(1)
+          const at = ((h ?? [])[0] as { lat: number | null; lng: number | null } | undefined)
+          near = at?.lat != null && at?.lng != null ? { lat: at.lat, lng: at.lng } : null
+        }
+        if (!near) return fail('Their location is unknown. Ask where to look, then find_place.')
+        const close = perksNear(pool, near, 1609, 6)
+        const wider = close.length ? close : perksNear(pool, near, 5 * 1609, 4)
+        return ok(wider.length
+          ? { near: facts(wider), about }
+          : { near: [], note: 'No Bicycle Benefits member within 5 miles. Members are mostly in Greater Boston, the Pioneer Valley and Worcester.', about })
+      }
+      case 'get_whats_new': {
+        const note = "Opened leads; say when it opened and, on a route, how much of the trip is on it. For a coming project, what it is and the hearing date; describe it neutrally and add open_link (kind town_page) when they want to weigh in. MassDOT misses some city projects, so nothing here doesn't mean nothing is new."
+        const town = typeof input.town === 'string' && input.town.trim() ? input.town.trim() : null
+        const from = asPlace(input.from)
+        const to = asPlace(input.to)
+        if (town) {
+          const n = await newInfraInTown(town)
+          return ok({ town, ...newInfraForAssistant(n, todayKey(), false), note })
+        }
+        if (from && to) {
+          if (!inServiceArea(from.lat, from.lng) || !inServiceArea(to.lat, to.lng)) return ok({ found: false, note: 'This covers Massachusetts.' })
+          const r = await getTrip(from, to, to.name ?? '')
+          const line = r.bike_polyline ? decodePolyline(r.bike_polyline).map(([lat, lng]) => ({ lat, lng })) : []
+          if (line.length < 2) return fail('No bike route between those places. Try near one of them instead.')
+          return ok({ along_the_bike_route: newInfraForAssistant(await newInfraOnRoute(line), todayKey(), true), note })
+        }
+        let near = asPlace(input.near) ?? ctx.here ?? null
+        if (!near) {
+          const { data: h } = await ctx.user.from('saved_locations').select('lat, lng').eq('user_id', ctx.userId).ilike('label', 'home').limit(1)
+          const at = ((h ?? [])[0] as { lat: number | null; lng: number | null } | undefined)
+          near = at?.lat != null && at?.lng != null ? { lat: at.lat, lng: at.lng } : null
+        }
+        if (!near) return fail('Their location is unknown. Ask where to look, then find_place.')
+        return ok({ within_2_miles: newInfraForAssistant(await newInfraNear(near, 2), todayKey(), false), note })
+      }
       case 'find_rewards_partners': {
         let near = asPlace(input.near) ?? ctx.here ?? null
         if (!near) {
@@ -1026,6 +1464,8 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
       }
       case 'get_my_progress':
         return ok(await myProgress(ctx))
+      case 'get_badges':
+        return ok(await badgeCatalog(ctx))
       case 'get_departures': {
         const at = asPlace(input.place) ?? ctx.here ?? null
         if (!at) return fail('Their location is unknown. Ask which stop, then find_place.')
@@ -1046,6 +1486,10 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
       }
       case 'get_ebike_math':
         return ok(await ebikeMath(ctx))
+      case 'get_help': {
+        const topic = helpTopic(String(input.topic))
+        return topic ? ok(topic) : fail(`No help topic "${String(input.topic)}". Topics: ${HELP_TOPICS.join(', ')}.`)
+      }
       case 'get_bike_rules': {
         const lines: [string, string, number, number | null][] = [['Red Line', 'Red', 1, null], ['Orange Line', 'Orange', 1, null], ['Blue Line inbound', 'Blue', 1, 0], ['Blue Line outbound', 'Blue', 1, 1], ['Green Line', 'Green-B', 0, null], ['Buses and Silver Line', '1', 3, null], ['Ferry', 'Boat-F1', 4, null]]
         return ok({ ...BIKE_RULES, full_size_bike_right_now: Object.fromEntries(lines.map(([label, id, type, dir]) => [label, bikeOk(id, type, dir).ok ? 'yes' : 'no'])) })
@@ -1055,19 +1499,7 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
         const towns = await getTownDirectory()
         let town = asked ? towns.find((t) => t.town_name.toLowerCase() === asked) : undefined
         if (!asked) {
-          // Their home town; else the town their saved Home, or their phone, is in.
-          const { data } = await ctx.user.from('users').select('home_town').eq('id', ctx.userId).single()
-          let home = ((data as { home_town?: string | null } | null)?.home_town ?? '').toLowerCase()
-          if (!home) {
-            const { data: h } = await ctx.user.from('saved_locations').select('lat, lng').eq('user_id', ctx.userId).ilike('label', 'home').limit(1)
-            const at = ((h ?? [])[0] as { lat: number | null; lng: number | null } | undefined)
-            const point = at?.lat != null && at?.lng != null ? { lat: at.lat, lng: at.lng } : ctx.here ?? null
-            if (point) {
-              const { data: nid } = await ctx.admin.rpc('find_neighborhood_for_point', { p_lat: point.lat, p_lng: point.lng })
-              const { data: nb } = nid ? await ctx.admin.from('neighborhoods').select('town').eq('id', nid as string).maybeSingle() : { data: null }
-              home = ((nb as { town?: string } | null)?.town ?? '').toLowerCase()
-            }
-          }
+          const home = await homeTownName(ctx)
           town = towns.find((t) => t.town_name.toLowerCase() === home)
           if (!town) return ok({ found: false, note: "Their town isn't known. Ask which town they mean." })
         }
@@ -1122,16 +1554,43 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
       }
       case 'get_my_settings': {
         const [u, e] = await Promise.all([
-          ctx.user.from('users').select('notification_preferences').eq('id', ctx.userId).single(),
+          ctx.user.from('users').select(SETTINGS_COLUMNS).eq('id', ctx.userId).single(),
           ctx.user.rpc('get_my_email_subscriptions'),
         ])
-        const prefs = ((u.data as { notification_preferences?: Record<string, boolean> } | null)?.notification_preferences ?? {})
+        const row = (u.data ?? {}) as SettingsRow
+        const prefs = row.notification_preferences ?? {}
         const em = (e.data ?? {}) as { all_off?: boolean; subscriptions?: { id: string; topic: string; names?: { en?: string }; on: boolean }[] }
+        const notifications = Object.entries(NOTICES).map(([key, name]) => ({ key, name, on: prefs[key] ?? true }))
+        const push = notifications.filter((n) => n.key !== 'campaign_emails')
+        const lists = (em.subscriptions ?? []).map((x) => ({ id: x.id, name: x.names?.en ?? x.topic, on: x.on }))
+        const vacation = vacationOn(row.vacation_until)
+        const tracking = row.tracking_mode === 'manual' ? 'manual' : 'auto'
+        const language = row.locale && row.locale in LANGUAGE_WORDS ? row.locale : null
+        const car = row.vehicle_type && row.vehicle_type in CAR_WORDS ? row.vehicle_type : 'gas'
+        const profilePublic = row.profile_public !== false
         return ok({
-          notifications: Object.entries(NOTICES).map(([key, name]) => ({ key, name, on: prefs[key] ?? true })),
-          email_lists: (em.subscriptions ?? []).map((x) => ({ id: x.id, name: x.names?.en ?? x.topic, on: x.on })),
+          notifications,
+          email_lists: lists,
           ...(em.all_off ? { note: 'They turned off all Shift email.' } : {}),
-        }, canOpen(ctx, 'notifications') ? { screen: 'notifications', label: 'Open notification settings' } : undefined)
+          tracking_mode: tracking,
+          vacation,
+          language,
+          vehicle_type: car,
+          profile_public: profilePublic,
+          assistant_on: true,
+          // The same words as the Settings rows, so the answer matches the screen.
+          summary: [
+            `Push: ${push.filter((n) => n.on).length} of ${push.length} kinds on`,
+            em.all_off ? 'Email: all off' : `Email: ${lists.filter((l) => l.on).length} of ${lists.length} lists on`,
+            `Trip tracking: ${TRACKING_WORDS[tracking]}`,
+            `Vacation mode: ${vacation ? `on until ${dayWord(vacation.until)}` : 'off'}`,
+            `Language: ${language ? LANGUAGE_WORDS[language] : 'not set (the phone decides)'}`,
+            `My car: ${CAR_WORDS[car]}`,
+            `Public profile: ${profilePublic ? 'on' : 'off'}`,
+            'AI assistant: on',
+          ],
+          can_change: 'All of these change with change_settings (a card they approve), except their email address, signing out and deleting the account: those are on the account screen (open_screen account).',
+        }, canOpen(ctx, 'settings') ? { screen: 'settings', label: 'Open Settings' } : canOpen(ctx, 'notifications') ? { screen: 'notifications', label: 'Open notification settings' } : undefined)
       }
       case 'check_route_link': {
         const r = await fetchRideWithGps(String(input.url ?? ''))
@@ -1159,6 +1618,47 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
           note: 'Two or three sentences: name only the one or two they may qualify for, what each gives and how to apply, and add open_link kind fare with its id. When you can tell someone qualifies (their age, a disability, a benefit), say so; otherwise ask the one question that decides it. Never guess eligibility from a name or a trip.',
         })
       }
+      case 'get_venue_parking': {
+        // Prices and dates come from venue-facts.json (kept current weekly), never the prompt.
+        const v = VENUES[String(input.venue)]
+        if (!v) return fail('Use td-garden, fenway-park or gillette-stadium.')
+        const today = todayKey()
+        const official = v.garages.find((g) => g.official)
+        const checked = new Date(`${v.checked}T12:00:00Z`).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
+        const trains = v.transit.eventTrains
+        return ok(
+          {
+            venue: v.name,
+            answer: v.lede,
+            official_parking: official
+              ? { name: official.name, where: official.where ?? null, walk_minutes: official.walkMin, prices: official.prices ?? [], facts: official.facts ?? [] }
+              : null,
+            prices_checked: checked,
+            price_note: v.priceNote ?? null,
+            other_garages: v.garages.filter((g) => !g.official).slice(0, 3).map((g) => ({ name: g.name, walk_minutes: g.walkMin, note: g.note ?? null })),
+            train: { headline: v.transit.headline, station: v.transit.stopName, lines: v.transit.lines, tips: v.transit.tips },
+            ...(trains
+              ? { event_trains: { fare: trains.fare, buy: trains.buy, next: trains.trips.filter((t) => t.date >= today).slice(0, 3) } }
+              : {}),
+            rideshare: v.rideshare,
+            next: 'Answer parking first, as asked: the official garage or lot, its price and "checked <prices_checked>", then the train as a plain fact in one sentence (never argue against driving). Prices only from here. The button opens the page with the other garages, walk times and live trains; for a door-to-door plan from them, check_trip to the venue.',
+          },
+          { href: `https://www.gogreenstreets.org/parking/${v.slug}?utm_source=assistant`, label: `Parking at ${v.name}`, external: true },
+        )
+      }
+      case 'get_lesson_offer': {
+        // Their saved Home first, else where the phone is (free_lesson_origin).
+        const { data, error } = await ctx.user.rpc('get_free_lesson_offer', { p_lat: ctx.here?.lat ?? null, p_lng: ctx.here?.lng ?? null })
+        if (error || !data) return fail("Couldn't check the free lesson just now.")
+        const o = data as { state: string; code?: string; requested?: boolean; from_home?: boolean; reminder?: boolean
+          program?: { school: string; minutes: number; miles?: number; left?: number; max?: number } }
+        const button = 'Give a bike_confidence button with answer nervous: the code is claimed there, and they book with the school.'
+        if (o.state === 'has_code') return ok({ qualifies: true, already_has_code: o.code, school: o.program?.school, booked_by_email: !!o.requested, next: 'They already have their code. Remind them to give it to the school when they book. ' + button })
+        if (o.state === 'offer') return ok({ qualifies: true, school: o.program?.school, minutes: o.program?.minutes, miles_from: o.from_home ? 'their home' : 'where they are now', miles: o.program?.miles, left: o.program?.left, of: o.program?.max, who: 'People who can ride but are rusty or nervous in traffic. Green Streets pays; they pay nothing.', next: button })
+        if (o.state === 'full') return ok({ qualifies: false, why: 'All of this round of free lessons are taken.', next: 'Say so. The bike_confidence screen (answer nervous) has a "remind me in April" option and other ways to build confidence.' })
+        if (o.state === 'far') return ok({ qualifies: false, why: 'The free lesson is only for people who live near the school in Somerville.', next: 'Say so plainly, then offer bike_confidence (answer nervous), which lists classes and instructors near them.' })
+        return ok({ qualifies: null, why: 'No home saved and no location shared, so the distance to the school is unknown.', next: 'Offer commute_setup to save their home, or ask them to share their location, then check again.' })
+      }
       case 'find_bikes_to_try': {
         const at = asPlace(input.near)
         if (!at) return fail('Need a place with coordinates.')
@@ -1181,42 +1681,142 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
         })
       }
       case 'find_roams': {
-        const all = await getActiveRoams()
-        const words = typeof input.query === 'string' ? input.query.toLowerCase().split(/[^a-z0-9]+/).filter((w) => w.length > 2 && !['the', 'loop', 'path', 'trail', 'route'].includes(w)) : []
-        const near = asPlace(input.near) ?? ctx.here ?? null
+        const all = await getRoamsInSeason()
+        const region = regionIn(input.query)
+        const query = region ? region.rest : input.query
+        const words = typeof query === 'string' ? query.toLowerCase().split(/[^a-z0-9]+/).filter((w) => w.length > 2 && !['the', 'loop', 'path', 'trail', 'trails', 'route', 'rail', 'rails', 'easy', 'flat', 'beginner'].includes(w)) : []
+        const from = asPlace(input.near) ?? ctx.here ?? null
+        const near = region?.at ?? from
         const mode = ['walk', 'bike', 'transit', 'multi'].includes(String(input.mode)) ? String(input.mode) : null
         const found = all
           .filter((r) => !mode || r.mode === mode)
           .filter((r) => !words.length || words.every((w) => `${r.name} ${r.region ?? ''}`.toLowerCase().includes(w)))
-          .map((r) => ({ r, d: near && r.start_lat != null && r.start_lng != null ? haversineMiles(near.lat, near.lng, r.start_lat, r.start_lng) : null }))
-          .sort((a, b) => (words.length ? 0 : (a.d ?? 1e9) - (b.d ?? 1e9)))
+          .map((r) => ({ r, sortBy: near && r.start_lat != null && r.start_lng != null ? haversineMiles(near.lat, near.lng, r.start_lat, r.start_lng) : null, d: from && r.start_lat != null && r.start_lng != null ? haversineMiles(from.lat, from.lng, r.start_lat, r.start_lng) : null }))
+          .filter((x) => !region || (x.sortBy != null && x.sortBy <= 30))
+          .sort((a, b) => (words.length ? 0 : (a.sortBy ?? 1e9) - (b.sortBy ?? 1e9)))
           .slice(0, 6)
-          .map(({ r, d }) => ({ id: r.id, name: r.name, kind: r.mode, miles: r.distance_miles != null ? round1(r.distance_miles) : null, minutes: r.estimated_minutes, about: r.hook ?? r.tagline, area: r.region, start_miles_away: d != null ? round1(d) : null }))
-        return ok({ roams: found, ...(found.length ? { next: 'For one they pick (or the one they named), call get_roam with its id.' } : { note: 'No Roam by that name. List the nearest instead, or read a route link they have with check_route_link.' }) })
+        const hills = await roamHills(ctx, found.map(({ r }) => r.id))
+        const roams = found.map(({ r, d }) => ({ id: r.id, name: r.name, kind: r.mode, miles: r.distance_miles != null ? round1(r.distance_miles) : null, minutes: r.estimated_minutes, about: r.hook ?? r.tagline, area: r.region, hills: hills.get(r.id)?.feel ?? null, start_miles_away: d != null ? round1(d) : null }))
+        return ok({ roams, ...(roams.length ? { next: 'For one they pick (or the one they named), call get_roam with its id. For "which trail" questions, find_trails has rail trails with no Roam.' } : { note: 'No Roam by that name. Try find_trails, list the nearest Roams instead, or read a route link they have with check_route_link.' }) })
       }
       case 'get_roam': {
         const id = String(input.id ?? '')
         const r = /^[A-Za-z0-9_-]{1,100}$/.test(id) ? await getRoamDetail(id) : null
         if (!r) return fail('No Roam with that id. Use one from find_roams.')
-        const [event, trail] = await Promise.all([getNextRoamEvent(r.id), getRoamTrailInfo(r.id)])
         const stops = [...r.checkpoints].sort((a, b) => a.sequence_order - b.sequence_order)
         const first = stops[0]
         const last = stops[stops.length - 1]
         const loop = !!first && !!last && haversineMiles(first.lat, first.lng, last.lat, last.lng) < 0.3
+        const [event, trail, hills, onward, elev] = await Promise.all([
+          getNextRoamEvent(r.id), getRoamTrailInfo(r.id), roamHills(ctx, [r.id], new Set(loop ? [r.id] : [])), getRoamKeepGoing(r.id),
+          ctx.screens?.has(CARD_TRAIL) ? ctx.admin.from('roams').select('profile:elevation->profile').eq('id', r.id).maybeSingle() : null,
+        ])
+        // A Roam with no facts of its own borrows its trail's, marked as the
+        // whole trail's: a long trail's other sections can differ.
+        const uses = trail.trails.filter((t) => t.relation === 'uses').map((t) => t.id)
+        const whole = !r.surface && uses.length === 1
+          ? (await ctx.admin.from('trails').select('name, surface, transit_note, parking_note').eq('id', uses[0]).maybeSingle()).data as { name: string; surface: string | null; transit_note: string | null; parking_note: string | null } | null
+          : null
         const link: ScreenLink = canOpen(ctx, 'roam')
-          ? { screen: 'roam', params: { roamId: r.id }, label: 'Open the Roam' }
-          : { href: `/shift/roams/${encodeURIComponent(r.id)}`, label: 'See the Roam' }
-        return ok({
-          name: r.name, kind: r.mode, about: r.hook ?? r.tagline ?? excerptOf(r.description, 200),
+          ? { screen: 'roam', params: { roamId: r.id }, label: `Open ${roamButtonName(r.name)}` }
+          : { href: `/shift/roams/${encodeURIComponent(r.id)}`, label: `See ${roamButtonName(r.name)}` }
+        const h = hills.get(r.id) ?? null
+        const prof = ((elev?.data as { profile?: [number, number][] } | null)?.profile ?? []).filter((p) => Array.isArray(p))
+        const step = Math.max(1, Math.ceil(prof.length / 40))
+        const closedNow = trail.disruptions.find((d) => d.affects === 'route') ?? trail.disruptions[0]
+        const card: TrailCard | undefined = ctx.screens?.has(CARD_TRAIL) ? {
+          roam_id: r.id, name: roamButtonName(r.name), area: r.region, kind: r.mode,
+          miles: r.distance_miles != null ? round1(r.distance_miles) : null, minutes: r.estimated_minutes,
+          surface: surfaceKind(r.surface ?? whole?.surface),
+          hills: h ? (h.feel === 'a gentle grade' ? 'gentle' : h.feel) : null,
+          climb_ft: h?.climb_ft ?? null, climb_ft_back: h?.climb_ft_coming_back ?? null, loop,
+          profile: prof.filter((_, i) => i % step === 0 || i === prof.length - 1),
+          start: first?.label ?? null, end: loop ? null : last?.label ?? null,
+          getting_there: r.surface ? wayIn(r.access_note, r.parking_note) : wayIn(r.access_note ?? whole?.transit_note, r.parking_note ?? whole?.parking_note),
+          closure: closedNow ? clip(closedNow.title, 90) : null, closure_on_route: closedNow?.affects === 'route', closure_from: closedNow?.affects === 'access' ? closedNow.from_label ?? null : null,
+          open_label: link.label,
+        } : undefined
+        const result = ok({
+          name: r.name, kind: r.mode, area: r.region, about: r.hook ?? r.tagline ?? excerptOf(r.description, 200),
           route_miles: r.distance_miles != null ? round1(r.distance_miles) : null, minutes: r.estimated_minutes,
           full_trail_miles: r.full_trail_miles, surface: r.surface, getting_in: r.access_note, parking: r.parking_note,
+          hills: hills.get(r.id) ?? null,
+          ...(whole ? { whole_trail: { name: whole.name, surface: clip(whole.surface, 220), getting_there: clip(whole.transit_note, 260), parking: clip(whole.parking_note, 220), note: 'These describe the whole trail, not only this stretch.' } } : {}),
+          on_trails: trail.trails.map((t) => ({ name: t.name, this_roam: t.relation === 'uses' ? 'rides it' : 'connects to it' })),
+          keep_going: onward.slice(0, 4).map((k) => ({ to: k.title, from: k.start_label, length: k.length_label })),
           start: first ? { lat: first.lat, lng: first.lng, name: first.label } : null,
           ...(loop ? { loop: true } : last && last !== first ? { end: { lat: last.lat, lng: last.lng, name: last.label } } : {}),
           stops: stops.map((c) => c.label).slice(0, 10),
-          closures_now: trail.disruptions.map((d) => ({ trail: d.trail_name, on_this_route: d.affects === 'route', what: d.title, about: excerptOf(d.summary, 200), until: d.ends_on ?? d.ends_note, detour: d.detours?.[0]?.steps?.slice(0, 4) ?? null })),
+          closures_now: trail.disruptions.map((d) => ({ trail: d.trail_name, on_this_route: d.affects === 'route', coming_from: d.affects === 'access' ? d.from_label ?? null : null, what: d.title, about: excerptOf(d.summary, 200), until: d.ends_on ?? d.ends_note, detour: d.detours?.[0]?.steps?.slice(0, 4) ?? null })),
           next_group_outing: event ? { title: event.title, date: event.event_date, time: event.event_time?.slice(0, 5) ?? null, where: event.location_name, organizer: event.organizer_name } : null,
-          next: 'Answer what they asked (how long, where it starts, how to get there) in a sentence or two; any closure first. To get them to the start, pass start to check_trip.',
-        }, link)
+          next: 'Answer what they asked (how long, where it starts, how to get there) in a sentence or two; any closure first. Hills: say the feel and, when it is not a loop, which way climbs. Getting there: getting_in, or whole_trail.getting_there; pass start to check_trip only when they could walk, bike or take transit there.',
+          ...(card ? { card: 'A card shows under your reply with its length, minutes, surface, hills (as a chart, with the climb each way), how to get there, any closure, and a button to the Roam. Leave those numbers to the card: say why it suits them and the one thing worth knowing.' } : {}),
+        }, card ? undefined : link)
+        return card ? { ...result, trail: card } : result
+      }
+      case 'find_trails': {
+        const region = regionIn(input.query)
+        const query = region ? region.rest : input.query
+        const words = typeof query === 'string' ? query.toLowerCase().split(/[^a-z0-9]+/).filter((w) => w.length > 2 && !['the', 'rail', 'rails', 'trail', 'trails', 'path', 'paths', 'bikeway', 'greenway', 'easy', 'flat', 'beginner'].includes(w)) : []
+        const from = asPlace(input.near) ?? ctx.here ?? null
+        const near = region?.at ?? from
+        const [{ data }, { data: links }, roams] = await Promise.all([
+          ctx.admin.from('trails').select('id, name, aka, towns, full_miles, surface, summary, transit_note, parking_note, access_points, elevation')
+            .eq('status', 'approved').eq('active', true).limit(200),
+          ctx.admin.from('roam_trails').select('trail_id, roam_id, relation').limit(500),
+          getActiveRoams(),
+        ])
+        type AccessPoint = { lat: number; lng: number; name: string; notes: string | null }
+        type TrailRow = { id: string; name: string; aka: string[] | null; towns: string[] | null; full_miles: number | null; surface: string | null; summary: string | null; transit_note: string | null; parking_note: string | null; access_points: AccessPoint[] | null; elevation: { climb_ft?: number; miles?: number; max_grade_pct?: number } | null }
+        const roamName = new Map(roams.map((r) => [r.id, r.name]))
+        const found = ((data ?? []) as TrailRow[])
+          .filter((t) => !words.length || words.every((w) => `${t.name} ${(t.aka ?? []).join(' ')} ${(t.towns ?? []).join(' ')}`.toLowerCase().includes(w)))
+          .map((t) => {
+            const pts = (t.access_points ?? []).filter((a) => typeof a.lat === 'number' && typeof a.lng === 'number')
+            const sortBy = near && pts.length ? Math.min(...pts.map((a) => haversineMiles(near.lat, near.lng, a.lat, a.lng))) : null
+            const d = from && pts.length ? Math.min(...pts.map((a) => haversineMiles(from.lat, from.lng, a.lat, a.lng))) : null
+            return { t, pts, sortBy, d }
+          })
+          .filter((x) => !region || (x.sortBy != null && x.sortBy <= 30))
+          .sort((a, b) => (words.length ? 0 : (a.sortBy ?? 1e9) - (b.sortBy ?? 1e9)))
+          .slice(0, 5)
+        // A Roam's stretch can differ from its whole trail (the Mass Central
+        // is mostly stone dust with no train; Sudbury to Hudson is paved with
+        // one), so each Roam brings its own facts (2026-10-28).
+        const onFound = ((links ?? []) as { trail_id: string; roam_id: string; relation: string }[])
+          .filter((l) => roamName.has(l.roam_id) && found.some(({ t }) => t.id === l.trail_id))
+        const roamIds = [...new Set(onFound.map((l) => l.roam_id))]
+        const [{ data: facts }, roamFeel] = await Promise.all([
+          roamIds.length ? ctx.admin.from('roams').select('id, distance_miles, surface, access_note').in('id', roamIds) : Promise.resolve({ data: [] }),
+          roamHills(ctx, roamIds),
+        ])
+        const roamFacts = new Map(((facts ?? []) as { id: string; distance_miles: number | null; surface: string | null; access_note: string | null }[]).map((f) => [f.id, f]))
+        const trails = found.map(({ t, pts, d }) => ({
+          id: t.id, name: t.name, towns: (t.towns ?? []).slice(0, 12), miles: t.full_miles,
+          surface: clip(t.surface, 340), about: clip(t.summary, 260),
+          // Measured along its MAPC TrailMap line (trail-elevation, Shift 01487).
+          hills: t.elevation?.climb_ft != null && Number(t.elevation.miles) > 0
+            ? { feel: hillsFeel(t.elevation.climb_ft / Number(t.elevation.miles), Number(t.elevation.max_grade_pct ?? 0)), steepest_grade_pct: t.elevation.max_grade_pct }
+            : null,
+          getting_there: clip(t.transit_note, 240), parking: clip(t.parking_note, 200),
+          // "It meets the Mass Central Rail Trail here at the Diamond Crossing."
+          meets: pts.filter((a) => /\b(meets|connects|links|joins)\b/i.test(a.notes ?? '')).slice(0, 3).map((a) => ({ at: a.name, what: clip(a.notes, 160) })),
+          roams: onFound.filter((l) => l.trail_id === t.id).map((l) => {
+            const f = roamFacts.get(l.roam_id)
+            return {
+              id: l.roam_id, name: roamName.get(l.roam_id), this_roam: l.relation === 'uses' ? 'rides it' : 'connects to it',
+              miles: f?.distance_miles != null ? round1(f.distance_miles) : null, surface: clip(f?.surface, 120),
+              hills: roamFeel.get(l.roam_id)?.feel ?? null, getting_in: clip(f?.access_note, 200),
+            }
+          }),
+          nearest_access_miles_away: d != null ? round1(d) : null,
+        }))
+        return ok({
+          trails,
+          ...(trails.length
+            ? { next: "A Roam's surface, hills and getting_in are for its own stretch and can differ from the whole trail's: describe a Roam by its own. For a Roam that fits, call get_roam (its hills, stops and button). A trail's hills are for the whole trail; with none, say a rail trail is usually a gentle grade, not that it is flat." }
+            : { note: 'No trail by that name in our records. Try find_roams, or list the nearest trails with no query.' }),
+        })
       }
       case 'cancel_reminder': {
         const id = String(input.id ?? '')
@@ -1238,13 +1838,15 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
       case 'note_feedback': {
         // A picture they attached goes with it, as a link that works for a week.
         const shot = ctx.screenshot ? (await signedUrls(ctx.admin, [ctx.screenshot], 7 * 86_400)).get(ctx.screenshot) ?? null : null
-        await ctx.admin.from('admin_notifications').insert({
+        // It used to say "noted" whether or not the row saved (2026-10-30).
+        const { error } = await ctx.admin.from('admin_notifications').insert({
           level: 'info',
           source: 'shift_assistant',
           title: `Shift assistant feedback (${String(input.kind)}): ${String(input.summary).slice(0, 120)}`,
           body: [input.their_words ? `"${String(input.their_words).slice(0, 1500)}"` : null, `${ctx.email}`, shot ? `Their picture (link works for 7 days): ${shot}` : null].filter(Boolean).join('\n'),
-          context: { kind: 'shift_assistant_feedback', feedback_kind: input.kind, user_id: ctx.userId, ...(ctx.screenshot ? { screenshot_path: ctx.screenshot } : {}) },
+          context: { kind: 'shift_assistant_feedback', feedback_kind: input.kind, summary: String(input.summary).slice(0, 600), user_id: ctx.userId, ...(ctx.screenshot ? { screenshot_path: ctx.screenshot } : {}) },
         })
+        if (error) return fail("It didn't go through. Don't say it was passed on: suggest Send feedback in Profile > Help, or info@gogreenstreets.org.")
         return ok({ noted: true, ...(shot ? { picture_sent: true } : {}) })
       }
     }
@@ -1258,6 +1860,8 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
 export async function approvalCard(ctx: ToolCtx, name: string, input: Record<string, unknown>):
   Promise<{ card: ApprovalCard; input: Record<string, unknown> } | { result: ToolResult }> {
   if (RIDE_PLAN_NEEDS_APPROVAL.has(name)) return ridePlanCard(ctx, name, input)
+  if (name === 'join_shift_together') return shiftTogetherCard(ctx, input)
+  if (name === 'join_practice_ride') return practiceRideCard(ctx, input)
   if (name === 'set_reminder') {
     const from = asPlace(input.from)
     const to = asPlace(input.to)
@@ -1297,7 +1901,7 @@ export async function approvalCard(ctx: ToolCtx, name: string, input: Record<str
     return {
       card: {
         title: status === 'going' ? `Going to ${d.title}` : status === 'maybe' ? `Maybe for ${d.title}` : `Can't make ${d.title}`,
-        lines: [[d.day, d.time].filter(Boolean).join(', '), ...(d.meetup ? [`Meet at ${d.meetup}`] : []), d.joined ? 'The organizer sees your answer' : 'You join the ride, and the organizer sees your name'],
+        lines: [[d.day, d.time].filter(Boolean).join(', '), ...(d.meetup ? [`Meet at ${d.meetup}`] : []), d.joined ? 'People on the ride see your answer' : 'You join the ride, and people on it see your name'],
         cta: status === 'going' ? "I'm going" : status === 'maybe' ? 'Maybe' : "Can't make it", tone: 'primary',
       },
       input: { occurrence_id: id, status },
@@ -1339,23 +1943,415 @@ export async function approvalCard(ctx: ToolCtx, name: string, input: Record<str
       const l = lists.find((s) => s.id === v.id)
       return l && typeof v.on === 'boolean' ? [{ id: l.id, name: l.names?.en ?? l.topic, on: v.on }] : []
     })
-    if (!notices.length && !emails.length) return { result: fail('Nothing to change. Use the keys and ids from get_my_settings.') }
+    // The rest of the Settings screen (Shift 2026-10-30). Each line is the row's own words.
+    const lines: string[] = []
+    const changes: Record<string, unknown> = {}
+    const { data: me } = await ctx.user.from('users').select(SETTINGS_COLUMNS).eq('id', ctx.userId).single()
+    const row = (me ?? {}) as SettingsRow
+    const mode = input.tracking_mode
+    if (mode != null) {
+      if (mode !== 'auto' && mode !== 'manual') return { result: fail('Trip tracking is "auto" or "manual".') }
+      if (!canOpen(ctx, 'tracking')) return { result: fail("Their version of the app can't switch trip tracking from here. Tell them it lives in the app under Profile, then Settings, then Trip tracking.") }
+      if ((row.tracking_mode ?? 'auto') === mode) return { result: fail(`Trip tracking is already ${TRACKING_WORDS[mode]}.`) }
+      changes.tracking_mode = mode
+      lines.push(`Trip tracking: ${TRACKING_WORDS[mode]}`)
+    }
+    const lang = input.language
+    if (lang != null) {
+      if (typeof lang !== 'string' || !(lang in LANGUAGE_WORDS)) return { result: fail('The language is "en", "es", "pt-BR" or "zh-Hans".') }
+      if (!canOpen(ctx, 'language')) return { result: fail("Their version of the app can't change its language from here. Tell them it lives in the app under Profile, then Settings, then Language.") }
+      if (row.locale === lang) return { result: fail(`The app is already in ${LANGUAGE_WORDS[lang]}.`) }
+      changes.language = lang
+      lines.push(`Language: ${LANGUAGE_WORDS[lang]}`)
+    }
+    const vac = input.vacation
+    if (vac != null) {
+      const v = vac as { until?: unknown; end?: unknown }
+      const on = vacationOn(row.vacation_until)
+      if (v.end === true) {
+        if (!on) return { result: fail('Vacation mode is already off.') }
+        changes.vacation = { end: true }
+        lines.push('Vacation mode: off (tracking starts again)')
+      } else {
+        const until = typeof v.until === 'string' ? v.until.trim() : ''
+        const today = bostonToday()
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(until) || Number.isNaN(new Date(`${until}T12:00:00Z`).getTime())) return { result: fail('Give the last day of the vacation as YYYY-MM-DD.') }
+        if (until <= today) return { result: fail('The last day of the vacation has to be after today.') }
+        if (until > plusDays(today, VACATION_MAX_DAYS)) return { result: fail(`Vacation mode runs ${VACATION_MAX_DAYS} days at most. Offer ${dayWord(plusDays(today, VACATION_MAX_DAYS))}, the latest it can go.`) }
+        if (on?.until === until) return { result: fail(`Vacation mode is already on until ${dayWord(until)}.`) }
+        changes.vacation = { until }
+        lines.push(`Vacation mode: on until ${dayWord(until)}`)
+      }
+    }
+    const car = input.vehicle_type
+    if (car != null) {
+      if (typeof car !== 'string' || !(car in CAR_WORDS)) return { result: fail('The car is "gas", "hybrid", "ev" or "none".') }
+      if ((row.vehicle_type ?? 'gas') === car) return { result: fail(`My car is already ${CAR_WORDS[car]}.`) }
+      changes.vehicle_type = car
+      lines.push(`My car: ${CAR_WORDS[car]}`)
+    }
+    const pub = input.profile_public
+    if (pub != null) {
+      if (typeof pub !== 'boolean') return { result: fail('Public profile is true or false.') }
+      if ((row.profile_public !== false) === pub) return { result: fail(`Public profile is already ${pub ? 'on' : 'off'}.`) }
+      changes.profile_public = pub
+      lines.push(`Public profile: ${pub ? 'on' : 'off'}`)
+    }
+    const assistant = input.assistant_on
+    if (assistant != null) {
+      if (assistant !== false) return { result: fail("You can turn the assistant off, not on. It's on now.") }
+      if (!canOpen(ctx, 'assistant_settings')) return { result: fail("Their version of the app can't turn the assistant off from here. Tell them it lives in the app under Profile, then Settings, then AI assistant.") }
+      changes.assistant_on = false
+      lines.push('AI assistant: off (the Ask button goes away)')
+    }
+    if (!notices.length && !emails.length && !lines.length) return { result: fail('Nothing to change. Use the keys and ids from get_my_settings.') }
+    const off = changes.assistant_on === false
     return {
       card: {
         title: 'Change your settings',
-        lines: [...notices.map(([k, on]) => `${NOTICES[k]}: ${on ? 'on' : 'off'}`), ...emails.map((m) => `${m.name} email: ${m.on ? 'on' : 'off'}`)],
-        cta: 'Save', tone: 'primary',
+        lines: [...notices.map(([k, on]) => `${NOTICES[k]}: ${on ? 'on' : 'off'}`), ...emails.map((m) => `${m.name} email: ${m.on ? 'on' : 'off'}`), ...lines],
+        cta: off ? 'Turn off' : 'Save', tone: off ? 'danger' : 'primary',
       },
-      input: { notifications: Object.fromEntries(notices), emails: emails.map(({ id, on }) => ({ id, on })) },
+      input: { notifications: Object.fromEntries(notices), emails: emails.map(({ id, on }) => ({ id, on })), ...changes },
     }
   }
   return { result: fail(`Unknown tool ${name}`) }
 }
 
+/** The agreement on the app's sign-up checkbox (Shift locales partners.terms_check, Keith 2026-10-29). */
+const TOGETHER_TERMS = "I'm 18 or older. Green Streets introduces people but doesn't check or supervise them. If we meet, it's because we both agree to, in a public place, with bikes, cars and gear we get on our own. Getting around always carries some risk, and I'm responsible for my own safety."
+const TOGETHER_WAYS: Record<string, string> = { walk: 'walking', bike: 'biking', transit: 'the bus or train', micro: 'a scooter' }
+const DAY_WORDS: Record<string, string> = { mon: 'Mon', tue: 'Tue', wed: 'Wed', thu: 'Thu', fri: 'Fri', sat: 'Sat', sun: 'Sun' }
+const SLOT_WORDS: Record<string, string> = { weekend_morning: 'weekend mornings', weekend_afternoon: 'weekend afternoons', weekday_evening: 'weekday evenings' }
+
+/** Shift Together sign-up (Keith 2026-10-29: the assistant should set it up, not
+ *  only link the form). The same RPCs the app's form uses, as the person. */
+async function shiftTogetherCard(ctx: ToolCtx, input: Record<string, unknown>):
+  Promise<{ card: ApprovalCard; input: Record<string, unknown> } | { result: ToolResult }> {
+  const kind = ['newcomer', 'guide', 'carpool'].includes(String(input.kind)) ? String(input.kind) : null
+  if (!kind) return { result: fail('kind is newcomer, guide or carpool.') }
+  if (!canOpen(ctx, 'partner_request')) return { result: fail("Their version of the app doesn't have Shift Together yet. Tell them an app update brings it.") }
+  const list = (v: unknown, ok: string[]) => (Array.isArray(v) ? [...new Set(v.map(String).filter((x) => ok.includes(x)))] : [])
+  let modes = kind === 'carpool' ? [] : list(input.modes, ['walk', 'bike', 'transit', 'micro'])
+  let days = list(input.days, Object.keys(DAY_WORDS))
+  let times = kind === 'carpool' ? [] : list(input.times, ['morning', 'midday', 'evening'])
+  const role = kind === 'carpool' && ['driver', 'rider', 'either'].includes(String(input.carpool_role)) ? String(input.carpool_role) : null
+  const hhmm = (v: unknown) => (typeof v === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(v) ? v : null)
+  let arrive = kind === 'carpool' ? hhmm(input.arrive_by) : null
+  let leave = kind === 'carpool' ? hhmm(input.leave_at) : null
+  if (kind === 'carpool' && !role) return { result: fail('Ask whether they would drive, ride along, or either.') }
+
+  const [placesQ, contactQ, reqsQ, ackQ, versionQ] = await Promise.all([
+    ctx.user.from('saved_locations').select('id, label, address_text, lat').eq('user_id', ctx.userId).limit(30),
+    ctx.user.rpc('get_my_partner_contact'),
+    ctx.user.rpc('get_my_partner_requests'),
+    ctx.user.from('commute_partner_acks').select('version').eq('user_id', ctx.userId),
+    ctx.user.rpc('partner_terms_version'),
+  ])
+  const places = ((placesQ.data ?? []) as { id: string; label: string; address_text: string | null; lat: number | null }[]).filter((p) => p.lat != null)
+  const find = (name: unknown, fallbacks: string[]) => {
+    const want = typeof name === 'string' && name.trim() ? [name.trim()] : fallbacks
+    for (const w of want) { const p = places.find((x) => x.label.toLowerCase() === w.toLowerCase()); if (p) return p }
+    return null
+  }
+  const from = find(input.from, ['Home'])
+  const to = find(input.to, ['Work', 'School'])
+  if (!from) return { result: fail(input.from ? `They have no saved place called "${input.from}".` : 'They have no Home saved. Offer open_screen commute_setup to set it, then try again.') }
+  // A guide is matched on where they live (Shift 01504); where they go only ranks them.
+  if (!to && (kind !== 'guide' || input.to)) return { result: fail(input.to ? `They have no saved place called "${input.to}".` : 'They have no Work or School saved. Ask where the trip goes, save it with save_place, then try again.') }
+  if (to && from.id === to.id) return { result: fail('The trip needs two different places.') }
+
+  // What they didn't say comes from their own trips between the two places
+  // (the form's prefill, 01350; Keith 2026-10-29: guess, don't ask).
+  let fromTrips = false
+  if (to && (!days.length || (kind === 'carpool' ? !arrive : !times.length) || (kind === 'guide' && !modes.length))) {
+    const { data: p } = await ctx.user.rpc('get_my_partner_prefill', { p_origin_location_id: from.id, p_destination_location_id: to.id })
+    const pre = (p ?? null) as { trips?: number; days?: string[]; time_of_day?: string[]; arrive_by?: string | null; leave_at?: string | null; modes?: string[] } | null
+    if (pre && (pre.trips ?? 0) >= 3) {
+      if (!days.length && pre.days?.length) { days = pre.days; fromTrips = true }
+      if (kind === 'carpool') {
+        // Arrive by the half hour at or after when they usually get there.
+        const half = (v: string | null | undefined, up: boolean) => {
+          if (!v) return null
+          const [h, m] = v.split(':').map(Number)
+          const mins = up ? Math.ceil((h * 60 + m) / 30) * 30 : Math.round((h * 60 + m) / 30) * 30
+          return mins < 24 * 60 ? `${String(Math.floor(mins / 60)).padStart(2, '0')}:${String(mins % 60).padStart(2, '0')}` : null
+        }
+        if (!arrive && half(pre.arrive_by, true)) { arrive = half(pre.arrive_by, true); fromTrips = true }
+        if (!leave && half(pre.leave_at, false)) { leave = half(pre.leave_at, false); fromTrips = true }
+      } else if (!times.length && pre.time_of_day?.length) { times = pre.time_of_day; fromTrips = true }
+      if (kind === 'guide' && !modes.length && pre.modes?.length) { modes = pre.modes; fromTrips = true }
+    }
+  }
+  if (kind !== 'carpool' && !modes.length) return { result: fail('Ask which way: walking, biking, the bus or train, or a scooter.') }
+  if (kind === 'carpool' && !arrive) return { result: fail("Their trips don't show when they get there. Ask what time they need to arrive.") }
+
+  const contact = (contactQ.data ?? null) as { hidden?: boolean; contact_email?: string | null } | null
+  const given = typeof input.contact_email === 'string' ? input.contact_email.trim().toLowerCase() : ''
+  if (given && (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(given) || /@privaterelay\.appleid\.com$/.test(given))) {
+    return { result: fail("That email won't work: it needs to be one their match can write to, not another hidden address.") }
+  }
+  if (contact?.hidden && !contact.contact_email && !given) {
+    return { result: fail("They signed in with Apple's Hide My Email, so a match's email can't reach them. Ask for an email their match can write to (they see it only after both say yes), then call again with contact_email.") }
+  }
+  const version = typeof versionQ.data === 'string' ? versionQ.data : null
+  const accepted = !!version && ((ackQ.data ?? []) as { version: string }[]).some((a) => a.version === version)
+  const existing = ((reqsQ.data ?? []) as { kind: string; status: string }[]).find((r) => r.kind === kind && r.status !== 'closed')
+
+  const what = kind === 'newcomer'
+    ? `Go with someone nearby the first time, ${modes.map((m) => TOGETHER_WAYS[m]).join(' or ')}`
+    : kind === 'guide'
+      ? `Show someone the way, ${modes.map((m) => TOGETHER_WAYS[m]).join(' or ')}`
+      : `Share the drive: ${role === 'driver' ? 'you drive' : role === 'rider' ? 'you ride along' : 'drive or ride'}`
+  const ampm = (v: string) => { const [h, m] = v.split(':').map(Number); return `${h % 12 || 12}:${String(m).padStart(2, '0')} ${h < 12 ? 'AM' : 'PM'}` }
+  const weekdays = days.length === 5 && ['mon', 'tue', 'wed', 'thu', 'fri'].every((d) => days.includes(d))
+  const when = [days.length ? (weekdays ? 'Weekdays' : days.map((d) => DAY_WORDS[d]).join(', ')) : 'Any day',
+    kind === 'carpool' ? `arrive by ${ampm(arrive!)}${leave ? `, leave at ${ampm(leave)}` : ''}` : times.length ? times.join(', ') : 'any time'].join(', ')
+  const note = typeof input.note === 'string' && input.note.trim() ? input.note.replace(/\s+/g, ' ').trim().slice(0, 300) : null
+  // Other times (01504): a newcomer's quieter first trip, a guide's other free
+  // times (practice rides too, when they bike); and how far a guide would go.
+  // Not given: left as they were.
+  const other = kind === 'carpool' || !Array.isArray(input.other_times) ? null : list(input.other_times, PRACTICE_SLOTS)
+  const maxMiles = kind === 'guide' && [2, 3, 5, 8].includes(Number(input.max_miles)) ? Number(input.max_miles) : null
+  return {
+    card: {
+      title: existing ? 'Update your Shift Together sign-up' : 'Sign up for Shift Together',
+      lines: [
+        what,
+        to ? `${from.label} to ${to.label}` : `From ${from.label}`,
+        ...(kind === 'guide' ? [`Trips up to ${maxMiles ?? 5} miles`] : []),
+        fromTrips ? `${when} (from your trips)` : when,
+        ...(note ? [`Your note: "${note}"`] : []),
+        ...(other?.length ? [`${kind === 'guide' ? 'Also free' : 'Or a first trip on'} ${other.map((x) => SLOT_WORDS[x]).join(' or ')}`] : []),
+        ...(given ? [`Your match can write to ${given} once you both say yes`] : []),
+        "Shift suggests someone nearby. You both say yes before either of you sees the other's email",
+        ...(accepted ? [] : [`By signing up you agree: ${TOGETHER_TERMS}`]),
+      ],
+      cta: existing ? 'Save' : 'Sign me up', tone: 'primary',
+    },
+    input: { kind, modes, from_id: from.id, to_id: to?.id ?? null, days, times, carpool_role: role, arrive_by: arrive, leave_at: leave, note,
+      contact_email: given || null, accept_version: accepted ? null : version,
+      other_times: other, max_miles: maxMiles },
+  }
+}
+
+async function runApprovedShiftTogether(ctx: ToolCtx, input: Record<string, unknown>): Promise<ToolResult> {
+  const sorry = "That didn't save. Try again in a moment, or use the sign-up form."
+  if (input.accept_version) {
+    const { data, error } = await ctx.user.rpc('accept_partner_terms', { p_version: String(input.accept_version) })
+    if (error || !(data as { ok?: boolean } | null)?.ok) return fail(sorry)
+  }
+  if (input.contact_email) {
+    const { data, error } = await ctx.user.rpc('set_partner_contact_email', { p_email: String(input.contact_email) })
+    if (error || !(data as { ok?: boolean } | null)?.ok) return fail("The contact email didn't save, so nothing was signed up. Check it with them and try again.")
+  }
+  const { data, error } = await ctx.user.rpc('set_partner_request', {
+    p_kind: input.kind, p_modes: input.modes ?? [], p_origin_location_id: input.from_id, p_destination_location_id: input.to_id,
+    p_days: input.days ?? [], p_time_of_day: input.times ?? [], p_carpool_role: input.carpool_role ?? null,
+    p_arrive_by: input.arrive_by ?? null, p_leave_at: input.leave_at ?? null, p_note: input.note ?? null,
+    // No scope or languages: a new sign-up gets nearby, a changed one keeps what they chose.
+    p_carpool_scope: null, p_languages: null,
+  })
+  const r = (data ?? null) as { ok?: boolean; reason?: string; matches?: number } | null
+  if (error || !r) return fail(sorry)
+  if (!r.ok) {
+    if (r.reason === 'under_18') return fail('Shift Together is for people 18 and older, and the birth date on their account says they are under 18. Tell them kindly; if the date is wrong, they can email info@gogreenstreets.org.')
+    return fail(sorry)
+  }
+  // Other times and a guide's distance ride on the sign-up just saved (Shift
+  // 01504); a miss leaves the sign-up standing.
+  if (input.kind !== 'carpool' && (Array.isArray(input.other_times) || input.max_miles != null)) {
+    const { data: g } = await ctx.user.rpc('set_partner_extras', {
+      p_kind: input.kind, p_slots: Array.isArray(input.other_times) ? input.other_times : null, p_max_miles: input.max_miles ?? null,
+    })
+    r.matches = (r.matches ?? 0) + ((g as { matches?: number } | null)?.matches ?? 0)
+  }
+  const found = (r.matches ?? 0) > 0
+  return {
+    ...ok({
+    saved: true, matches_now: r.matches ?? 0,
+    note: (r.matches ?? 0) > 0
+      ? 'Signed up, and Shift already found someone. Say so in a sentence, and give a partner_matches button so they can see who and say yes or no.'
+      : "Signed up. Say in a sentence that Shift will let them know when it finds someone nearby; there's nobody yet. For a bike trip, a beginner-friendly group ride (find_rides_and_events) is a good thing to try meanwhile.",
+    }),
+    ...(found && canOpen(ctx, 'partner_matches') ? { link: { screen: 'partner_matches' as const, label: 'See who' } } : {}),
+  }
+}
+
+/** A practice ride (01503, Keith 2026-10-29): an easy bike ride near home with
+ *  a guide, off the commute. The same RPCs the app's partner-practice screen uses. */
+async function practiceRideCard(ctx: ToolCtx, input: Record<string, unknown>):
+  Promise<{ card: ApprovalCard; input: Record<string, unknown> } | { result: ToolResult }> {
+  if (!canOpen(ctx, 'partner_practice')) return { result: fail("Their version of the app doesn't have practice rides yet. Tell them an app update brings them; meanwhile a beginner-friendly group ride (find_rides_and_events) or the free lesson (get_lesson_offer) is a good start.") }
+  const slots = Array.isArray(input.slots) ? [...new Set(input.slots.map(String).filter((x) => PRACTICE_SLOTS.includes(x)))] : []
+  if (!slots.length) slots.push('weekend_morning')
+  const [nearQ, contactQ, reqsQ, ackQ, versionQ] = await Promise.all([
+    ctx.user.rpc('practice_places_near', {}),
+    ctx.user.rpc('get_my_partner_contact'),
+    ctx.user.rpc('get_my_partner_requests'),
+    ctx.user.from('commute_partner_acks').select('version').eq('user_id', ctx.userId),
+    ctx.user.rpc('partner_terms_version'),
+  ])
+  const near = (nearQ.data ?? null) as { home?: boolean; places?: { trail_id: string; trail: string; point: string; miles: number }[] | null } | null
+  if (!near?.home) return { result: fail('They have no Home saved, and a practice ride starts near home. Offer open_screen commute_setup to set it, then try again.') }
+  const places = near.places ?? []
+  const words = typeof input.path === 'string' ? input.path.toLowerCase().split(/\s+/).filter((w) => w.length > 2) : []
+  const path = input.near_home === true ? null
+    : words.length ? places.find((p) => words.every((w) => p.trail.toLowerCase().includes(w))) ?? null
+    : places[0] ?? null
+  if (words.length && !path && input.near_home !== true) {
+    return { result: fail(places.length
+      ? `No path called "${input.path}" within 4 miles of their home. The nearby ones: ${places.map((p) => `${p.trail} (${p.miles} mi)`).join(', ')}. Ask which, or offer the quiet streets near home.`
+      : 'There are no paths within 4 miles of their home. Offer the quiet streets near home (near_home true).') }
+  }
+  const contact = (contactQ.data ?? null) as { hidden?: boolean; contact_email?: string | null } | null
+  const given = typeof input.contact_email === 'string' ? input.contact_email.trim().toLowerCase() : ''
+  if (given && (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(given) || /@privaterelay\.appleid\.com$/.test(given))) {
+    return { result: fail("That email won't work: it needs to be one their guide can write to, not another hidden address.") }
+  }
+  if (contact?.hidden && !contact.contact_email && !given) {
+    return { result: fail("They signed in with Apple's Hide My Email, so a guide's email can't reach them. Ask for an email their guide can write to (they see it only after both say yes), then call again with contact_email.") }
+  }
+  const version = typeof versionQ.data === 'string' ? versionQ.data : null
+  const accepted = !!version && ((ackQ.data ?? []) as { version: string }[]).some((a) => a.version === version)
+  const existing = ((reqsQ.data ?? []) as { kind: string; status: string }[]).find((r) => r.kind === 'practice' && r.status !== 'closed')
+  return {
+    card: {
+      title: existing ? 'Update your practice ride' : 'Find a practice ride',
+      lines: [
+        'An easy bike ride with a Shift Together guide who lives nearby',
+        path ? `${path.trail}, from the ${path.point} entrance (${path.miles} mi from home)` : 'The quiet streets near your home',
+        `When: ${slots.map((x) => SLOT_WORDS[x]).join(' or ')}`,
+        ...(given ? [`Your guide can write to ${given} once you both say yes`] : []),
+        "You both say yes before either of you sees the other's email",
+        ...(accepted ? [] : [`By signing up you agree: ${TOGETHER_TERMS}`]),
+      ],
+      cta: existing ? 'Save' : 'Sign me up', tone: 'primary',
+    },
+    input: { trail_id: path?.trail_id ?? null, point: path?.point ?? null, slots, contact_email: given || null, accept_version: accepted ? null : version },
+  }
+}
+
+async function runApprovedPracticeRide(ctx: ToolCtx, input: Record<string, unknown>): Promise<ToolResult> {
+  const sorry = "That didn't save. Try again in a moment, or use the practice ride screen."
+  if (input.accept_version) {
+    const { data, error } = await ctx.user.rpc('accept_partner_terms', { p_version: String(input.accept_version) })
+    if (error || !(data as { ok?: boolean } | null)?.ok) return fail(sorry)
+  }
+  if (input.contact_email) {
+    const { data, error } = await ctx.user.rpc('set_partner_contact_email', { p_email: String(input.contact_email) })
+    if (error || !(data as { ok?: boolean } | null)?.ok) return fail("The contact email didn't save, so nothing was signed up. Check it with them and try again.")
+  }
+  const { data, error } = await ctx.user.rpc('set_practice_request', {
+    p_trail_id: input.trail_id ?? null, p_point: input.point ?? null, p_slots: input.slots, p_note: null, p_languages: null,
+  })
+  const r = (data ?? null) as { ok?: boolean; reason?: string; matches?: number } | null
+  if (error || !r) return fail(sorry)
+  if (!r.ok) {
+    if (r.reason === 'under_18') return fail('Shift Together is for people 18 and older, and the birth date on their account says they are under 18. Tell them kindly; if the date is wrong, they can email info@gogreenstreets.org.')
+    return fail(sorry)
+  }
+  const found = (r.matches ?? 0) > 0
+  return {
+    ...ok({
+      saved: true, matches_now: r.matches ?? 0,
+      note: found
+        ? 'Signed up, and Shift already found a guide. Say so in a sentence, and give a partner_matches button so they can see who and say yes or no.'
+        : "Signed up. Say in a sentence that Shift will let them know when a guide near them is free then; there's nobody yet. A beginner-friendly group ride (find_rides_and_events) or the free lesson (get_lesson_offer) is a good thing to try meanwhile.",
+    }),
+    ...(found && canOpen(ctx, 'partner_matches') ? { link: { screen: 'partner_matches' as const, label: 'See who' } } : {}),
+  }
+}
+
 /** Run a saving tool once the person approved its card. */
+/** The approved settings beyond notices and email, written the way the app
+ *  writes them (Shift lib/vacation.ts, lib/assistant.ts, profile/index.tsx),
+ *  then a button to the screen for what changed, with the params the new
+ *  app uses to apply it on the phone (tracking, language and the assistant
+ *  switch live partly on the device). The first in this order wins:
+ *  tracking, language, assistant, vacation, car, public profile, notices. */
+async function applySettings(ctx: ToolCtx, input: Record<string, unknown>, noticesChanged: boolean): Promise<ToolResult> {
+  const saved: string[] = []
+  const oops = (what: string) => fail(`${what} didn't save. Try again in a moment.`)
+  const mode = input.tracking_mode
+  if (mode === 'auto' || mode === 'manual') {
+    if (!canOpen(ctx, 'tracking')) return fail("Their version of the app can't switch trip tracking from here. Tell them it lives in the app under Profile, then Settings, then Trip tracking.")
+    const { error } = await ctx.user.from('users').update({ tracking_mode: mode }).eq('id', ctx.userId)
+    if (error) return oops('Trip tracking')
+    saved.push(`Trip tracking: ${TRACKING_WORDS[mode]}`)
+  }
+  const lang = input.language
+  if (typeof lang === 'string' && lang in LANGUAGE_WORDS) {
+    if (!canOpen(ctx, 'language')) return fail("Their version of the app can't change its language from here. Tell them it lives in the app under Profile, then Settings, then Language.")
+    const { error } = await ctx.user.from('users').update({ locale: lang }).eq('id', ctx.userId)
+    if (error) return oops('The language')
+    saved.push(`Language: ${LANGUAGE_WORDS[lang]}`)
+  }
+  const vac = input.vacation as { until?: unknown; end?: unknown } | null | undefined
+  if (vac && (vac.end === true || typeof vac.until === 'string')) {
+    // As lib/vacation.ts: end_vacation ends it as of yesterday; start_vacation
+    // starts today (the RPC allows a day either way of the person's own
+    // timezone) and sets users.vacation_until. A new date while one is on
+    // ends the old one first, since the RPC keeps one at a time.
+    const { data: me } = await ctx.user.from('users').select('vacation_until').eq('id', ctx.userId).single()
+    const on = vacationOn((me as SettingsRow | null)?.vacation_until)
+    if (on) {
+      const { error } = await ctx.user.rpc('end_vacation')
+      if (error) return oops('Vacation mode')
+    }
+    if (vac.end === true) saved.push('Vacation mode: off')
+    else {
+      const until = String(vac.until)
+      const { error } = await ctx.user.rpc('start_vacation', { p_starts_on: bostonToday(), p_ends_on: until })
+      if (error) return fail(error.message.includes('too_long') ? `Vacation mode runs ${VACATION_MAX_DAYS} days at most.` : error.message.includes('invalid') ? 'That date doesn\'t work for vacation mode. It has to be after today, within 30 days.' : "Vacation mode didn't save. Try again in a moment.")
+      saved.push(`Vacation mode: on until ${dayWord(until)}`)
+    }
+  }
+  const car = input.vehicle_type
+  if (typeof car === 'string' && car in CAR_WORDS) {
+    const { error } = await ctx.user.from('users').update({ vehicle_type: car }).eq('id', ctx.userId)
+    if (error) return oops('My car')
+    // Rescales their lifetime CO₂ against the new car, as the app does.
+    await ctx.user.rpc('rebuild_user_impact_cache', { p_user_id: ctx.userId })
+    saved.push(`My car: ${CAR_WORDS[car]}`)
+  }
+  const pub = input.profile_public
+  if (typeof pub === 'boolean') {
+    const { error } = await ctx.user.from('users').update({ profile_public: pub }).eq('id', ctx.userId)
+    if (error) return oops('Public profile')
+    saved.push(`Public profile: ${pub ? 'on' : 'off'}`)
+  }
+  if (input.assistant_on === false) {
+    if (!canOpen(ctx, 'assistant_settings')) return fail("Their version of the app can't turn the assistant off from here. Tell them it lives in the app under Profile, then Settings, then AI assistant.")
+    const { data, error } = await ctx.user.rpc('set_assistant_choice', { p_on: false })
+    if (error || (data as { ok?: boolean } | null)?.ok !== true) return oops('The assistant switch')
+    saved.push('AI assistant: off')
+  }
+  if (noticesChanged) saved.push('Notices and email lists')
+
+  // The button, for the first change in this order, and what the phone still needs.
+  const link: ScreenLink | undefined =
+    (mode === 'auto' || mode === 'manual') && canOpen(ctx, 'tracking') ? { screen: 'tracking', params: { mode }, label: 'Open Trip tracking' }
+    : typeof lang === 'string' && lang in LANGUAGE_WORDS && canOpen(ctx, 'language') ? { screen: 'language', params: { set: lang }, label: 'Open Language' }
+    : input.assistant_on === false && canOpen(ctx, 'assistant_settings') ? { screen: 'assistant_settings', params: { state: 'off' }, label: 'Open AI assistant settings' }
+    : vac && (vac.end === true || typeof vac.until === 'string') && canOpen(ctx, 'vacation') ? { screen: 'vacation', label: 'Open Vacation mode' }
+    : typeof car === 'string' && car in CAR_WORDS && canOpen(ctx, 'car') ? { screen: 'car', label: 'Open My car' }
+    : typeof pub === 'boolean' && canOpen(ctx, 'privacy') ? { screen: 'privacy', label: 'Open Public profile' }
+    : noticesChanged && canOpen(ctx, 'notifications') ? { screen: 'notifications', label: 'Open notification settings' }
+    : undefined
+  const note =
+    mode === 'auto' || mode === 'manual' ? `Saved. The phone switches when they tap the button, so say so in a sentence${mode === 'auto' ? ' (automatic tracking also needs location permission, which the screen asks for)' : ''}.`
+    : typeof lang === 'string' ? 'Saved. The app changes its language when they tap the button, so say so in a sentence.'
+    : input.assistant_on === false ? 'Saved. The Ask button goes away when they tap the button; say goodbye in a sentence and that the switch under Profile, then Settings, then AI assistant turns it back on.'
+    : 'Saved. Say so in a sentence; the Settings screen shows the same.'
+  return ok({ saved: true, changed: saved, note }, link)
+}
+
 export async function runApproved(ctx: ToolCtx, name: string, input: Record<string, unknown>): Promise<ToolResult> {
   try {
     if (RIDE_PLAN_NEEDS_APPROVAL.has(name)) return await runApprovedRidePlan(ctx, name, input)
+    if (name === 'join_shift_together') return await runApprovedShiftTogether(ctx, input)
+    if (name === 'join_practice_ride') return await runApprovedPracticeRide(ctx, input)
     if (name === 'set_reminder') {
       if (!ctx.threadId) return fail("That reminder didn't save. Try again in a moment.")
       const { error } = await ctx.admin.from('member_assistant_plans').insert({ ...input, user_id: ctx.userId, thread_id: ctx.threadId })
@@ -1365,7 +2361,7 @@ export async function runApproved(ctx: ToolCtx, name: string, input: Record<stri
     if (name === 'rsvp_ride') {
       const r = await rsvpRide(ctx, String(input.occurrence_id), input.status as 'going' | 'maybe' | 'not_going')
       if ('error' in r) return fail(`That didn't save: ${r.error}`)
-      return ok({ saved: true, ride: r.date.title, day: r.date.day, time: r.date.time, meetup: r.date.meetup, event_id: r.date.event_id, note: 'Done. Say so in a sentence with the day, time and meeting spot. Offer a reminder (set_reminder) for getting there, or open_screen event with event_id for the details.' })
+      return ok({ saved: true, ride: r.date.title, day: r.date.day, time: r.date.time, meetup: r.date.meetup, event_id: r.date.event_id, note: `Done. Say so in a sentence with the day, time and meeting spot. Offer a reminder (set_reminder) for getting there${r.date.event_id ? ', or open_screen event with event_id for the details' : ''}.` })
     }
     if (name === 'remember') {
       const { error } = await ctx.admin.from('member_assistant_memories').insert({ user_id: ctx.userId, note: String(input.note) })
@@ -1394,7 +2390,7 @@ export async function runApproved(ctx: ToolCtx, name: string, input: Record<stri
         const { error } = await ctx.user.rpc('set_my_email_subscription', { p_id: m.id, p_on: m.on })
         if (error) return fail("The email change didn't save. Try again in a moment.")
       }
-      return ok({ saved: true, note: 'Saved. The Notifications screen shows the same switches.' })
+      return await applySettings(ctx, input, Object.keys(notices).length > 0 || ((input.emails ?? []) as unknown[]).length > 0)
     }
     return fail(`Unknown tool ${name}`)
   } catch (e) {

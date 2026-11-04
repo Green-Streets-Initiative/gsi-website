@@ -1,8 +1,10 @@
 {
   "_comment": "Run state for the SEO/AEO routine. Updated each run. Baselines are a cache; the authoritative time series is the committed seo/data/gsc/ files.",
-  "last_run": "2026-10-19",
-  "last_deep_dive": "2026-10",
-  "serp_rotation_index": 15,
+  "last_run": "2026-11-01",
+  "last_deep_dive": "2026-11",
+  "serp_rotation_index": 18,
+  "_serp_rotation_note_2026_11_01": "Index 15 selected new-to-boston / family-logistics / year-round-weather (query 1: 'do I need a car in Boston', 'biking with a toddler', 'winter bike commuting gear') plus 'how long is a 10 minute drive walking' as the deep-dive's drive-time check. GSI absent on all 6 and on the 3 sentinels. Index 18 next = (18,19,20) mod 14 = 4,5,6 = students-campus / roams-trails / events-programs, query index floor(18/14)=1.",
+  "_missed_run_2026_10_26": "The 2026-10-26 weekly did not complete: it left seo/data/gsc/weekly-2026-10-23.json and seo/data/posthog/weekly-2026-10-19.json uncommitted and sent no email. Most likely cause: the PostHog pull timing out (six parallel queries hit max execution time on every attempt 2026-11-01 until pull-posthog.mjs was changed to run them one at a time). The 10-23 GSC file is kept as a valid, contiguous week; this run's GSC week was pulled with --end-lag 2 (10-24 -> 10-30) so the series stays contiguous.",
   "_serp_rotation_note_2026_10_19": "Index 12 selected local-business-partners / brand-navigational / used-car-to-ebike (query 0). Index 15 next = new-to-boston / family-logistics / year-round-weather (1, 2, 3 mod 14), query index floor(15/14)=1.",
   "_serp_rotation_note_2026_10_12": "Index 9 selected ebike-curious / employers-rto / schools-wellness (query 0 each). Index 12 next = local-business-partners / brand-navigational / used-car-to-ebike (12, 13, 0 mod 14), query index floor(12/14)=0.",
   "_serp_rotation_note_2026_10_05": "Index 6 selected events-programs / town-commuters / drive-time-conversion (first query of each). Index 9 next = ebike-curious / employers-rto / schools-wellness.",
@@ -10,6 +12,15 @@
   "_serp_rotation_note": "Index selects clusters (excluding aeo-sentinels) in portfolio order: for k in 0..2, cluster[(index+k) % n], query[floor(index/n) % len]. History: 0 = used-car-to-ebike / new-to-boston / family-logistics; 3 = year-round-weather / town-commuters / ebike-curious; 6 = employers-rto / schools-wellness / local-business-partners; 9-11 hand-advanced on 2026-09-14 to students-campus / drive-time-conversion / brand-navigational and the index parked at 12. On 2026-09-21 n was 13 (roams-trails shipped), so 12 wrapped to 0 on its own and the hand-correction that note predicted was NOT needed — the cycle restarted cleanly at used-car-to-ebike / new-to-boston / family-logistics. Index now 3. NOTE: if item 3 of 2026-09-21 ships, events-programs takes n from 13 to 14 and the cycle shifts again; the point is coverage over time, not a fixed cycle, so hand-correct and say so.",
   "stagnant_weeks": 0,
   "north_star": {
+    "week_of_2026_10_19": 23,
+    "by_channel_week_of_2026_10_19": {
+      "organic_search": { "sessions": 173, "activated": 19, "app_intent": 3 },
+      "paid_search": { "sessions": 129, "activated": 4, "app_intent": 2 },
+      "paid_other": { "sessions": 404, "activated": 26, "app_intent": 18 },
+      "answer_engine": { "sessions": 0, "activated": 0, "app_intent": 0 }
+    },
+    "partial_week_of_2026_10_26_6_days": { "organic_search": { "sessions": 203, "activated": 15, "app_intent": 1 }, "paid_search": { "sessions": 105, "activated": 3, "app_intent": 1 }, "paid_other": { "sessions": 561, "activated": 1, "app_intent": 22 }, "north_star": 24 },
+    "_note_2026_11_01": "North star 23 (prior-4 mean 17.0, +35%). Run on a Sunday, so the PostHog week of 10-26 is 6 of 7 days (24 already). Organic intent 3/173 = 1.7%; landing outcomes since 09-14: /events 3/516 (0.6%) but 57 activated (register/event-info), towns 4/63 (6.3%), home 5/104 (4.8%), roams 0/66. paid_other now = Meta one_line_test (363 landings 7d, /shift, ~5% intent) + LinkedIn team-challenge-nov-2026 (120, employer page, 0 app intent by design) + rdt_cid/semester 119 (the Reddit ads were recorded as hard-stopped 10-01 — reported, not resolved). gclid 114 sessions/7d vs grant 303 clicks Oct 1-28 (~76/wk): gclid still runs ~1.5x the grant; unreconciled.",
     "week_of_2026_10_12": 12,
     "by_channel_week_of_2026_10_12": {
       "organic_search": { "sessions": 142, "activated": 15, "app_intent": 2 },
@@ -66,10 +77,14 @@
     "_note": "paid_other is almost entirely the Reddit 'semester' campaign (rdt_cid, 393 landings in 7d, mostly /shift-your-semester/<school>). paid_search (gclid) shows 9-11 sessions/wk while the Ad Grants snapshot shows 1 click MTD at 2026-09-24 — unreconciled; gclid may include Google Ads traffic outside the grant account. Report the gap, don't pick a side."
   },
   "baselines": {
-    "clicks_4wk": 68.25,
-    "clicks_12wk": 35.0,
-    "impressions_4wk": 4273.3,
-    "impressions_12wk": 2734.0,
+    "clicks_4wk": 114.5,
+    "clicks_12wk": 57.17,
+    "impressions_4wk": 7119.3,
+    "impressions_12wk": 4106.1,
+    "_cache_2026_11_01": "Week to 2026-10-30: clicks 146, impressions 10,439 (record), CTR 1.40%, pos 6.6. Week to 10-23 (from the missed 10-26 run): 139 / 7,809. Cache INCLUDES this week. Comparison baselines excluding it: 92.0 / 45.67 clicks, 5,372.8 / 3,313.5 impr. Non-brand 1,863 (10-23: 2,845), trailing-4 1,744.3 vs prior-4 477.3 (+265%), stagnant_weeks 0. Coverage 81% -> 97% after the 2026-11-01 portfolio edits. 28 days to 10-29: 463 clicks / 27,544 impr vs 143 / 13,817 prior 28 days; mobile 63% of impressions. PostHog organic (incl. paid, old series) 287 vs 201 4-wk.",
+    "nonbrand_discovery_impressions_wk_2026_10_30": 1863,
+    "nonbrand_4wk_2026_10_30": 1744.3,
+    "nonbrand_prior_4wk_2026_10_30": 477.3,
     "_cache_2026_10_19": "Week to 2026-10-16: clicks 70, impressions 4881, CTR 1.43%, pos 7.1. Cache INCLUDES this week. Comparison baselines excluding it: 59.25 / 29.83 clicks, 3875.8 / 2399.3 impr. Non-brand 1138 (held after September rolled out; ~2/3 events incl. ~300 unmatched event-name impressions), trailing-4 817.5 vs prior-4 330.5 (+147%), stagnant_weeks 0. Coverage 69% (Monster Mash et al. unmatched). PostHog organic 142 vs prior-4 93.0.",
     "nonbrand_discovery_impressions_wk_2026_10_16": 1138,
     "nonbrand_4wk_2026_10_16": 817.5,
@@ -107,17 +122,18 @@
     "_aeo_referral_note": "THREE answer-engine referral sessions in the 7 days to 2026-09-21 — chatgpt.com 1, www.perplexity.ai 1, gemini.google.com 1 — against 0 for the two prior runs. n=3 is noise and must not be reported as a trend. What is new is the SHAPE: one session each from three different engines, where every previous answer-engine referral came from one engine pointing at one contest-rules page and stopped when the contest ended. First weekly pulse after the Roams and Campus sections landed in llms.txt (79 -> 122 links); both facts are true and neither proves the other. Watch whether it persists."
   },
   "health": {
-    "sitemap_loc_count": 349,
-    "sitemap_non_event_loc_count": 243,
+    "sitemap_loc_count": 438,
+    "sitemap_non_event_loc_count": 273,
+    "_sitemap_2026_11_01": "438 = 165 events + 273 non-event (+30: shift/towns now 84 urls, guides 34). A rise, not a DB-blip drop. llms.txt 230 links / 8 sections; still no locale sections (es/pt-BR/zh-Hans x 28). Robots unchanged. IndexNow 200 OK, 438 URLs. Key pages all 200, canonical ok.",
     "_sitemap_2026_10_19": "349 = 106 events + 243 non-event. +98 non-event is deliberate: 84 translated guides (/es, /pt-BR, /zh-Hans x 28, shipped 10-17) + five answer pages + guides. NEW FINGERPRINT ~243. llms.txt 200 links / 8 sections; health check flags the three locale classes as missing from llms.txt (minor; hreflang alternates present). Robots unchanged. IndexNow weekly sitemap: 200 OK, 349 URLs.",
     "_sitemap_2026_10_12": "264 = 119 events + 145 non-event (+2 incl. the winter guide). llms.txt 188 links / 8 sections. Robots unchanged. Winter + cargo guides verified in sitemap, llms.txt and /guides (inspect.mjs listed).",
     "_sitemap_2026_10_05": "261 = 118 events + 143 non-event (+2: cargo guide, Brandeis page). llms.txt 184 links / 8 sections. Robots unchanged. Event URLs now readable slugs (b2efdef/111f37c, 2026-09-30); legacy ids 308.",
     "_sitemap_2026_09_28": "293 = 152 events + 141 non-event. Non-event is the stable fingerprint (was ~142). llms.txt 182 links / 8 sections unchanged; robots hash unchanged.",
-    "llms_txt_link_count": 200,
+    "llms_txt_link_count": 230,
     "llms_txt_section_count": 8,
     "_llms_note": "/llms.txt is generated per request, so its hash changes whenever content is published — treat hash drift as expected; link and section counts are the meaningful signals. 2026-09-22 after SEO item 2: 8 sections, 182 links (60 of them the capped 'What is on' event list). The sitemap count is now EVENT-DRIVEN and will swing week to week as events are added and pass — a fall is not automatically a regression. Read the non-event portion (~142) as the stable fingerprint and treat a drop THERE as the DB-blip signal.",
     "robots_hash": "87554763188151d8aea395e9a6b2129c6b5597a3aacad864f06e58293cf3586c",
-    "_last_fingerprint_update": "2026-10-19",
+    "_last_fingerprint_update": "2026-11-01",
     "_llms_gap_note": "The 2026-09-14 Roams gap is CLOSED — health-check.mjs now groups two segments deep under /shift and reports no missing class. A residual blind spot remains and is item 2: the check is satisfied at CLASS level by the single /events hub line in llms.txt, while 33 individual event pages — the best-converting class on the site — are listed in neither llms.txt nor the sitemap.",
     "_robots_note": "Hash changed 2026-09-21 and the cause is benign: commit 228e503 ('Challenges goes live') added `Disallow: /preview` for the review harnesses, which also carry noindex. Not a regression.",
     "llms_txt_hash": null,
@@ -301,7 +317,8 @@
       "do_not": "Do not assume a guide is discoverable just because its own /guides/<slug> URL returns 200. After shipping a guide, check the /guides index, sitemap.xml and llms.txt too — the slug route is dynamic and will 200 well before the index catches up."
     }
   ],
-  "pending": [
+  "pending": [],
+  "superseded_pending": [
     {
       "report_date": "2026-10-19",
       "item_n": 1,

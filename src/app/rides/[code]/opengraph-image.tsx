@@ -61,7 +61,8 @@ export default async function OGImage({ params }: { params: Promise<{ code: stri
   const route = (web?.route_waypoints ?? []).filter((p) => Number.isFinite(p?.lat) && Number.isFinite(p?.lng))
   const map = route.length >= 2 ? await routeMapImage({ points: route, width: MAP_W, height: size.height, color: colors.accent }) : null
 
-  const hostName = host?.name ?? web?.organizer_name ?? null
+  // The organization only once verified (rideExtras): a typed-in name could be anyone's.
+  const hostName = host?.name ?? null
   const title = trim((ride?.name ?? 'A group ride').trim(), 90)
   const when = web ? nextWhen(web) : ''
   const miles = route.length >= 2 ? routeMiles(route) : null

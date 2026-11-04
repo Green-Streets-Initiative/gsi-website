@@ -22,8 +22,10 @@ import type {
   PrizeWinner,
   EmployerBenefits,
 } from './portal-types'
+import { PRIZE_WINNER_COLUMNS } from './portal-types'
 import { hasAccess, isTierAtLeast } from './portal-utils'
 import { isOwnerRow, normalizeRole, type PortalRole } from './portal-roles'
+import { readStaffWorkplace, takeWorkplaceParam, writeStaffWorkplace } from './staff-workplace'
 
 export type { PortalRole }
 
@@ -72,6 +74,11 @@ interface PortalContextValue {
   /** role === 'manager' (Shift migration 01081). */
   isManager: boolean
   isGsiAdmin: boolean
+  /**
+   * The signed-in email has a team row on the workplace shown. False when
+   * Green Streets staff opened a workplace they aren't on (the staff picker).
+   */
+  onTeam: boolean
   /** The signed-in person is the account owner (always an admin). */
   isOwner: boolean
   /**
@@ -162,6 +169,7 @@ export function PortalProvider({ children }: { children: ReactNode }) {
   const [prizeWinnersMap, setPrizeWinnersMap] = useState<Record<string, PrizeWinner[]>>({})
   const [benefitsForm, setBenefitsForm] = useState<EmployerBenefits>({})
   const [isGsiAdmin, setIsGsiAdmin] = useState(false)
+  const [onTeam, setOnTeam] = useState(true)
 
   const tierAtLeast = useCallback(
     (tier: 'starter' | 'basic' | 'standard' | 'premium') => isTierAtLeast(group, tier),
@@ -203,9 +211,29 @@ export function PortalProvider({ children }: { children: ReactNode }) {
       ])
 
       if (adminRes.error) throw adminRes.error
-      const adminRow = adminRes.data?.[0] ?? null
-      setIsGsiAdmin(!!gsiRes.data)
-      setOtherWorkplaces(Math.max(0, (adminRes.count ?? (adminRow ? 1 : 0)) - 1))
+      const ownRow = adminRes.data?.[0] ?? null
+      const isGsi = !!gsiRes.data
+      setIsGsiAdmin(isGsi)
+      setOtherWorkplaces(Math.max(0, (adminRes.count ?? (ownRow ? 1 : 0)) - 1))
+
+      // Green Streets staff may open any workplace (the staff picker). They
+      // keep their own role there if they are on its team; otherwise they
+      // read as a viewer, and isGsiAdmin grants what staff have always had.
+      // Everyone else always gets their oldest workplace, as before.
+      const fromLink = takeWorkplaceParam()
+      if (isGsi && fromLink) writeStaffWorkplace(fromLink)
+      const staffChoice = isGsi ? readStaffWorkplace() : null
+      let adminRow: { group_id: string; role: string | null } | null = ownRow
+      if (staffChoice && staffChoice !== ownRow?.group_id) {
+        const { data: rowThere } = await supabase
+          .from('group_admins')
+          .select('group_id, role')
+          .eq('group_id', staffChoice)
+          .eq('email', email)
+          .maybeSingle()
+        adminRow = rowThere ?? { group_id: staffChoice, role: null }
+      }
+      setOnTeam(!!adminRow && adminRow.role !== null)
 
       if (!adminRow) {
         setNoWorkplace(true)
@@ -224,6 +252,12 @@ export function PortalProvider({ children }: { children: ReactNode }) {
         .maybeSingle()
 
       if (groupError) throw groupError
+      if (!groupData && staffChoice) {
+        // The chosen workplace is gone: forget it and load the usual one.
+        writeStaffWorkplace(null)
+        window.location.assign(window.location.pathname)
+        return
+      }
       if (!groupData) {
         setNoWorkplace(true)
         setLoading(false)
@@ -269,7 +303,7 @@ export function PortalProvider({ children }: { children: ReactNode }) {
       const [challengeRes, flagshipRes, memberRes, dashboardRes, membersRes, poolRes, adminsRes, selfRes] = await Promise.all([
         supabase
           .from('competitions')
-          .select('id, name, metric, starts_at, ends_at, prize_description, counting_rules, contact_name, contact_email')
+          .select('id, name, metric, starts_at, ends_at, description, prize_description, counting_rules, contact_name, contact_email')
           .eq('group_id', groupData.id)
           .order('starts_at', { ascending: false }),
         supabase
@@ -344,7 +378,7 @@ export function PortalProvider({ children }: { children: ReactNode }) {
           if (drawnIds.length > 0) {
             const { data: winners } = await supabase
               .from('employer_prize_winners')
-              .select('*')
+              .select(PRIZE_WINNER_COLUMNS)
               .in('prize_id', drawnIds)
 
             if (winners) {
@@ -514,8 +548,12 @@ export function PortalProvider({ children }: { children: ReactNode }) {
   const isManager = role === 'manager'
   const me = admins.find((a) => a.email.toLowerCase() === (sessionEmail ?? ''))
   const isOwner = !!me && isOwnerRow(me, group?.admin_email)
-  const canRunPrograms = isAdmin || isManager || isGsiAdmin
-  const canAdminister = isAdmin || isGsiAdmin
+  // A lapsed account loses every action here, in one place (Keith
+  // 2026-10-31): the server refuses the writes anyway, so the buttons go
+  // too. accessActive already lets GSI staff through. Billing stays open to
+  // admins so they can renew.
+  const canRunPrograms = (isAdmin || isManager || isGsiAdmin) && accessActive
+  const canAdminister = (isAdmin || isGsiAdmin) && accessActive
 
   const value: PortalContextValue = {
     group,
@@ -545,12 +583,13 @@ export function PortalProvider({ children }: { children: ReactNode }) {
     isAdmin,
     isManager,
     isGsiAdmin,
+    onTeam,
     isOwner,
     canManageChallenges: canRunPrograms,
     canInviteEmployees: canRunPrograms,
     canEditAdvisor: canRunPrograms,
     canManageTeam: canAdminister,
-    canManageBilling: canAdminister,
+    canManageBilling: isAdmin || isGsiAdmin,
     canManageAccount: canAdminister,
     agreementGated,
     tierAtLeast,

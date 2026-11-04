@@ -71,7 +71,7 @@ const challengeSchema = {
       description:
         'null = the Shift standard (walks of half a mile or more, bike and e-scooter rides, transit, carpools, up to 2 trips a day). To count only trips to or from the office: {"commute_only": true, "offices": [{"address": "...", "lat": 0, "lng": 0, "radius_m": 250}]} using a saved location. To narrow the ways: {"modes": ["walk","bike","escooter","transit_bus","transit_train","transit_commuter_rail","ferry","carpool"]}.',
     },
-    description: { type: ['string', 'null'], description: 'One or two sentences staff see with the challenge.' },
+    description: { type: ['string', 'null'], description: 'What it\'s about: one or two sentences (under 280 characters) employees read under the name and dates on the challenge page in the app. Why the workplace is running it and what to aim for; no dates. null clears it.' },
     contact_name: { type: ['string', 'null'] },
     contact_email: { type: ['string', 'null'], description: 'Required when there is a first-to-the-goal reward.' },
     template_slug: { type: ['string', 'null'] },
@@ -453,7 +453,14 @@ async function accountOverview(ctx: ToolCtx) {
   const advisorDone = !!(benefits.destination_address && Object.entries(benefits).some(([k, v]) => k !== 'destination_address' && !!v))
   return {
     workplace: { name: g.name, plan: g.tier, rewards_included: canRewards, status: g.status, access_ends: g.access_ends_at ?? null, join_code: g.invite_code, join_link: g.invite_code ? `https://shift.gogreenstreets.org/join/${g.invite_code}` : null, join_policy: g.join_policy ?? 'open' },
-    you: { email: ctx.email, role: ctx.role, can_add_money: ctx.role === 'admin', can_change_settings: ctx.role === 'admin' || ctx.role === 'gsi' },
+    you: {
+      email: ctx.email,
+      role: ctx.role,
+      can_run_challenges_and_invites: ctx.role !== 'viewer',
+      can_add_money: ctx.role === 'admin',
+      can_change_settings: ctx.role === 'admin' || ctx.role === 'gsi',
+      can_change_anything: ctx.role !== 'viewer',
+    },
     setup_checklist: {
       success_plan: !!(onboarding.goal_type || onboarding.success_definition || onboarding.launch_date),
       company_profile: !!(g.name && g.admin_name && (g.admin_phone || g.website_url)),
@@ -690,6 +697,7 @@ export async function approvalCard(ctx: ToolCtx, name: string, input: Record<str
       const b = d.body
       const lines = [
         `${b.name} · ${b.starts_on === b.ends_on ? shortDate(b.starts_on!) : `${shortDate(b.starts_on!)} to ${shortDate(b.ends_on!)}`}`,
+        ...(String(b.description ?? '').trim() ? [`"${String(b.description).trim()}"`] : []),
         ...(b.prizes ?? []).map(prizeLine),
       ]
       if (name === 'launch_challenge') {
@@ -726,6 +734,8 @@ export async function approvalCard(ctx: ToolCtx, name: string, input: Record<str
       if (old && (old.starts_on !== body.starts_on || old.ends_on !== body.ends_on))
         lines.push(`Dates: ${shortDate(old.starts_on!)} to ${shortDate(old.ends_on!)} → ${shortDate(body.starts_on!)} to ${shortDate(body.ends_on!)}`)
       if (old && JSON.stringify(old.counting_rules ?? null) !== JSON.stringify(body.counting_rules ?? null)) lines.push('Which trips count changes.')
+      if (old && 'description' in body && String(old.description ?? '').trim() !== String(body.description ?? '').trim())
+        lines.push(String(body.description ?? '').trim() ? `What it's about: "${String(body.description).trim()}"` : "Removes what it's about.")
       for (const p of body.prizes ?? []) lines.push(prizeLine(p))
       if (c.money.set_aside_now_cents > 0) lines.push(`Sets aside ${money(c.money.set_aside_now_cents)} more from your rewards balance.`)
       lines.push('Your team sees the changes in the app right away.')

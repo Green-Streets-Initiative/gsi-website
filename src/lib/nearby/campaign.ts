@@ -36,22 +36,42 @@ export function isNewRoutesContext(search: string, partnerCampaign?: string | nu
   return !!p.get('partner') && partnerCampaign === NEWROUTES_CAMPAIGN
 }
 
+let openCheck: Promise<boolean> | null = null
+
+/**
+ * Whether the New Routes offer is open right now (enabled and inside its
+ * sign-up window), from the same-origin /api/nearby/newroutes. A context says
+ * a visit came from the campaign; this says the campaign still runs. Partner
+ * links outlive the window in welcome emails, so every client surface asks
+ * both. Asked once per page load; fails CLOSED.
+ */
+export function fetchNewRoutesOpen(): Promise<boolean> {
+  openCheck ??= fetch('/api/nearby/newroutes')
+    .then(res => (res.ok ? res.json() : null))
+    .then(data => data?.open === true)
+    .catch(() => false)
+  return openCheck
+}
+
 /**
  * isNewRoutesContext for a CLIENT surface holding only the URL: resolves the
  * partner row first (same-origin, CDN-cached ~60s) so the campaign decision
- * comes from the row rather than the slug. Fails soft to false — a lookup
- * that errors must not conjure an offer.
+ * comes from the row rather than the slug, then checks the offer is still
+ * open. Fails soft to false — a lookup that errors must not conjure an offer.
  */
 export async function resolveNewRoutesContext(search: string): Promise<boolean> {
   const p = new URLSearchParams(search)
-  if ((p.get('utm_campaign') ?? '').toLowerCase() === NEWROUTES_CAMPAIGN) return true
-  const slug = parsePartnerSlug(p)
-  if (!slug) return false
-  try {
-    return (await fetchPartnerClient(slug))?.campaign === NEWROUTES_CAMPAIGN
-  } catch {
-    return false
+  let inContext = (p.get('utm_campaign') ?? '').toLowerCase() === NEWROUTES_CAMPAIGN
+  if (!inContext) {
+    const slug = parsePartnerSlug(p)
+    if (!slug) return false
+    try {
+      inContext = (await fetchPartnerClient(slug))?.campaign === NEWROUTES_CAMPAIGN
+    } catch {
+      return false
+    }
   }
+  return inContext && (await fetchNewRoutesOpen())
 }
 
 // The app-open link on shift.gogreenstreets.org. A New Routes tap goes here so

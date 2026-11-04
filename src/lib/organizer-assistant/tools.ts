@@ -8,6 +8,8 @@ import type { DashboardRide, DetailDate, RideDetail, RideRow, RosterRow, Turnout
 import { designRoute, encodePlan, summarizeRoute } from './route-designer'
 import { fetchRideWithGps } from '@/lib/organizers/rwgps'
 import { forecastLine, rideForecast } from '@/lib/rides/forecast'
+import { newInfraNear, newInfraOnRoute } from '@/lib/server/new-infra'
+import { newInfraForAssistant } from '@/lib/new-infra'
 
 // The organizer assistant's tools (Keith 2026-10-22). Same shape as the
 // employer assistant's: reads run straight away as the organizer; anything
@@ -140,6 +142,18 @@ export const TOOLS: Anthropic.Tool[] = [
     input_schema: { type: 'object', properties: { series_id: uuid, occurrence_id: uuid }, required: ['series_id', 'occurrence_id'] },
   },
   {
+    name: 'get_whats_new',
+    description: "What's new on a ride's route: bike lanes and paths it rides that opened in the last six months (MassDOT's bike inventory, plus OpenStreetMap changes only when a second source backs them), and street projects along it with a public hearing coming. A date with no route gets the half mile around its meeting point. Or near any place. The same lines show on the ride page under \"New on this route\". Good for a ride description (\"we'll ride the new Cummins Hwy protected lane\").",
+    input_schema: {
+      type: 'object',
+      properties: {
+        series_id: nullable('string', "A ride's id."),
+        occurrence_id: nullable('string', 'With series_id: one date, when it has its own route or meeting point.'),
+        near: { ...placeSchema, description: 'A place from find_place, instead of a ride.' },
+      },
+    },
+  },
+  {
     name: 'find_place',
     description: 'Look up a meeting point: a few matching places with name, address and coordinates, around Greater Boston unless the query says otherwise.',
     input_schema: { type: 'object', properties: { query: { type: 'string' } }, required: ['query'] },
@@ -174,7 +188,7 @@ export const TOOLS: Anthropic.Tool[] = [
   },
   {
     name: 'plan_route',
-    description: "Design a ride route from goals and have Shift's route planner build it: a loop or A to B, a target distance, places to pass (by name, or a kind like \"a coffee shop\"), bike lanes to show off (the longest protected lanes and paths nearby, or lanes opened in the last two years), and staying near Bluebikes docks and T stations. Returns the distance, riding time, share on calm streets, the spots to take carefully, how each goal came out, and a button that opens the route street by street with Street View in the editor, where they save it. Nothing is saved by this tool. Takes up to a minute.",
+    description: "Design a ride route from goals and have Shift's route planner build it: a loop or A to B, a target distance, places to pass (by name, or a kind like \"a coffee shop\"), bike lanes to show off (the longest protected lanes and paths nearby, or lanes opened in the last six months), and staying near Bluebikes docks and T stations. Returns the distance, riding time, share on calm streets, the spots to take carefully, how each goal came out, and a button that opens the route street by street with Street View in the editor, where they save it. Nothing is saved by this tool. Takes up to a minute.",
     input_schema: {
       type: 'object',
       properties: {
@@ -186,7 +200,7 @@ export const TOOLS: Anthropic.Tool[] = [
         target_miles: nullable('number', 'About how long, in miles.'),
         pace: nullable('string', 'relaxed (8–12 mph), moderate (12–15), brisk (15–18), fast (18+) or kids (5–8). A speed they give maps to the band it falls in.'),
         places: { type: 'array', items: { type: 'string' }, description: 'Places to pass, in their words: "Bow Market", "a coffee shop near the halfway point", "Mystic River Reservation". At most six.' },
-        showcase: { type: ['string', 'null'], enum: ['protected', 'new', null], description: 'protected: ride the best protected lanes and car-free paths nearby. new: ride lanes MassDOT lists as opened in the last two years.' },
+        showcase: { type: ['string', 'null'], enum: ['protected', 'new', null], description: 'protected: ride the best protected lanes and car-free paths nearby. new: ride lanes MassDOT lists as opened in the last six months.' },
         near_station_miles: nullable('number', 'Check that the start, and as much of the route as possible, is within this many miles of a Bluebikes dock or T station.'),
         prefer: { type: 'array', items: { type: 'string', enum: ['bicycle_benefits', 'bike_friendly_business'] }, description: 'Bike-friendly businesses to favor for a stop given as a kind ("a coffee shop"). bicycle_benefits: Bicycle Benefits members, which give a perk to people with the program\'s helmet sticker. bike_friendly_business: businesses the League of American Bicyclists certifies as Bicycle Friendly. Use what the organizer asks for.' },
       },
@@ -305,6 +319,7 @@ export const ACTIVITY: Record<string, string> = {
   get_credit_requests: 'Reading credit requests',
   get_turnout: 'Adding up turnout',
   get_forecast: 'Checking the forecast',
+  get_whats_new: 'Looking for new bike lanes',
   find_place: 'Looking up the place',
   plan_route: 'Planning the route (up to a minute)',
   check_route_link: 'Checking the route',
@@ -548,6 +563,22 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
         await loadDetail(ctx, input.series_id)
         const t = await rpc<Turnout>(ctx, 'organizer_ride_turnout', { p_series_id: input.series_id })
         return ok({ months: t.months, last_dates: t.dates.slice(0, 8) }, { href: `/organizers/rides/${input.series_id}/turnout`, label: 'Open turnout and downloads' })
+      }
+      case 'get_whats_new': {
+        const note = 'Lead with what opened: name it, when, and how much of the ride is on it. A coming project gets one line with its hearing date, described neutrally. MassDOT misses some city projects: if nothing turns up, say so and ask whether they know one.'
+        const sid = typeof input.series_id === 'string' && /^[0-9a-f-]{36}$/i.test(input.series_id) ? input.series_id : null
+        if (sid) {
+          const d = await loadDetail(ctx, sid)
+          const o = input.occurrence_id ? findDate(d, input.occurrence_id) : null
+          const line = (o?.own_route && o.route ? o.route.route_waypoints : d.ride.route_waypoints) ?? []
+          if (line.length >= 2) return ok({ on_the_route: newInfraForAssistant(await newInfraOnRoute(line), todayKey(), true), note })
+          const lat = o?.meetup_lat ?? d.ride.meetup_lat, lng = o?.meetup_lng ?? d.ride.meetup_lng
+          if (lat == null || lng == null) return fail('This ride has no route or meeting point yet.')
+          return ok({ no_route_yet: true, near_the_start: newInfraForAssistant(await newInfraNear({ lat, lng }, 0.5), todayKey(), false), note })
+        }
+        const p = input.near as { lat?: unknown; lng?: unknown } | null
+        if (!p || typeof p.lat !== 'number' || typeof p.lng !== 'number') return fail('Give a ride (series_id) or a place from find_place.')
+        return ok({ within_1_mile: newInfraForAssistant(await newInfraNear({ lat: p.lat, lng: p.lng }, 1), todayKey(), false), note })
       }
       case 'get_forecast': {
         const d = await loadDetail(ctx, input.series_id)
@@ -1001,7 +1032,7 @@ export async function runApproved(ctx: ToolCtx, name: string, input: Record<stri
       case 'invite_co_organizer': {
         const r = await inviteCoOrganizer(ctx.user, { seriesId: String(input.series_id), email: String(input.email), organizerEmail: ctx.email })
         if (!r.ok) return fail(r.error)
-        return ok({ status: r.status, emailed: r.emailed }, { href: `/organizers/rides/${input.series_id}/team`, label: 'See co-organizers' })
+        return ok({ status: r.status, emailed: r.emailed, already_emailed_today: r.alreadyEmailed }, { href: `/organizers/rides/${input.series_id}/team`, label: 'See co-organizers' })
       }
       case 'settle_credit': {
         const r = await rpc<{ ok: boolean; state: string; remaining: number }>(ctx, 'settle_ride_credit_request', {

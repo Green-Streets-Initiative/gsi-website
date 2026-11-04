@@ -24,7 +24,18 @@ import { rideExtras } from '@/lib/rides/host'
  * does; Shift shows only as the small "RSVP with" line at the foot.
  */
 export const dynamic = 'force-dynamic'
-export const metadata: Metadata = { title: 'Ride flyer | Green Streets Initiative', robots: { index: false } }
+
+// The printed page's title (the browser prints it in the margin) is the
+// ride's name alone: the flyer is the organizer's, not GSI's.
+export async function generateMetadata({ params }: { params: Promise<{ code: string }> }): Promise<Metadata> {
+  const { code } = await params
+  let name: string | null = null
+  if (looksLikeRideCode(code)) {
+    const { data } = await createServerSupabaseClient().rpc('get_ride_public', { p_code: code })
+    name = (data as RideLookup | null)?.name ?? null
+  }
+  return { title: { absolute: name ?? 'Ride flyer' }, robots: { index: false } }
+}
 
 export default async function RideFlyerPage({ params }: { params: Promise<{ code: string }> }) {
   const { code } = await params
@@ -47,7 +58,9 @@ export default async function RideFlyerPage({ params }: { params: Promise<{ code
   ].filter(Boolean).slice(0, 4) as { label: string; value: string; sub?: string }[]
   const host = extras?.host ?? null
   const brand = await organizerBrand(host?.logo_url)
-  const hostName = host?.name ?? ride.organizer_name
+  // The organization's name only once verified (rideExtras, Shift 01563): a
+  // typed-in name could be anyone's, so the flyer doesn't print it.
+  const hostName = host?.name ?? null
   const ink = brand?.ink ?? '#191A2E'
   const hexRgb = (h: string) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16)) as [number, number, number]
   // The QR stays dark on white for any phone camera; the brand's ink when it is dark enough.
