@@ -137,23 +137,30 @@ const avoidCache = new Map<string, { result: { route: AvoidingRoute | null }; ex
 
 /**
  * A trip's bike route re-planned around the streets someone asked to avoid
- * (Around You v2). Cached a day per instance, keyed on the streets'
- * geometry; a Google failure (null) is never kept.
+ * (Around You v2), and/or sent through one place they picked. Cached a day
+ * per instance, keyed on the streets' geometry and the place; a Google
+ * failure (null) is never kept.
  */
 export async function getTripAvoiding(
   from: { lat: number; lng: number },
   to: { lat: number; lng: number },
   avoid: string[][],
   names: string[] = [],
+  through: { lat: number; lng: number } | null = null,
 ): Promise<{ route: AvoidingRoute | null; avoided_towns?: (string | null)[] } | null> {
   const f = { lat: round3(from.lat), lng: round3(from.lng) }
   const t = { lat: round3(to.lat), lng: round3(to.lng) }
-  const key = `${REACH_ROW_VERSION}:${f.lat},${f.lng}|${t.lat},${t.lng}|${fnv(avoid.map(g => g.join(' ')).join('|') + '#' + names.join('|'))}`
+  // The place to the nearest ~10 m: a street corner, not a neighborhood
+  const via = through ? { lat: round4(through.lat), lng: round4(through.lng) } : null
+  const key = `${REACH_ROW_VERSION}:${f.lat},${f.lng}|${t.lat},${t.lng}|${fnv(avoid.map(g => g.join(' ')).join('|') + '#' + names.join('|'))}${via ? `|via:${via.lat},${via.lng}` : ''}`
   const cached = avoidCache.get(key)
   if (cached && cached.expires > Date.now()) return cached.result
 
-  const [laneIndex, crashes] = await Promise.all([laneIndexAlong(f, [t]), crashesFor(f.lat, f.lng)])
-  const result = await buildAvoidingRoute(f, t, avoid, laneIndex, crashes, names)
+  const [laneIndex, crashes] = await Promise.all([
+    laneIndexAlong(f, via ? [via, t] : [t]),
+    crashesFor(f.lat, f.lng),
+  ])
+  const result = await buildAvoidingRoute(f, t, avoid, laneIndex, crashes, names, via)
   if (!result) return null
   if (avoidCache.size >= CACHE_MAX_ENTRIES) {
     const oldest = avoidCache.keys().next().value
@@ -195,4 +202,8 @@ function quarterHour(iso: string): string {
 
 function round3(n: number): number {
   return Math.round(n * 1000) / 1000
+}
+
+function round4(n: number): number {
+  return Math.round(n * 10000) / 10000
 }

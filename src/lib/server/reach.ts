@@ -1393,6 +1393,11 @@ const AVOID_EXTRA_MAX_RATIO = 2
  * rides a street of the same name in another town, both get their town
  * ("Cambridge Street, Cambridge" in the list, Boston in the Avoiding line),
  * so it doesn't read as the street just avoided.
+ *
+ * `through` is "go through a place" (Keith 2026-11-04, parity with the ride
+ * planner): every route is asked to pass that point, `avoid` may then be
+ * empty, and there's no detour search (Google takes the one via). `route`
+ * is null when no route through it stays off the avoided streets.
  */
 export async function buildAvoidingRoute(
   origin: { lat: number; lng: number },
@@ -1401,9 +1406,15 @@ export async function buildAvoidingRoute(
   laneIndex: LaneVertex[],
   crashes: CrashCluster[] = [],
   names: string[] = [],
+  through: { lat: number; lng: number } | null = null,
 ): Promise<{ route: AvoidingRoute | null; avoided_towns?: (string | null)[] } | null> {
   const streets = avoid.map(group => group.map(decodePolyline))
-  const ends: [number, number][] = [[origin.lat, origin.lng], [dest.lat, dest.lng]]
+  const ends: [number, number][] = [
+    [origin.lat, origin.lng],
+    [dest.lat, dest.lng],
+    // A spot chosen on an avoided street can't be avoided either
+    ...(through ? [[through.lat, through.lng] as [number, number]] : []),
+  ]
   const pick = (routes: { minutes: number; encodedPolyline: string | null }[]) => {
     const fastest = Math.min(...routes.map(r => r.minutes))
     const cap = Math.max(fastest + AVOID_EXTRA_MAX_MIN, fastest * AVOID_EXTRA_MAX_RATIO)
@@ -1417,8 +1428,12 @@ export async function buildAvoidingRoute(
     )
   }
 
-  const plain = await queryBikeRoutes(origin, dest)
+  const plain = await queryBikeRoutes(origin, dest, through ?? undefined)
   let chosen = plain.length > 0 ? pick(plain) : null
+  if (!chosen && through) {
+    if (plain.length === 0) return null
+    return { route: null }
+  }
   if (!chosen) {
     const vias = detourVias(streets[streets.length - 1] ?? [], laneIndex)
     const detours = (await Promise.all(

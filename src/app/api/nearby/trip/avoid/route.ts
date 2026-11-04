@@ -11,6 +11,11 @@ import { getTripAvoiding, inServiceArea } from '@/lib/server/trip'
  * `avoided_towns` when a same-named street in another town had to be told
  * apart.
  *
+ * "Go through a place" rides the same call: `through` { lat, lng } sends the
+ * ride through that point (one place only), and `avoid` may then be empty.
+ * With a place, `route` is null when no ride through it stays off the
+ * avoided streets.
+ *
  * Only for people with Around You v2 on (around_you_v2, Shift 01581): each
  * call can cost up to three Google route lookups, so the switch is checked here,
  * not just in the page.
@@ -57,10 +62,14 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null)
   const from = point(body?.from)
   const to = point(body?.to)
-  const avoid = streets(body?.avoid)
-  if (!from || !to || !avoid) return NextResponse.json({ error: 'from, to and avoid required' }, { status: 400 })
+  const through = body?.through == null ? null : point(body.through)
+  if (body?.through != null && !through) return NextResponse.json({ error: 'through must be a point in the service area' }, { status: 400 })
+  // With a place to go through, there may be nothing to avoid
+  const noAvoid = body?.avoid == null || (Array.isArray(body.avoid) && body.avoid.length === 0)
+  const avoid = through && noAvoid ? [] : streets(body?.avoid)
+  if (!from || !to || !avoid) return NextResponse.json({ error: 'from, to and avoid (or through) required' }, { status: 400 })
 
-  const result = await getTripAvoiding(from, to, avoid, streetNames(body?.names, avoid.length))
+  const result = await getTripAvoiding(from, to, avoid, streetNames(body?.names, avoid.length), through)
   if (!result) return NextResponse.json({ error: 'route lookup failed' }, { status: 502 })
   return NextResponse.json(result, { headers: { 'Cache-Control': 'private, no-store' } })
 }
