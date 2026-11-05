@@ -1060,6 +1060,39 @@
       "search_terms": "Only ~10 named terms so far; all How-to Guides / Paying for the T transit and fare lookups (boston public transportation 1/8, charliecard 2/7 + 1/7, boston transit 0/6, charlie card 0/6, mbta monthly pass 2/6). Nothing off-target; no negatives proposed.",
       "alerts": [],
       "emailed": false
+    },
+    {
+      "date": "2026-11-05",
+      "source": "scheduled quick check (ad-grants-pulse), ~10:05 ET, live account via authuser=walkrideday%40gmail.com (resolved to 5). This month = Nov 1-5.",
+      "mtd": {
+        "window": "2026-11-01..2026-11-05",
+        "impressions": 832,
+        "clicks": 70,
+        "ctr_pct": 8.41,
+        "cost": 212.32,
+        "conversions": 6
+      },
+      "by_campaign": {
+        "How-to Guides": { "impressions": 759, "clicks": 71, "conversions": 6 },
+        "Town Walking & Biking": { "impressions": 58, "clicks": 3 },
+        "Venue Parking": { "impressions": 44, "clicks": 2, "note": "Eligible (Learning); day 2" },
+        "Shift App — Massachusetts": { "impressions": 6, "clicks": 0 },
+        "GSI — Brand": { "impressions": 0, "clicks": 0 },
+        "Shift Your Semester — Students": { "impressions": 0, "clicks": 0 },
+        "New Routes — Movers": { "impressions": 0, "clicks": 0, "note": "Paused 11-04 as approved" }
+      },
+      "campaign_status": "How-to Guides and Brand Eligible (Limited) Limited by search volume; Venue Parking Eligible (Learning); New Routes Paused (11-04, expected); others Eligible. Campaign rows sum to 76 clicks vs the 70 total row (reporting lag); total used.",
+      "banners": "No serving-related banner; only the 'Add broad match keywords' recommendation card (not applied).",
+      "ads": {
+        "disapproved_seen": 0,
+        "limited_by_policy": 0,
+        "not_eligible": 0,
+        "poor": "6, all known from the 11-04 weekly (3 pinned Venue Parking Ad 1s, How to Pay for the T, Walking School Bus Ideas, Walk More Win More)"
+      },
+      "search_terms": "Top 10 by impressions all How-to Guides / Paying for the T fare and transit lookups (boston public transportation 3/16, charliecard 4/11 + 2/9, charlie card 0/10, boston transit 0/9, the t boston 1/9, mbta monthly pass 2/8, boston train system 2/7, mbta passes 1/7, public transportation boston 0/6). Zero-click rows are on-target. Named terms total 49 clicks / 466 impr, 3 conv. No negatives proposed.",
+      "month_end_math": "8.41% on 832 impr after 5 days; well above 5%.",
+      "alerts": [],
+      "emailed": false
     }
   ],
   "snapshots": [
