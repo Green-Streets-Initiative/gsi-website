@@ -1,7 +1,10 @@
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 
+/** Pages that may name themselves as the source of a sign-up. */
+const SOURCES = new Set(['newsletter_footer', 'creative_challenge'])
+
 export async function POST(req: Request) {
-  let body: { email?: string; firstName?: string; website?: string }
+  let body: { email?: string; firstName?: string; website?: string; source?: string }
   try {
     body = await req.json()
   } catch {
@@ -24,6 +27,8 @@ export async function POST(req: Request) {
   }
 
   const firstName = body.firstName?.trim() || null
+  // Where the sign-up came from: the footer unless a known page says so.
+  const source = body.source && SOURCES.has(body.source) ? body.source : 'newsletter_footer'
 
   try {
     const supabase = createServerSupabaseClient()
@@ -62,9 +67,9 @@ export async function POST(req: Request) {
           email,
           first_name: firstName,
           loops_subscribed: true,
-          source: 'newsletter_footer',
+          source,
           classification_status: 'unclassified',
-          notes: 'Subscribed via website footer newsletter form',
+          notes: source === 'newsletter_footer' ? 'Subscribed via website footer newsletter form' : `Subscribed via website (${source})`,
         })
         .select('id')
         .single()
