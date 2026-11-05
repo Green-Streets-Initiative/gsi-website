@@ -1,6 +1,7 @@
 import 'server-only'
 import { withUtm } from '@/lib/utm'
 import { eventUrl } from '@/lib/events-url'
+import { promoFor } from '@/lib/towns/digest-promos'
 import {
   buildFeaturedCandidates,
   dateOnlyChip,
@@ -450,6 +451,18 @@ export function buildTownDigest(opts: {
       </td></tr>`
     : ''
 
+  // A Green Streets offer for this town (lib/towns/digest-promos.ts): rides
+  // along only, after the featured item and the other open items.
+  const promo = promoFor(slug, todayIso)
+  const promoSection = promo
+    ? `<tr><td style="padding:0 32px 24px;">
+        <p style="margin:0 0 8px;font-family:${FONT_DISPLAY};font-size:12px;font-weight:700;letter-spacing:0.1em;color:#5A5C6E;">FROM GREEN STREETS</p>
+        <p style="margin:0 0 4px;font-size:15px;line-height:1.5;font-weight:700;color:#191A2E;">${escapeHtml(promo.title)}</p>
+        <p style="margin:0 0 6px;font-size:14px;line-height:1.55;color:#3A3C4E;">${escapeHtml(promo.body)}</p>
+        <p style="margin:0;font-size:14px;"><a href="${linkFor(`promo_${promo.key}`)(promo.url)}" style="color:#2966E5;font-weight:700;text-decoration:none;">${escapeHtml(promo.label)} &rarr;</a></p>
+      </td></tr>`
+    : ''
+
   const eventsSection = eventPicks.length
     ? `<tr><td style="padding:0 32px 24px;">
         <p style="margin:0 0 10px;font-family:${FONT_DISPLAY};font-size:16px;font-weight:700;color:#191A2E;">Happening around ${escapeHtml(townName)}</p>
@@ -535,6 +548,7 @@ export function buildTownDigest(opts: {
     </td>
   </tr>
   ${alsoSection}
+  ${promoSection}
   ${infraSection}
   ${eventsSection}
   ${perkSection}
