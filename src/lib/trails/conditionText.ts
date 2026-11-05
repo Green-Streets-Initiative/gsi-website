@@ -63,8 +63,8 @@ export const LANE_STYLE = { color: '#6D4AC9', width: 2.6, label: 'Protected bike
 export const CONDITION_LABEL: Record<Condition, string> = {
   clear: 'Clear',
   snowy: 'Some snow or slush',
-  icy: 'Icy',
-  not_cleared: 'Not cleared',
+  icy: 'Icy patches',
+  not_cleared: 'Not plowed or blocked',
 }
 
 export const CONDITION_COLOR: Record<Condition, string> = {
