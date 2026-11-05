@@ -242,6 +242,8 @@ export const TAG_META: Record<string, { label: string; color: string; bg: string
   bilingual:             { label: 'Bilingual',            color: '#FCD34D', bg: '#FCD34D20', ink: '#7A5200', inkBg: '#7A52001F' },
   students:              { label: 'Students',             color: '#2DD4BF', bg: '#2DD4BF20', ink: '#0B6B75', inkBg: '#0B6B751F' },
   advocacy:              { label: 'Advocacy',             color: '#FB923C', bg: '#FB923C20', ink: '#B7410E', inkBg: '#B7410E1F' },
+  // Free helmets, lights, locks or a free tune-up handed out at the event.
+  free_gear:             { label: 'Free gear',            color: '#4ADE80', bg: '#4ADE8020', ink: '#2D6A4F', inkBg: '#2D6A4F1F' },
   // Listing status, set by the importer from the organizer's wording and
   // kept current by the schedule check (Shift, 2026-10-20).
   members_only:          { label: 'Members only',         color: '#CBD5E1', bg: '#CBD5E120', ink: '#475569', inkBg: '#4755691F' },
