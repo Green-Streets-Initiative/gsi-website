@@ -92,6 +92,9 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
       '@type': 'Event',
       name: ev.title,
       startDate: ev.event_time ? `${ev.event_date}T${ev.event_time.slice(0, 5)}` : ev.event_date,
+      // Cancelled dates are filtered out above, so everything listed here is on.
+      eventStatus: 'https://schema.org/EventScheduled',
+      eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
       url: `${SITE_URL}${eventPath(ev)}`,
       ...(ev.location_name ? { location: { '@type': 'Place', name: ev.location_name, address: ev.location_address ?? ev.location_name } } : {}),
     })),
