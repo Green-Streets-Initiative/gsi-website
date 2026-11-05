@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
-import { Bike, CalendarDays, FileText, Landmark, MapPin, Megaphone, ReceiptText, Satellite, ShieldCheck, Store, TrainFront } from 'lucide-react'
+import { Bike, CalendarDays, Landmark, MapPin, Megaphone, ReceiptText, Satellite, ShieldCheck, Store, TrainFront } from 'lucide-react'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
 import { getTownBySlug, getTownDirectory } from '@/lib/towns/queries'
@@ -255,7 +255,6 @@ export default async function TownChallengePage({ searchParams }: { searchParams
             <ul className="space-y-5 print:space-y-2">
               {[
                 [ReceiptText, 'Your Uber and Lyft fee money can pay for it', <>State law lets cities and towns spend it on &ldquo;programs that support alternative modes of transportation&rdquo; (Chapter 187 of the Acts of 2016, Section 8).</>],
-                [FileText, 'No quotes needed', 'At $2,500 it is well under the $10,000 line where state purchasing rules (Chapter 30B) call for quotes.'],
                 [CalendarDays, 'A line for your December 31 report', <>&ldquo;Planned: Town Challenge with Green Streets Initiative, a three-month resident walking, biking and transit program, spring 2027, $2,500.&rdquo;</>],
                 [Store, 'A local sponsor can cover the prizes', <>A bank, credit union or business can fund the $750, and {T} pays $1,750. <a href="#sponsor" className="font-bold text-forest underline underline-offset-2">How a sponsor works</a></>],
               ].map(([Icon, t, b]) => {
