@@ -17,7 +17,7 @@ export default function Page() {
       <main className="min-h-[70vh] bg-cream">
         <JudgePanel />
       </main>
-      <Footer variant="light" street />
+      <Footer variant="light" />
     </div>
   )
 }

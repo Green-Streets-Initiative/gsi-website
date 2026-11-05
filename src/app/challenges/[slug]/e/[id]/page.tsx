@@ -47,7 +47,7 @@ export default async function Page({ params, searchParams }: { params: Params; s
       <main className="min-h-[70vh] bg-cream">
         <EntryShare initial={data} preview={preview} />
       </main>
-      <Footer variant="light" street />
+      <Footer variant="light" />
     </div>
   )
 }

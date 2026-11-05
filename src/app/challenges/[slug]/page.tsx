@@ -48,7 +48,7 @@ export default async function Page({ params, searchParams }: { params: Params; s
       <main className="bg-cream">
         <ChallengePage initial={data} preview={preview} />
       </main>
-      <Footer variant="light" street />
+      <Footer variant="light" />
     </div>
   )
 }

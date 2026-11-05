@@ -130,7 +130,7 @@ export default async function Page({ params, searchParams }: { params: Params; s
           </S>
         </article>
       </main>
-      <Footer variant="light" street />
+      <Footer variant="light" />
     </div>
   )
 }

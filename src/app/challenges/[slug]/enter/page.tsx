@@ -30,7 +30,7 @@ export default async function Page({ params, searchParams }: { params: Params; s
         </div>
         <EnterFlow c={data.challenge} preview={preview} />
       </main>
-      <Footer variant="light" street />
+      <Footer variant="light" />
     </div>
   )
 }

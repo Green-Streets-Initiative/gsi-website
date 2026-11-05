@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { SignHero, SignTop, StreetHeading, StreetSection, StepSign, H3 } from '@/components/street/Street'
+import { SignHero, SignTop, StreetHeading, StreetSection, StepSign, H3 } from './street'
 import {
   ApiError, categoryLabel, fetchChallenge, joinNewsletter, lastDay, longDay, post, prizeFor, readPerson, shortDay,
   withPreview, writePerson, type ChallengeResponse, type EntryView, type Person,
