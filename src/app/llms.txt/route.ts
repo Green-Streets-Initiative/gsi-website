@@ -163,7 +163,11 @@ export async function GET() {
   // the page is.
   L.push('## Parking at big venues')
   for (const v of Object.values(VENUES)) {
-    L.push(`- [Parking at ${v.name}](${SITE_URL}/parking/${v.slug}): ${v.lede} Garages and lots with walk times and published prices (checked ${v.checked}), and how to get there by train.`)
+    L.push(
+      v.noParking
+        ? `- [Parking at ${v.name}](${SITE_URL}/parking/${v.slug}): ${v.lede} The City's game-day travel plan with the team: satellite lots, shuttle stops, bike valet, Bluebikes and walks (checked ${v.checked}).${v.notice ? ` ${v.notice.text}` : ''}`
+        : `- [Parking at ${v.name}](${SITE_URL}/parking/${v.slug}): ${v.lede} Garages and lots with walk times and published prices (checked ${v.checked}), and how to get there by train.`,
+    )
   }
   L.push('')
 

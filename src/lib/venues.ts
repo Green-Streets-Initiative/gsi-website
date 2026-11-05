@@ -44,6 +44,11 @@ export type BikeDock = { ids: string[]; name: string; lat: number; lng: number; 
 /** A special event train (Gillette). Dates are Eastern, YYYY-MM-DD; past ones drop off the page. */
 export type EventTrain = { date: string; event: string; times: string; onSale: string }
 
+/** A T station with the team's free game-day shuttle (White Stadium). `stop` is the MBTA parent stop, for its live board. */
+export type ShuttleStation = { stop: string; name: string; lines: string[]; where: string; lat: number; lng: number }
+
+type Source = { label: string; url: string }
+
 export type Venue = {
   slug: string
   name: string
@@ -59,8 +64,8 @@ export type Venue = {
   checked: string
   /** Said before the sources line ("Buying ahead holds you a space."). */
   priceNote?: string
-  /** The list under the big card: its heading and one line above it. */
-  others: { title: string; note: string }
+  /** The list under the big card: its heading and one line above it. Left out with no garages. */
+  others?: { title: string; note: string }
   /** Where a visitor compares the other garages. Left out when there's nothing to compare. */
   compare?: { label: string; url: string }
   transit: {
@@ -77,8 +82,24 @@ export type Venue = {
     live: 'board' | 'alerts'
     eventTrains?: { fare: string; buy: string; trips: EventTrain[]; source: { label: string; url: string } }
   }
-  bikes?: { docks: BikeDock[]; note: string }
+  bikes?: {
+    docks: BikeDock[]
+    note: string
+    /** Bike parking at the venue, as numbers (White Stadium's valet, racks and new dock). */
+    parking?: { tiles: { amount: string; label: string }[]; source: Source }
+  }
   rideshare: string
+  /** Where the team plays now, when it isn't here yet (White Stadium until 2028). From venue-facts.json. */
+  notice?: { text: string; source: Source }
+  /**
+   * A venue with no fan parking (White Stadium): the answer card's tiles and
+   * chips come from venue-facts.json `prices` and `facts`, `pending` lists what
+   * isn't decided yet, and the shuttle stations take the garages' place.
+   */
+  noParking?: { title: string; tiles: { label: string; amount: string }[]; chips: string[]; pending: string[] }
+  shuttles?: { stations: ShuttleStation[]; satellite: string; source: Source }
+  /** Walking in: the nearest stations and stops with their walk, and the entrances. */
+  walk?: { from: { name: string; lines: string; walkMin: number }[]; entrances: string }
 }
 
 const BASE: Record<string, VenueBase> = {
@@ -300,6 +321,73 @@ const BASE: Record<string, VenueBase> = {
     },
     rideshare: 'Uber and Lyft pick up in Lot 15 or 16, next to Bass Pro Shops at Patriot Place; the event guide says which. No drop-offs on Route 1.',
   },
+
+  // Boston Legacy FC (NWSL) from the 2028 season (Keith 2026-11-05, for the
+  // partnership pitch). No fan parking: the City's Transportation Access Plan
+  // Agreement with the team (signed 2026-05-07) has free shuttles from three
+  // stations and satellite lots instead. Shuttle stops from its Exhibits
+  // D.1-D.3 (April 2026, "subject to revision"); bike parking from section 3.C;
+  // entrances from 3.B. Walks to Green Street (1.18 km) and Stony Brook
+  // (1.25 km) are OpenStreetMap foot routes at 80 m a minute; the bus stop and
+  // docks are straight-line × 1.25. Stadium point from OpenStreetMap.
+  'white-stadium': {
+    slug: 'white-stadium',
+    name: 'White Stadium',
+    address: '450 Walnut Ave, Boston',
+    lat: 42.30948,
+    lng: -71.09594,
+    lede: 'There’s no fan parking at the stadium. Free shuttles run from Forest Hills, Ruggles and JFK/UMass.',
+    garages: [],
+    priceSources: [
+      { label: 'boston.gov', url: 'https://www.boston.gov/news/transportation-access-plan-agreement-white-stadium-update' },
+      { label: 'the City’s agreement with the team', url: 'https://drive.google.com/file/d/1Q_FJfjN2FbtRUbrXPG_KyB7-dhq7G7aa/view' },
+    ],
+    shuttles: {
+      stations: [
+        { stop: 'place-forhl', name: 'Forest Hills', lines: ['Orange Line', 'Needham, Franklin and Providence trains'], where: 'On the Arborway side of the station', lat: 42.300713, lng: -71.113943 },
+        { stop: 'place-rugg', name: 'Ruggles', lines: ['Orange Line', 'Needham, Franklin and Providence trains'], where: 'On Columbus Ave, by the station entrance', lat: 42.336377, lng: -71.088961 },
+        { stop: 'place-jfk', name: 'JFK/UMass', lines: ['Red Line', 'Kingston, Greenbush and Fall River/New Bedford trains'], where: 'On Columbia Rd, by the station entrance', lat: 42.320685, lng: -71.052391 },
+      ],
+      satellite: 'Lots outside Boston. Buy parking with your ticket and ride the free shuttle in.',
+      source: { label: 'the City’s agreement with the team', url: 'https://drive.google.com/file/d/1Q_FJfjN2FbtRUbrXPG_KyB7-dhq7G7aa/view' },
+    },
+    transit: {
+      stop: 'place-forhl',
+      stopName: 'Forest Hills',
+      lat: 42.300713,
+      lng: -71.113943,
+      headline: 'Take the T to a free shuttle.',
+      live: 'board',
+      lines: [],
+      tips: ['Every shuttle is wheelchair accessible.', 'Bus 16 from Forest Hills stops on Circuit Drive, an 8-minute walk from the stadium.'],
+    },
+    bikes: {
+      docks: [
+        { ids: ['2327cb08-fa9f-459b-9ab0-1a319b0f2f4c'], name: 'Walnut Ave at School St', lat: 42.311877, lng: -71.0964068, walkMin: 5 },
+        { ids: ['f8350cc1-0de8-11e7-991c-3863bb43a7d0'], name: 'Seaver St at Humboldt Ave', lat: 42.309796, lng: -71.092225, walkMin: 5 },
+        { ids: ['f834e244-0de8-11e7-991c-3863bb43a7d0'], name: 'Egleston Square', lat: 42.315692, lng: -71.098634, walkMin: 12 },
+        { ids: ['f834f036-0de8-11e7-991c-3863bb43a7d0'], name: 'Green Street T Stop', lat: 42.310579, lng: -71.107341, walkMin: 15 },
+      ],
+      note: '',
+      parking: {
+        tiles: [
+          { amount: '1,000', label: 'Bike valet spaces on game days' },
+          { amount: '16', label: 'Docks at a new Bluebikes station in the park' },
+          { amount: '10', label: 'Bike racks at the stadium' },
+        ],
+        source: { label: 'the City’s agreement with the team', url: 'https://drive.google.com/file/d/1Q_FJfjN2FbtRUbrXPG_KyB7-dhq7G7aa/view' },
+      },
+    },
+    walk: {
+      from: [
+        { name: 'Seaver St at Humboldt Ave', lines: 'Buses 22 and 29', walkMin: 5 },
+        { name: 'Green Street', lines: 'Orange Line', walkMin: 15 },
+        { name: 'Stony Brook', lines: 'Orange Line', walkMin: 16 },
+      ],
+      entrances: 'Walk in from Walnut Ave at School St or Park Lane, or from Pierpont Rd at Circuit Drive.',
+    },
+    rideshare: 'On game days Uber and Lyft drop off and pick up at the Seaver Street lot. Free wheelchair-accessible carts run from there to the stadium.',
+  },
 }
 
 /** The parts that go out of date live in venue-facts.json (see its _comment). */
@@ -311,8 +399,10 @@ type Facts = {
   facts?: string[]
   notes?: Record<string, string>
   trains?: { fare: string; buy: string; trips: EventTrain[] }
+  notice?: { text: string; source: Source }
+  pending?: string[]
 }
-type VenueBase = Omit<Venue, 'checked' | 'transit'> & {
+type VenueBase = Omit<Venue, 'checked' | 'transit' | 'notice' | 'noParking'> & {
   transit: Omit<Venue['transit'], 'eventTrains'> & { eventTrainSource?: { label: string; url: string } }
 }
 const FACTS = venueFacts as unknown as Record<string, Facts>
@@ -323,9 +413,15 @@ const withFacts = ({ transit: { eventTrainSource, ...transit }, ...b }: VenueBas
     ...b,
     checked: f.checked,
     priceNote: f.priceNote ?? b.priceNote,
-    others: { ...b.others, note: f.othersNote ?? b.others.note },
+    others: b.others && { ...b.others, note: f.othersNote ?? b.others.note },
     garages: b.garages.map((g) => (g.official ? { ...g, prices: f.prices, facts: f.facts } : { ...g, note: f.notes?.[g.name] ?? g.note })),
     transit: { ...transit, eventTrains: f.trains && eventTrainSource ? { ...f.trains, source: eventTrainSource } : undefined },
+    notice: f.notice,
+    // No garages: the tiles and chips answer the parking question instead.
+    noParking:
+      b.garages.length === 0
+        ? { title: `No fan parking at ${b.name}`, tiles: f.prices, chips: f.facts ?? [], pending: f.pending ?? [] }
+        : undefined,
   }
 }
 

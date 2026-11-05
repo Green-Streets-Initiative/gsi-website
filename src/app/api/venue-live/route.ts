@@ -16,6 +16,8 @@ const BIG_EFFECTS = new Set(['SUSPENSION', 'SHUTTLE', 'STATION_CLOSURE', 'DETOUR
 type Included = { type: string; id: string; attributes: Record<string, unknown> }
 
 export type VenueLive = {
+  /** The station these trains and alerts are for (a venue with shuttle stations has more than one). */
+  stop: string
   alerts: { effect: string; header: string; start: string; end: string | null; now: boolean }[]
   /** One row per subway line and direction: minutes to the next two trains. */
   subway: { route: string; headsign: string; mins: number[] }[]
@@ -28,13 +30,18 @@ const get = (url: string, ttl = 30) =>
   fetch(url, { next: { revalidate: ttl } }).then((r) => (r.ok ? r.json() : null)).catch(() => null)
 
 export async function GET(req: Request) {
-  const venue = getVenue(new URL(req.url).searchParams.get('venue') ?? '')
+  const params = new URL(req.url).searchParams
+  const venue = getVenue(params.get('venue') ?? '')
   if (!venue) return NextResponse.json({ error: 'venue' }, { status: 404 })
-  const stop = venue.transit.stop
+  // The venue's station, or one of its shuttle stations (White Stadium); nothing else.
+  const stations = [venue.transit.stop, ...(venue.shuttles?.stations.map((s) => s.stop) ?? [])]
+  const asked = params.get('stop')
+  const stop = asked && stations.includes(asked) ? asked : venue.transit.stop
   const minTime = new Date().toLocaleTimeString('en-GB', { timeZone: 'America/New_York', hour: '2-digit', minute: '2-digit' })
 
   const [preds, sched, alerts, status] = await Promise.all([
-    get(`${MBTA}/predictions?filter[stop]=${stop}&include=trip&sort=departure_time&page[limit]=100`),
+    // Trains only, asked of the API: at a big busway (Forest Hills) bus predictions fill the page before the trains.
+    get(`${MBTA}/predictions?filter[stop]=${stop}&filter[route_type]=0,1,2&include=trip&sort=departure_time&page[limit]=100`),
     get(`${MBTA}/schedules?filter[stop]=${stop}&filter[route_type]=2&filter[direction_id]=0&filter[min_time]=${minTime}&include=trip&sort=departure_time&page[limit]=12`, 300),
     get(`${MBTA}/alerts?filter[stop]=${stop}`, 120),
     get(BLUEBIKES_STATUS),
@@ -103,6 +110,7 @@ export async function GET(req: Request) {
   })
 
   const body: VenueLive = {
+    stop,
     alerts: liveAlerts.slice(0, 3),
     subway: [...subway.values()].sort((a, b) => a.route.localeCompare(b.route) || a.headsign.localeCompare(b.headsign)),
     rail,

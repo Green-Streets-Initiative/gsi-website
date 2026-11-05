@@ -571,10 +571,10 @@ export const TOOLS: Anthropic.Tool[] = [
   },
   {
     name: 'get_venue_parking',
-    description: "Parking and getting there for a game or show at TD Garden (Bruins, Celtics, concerts), Fenway Park (Red Sox) or Gillette Stadium (Patriots, Revolution, concerts): the official garage or lots with their published prices and the day we checked them, the station and lines, the upcoming event trains to Gillette, rideshare pick-up, and a button to our parking page with the other garages, walk times and live trains.",
+    description: "Parking and getting there for a game or show at TD Garden (Bruins, Celtics, concerts), Fenway Park (Red Sox), Gillette Stadium (Patriots, Revolution, concerts) or White Stadium in Franklin Park (Boston Legacy FC from 2028; no fan parking, free shuttles from Forest Hills, Ruggles and JFK/UMass): the official garage or lots with their published prices and the day we checked them, the station and lines, the upcoming event trains to Gillette, rideshare pick-up, and a button to our parking page with the other garages, walk times and live trains.",
     input_schema: {
       type: 'object',
-      properties: { venue: { type: 'string', enum: ['td-garden', 'fenway-park', 'gillette-stadium'] } },
+      properties: { venue: { type: 'string', enum: ['td-garden', 'fenway-park', 'gillette-stadium', 'white-stadium'] } },
       required: ['venue'],
     },
   },
@@ -1621,7 +1621,7 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
       case 'get_venue_parking': {
         // Prices and dates come from venue-facts.json (kept current weekly), never the prompt.
         const v = VENUES[String(input.venue)]
-        if (!v) return fail('Use td-garden, fenway-park or gillette-stadium.')
+        if (!v) return fail('Use td-garden, fenway-park, gillette-stadium or white-stadium.')
         const today = todayKey()
         const official = v.garages.find((g) => g.official)
         const checked = new Date(`${v.checked}T12:00:00Z`).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
@@ -1640,8 +1640,20 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
             ...(trains
               ? { event_trains: { fare: trains.fare, buy: trains.buy, next: trains.trips.filter((t) => t.date >= today).slice(0, 3) } }
               : {}),
+            ...(v.noParking
+              ? {
+                  no_fan_parking: { tiles: v.noParking.tiles, rules: v.noParking.chips, not_decided_yet: v.noParking.pending },
+                  shuttle_stations: v.shuttles?.stations.map((s) => ({ station: s.name, lines: s.lines, shuttle_stop: s.where })) ?? [],
+                  satellite_lots: v.shuttles?.satellite ?? null,
+                  bike_parking: v.bikes?.parking?.tiles ?? [],
+                  walk: v.walk ?? null,
+                }
+              : {}),
+            ...(v.notice ? { team_plays_now: v.notice.text } : {}),
             rideshare: v.rideshare,
-            next: 'Answer parking first, as asked: the official garage or lot, its price and "checked <prices_checked>", then the train as a plain fact in one sentence (never argue against driving). Prices only from here. The button opens the page with the other garages, walk times and live trains; for a door-to-door plan from them, check_trip to the venue.',
+            next: v.noParking
+              ? 'Answer parking first, as asked: there is no fan parking; the free shuttles from the three stations, or a satellite lot bought with the ticket for people driving in from outside Boston. Say team_plays_now if they ask about a game soon. Never say what is not_decided_yet as if it were set. The button opens the page with live trains at each shuttle station and the Bluebikes docks.'
+              : 'Answer parking first, as asked: the official garage or lot, its price and "checked <prices_checked>", then the train as a plain fact in one sentence (never argue against driving). Prices only from here. The button opens the page with the other garages, walk times and live trains; for a door-to-door plan from them, check_trip to the venue.',
           },
           { href: `https://www.gogreenstreets.org/parking/${v.slug}?utm_source=assistant`, label: `Parking at ${v.name}`, external: true },
         )

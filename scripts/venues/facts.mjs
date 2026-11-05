@@ -12,6 +12,11 @@
  *                                                            or notes.Stadium-side lots 'Prepaid only · $60'
  *   node scripts/venues/facts.mjs add-train <date> <event> <times> <onSale>
  *   node scripts/venues/facts.mjs drop-past-trains
+ *   node scripts/venues/facts.mjs add-venue <venue> <file.json>  a new venue's block (with its base in src/lib/venues.ts)
+ *
+ * A venue with no fan parking (White Stadium) uses `prices` for its three
+ * answer tiles and adds `notice` (where the team plays now, with its source)
+ * and `pending` (what the City or the team hasn't decided yet).
  *
  * `set` changes an existing text only (a typo in the path is an error, not a
  * new field). Dates are YYYY-MM-DD in Boston time.
@@ -43,6 +48,9 @@ function check(facts) {
       if (!ISO.test(t.date) || !ISO.test(t.onSale) || !t.event || !t.times) die(`${where('trains.trips')}: bad trip ${JSON.stringify(t)}`)
     }
     if (!Array.isArray(v.verify) || v.verify.length === 0) die(`${where('verify')} needs at least one source`)
+    for (const s of v.verify) if (!/^https:\/\//.test(s.url ?? '') || !Array.isArray(s.confirm) || !s.confirm.length) die(`${where('verify')}: every source needs an https url and lines to confirm`)
+    if (v.notice && (!v.notice.text || !/^https:\/\//.test(v.notice.source?.url ?? '') || !v.notice.source?.label)) die(`${where('notice')} needs text and a source with a label and url`)
+    if (v.pending && (!Array.isArray(v.pending) || v.pending.some((p) => typeof p !== 'string' || !p))) die(`${where('pending')} must be a list of texts`)
   }
 }
 
@@ -101,6 +109,13 @@ if (cmd === 'show' || !cmd) {
   trains.trips = trains.trips.filter((t) => t.date >= today())
   save(facts)
   console.log(`dropped ${before - trains.trips.length}`)
+} else if (cmd === 'add-venue') {
+  const [slug, file] = args
+  if (!/^[a-z0-9-]+$/.test(slug ?? '') || !file) die('usage: add-venue <venue> <file.json>')
+  if (facts[slug]) die(`"${slug}" is already listed; change it with set or confirm`)
+  facts[slug] = JSON.parse(readFileSync(file, 'utf8'))
+  save(facts)
+  console.log(`added ${slug} (confirmed ${facts[slug].checked})`)
 } else {
   die(`unknown command "${cmd}"`)
 }

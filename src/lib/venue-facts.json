@@ -140,5 +140,76 @@
         ]
       }
     ]
+  },
+  "white-stadium": {
+    "checked": "2026-11-05",
+    "notice": {
+      "text": "Boston Legacy FC moves into White Stadium for the 2028 season. Their 2027 home games are at Centreville Bank Stadium in Pawtucket, RI.",
+      "source": {
+        "label": "bostonlegacyfc.com",
+        "url": "https://bostonlegacyfc.com/blogs/press/boston-legacy-fc-announces-centreville-bank-stadium-as-2027-venue-ahead-of-move-home-to-white-stadium-in-2028"
+      }
+    },
+    "prices": [
+      {
+        "label": "Fan parking at the stadium",
+        "amount": "None"
+      },
+      {
+        "label": "Shuttles from three T stations",
+        "amount": "Free"
+      },
+      {
+        "label": "Longest wait for a shuttle",
+        "amount": "10 min"
+      }
+    ],
+    "facts": [
+      "Choose shuttle, T, bike or walking when you buy tickets",
+      "Satellite lots: buy parking with your ticket",
+      "Nearby streets kept for residents on game days"
+    ],
+    "pending": [
+      "Shuttle hours",
+      "Which satellite lots",
+      "Which streets are for residents only"
+    ],
+    "verify": [
+      {
+        "url": "https://bostonlegacyfc.com/blogs/press/boston-legacy-fc-announces-centreville-bank-stadium-as-2027-venue-ahead-of-move-home-to-white-stadium-in-2028",
+        "confirm": [
+          "Legacy plays its 2027 home matches at Centreville Bank Stadium in Pawtucket, RI",
+          "Legacy moves into White Stadium for the 2028 season"
+        ],
+        "season": "When Legacy names its first game at White Stadium, put the date in notice.text. Once games are being played there, the notice can go."
+      },
+      {
+        "url": "https://www.boston.gov/news/transportation-access-plan-agreement-white-stadium-update",
+        "confirm": [
+          "No Legacy fan parking in Franklin Park or on neighborhood streets on game days",
+          "Free shuttles from Forest Hills, Ruggles and JFK/UMass, and from satellite lots outside the city, run and paid for by the team",
+          "Fans choose how they will travel (transit, shuttle, bike, walking or rideshare) when they buy tickets",
+          "A game-day parking protection program keeps nearby streets for residents"
+        ]
+      },
+      {
+        "url": "https://www.boston.gov/government/cabinets/operations-cabinet/white-stadium-game-day-transportation-planning",
+        "confirm": [
+          "The resident parking zone and Franklin Park parking rules are still proposals, with final decisions in winter 2027 (when they are final, drop that line from pending)",
+          "Proposed zone: streets within 0.75 mile, about a 15-minute walk"
+        ]
+      },
+      {
+        "url": "https://drive.google.com/file/d/1Q_FJfjN2FbtRUbrXPG_KyB7-dhq7G7aa/view",
+        "confirm": [
+          "Signed May 7, 2026 (the TAPA linked from boston.gov/whitestadium)",
+          "Shuttles to all three stations at least every 10 minutes; every shuttle wheelchair accessible",
+          "Satellite parking is bought at ticket checkout; the lot shuttle is free to ticket holders, including those who walk up",
+          "Shuttle hours and satellite lots go to the City five months before the first game (when the team publishes them, add them to the page and drop them from pending)",
+          "Up to 1,000 bike valet spaces on game days, 10 permanent bike racks, a new 16-dock Bluebikes station in Franklin Park",
+          "Rideshare pick-up and drop-off at the Seaver Street lot, with free wheelchair-accessible carts to the stadium"
+        ]
+      }
+    ]
   }
 }

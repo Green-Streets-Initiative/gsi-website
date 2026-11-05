@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import type { VenueLive } from '@/app/api/venue-live/route'
-import type { BikeDock } from '@/lib/venues'
+import type { BikeDock, ShuttleStation } from '@/lib/venues'
 
 /*
  * The live parts of a venue page, from one /api/venue-live call that
@@ -13,17 +13,21 @@ import type { BikeDock } from '@/lib/venues'
  */
 
 const Live = createContext<VenueLive | null | 'failed'>(null)
+/** The station whose trains are showing, and a way to pick another (White Stadium's shuttle stations). */
+const Station = createContext<{ stop: string | null; pick: (stop: string) => void }>({ stop: null, pick: () => {} })
 
 export function LiveProvider({ venue, children }: { venue: string; children: ReactNode }) {
   const [data, setData] = useState<VenueLive | null | 'failed'>(null)
+  const [stop, pick] = useState<string | null>(null)
   useEffect(() => {
     let cancelled = false
     const load = () => {
       if (document.visibilityState !== 'visible') return
-      fetch(`/api/venue-live?venue=${encodeURIComponent(venue)}`)
+      fetch(`/api/venue-live?venue=${encodeURIComponent(venue)}${stop ? `&stop=${encodeURIComponent(stop)}` : ''}`)
         .then((r) => (r.ok ? r.json() : Promise.reject()))
         .then((d: VenueLive) => !cancelled && setData(d))
-        .catch(() => !cancelled && setData((prev) => (prev && prev !== 'failed' ? prev : 'failed')))
+        // Keep the last good answer through a blip, unless it's for another station.
+        .catch(() => !cancelled && setData((prev) => (prev && prev !== 'failed' && (!stop || prev.stop === stop) ? prev : 'failed')))
     }
     load()
     const timer = setInterval(load, 30_000)
@@ -33,8 +37,12 @@ export function LiveProvider({ venue, children }: { venue: string; children: Rea
       clearInterval(timer)
       document.removeEventListener('visibilitychange', load)
     }
-  }, [venue])
-  return <Live.Provider value={data}>{children}</Live.Provider>
+  }, [venue, stop])
+  return (
+    <Station.Provider value={{ stop, pick }}>
+      <Live.Provider value={data}>{children}</Live.Provider>
+    </Station.Provider>
+  )
 }
 
 const LINE: Record<string, { name: string; color: string }> = {
@@ -59,9 +67,11 @@ const firstSentence = (s: string) =>
   s.split(/(?<!\b(?:Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec|St|Ave|Sq|Mt|approx)\.)(?<=\.)\s/)[0]
 
 /** In the hero: one line saying the station has a service change, jumping to the details. */
-export function LiveAlertChip({ stopName }: { stopName: string }) {
+export function LiveAlertChip({ stopName, names }: { stopName: string; names?: Record<string, string> }) {
   const data = useContext(Live)
   if (!data || data === 'failed' || data.alerts.length === 0) return null
+  // With shuttle stations to pick from, the alerts are for whichever is showing.
+  stopName = names?.[data.stop] ?? stopName
   const now = data.alerts.some((a) => a.now)
   return (
     <a
@@ -75,9 +85,13 @@ export function LiveAlertChip({ stopName }: { stopName: string }) {
 }
 
 /** Disruptions at the station on now or this week, MBTA's own words. */
-export function LiveAlerts({ stop, stopName }: { stop: string; stopName: string }) {
+export function LiveAlerts({ stop, stopName, names }: { stop: string; stopName: string; names?: Record<string, string> }) {
   const data = useContext(Live)
   if (!data || data === 'failed' || data.alerts.length === 0) return null
+  if (names?.[data.stop]) {
+    stop = data.stop
+    stopName = names[data.stop]
+  }
   return (
     <ul className="mt-5 space-y-2" aria-label={`Service changes at ${stopName}`}>
       {data.alerts.map((a) => (
@@ -113,7 +127,7 @@ export function LiveDepartures({ stop, stopName }: { stop: string; stopName: str
       </p>
     )
   }
-  if (!data) return <div className="h-[260px] animate-pulse rounded-[16px] bg-navy/[0.04]" aria-label="Loading train times" />
+  if (!data || data.stop !== stop) return <div className="h-[260px] animate-pulse rounded-[16px] bg-navy/[0.04]" aria-label="Loading train times" />
 
   return (
     <div className="rounded-[16px] border border-navy/10 bg-white">
@@ -151,6 +165,38 @@ export function LiveDepartures({ stop, stopName }: { stop: string; stopName: str
           </li>
         ))}
       </ul>
+    </div>
+  )
+}
+
+/** Live trains at each shuttle station, one at a time, picked by tab. */
+export function StationBoards({ stations }: { stations: ShuttleStation[] }) {
+  const { stop, pick } = useContext(Station)
+  const current = stations.find((s) => s.stop === stop) ?? stations[0]
+  return (
+    <div>
+      <div role="tablist" aria-label="Station" className="mb-3 flex flex-wrap gap-2">
+        {stations.map((s) => {
+          const on = s.stop === current.stop
+          return (
+            <button
+              key={s.stop}
+              type="button"
+              role="tab"
+              aria-selected={on}
+              onClick={() => pick(s.stop)}
+              className={`min-h-[44px] rounded-full border-2 px-4 text-[0.9375rem] font-bold transition-colors ${
+                on ? 'border-navy bg-navy text-white' : 'border-navy/20 bg-white text-navy hover:border-forest'
+              }`}
+            >
+              {s.name}
+            </button>
+          )
+        })}
+      </div>
+      <div role="tabpanel">
+        <LiveDepartures stop={current.stop} stopName={current.name} />
+      </div>
     </div>
   )
 }
