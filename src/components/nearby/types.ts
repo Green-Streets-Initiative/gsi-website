@@ -34,6 +34,8 @@ export interface CommunityData {
   events: NearbyEvent[]
   roams: RoamCardData[]
   partners: { count: number; names: string[] }
+  /** The town's digest, when the town has a published page (null otherwise). */
+  digestTown?: { name: string; slug: string } | null
 }
 
 export interface ReachStep {

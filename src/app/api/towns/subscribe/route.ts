@@ -3,7 +3,10 @@ import { subscribeTownDigest } from '@/lib/loops'
 
 /**
  * Town-digest email capture (paths Phase 1 / E19 front door).
- * Body: { email, town } — town is the page slug ("somerville-ma").
+ * Body: { email, town, source?, locale? } — town is the page slug
+ * ("somerville-ma"); source is the placement (TownDigestSignup's `source`:
+ * town_page, shift, nearby, move_in), which the function keeps only when it
+ * knows it.
  *
  * The subscription lives in Shift's one email subscription system (topic
  * town_digest, product item 19 step 2), written through the
@@ -17,7 +20,7 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const SLUG_RE = /^[a-z0-9-]{2,60}$/
 
 export async function POST(req: Request) {
-  let body: { email?: string; town?: string }
+  let body: { email?: string; town?: string; source?: string; locale?: string }
   try {
     body = await req.json()
   } catch {
@@ -35,7 +38,14 @@ export async function POST(req: Request) {
     const res = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/email-subscriptions`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'signup', topic: 'town_digest', email, town, locale: 'en' }),
+      body: JSON.stringify({
+        action: 'signup',
+        topic: 'town_digest',
+        email,
+        town,
+        locale: typeof body.locale === 'string' ? body.locale : 'en',
+        source: typeof body.source === 'string' ? body.source : 'town_page',
+      }),
     })
     if (!res.ok) dbError = { message: `email-subscriptions ${res.status}` }
   } catch (e) {

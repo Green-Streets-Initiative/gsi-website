@@ -1,6 +1,8 @@
 import type { Metadata } from 'next'
 import { NewRoutesStrip, RecentTripsCard, StatusBar } from '@/components/shift-mockup'
 import { TownsTeaserBand } from '@/components/towns/TownsCrossLink'
+import TownDigestSignup from '@/components/towns/TownDigestSignup'
+import { getQualifyingTowns } from '@/lib/towns/queries'
 import Link from 'next/link'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
@@ -50,7 +52,12 @@ export const metadata: Metadata = {
 const CHEV = <span className="font-extrabold tracking-[-0.08em] text-forest">&#8250;&#8250;</span>
 const CHEV_DARK = <span className="font-extrabold tracking-[-0.08em] text-[#BAF14D]">&#8250;&#8250;</span>
 
-export default function ShiftPage() {
+export default async function ShiftPage() {
+  // Published town pages only, so every link in the digest works (towns milestone g2).
+  const digestTowns = (await getQualifyingTowns().catch(() => []))
+    .map((t) => ({ name: t.town_name, slug: t.slug }))
+    .sort((a, b) => a.name.localeCompare(b.name))
+
   return (
     <>
       <Nav variant="light" />
@@ -549,6 +556,16 @@ export default function ShiftPage() {
               ) : (
                 <div className="mt-[34px]">
                   <WaitlistEmailForm source="shift_page" />
+                </div>
+              )}
+
+              {/* Not ready for the app? The town digest is the lighter yes. */}
+              {digestTowns.length > 0 && (
+                <div className="mx-auto mt-10 max-w-[440px] border-t border-navy/10 pt-8 text-left">
+                  <p className="mb-1 font-display text-[13px] font-bold uppercase tracking-[0.14em] text-forest">
+                    Not ready for the app?
+                  </p>
+                  <TownDigestSignup towns={digestTowns} source="shift" variant="inline" />
                 </div>
               )}
 

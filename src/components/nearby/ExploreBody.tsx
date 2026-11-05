@@ -10,6 +10,7 @@ import { EVENT_TYPE_ICONS } from '@/components/events/event-type-icons'
 import type { SectionData, CommunityData } from './types'
 import { SkeletonRows } from './SectionShell'
 import { useNearbyT } from './NearbyI18n'
+import NearbyTownDigest from './NearbyTownDigest'
 
 /** Community events + Roams — the mobile Explore nearby tab body and the
  *  desktop rail. `compact` narrows the roams grid to fit a ~440px column. */
@@ -20,6 +21,7 @@ export function ExploreBody({ community, compact }: {
   const tr = useNearbyT()
   const events = community.data?.events ?? []
   const roams = community.data?.roams ?? []
+  const digestTown = community.data?.digestTown ?? null
 
   return (
     <>
@@ -70,6 +72,9 @@ export function ExploreBody({ community, compact }: {
           )}
         </div>
       )}
+
+      {/* The town's digest, when its town page is published (towns milestone g2) */}
+      {digestTown && <NearbyTownDigest town={digestTown} />}
 
       {/* Roams */}
       {roams.length > 0 && (
