@@ -38,6 +38,35 @@
       "messaging_notes": "Answer the parking question first: which garage or lot, what it charges with the date we checked, how far it is on foot. Then state the alternative as a plain fact (the station under the arena, the event train). Never argue against driving; these people have decided to drive and the page earns trust by helping them. Placed first in this file because bucketing takes the first match and these venue names collide with nothing else, while 'foxborough parking' would otherwise read as town demand."
     },
     {
+      "id": "white-stadium",
+      "audience": "People going to a Boston Legacy FC game (NWSL, from the 2028 season) or another event at White Stadium in Franklin Park, searching how to get there or where to park. Added 2026-11-05 with /parking/white-stadium, the page behind GSI's partnership pitch to the team; outside exp-2026-11-3.",
+      "intent": "navigational",
+      "priority": 3,
+      "queries": [
+        "white stadium parking",
+        "white stadium boston",
+        "boston legacy fc parking",
+        "white stadium shuttle"
+      ],
+      "gsc_patterns": [
+        "white stadium",
+        "boston legacy",
+        "legacy fc"
+      ],
+      "target_urls": [
+        "/parking/white-stadium"
+      ],
+      "proposed_assets": [
+        "/parking/white-stadium (live 2026-11-05)"
+      ],
+      "aeo_questions": [
+        "Is there parking at White Stadium?",
+        "How do I get to a Boston Legacy FC game?",
+        "Where do the White Stadium shuttles leave from?"
+      ],
+      "messaging_notes": "Say plainly there is no fan parking, then the free shuttles from Forest Hills, Ruggles and JFK/UMass and the satellite lots for people driving in. Until 2028, say where Legacy plays now (Pawtucket, RI in 2027). Never argue against driving."
+    },
+    {
       "id": "used-car-to-ebike",
       "audience": "People shopping for a car (especially a used car) who could be won over to an e-bike on cost and practicality.",
       "intent": "consideration",
