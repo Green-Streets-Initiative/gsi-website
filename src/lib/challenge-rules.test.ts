@@ -167,3 +167,17 @@ describe('topSentence', () => {
     assert.match(topSentence({ ...t, spots: 1 }, 'trips'), /^The person with the most active trips/)
   })
 })
+
+import { prizeSentence } from './challenge-rules.ts'
+
+describe('Try something new, repeat trips (Shift 01635)', () => {
+  const tn = { ...base, metric: 'tried_new', spots: 25 }
+  it('a goal above one says how many trips a new way', () => {
+    assert.match(prizeSentence({ ...tn, goal: 3 }), /^The first 25 people to make 3 trips a new way each get a \$15 gift card/)
+    assert.match(drawingSentence({ ...tn, goal: 3 }, 'tried_new'), /^Everyone who makes 3 trips a new way \(in any mix/)
+  })
+  it('a goal of one reads as before', () => {
+    assert.match(prizeSentence({ ...tn, goal: 1 }), /^The first 25 people to make a trip a new way each get/)
+    assert.match(drawingSentence({ ...tn, goal: 1 }, 'tried_new'), /^Everyone who makes a trip a new way \(a way of getting around/)
+  })
+})

@@ -33,11 +33,12 @@ type Prize = {
   prize_id: string; name: string; award_mode?: 'guaranteed' | 'drawing' | 'merit'; metric?: string; goal: number; spots: number; spots_left: number
   funded: boolean; amount_cents: number | null; description: string | null; requires_work_email: boolean; closed: boolean; cancelled: boolean; my_win: Win | null
 }
-type Offer = Omit<Prize, 'goal' | 'closed' | 'cancelled' | 'my_win'>
+// goal: trips a new way it takes (Shift 01635; absent before it, meaning 1).
+type Offer = Omit<Prize, 'goal' | 'closed' | 'cancelled' | 'my_win'> & { goal?: number }
 type WorkChallenge = {
   ok: boolean; competition_id: string; name: string; employer?: string; contact_name?: string | null; contact_email?: string | null
   starts_at: string; ends_at: string; rules: CountingRules; my_count: number; trips_to_check: number
-  work_email_verified: boolean; email_domains: string[]; prizes: Prize[]; offers?: Offer[]; my_new_modes?: string[]
+  work_email_verified: boolean; email_domains: string[]; prizes: Prize[]; offers?: Offer[]; my_new_modes?: string[]; my_new_trips?: number
 }
 
 /** Where a prize stands for them, in the app's own states (Shift lib/employer-challenge.ts prizeState). */
@@ -151,6 +152,8 @@ export async function myChallenges(ctx: Ctx) {
         try_something_new: (c.offers ?? []).map((o) => ({
           how_to_win: o.award_mode === 'drawing' ? drawingSentence(as(o), 'tried_new') : prizeSentence(as(o)),
           spots_left: o.award_mode === 'guaranteed' ? o.spots_left : undefined,
+          trips_a_new_way_so_far: c.my_new_trips,
+          trips_a_new_way_needed: o.goal ?? 1,
         })),
         new_ways_they_tried: (c.my_new_modes ?? []).map((m) => WAY_WORDS[m] ?? m),
         what_counts: countingSentences(base),

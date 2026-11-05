@@ -126,9 +126,13 @@ export function prizeSentence(i: ChallengeRulesInput): string {
   const trips = `${i.goal} ${i.goal === 1 ? 'trip' : 'trips'}`
   const who =
     i.metric === 'tried_new'
-      ? i.spots === 1
-        ? 'The first person to make a trip a new way gets'
-        : `The first ${i.spots} people to make a trip a new way each get`
+      ? i.goal > 1
+        ? i.spots === 1
+          ? `The first person to make ${trips} a new way gets`
+          : `The first ${i.spots} people to make ${trips} a new way each get`
+        : i.spots === 1
+          ? 'The first person to make a trip a new way gets'
+          : `The first ${i.spots} people to make a trip a new way each get`
       : i.spots === 1
         ? `The first person to reach ${trips} gets`
         : `The first ${i.spots} people to reach ${trips} each get`
@@ -167,7 +171,7 @@ function entryPhrase(goal: number, metric: string | null | undefined): string {
     case 'tried_new':
       return goal === 1
         ? "Everyone who makes a trip a new way (a way of getting around they hadn't used in the 60 days before the challenge; driving alone doesn't count)"
-        : `Everyone who tries ${num(goal)} new ways of getting around`
+        : `Everyone who makes ${num(goal)} trips a new way (in any mix of ways of getting around they hadn't used in the 60 days before the challenge; driving alone doesn't count)`
     case 'active_days':
       return goal === 1 ? 'Everyone with at least one active day' : `Everyone with ${num(goal)} or more active days`
     case 'miles':

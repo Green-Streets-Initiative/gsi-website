@@ -42,8 +42,15 @@ function rowsFor(prizes: PrizeFormState[], employer: string, startsAt: string, e
       const drawing = p.award_mode === 'drawing'
       offers.push({
         kind: 'offer',
-        title: `Make a trip a new way, ${drawing ? 'enter to win' : 'win'} ${prizeLabel(p, employer)}`,
-        body: notStarted ? startsLine : "Make a trip in a way you haven't in a while: a walk, a bike ride, the bus, the train or a carpool.",
+        // Same words as the app (lib/try-new.ts, 01635 for goals above one trip).
+        title: goal > 1
+          ? `Make ${goal} trips a new way, ${drawing ? 'enter to win' : 'win'} ${prizeLabel(p, employer)}`
+          : `Make a trip a new way, ${drawing ? 'enter to win' : 'win'} ${prizeLabel(p, employer)}`,
+        body: notStarted
+          ? startsLine
+          : goal > 1
+            ? `Make ${goal} trips in ways you haven't in a while: walks, bike rides, the bus, the train or carpools. Any mix counts.`
+            : "Make a trip in a way you haven't in a while: a walk, a bike ride, the bus, the train or a carpool.",
         meta: drawing ? `Winners drawn after ${after}` : `${spots} of ${spots} spots left`,
       })
     } else if (p.award_mode === 'drawing' && (p.metric === 'trips' || p.metric === 'active_days')) {

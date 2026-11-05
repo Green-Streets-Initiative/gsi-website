@@ -314,7 +314,9 @@ export default function GuaranteedChallengeSection({
                     </Badge>
                   </div>
                   <div className="text-[14px] leading-[1.5] text-ink-muted">
-                    {p.metric === 'tried_new' ? `First ${p.spots} to try something new` : `First ${p.spots} to reach ${p.goal} trips`} ·{' '}
+                    {p.metric === 'tried_new'
+                      ? p.goal > 1 ? `First ${p.spots} to make ${p.goal} trips a new way` : `First ${p.spots} to try something new`
+                      : `First ${p.spots} to reach ${p.goal} trips`} ·{' '}
                     {p.funded && p.amount_cents ? `${dollars(p.amount_cents)} gift card each` : p.description}
                     {p.requires_work_email && ' · verified employees only'}
                   </div>

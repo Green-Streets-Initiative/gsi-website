@@ -63,7 +63,8 @@ function rewardWords(p: TeamPrize, employer: string): string {
 function ownPrizeSentence(p: TeamPrize, employer: string): string {
   const n = p.spots
   if (p.kind === 'drawing' && p.metric === 'tried_new') {
-    return `Make one trip a way you haven't lately: on foot, by bike, on transit or in a carpool. Everyone who does is entered in a drawing at the end. ${n} ${n === 1 ? 'winner gets' : 'winners each get'} ${rewardWords(p, employer)}.`
+    const trips = p.goal > 1 ? `${p.goal} trips in ways you haven't lately, in any mix` : "one trip a way you haven't lately"
+    return `Make ${trips}: on foot, by bike, on transit or in a carpool. Everyone who does is entered in a drawing at the end. ${n} ${n === 1 ? 'winner gets' : 'winners each get'} ${rewardWords(p, employer)}.`
   }
   if (p.kind === 'drawing') {
     return `Everyone with ${p.goal} or more trips is entered in a drawing at the end. ${n} ${n === 1 ? 'winner gets' : 'winners each get'} ${rewardWords(p, employer)}.`

@@ -33,7 +33,7 @@ export const DEFAULT_METRIC_THRESHOLD: Record<string, string> = {
   trips: '10',
   active_days: '5',
   miles: '10',
-  tried_new: '1',
+  tried_new: '3',
 }
 
 export const EMPTY_PRIZE_FORM: PrizeFormState = {
