@@ -141,7 +141,7 @@ export default async function TownChallengePage({ searchParams }: { searchParams
             </div>
           </div>
           <ul className="mt-4 grid gap-2 text-[15px] font-bold text-navy sm:grid-cols-3 print:mt-2 print:grid-cols-3 print:text-[12px]">
-            {['$2,500, no quotes needed', 'Payable with rideshare fee money', 'GPS-recorded, not self-reported'].map((t) => (
+            {['$2,500 a season', 'Payable with rideshare fee money', 'GPS-recorded, not self-reported'].map((t) => (
               <li key={t} className="flex items-center gap-2 rounded-full bg-white px-4 py-2.5 print:py-1.5">
                 <ShieldCheck className="h-4 w-4 shrink-0 text-forest" aria-hidden /> {t}
               </li>
