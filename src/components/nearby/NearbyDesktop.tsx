@@ -25,6 +25,7 @@ import { defaultRouteMode, reachModeFor } from '@/lib/nearby/reach-ui'
 import { ExploreBody } from './ExploreBody'
 import { ExplorePerks, isPerkMarker, useNearbyPerks, usePerkMarkers } from './NearbyPerks'
 import PartnerCobrand from './PartnerCobrand'
+import ManagerSetupLine from './ManagerSetupLine'
 import NewRoutesOffer from './NewRoutesOffer'
 import type { NearbyPartner } from '@/lib/nearby/partner'
 import GuideLinks from './GuideLinks'
@@ -401,6 +402,10 @@ export default function NearbyDesktop({
             />
           </div>
         )}
+        {/* Property managers arriving from a /move-in outreach email */}
+        <div className="mt-2 empty:hidden">
+          <ManagerSetupLine variant="inline" />
+        </div>
         {outside && (
           <p className="mt-3 rounded-xl border border-(--nb-warn-line) bg-(--nb-warn-tint) px-5 py-3.5 text-[0.875rem] leading-relaxed text-(--nb-ink)">
             {tr('desktop.outside_banner')}

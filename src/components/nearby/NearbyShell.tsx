@@ -31,6 +31,7 @@ import TripPlanner from './TripPlanner'
 import { ExploreBody } from './ExploreBody'
 import { ExplorePerks, TripPerks, isPerkMarker, useNearbyPerks, usePerkMarkers } from './NearbyPerks'
 import PartnerCobrand from './PartnerCobrand'
+import ManagerSetupLine from './ManagerSetupLine'
 import NewRoutesOffer from './NewRoutesOffer'
 import type { NearbyPartner } from '@/lib/nearby/partner'
 import GuideLinks from './GuideLinks'
@@ -421,6 +422,10 @@ export default function NearbyShell({
           <PartnerCobrand partner={partner} logoClass="max-h-6" gsiClass="max-h-4" textClass="text-[0.7rem]" />
         </div>
       )}
+      {/* Property managers arriving from a /move-in outreach email: the way
+          on to setting up their own page. Same flex-row slot as the co-brand,
+          so the stage below still measures the remaining height. */}
+      <ManagerSetupLine variant="strip" />
 
       {/* The stage (sheet snap heights + camera padding measure this box).
           Attribution rides above the sheet's peek height so the license
