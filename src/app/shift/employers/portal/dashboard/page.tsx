@@ -4,7 +4,8 @@
 // is it working. One screen, no scrolling to discover anything:
 //   the assistant bar (where the assistant is on),
 //   Next up: at most three steps,
-//   Is it working?: three meters.
+//   Is it working?: three meters,
+//   Carpooling: counts, only once 3+ people have an open carpool sign-up.
 // Everything that used to be stacked here lives on the page whose job it
 // is: the goal folds into the meters, top movers are on Employees, locations
 // and the full numbers on Impact, the plan on Billing, joins in the bell.
@@ -15,6 +16,7 @@ import { computeSetupSteps } from '../_lib/setup-steps'
 import { assistantAvailable } from '../_components/AssistantPanel'
 import { AssistantBar, NextUp, homeSuggestions } from './AssistantHome'
 import ProgramHealthCard from './ProgramHealthCard'
+import CarpoolCard from './CarpoolCard'
 import { Card } from '@/components/employer/Card'
 
 /** Wall clock, kept out of render so the purity lint stays quiet. */
@@ -118,7 +120,11 @@ export default function DashboardPage() {
 
       <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
         <NextUp steps={next.steps} withAssistant={withAssistant} onSkipJoin={skipJoin} />
-        <ProgramHealthCard group={group} memberCount={memberCount} members={members} dashboard={dashboard30} />
+        <div className="grid grid-cols-[minmax(0,1fr)] gap-4">
+          <ProgramHealthCard group={group} memberCount={memberCount} members={members} dashboard={dashboard30} />
+          {/* Shows only at 3+ open carpool sign-ups (the server hides smaller counts). */}
+          <CarpoolCard groupId={group.id} />
+        </div>
       </div>
 
       {/* Staff switch workplaces from the staff bar instead. */}
