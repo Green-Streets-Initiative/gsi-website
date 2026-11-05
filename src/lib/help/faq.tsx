@@ -67,7 +67,7 @@ export const faqSections = [
       {
         question: 'Shift stopped recording my trips. How do I fix it?',
         answer:
-          'Open Profile > Settings > Trip tracking. It shows anything that’s off, like location not set to Always, Precise Location turned off, or Background App Refresh off on an iPhone, with a button to fix it. If tracking stops, a card at the top of Home walks you through it too. Trips under 0.1 mile or 2 minutes aren’t saved, and tunnels or underground stations can occasionally cause a missed trip.',
+          'Three steps fix most cases. In your phone’s Settings, open Shift and set Location to Always (Allow all the time on Android). Turn on Motion & Fitness on an iPhone, or Physical activity on Android. Then open Shift, which starts recording again. Profile > Settings > Trip tracking shows anything else that’s off, like Precise Location or Background App Refresh, with a button to fix it, and a card at the top of Home walks you through it too. Trips under 0.1 mile or 2 minutes aren’t saved, and tunnels or underground stations can occasionally cause a missed trip.',
       },
       {
         question: 'I got signed out. Did I lose my trips?',
