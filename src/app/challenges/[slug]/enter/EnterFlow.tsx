@@ -9,11 +9,13 @@ import {
 import EmailGate, { INPUT, LABEL, PRIMARY } from '../_components/EmailGate'
 import ShareButton from '../_components/ShareButton'
 import { track } from '../_lib/track'
+import { ACCEPT, MAX_MB, probeVideo, sendFile, typeOf, type Probe } from '../_lib/upload'
 
 /**
  * Entering: confirm an email (first time only), then one short form, then the
  * ad's own page to share. Asks only what judging and a prize need; the rest is
- * read from the video link.
+ * read from the video itself: an uploaded file (the browser reads its length
+ * and stills) or a YouTube, Vimeo or TikTok link (the platform tells us).
  */
 export default function EnterFlow({ c, preview }: { c: ChallengeView; preview: string }) {
   const [person, setPerson] = useState<Person | null>(null)
@@ -96,7 +98,13 @@ function EntryForm({ c, preview, person, onDone, onSignOut }: {
   onDone: (d: { entry: EntryView; share_url: string }) => void
   onSignOut: () => void
 }) {
+  const [source, setSource] = useState<'upload' | 'link'>('upload')
   const [link, setLink] = useState('')
+  const [file, setFile] = useState<File | null>(null)
+  const [probe, setProbe] = useState<Probe | null>(null)
+  const [probing, setProbing] = useState(false)
+  const [fileError, setFileError] = useState<string | null>(null)
+  const [progress, setProgress] = useState<number | null>(null)
   const [title, setTitle] = useState('')
   const [says, setSays] = useState('')
   const [category, setCategory] = useState('')
@@ -112,13 +120,52 @@ function EntryForm({ c, preview, person, onDone, onSignOut }: {
 
   const defaultCredit = `${person.first_name}${lastName.trim() ? ` ${lastName.trim()[0].toUpperCase()}.` : ''}`
 
+  const minS = c.min_seconds ?? 30
+  const maxS = c.max_seconds ?? 60
+
+  async function pick(f: File | null) {
+    setFile(null)
+    setProbe(null)
+    setFileError(null)
+    if (!f) return
+    const type = typeOf(f)
+    if (!type) { setFileError('Choose an MP4, MOV or WebM video.'); return }
+    if (f.size > MAX_MB * 1024 * 1024) {
+      setFileError(`That file is ${Math.round(f.size / 1024 / 1024)} MB. Videos can be up to ${MAX_MB} MB: export it at 1080p, or post it on YouTube, Vimeo or TikTok and paste the link.`)
+      return
+    }
+    setProbing(true)
+    try {
+      const p = await probeVideo(f)
+      if (p.duration > maxS + 5 || p.duration < minS - 5) {
+        setFileError(`Ads run ${minS} to ${maxS} seconds. This one is ${mmss(p.duration)}.`)
+        return
+      }
+      setFile(f)
+      setProbe(p)
+    } catch (err) {
+      setFileError((err as Error).message)
+    } finally {
+      setProbing(false)
+    }
+  }
+
   async function submit(e: React.FormEvent) {
     e.preventDefault()
+    if (source === 'upload' && (!file || !probe)) { setError('Choose your video file first.'); return }
     setBusy(true)
     setError(null)
     try {
+      let upload: Record<string, unknown> | undefined
+      if (source === 'upload' && file && probe) {
+        const type = typeOf(file)!
+        const start = await post<{ path: string; upload_url: string }>({ action: 'upload_start', slug: c.slug, preview, type, size: file.size }, person.token)
+        setProgress(0)
+        await sendFile(start.upload_url, file, type, setProgress)
+        upload = { path: start.path, duration_s: probe.duration, codec: probe.codec, thumb: probe.thumb, sheet: probe.sheet }
+      }
       const r = await post<{ entry: EntryView; share_url: string }>({
-        action: 'enter', slug: c.slug, preview, link: link.trim(), title, says, category,
+        action: 'enter', slug: c.slug, preview, ...(upload ? { upload } : { link: link.trim() }), title, says, category,
         last_name: lastName, town, credit_name: credit.trim() || defaultCredit,
         confirm: { adult: eligible, resident: eligible, rights, people: rights, rules },
       }, person.token)
@@ -129,9 +176,10 @@ function EntryForm({ c, preview, person, onDone, onSignOut }: {
       window.scrollTo({ top: 0, behavior: 'smooth' })
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) { onSignOut(); return }
-      setError(err instanceof ApiError ? err.message : 'Something went wrong. Try again in a minute.')
+      setError(err instanceof Error && err.message ? err.message : 'Something went wrong. Try again in a minute.')
     } finally {
       setBusy(false)
+      setProgress(null)
     }
   }
 
@@ -142,14 +190,52 @@ function EntryForm({ c, preview, person, onDone, onSignOut }: {
         <button type="button" onClick={onSignOut} className="font-bold text-forest underline-offset-4 hover:underline">Not you?</button>
       </p>
 
-      <label className="block">
-        <span className={LABEL}>Link to your video</span>
-        <input required value={link} onChange={(e) => setLink(e.target.value)} inputMode="url" autoComplete="off"
-          placeholder="youtube.com/…, vimeo.com/… or tiktok.com/…" className={INPUT} />
-        <span className="mt-1.5 block text-[14px] text-ink-soft">
-          Public or unlisted. {c.min_seconds ?? 30} to {c.max_seconds ?? 60} seconds.
-        </span>
-      </label>
+      <fieldset>
+        <legend className={LABEL}>Your video</legend>
+        <div className="mt-2 flex flex-wrap gap-2" role="radiogroup">
+          {([['upload', 'Upload the file'], ['link', 'Paste a link']] as const).map(([k, label]) => (
+            <label key={k} className={`inline-flex min-h-[46px] cursor-pointer items-center rounded-full border-2 px-5 text-[16px] font-bold ${source === k ? 'border-navy bg-navy text-white' : 'border-navy/[0.16] bg-white text-navy hover:border-navy/40'}`}>
+              <input type="radio" name="source" value={k} checked={source === k} onChange={() => { setSource(k); setError(null) }} className="sr-only" />
+              {label}
+            </label>
+          ))}
+        </div>
+
+        {source === 'upload' ? (
+          <div className="mt-4">
+            {probe && file ? (
+              <div className="flex items-center gap-4 rounded-[16px] bg-white p-3">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={probe.thumb} alt="" className={`shrink-0 rounded-[10px] bg-navy object-cover ${probe.portrait ? 'h-28 w-16' : 'h-20 w-36'}`} />
+                <div className="min-w-0">
+                  <p className="truncate text-[16px] font-bold text-navy">{file.name}</p>
+                  <p className="text-[15px] text-ink-soft">{mmss(probe.duration)} · {Math.max(1, Math.round(file.size / 1024 / 1024))} MB</p>
+                  <label className="mt-1 inline-flex min-h-[40px] cursor-pointer items-center font-bold text-forest underline-offset-4 hover:underline">
+                    Choose a different file
+                    <input id="cb-file-change" type="file" accept={ACCEPT} className="sr-only" onChange={(e) => void pick(e.target.files?.[0] ?? null)} />
+                  </label>
+                </div>
+              </div>
+            ) : (
+              <label className="flex min-h-[120px] cursor-pointer flex-col items-center justify-center rounded-[16px] border-2 border-dashed border-navy/[0.24] bg-white px-4 py-6 text-center hover:border-navy/50">
+                <span className="text-[17px] font-bold text-navy">{probing ? 'Reading your video…' : 'Choose your video'}</span>
+                <span className="mt-1 text-[14px] text-ink-soft">MP4, MOV or WebM, up to {MAX_MB} MB, {minS} to {maxS} seconds</span>
+                <input id="cb-file" type="file" accept={ACCEPT} className="sr-only" disabled={probing} onChange={(e) => void pick(e.target.files?.[0] ?? null)} />
+              </label>
+            )}
+            {fileError && <p role="alert" className="mt-2 text-[15px] font-semibold text-ep-danger">{fileError}</p>}
+          </div>
+        ) : (
+          <label className="mt-4 block">
+            <span className="sr-only">Link to your video</span>
+            <input id="cb-link" required value={link} onChange={(e) => setLink(e.target.value)} inputMode="url" autoComplete="off"
+              placeholder="youtube.com/…, vimeo.com/… or tiktok.com/…" className={INPUT} />
+            <span className="mt-1.5 block text-[14px] text-ink-soft">
+              Public or unlisted, and kept up until the winners are announced. {minS} to {maxS} seconds.
+            </span>
+          </label>
+        )}
+      </fieldset>
 
       <label className="block">
         <span className={LABEL}>Title</span>
@@ -206,12 +292,17 @@ function EntryForm({ c, preview, person, onDone, onSignOut }: {
       {error && <p role="alert" className="text-[15px] font-semibold text-ep-danger">{error}</p>}
       <div className="flex flex-wrap items-center gap-4">
         <button type="submit" disabled={busy || !eligible || !rights || !rules} className={PRIMARY}>
-          {busy ? 'Checking your video…' : 'Enter my ad'}
+          {progress != null ? `Uploading… ${Math.round(progress * 100)}%` : busy ? 'Checking your video…' : 'Enter my ad'}
         </button>
         <span className="text-[15px] text-ink-soft">Entries close {lastDay(c.entries_close_at)}.</span>
       </div>
     </form>
   )
+}
+
+function mmss(s: number): string {
+  const t = Math.round(s)
+  return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`
 }
 
 function Check({ checked, onChange, children }: { checked: boolean; onChange: (v: boolean) => void; children: React.ReactNode }) {

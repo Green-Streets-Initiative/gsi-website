@@ -115,9 +115,11 @@ export default function EntryShare({ initial, preview }: { initial: EntryRespons
 
       <div className="mt-6 flex flex-wrap items-center gap-4">
         <ShareButton url={e.share_url} title={e.title} />
-        <a href={e.link_url} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-[44px] items-center font-bold text-navy underline-offset-4 hover:underline">
-          Watch on {e.platform === 'youtube' ? 'YouTube' : e.platform === 'vimeo' ? 'Vimeo' : 'TikTok'}
-        </a>
+        {e.link_url && (
+          <a href={e.link_url} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-[44px] items-center font-bold text-navy underline-offset-4 hover:underline">
+            Watch on {e.platform === 'youtube' ? 'YouTube' : e.platform === 'vimeo' ? 'Vimeo' : 'TikTok'}
+          </a>
+        )}
       </div>
     </div>
   )

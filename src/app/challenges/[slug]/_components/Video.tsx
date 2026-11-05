@@ -1,14 +1,15 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { ChallengeView, EntryView } from '../_lib/api'
 import { categoryLabel, prizeFor } from '../_lib/api'
 
 /** TikTok plays tall; YouTube and Vimeo wide. */
 export const tall = (e: EntryView) => e.platform === 'tiktok'
 
-/** The platform's own player. */
+/** The platform's own player, or ours for an uploaded file. */
 export function Player({ entry, autoPlay = false }: { entry: EntryView; autoPlay?: boolean }) {
+  if (entry.platform === 'upload') return <FilePlayer entry={entry} autoPlay={autoPlay} />
   if (!entry.embed_url) return null
   const src = autoPlay && entry.platform !== 'tiktok'
     ? `${entry.embed_url}${entry.embed_url.includes('?') ? '&' : '?'}autoplay=1`
@@ -23,6 +24,45 @@ export function Player({ entry, autoPlay = false }: { entry: EntryView; autoPlay
         allowFullScreen
         loading="lazy"
         referrerPolicy="strict-origin-when-cross-origin"
+      />
+    </div>
+  )
+}
+
+/**
+ * An uploaded ad. The link to the file lasts a few hours, so a page left open
+ * overnight reloads it. Tall videos play tall. If the browser can't play the
+ * file's format (an iPhone HEVC video in an older browser), say so plainly and
+ * offer the file itself.
+ */
+function FilePlayer({ entry, autoPlay }: { entry: EntryView; autoPlay: boolean }) {
+  const [portrait, setPortrait] = useState(false)
+  const [failed, setFailed] = useState(false)
+  if (!entry.video_url) return null
+  const box = portrait ? 'mx-auto aspect-[9/16] max-h-[78vh] w-full max-w-[420px]' : 'aspect-video w-full'
+  if (failed) {
+    return (
+      <div className={`flex flex-col items-center justify-center gap-3 rounded-[16px] bg-navy px-6 text-center ${box}`}>
+        <p className="text-[16px] text-white/85">This video won&rsquo;t play in this browser. Try Safari, or open it on your phone.</p>
+        <a href={entry.video_url} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-[44px] items-center font-bold text-lime underline-offset-4 hover:underline">
+          Open the video file
+        </a>
+      </div>
+    )
+  }
+  return (
+    <div className={`overflow-hidden rounded-[16px] bg-navy ${box}`}>
+      <video
+        src={entry.video_url}
+        poster={entry.thumbnail_url ?? undefined}
+        controls
+        playsInline
+        preload="metadata"
+        autoPlay={autoPlay}
+        className="h-full w-full"
+        aria-label={entry.title}
+        onLoadedMetadata={(ev) => setPortrait(ev.currentTarget.videoHeight > ev.currentTarget.videoWidth)}
+        onError={() => setFailed(true)}
       />
     </div>
   )

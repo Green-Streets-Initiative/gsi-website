@@ -202,7 +202,7 @@ export default function ChallengePage({ initial, preview }: { initial: Challenge
                 ))}
               </ul>
               <p className="mt-6 text-[16px] leading-relaxed text-ink-soft">
-                Post it on YouTube, Vimeo or TikTok (public or unlisted), then paste the link. Up to {c.max_entries_per_person} ads each. Massachusetts residents 18 and older.
+                Upload the file, or paste a YouTube, Vimeo or TikTok link. Up to {c.max_entries_per_person} ads each. Massachusetts residents 18 and older.
               </p>
             </div>
             <div>

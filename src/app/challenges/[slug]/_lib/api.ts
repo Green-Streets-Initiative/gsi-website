@@ -51,9 +51,13 @@ export interface EntryView {
   says: string
   category: string
   credit_name: string
-  platform: 'youtube' | 'vimeo' | 'tiktok'
-  link_url: string
+  platform: 'youtube' | 'vimeo' | 'tiktok' | 'upload'
+  /** Null for an uploaded file. */
+  link_url: string | null
   embed_url: string | null
+  /** An uploaded file's short-lived play link (null for links). */
+  video_url?: string | null
+  video_codec?: string | null
   thumbnail_url: string | null
   duration_s: number | null
   finalist_rank: number | null

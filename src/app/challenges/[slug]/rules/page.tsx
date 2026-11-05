@@ -73,8 +73,8 @@ export default async function Page({ params, searchParams }: { params: Params; s
           <S n={4} title="How to enter">
             <Ul items={[
               `Make an ad of ${c.min_seconds ?? 30} to ${c.max_seconds ?? 60} seconds that promotes ${catList} in Massachusetts.`,
-              'Post it publicly, or as unlisted, on YouTube, Vimeo or TikTok, and keep it up until the winners are announced.',
-              `Enter its link on the challenge page with your email, name and town. Up to ${c.max_entries_per_person} entries per person, each a different ad.`,
+              'Upload the video file (MP4, MOV or WebM, up to 50 MB), or post it publicly or as unlisted on YouTube, Vimeo or TikTok and keep it up until the winners are announced.',
+              `Enter it on the challenge page with your email, name and town. Up to ${c.max_entries_per_person} entries per person, each a different ad.`,
               'Your ad must be your own (or your team’s) original work. You must have the rights to everything in it, including music, footage and images, and everyone who can be recognized in it must have agreed to be in it.',
               'Keep it positive and safe. Ads that knock drivers or any group of people, show unsafe or illegal walking, biking or driving, or include nudity, hate or graphic violence can’t win.',
               'Ads may use AI tools, as long as the result is your own work and you have the rights to it.',
