@@ -8,10 +8,16 @@ import ContactForm from '@/components/ContactForm'
 // 2026-10-13, employer handoff h-intel-20261013-1). Aimed at sustainability
 // leads; also the landing page for the Ad Grant compliance ad group and the
 // November commute-survey send. Facts and URLs were checked on 2026-10-15
-// and are listed at the bottom of the page; change them there first.
+// (CARB primary-data line 2026-11-05) and are listed at the bottom of the
+// page; change them there first.
 // Rules kept here: Shift's app data is not called a full-workforce
 // inventory (the survey covers everyone, the app covers members); no rule
 // accepts app data in place of a required survey; website prices only.
+// Price (Keith 2026-10-31, plans.ts SURVEY_FEATURE): the first survey is free
+// at any tier; after that it is included in Standard and Premium. No
+// standalone survey price.
+// SB 253's 2027 Scope 3 list is a CARB proposal: say "proposed", never
+// "required" (h-intel-20261102-1).
 // Keith 2026-10-15: the offer comes before the reasons; say the package
 // plainly (emissions, filing, behavior change, one price); no "this, never
 // that" sentences; privacy gets one plain line here and a fuller page later.
@@ -19,7 +25,7 @@ import ContactForm from '@/components/ContactForm'
 export const metadata = {
   title: 'Commute survey and commuting emissions for Massachusetts employers | Green Streets Initiative',
   description:
-    'Green Streets Initiative runs your employee commute survey and returns your commuting emissions number (Scope 3, category 7) in the shape a carbon accountant needs, plus the summary a MassDEP, Cambridge, Boston or Somerville filing asks for. Then Shift measures the change all year. One package, included in the Standard plan.',
+    'Green Streets Initiative runs your employee commute survey and returns your commuting emissions number (Scope 3, category 7) in the shape a carbon accountant needs, plus the summary a MassDEP, Cambridge, Boston or Somerville filing asks for. Your first survey is free; after that it is included in the Standard plan.',
   alternates: { canonical: 'https://www.gogreenstreets.org/shift/employers/commute-survey' },
 }
 
@@ -48,7 +54,7 @@ const WHY_NOW = [
   {
     eyebrow: 'Companies with $1B or more in revenue',
     title: 'California SB 253 starts with employee commuting',
-    body: 'For the first Scope 3 reports in 2027, the California Air Resources Board proposed five of the fifteen GHG Protocol categories. Category 7, employee commuting, is one of them. SB 253 covers companies with $1 billion or more in revenue that do business in California, which includes many Massachusetts headquarters.',
+    body: 'For the first Scope 3 reports in 2027, the California Air Resources Board proposed five of the fifteen GHG Protocol categories. Category 7, employee commuting, is one of them, and the proposal asks companies to state what share of each category was calculated from primary data, such as a survey of their own staff. SB 253 covers companies with $1 billion or more in revenue that do business in California, which includes many Massachusetts headquarters. The 2027 rules are still a proposal and may change.',
   },
   {
     eyebrow: 'Any public climate goal',
@@ -87,12 +93,13 @@ const RULES = [
 const FORM_POINTS = [
   'Tell us your company and roughly how many people work at your Massachusetts office.',
   'We reply within two business days with a sample report and two start dates in the next ten business days.',
-  'The finished report and your commuting emissions number are included in the Standard plan, $3,000 a year. Ask us about running the survey on its own.',
+  'Your first survey, its report and your commuting emissions number are free, on any plan. After that, they are included in the Standard and Premium plans.',
 ]
 
 const SOURCES = [
   { label: 'GHG Protocol, Technical Guidance for Calculating Scope 3 Emissions, chapter 7, Employee commuting', href: 'https://ghgprotocol.org/sites/default/files/2022-12/Chapter7.pdf' },
   { label: 'Jones Day, SB 253’s 2027 rules take shape: what CARB previewed at its July workshop (July 23, 2026)', href: 'https://trendingnowinesg.jonesday.com/post/102ndem/sb-253s-2027-rules-take-shape-what-carb-previewed-at-its-july-workshop' },
+  { label: 'Morgan Lewis, CARB extends SB 253 deadline and previews 2027 reporting rules (August 7, 2026): category 7 in the proposed set, and the percentage calculated using primary data', href: 'https://www.morganlewis.com/pubs/2026/08/carb-extends-sb-253-deadline-and-previews-2027-reporting-rules' },
   { label: 'LEEDuser, LEED v4.1 O+M transportation performance (Arc survey, CO₂e per one-way trip)', href: 'https://leeduser.buildinggreen.com/node/58624' },
   { label: 'MassDEP Rideshare Program guide (who files, December 31 deadline, survey cadence)', href: 'https://www.mass.gov/guides/massdep-rideshare-program' },
   { label: 'City of Cambridge, Parking and Transportation Demand Management ordinance and program', href: 'https://www.cambridgema.gov/CDD/Transportation/fordevelopers/ptdm' },
@@ -121,7 +128,7 @@ export default function CommuteSurveyPage() {
               Every company with a climate goal reports the emissions from its staff getting to work. Most fill in that line with national averages, because nobody has asked their own people. Green Streets Initiative runs your employee commute survey and gives you the number from your own people’s trips.
             </p>
             <p className="mb-10 max-w-[660px] text-[1.0625rem] leading-[1.65] text-navy">
-              <span className="font-semibold">One package, one price:</span> richer emissions reporting, your commute survey filed, and a program that gets more of your people walking, biking and taking transit. Included in the Standard plan, $3,000 a year.
+              <span className="font-semibold">Your first survey is free.</span> After that, one package at one price: richer emissions reporting, your commute survey filed, and a program that gets more of your people walking, biking and taking transit. Included in the Standard plan, $3,000 a year.
             </p>
             <div className="flex flex-wrap items-center gap-x-6 gap-y-4">
               <a
@@ -272,7 +279,7 @@ export default function CommuteSurveyPage() {
               Three things in one package
             </h2>
             <p className="mb-8 max-w-[680px] text-[1.0625rem] leading-[1.65] text-ink-soft">
-              Included in the Standard plan, $3,000 a year, with everything else Shift for Employers does.
+              Your first survey is free on any plan. After that, all three are included in the Standard plan, $3,000 a year, with everything else Shift for Employers does.
             </p>
             <div className="mb-12 grid gap-6 md:grid-cols-3">
               {PACKAGE.map((card) => (
@@ -288,7 +295,7 @@ export default function CommuteSurveyPage() {
                   Get a sample report and a start date
                 </h2>
                 <p className="mb-6 text-[1.0625rem] leading-[1.65] text-ink-soft">
-                  A survey week takes ten business days from your yes to your report: a few days to load the staff list, one week for answers, a reminder, and the write-up. This fall that still lands before the November 30 and December 31 filing dates.
+                  A survey week takes ten business days from your yes to your report: a few days to load the staff list, one week for answers, a reminder, and the write-up. A yes by December 14 still lands before MassDEP’s December 31 filing date.
                 </p>
                 <ul className="flex flex-col gap-3 text-[0.9375rem] leading-[1.6] text-ink-soft">
                   {FORM_POINTS.map((item) => (
@@ -318,7 +325,7 @@ export default function CommuteSurveyPage() {
         {/* Sources */}
         <section className="bg-cream px-6 pb-16 pt-8 lg:px-8">
           <div className="mx-auto max-w-[1120px]">
-            <h2 className="mb-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-soft">Sources, checked October 15, 2026</h2>
+            <h2 className="mb-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-soft">Sources, checked October 15 and November 5, 2026</h2>
             <ul className="flex flex-col gap-2 text-[13px] leading-[1.5] text-ink-soft">
               {SOURCES.map((s) => (
                 <li key={s.label}>
