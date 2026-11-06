@@ -12,6 +12,8 @@ import {
   type PublishedRouteCard,
 } from '@/lib/shift/routeDisplay'
 import SchoolRoutesMap from './SchoolRoutesMap'
+import ReportSpotSheet from '@/components/spot/ReportSpotSheet'
+import { useSpotSwitch } from '@/components/spot/useSpotSwitch'
 
 interface Props {
   schoolId: string
@@ -24,6 +26,10 @@ interface Props {
 export default function SchoolRoutesSection({ schoolId, schoolName }: Props) {
   const [routes, setRoutes] = useState<PublishedRouteCard[]>([])
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  // Report a spot (behind the report_a_spot switch): closes the parity gap
+  // gap-safe-routes-no-report. Starts on the picked route, else the school.
+  const spotOn = useSpotSwitch()
+  const [spotAt, setSpotAt] = useState<{ lat: number; lng: number; label: string | null } | null>(null)
 
   useEffect(() => {
     supabase
@@ -39,6 +45,19 @@ export default function SchoolRoutesSection({ schoolId, schoolName }: Props) {
   const publishedAt = routes[0]?.published_at
   const stale =
     publishedAt && Date.now() - new Date(publishedAt).getTime() > 365 * 24 * 60 * 60 * 1000
+
+  const openSpot = () => {
+    const picked = routes.find((r) => r.id === selectedId)?.waypoints ?? []
+    if (picked.length > 0) {
+      const mid = picked[Math.floor(picked.length / 2)]
+      setSpotAt({ lat: mid.lat, lng: mid.lng, label: null })
+      return
+    }
+    // Every route ends at the school.
+    const first = routes[0]?.waypoints ?? []
+    const school = first[first.length - 1]
+    if (school) setSpotAt({ lat: school.lat, lng: school.lng, label: schoolName })
+  }
 
   return (
     <div className="space-y-4">
@@ -72,6 +91,26 @@ export default function SchoolRoutesSection({ schoolId, schoolName }: Props) {
         selectedId={selectedId}
         onSelect={setSelectedId}
       />
+
+      {spotOn && (
+        <div className="text-center">
+          <button
+            type="button"
+            onClick={openSpot}
+            aria-haspopup="dialog"
+            className="inline-flex min-h-[44px] cursor-pointer items-center text-[0.9375rem] font-semibold text-[#4A4D68] underline decoration-[rgba(74,77,104,0.45)] underline-offset-[3px] transition-colors hover:text-[#191A2E] focus-visible:rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2D6A4F]"
+          >
+            Report a spot on these routes
+          </button>
+          <ReportSpotSheet
+            surface="school_routes"
+            open={!!spotAt}
+            spot={spotAt ?? { lat: 0, lng: 0 }}
+            label={spotAt?.label ?? null}
+            onClose={() => setSpotAt(null)}
+          />
+        </div>
+      )}
 
       {routes.map((route, i) => {
         const badge = modeBadgeStyle(route.recommended_modes)

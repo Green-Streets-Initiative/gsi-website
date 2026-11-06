@@ -6,6 +6,7 @@ import { bluebikeHtml, destinationPinHtml } from './markers'
 import type { NearbyMarker } from './NearbyMap'
 import type { Selection } from './useNearbyModel'
 import type { ReachRow } from './types'
+import { spotCautionMarkerHtml, useSpotCautions, walkLegs } from '@/components/spot/useSpotCautions'
 
 /**
  * Reach routes draw on the page's MAIN map (no nested mini-maps): when the
@@ -59,9 +60,21 @@ export function useReachOverlay({ selection, reachRows, corridorLines, markers, 
     ? reachRow?.dest_docks?.[0]
     : undefined
 
+  // Report a spot: open reports along the walking parts of a transit trip,
+  // as small warning dots (the list under the route reads the same answer).
+  // Empty while the report_a_spot switch is off.
+  const walks = useMemo(
+    () => (reachRow && selection?.type === 'reach' && selection.mode === 'transit' ? walkLegs(reachRow.transit_segments) : null),
+    [reachRow, selection],
+  )
+  const cautions = useSpotCautions(walks)
+
   const overlayMarkers = useMemo<NearbyMarker[]>(() => {
     if (!reachRow) return markers
     const out = [...markers, { id: `reachdest-${reachRow.id}`, lat: reachRow.lat, lng: reachRow.lng, html: destinationPinHtml(reachRow.name), zIndex: 5 }]
+    for (const c of cautions) {
+      out.push({ id: `spotcaution-${c.kind}-${c.lat.toFixed(5)},${c.lng.toFixed(5)}`, lat: c.lat, lng: c.lng, html: spotCautionMarkerHtml(c.kind), zIndex: 4 })
+    }
     // Skipped when the page already shows it (a short trip inside the
     // start's dock radius) — the model keeps that copy.
     if (destDock && !markers.some(m => m.id === `dock-${destDock.station_id}`)) {
@@ -86,7 +99,7 @@ export function useReachOverlay({ selection, reachRows, corridorLines, markers, 
       })
     }
     return out
-  }, [markers, reachRow, destDock, dockSelectedId, openDocksLabel])
+  }, [markers, reachRow, destDock, dockSelectedId, openDocksLabel, cautions])
 
   const highlight = selection?.type === 'reach' ? `reach:${selection.id}` : highlightedCorridorId
 

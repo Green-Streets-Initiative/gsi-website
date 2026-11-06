@@ -12,6 +12,7 @@ import BikeComfortBlock, { NEARBY_COMFORT_COLORS } from './BikeComfortBlock'
 import type { ReachRow, ReachStep, ReachSegment, BikeComfortTier, BikeComfortData } from './types'
 import { useNearbyT, useNearbyLocale } from './NearbyI18n'
 import { TripPerks } from './NearbyPerks'
+import { SpotCautionsList } from '@/components/spot/useSpotCautions'
 
 /** Comfort-tier → i18n key, so a tapped bike leg's tier reads in the page
  *  language (matches BikeComfortBlock's localized labels). */
@@ -466,6 +467,7 @@ export function ReachList({ center, rows, onRowTap, modeFilter, routeSelection, 
                       <>
                         <TripFacts row={row} />
                         <TransitLegs steps={row.steps} segments={row.transit_segments} />
+                        <SpotCautionsList segments={row.transit_segments} />
                         <p className="mt-2 text-[0.72rem] leading-snug text-(--nb-ink-70)">
                           {tr('reach.transit_leg_hint')}
                         </p>

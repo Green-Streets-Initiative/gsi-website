@@ -34,6 +34,7 @@ import { useNearbyT } from './NearbyI18n'
 import NearbyLanguagePill from './NearbyLanguagePill'
 import { useNearbyV2, wantsSignIn } from './useNearbyV2'
 import { NearbySignIn, V2Blocks, V2LayersButton, V2PlaceChips, type V2Layers } from './NearbyV2'
+import { useSpotPress } from '@/components/spot/useSpotPress'
 
 /**
  * The desktop (≥ lg) experience: a two-pane app layout. The map is a sticky
@@ -175,6 +176,8 @@ export default function NearbyDesktop({
   // next one.
   const [bikeAlt, setBikeAlt] = useState(false)
 
+  // Report a spot: right-click on the map (behind the report_a_spot switch)
+  const spotPress = useSpotPress()
   const openDocksLabel = useCallback((count: number) => tr('detail.open_docks', { count }), [tr])
   const overlay = useReachOverlay({
     selection: model.routeSelection ?? selection, reachRows, corridorLines, markers, highlightedCorridorId, bikeAlt,
@@ -474,6 +477,7 @@ export default function NearbyDesktop({
                 onMarkerTap={(id) => (isPerkMarker(id) ? nearbyPerks.planById(id) : handleMarkerTap(id))}
                 onLaneTap={(info) => select({ type: 'lane', info }, 'map')}
                 onReachLegTap={handleLegTap}
+                onSpotPress={spotPress.onSpotPress}
                 fitCount={7}
                 extraFitPoints={accessPoints}
                 focusPoint={model.selectionPoint}
@@ -769,6 +773,7 @@ export default function NearbyDesktop({
           </div>
         </div>
       </div>
+      {spotPress.sheet}
     </div>
   )
 }

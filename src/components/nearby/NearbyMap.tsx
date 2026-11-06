@@ -87,6 +87,10 @@ interface Props {
   onLaneTap?: (info: LaneTapInfo) => void
   /** A stretch of a drawn destination route tapped (reach:* features) */
   onReachLegTap?: (info: RouteLegTapInfo) => void
+  /** Report a spot: press and hold (touch) or right-click (mouse) on the map
+   *  reports this point. Off when absent (the switch is off, or the map is
+   *  one that doesn't take reports). */
+  onSpotPress?: (point: { lat: number; lng: number }) => void
   /** Fit viewport to user + this many nearest markers, once (default: all) */
   fitCount?: number
   /** Extra coordinates the one-time fit must include (e.g. corridor access
@@ -129,6 +133,67 @@ const CORRIDOR_OPACITY_DEFAULT = 0.45
 const CORRIDOR_WIDTH_DEFAULT = 2.5
 const BIKE_BG_OPACITY = { separated: 0.9, glow: 0.15, painted: 0.65 }
 
+/* ── Report a spot: press and hold, or right-click ── */
+
+const HOLD_MS = 550
+const HOLD_SLOP_PX = 10
+
+/**
+ * Press and hold on a touch screen, or right-click with a mouse, reports the
+ * point under the finger (Report a spot). The map uses neither for anything
+ * else: a right-DRAG still rotates, so a right-click only counts when the
+ * mouse didn't move between press and release. `report` answers false when
+ * reporting is off, and the gesture then does nothing at all.
+ */
+function attachSpotPress(map: maplibregl.Map, report: (p: { lat: number; lng: number }) => boolean) {
+  let hold: ReturnType<typeof setTimeout> | null = null
+  let holdStart: { x: number; y: number } | null = null
+  const cancelHold = () => {
+    if (hold) clearTimeout(hold)
+    hold = null
+    holdStart = null
+  }
+  map.on('touchstart', (e) => {
+    cancelHold()
+    if (e.originalEvent.touches.length !== 1) return
+    holdStart = { x: e.point.x, y: e.point.y }
+    const lngLat = e.lngLat
+    hold = setTimeout(() => {
+      hold = null
+      holdStart = null
+      if (report({ lat: lngLat.lat, lng: lngLat.lng })) {
+        try { navigator.vibrate?.(10) } catch { /* not every phone */ }
+      }
+    }, HOLD_MS)
+  })
+  map.on('touchmove', (e) => {
+    if (!holdStart) return
+    if (e.originalEvent.touches.length !== 1 || Math.hypot(e.point.x - holdStart.x, e.point.y - holdStart.y) > HOLD_SLOP_PX) cancelHold()
+  })
+  map.on('touchend', cancelHold)
+  map.on('touchcancel', cancelHold)
+  map.on('movestart', cancelHold)
+
+  // macOS and Linux send contextmenu on the press, Windows on the release.
+  let pressed: { x: number; y: number; lat: number; lng: number } | null = null
+  map.on('contextmenu', (e) => {
+    e.preventDefault()
+    e.originalEvent.preventDefault()
+    const at = { x: e.point.x, y: e.point.y, lat: e.lngLat.lat, lng: e.lngLat.lng }
+    if ((e.originalEvent.buttons & 2) === 0) {
+      report({ lat: at.lat, lng: at.lng })
+      return
+    }
+    pressed = at
+  })
+  map.on('mouseup', (e) => {
+    if (!pressed || e.originalEvent.button !== 2) return
+    const at = pressed
+    pressed = null
+    if (Math.hypot(e.point.x - at.x, e.point.y - at.y) <= HOLD_SLOP_PX) report({ lat: at.lat, lng: at.lng })
+  })
+}
+
 /* ── Live traffic ── */
 
 const TRAFFIC_SOURCE = 'traffic'
@@ -151,7 +216,7 @@ const TRAFFIC_STORAGE_KEY = 'nearby.traffic'
 export default function NearbyMap({
   center, markers, lines, paintedVisible = true, separatedVisible = true, trafficVisible = false,
   corridorLines, selectedCorridorId = null, highlightedStreetKey = null, onCorridorSelect,
-  onMarkerTap, onLaneTap, onReachLegTap,
+  onMarkerTap, onLaneTap, onReachLegTap, onSpotPress,
   fitCount, extraFitPoints, fitToLines = false, lineEmphasis = false,
   cooperative = true, controls, fitPadding, focusPoint, focusPadding, holdSelectionFit = false,
   heightClass = 'h-[320px] sm:h-[380px]',
@@ -189,6 +254,10 @@ export default function NearbyMap({
   onLaneTapRef.current = onLaneTap
   const onReachLegTapRef = useRef(onReachLegTap)
   onReachLegTapRef.current = onReachLegTap
+  const onSpotPressRef = useRef(onSpotPress)
+  onSpotPressRef.current = onSpotPress
+  // A held press ends in a click; that click mustn't also clear the selection
+  const suppressClickUntilRef = useRef(0)
   const corridorLinesRef = useRef(corridorLines)
   corridorLinesRef.current = corridorLines
   const fitToLinesRef = useRef(fitToLines)
@@ -273,12 +342,21 @@ export default function NearbyMap({
       // Background tap clears the selection (layer taps are handled by the
       // layer's own handler — skip when the tap actually hit a line)
       map.on('click', (e) => {
+        if (Date.now() < suppressClickUntilRef.current) return
         const layers = ['corridor-lines', 'corridor-lines-dashed', 'corridor-lines-hit', 'bike-separated', 'bike-painted'].filter(l => map.getLayer(l))
         if (layers.length > 0) {
           const hits = map.queryRenderedFeatures(e.point, { layers })
           if (hits.length > 0) return
         }
         onSelectRef.current?.(null, 'background')
+      })
+
+      attachSpotPress(map, (p) => {
+        const report = onSpotPressRef.current
+        if (!report) return false
+        suppressClickUntilRef.current = Date.now() + 700
+        report(p)
+        return true
       })
     }
 
