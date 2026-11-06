@@ -161,13 +161,16 @@ export default function ShiftSchoolsPage() {
             </div>
             <div className="mt-10">
               <p className="mb-2 text-[11px] font-semibold uppercase tracking-widest text-ink-soft">
-                Alliance Partner
+                Massachusetts Safe Routes to School Alliance Partner
               </p>
               <img
                 src="/srts-alliance-partner.jpg"
                 alt="Massachusetts Safe Routes to School"
                 className="h-auto w-[180px]"
               />
+              <p className="mt-4 max-w-[520px] text-[0.9375rem] leading-[1.6] text-ink-soft">
+                Works alongside your Safe Routes activities and adds the one thing they don&apos;t: the only weekly count for every classroom.
+              </p>
             </div>
           </div>
         </section>
@@ -219,6 +222,12 @@ export default function ShiftSchoolsPage() {
                 </div>
               ))}
             </div>
+            <p className="mt-8 max-w-[680px] text-[1rem] leading-[1.65] text-ink-soft">
+              From our research: in Everett, a district of 7,300 students, 51% walk to school.{' '}
+              <Link href="/programs/what-moves-us/everett-schools" className="font-semibold text-navy underline underline-offset-4">
+                See the Everett study &rarr;
+              </Link>
+            </p>
           </div>
         </section>
 
