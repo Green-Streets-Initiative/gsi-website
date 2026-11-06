@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import posthog from 'posthog-js'
-import { Camera, Image as ImageIcon, X } from '@phosphor-icons/react'
+import { Camera, Check, Image as ImageIcon, X } from '@phosphor-icons/react'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { loadMaplibre } from '@/lib/map/loadMaplibre'
 import { haversineMeters } from '@/lib/geo/measure'
@@ -16,9 +16,9 @@ import {
 
 /*
  * "Report a spot" (version 1) on gogreenstreets.org. One sheet, top to
- * bottom: an optional photo, one tap for what's wrong (and a second for the
- * kinds in SPOT_DETAILS), the spot under a
- * fixed pin, an optional note, then a line that says where it goes next,
+ * bottom: one tap for what's wrong (and a second for the kinds in
+ * SPOT_DETAILS), the spot under a fixed pin, the wheelchair line, an
+ * optional note and photo, then a line that says where it goes next,
  * and Send. Saved through /api/spot/report (Shift's report-route-issue).
  * Shift never submits to the town: when the town has a report page on
  * file, the thanks opens it in a new tab with the words already copied.
@@ -184,6 +184,30 @@ function SpotPinMap({ start, onSettle }: { start: Spot; onSettle: (p: Spot) => v
   )
 }
 
+/** Who owns the street under the pin (MassDOT's records), through /api/spot/report. */
+type Road = { street: string | null; stateRoad: boolean; townTakes: string[] }
+
+async function fetchRoad(p: Spot): Promise<Road | null> {
+  try {
+    const res = await fetch('/api/spot/report', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ road: { lat: Number(p.lat.toFixed(6)), lng: Number(p.lng.toFixed(6)) } }),
+    })
+    if (!res.ok) return null
+    const data = await res.json() as Record<string, unknown>
+    const r = data.road as { street?: unknown } | null
+    if (!r) return null
+    return {
+      street: typeof r.street === 'string' ? r.street : null,
+      stateRoad: data.state_road === true,
+      townTakes: Array.isArray(data.town_takes) ? data.town_takes.filter((k): k is string => typeof k === 'string') : [],
+    }
+  } catch {
+    return null
+  }
+}
+
 /* ── The sheet ───────────────────────────────────────────────────────── */
 
 export default function ReportSpotSheet({ surface, open, onClose, spot, label }: ReportSpotSheetProps) {
@@ -204,6 +228,7 @@ export default function ReportSpotSheet({ surface, open, onClose, spot, label }:
   const [note, setNote] = useState('')
   const [pin, setPin] = useState<Spot>(spot)
   const [dest, setDest] = useState<SpotDestination | null>(null)
+  const [road, setRoad] = useState<Road | null>(null)
   const [place, setPlace] = useState<string | null>(label ?? null)
   const [state, setState] = useState<SendState>('idle')
   const [answer, setAnswer] = useState<Answer | null>(null)
@@ -223,6 +248,7 @@ export default function ReportSpotSheet({ surface, open, onClose, spot, label }:
     setNote('')
     setPin(spot)
     setDest(null)
+    setRoad(null)
     setPlace(label ?? null)
     setState('idle')
     setAnswer(null)
@@ -263,6 +289,8 @@ export default function ReportSpotSheet({ surface, open, onClose, spot, label }:
     const seq = ++askSeq.current
     const nearStart = haversineMeters(p.lat, p.lng, spot.lat, spot.lng) <= LABEL_RADIUS_M
     let d: SpotDestination | null = null
+    // Who owns the street, alongside the town (the same rule the server holds by).
+    void fetchRoad(p).then((r) => { if (seq === askSeq.current) setRoad(r) })
     try {
       const { data, error } = await supabase.rpc('report_spot_destination', { p_lat: p.lat, p_lng: p.lng })
       const r = data as Record<string, unknown> | null
@@ -398,11 +426,21 @@ export default function ReportSpotSheet({ surface, open, onClose, spot, label }:
     posthog.capture('spot_handoff_opened', { surface })
   }
 
+  // A state road (MassDOT or DCR): the town can't fix most problems there.
+  const stateRoad = !!choice && isSpotKind(choice) && !notForTown && !!road?.stateRoad &&
+    !road.townTakes.includes(detail ? `${choice}:${detail}` : choice) && !road.townTakes.includes(choice)
+
+  // "Near …": the street under the pin once it's known (the app gets it from
+  // the phone's own lookup), unless the pin is still on the place we opened with.
+  const placeShown = road?.street && dest && place !== label ? `${road.street}, ${dest.town}` : place
+
   // The line above Send: what happens next.
   const nextLine = choice === 'map_wrong'
     ? 'This comes to Green Streets, and we’ll fix the map.'
     : notForTown
       ? 'We’ll save it and show it to people walking here.'
+    : stateRoad
+      ? `${road?.street ?? 'This street'} is a state road, so ${dest?.town ?? 'the town'} can’t fix this. We’ll save it and show it to people walking here.`
     : dest && safeUrl(dest.url)
       ? `Next: send it to ${dest.town}. We’ll open their report page with your words copied.`
       : dest
@@ -461,8 +499,8 @@ export default function ReportSpotSheet({ surface, open, onClose, spot, label }:
                 <>
                   <p className="text-[1.0625rem] font-bold">Thanks.</p>
                   <p className="mt-1 text-[0.9375rem] text-[#4A4D68]">
-                    This street belongs to {OWNER_NAMES[answer.held.owner]}, not {town ?? 'the town'}, so {town ?? 'the town'} can&apos;t fix it.
-                    We&apos;ve saved it, and people walking here will see it on their route.
+                    {answer.held.street ?? 'This street'} is run by {OWNER_NAMES[answer.held.owner]}, so {town ?? 'the town'} can&apos;t fix it.
+                    We saved your report, and people walking here will see it.
                   </p>
                 </>
               ) : townUrl && town ? (
@@ -515,56 +553,42 @@ export default function ReportSpotSheet({ surface, open, onClose, spot, label }:
                   onChange={(e) => { void pickPhoto(e.target.files?.[0]); e.target.value = '' }} />
                 <input ref={chooseRef} type="file" accept="image/*" className="hidden"
                   onChange={(e) => { void pickPhoto(e.target.files?.[0]); e.target.value = '' }} />
-                {photo.status === 'ready' ? (
-                  <div className="flex items-center gap-3">
-                    <button type="button" onClick={() => setLightbox(true)} aria-label="See the photo" className="shrink-0 cursor-pointer rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2D6A4F]">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={photo.url} alt="" className="h-16 w-20 rounded-lg object-cover" />
-                    </button>
-                    <p className="min-w-0 flex-1 text-[0.9375rem] font-semibold">Photo added</p>
-                    <button type="button" onClick={() => setPhoto({ status: 'none' })}
-                      className="min-h-[44px] cursor-pointer px-2 text-[0.9375rem] font-semibold text-[#4A4D68] underline underline-offset-[3px] hover:text-[#191A2E]">
-                      Remove
-                    </button>
-                  </div>
-                ) : photo.status === 'working' ? (
-                  <p className="text-[0.9375rem] text-[#4A4D68]" role="status">Adding the photo…</p>
-                ) : (
-                  <div>
-                    <div className="flex flex-wrap gap-2">
-                      {/* A computer has no camera to choose: only the files. */}
-                      {canTakePhoto && (
-                        <button type="button" onClick={() => takeRef.current?.click()} className={quietButton}>
-                          <Camera size={18} aria-hidden /> Take a photo
-                        </button>
-                      )}
-                      <button type="button" onClick={() => chooseRef.current?.click()} className={quietButton}>
-                        <ImageIcon size={18} aria-hidden /> Choose a photo
-                      </button>
-                    </div>
-                    <p className="mt-1.5 text-[0.875rem] text-[#4A4D68]">A photo is optional. Leave out faces and license plates.</p>
-                    {photo.status === 'failed' && (
-                      <p role="alert" className="mt-1 text-[0.9375rem] text-[#9B2C2C]">That photo didn&apos;t work. Try another.</p>
-                    )}
-                  </div>
-                )}
-
                 {/* What's wrong: one tap */}
-                <fieldset className="m-0 mt-5 border-0 p-0">
+                <fieldset className="m-0 border-0 p-0">
                   <legend className="mb-2 text-[0.9375rem] font-bold">What&apos;s wrong?</legend>
                   <div role="radiogroup" aria-labelledby={`${titleId}-what`}>
                   <span id={`${titleId}-what`} className="sr-only">What&apos;s wrong?</span>
-                  <div className="flex flex-wrap gap-2">
+                  {choice && isSpotKind(choice) ? (
+                    // Picked: the choice stays in view with a way back, and the
+                    // second tap sits right under it, so the map stays close.
+                    <div className="flex min-h-[48px] items-center gap-2 rounded-2xl bg-[#2D6A4F] pl-4 pr-1 text-white">
+                      <Check size={18} weight="bold" aria-hidden />
+                      <span className="flex-1 text-[0.9375rem] font-semibold">{SPOT_LABELS[choice]}</span>
+                      <button
+                        type="button"
+                        onClick={() => { setChoice(null); setDetail(null) }}
+                        aria-label="Pick a different problem"
+                        className="min-h-[44px] cursor-pointer rounded-full px-3 text-[0.9375rem] font-semibold underline underline-offset-[3px] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+                      >
+                        Change
+                      </button>
+                    </div>
+                  ) : (
+                  // Two even columns, as in the app; nothing here is picked
+                  // (a pick folds the grid into the row above).
+                  <div className="grid grid-cols-2 gap-2">
                     {SPOT_KINDS.map((k) => (
-                      <button key={k} type="button" role="radio" aria-checked={choice === k} onClick={() => { setChoice(k); setDetail(null) }} className={chip(choice === k)}>
+                      <button key={k} type="button" role="radio" aria-checked={false} onClick={() => { setChoice(k); setDetail(null) }}
+                        className={`${chip(false)} min-h-[48px] !rounded-xl py-2 ${k === 'spot_other' ? 'col-span-2' : ''}`}>
                         {SPOT_LABELS[k]}
                       </button>
                     ))}
                   </div>
+                  )}
                   {/* The second tap, where it decides who fixes it */}
                   {kindDetails && (
                     <div className="mt-3">
-                      <p id={`${titleId}-which`} className="mb-2 text-[0.9375rem] text-[#4A4D68]">Which one?</p>
+                      <p id={`${titleId}-which`} className="mb-2 text-[0.9375rem] font-bold">Which one?</p>
                       <div role="radiogroup" aria-labelledby={`${titleId}-which`} className="flex flex-wrap gap-2">
                         {kindDetails.map((d) => (
                           <button key={d.key} type="button" role="radio" aria-checked={detail === d.key} onClick={() => setDetail(d.key)} className={chip(detail === d.key)}>
@@ -574,6 +598,7 @@ export default function ReportSpotSheet({ surface, open, onClose, spot, label }:
                       </div>
                     </div>
                   )}
+                  {!(choice && isSpotKind(choice)) && (
                   <button
                     type="button"
                     role="radio"
@@ -585,6 +610,7 @@ export default function ReportSpotSheet({ surface, open, onClose, spot, label }:
                   >
                     {choice === 'map_wrong' ? '✓ ' : ''}This map is wrong
                   </button>
+                  )}
                   </div>
                 </fieldset>
 
@@ -592,7 +618,7 @@ export default function ReportSpotSheet({ surface, open, onClose, spot, label }:
                 <p className="mt-4 text-[0.9375rem] font-bold">Where is it?</p>
                 <p className="text-[0.875rem] text-[#4A4D68]">Move the map so the pin is on the spot.</p>
                 <SpotPinMap start={spot} onSettle={settle} />
-                {place && <p className="mt-1.5 text-[0.9375rem] text-[#191A2E]">Near {place}</p>}
+                {placeShown && <p className="mt-1.5 text-[0.9375rem] text-[#191A2E]">Near {placeShown}</p>}
 
                 {choice && choice !== 'map_wrong' && (
                   <label className="mt-5 flex min-h-[44px] cursor-pointer items-center gap-3 text-[0.9375rem] text-[#191A2E]">
@@ -623,6 +649,43 @@ export default function ReportSpotSheet({ surface, open, onClose, spot, label }:
                 <p id={`${titleId}-count`} className="mt-1 text-right text-[0.875rem] tabular-nums text-[#4A4D68]">
                   {NOTE_MAX - note.length} left
                 </p>
+
+                {/* Photo (optional): last, since towns get the words and the spot */}
+                <div className="mt-4">
+                  {photo.status === 'ready' ? (
+                    <div className="flex items-center gap-3">
+                      <button type="button" onClick={() => setLightbox(true)} aria-label="See the photo" className="shrink-0 cursor-pointer rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2D6A4F]">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={photo.url} alt="" className="h-16 w-20 rounded-lg object-cover" />
+                      </button>
+                      <p className="min-w-0 flex-1 text-[0.9375rem] font-semibold">Photo added</p>
+                      <button type="button" onClick={() => setPhoto({ status: 'none' })}
+                        className="min-h-[44px] cursor-pointer px-2 text-[0.9375rem] font-semibold text-[#4A4D68] underline underline-offset-[3px] hover:text-[#191A2E]">
+                        Remove
+                      </button>
+                    </div>
+                  ) : photo.status === 'working' ? (
+                    <p className="text-[0.9375rem] text-[#4A4D68]" role="status">Adding the photo…</p>
+                  ) : (
+                    <div>
+                      <div className="flex flex-wrap gap-2">
+                        {/* A computer has no camera to choose: only the files. */}
+                        {canTakePhoto && (
+                          <button type="button" onClick={() => takeRef.current?.click()} className={quietButton}>
+                            <Camera size={18} aria-hidden /> Take a photo
+                          </button>
+                        )}
+                        <button type="button" onClick={() => chooseRef.current?.click()} className={quietButton}>
+                          <ImageIcon size={18} aria-hidden /> Choose a photo
+                        </button>
+                      </div>
+                      <p className="mt-1.5 text-[0.875rem] text-[#4A4D68]">A photo is optional. Leave out faces and license plates.</p>
+                      {photo.status === 'failed' && (
+                        <p role="alert" className="mt-1 text-[0.9375rem] text-[#9B2C2C]">That photo didn&apos;t work. Try another.</p>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="border-t border-[rgba(25,26,46,0.08)] px-5 pt-3" style={{ paddingBottom: 'max(14px, env(safe-area-inset-bottom))' }}>

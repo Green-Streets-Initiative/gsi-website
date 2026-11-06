@@ -17,6 +17,9 @@ import { createServerSupabaseClient } from '@/lib/supabase-server'
  *    { ok, id, destination } for a spot, { ok } for "This map is wrong".
  *  - application/json { handoff: <id> }: the person opened the town's
  *    report page. Forwarded from here so the sender (the IP hash) matches.
+ *  - application/json { road: { lat, lng } }: before Send, who owns the
+ *    street under the pin, so the sheet can say a state road's problem
+ *    won't go to the town. Nothing is saved.
  *
  * Shift never submits anything to the town.
  */
@@ -118,6 +121,18 @@ export async function POST(req: NextRequest) {
       body = JSON.parse(raw)
     } catch {
       return NextResponse.json({ error: 'bad_json' }, { status: 400 })
+    }
+    // Before Send: who owns the street under the pin (MassDOT's records).
+    if (body && typeof body === 'object' && body.road && typeof body.road === 'object') {
+      const r = body.road as Record<string, unknown>
+      if (typeof r.lat !== 'number' || typeof r.lng !== 'number') return NextResponse.json({ error: 'bad_road' }, { status: 400 })
+      try {
+        const { status, data } = await forward(req, { road: { lat: r.lat, lng: r.lng } })
+        if (status < 200 || status >= 300) return failure(status, data)
+        return NextResponse.json({ road: data.road ?? null, state_road: data.state_road === true, town_takes: Array.isArray(data.town_takes) ? data.town_takes : [] })
+      } catch {
+        return NextResponse.json({ error: 'unavailable' }, { status: 502 })
+      }
     }
     if (!body || typeof body !== 'object' || typeof body.handoff !== 'string') {
       return NextResponse.json({ error: 'bad_handoff' }, { status: 400 })
