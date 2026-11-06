@@ -5,7 +5,10 @@ import { supabase } from '@/lib/supabase'
 import {
   modeBadgeStyle,
   modeLineColor,
+  reviewBasisLine,
+  routeCardMapsUrl,
   routeLetter,
+  routeWalkedLine,
   type PublishedRouteCard,
 } from '@/lib/shift/routeDisplay'
 import SchoolRoutesMap from './SchoolRoutesMap'
@@ -43,13 +46,16 @@ export default function SchoolRoutesSection({ schoolId, schoolName }: Props) {
         <h2 className="font-display text-lg font-bold text-[#191A2E]">Safe Routes to School</h2>
         {publishedAt && (
           <p className="mt-1 text-sm text-[#6B7280]">
-            Routes assessed{' '}
+            Routes checked{' '}
             {new Date(publishedAt).toLocaleDateString('en-US', {
               year: 'numeric',
               month: 'long',
             })}
           </p>
         )}
+        <p className="mx-auto mt-2 max-w-prose text-sm text-[#4A4D68]">
+          {reviewBasisLine(routes[0]?.review_basis)}
+        </p>
       </div>
 
       {stale && (
@@ -73,6 +79,9 @@ export default function SchoolRoutesSection({ schoolId, schoolName }: Props) {
           route.recommended_modes === 'walk_and_bike' ||
           route.recommended_modes === 'bike_with_caution'
         const isSelected = selectedId === route.id
+        const walkUrl = routeCardMapsUrl(route, 'walking')
+        const bikeUrl = routeCardMapsUrl(route, 'bicycling')
+        const walkedLine = routeWalkedLine(route.volunteer_submitted_at)
 
         return (
           <div
@@ -116,10 +125,12 @@ export default function SchoolRoutesSection({ schoolId, schoolName }: Props) {
                 <p className="text-sm text-[#6B7280] mb-3">{route.family_description}</p>
               )}
 
+              {walkedLine && <p className="text-xs text-[#6B7280] mb-3">{walkedLine}</p>}
+
               <div className="flex flex-wrap gap-2">
-                {route.google_maps_url_walk && (
+                {walkUrl && (
                   <a
-                    href={route.google_maps_url_walk}
+                    href={walkUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={(e) => e.stopPropagation()}
@@ -128,9 +139,9 @@ export default function SchoolRoutesSection({ schoolId, schoolName }: Props) {
                     Open in Google Maps (Walking)
                   </a>
                 )}
-                {showCycling && route.google_maps_url_bike && (
+                {showCycling && bikeUrl && (
                   <a
-                    href={route.google_maps_url_bike}
+                    href={bikeUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={(e) => e.stopPropagation()}

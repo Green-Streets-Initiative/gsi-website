@@ -2,6 +2,7 @@ import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { notFound } from 'next/navigation'
 import { ClipboardText } from '@phosphor-icons/react/dist/ssr'
 import VolunteerAssessmentClient from './client'
+import { routeMapsUrl } from '@/lib/shift/routeDisplay'
 
 async function getAssignmentData(token: string) {
   const supabase = createServerSupabaseClient()
@@ -94,17 +95,11 @@ async function getAssignmentData(token: string) {
   const waypoints = corridor.waypoints as { lat: number; lng: number }[] ?? []
   const start = waypoints[0]
   const end = waypoints[waypoints.length - 1]
-  const midpoints = waypoints.slice(1, -1)
 
-  let walkUrl = ''
-  let bikeUrl = ''
-  if (start && end) {
-    const origin = `${start.lat},${start.lng}`
-    const destination = `${end.lat},${end.lng}`
-    const wp = midpoints.map((p) => `${p.lat},${p.lng}`).join('|')
-    walkUrl = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}${wp ? `&waypoints=${wp}` : ''}&travelmode=walking`
-    bikeUrl = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}${wp ? `&waypoints=${wp}` : ''}&travelmode=bicycling`
-  }
+  // Three via points along the line (routeMapsUrl): Google can't open a
+  // link with every point in it.
+  const walkUrl = start && end ? routeMapsUrl(waypoints, 'walking') : ''
+  const bikeUrl = start && end ? routeMapsUrl(waypoints, 'bicycling') : ''
 
   // Neutrally worded AI flags (no scores revealed)
   const pointsOfInterest = (corridor.ai_flags ?? []).map((f: any) => ({
