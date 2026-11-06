@@ -115,16 +115,30 @@ function RideCard({ r }: { r: DashboardRide }) {
   )
 }
 
+/** Whole days from today (Massachusetts) to a YYYY-MM-DD date. */
+function daysUntil(date: string): number {
+  return Math.round((Date.parse(`${date}T12:00:00Z`) - Date.parse(`${todayKey()}T12:00:00Z`)) / 86_400_000)
+}
+
 /** The assistant, front and center: say what you need in your own words. */
 function AskBox({ rides, canCreate }: { rides: DashboardRide[]; canCreate: boolean }) {
   const [text, setText] = useState('')
   const next = rides.flatMap((r) => r.next_dates.filter((d) => d.status === 'scheduled').map((d) => ({ r, d })))
     .sort((a, b) => a.d.date.localeCompare(b.d.date))[0]
+  // What needs doing, most pressing first (Keith 2026-11-06: suggestions come
+  // from the organizer's own rides; weather is context the assistant brings
+  // up when it matters, not a question to ask it).
+  const soon = next && daysUntil(next.d.date) <= 2
+  const empty = next && next.d.going + next.d.maybe === 0
+  const requests = rides.find((r) => r.open_requests > 0)
   const chips = [
-    canCreate ? 'Plan a new ride with me' : null,
-    next && !next.d.confirmed ? `Post "It's on" for ${next.r.name} on ${dateLabel(next.d.date)}` : null,
-    next ? `What's the forecast for ${dateLabel(next.d.date)}?` : null,
-    rides.length ? "Who's coming this week?" : null,
+    soon && !next.d.confirmed
+      ? `Post "It's on" for ${rides.length > 1 ? `${next.r.name} on ` : ''}${dateLabel(next.d.date)}` : null,
+    empty ? `Help me get people to ${next.r.name} on ${dateLabel(next.d.date)}` : null,
+    next && !empty ? `Who's coming on ${dateLabel(next.d.date)}, and who's new?` : null,
+    requests ? `Go through the credit requests for ${requests.name}` : null,
+    rides.length ? 'How many came this month, and how many were new?' : null,
+    canCreate ? (rides.length ? 'Plan another ride with me' : 'Plan a new ride with me') : null,
   ].filter(Boolean).slice(0, 3) as string[]
   const go = (t: string) => { if (t.trim()) { openAssistant(t.trim()); setText('') } }
   return (

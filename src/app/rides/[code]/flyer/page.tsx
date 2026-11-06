@@ -11,7 +11,7 @@ import { rideFacts } from '@/components/rides/RideFacts'
 import { RIDE_STYLE_LABEL } from '@/lib/ride-style'
 import { promoLink } from '@/lib/rides/promo'
 import { contrast, organizerBrand } from '@/lib/organizers/brand'
-import { rideExtras } from '@/lib/rides/host'
+import { hostLabel, rideExtras } from '@/lib/rides/host'
 
 /**
  * A ride's printable flyer: one letter-size page with the facts, the route
@@ -60,7 +60,8 @@ export default async function RideFlyerPage({ params }: { params: Promise<{ code
   const brand = await organizerBrand(host?.logo_url)
   // The organization's name only once verified (rideExtras, Shift 01563): a
   // typed-in name could be anyone's, so the flyer doesn't print it.
-  const hostName = host?.name ?? null
+  // Else the organizer by their profile name (Keith 2026-11-06: every ride says who hosts it).
+  const hostName = hostLabel(extras, true)
   const ink = brand?.ink ?? '#191A2E'
   const hexRgb = (h: string) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16)) as [number, number, number]
   // The QR stays dark on white for any phone camera; the brand's ink when it is dark enough.

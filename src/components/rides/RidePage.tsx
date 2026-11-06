@@ -5,12 +5,12 @@ import posthog from 'posthog-js'
 import { Bike, Calendar, Check, CloudSun, Download, ExternalLink, MapPin, MessageCircle, Radio, Route as RouteIcon, Share2, Users } from 'lucide-react'
 import EventMap from '@/components/events/EventMap'
 import RouteMap from '@/components/organizers/RouteMap'
-import { buildIcs, gcalUrl as eventGcalUrl } from '@/lib/event-calendar'
+import { buildIcs, calendarLocation, gcalUrl as eventGcalUrl } from '@/lib/event-calendar'
 import { routeMiles } from '@/lib/organizers/route-geo'
 import { todayKey } from '@/lib/organizers/ride-words'
 import RideStoreBadges from '@/components/rides/RideStoreBadges'
 import OrganizerChannels from '@/components/rides/OrganizerChannels'
-import RideFacts from '@/components/rides/RideFacts'
+import RideFacts, { rideFacts } from '@/components/rides/RideFacts'
 import RidePerks from '@/components/rides/RidePerks'
 import RideCoffee, { type RideCoffeeInfo } from '@/components/rides/RideCoffee'
 import RideNewInfra from '@/components/rides/RideNewInfra'
@@ -73,17 +73,43 @@ function directionsUrl(d: Pick<RideDate, 'meetup_lat' | 'meetup_lng'>): string {
   return `https://www.google.com/maps/dir/?api=1&destination=${d.meetup_lat},${d.meetup_lng}`
 }
 
-/** One date as the events calendar's entry, so "save to calendar" carries the
- *  same details the events pages do (lib/event-calendar.ts: the place with
- *  ", MA" when needed, the description, sign-up link, host, a link back). */
-function calendarEvent(ride: PublicRide, d: RideDate, hostName: string | null) {
+/**
+ * One date as a calendar entry that holds everything someone needs on the day
+ * (Keith 2026-11-06): where to say you're coming, directions to the start,
+ * the route's facts, who hosts it, the organizer's own sign-up, and what it
+ * is. The location field carries the meeting spot; the link goes back to this
+ * date on the ride page.
+ */
+function calendarEvent(ride: PublicRide, d: RideDate, hostName: string | null, miles: number | null, climb: number | null) {
+  const walk = ride.activity === 'walk'
+  const page = `${pageUrl(ride)}?date=${d.date}`
+  const where = calendarLocation(d.meetup_name, d.meetup_address)
+  const facts = rideFacts(ride, miles, climb)
+  const factLine = [
+    ...facts.stats.map((f) => (f.label === 'Pace' && f.sub ? `${f.value} (${f.sub})` : f.value)),
+    ...facts.policies.map((p) => p.title),
+  ].join(' · ')
+  const about = (d.description || ride.description || '').trim()
+  const notes = [
+    `${walk ? 'Group walk' : 'Group ride'}${hostName ? ` hosted by ${hostName}` : ''}.`,
+    `Say you're coming, or change your answer: ${page}`,
+    ride.registration_url ? `The organizer's sign-up: ${ride.registration_url}` : null,
+    [
+      where ? `Meet: ${where}` : null,
+      d.meetup_lat != null && d.meetup_lng != null ? `Directions to the start: ${directionsUrl(d)}` : null,
+      factLine ? `${walk ? 'The walk' : 'The ride'}: ${factLine}` : null,
+    ].filter(Boolean).join('\n'),
+    about || null,
+    `If plans change, everyone who said they're coming hears right away. The latest is always on the ride page: ${page}`,
+  ].filter(Boolean).join('\n\n')
   return {
-    id: `${ride.code}-${d.date}`, slug: null, title: d.title || ride.name, body: d.description || ride.description,
+    id: `${ride.code}-${d.date}`, slug: null, title: d.title || ride.name, body: about,
     event_date: d.date, event_time: d.start_time, event_end_time: d.end_time,
     location_name: d.meetup_name, location_address: d.meetup_address, location_lat: d.meetup_lat, location_lng: d.meetup_lng,
     organizer_name: hostName, organizer_url: null,
-    // Back to this date on the ride page, not an events URL rides don't have.
-    event_url: `${pageUrl(ride)}?date=${d.date}`, registration_url: ride.registration_url, tags: ride.tags ?? [],
+    // Back to this date on the ride page, where people answer.
+    event_url: page, registration_url: ride.registration_url, tags: ride.tags ?? [],
+    notes,
   } as unknown as Parameters<typeof buildIcs>[0]
 }
 
@@ -92,11 +118,11 @@ function pageUrl(ride: PublicRide): string {
   return `https://www.gogreenstreets.org/rides/${ride.code}`
 }
 
-function downloadIcs(ride: PublicRide, d: RideDate, hostName: string | null) {
-  const blob = new Blob([buildIcs(calendarEvent(ride, d, hostName))], { type: 'text/calendar;charset=utf-8' })
+function downloadIcs(ev: Parameters<typeof buildIcs>[0], name: string, date: string) {
+  const blob = new Blob([buildIcs(ev)], { type: 'text/calendar;charset=utf-8' })
   const a = document.createElement('a')
   a.href = URL.createObjectURL(blob)
-  a.download = `${ride.name.replace(/[^\w-]+/g, '-').slice(0, 40)}-${d.date}.ics`
+  a.download = `${name.replace(/[^\w-]+/g, '-').slice(0, 40)}-${date}.ics`
   document.body.appendChild(a)
   a.click()
   a.remove()
@@ -119,8 +145,10 @@ function downloadGpx(ride: PublicRide, line: { lat: number; lng: number }[], dat
   a.remove()
 }
 
-export default function RidePage({ ride, host = null, ascentFt = null, initialDate = null, perks = [], newInfra = [], coffee = null }: {
+export default function RidePage({ ride, host = null, hostPerson = null, ascentFt = null, initialDate = null, perks = [], newInfra = [], coffee = null }: {
   ride: PublicRide; host?: RideHost | null; ascentFt?: number | null
+  /** Who hosts it when there's no verified organization: the organizer's profile name (hostLabel). */
+  hostPerson?: string | null
   /** A date the visitor came for (?date=YYYY-MM-DD from a calendar listing). */
   initialDate?: string | null
   /** Bicycle Benefits members by any of the ride's meeting spots or routes. */
@@ -133,7 +161,8 @@ export default function RidePage({ ride, host = null, ascentFt = null, initialDa
   const hostHref = host?.href ?? null
   // The organization only once verified (Shift 01563, rideExtras); a typed-in
   // name could be anyone's, so it isn't shown, as on the events calendar.
-  const hostName = host?.name ?? null
+  // Without one, the organizer by their profile name, so the page always says who hosts it.
+  const hostName = host?.name ?? hostPerson ?? null
   const open = ride.occurrences.filter((d) => d.status === 'scheduled')
   // A link to one date opens that date; if it isn't open, say so and pick
   // nothing rather than quietly answering for another date.
@@ -275,6 +304,8 @@ export default function RidePage({ ride, host = null, ascentFt = null, initialDa
   const route = ((own ? own.route_waypoints : ride.route_waypoints) ?? []).filter((p) => Number.isFinite(p?.lat) && Number.isFinite(p?.lng))
   const miles = route.length >= 2 ? routeMiles(route) : null
   const climb = own ? (typeof own.route_elevation?.ascent_ft === 'number' ? Math.round(own.route_elevation.ascent_ft) : null) : ascentFt
+  // The chosen date as a calendar entry (calendarEvent): offered before and after answering.
+  const calEv = selected ? calendarEvent(ride, selected, hostName, miles, climb) : null
   const routeLink = own ? own.route_google_maps_url : ride.route_google_maps_url
   const dateTitle = selected?.title ?? null
   const about = selected?.description || ride.description
@@ -414,6 +445,20 @@ export default function RidePage({ ride, host = null, ascentFt = null, initialDa
                             ? 'Be the first to say you’re going'
                             : `${counts[selected.id]?.going ?? 0} going${(counts[selected.id]?.maybe ?? 0) > 0 ? ` · ${counts[selected.id].maybe} maybe` : ''}`}
                         </p>
+                        {/* Save it before answering too (Keith 2026-11-06); after answering, the buttons sit with the confirmation. */}
+                        {calEv && selected.status === 'scheduled' && !ended && !done && (
+                          <p className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                            <Download size={17} className="shrink-0 text-(--ev-ink-60)" />
+                            <span>Add to calendar:</span>
+                            <a href={eventGcalUrl(calEv)} target="_blank" rel="noopener noreferrer"
+                              onClick={() => posthog.capture('ride_calendar_saved', { code: ride.code, app: 'google', answered: false })}
+                              className="font-semibold text-(--ev-accent) hover:underline">Google</a>
+                            <span aria-hidden className="text-(--ev-ink-60)">·</span>
+                            <button type="button"
+                              onClick={() => { posthog.capture('ride_calendar_saved', { code: ride.code, app: 'ics', answered: false }); downloadIcs(calEv, ride.name, selected.date) }}
+                              className="font-semibold text-(--ev-accent) hover:underline">Apple or Outlook</button>
+                          </p>
+                        )}
                       </div>
 
 
@@ -444,10 +489,10 @@ export default function RidePage({ ride, host = null, ascentFt = null, initialDa
                               <div className="mt-3 flex flex-wrap gap-2">
                                 {done.status !== 'not_going' && (
                                   <>
-                                    <a href={eventGcalUrl(calendarEvent(ride, selected, hostName))} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-[40px] items-center gap-1.5 rounded-[10px] border border-(--ev-line-strong) px-4 py-2 text-[14px] font-semibold text-(--ev-ink) hover:bg-(--ev-panel)">
+                                    <a href={eventGcalUrl(calEv!)} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-[40px] items-center gap-1.5 rounded-[10px] border border-(--ev-line-strong) px-4 py-2 text-[14px] font-semibold text-(--ev-ink) hover:bg-(--ev-panel)">
                                       <Calendar size={14} /> Google Calendar
                                     </a>
-                                    <button type="button" onClick={() => downloadIcs(ride, selected, hostName)} className="inline-flex min-h-[40px] items-center gap-1.5 rounded-[10px] border border-(--ev-line-strong) px-4 py-2 text-[14px] font-semibold text-(--ev-ink) hover:bg-(--ev-panel)">
+                                    <button type="button" onClick={() => downloadIcs(calEv!, ride.name, selected.date)} className="inline-flex min-h-[40px] items-center gap-1.5 rounded-[10px] border border-(--ev-line-strong) px-4 py-2 text-[14px] font-semibold text-(--ev-ink) hover:bg-(--ev-panel)">
                                       <Download size={14} /> Apple or Outlook
                                     </button>
                                   </>

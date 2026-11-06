@@ -16,7 +16,7 @@ import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { organizerBrand } from '@/lib/organizers/brand'
 import { PACE_OPTIONS } from '@/lib/organizers/ride-words'
 import { routeMiles } from '@/lib/organizers/route-geo'
-import { rideExtras } from '@/lib/rides/host'
+import { hostLabel, rideExtras } from '@/lib/rides/host'
 import { looksLikeRideCode, nextWhen, type RideLookup } from '@/lib/rides/public'
 import { routeMapImage } from '@/lib/server/route-map-image'
 
@@ -62,7 +62,8 @@ export default async function OGImage({ params }: { params: Promise<{ code: stri
   const map = route.length >= 2 ? await routeMapImage({ points: route, width: MAP_W, height: size.height, color: colors.accent }) : null
 
   // The organization only once verified (rideExtras): a typed-in name could be anyone's.
-  const hostName = host?.name ?? null
+  // Else the organizer by their profile name (Keith 2026-11-06).
+  const hostName = hostLabel(extras, true)
   const title = trim((ride?.name ?? 'A group ride').trim(), 90)
   const when = web ? nextWhen(web) : ''
   const miles = route.length >= 2 ? routeMiles(route) : null

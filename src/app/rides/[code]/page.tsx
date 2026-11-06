@@ -7,7 +7,7 @@ import AppOnlyRidePage from '@/components/rides/AppOnlyRidePage'
 import type { RideCoffeeInfo } from '@/components/rides/RideCoffee'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { looksLikeRideCode, scheduleText, type PublicRide, type RideLookup } from '@/lib/rides/public'
-import { rideExtras } from '@/lib/rides/host'
+import { hostLabel, rideExtras } from '@/lib/rides/host'
 import { bikePerksForPlaces } from '@/lib/server/bike-perks'
 import { newInfraForPlaces } from '@/lib/server/new-infra'
 
@@ -88,7 +88,7 @@ export default async function Page({ params, searchParams }: { params: Promise<{
     <>
       <Nav variant="light" />
       <main className="bg-cream" style={{ paddingTop: '60px' }}>
-        {ride.web ? <RidePage ride={ride} host={extras?.host ?? null} ascentFt={extras?.ascentFt ?? null} initialDate={initialDate} perks={perks} newInfra={newInfra} coffee={coffee} /> : <AppOnlyRidePage ride={ride} />}
+        {ride.web ? <RidePage ride={ride} host={extras?.host ?? null} hostPerson={hostLabel(extras)} ascentFt={extras?.ascentFt ?? null} initialDate={initialDate} perks={perks} newInfra={newInfra} coffee={coffee} /> : <AppOnlyRidePage ride={ride} />}
       </main>
       <Footer variant="light" />
     </>

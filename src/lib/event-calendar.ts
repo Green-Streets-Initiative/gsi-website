@@ -24,7 +24,11 @@ type CalendarEvent = Pick<
   | 'id' | 'slug' | 'title' | 'body' | 'event_date' | 'event_time' | 'event_end_time'
   | 'location_name' | 'location_address' | 'location_lat' | 'location_lng'
   | 'organizer_name' | 'organizer_url' | 'event_url' | 'registration_url' | 'tags'
-> & { registration_notes?: string | null; event_end_date?: string | null; schedule_status?: CommunityEvent['schedule_status'] }
+> & {
+  registration_notes?: string | null; event_end_date?: string | null; schedule_status?: CommunityEvent['schedule_status']
+  /** The whole note, written by a page that knows more than an event row (a Shift ride's page). */
+  notes?: string | null
+}
 
 /** The last day of a multi-day event (Shift 01557), else the event's own day. */
 function lastDay(ev: Pick<CalendarEvent, 'event_date' | 'event_end_date'>): string {
@@ -76,6 +80,7 @@ function trimText(text: string, max: number): string {
 /** The calendar entry's notes: what it is, how to sign up, cost, host, and
  *  where to read more. Blank parts are left out. */
 export function calendarNotes(ev: CalendarEvent): string {
+  if (ev.notes) return trimText(ev.notes, MAX_DESCRIPTION_CHARS + 600)
   const tags = ev.tags ?? []
   const regNotes = (ev.registration_notes ?? '').trim()
 
