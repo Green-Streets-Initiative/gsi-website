@@ -29,13 +29,17 @@ export interface RideExtras {
    */
   person: string | null
   ascentFt: number | null
+  /** How the ride's own route rides, street by street (the planner's comfort tiers), for the ride page's comfort bar. */
+  comfortSegments: { label: string; rating: string; distance_mi: number }[] | null
 }
 
 export async function rideExtras(rideId: string): Promise<RideExtras> {
   const db = createServerSupabaseClient()
-  const { data: s } = await db.from('ride_series').select('organizer_user_id, event_organizer_id, org_verification_status, route_elevation').eq('id', rideId).maybeSingle()
-  const row = s as { organizer_user_id: string | null; event_organizer_id: string | null; org_verification_status: string | null; route_elevation: { ascent_ft?: number } | null } | null
+  const { data: s } = await db.from('ride_series').select('organizer_user_id, event_organizer_id, org_verification_status, route_elevation, comfort_segments').eq('id', rideId).maybeSingle()
+  const row = s as { organizer_user_id: string | null; event_organizer_id: string | null; org_verification_status: string | null; route_elevation: { ascent_ft?: number } | null; comfort_segments: unknown } | null
   const ascent = typeof row?.route_elevation?.ascent_ft === 'number' ? Math.round(row.route_elevation.ascent_ft) : null
+  const comfortSegments = Array.isArray(row?.comfort_segments) && row.comfort_segments.length
+    ? (row.comfort_segments as { label: string; rating: string; distance_mi: number }[]) : null
   // The same name the ride's people list shows for them (_ride_member_name).
   const person = row?.organizer_user_id
     ? await db.rpc('_ride_member_name', { p_user_id: row.organizer_user_id, p_guest_id: null })
@@ -45,13 +49,13 @@ export async function rideExtras(rideId: string): Promise<RideExtras> {
   // on it is verified (Shift 01563: automatic when their email domain matches
   // its website). Before that anyone could post a ride as any group.
   const orgId = row?.org_verification_status === 'verified' ? row.event_organizer_id : null
-  if (!orgId) return { host: null, person, ascentFt: ascent }
+  if (!orgId) return { host: null, person, ascentFt: ascent, comfortSegments }
   const [{ data: o }, qualifies] = await Promise.all([
     db.from('event_organizers').select('id, name, url, logo_url, social_links, status').eq('id', orgId).maybeSingle(),
     hostQualifies(orgId).catch(() => false),
   ])
   const org = o as { id: string; name: string; url: string | null; logo_url: string | null; social_links: Record<string, string> | null; status: string | null } | null
-  if (!org) return { host: null, person, ascentFt: ascent }
+  if (!org) return { host: null, person, ascentFt: ascent, comfortSegments }
   const links = Object.fromEntries(Object.entries(org.social_links ?? {}).filter(([, u]) => typeof u === 'string' && /^https:\/\/\S+$/i.test(u)))
   // The host page only opens for an active organization (loadHostPage); an
   // organizer's own new one is still pending_review, so no link to a 404.
@@ -60,6 +64,7 @@ export async function rideExtras(rideId: string): Promise<RideExtras> {
     host: { id: org.id, name: org.name, url: org.url, logo_url: org.logo_url, social_links: links, href: linkable ? hostPath(org.id) : null },
     person,
     ascentFt: ascent,
+    comfortSegments,
   }
 }
 

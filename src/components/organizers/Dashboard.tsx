@@ -1,8 +1,8 @@
 'use client'
 
 import Link from 'next/link'
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import { ArrowUp, CalendarDays, MapPin, Megaphone, MessageSquareText, Plus, Users } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { ArrowUp, CalendarDays, Check, ChevronRight, MapPin, Megaphone, MessageSquareText, Plus, Users } from 'lucide-react'
 import { ago, clock, scheduleText } from '@/lib/rides/public'
 import { errorText, getRides } from '@/lib/organizers/api'
 import { UPDATE_KIND_LABEL, dateLabel, plural, todayKey } from '@/lib/organizers/ride-words'
@@ -10,7 +10,7 @@ import type { DashboardRide, NextDate } from '@/lib/organizers/types'
 import { ASSISTANT_CHANGED_EVENT, openAssistant } from './AssistantPanel'
 import { useConsole } from './ConsoleContext'
 import { FeedbackDueCard, FeedbackLink } from './Feedback'
-import { Badge, Button, Card, Empty, Notice, Spinner, cx, type Tone } from './ui'
+import { Badge, Card, Empty, Notice, Spinner, Tabs, cx, tabPanel, type Tone } from './ui'
 
 export function rideStateBadges(r: Pick<DashboardRide, 'status' | 'visibility' | 'calendar_status' | 'break_until' | 'my_role'>) {
   const out: { tone: Tone; text: string }[] = []
@@ -29,61 +29,64 @@ export function rideStateBadges(r: Pick<DashboardRide, 'status' | 'visibility' |
   return out
 }
 
-function DateChip({ d, rideId }: { d: NextDate; rideId: string }) {
+function DateChip({ d, rideId, phoneHidden }: { d: NextDate; rideId: string; phoneHidden?: boolean }) {
   const off = d.status === 'canceled'
   return (
     <Link
       href={`/organizers/rides/${rideId}/roster?date=${d.id}`}
       className={cx(
-        'group flex flex-col rounded-xl border px-3 py-2.5 transition hover:border-(--ev-line-stronger) sm:min-w-[148px] sm:flex-1',
+        phoneHidden ? 'hidden sm:inline-flex' : 'inline-flex',
+        'min-h-[40px] items-center gap-2 rounded-full border px-3 text-[14px] transition hover:border-(--ev-line-stronger)',
         off ? 'border-dashed border-(--ev-line-strong) bg-(--ev-panel-faint)' : 'border-(--ev-line-mid) bg-white',
       )}
     >
-      <span className={cx('text-[14px] font-bold', off ? 'text-(--ev-ink-75) line-through' : 'text-(--ev-ink)')}>{dateLabel(d.date)}</span>
-      <span className="text-[14px] text-(--ev-ink-75)">{off ? 'Cancelled' : clock(d.start_time)}{!off && d.moved ? ' · changed' : ''}</span>
-      {!off && (
-        <span className="mt-1 text-[14px] font-semibold text-(--ev-ink-85)">
-          {d.going} going{d.maybe > 0 ? ` · ${d.maybe} maybe` : ''}
-        </span>
-      )}
-      {!off && d.confirmed && <span className="mt-1 w-fit"><Badge tone="good">It&rsquo;s on</Badge></span>}
+      <span className={cx('font-bold', off ? 'text-(--ev-ink-75) line-through' : 'text-(--ev-ink)')}>{dateLabel(d.date)}</span>
+      <span className="text-(--ev-ink-75)">
+        {off ? 'Cancelled' : `${clock(d.start_time)}${d.moved ? ' (changed)' : ''} · ${d.going} going${d.maybe > 0 ? `, ${d.maybe} maybe` : ''}`}
+      </span>
+      {!off && d.confirmed && <Check className="h-4 w-4 text-(--ev-accent)" strokeWidth={3} aria-label="It's on" />}
     </Link>
   )
 }
 
-function RideCard({ r }: { r: DashboardRide }) {
-  const canPost = r.status !== 'archived' && (!r.ride_date || r.next_dates.length > 0)
+/** One ride as a row: what it is, its next dates, and the two things you do from here. */
+function RideRow({ r }: { r: DashboardRide }) {
+  const over = r.status === 'archived' || (!!r.ride_date && r.next_dates.length === 0)
+  const canPost = !over && (!r.ride_date || r.next_dates.length > 0)
+  const badges = rideStateBadges(r)
   return (
-    <Card as="li" className="list-none">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
-          <Link href={`/organizers/rides/${r.id}`} className="font-display text-[21px] font-extrabold leading-tight text-(--ev-ink) hover:underline">
+    <li className="list-none rounded-2xl border border-(--ev-line-mid) bg-(--ev-card) p-4 sm:p-5">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+        <div className="min-w-0 sm:flex-1">
+          <Link href={`/organizers/rides/${r.id}`} className="font-display text-[19px] font-extrabold leading-tight text-(--ev-ink) hover:underline">
             {r.name}
           </Link>
-          <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-[14px] text-(--ev-ink-80)">
+          <p className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-[14px] text-(--ev-ink-80)">
             <span className="inline-flex items-center gap-1.5"><CalendarDays className="h-4 w-4" aria-hidden />{scheduleText(r)}</span>
             {r.meetup_name && <span className="inline-flex items-center gap-1.5"><MapPin className="h-4 w-4" aria-hidden />{r.meetup_name}</span>}
-            <span className="inline-flex items-center gap-1.5"><Users className="h-4 w-4" aria-hidden />{plural(r.members, 'person', 'people')} on the ride</span>
-          </div>
-          <div className="mt-2 flex flex-wrap gap-1.5">
-            {rideStateBadges(r).map((b) => <Badge key={b.text} tone={b.tone}>{b.text}</Badge>)}
-            {r.my_role === 'admin' && r.organizer_person && <Badge tone="plain">Organizer: {r.organizer_person}</Badge>}
-          </div>
+            <span className="inline-flex items-center gap-1.5"><Users className="h-4 w-4" aria-hidden />{plural(r.members, 'person', 'people')}</span>
+          </p>
+          {(badges.length > 0 || (r.my_role === 'admin' && r.organizer_person)) && (
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {badges.map((b) => <Badge key={b.text} tone={b.tone}>{b.text}</Badge>)}
+              {r.my_role === 'admin' && r.organizer_person && <Badge tone="plain">Organizer: {r.organizer_person}</Badge>}
+            </div>
+          )}
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex gap-2 *:flex-1 *:justify-center sm:*:flex-none">
           {canPost && (
-            <Link href={`/organizers/rides/${r.id}?post=1`} className="inline-flex min-h-[40px] items-center gap-1.5 rounded-[10px] bg-(--ev-accent-fill) px-3.5 text-[14px] font-semibold text-(--ev-on-accent-fill) hover:opacity-90">
+            <Link href={`/organizers/rides/${r.id}?post=1`} className="inline-flex min-h-[44px] items-center gap-1.5 rounded-[10px] border border-(--ev-line-strong) bg-white px-3.5 text-[14px] font-semibold text-(--ev-ink) hover:bg-(--ev-panel)">
               <Megaphone className="h-4 w-4" aria-hidden />Post an update
             </Link>
           )}
-          <Link href={`/organizers/rides/${r.id}`} className="inline-flex min-h-[40px] items-center rounded-[10px] border border-(--ev-line-strong) bg-white px-3.5 text-[14px] font-semibold text-(--ev-ink) hover:bg-(--ev-panel)">
-            Open
+          <Link href={`/organizers/rides/${r.id}`} className="inline-flex min-h-[44px] items-center gap-1 rounded-[10px] bg-(--ev-ink) px-3.5 text-[14px] font-semibold text-white hover:opacity-90">
+            Open<ChevronRight className="h-4 w-4" aria-hidden />
           </Link>
         </div>
       </div>
 
       {r.open_requests > 0 && (
-        <div className="mt-4">
+        <div className="mt-3">
           <Notice tone="warn">
             <Link href={`/organizers/rides/${r.id}/roster`} className="font-semibold underline">
               {plural(r.open_requests, 'credit request')} to review
@@ -92,26 +95,80 @@ function RideCard({ r }: { r: DashboardRide }) {
         </div>
       )}
 
-      {r.status !== 'archived' && (
+      {!over && (
         r.next_dates.length > 0 ? (
-          <div className="mt-4 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
-            {r.next_dates.map((d) => <DateChip key={d.id} d={d} rideId={r.id} />)}
+          <div className="mt-3 flex flex-wrap gap-2">
+            {r.next_dates.map((d, i) => <DateChip key={d.id} d={d} rideId={r.id} phoneHidden={i > 1} />)}
           </div>
         ) : (
-          <p className="mt-4 text-[14px] text-(--ev-ink-75)">
-            {r.break_until ? 'No dates until the break ends.' : r.ride_date ? 'This one-off ride has happened.' : 'No upcoming dates. Check When and the season dates in Edit ride.'}
+          <p className="mt-3 text-[14px] text-(--ev-ink-75)">
+            {r.break_until ? 'No dates until the break ends.' : 'No upcoming dates. Check When and the season dates in Edit ride.'}
           </p>
         )
       )}
 
       {r.latest_update && (
-        <p className="mt-4 border-t border-(--ev-line) pt-3 text-[14px] text-(--ev-ink-80)">
+        <p className="mt-3 line-clamp-2 border-t border-(--ev-line) pt-3 text-[14px] text-(--ev-ink-80)">
           <span className="font-semibold text-(--ev-ink)">Latest: {UPDATE_KIND_LABEL[r.latest_update.kind] ?? r.latest_update.title}</span>
           {r.latest_update.note ? ` · “${r.latest_update.note}”` : ''}
           <span className="text-(--ev-ink-75)"> · {ago(r.latest_update.created_at)} · sent to {r.latest_update.recipients}</span>
         </p>
       )}
-    </Card>
+    </li>
+  )
+}
+
+/** A number with its label under it; the label comes first for screen readers. */
+function Readout({ n, label, word }: { n: ReactNode; label: string; word?: boolean }) {
+  return (
+    <div className="flex flex-col-reverse justify-end rounded-xl bg-white/[0.07] px-3 py-3 sm:px-4">
+      <dt className="mt-1.5 text-[14px] font-semibold text-white/75">{label}</dt>
+      <dd className={cx('flex min-h-[26px] items-center font-display font-extrabold leading-none text-white', word ? 'text-[19px]' : 'text-[26px]')}>{n}</dd>
+    </div>
+  )
+}
+
+/**
+ * The next date across your rides, first (the employer portal's hero panel,
+ * PortalHeroPanel): which ride, when and where, who said they're coming,
+ * whether you've said it's on, and the two things you do before a ride.
+ */
+function NextUp({ r, d }: { r: DashboardRide; d: NextDate }) {
+  const days = daysUntil(d.date)
+  const when = days === 0 ? 'Today' : days === 1 ? 'Tomorrow' : dateLabel(d.date)
+  return (
+    <section aria-labelledby="next-up" className="mb-6 overflow-hidden rounded-2xl bg-[#191A2E] text-white">
+      <div className="grid gap-5 p-5 sm:p-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,380px)] lg:items-center">
+        <div className="min-w-0">
+          <p id="next-up" className="text-[14px] font-bold text-[#BAF14D]">Next up · {when}</p>
+          <Link href={`/organizers/rides/${r.id}`} className="mt-1 block font-display text-[clamp(24px,3vw,30px)] font-extrabold leading-tight hover:underline">
+            {r.name}
+          </Link>
+          <p className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[15px] text-white/80">
+            <span className="inline-flex items-center gap-1.5"><CalendarDays className="h-4 w-4" aria-hidden />{days <= 1 ? `${dateLabel(d.date)}, ` : ''}{clock(d.start_time)}{d.moved ? ' (changed for this date)' : ''}</span>
+            {r.meetup_name && <span className="inline-flex items-center gap-1.5"><MapPin className="h-4 w-4" aria-hidden />{r.meetup_name}</span>}
+          </p>
+        </div>
+        <dl className="grid grid-cols-3 gap-2">
+          <Readout n={d.going} label="Going" />
+          <Readout n={d.maybe} label="Maybe" />
+          <Readout word label="It’s on?" n={d.confirmed
+            ? <span className="inline-flex items-center gap-1 text-[#BAF14D]"><Check className="h-5 w-5" strokeWidth={3} aria-hidden />Yes</span>
+            : 'Not yet'} />
+        </dl>
+      </div>
+      <div className="flex flex-wrap gap-2 border-t border-white/10 px-5 py-4 sm:px-6">
+        <Link href={`/organizers/rides/${r.id}?post=1`} className="inline-flex min-h-[44px] items-center gap-1.5 rounded-[10px] bg-[#BAF14D] px-4 text-[15px] font-bold text-[#191A2E] hover:opacity-90">
+          <Megaphone className="h-4 w-4" aria-hidden />{d.confirmed ? 'Post an update' : `Say it’s on, or post an update`}
+        </Link>
+        <Link href={`/organizers/rides/${r.id}/roster?date=${d.id}`} className="inline-flex min-h-[44px] items-center gap-1.5 rounded-[10px] border border-white/30 px-4 text-[15px] font-semibold text-white hover:bg-white/10">
+          <Users className="h-4 w-4" aria-hidden />Who&rsquo;s coming
+        </Link>
+        <Link href={`/organizers/rides/${r.id}`} className="inline-flex min-h-[44px] items-center gap-1 rounded-[10px] px-3 text-[15px] font-semibold text-white/85 hover:bg-white/10">
+          Open<ChevronRight className="h-4 w-4" aria-hidden />
+        </Link>
+      </div>
+    </section>
   )
 }
 
@@ -128,12 +185,9 @@ function AskBox({ rides, canCreate }: { rides: DashboardRide[]; canCreate: boole
   // What needs doing, most pressing first (Keith 2026-11-06: suggestions come
   // from the organizer's own rides; weather is context the assistant brings
   // up when it matters, not a question to ask it).
-  const soon = next && daysUntil(next.d.date) <= 2
   const empty = next && next.d.going + next.d.maybe === 0
   const requests = rides.find((r) => r.open_requests > 0)
   const chips = [
-    soon && !next.d.confirmed
-      ? `Post "It's on" for ${rides.length > 1 ? `${next.r.name} on ` : ''}${dateLabel(next.d.date)}` : null,
     empty ? `Help me get people to ${next.r.name} on ${dateLabel(next.d.date)}` : null,
     next && !empty ? `Who's coming on ${dateLabel(next.d.date)}, and who's new?` : null,
     requests ? `Go through the credit requests for ${requests.name}` : null,
@@ -142,12 +196,13 @@ function AskBox({ rides, canCreate }: { rides: DashboardRide[]; canCreate: boole
   ].filter(Boolean).slice(0, 3) as string[]
   const go = (t: string) => { if (t.trim()) { openAssistant(t.trim()); setText('') } }
   return (
-    <Card className="mb-6 border-(--ev-accent-line-30) bg-white">
-      <div className="flex items-center gap-2">
-        <MessageSquareText className="h-5 w-5 text-(--ev-accent)" aria-hidden />
-        <h2 className="font-display text-[20px] font-extrabold leading-tight">What do you want to get done?</h2>
+    <Card className="mb-6 border-(--ev-accent-line-30) bg-white !p-4 sm:!p-5">
+      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
+        <h2 className="inline-flex items-center gap-2 font-display text-[17px] font-extrabold leading-tight">
+          <MessageSquareText className="h-5 w-5 text-(--ev-accent)" aria-hidden />What do you want to get done?
+        </h2>
+        <p className="text-[14px] text-(--ev-ink-75)">Nothing people see changes without your OK.</p>
       </div>
-      <p className="mt-1 text-[15px] text-(--ev-ink-80)">Ask in your own words. Nothing people see changes without your OK.</p>
       <form className="mt-3 flex items-end gap-2" onSubmit={(e) => { e.preventDefault(); go(text) }}>
         <label htmlFor="ask" className="sr-only">Ask the assistant</label>
         <input id="ask" value={text} onChange={(e) => setText(e.target.value)} autoComplete="off"
@@ -159,9 +214,9 @@ function AskBox({ rides, canCreate }: { rides: DashboardRide[]; canCreate: boole
       </form>
       {chips.length > 0 && (
         <div className="mt-3 flex flex-wrap gap-2">
-          {chips.map((c) => (
+          {chips.map((c, i) => (
             <button key={c} type="button" onClick={() => go(c)}
-              className="min-h-[38px] rounded-full border border-(--ev-accent-line-40) bg-(--ev-accent-tint-8) px-3.5 text-left text-[14px] font-semibold text-(--ev-accent-90) hover:border-(--ev-accent)">
+              className={cx(i > 0 && 'hidden sm:block', 'min-h-[38px] rounded-full border border-(--ev-accent-line-40) bg-(--ev-accent-tint-8) px-3.5 text-left text-[14px] font-semibold text-(--ev-accent-90) hover:border-(--ev-accent)')}>
               {c}
             </button>
           ))}
@@ -171,11 +226,13 @@ function AskBox({ rides, canCreate }: { rides: DashboardRide[]; canCreate: boole
   )
 }
 
+type ListTab = 'coming' | 'past' | 'all'
+
 export default function Dashboard() {
   const { me, assistant } = useConsole()
   const [rides, setRides] = useState<DashboardRide[] | null>(null)
   const [err, setErr] = useState<string | null>(null)
-  const [showEnded, setShowEnded] = useState(false)
+  const [tab, setTab] = useState<ListTab>('coming')
   const [claimNote, setClaimNote] = useState(me?.invites_claimed ?? 0)
 
   const load = useCallback(async () => {
@@ -202,10 +259,17 @@ export default function Dashboard() {
     const today = todayKey()
     // A one-off ride whose day has gone is history, with ended rides.
     const over = (r: DashboardRide) => r.status === 'archived' || (!!r.ride_date && r.ride_date < today && r.next_dates.length === 0)
+    const mine = all.filter((r) => r.my_role !== 'admin' && !over(r))
+    // Soonest first, so the list reads in the order you'll ride them.
+    const soonest = (r: DashboardRide) => r.next_dates.find((d) => d.status === 'scheduled')?.date ?? '9999'
+    mine.sort((a, b) => soonest(a).localeCompare(soonest(b)))
+    const next = mine.flatMap((r) => r.next_dates.filter((d) => d.status === 'scheduled').map((d) => ({ r, d })))
+      .sort((a, b) => a.d.date.localeCompare(b.d.date) || a.d.start_time.localeCompare(b.d.start_time))[0] ?? null
     return {
-      mine: all.filter((r) => r.my_role !== 'admin' && !over(r)),
+      mine,
+      next,
       others: all.filter((r) => r.my_role === 'admin' && !over(r)),
-      ended: all.filter(over),
+      ended: all.filter((r) => r.my_role !== 'admin' && over(r)),
     }
   }, [rides])
 
@@ -214,6 +278,15 @@ export default function Dashboard() {
       <Plus className="h-4 w-4" aria-hidden />New ride
     </Link>
   ) : null
+
+  const tabs: { id: ListTab; label: string; count?: number }[] = [
+    { id: 'coming', label: 'Coming up', count: groups.mine.length },
+    ...(groups.ended.length ? [{ id: 'past' as const, label: 'Past', count: groups.ended.length }] : []),
+    ...(groups.others.length ? [{ id: 'all' as const, label: 'Every ride on Shift', count: groups.others.length }] : []),
+  ]
+  const shown = tabs.some((t) => t.id === tab) ? tab : 'coming'
+  const list = shown === 'past' ? groups.ended : shown === 'all' ? groups.others : groups.mine
+  const nothingAtAll = rides && groups.mine.length + groups.others.length + groups.ended.length === 0
 
   return (
     <div>
@@ -224,10 +297,6 @@ export default function Dashboard() {
         </div>
         {newRide}
       </div>
-
-      <FeedbackDueCard />
-
-      {assistant && <AskBox rides={groups.mine} canCreate={!!me?.can_create} />}
 
       {claimNote > 0 && (
         <div className="mb-5">
@@ -243,40 +312,35 @@ export default function Dashboard() {
 
       {!rides && !err && <Spinner label="Loading your rides" />}
 
-      {rides && groups.mine.length === 0 && groups.others.length === 0 && (
-        <Empty
-          title={groups.ended.length > 0 ? 'Nothing coming up' : me?.can_create ? 'Set up your first ride' : 'No rides yet'}
-          action={newRide}
-        >
-          {groups.ended.length > 0 && me?.can_create
-            ? 'Set up the next one: a one-off or a regular ride, with its own page to share.'
-            : me?.can_create
+      {groups.next && <NextUp r={groups.next.r} d={groups.next.d} />}
+
+      {assistant && rides && <AskBox rides={groups.mine} canCreate={!!me?.can_create} />}
+
+      {nothingAtAll && (
+        <Empty title={me?.can_create ? 'Set up your first ride' : 'No rides yet'} action={newRide}>
+          {me?.can_create
             ? 'A one-off ride or a regular one, with a meeting point and a route. You get a ride page to share, and everyone who answers lands on your list.'
             : 'When an organizer adds you as a co-organizer, their ride shows up here.'}
         </Empty>
       )}
 
-      {groups.mine.length > 0 && (
-        <ul className="space-y-4">{groups.mine.map((r) => <RideCard key={r.id} r={r} />)}</ul>
-      )}
-
-      {groups.others.length > 0 && (
-        <section className="mt-10">
-          <h2 className="mb-3 font-display text-[20px] font-extrabold">Every group ride on Shift</h2>
-          <p className="mb-4 text-[14px] text-(--ev-ink-75)">You see these as a GSI admin.</p>
-          <ul className="space-y-4">{groups.others.map((r) => <RideCard key={r.id} r={r} />)}</ul>
+      {rides && !nothingAtAll && (
+        <section aria-label="Rides">
+          <Tabs tabs={tabs} value={shown} onChange={setTab} label="Which rides" prefix="rides" />
+          <div {...tabPanel('rides', shown)} className="pt-4">
+            {shown === 'all' && <p className="mb-3 text-[14px] text-(--ev-ink-75)">Every group ride on Shift. You see these as a GSI admin.</p>}
+            {list.length > 0 ? (
+              <ul className="space-y-3">{list.map((r) => <RideRow key={r.id} r={r} />)}</ul>
+            ) : (
+              <Empty title="Nothing coming up" action={newRide}>
+                {me?.can_create ? 'Set up the next one: a one-off or a regular ride, with its own page to share.' : 'When an organizer adds you as a co-organizer, their ride shows up here.'}
+              </Empty>
+            )}
+          </div>
         </section>
       )}
 
-      {groups.ended.length > 0 && (
-        <section className="mt-10">
-          <Button variant="ghost" onClick={() => setShowEnded((v) => !v)} aria-expanded={showEnded}>
-            {showEnded ? 'Hide' : 'Show'} {plural(groups.ended.length, 'past ride')}
-          </Button>
-          {showEnded && <ul className="mt-3 space-y-4">{groups.ended.map((r) => <RideCard key={r.id} r={r} />)}</ul>}
-        </section>
-      )}
-
+      {rides && <div className="mt-8"><FeedbackDueCard /></div>}
       {rides && <FeedbackLink />}
     </div>
   )

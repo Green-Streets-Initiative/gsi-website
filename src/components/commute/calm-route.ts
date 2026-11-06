@@ -109,6 +109,16 @@ export const COMFORT_COLORS: Record<string, string> = {
   shared_road: '#B4BAD2',
 }
 
+/** The same tiers darker, so each reads on a light street map and a light
+ *  page (the organizer console's route review, route choices, the ride page). */
+export const MAP_COMFORT_COLORS: Record<string, string> = {
+  path: '#2E8B57',
+  protected: '#0E9F8E',
+  bike_lane: '#2966E5',
+  quiet_street: '#7CB342',
+  shared_road: '#8C8FA3',
+}
+
 export const COMFORT_LABELS: Record<string, string> = {
   path: 'Path',
   protected: 'Protected',

@@ -3,6 +3,43 @@ import { CurrencyDollar, Gift, HandHeart, Plant, Baby, UsersThree, ClipboardText
 import { PACE_OPTIONS, TAG_OPTIONS, WALK_PACE_OPTIONS, travelMph } from '@/lib/organizers/ride-words'
 import { RIDE_STYLE_BLURB, RIDE_STYLE_INK, RIDE_STYLE_LABEL, RIDE_STYLE_ORDER, rideStyle } from '@/lib/ride-style'
 import type { PublicRide } from '@/lib/rides/public'
+import { MAP_COMFORT_COLORS, comfortBreakdown, comfortableShare, type CalmSegment } from '@/components/commute/calm-route'
+
+/** The street types as a rider or walker reads them (the console's route review words). */
+const TIER_WORDS: Record<string, [string, string]> = {
+  path: ['Path', 'Path'],
+  protected: ['Protected lane', 'Street with a protected lane'],
+  bike_lane: ['Bike lane', 'Street with a bike lane'],
+  quiet_street: ['Quiet street', 'Quiet street'],
+  shared_road: ['Shared road', 'Busier street'],
+}
+
+/** How comfortable the route is: one bar and its share on calm streets, the same maths as the planner and Commute Advisor. */
+function ComfortRow({ segments, walk }: { segments: CalmSegment[]; walk: boolean }) {
+  const tiers = comfortBreakdown(segments)
+  if (tiers.length === 0) return null
+  const pct = Math.round(comfortableShare(segments) * 100)
+  return (
+    <div>
+      <div className="flex items-baseline justify-between gap-3">
+        <span className="text-[14px] font-semibold text-(--ev-ink-75)">On calm streets</span>
+        <span className="font-display text-[20px] font-extrabold leading-tight text-(--ev-ink)">{pct}%</span>
+      </div>
+      <div className="mt-1.5 flex h-3 w-full overflow-hidden rounded-full bg-(--ev-track)" role="img"
+        aria-label={tiers.map((t) => `${t.pct}% ${TIER_WORDS[t.rating]?.[walk ? 1 : 0] ?? t.rating}`).join(', ')}>
+        {tiers.map((t) => <span key={t.rating} style={{ width: `${t.pct}%`, background: MAP_COMFORT_COLORS[t.rating] ?? MAP_COMFORT_COLORS.shared_road }} />)}
+      </div>
+      <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
+        {tiers.map((t) => (
+          <li key={t.rating} className="flex items-center gap-1.5 text-[14px] text-(--ev-ink-80)">
+            <span className="h-2.5 w-2.5 rounded-full" style={{ background: MAP_COMFORT_COLORS[t.rating] ?? MAP_COMFORT_COLORS.shared_road }} aria-hidden />
+            {t.pct}% {(TIER_WORDS[t.rating]?.[walk ? 1 : 0] ?? t.rating).toLowerCase()}
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
 
 /**
  * What a ride is like, laid out the way ride and trail apps do it rather
@@ -78,29 +115,40 @@ export function rideFacts(ride: PublicRide, miles: number | null, ascentFt: numb
   return { stats, level, policies, audience }
 }
 
-export default function RideFacts({ ride, miles, ascentFt, className = 'mt-5' }: { ride: PublicRide; miles: number | null; ascentFt: number | null; className?: string }) {
+export default function RideFacts({ ride, miles, ascentFt, comfort = null, className = 'mt-5' }: {
+  ride: PublicRide; miles: number | null; ascentFt: number | null; className?: string
+  /** The route's comfort pieces, when this date rides the ride's own route. */
+  comfort?: CalmSegment[] | null
+}) {
   const { stats, level, policies, audience } = rideFacts(ride, miles, ascentFt)
-  if (stats.length === 0 && !level && policies.length === 0 && audience.length === 0) return null
+  const calm = comfort && comfort.length > 0 ? comfort : null
+  if (stats.length === 0 && !level && policies.length === 0 && audience.length === 0 && !calm) return null
 
   return (
     <div className={`${className} overflow-hidden rounded-2xl border border-(--ev-line) bg-(--ev-card)`}>
       {stats.length > 0 && (
-        <dl className="grid grid-cols-2 sm:grid-cols-4">
+        <dl className={`grid ${stats.length === 1 ? 'grid-cols-1' : stats.length === 2 ? 'grid-cols-2' : stats.length === 3 ? 'grid-cols-2 sm:grid-cols-3' : 'grid-cols-2 sm:grid-cols-4'}`}>
           {stats.map((s, i) => (
             <div key={s.label} className={`px-4 py-3.5 ${i % 2 === 1 ? 'border-l border-(--ev-line)' : ''} ${i >= 2 ? 'border-t border-(--ev-line) sm:border-t-0' : ''} ${i > 0 ? 'sm:border-l sm:border-(--ev-line)' : ''}`}>
-              <dt className="text-[13px] font-semibold text-(--ev-ink-75)">{s.label}</dt>
+              <dt className="text-[14px] font-semibold text-(--ev-ink-75)">{s.label}</dt>
               <dd className="mt-0.5 font-display text-[20px] font-extrabold leading-tight text-(--ev-ink)">{s.value}</dd>
-              {s.sub && <dd className="text-[13px] text-(--ev-ink-75)">{s.sub}</dd>}
+              {s.sub && <dd className="text-[14px] text-(--ev-ink-75)">{s.sub}</dd>}
             </div>
           ))}
         </dl>
       )}
 
+      {calm && (
+        <div className={`px-4 py-4 ${stats.length > 0 ? 'border-t border-(--ev-line)' : ''}`}>
+          <ComfortRow segments={calm} walk={ride.activity === 'walk'} />
+        </div>
+      )}
+
       {(level || policies.length > 0 || audience.length > 0) && (
-        <div className={`grid gap-4 px-4 py-4 ${stats.length > 0 ? 'border-t border-(--ev-line)' : ''}`}>
+        <div className={`grid gap-4 px-4 py-4 ${stats.length > 0 || calm ? 'border-t border-(--ev-line)' : ''}`}>
           {level && (
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-              <span className="text-[13px] font-semibold text-(--ev-ink-75)">Level</span>
+              <span className="text-[14px] font-semibold text-(--ev-ink-75)">Level</span>
               <span className="flex gap-1" role="img" aria-label={`Level: ${RIDE_STYLE_LABEL[level]}, ${RIDE_STYLE_ORDER.indexOf(level) + 1} of 3`}>
                 {RIDE_STYLE_ORDER.map((l, i) => (
                   <span key={l} className="h-2.5 w-8 rounded-full"
@@ -130,7 +178,7 @@ export default function RideFacts({ ride, miles, ascentFt, className = 'mt-5' }:
 
           {audience.length > 0 && (
             <p className="flex flex-wrap items-center gap-2">
-              <span className="text-[13px] font-semibold text-(--ev-ink-75)">Especially for</span>
+              <span className="text-[14px] font-semibold text-(--ev-ink-75)">Especially for</span>
               {audience.map((a) => <span key={a} className="rounded-full border border-(--ev-line-strong) px-3 py-1 text-[14px] font-semibold text-(--ev-ink)">{a}</span>)}
             </p>
           )}

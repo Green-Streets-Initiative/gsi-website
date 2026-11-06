@@ -70,12 +70,12 @@ export default function RideFrame({ id, children }: { id: string; children: Reac
   const r = detail.ride
   const base = `/organizers/rides/${id}`
   const tabs = [
-    { href: base, label: 'Dates & updates' },
-    { href: `${base}/roster`, label: "Who's coming" },
-    { href: `${base}/promote`, label: 'Promote' },
-    { href: `${base}/turnout`, label: 'Turnout' },
-    { href: `${base}/team`, label: 'Co-organizers' },
-    ...(detail.can_edit ? [{ href: `${base}/edit`, label: 'Edit ride' }] : []),
+    { href: base, label: 'Dates & updates', short: 'Dates' },
+    { href: `${base}/roster`, label: "Who's coming", short: "Who's coming" },
+    { href: `${base}/promote`, label: 'Promote', short: 'Promote' },
+    { href: `${base}/turnout`, label: 'Turnout', short: 'Turnout' },
+    { href: `${base}/team`, label: 'Co-organizers', short: 'Co-organizers' },
+    ...(detail.can_edit ? [{ href: `${base}/edit`, label: 'Edit ride', short: 'Edit' }] : []),
   ]
   // Edit ride and Plan a date are full-page forms with their own heading.
   const editing = path === `${base}/edit` || path.startsWith(`${base}/dates/`)
@@ -112,20 +112,21 @@ export default function RideFrame({ id, children }: { id: string; children: Reac
             </div>
           </div>
 
-          {/* Phones get every tab as a wrapping pill, so none hides off-screen. */}
+          {/* Phones get every tab as a pill in a three-across grid (two rows, short
+              names), so none hides off-screen and the page starts on screen one. */}
           <nav aria-label="Ride" className="mt-5">
-            <ul className="flex flex-wrap gap-1.5 sm:flex-nowrap sm:gap-1 sm:border-b sm:border-(--ev-line-mid)">
+            <ul className="grid grid-cols-3 gap-1.5 sm:flex sm:gap-1 sm:border-b sm:border-(--ev-line-mid)">
               {tabs.map((t) => {
                 const active = t.href === base ? path === base : path.startsWith(t.href)
                 return (
                   <li key={t.href}>
                     <Link href={t.href} aria-current={active ? 'page' : undefined}
-                      className={cx('inline-flex min-h-[40px] items-center rounded-full border px-3.5 text-[14px] font-semibold',
+                      className={cx('flex min-h-[44px] items-center justify-center whitespace-nowrap rounded-full border px-2 text-[14px] font-semibold sm:inline-flex sm:justify-start',
                         'sm:-mb-px sm:min-h-0 sm:rounded-none sm:border-0 sm:border-b-2 sm:bg-transparent sm:px-3 sm:py-2.5',
                         active
                           ? 'border-(--ev-accent-fill) bg-(--ev-accent-fill) text-(--ev-on-accent-fill) sm:text-(--ev-ink)'
                           : 'border-(--ev-line-strong) bg-white text-(--ev-ink-85) hover:text-(--ev-ink) sm:border-transparent sm:text-(--ev-ink-75)')}>
-                      {t.label}
+                      <span className="sm:hidden">{t.short}</span><span className="hidden sm:inline">{t.label}</span>
                     </Link>
                   </li>
                 )

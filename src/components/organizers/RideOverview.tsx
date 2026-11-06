@@ -13,7 +13,7 @@ import PostUpdate from './PostUpdate'
 import { ridePageUrl, useRide } from './RideFrame'
 import { SkipDatesDialog } from './SkipDates'
 import { StopRideDialog, resume } from './StopRide'
-import { Badge, Button, Card, Empty, Notice, SectionTitle, Toast, copyText, cx } from './ui'
+import { Badge, Button, Card, Empty, Notice, SectionTitle, Tabs, Toast, copyText, cx, tabPanel } from './ui'
 
 function ShareCard({ code, fresh, rideId }: { code: string; fresh: boolean; rideId: string }) {
   const url = ridePageUrl(code)
@@ -112,7 +112,7 @@ export default function RideOverview() {
   const [cancelling, setCancelling] = useState<DetailDate | null>(null)
   const [changing, setChanging] = useState<DetailDate | null>(null)
   const [stopping, setStopping] = useState(false)
-  const [showPast, setShowPast] = useState(false)
+  const [tab, setTab] = useState<'dates' | 'updates' | 'past'>(() => (r.status === 'archived' ? 'past' : 'dates'))
   const [busy, setBusy] = useState(false)
   const [posting, setPosting] = useState(!!params.get('post'))
   const [skipping, setSkipping] = useState(false)
@@ -181,6 +181,8 @@ export default function RideOverview() {
   // The next date has its own card above; the list holds the rest.
   const heroShown = !!nextDate && !ended
   const later = heroShown ? upcoming.filter((d) => d.id !== nextDate!.id) : upcoming
+  // An ended ride opens on its history (the tab's starting value).
+  const shownTab = tab === 'past' && !past.length ? 'dates' : tab
 
   return (
     <div className="grid grid-cols-[minmax(0,1fr)] gap-5">
@@ -251,79 +253,83 @@ export default function RideOverview() {
         </Card>
       )}
 
-      <Card>
-        <SectionTitle
-          hint={detail.can_manage ? 'Plan, change or cancel one date; the rest stays as it is.' : undefined}
-          action={detail.can_manage && !ended ? (
-            <div className="flex flex-wrap gap-1.5">
-              {/* Skip dates beyond the ones listed: writes the ride itself, so its organizer only. */}
-              {detail.my_role === 'organizer' && !r.ride_date && (
-                <Button size="sm" variant="ghost" onClick={() => setSkipping(true)}><CalendarX className="h-4 w-4" aria-hidden />Skip dates further out</Button>
+      {/* Dates, updates and history behind tabs, so the first screen shows all three are here. */}
+      <Card className="!pt-2 sm:!pt-3">
+        <Tabs tabs={[
+          { id: 'dates' as const, label: heroShown ? 'Later dates' : 'Dates', count: later.length },
+          { id: 'updates' as const, label: 'Updates', count: detail.updates.length },
+          ...(past.length ? [{ id: 'past' as const, label: 'Past dates', count: past.length }] : []),
+        ]} value={shownTab} onChange={setTab} label="Dates and updates" prefix="ride" className="-mx-5 px-3 sm:-mx-6 sm:px-4" />
+        <div {...tabPanel('ride', shownTab)} className="pt-4">
+          {shownTab === 'dates' && (
+            <>
+              {detail.can_manage && (
+                <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-[14px] text-(--ev-ink-75)">{ended ? 'This ride has ended.' : 'Plan, change or cancel one date; the rest stays as it is.'}</p>
+                  {!ended ? (
+                    <div className="flex flex-wrap gap-1.5">
+                      {/* Skip dates beyond the ones listed: writes the ride itself, so its organizer only. */}
+                      {detail.my_role === 'organizer' && !r.ride_date && (
+                        <Button size="sm" variant="ghost" onClick={() => setSkipping(true)}><CalendarX className="h-4 w-4" aria-hidden />Skip dates further out</Button>
+                      )}
+                      {onBreak
+                        ? <Button size="sm" onClick={() => void doResume()} busy={busy}><PlayCircle className="h-4 w-4" aria-hidden />End the break now</Button>
+                        : <Button size="sm" variant="ghost" onClick={() => setStopping(true)}><PauseCircle className="h-4 w-4" aria-hidden />Pause or end</Button>}
+                    </div>
+                  ) : (
+                    <Button size="sm" onClick={() => void doResume()} busy={busy}><PlayCircle className="h-4 w-4" aria-hidden />Start it again</Button>
+                  )}
+                </div>
               )}
-              {onBreak
-                ? <Button size="sm" onClick={() => void doResume()} busy={busy}><PlayCircle className="h-4 w-4" aria-hidden />End the break now</Button>
-                : <Button size="sm" variant="ghost" onClick={() => setStopping(true)}><PauseCircle className="h-4 w-4" aria-hidden />Pause or end</Button>}
-            </div>
-          ) : ended && detail.can_manage ? (
-            <Button size="sm" onClick={() => void doResume()} busy={busy}><PlayCircle className="h-4 w-4" aria-hidden />Start it again</Button>
-          ) : undefined}
-        >
-          {heroShown ? 'Later dates' : 'Dates'}
-        </SectionTitle>
-        {onBreak && <div className="mb-3"><Notice tone="warn">On a break until {dateLabel(r.break_until!)}.{r.stopped_note ? ` “${r.stopped_note}”` : ''}</Notice></div>}
-        {heroShown && later.length === 0 ? (
-          <p className="text-[15px] text-(--ev-ink-85)">No later dates yet.</p>
-        ) : later.length === 0 ? (
-          <Empty title={ended ? 'This ride has ended' : 'No upcoming dates'}>
-            {ended ? 'Its history and turnout are still here.' : r.ride_date ? 'This one-off ride has happened. Set up a new ride for the next one.' : 'No upcoming dates. Check When and the season dates in Edit ride.'}
-          </Empty>
-        ) : (
-          <ul>
-            {later.map((d) => (
-              <DateRow key={d.id} d={d} canManage={detail.can_manage} canEdit={detail.can_edit} rideId={r.id} usualMiles={r.route_miles} hasUsual={hasUsual}
-                onCancel={() => setCancelling(d)} onChange={() => setChanging(d)} onRestore={() => void restore(d)} />
-            ))}
-          </ul>
-        )}
-        {past.length > 0 && (
-          <div className="mt-3">
-            <Button size="sm" variant="ghost" onClick={() => setShowPast((v) => !v)} aria-expanded={showPast}>
-              {showPast ? 'Hide' : 'Show'} {past.length === 1 ? 'the last date' : `the last ${past.length} dates`}
-            </Button>
-            {showPast && <ul className="mt-2">{past.map((d) => <DateRow key={d.id} d={d} canManage={false} canEdit={false} rideId={r.id} usualMiles={r.route_miles} hasUsual={hasUsual} onCancel={() => {}} onChange={() => {}} onRestore={() => {}} />)}</ul>}
-          </div>
-        )}
-      </Card>
+              {onBreak && <div className="mb-3"><Notice tone="warn">On a break until {dateLabel(r.break_until!)}.{r.stopped_note ? ` “${r.stopped_note}”` : ''}</Notice></div>}
+              {heroShown && later.length === 0 ? (
+                <p className="text-[15px] text-(--ev-ink-85)">No later dates yet.</p>
+              ) : later.length === 0 ? (
+                <Empty title={ended ? 'This ride has ended' : 'No upcoming dates'}>
+                  {ended ? 'Its history and turnout are under Past dates.' : r.ride_date ? 'This one-off ride has happened. Set up a new ride for the next one.' : 'No upcoming dates. Check When and the season dates in Edit ride.'}
+                </Empty>
+              ) : (
+                <ul>
+                  {later.map((d) => (
+                    <DateRow key={d.id} d={d} canManage={detail.can_manage} canEdit={detail.can_edit} rideId={r.id} usualMiles={r.route_miles} hasUsual={hasUsual}
+                      onCancel={() => setCancelling(d)} onChange={() => setChanging(d)} onRestore={() => void restore(d)} />
+                  ))}
+                </ul>
+              )}
+            </>
+          )}
 
-      <Card>
-        <SectionTitle>Updates</SectionTitle>
-        {detail.updates.length === 0 ? (
-          <p className="text-[14px] text-(--ev-ink-75)">Nothing posted yet. Updates show here, on the ride page and in the app.</p>
-        ) : (
-          <ul className="space-y-3">
-            {detail.updates.map((u) => {
-              const d = detail.occurrences.find((o) => o.id === u.occurrence_id)
-              return (
-                <li key={u.id} className="rounded-xl border border-(--ev-line) px-4 py-3">
-                  <div className="flex flex-wrap items-baseline justify-between gap-2">
-                    <p className="text-[15px] font-semibold text-(--ev-ink)">
-                      {UPDATE_KIND_LABEL[u.kind] ?? u.title}{d ? ` · ${dateLabel(d.date)}` : ''}
+          {shownTab === 'past' && (
+            <ul>{past.map((d) => <DateRow key={d.id} d={d} canManage={false} canEdit={false} rideId={r.id} usualMiles={r.route_miles} hasUsual={hasUsual} onCancel={() => {}} onChange={() => {}} onRestore={() => {}} />)}</ul>
+          )}
+
+          {shownTab === 'updates' && (detail.updates.length === 0 ? (
+            <p className="text-[15px] text-(--ev-ink-80)">Nothing posted yet. Updates show here, on the ride page and in the app.</p>
+          ) : (
+            <ul className="space-y-3">
+              {detail.updates.map((u) => {
+                const d = detail.occurrences.find((o) => o.id === u.occurrence_id)
+                return (
+                  <li key={u.id} className="rounded-xl border border-(--ev-line) px-4 py-3">
+                    <div className="flex flex-wrap items-baseline justify-between gap-2">
+                      <p className="text-[15px] font-semibold text-(--ev-ink)">
+                        {UPDATE_KIND_LABEL[u.kind] ?? u.title}{d ? ` · ${dateLabel(d.date)}` : ''}
+                      </p>
+                      <p className="text-[14px] text-(--ev-ink-75)">{ago(u.created_at)}{u.by ? ` · ${u.by}` : ''}</p>
+                    </div>
+                    {u.body && <p className="mt-1 text-[14px] text-(--ev-ink-80)">{u.body}</p>}
+                    {u.note && <p className="mt-1.5 border-l-2 border-(--ev-accent-line) pl-3 text-[14px] text-(--ev-ink-85)">{u.note}</p>}
+                    <p className="mt-1.5 text-[14px] text-(--ev-ink-75)">
+                      Sent to {plural(u.recipients, 'person', 'people')}
+                      {u.push_sent || u.email_sent ? ` (${[u.push_sent ? `${u.push_sent} app` : '', u.email_sent ? `${u.email_sent} email` : ''].filter(Boolean).join(', ')})` : ''}
                     </p>
-                    <p className="text-[14px] text-(--ev-ink-75)">{ago(u.created_at)}{u.by ? ` · ${u.by}` : ''}</p>
-                  </div>
-                  {u.body && <p className="mt-1 text-[14px] text-(--ev-ink-80)">{u.body}</p>}
-                  {u.note && <p className="mt-1.5 border-l-2 border-(--ev-accent-line) pl-3 text-[14px] text-(--ev-ink-85)">{u.note}</p>}
-                  <p className="mt-1.5 text-[14px] text-(--ev-ink-75)">
-                    Sent to {plural(u.recipients, 'person', 'people')}
-                    {u.push_sent || u.email_sent ? ` (${[u.push_sent ? `${u.push_sent} app` : '', u.email_sent ? `${u.email_sent} email` : ''].filter(Boolean).join(', ')})` : ''}
-                  </p>
-                </li>
-              )
-            })}
-          </ul>
-        )}
+                  </li>
+                )
+              })}
+            </ul>
+          ))}
+        </div>
       </Card>
-
 
       {cancelling && <CancelDateDialog key={cancelling.id} date={cancelling} onClose={() => setCancelling(null)} onDone={done} />}
       {changing && <ChangeDateDialog key={changing.id} date={changing} ride={r} onClose={() => setChanging(null)} onDone={done} />}

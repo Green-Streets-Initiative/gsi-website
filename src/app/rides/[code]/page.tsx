@@ -88,7 +88,7 @@ export default async function Page({ params, searchParams }: { params: Promise<{
     <>
       <Nav variant="light" />
       <main className="bg-cream" style={{ paddingTop: '60px' }}>
-        {ride.web ? <RidePage ride={ride} host={extras?.host ?? null} hostPerson={hostLabel(extras)} ascentFt={extras?.ascentFt ?? null} initialDate={initialDate} perks={perks} newInfra={newInfra} coffee={coffee} /> : <AppOnlyRidePage ride={ride} />}
+        {ride.web ? <RidePage ride={ride} host={extras?.host ?? null} hostPerson={hostLabel(extras)} ascentFt={extras?.ascentFt ?? null} comfort={extras?.comfortSegments ?? null} initialDate={initialDate} perks={perks} newInfra={newInfra} coffee={coffee} /> : <AppOnlyRidePage ride={ride} />}
       </main>
       <Footer variant="light" />
     </>

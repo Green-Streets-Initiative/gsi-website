@@ -6,10 +6,10 @@ import { AlertTriangle, Camera } from 'lucide-react'
 import { PanelPhoto } from '@/components/nearby/DetailPanel'
 import { ReportRouteLink, type RouteIssueStretch } from '@/components/commute/ReportRouteSheet'
 import {
-  COMFORT_LABELS as BIKE_LABELS, comfortPieces, comfortableShare, concernAdvice, concernTitle, formatStretchMiles, legPhotoSpec,
+  COMFORT_LABELS as BIKE_LABELS, MAP_COMFORT_COLORS, comfortPieces, comfortableShare, concernAdvice, concernTitle, formatStretchMiles, legPhotoSpec,
   newLaneNotes, relevantConcerns, safetyVerdict, type CalmFlag, type CalmOption, type ComfortPiece,
 } from '@/components/commute/calm-route'
-import { paceOptionsFor, travelMph, type Activity } from '@/lib/organizers/ride-words'
+import { PACE_MID_MPH, paceOptionsFor, travelMph, type Activity } from '@/lib/organizers/ride-words'
 import { routeMiles } from '@/lib/organizers/route-geo'
 import { assessRouteRisk } from '@/lib/organizers/route-risk'
 import type { RouteDraft } from '@/lib/organizers/types'
@@ -24,14 +24,7 @@ import { cx } from './ui'
  * lane on Cummins Hwy" is something they can see.
  */
 
-/** Darker than the site legend so each tier reads on the light street map. */
-export const MAP_COMFORT_COLORS: Record<string, string> = {
-  path: '#2E8B57',
-  protected: '#0E9F8E',
-  bike_lane: '#2966E5',
-  quiet_street: '#7CB342',
-  shared_road: '#8C8FA3',
-}
+export { MAP_COMFORT_COLORS }
 
 const TIER_ORDER = ['path', 'protected', 'bike_lane', 'quiet_street', 'shared_road']
 
@@ -142,9 +135,10 @@ export default function RouteReview({ route, reading, pace, activity = 'bike', f
   const verdict = safetyVerdict(concerns, comfortPct, walk)
   const COMFORT_LABELS = walk ? WALK_LABELS : BIKE_LABELS
   const paceOpt = paceOptionsFor(activity).find((p) => p.key === pace)
-  const mph = travelMph(pace, activity)
-  const rideMin = mph ? Math.round((miles / mph) * 60) : null
-  const timeLabel = walk ? 'Walking time' : paceOpt ? `Riding time, ${paceOpt.label.toLowerCase()}` : 'Riding time'
+  // No pace yet: a relaxed pace, the same estimate the route choices show.
+  const mph = travelMph(pace, activity) ?? PACE_MID_MPH.relaxed
+  const rideMin = Math.round((miles / mph) * 60)
+  const timeLabel = walk ? 'Walking time' : paceOpt ? `Riding time, ${paceOpt.label.toLowerCase()}` : 'Riding time, relaxed'
 
   // Miles on each tier, for the bar.
   const tiers = useMemo(() => {
@@ -194,7 +188,7 @@ export default function RouteReview({ route, reading, pace, activity = 'bike', f
         {([
           ['Distance', `${miles.toFixed(1)} mi`],
           ['Climbing', route.elevation ? `${Math.round(route.elevation.ascent_ft).toLocaleString()} ft` : '–'],
-          [timeLabel, rideMin ? `about ${minutes(rideMin)}` : 'Pick a pace'],
+          [timeLabel, `about ${minutes(rideMin)}`],
           ['On calm streets', comfortPct != null ? `${comfortPct}%` : '–'],
         ] as const).map(([k, v]) => (
           <div key={k} className="rounded-xl bg-(--ev-panel-faint) px-3.5 py-2.5">

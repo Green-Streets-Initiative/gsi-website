@@ -2,13 +2,16 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { ArrowLeft, ChevronDown, ImagePlus, MessageSquareText, Trash2 } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { ArrowLeft, ArrowRight, Bike, CalendarDays, Check, Footprints, ImagePlus, MapPin, MessageSquareText, Trash2 } from 'lucide-react'
+import { comfortableShare } from '@/components/commute/calm-route'
+import { scheduleText } from '@/lib/rides/public'
+import { routeMiles } from '@/lib/organizers/route-geo'
 import AddressAutocomplete from '@/components/AddressAutocomplete'
 import { errorText, getRideFundFor, saveRide, setEndShop, setRepliesToOrganizer, uploadFlyer, type RideFundHere } from '@/lib/organizers/api'
 import { takePrefill } from '@/lib/organizers/first-ride'
 import { decodePlan, draftOf, routePayload } from '@/lib/organizers/saved-route'
-import { DAY_LABELS, TAG_OPTIONS, WEEK_OPTIONS, dateLabel, paceOptionsFor, todayKey, type Activity } from '@/lib/organizers/ride-words'
+import { DAY_LABELS, TAG_OPTIONS, WEEK_OPTIONS, dateLabel, paceOptionsFor, todayKey, travelMph, type Activity } from '@/lib/organizers/ride-words'
 import { biweeklyStarts, scheduleDates } from '@/lib/organizers/schedule'
 import type { Frequency, Pace, RideRow, RouteDraft } from '@/lib/organizers/types'
 import { ROUTE_IMPORT_KEY, openAssistant } from './AssistantPanel'
@@ -111,72 +114,168 @@ function toPayload(f: Form): Record<string, unknown> {
   }
 }
 
-/** What still stands between this form and a ride, in the app's words. */
-function blocking(f: Form): string | null {
-  if (!f.name.trim()) return f.activity === 'walk' ? 'Give the walk a name' : 'Give the ride a name'
-  if (f.schedule === 'one_time' && !f.ride_date) return 'Pick a date'
-  if (f.schedule === 'recurring' && f.frequency !== 'daily' && f.days.length === 0) return 'Pick at least one day'
-  if (!f.start_time) return 'Pick a start time'
-  if (f.meetup_lat == null || f.meetup_lng == null) return 'Pick a meeting point'
-  if (f.end_time && f.end_time <= f.start_time) return 'Set "Back by" to after the start time'
-  if (f.schedule === 'recurring' && f.season_start && f.season_end && f.season_end < f.season_start) return 'Set the season end after its start'
+/**
+ * The form's six parts, one at a time (Keith 2026-11-06: no totem-pole
+ * pages). A new ride walks through them as steps, like the employer
+ * challenge builder; an existing ride opens them as tabs. Only the first
+ * three are needed; the rest are optional and say so.
+ */
+type Step = 'ride' | 'when' | 'where' | 'route' | 'expect' | 'share'
+const STEPS: { id: Step; label: string; walkLabel?: string; short?: string; optional?: boolean }[] = [
+  { id: 'ride', label: 'The ride', walkLabel: 'The walk' },
+  { id: 'when', label: 'When' },
+  { id: 'where', label: 'Meeting point' },
+  { id: 'route', label: 'Route', optional: true },
+  { id: 'expect', label: 'What to expect', optional: true },
+  { id: 'share', label: 'Sign-ups and sharing', short: 'Sharing', optional: true },
+]
+const stepLabel = (s: (typeof STEPS)[number], walk: boolean) => (walk && s.walkLabel ? s.walkLabel : s.label)
+
+/** What still stands between this form and a ride, in the app's words, and the step it's on. */
+function blocking(f: Form): { step: Step; text: string } | null {
+  if (!f.name.trim()) return { step: 'ride', text: f.activity === 'walk' ? 'Give the walk a name' : 'Give the ride a name' }
+  if (f.schedule === 'one_time' && !f.ride_date) return { step: 'when', text: 'Pick a date' }
+  if (f.schedule === 'recurring' && f.frequency !== 'daily' && f.days.length === 0) return { step: 'when', text: 'Pick at least one day' }
+  if (!f.start_time) return { step: 'when', text: 'Pick a start time' }
+  if (f.end_time && f.end_time <= f.start_time) return { step: 'when', text: 'Set "Back by" to after the start time' }
+  if (f.schedule === 'recurring' && f.season_start && f.season_end && f.season_end < f.season_start) return { step: 'when', text: 'Set the season end after its start' }
+  if (f.meetup_lat == null || f.meetup_lng == null) return { step: 'where', text: 'Pick a meeting point' }
   return null
 }
 
 const LINK_OK = (v: string, mail = false) => !v.trim() || (mail ? /^(https?:\/\/|mailto:)\S+$/i : /^https?:\/\/\S+$/i).test(v.trim())
 
-// What a ride needs: name, when, where. Everything else waits under "More
-// details" on a new ride, so the form is three short cards on a phone.
-const MAIN_SECTIONS = [['sec-ride', 'The ride'], ['sec-when', 'When'], ['sec-where', 'Meeting point']] as const
-const MORE_SECTIONS = [['sec-route', 'Route'], ['sec-expect', 'What to expect'], ['sec-signup', 'Sign-ups'], ['sec-who', 'Visibility']] as const
-type SectionId = (typeof MAIN_SECTIONS)[number][0] | (typeof MORE_SECTIONS)[number][0] | 'sec-more' | 'sec-coffee'
+/** The first step with a link to fix. */
+function linkProblem(f: Form): Step | null {
+  if (!LINK_OK(f.route_google_maps_url)) return 'route'
+  if (!LINK_OK(f.registration_url) || !LINK_OK(f.contact_url, true)) return 'share'
+  return null
+}
 
-/** Jump links: a sticky list beside the form on wide screens; on phones a
- *  sticky picker that names the section you're in, so no section hides off
- *  the edge of a sideways-scrolling strip. A folded section opens first. */
-function SectionNav({ more, coffee, walk, onOpenMore }: { more: boolean; coffee: boolean; walk: boolean; onOpenMore: () => void }) {
-  const SECTIONS: readonly (readonly [SectionId, string])[] = (more
-    ? [...MAIN_SECTIONS, MORE_SECTIONS[0], ...(coffee ? [['sec-coffee', 'The stop at the end'] as const] : []), ...MORE_SECTIONS.slice(1)]
-    : [...MAIN_SECTIONS, ['sec-more', 'More details'] as const]
-  ).map(([id, label]) => [id, id === 'sec-ride' && walk ? 'The walk' : label] as const)
-  const [current, setCurrent] = useState<string>(SECTIONS[0][0])
-  useEffect(() => {
-    const els = SECTIONS.map(([id]) => document.getElementById(id)).filter((e): e is HTMLElement => !!e)
-    const io = new IntersectionObserver((entries) => {
-      const top = entries.filter((e) => e.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0]
-      if (top) setCurrent(top.target.id)
-    }, { rootMargin: '-120px 0px -60% 0px' })
-    els.forEach((e) => io.observe(e))
-    return () => io.disconnect()
-  }, [more, coffee]) // eslint-disable-line react-hooks/exhaustive-deps
-  const jump = (id: string) => {
-    setCurrent(id)
-    if (id === 'sec-more') onOpenMore()
-    // Let a just-opened fold render before scrolling to it.
-    setTimeout(() => document.getElementById(id === 'sec-more' ? 'sec-route' : id)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), id === 'sec-more' ? 60 : 0)
+/**
+ * Steps across the top. A new ride: numbered steps with checks for the done
+ * ones, the way the challenge builder shows them; on a phone, "Step 2 of 6"
+ * with a bar. An existing ride: every part is a tab, at every width.
+ */
+function StepNav({ step, onStep, editing, walk, done }: { step: Step; onStep: (s: Step) => void; editing: boolean; walk: boolean; done: (s: Step) => boolean }) {
+  const index = STEPS.findIndex((s) => s.id === step)
+  if (editing) {
+    return (
+      <nav aria-label="Parts of the ride" className="mb-5">
+        {/* Phones: all six parts as a 3 × 2 grid, none hidden off the edge. */}
+        <ul className="grid grid-cols-3 gap-1.5 sm:flex sm:flex-nowrap sm:gap-1 sm:overflow-x-auto sm:border-b sm:border-(--ev-line-mid) [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {STEPS.map((s) => {
+            const on = s.id === step
+            return (
+              <li key={s.id}>
+                <button type="button" onClick={() => onStep(s.id)} aria-current={on ? 'step' : undefined}
+                  className={cx('flex min-h-[44px] w-full items-center justify-center rounded-[10px] border px-1 text-center text-[14px] font-semibold leading-tight sm:inline-flex sm:w-auto sm:whitespace-nowrap',
+                    'sm:-mb-px sm:min-h-0 sm:rounded-none sm:border-0 sm:border-b-2 sm:bg-transparent sm:px-3 sm:py-2.5 sm:text-[15px]',
+                    on
+                      ? 'border-(--ev-accent-fill) bg-(--ev-accent-fill) text-(--ev-on-accent-fill) sm:border-(--ev-ink) sm:text-(--ev-ink)'
+                      : 'border-(--ev-line-strong) bg-white text-(--ev-ink-85) hover:text-(--ev-ink) sm:border-transparent sm:text-(--ev-ink-75)')}>
+                  <span className="sm:hidden">{s.short ?? stepLabel(s, walk)}</span>
+                  <span className="hidden sm:inline">{stepLabel(s, walk)}</span>
+                </button>
+              </li>
+            )
+          })}
+        </ul>
+      </nav>
+    )
   }
   return (
-    <nav aria-label="Ride form sections"
-      className="sticky top-[60px] z-20 -mx-4 mb-4 border-b border-(--ev-line) bg-(--ev-bar) px-4 py-2 backdrop-blur lg:top-[84px] lg:mx-0 lg:mb-0 lg:self-start lg:border-0 lg:bg-transparent lg:p-0">
-      <label className="flex items-center gap-2 lg:hidden">
-        <span className="text-[14px] font-semibold text-(--ev-ink-75)">Section</span>
-        <select value={current}
-          onChange={(e) => jump(e.target.value)}
-          className="min-h-[40px] flex-1 rounded-[10px] border border-(--ev-line-strong) bg-white px-3 text-[15px] font-semibold text-(--ev-ink)">
-          {SECTIONS.map(([id, label]) => <option key={id} value={id}>{label}</option>)}
-        </select>
-      </label>
-      <ul className="hidden gap-1 lg:flex lg:flex-col">
-        {SECTIONS.map(([id, label]) => (
-          <li key={id}>
-            <a href={`#${id}`} aria-current={current === id ? 'location' : undefined}
-              onClick={(e) => { e.preventDefault(); jump(id) }}
-              className={cx('block whitespace-nowrap rounded-lg px-3 py-2 text-[14px] font-semibold hover:bg-(--ev-panel) hover:text-(--ev-ink)',
-                current === id ? 'bg-(--ev-panel) text-(--ev-ink)' : 'text-(--ev-ink-80)')}>{label}</a>
-          </li>
-        ))}
-      </ul>
+    <nav aria-label="Steps" className="mb-5">
+      <div className="sm:hidden">
+        <p className="text-[15px] font-semibold text-(--ev-ink-85)">
+          Step {index + 1} of {STEPS.length}{STEPS[index].optional ? ' · optional' : ''}
+        </p>
+        <div className="mt-2 grid grid-cols-6 gap-1" aria-hidden>
+          {STEPS.map((s, i) => <span key={s.id} className={cx('h-1.5 rounded-full', i <= index ? 'bg-(--ev-ink)' : 'bg-(--ev-line-mid)')} />)}
+        </div>
+      </div>
+      <ol className="hidden flex-wrap gap-x-5 gap-y-2 sm:flex">
+        {STEPS.map((s, i) => {
+          const here = s.id === step
+          const reachable = i < index || done(s.id)
+          return (
+            <li key={s.id}>
+              <button type="button" onClick={() => (reachable ? onStep(s.id) : undefined)} aria-current={here ? 'step' : undefined}
+                disabled={!reachable && !here}
+                className={cx('flex items-center gap-2 text-[14px] font-semibold disabled:cursor-default',
+                  here ? 'text-(--ev-ink)' : reachable ? 'text-(--ev-ink-80) hover:text-(--ev-ink)' : 'text-(--ev-ink-75)')}>
+                <span className={cx('grid h-7 w-7 place-items-center rounded-full text-[13px] font-bold',
+                  here ? 'bg-(--ev-ink) text-white' : i < index ? 'bg-(--ev-accent-tint-15) text-(--ev-ink)' : 'bg-(--ev-panel) text-(--ev-ink-75)')}>
+                  {i < index ? <Check className="h-4 w-4" strokeWidth={2.5} aria-hidden /> : i + 1}
+                </span>
+                {stepLabel(s, walk)}
+              </button>
+            </li>
+          )
+        })}
+      </ol>
     </nav>
+  )
+}
+
+/** How the ride will read on its page, as the organizer fills it in (the challenge builder's live preview). */
+function PreviewRow({ icon: Icon, children, empty }: { icon: typeof CalendarDays; children: ReactNode; empty?: boolean }) {
+  return (
+    <p className={cx('flex items-start gap-2.5 text-[15px]', empty ? 'text-(--ev-ink-75)' : 'font-semibold text-(--ev-ink)')}>
+      <Icon className="mt-0.5 h-[18px] w-[18px] shrink-0 text-(--ev-ink-75)" aria-hidden />{children}
+    </p>
+  )
+}
+
+function Preview({ f, route, hostName }: { f: Form; route: RouteDraft | null; hostName: string | null }) {
+  const walk = f.activity === 'walk'
+  const sched = f.schedule === 'one_time'
+    ? (f.ride_date ? scheduleText({ ride_date: f.ride_date, frequency: null, days: null, week_of_month: null, start_time: f.start_time || null }) : null)
+    : (f.frequency === 'daily' || f.days.length
+      ? scheduleText({ ride_date: null, frequency: f.frequency, days: f.days, week_of_month: f.week_of_month, start_time: f.start_time || null })
+      : null)
+  const miles = route && route.waypoints.length >= 2 ? routeMiles(route.waypoints) : null
+  const calm = route?.comfortSegments?.length ? Math.round(comfortableShare(route.comfortSegments) * 100) : null
+  const mph = travelMph(f.pace || null, f.activity)
+  const pace = paceOptionsFor(f.activity).find((p) => p.key === f.pace)
+  const initials = (hostName ?? '').split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]?.toUpperCase()).join('')
+  return (
+    <aside className="hidden lg:block lg:sticky lg:top-[84px] lg:self-start" aria-label="Preview">
+      <p className="mb-2 text-[14px] font-semibold text-(--ev-ink-75)">On your {walk ? 'walk' : 'ride'} page</p>
+      <div className="overflow-hidden rounded-2xl border border-(--ev-line-mid) bg-white shadow-sm">
+        <div className="bg-(--ev-panel) px-4 pb-4 pt-4">
+          <div className="flex items-center gap-2.5">
+            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-(--ev-ink) text-[13px] font-bold text-white">{initials || (walk ? <Footprints className="h-4 w-4" aria-hidden /> : <Bike className="h-4 w-4" aria-hidden />)}</span>
+            <span className="text-[14px] font-semibold text-(--ev-ink-80)">{walk ? 'Group walk' : 'Group ride'}{hostName ? ` · ${hostName}` : ''}</span>
+          </div>
+          <p className={cx('mt-3 font-display text-[22px] font-extrabold leading-tight', f.name.trim() ? 'text-(--ev-ink)' : 'text-(--ev-ink-75)')}>
+            {f.name.trim() || (walk ? 'Your walk’s name' : 'Your ride’s name')}
+          </p>
+        </div>
+        <div className="grid gap-2.5 px-4 py-4">
+          <PreviewRow icon={CalendarDays} empty={!sched}>{sched ?? 'When it happens'}</PreviewRow>
+          <PreviewRow icon={MapPin} empty={!f.meetup_name && !f.meetup_address}>{f.meetup_name || f.meetup_address || 'Where people meet'}</PreviewRow>
+        </div>
+        <dl className="grid grid-cols-3 border-t border-(--ev-line)">
+          {([
+            ['Distance', miles ? `${miles.toFixed(1)} mi` : '–'],
+            ['Calm streets', calm != null ? `${calm}%` : '–'],
+            [walk ? 'Walking' : 'Pace', walk ? (miles ? `${Math.round((miles / 3) * 60)} min` : pace?.label ?? '–') : pace ? pace.mph : '–'],
+          ] as const).map(([k, v], i) => (
+            <div key={k} className={cx('px-3 py-3', i > 0 && 'border-l border-(--ev-line)')}>
+              <dt className="text-[14px] font-semibold text-(--ev-ink-75)">{k}</dt>
+              <dd className="font-display text-[18px] font-extrabold leading-tight text-(--ev-ink)">{v}</dd>
+            </div>
+          ))}
+        </dl>
+        {!walk && mph && miles && (
+          <p className="border-t border-(--ev-line) px-4 py-2.5 text-[14px] text-(--ev-ink-80)">About {Math.round((miles / mph) * 60)} min of riding, plus stops</p>
+        )}
+      </div>
+      <p className="mt-2 text-[14px] text-(--ev-ink-75)">
+        {f.visibility === 'invite' ? 'Invite only: people need your link or code.' : 'Public: on the events calendar and in the Shift app.'}
+      </p>
+    </aside>
   )
 }
 
@@ -195,8 +294,18 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
   const [tried, setTried] = useState(false)
   const [flyerBusy, setFlyerBusy] = useState(false)
   const [meetupFit, setMeetupFit] = useState(0)
-  // Editing a ride opens everything; a new ride starts with the three cards it needs.
-  const [more, setMore] = useState(!!ride)
+  // One part of the form at a time: steps for a new ride, tabs for an existing one.
+  const [step, setStepRaw] = useState<Step>('ride')
+  const setStep = useCallback((s: Step) => {
+    setStepRaw(s)
+    // The top of the new part, not wherever the last one was scrolled to.
+    if (typeof window !== 'undefined' && window.scrollY > 200) window.scrollTo({ top: 0, behavior: 'smooth' })
+  }, [])
+  // A link to one part (the assistant's #sec-route) opens it.
+  useEffect(() => {
+    const h = window.location.hash.replace('#sec-', '')
+    if (STEPS.some((s) => s.id === h)) setStepRaw(h as Step)
+  }, [])
   // The season start before "Which week is first?" changed it, so its two
   // choices stay put after a pick (undefined until a pick).
   const [weekBase, setWeekBase] = useState<string | null | undefined>(undefined)
@@ -236,7 +345,6 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
       setF({ ...blank(), ...saved.form })
       setDirty(true)
       setRestored(true)
-      setMore(true)
     } catch { /* storage unavailable */ }
   }, [draftKey, ride])
 
@@ -262,7 +370,7 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
     }
     if (id || rw) {
       setDirty(true)
-      setMore(true)
+      setStepRaw('route')
       const url = new URL(window.location.href)
       url.searchParams.delete('import')
       url.searchParams.delete('rwgps')
@@ -289,7 +397,7 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
       })
       setPlanned({ stops: j.p.slice(1).map(([la, ln, lb]) => ({ lat: la, lng: ln, ...(lb ? { label: lb } : {}) })), chosen: Array.isArray(j.c) ? j.c : [] })
       setDirty(true)
-      setMore(true)
+      setStepRaw('route')
       const url = new URL(window.location.href)
       url.searchParams.delete('plan')
       window.history.replaceState({}, '', url.pathname + url.search + url.hash)
@@ -341,14 +449,15 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
     setDirty(true)
   }
 
-  const reason = blocking(f)
-  const linkErr = !LINK_OK(f.registration_url) || !LINK_OK(f.route_google_maps_url) || !LINK_OK(f.contact_url, true)
+  const block = blocking(f)
+  const reason = block?.text ?? null
+  const linkStep = linkProblem(f)
 
   async function save() {
     setTried(true)
-    if (reason || linkErr) {
-      // A link to fix may sit in the folded part.
-      if (!reason) setMore(true)
+    if (block || linkStep) {
+      // Open the part that needs fixing.
+      setStep(block?.step ?? linkStep!)
       setErr(reason ?? 'Links start with https://')
       return
     }
@@ -433,6 +542,24 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
     set('season_start', d)
   }
 
+  const stepIndex = STEPS.findIndex((s) => s.id === step)
+  const last = stepIndex === STEPS.length - 1
+  /** A step counts as done when nothing it asks for is missing. */
+  const stepDone = (s: Step) => {
+    if (block && STEPS.findIndex((x) => x.id === block.step) <= STEPS.findIndex((x) => x.id === s)) return false
+    return true
+  }
+  // Continue checks only what this step asks for, so nobody is stopped by a later one.
+  const next = () => {
+    setTried(true)
+    if (block && block.step === step) { setErr(block.text); return }
+    if (linkStep === step) { setErr('Links start with https://'); return }
+    setErr(null)
+    setTried(false)
+    setStep(STEPS[stepIndex + 1].id)
+  }
+  const hostPreview = f.event_organizer_id ? (f.organizer_name || null) : (me?.first_name ?? null)
+
   return (
     <div className="pb-28">
       <Link href={ride ? `/organizers/rides/${ride.id}` : '/organizers'} className="mb-3 inline-flex items-center gap-1.5 text-[14px] font-semibold text-(--ev-ink-80) hover:text-(--ev-ink)">
@@ -441,7 +568,7 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
       <h1 className="font-display text-[clamp(28px,3.6vw,38px)] font-extrabold leading-tight">{ride ? (walk ? 'Edit walk' : 'Edit ride') : first ? 'Make your first ride' : walk ? 'New walk' : 'New ride'}</h1>
       <p className="mt-1 max-w-2xl text-[15px] leading-snug text-(--ev-ink-80)">
         {ride
-          ? 'Changes show on your ride page and in the app right away. To change a single date, use that date on the ride page.'
+          ? 'Changes show on the ride page and in the app right away. To change one date only, open that date from Dates & updates.'
           : `A ${noun} you set up here shows up in the Shift app too, with a page you can share anywhere.`}
       </p>
 
@@ -470,11 +597,13 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
         </div>
       )}
 
-      <div className="mt-6 lg:grid lg:grid-cols-[176px_minmax(0,1fr)] lg:gap-8">
-      <SectionNav more={more} coffee={showCoffee} walk={walk} onOpenMore={() => setMore(true)} />
-      <div className="grid grid-cols-[minmax(0,1fr)] gap-5">
+      <div className="mt-6">
+      <StepNav step={step} onStep={setStep} editing={!!ride} walk={walk} done={(s) => stepDone(s)} />
+      <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_320px] lg:gap-8">
+      <div className="grid grid-cols-[minmax(0,1fr)] content-start gap-5">
+        {step === 'ride' && (
         <Card id="sec-ride">
-          <SectionTitle>{walk ? 'The walk' : 'The ride'}</SectionTitle>
+          <SectionTitle hint={ride ? undefined : `What it is and who it's from. Only the name is needed.`}>{walk ? 'The walk' : 'The ride'}</SectionTitle>
           <div className="grid gap-4">
             <Field label="Bike ride or walk">
               <div className="flex flex-wrap gap-2">
@@ -489,6 +618,7 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
             <Field label="Name" htmlFor="ride-name" error={tried && !f.name.trim() ? `Give the ${noun} a name` : null}>
               <Input id="ride-name" value={f.name} maxLength={120} onChange={(e) => set('name', e.target.value)} placeholder={walk ? 'Saturday Morning Walk' : 'Saturday Coffee Ride'} />
             </Field>
+            <OrgPicker value={f.event_organizer_id} onPick={pickOrg} />
             <Field label="Description" htmlFor="ride-desc" optional hint="What it's like, where it goes, what to bring.">
               <Textarea id="ride-desc" value={f.description} maxLength={4000} onChange={(e) => set('description', e.target.value)} rows={5}
                 placeholder={walk
@@ -514,7 +644,9 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
             </Field>
           </div>
         </Card>
+        )}
 
+        {step === 'when' && (
         <Card id="sec-when">
           <SectionTitle>When</SectionTitle>
           <div className="grid gap-4">
@@ -605,7 +737,9 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
             </div>
           </div>
         </Card>
+        )}
 
+        {step === 'where' && (
         <Card id="sec-where">
           <SectionTitle hint="Where people gather before you set off.">Meeting point</SectionTitle>
           <div className="grid gap-4 lg:grid-cols-[1fr_1fr]">
@@ -647,25 +781,14 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
             />
           </div>
         </Card>
+        )}
 
-        {!more ? (
-          <button type="button" id="sec-more" onClick={() => setMore(true)} aria-expanded={false}
-            className="flex w-full scroll-mt-[124px] items-center justify-between gap-3 rounded-2xl border border-(--ev-line-mid) bg-(--ev-card) p-5 text-left hover:bg-(--ev-panel-faint) sm:p-6 lg:scroll-mt-[80px]">
-            <span>
-              <span className="block font-display text-[20px] font-extrabold leading-tight text-(--ev-ink)">More details</span>
-              <span className="mt-1 block text-[14px] leading-snug text-(--ev-ink-75)">
-                {fund
-                  ? `Route, the stop at the end (funded by ${fund.funder_name}), pace, sign-up link, and who can find it. All optional; a new ${noun} is public.`
-                  : `Route, pace, sign-up link, and who can find it. All optional; a new ${noun} is public.`}
-              </span>
-            </span>
-            <ChevronDown className="h-5 w-5 shrink-0 text-(--ev-ink-75)" aria-hidden />
-          </button>
-        ) : (<>
+        {/* Kept mounted while hidden: the planner's choices and stops survive a look at another step. */}
+        <div hidden={step !== 'route'} className="grid grid-cols-[minmax(0,1fr)] gap-5">
         <Card id="sec-route">
           <SectionTitle hint={`Optional. With a route, people see how far, how hilly and how comfortable the ${noun} is before they come.`}>Route</SectionTitle>
           {plannedMoved && (
-            <div className="mb-3"><Notice tone="info">The assistant&rsquo;s route starts somewhere else, so the meeting point moved there. Change it above if that&rsquo;s not right.</Notice></div>
+            <div className="mb-3"><Notice tone="info">The assistant&rsquo;s route starts somewhere else, so the meeting point moved there. Change it under Meeting point if that&rsquo;s not right.</Notice></div>
           )}
           <RouteSection route={f.route} onRoute={(r) => set('route', r)} meetup={meetup} pace={f.pace || null} activity={f.activity} initialPlan={planned} initialImport={imported}
             onMeetAtStart={(p) => {
@@ -682,9 +805,11 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
         </Card>
 
         {showCoffee && <EndShopCard at={rideEnd} value={f.end_location_id} onChange={(id) => set('end_location_id', id)} fund={fund} />}
+        </div>
 
+        {step === 'expect' && (
         <Card id="sec-expect">
-          <SectionTitle>What to expect</SectionTitle>
+          <SectionTitle hint={ride ? undefined : 'Optional. Helps people pick a ride that suits them.'}>What to expect</SectionTitle>
           <div className="grid grid-cols-[minmax(0,1fr)] gap-5">
             <Field label="Pace" hint={f.activity === 'walk' ? 'How quickly the group walks.' : 'The average speed the group holds while riding.'}>
               <div className="flex flex-wrap gap-2">
@@ -713,10 +838,26 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
             </Field>
           </div>
         </Card>
+        )}
 
+        {step === 'share' && (
         <Card id="sec-signup">
-          <SectionTitle>Sign-ups and contact</SectionTitle>
-          <div className="grid gap-4">
+          <SectionTitle hint={ride ? undefined : `Optional. A new ${noun} is public unless you say otherwise.`}>Sign-ups and sharing</SectionTitle>
+          <div className="grid gap-5">
+            <Field label="Visibility">
+              <div className="grid gap-2 sm:grid-cols-2">
+                {([
+                  ['public', 'Public', 'On the Green Streets events calendar and in the app, straight away.'],
+                  ['invite', 'Invite only', `Only people with your ${noun} link or code can find it.`],
+                ] as const).map(([v, label, hint]) => (
+                  <button key={v} type="button" aria-pressed={f.visibility === v} onClick={() => set('visibility', v)}
+                    className={cx('rounded-xl border p-3 text-left transition', f.visibility === v ? 'border-(--ev-accent-fill) bg-(--ev-panel) ring-1 ring-(--ev-accent-fill)' : 'border-(--ev-line-strong) bg-white hover:bg-(--ev-panel-faint)')}>
+                    <span className="block text-[15px] font-semibold text-(--ev-ink)">{label}</span>
+                    <span className="mt-0.5 block text-[14px] leading-snug text-(--ev-ink-75)">{hint}</span>
+                  </button>
+                ))}
+              </div>
+            </Field>
             <Field label="Sign-up or waiver link" htmlFor="reg" optional hint="Do people also need to sign up or sign a waiver on your own site? Paste that page. For a regular ride, use one page that covers every date."
               error={!LINK_OK(f.registration_url) ? 'Links start with https://' : null}>
               <Input id="reg" value={f.registration_url} onChange={(e) => set('registration_url', e.target.value)} placeholder="https://…" inputMode="url" />
@@ -741,30 +882,10 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
             </Field>
           </div>
         </Card>
-
-        <Card id="sec-who">
-          <SectionTitle>Who it&rsquo;s from, and who can find it</SectionTitle>
-          <div className="grid grid-cols-[minmax(0,1fr)] gap-5">
-            <Field label="Visibility">
-              <div className="grid gap-2 sm:grid-cols-2">
-                {([
-                  ['public', 'Public', 'On the Green Streets events calendar and in the app, straight away.'],
-                  ['invite', 'Invite only', `Only people with your ${noun} link or code can find it.`],
-                ] as const).map(([v, label, hint]) => (
-                  <button key={v} type="button" aria-pressed={f.visibility === v} onClick={() => set('visibility', v)}
-                    className={cx('rounded-xl border p-3 text-left transition', f.visibility === v ? 'border-(--ev-accent-fill) bg-(--ev-panel) ring-1 ring-(--ev-accent-fill)' : 'border-(--ev-line-strong) bg-white hover:bg-(--ev-panel-faint)')}>
-                    <span className="block text-[15px] font-semibold text-(--ev-ink)">{label}</span>
-                    <span className="mt-0.5 block text-[14px] leading-snug text-(--ev-ink-75)">{hint}</span>
-                  </button>
-                ))}
-              </div>
-            </Field>
-            <OrgPicker value={f.event_organizer_id} onPick={pickOrg} />
-          </div>
-        </Card>
-        </>)}
+        )}
       </div>
-
+      <Preview f={f} route={f.route} hostName={hostPreview} />
+      </div>
       </div>
 
       <div className="fixed inset-x-0 bottom-0 z-30 border-t border-(--ev-line) bg-(--ev-bar) backdrop-blur">
@@ -772,12 +893,30 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
           <p className={cx('mr-auto text-[14px]', err ? 'font-semibold text-(--ev-danger)' : 'text-(--ev-ink-75)')} role={err ? 'alert' : undefined}>
             {err ?? (reason ? `Still needed: ${reason.charAt(0).toLowerCase()}${reason.slice(1)}` : dirty ? 'Unsaved changes' : ride ? 'No changes yet' : '')}
           </p>
-          <Link href={ride ? `/organizers/rides/${ride.id}` : '/organizers'} className="inline-flex min-h-[44px] items-center rounded-[10px] px-4 text-[15px] font-semibold text-(--ev-ink-85) hover:bg-(--ev-panel)">
-            Cancel
-          </Link>
-          <Button variant="primary" onClick={() => void save()} busy={saving} disabled={!!ride && !dirty}>
-            {ride ? 'Save changes' : walk ? 'Create walk' : 'Create ride'}
-          </Button>
+          {ride ? (<>
+            <Link href={`/organizers/rides/${ride.id}`} className="inline-flex min-h-[44px] items-center rounded-[10px] px-4 text-[15px] font-semibold text-(--ev-ink-85) hover:bg-(--ev-panel)">
+              Cancel
+            </Link>
+            <Button variant="primary" onClick={() => void save()} busy={saving} disabled={!dirty}>Save changes</Button>
+          </>) : (<>
+            {stepIndex > 0 ? (
+              <Button variant="ghost" onClick={() => setStep(STEPS[stepIndex - 1].id)}><ArrowLeft className="h-4 w-4" aria-hidden />Back</Button>
+            ) : (
+              <Link href="/organizers" className="inline-flex min-h-[44px] items-center rounded-[10px] px-4 text-[15px] font-semibold text-(--ev-ink-85) hover:bg-(--ev-panel)">Cancel</Link>
+            )}
+            {/* The rest is optional: once the needed parts are in, it can be made now. */}
+            {!last && !block && stepIndex >= 2 && (
+              <Button onClick={() => void save()} busy={saving}>{walk ? 'Create walk now' : 'Create ride now'}</Button>
+            )}
+            {last ? (
+              <Button variant="primary" onClick={() => void save()} busy={saving}>{walk ? 'Create walk' : 'Create ride'}</Button>
+            ) : (
+              <Button variant="primary" onClick={next}>
+                Next: {stepLabel(STEPS[stepIndex + 1], walk).toLowerCase()}
+                <ArrowRight className="h-4 w-4" aria-hidden />
+              </Button>
+            )}
+          </>)}
         </div>
       </div>
     </div>

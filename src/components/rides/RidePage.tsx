@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import posthog from 'posthog-js'
-import { Bike, Calendar, Check, CloudSun, Download, ExternalLink, MapPin, MessageCircle, Radio, Route as RouteIcon, Share2, Users } from 'lucide-react'
+import { Bike, Calendar, Check, CloudSun, Download, ExternalLink, Footprints, MapPin, Megaphone, MessageCircle, Radio, Route as RouteIcon, Share2, Users } from 'lucide-react'
+import type { CalmSegment } from '@/components/commute/calm-route'
 import EventMap from '@/components/events/EventMap'
 import RouteMap from '@/components/organizers/RouteMap'
 import { buildIcs, calendarLocation, gcalUrl as eventGcalUrl } from '@/lib/event-calendar'
@@ -146,8 +147,10 @@ function downloadGpx(ride: PublicRide, line: { lat: number; lng: number }[], dat
   a.remove()
 }
 
-export default function RidePage({ ride, host = null, hostPerson = null, ascentFt = null, initialDate = null, perks = [], newInfra = [], coffee = null }: {
+export default function RidePage({ ride, host = null, hostPerson = null, ascentFt = null, comfort = null, initialDate = null, perks = [], newInfra = [], coffee = null }: {
   ride: PublicRide; host?: RideHost | null; ascentFt?: number | null
+  /** The ride's own route, street by street, for the calm-streets bar. */
+  comfort?: CalmSegment[] | null
   /** Who hosts it when there's no verified organization: the organizer's profile name (hostLabel). */
   hostPerson?: string | null
   /** A date the visitor came for (?date=YYYY-MM-DD from a calendar listing). */
@@ -324,26 +327,53 @@ export default function RidePage({ ride, host = null, hostPerson = null, ascentF
   const newKey = newInfraKey(route, hasMap ? { lat: place!.meetup_lat!, lng: place!.meetup_lng! } : null)
   const newHere = newInfra.find((n) => n.key === newKey)?.info
 
+  const updatesCount = updates.length
+  const alongAny = !!coffee?.shop || hasNewInfra(newHere) || (!walk && perkStops.length > 0) || route.length >= 2 || !!(routeLink && /^https?:\/\//.test(routeLink))
+  const hostAny = !!hostName
+  const aboutAny = !!about || !!flyer || !!ride.registration_url
+  const TABS = ([
+    aboutAny ? { id: 'about', label: `About this ${noun}` } : null,
+    { id: 'updates', label: 'Updates', count: updatesCount },
+    alongAny ? { id: 'along', label: route.length < 2 ? 'Near the start' : walk ? 'Along the walk' : 'Along the route' } : null,
+    hostAny ? { id: 'host', label: 'Host' } : null,
+  ].filter(Boolean)) as { id: TabId; label: string; count?: number }[]
+  // A fresh update (the last three days) opens first; otherwise what it's about.
+  const freshUpdate = updates[0] && Date.now() - new Date(updates[0].created_at).getTime() < 3 * 864e5
+  const [tab, setTab] = useState<TabId>(freshUpdate || !aboutAny ? 'updates' : 'about')
+  const shownTab = TABS.some((t) => t.id === tab) ? tab : TABS[0].id
+  // The calm-streets bar is the ride's own route's; a date with its own route has none yet.
+  const comfortHere = own ? null : comfort
+
   return (
     <EventsToneProvider tone="light">
     <div className={`min-h-screen bg-(--ev-bg) px-4 pb-24 pt-6 sm:px-8 sm:pt-10 ${toneClass('light')}`}>
-      <div className="mx-auto max-w-[1040px]">
-        {/* ---- Header ---- */}
-        {host?.logo_url ? (
-          <div className="flex items-center gap-3">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={host.logo_url} alt={host.name} className="h-16 w-auto max-w-[200px] rounded-lg object-contain" />
-            <p className="text-[15px] font-medium text-(--ev-ink-75)">{walk ? 'Group walk' : 'Group ride'} hosted by <span className="font-semibold text-(--ev-ink)">{host.name}</span></p>
-          </div>
-        ) : (
-          <p className="text-[14px] font-semibold text-(--ev-accent)">
-            {walk ? 'Group walk' : 'Group ride'}{hostName ? <span className="font-medium text-(--ev-ink-75)"> hosted by {hostName}</span> : null}
+      <div className="mx-auto max-w-[1100px]">
+        {/* ---- Header: who hosts it, with a face, then the name and when/where ---- */}
+        <div className="flex items-center gap-3">
+          <HostFace name={hostName} logo={host?.logo_url ?? null} walk={walk} />
+          <p className="min-w-0 text-[15px] leading-snug text-(--ev-ink-80)">
+            <span className="block font-semibold text-(--ev-accent)">{walk ? 'Group walk' : 'Group ride'}</span>
+            {hostName && (
+              <span className="block">
+                Hosted by{' '}
+                {hostHref
+                  ? <a href={hostHref} className="font-semibold text-(--ev-ink) hover:underline">{hostName}</a>
+                  : <span className="font-semibold text-(--ev-ink)">{hostName}</span>}
+              </span>
+            )}
           </p>
-        )}
-        <h1 className="mt-2 font-display text-[clamp(30px,4vw,44px)] font-extrabold leading-[1.08] tracking-tight text-(--ev-ink)">
+        </div>
+        <h1 className="mt-3 font-display text-[clamp(30px,4.4vw,48px)] font-extrabold leading-[1.05] tracking-tight text-(--ev-ink)">
           {ride.name}
         </h1>
-        {headerSchedule && <p className="mt-2 text-[15px] font-medium text-(--ev-ink-80)">{headerSchedule}</p>}
+        {/* The pattern for a repeating ride; the date itself, the place and the facts each show once, below. */}
+        <ul className="mt-3 flex flex-wrap gap-2 empty:hidden">
+          {headerSchedule && (
+            <li className="inline-flex min-h-[36px] items-center gap-1.5 rounded-full bg-white px-3.5 text-[15px] font-semibold text-(--ev-ink) shadow-[inset_0_0_0_1px_var(--ev-line-mid)]">
+              <Calendar size={16} className="text-(--ev-ink-75)" aria-hidden />{headerSchedule}
+            </li>
+          )}
+        </ul>
 
         {(ended || paused) && (
           <div className={`mt-6 rounded-2xl px-5 py-4 ${ended ? TONE_STYLE.off : TONE_STYLE.warn}`}>
@@ -354,7 +384,7 @@ export default function RidePage({ ride, host = null, hostPerson = null, ascentF
           </div>
         )}
 
-        <div className="mt-6 grid grid-cols-[minmax(0,1fr)] gap-8 lg:grid-cols-[minmax(0,1fr)_400px]">
+        <div className="mt-6 grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[minmax(0,1fr)_400px] lg:gap-8">
           {/* ---- RSVP card: right under the title on phones, so the date,
                where to meet and Going / Maybe / Can't go are the first
                screen; the right column on desktop ---- */}
@@ -585,140 +615,195 @@ export default function RidePage({ ride, host = null, hostPerson = null, ascentF
             </div>
           </aside>
 
-          <div className="grid grid-cols-[minmax(0,1fr)] content-start gap-8 lg:col-start-1 lg:row-start-1">
-          {/* What it's like (pace, level, policies): under the RSVP on phones. */}
-          <RideFacts ride={ride} miles={miles} ascentFt={climb} className="" />
-
-          {/* ---- Latest from the organizer ---- */}
-          <section aria-labelledby="updates-h">
-            <h2 id="updates-h" className="font-display text-[22px] font-extrabold text-(--ev-ink)">Latest from the organizer</h2>
-            {updates.length === 0 ? (
-              <p className="mt-2 text-[15px] text-(--ev-ink-75)">Nothing new. If anything changes, it shows up here and in your inbox.</p>
-            ) : (
-              <ol className="mt-3 space-y-3">
-                {updates.map((u) => (
-                  <li key={u.id} className="rounded-2xl border border-(--ev-line) bg-(--ev-card) px-4 py-3">
-                    <div className="flex items-baseline justify-between gap-3">
-                      <p className="text-[15px] font-semibold text-(--ev-ink)">{u.title}</p>
-                      <time dateTime={u.created_at} className="shrink-0 text-[14px] text-(--ev-ink-75)">{ago(u.created_at)}</time>
-                    </div>
-                    {u.body && <p className="mt-0.5 text-[14px] text-(--ev-ink-80)">{u.body}</p>}
-                    {u.note && <p className="mt-1.5 border-l-2 border-(--ev-accent-line) pl-3 text-[14px] text-(--ev-ink-80)">&ldquo;{u.note}&rdquo;</p>}
-                  </li>
-                ))}
-              </ol>
-            )}
-            {hostName && (host ? Object.keys(host.social_links).length > 0 || host.url : ride.organizer_url) && (
-              <div className="mt-4 rounded-2xl border border-(--ev-line) bg-(--ev-card) p-4">
-                <p className="text-[15px] font-bold text-(--ev-ink)">Follow {hostName} for news between rides</p>
-                <OrganizerChannels className="mt-3" links={host?.social_links ?? {}} website={host ? host.url : ride.organizer_url} />
+          <div className="grid grid-cols-[minmax(0,1fr)] content-start gap-6 lg:col-start-1 lg:row-start-1">
+          {/* ---- The route or meeting point: the page's picture ---- */}
+          {hasMap && place && (
+            <div className="overflow-hidden rounded-2xl border border-(--ev-line-mid) bg-(--ev-card) shadow-(--ev-shadow)">
+              <div className={route.length >= 2 ? 'h-[300px] sm:h-[360px]' : 'h-56 sm:h-64'}>
+                {route.length >= 2 ? (
+                  <RouteMap line={route} stops={[]} meetup={{ lat: place.meetup_lat!, lng: place.meetup_lng! }} pick={false}
+                    className="h-full w-full" label={`Route map for ${ride.name}`} />
+                ) : (
+                  <EventMap lat={place.meetup_lat!} lng={place.meetup_lng!} label={place.meetup_name ?? undefined} />
+                )}
               </div>
-            )}
-          </section>
-
-          {/* ---- About, meeting point, organizer ---- */}
-          <section className="space-y-6" aria-label={`About this ${noun}`}>
-            {about && (
-              <div>
-                <h2 className="font-display text-[22px] font-extrabold text-(--ev-ink)">About this {noun}</h2>
-                <p className="mt-2 whitespace-pre-line text-[15px] leading-relaxed text-(--ev-ink-80)">{about}</p>
+              <div className="flex flex-wrap items-center justify-between gap-3 border-t border-(--ev-line) p-4">
+                <div className="min-w-0">
+                  <p className="text-[15px] font-semibold text-(--ev-ink)">Meet at {place.meetup_name || 'the start'}</p>
+                  {place.meetup_address && <p className="mt-0.5 text-[14px] text-(--ev-ink-75)">{place.meetup_address}</p>}
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {/* Nearby plans the trip there by bike, the T or Bluebikes, from where they are. */}
+                  <a href={`/nearby?to=${place.meetup_lat},${place.meetup_lng}&toName=${encodeURIComponent(place.meetup_name || ride.name)}&toMode=bike`}
+                    className="inline-flex min-h-[44px] items-center gap-1.5 rounded-[10px] border border-(--ev-line-strong) bg-white px-4 py-2 text-[14px] font-semibold text-(--ev-ink) hover:bg-(--ev-panel)">
+                    <Bike size={15} /> Get there by bike or T
+                  </a>
+                  <a href={directionsUrl(place)} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-[44px] items-center gap-1.5 rounded-[10px] border border-(--ev-line-strong) bg-white px-4 py-2 text-[14px] font-semibold text-(--ev-ink) hover:bg-(--ev-panel)">
+                    <MapPin size={15} /> Directions
+                  </a>
+                </div>
               </div>
-            )}
+            </div>
+          )}
 
-            {hasMap && place && (
-              <div className="overflow-hidden rounded-2xl border border-(--ev-line) bg-(--ev-card)">
-                <div className={route.length >= 2 ? 'h-72' : 'h-56'}>
-                  {route.length >= 2 ? (
-                    <RouteMap line={route} stops={[]} meetup={{ lat: place.meetup_lat!, lng: place.meetup_lng! }} pick={false}
-                      className="h-full w-full" label={`Route map for ${ride.name}`} />
-                  ) : (
-                    <EventMap lat={place.meetup_lat!} lng={place.meetup_lng!} label={place.meetup_name ?? undefined} />
+          {/* What it's like (distance, pace, hills, calm streets, level, policies). */}
+          <RideFacts ride={ride} miles={miles} ascentFt={climb} comfort={comfortHere} className="" />
+
+          {/* ---- The rest, by tab, so nothing waits at the bottom of a long scroll ---- */}
+          <section aria-label={`More about this ${noun}`}>
+            <div role="tablist" aria-label={`About this ${noun}`}
+              className="flex gap-1 overflow-x-auto border-b border-(--ev-line-mid) [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              {TABS.map((t) => {
+                const on = t.id === shownTab
+                return (
+                  <button key={t.id} type="button" role="tab" id={`ride-tab-${t.id}`} aria-selected={on} aria-controls={`ride-panel-${t.id}`}
+                    onClick={() => setTab(t.id)}
+                    className={`-mb-px inline-flex shrink-0 items-center gap-2 whitespace-nowrap border-b-2 px-3.5 py-3 text-[15px] font-semibold ${
+                      on ? 'border-(--ev-ink) text-(--ev-ink)' : 'border-transparent text-(--ev-ink-75) hover:text-(--ev-ink)'}`}>
+                    {t.label}
+                    {typeof t.count === 'number' && t.count > 0 && (
+                      <span className={`rounded-full px-2 py-px text-[13px] font-bold ${on ? 'bg-(--ev-ink) text-white' : 'bg-(--ev-panel) text-(--ev-ink-80)'}`}>{t.count}</span>
+                    )}
+                  </button>
+                )
+              })}
+            </div>
+
+            <div role="tabpanel" id={`ride-panel-${shownTab}`} aria-labelledby={`ride-tab-${shownTab}`} className="pt-5">
+              {shownTab === 'about' && (
+                <div className="grid gap-5 sm:grid-cols-[minmax(0,1fr)_auto]">
+                  <div className="min-w-0 space-y-4">
+                    {about && <p className="whitespace-pre-line text-[16px] leading-relaxed text-(--ev-ink-85)">{about}</p>}
+                    {ride.registration_url && (
+                      <a href={ride.registration_url} target="_blank" rel="noopener noreferrer"
+                        className="flex items-center gap-3 rounded-2xl border border-(--ev-line-mid) bg-white p-4 hover:bg-(--ev-panel-faint)">
+                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-(--ev-accent-tint-15) text-(--ev-accent)"><ExternalLink size={18} aria-hidden /></span>
+                        <span className="min-w-0">
+                          <span className="block text-[15px] font-bold text-(--ev-ink)">Also register with the organizer</span>
+                          <span className="block text-[14px] text-(--ev-ink-80)">They ask everyone to sign up on their own page too.</span>
+                        </span>
+                      </a>
+                    )}
+                  </div>
+                  {flyer && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={flyer} alt={`${dateTitle ?? ride.name} flyer`} className="max-h-[320px] w-full rounded-2xl border border-(--ev-line) object-cover sm:w-[240px]" />
                   )}
                 </div>
-                <div className="flex flex-wrap items-center justify-between gap-3 p-4">
-                  <div>
-                    <p className="text-[15px] font-semibold text-(--ev-ink)">Meet at {place.meetup_name || 'the start'}</p>
-                    {place.meetup_address && <p className="mt-0.5 text-[14px] text-(--ev-ink-75)">{place.meetup_address}</p>}
+              )}
+
+              {shownTab === 'updates' && (
+                updates.length === 0 ? (
+                  <div className="flex items-start gap-3 rounded-2xl border border-(--ev-line) bg-(--ev-card) p-4">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-(--ev-panel) text-(--ev-ink-75)"><Megaphone size={18} aria-hidden /></span>
+                    <p className="text-[15px] text-(--ev-ink-80)">Nothing new from the organizer. If plans change, it shows up here, and everyone who says they&rsquo;re coming hears right away.</p>
                   </div>
-                  <div className="flex flex-wrap gap-2">
-                    {/* Nearby plans the trip there by bike, the T or Bluebikes, from where they are. */}
-                    <a href={`/nearby?to=${place.meetup_lat},${place.meetup_lng}&toName=${encodeURIComponent(place.meetup_name || ride.name)}&toMode=bike`}
-                      className="inline-flex min-h-[40px] items-center gap-1.5 rounded-[10px] border border-(--ev-line-strong) px-4 py-2 text-[14px] font-semibold text-(--ev-ink) hover:bg-(--ev-panel)">
-                      <Bike size={14} /> Get there by bike or T
-                    </a>
-                    <a href={directionsUrl(place)} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-[40px] items-center gap-1.5 rounded-[10px] border border-(--ev-line-strong) px-4 py-2 text-[14px] font-semibold text-(--ev-ink) hover:bg-(--ev-panel)">
-                      <MapPin size={14} /> Directions
-                    </a>
-                  </div>
+                ) : (
+                  <ol className="space-y-3">
+                    {updates.map((u) => (
+                      <li key={u.id} className="flex gap-3 rounded-2xl border border-(--ev-line) bg-(--ev-card) px-4 py-3">
+                        <HostFace name={hostName} logo={host?.logo_url ?? null} walk={walk} small />
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-baseline justify-between gap-3">
+                            <p className="text-[15px] font-semibold text-(--ev-ink)">{u.title}</p>
+                            <time dateTime={u.created_at} className="shrink-0 text-[14px] text-(--ev-ink-75)">{ago(u.created_at)}</time>
+                          </div>
+                          {u.body && <p className="mt-0.5 text-[15px] text-(--ev-ink-80)">{u.body}</p>}
+                          {u.note && <p className="mt-1.5 border-l-2 border-(--ev-accent-line) pl-3 text-[15px] text-(--ev-ink-85)">&ldquo;{u.note}&rdquo;</p>}
+                        </div>
+                      </li>
+                    ))}
+                  </ol>
+                )
+              )}
+
+              {shownTab === 'along' && (
+                <div className="space-y-5">
+                  {((routeLink && /^https?:\/\//.test(routeLink)) || route.length >= 2) && (
+                    <div className="flex flex-wrap gap-2">
+                      {routeLink && /^https?:\/\//.test(routeLink) && (
+                        <a href={routeLink} target="_blank" rel="noopener noreferrer"
+                          className="inline-flex min-h-[44px] items-center gap-1.5 rounded-[10px] border border-(--ev-line-strong) bg-white px-4 text-[15px] font-semibold text-(--ev-ink) hover:bg-(--ev-panel)">
+                          <RouteIcon size={16} /> The full route, turn by turn <ExternalLink size={14} />
+                        </a>
+                      )}
+                      {route.length >= 2 && (
+                        <button type="button" onClick={() => downloadGpx(ride, route, selected?.date ?? null)}
+                          className="inline-flex min-h-[44px] items-center gap-1.5 rounded-[10px] border border-(--ev-line-strong) bg-white px-4 text-[15px] font-semibold text-(--ev-ink) hover:bg-(--ev-panel)">
+                          <Download size={16} /> {walk ? 'GPX for a phone or watch' : 'GPX for a bike computer'}
+                        </button>
+                      )}
+                    </div>
+                  )}
+                  {coffee?.shop && <RideCoffee info={coffee} />}
+                  {hasNewInfra(newHere) && <RideNewInfra info={newHere} onRoute={route.length >= 2} />}
+                  {/* Bicycle Benefits perks need a helmet sticker: rides only. */}
+                  {!walk && perkStops.length > 0 && <RidePerks stops={perkStops} code={ride.code} />}
                 </div>
-              </div>
-            )}
+              )}
 
-            {((routeLink && /^https?:\/\//.test(routeLink)) || route.length >= 2) && (
-              <div className="flex flex-wrap gap-x-6 gap-y-2">
-                {routeLink && /^https?:\/\//.test(routeLink) && (
-                  <a href={routeLink} target="_blank" rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 text-[15px] font-semibold text-(--ev-accent) hover:underline">
-                    <RouteIcon size={15} /> The full route, turn by turn <ExternalLink size={13} />
-                  </a>
-                )}
-                {route.length >= 2 && (
-                  <button type="button" onClick={() => downloadGpx(ride, route, selected?.date ?? null)}
-                    className="inline-flex items-center gap-1.5 text-[15px] font-semibold text-(--ev-accent) hover:underline">
-                    <Download size={15} /> {walk ? 'GPX for a phone or watch' : 'GPX for a bike computer'}
-                  </button>
-                )}
-              </div>
-            )}
-
-            {coffee?.shop && <RideCoffee info={coffee} />}
-
-            {hasNewInfra(newHere) && <RideNewInfra info={newHere} onRoute={route.length >= 2} />}
-
-            {/* Bicycle Benefits perks need a helmet sticker: rides only. */}
-            {!walk && perkStops.length > 0 && <RidePerks stops={perkStops} code={ride.code} />}
-
-            {(hostName || ride.registration_url) && (
-              <div className="space-y-2 text-[14px] text-(--ev-ink-80)">
-                {hostName && (
-                  <p>
-                    Hosted by <span className="font-semibold text-(--ev-ink)">{hostName}</span>
-                    {hostHref && (
-                      <>
-                        {' · '}
-                        <a href={hostHref} className="font-semibold text-(--ev-accent) hover:underline">{walk ? 'More walks from them' : 'More rides from them'}</a>
-                      </>
-                    )}
-                  </p>
-                )}
-                {ride.registration_url && (
-                  <p>
-                    The organizer also asks everyone to{' '}
-                    <a href={ride.registration_url} target="_blank" rel="noopener noreferrer" className="font-semibold text-(--ev-accent) hover:underline">
-                      register on their page <ExternalLink size={12} className="inline" />
+              {shownTab === 'host' && hostName && (
+                <div className="rounded-2xl border border-(--ev-line) bg-(--ev-card) p-5">
+                  <div className="flex items-center gap-4">
+                    <HostFace name={hostName} logo={host?.logo_url ?? null} walk={walk} large />
+                    <div className="min-w-0">
+                      <p className="font-display text-[22px] font-extrabold leading-tight text-(--ev-ink)">{hostName}</p>
+                      <p className="mt-0.5 text-[15px] text-(--ev-ink-80)">{host ? 'Hosts this group ' + noun : `Organizes this group ${noun} on Shift`}</p>
+                    </div>
+                  </div>
+                  {(host ? Object.keys(host.social_links).length > 0 || host.url : ride.organizer_url) && (
+                    <div className="mt-4">
+                      <p className="text-[15px] font-semibold text-(--ev-ink)">Follow them for news between {walk ? 'walks' : 'rides'}</p>
+                      <OrganizerChannels className="mt-2" links={host?.social_links ?? {}} website={host ? host.url : ride.organizer_url} />
+                    </div>
+                  )}
+                  {hostHref && (
+                    <a href={hostHref} className="mt-4 inline-flex min-h-[44px] items-center rounded-[10px] bg-(--ev-accent-fill) px-4 text-[15px] font-semibold text-(--ev-on-accent-fill) hover:opacity-90">
+                      {walk ? 'More walks from them' : 'More rides from them'}
                     </a>
-                    .
-                  </p>
-                )}
-              </div>
-            )}
-
-            {flyer && (
-              <img src={flyer} alt={`${dateTitle ?? ride.name} flyer`} className="max-h-[320px] w-full max-w-[420px] rounded-2xl border border-(--ev-line) object-cover" />
-            )}
-
-            <div className="rounded-2xl bg-(--ev-panel) p-5">
-              <p className="text-[16px] font-bold text-(--ev-ink)">{walk ? 'Walk along with Shift' : 'Ride along with Shift'}</p>
-              <p className="mt-1 text-[14px] text-(--ev-ink-80)">
-                On the day, Shift shows where the group is so you can catch up, and counts your {walk ? 'walk' : 'ride'} toward local rewards.
-              </p>
-              <RideStoreBadges code={ride.code} className="mt-3" placement="ride_page" height={40} />
+                  )}
+                </div>
+              )}
             </div>
           </section>
+
+          <div className="flex flex-col gap-4 rounded-2xl bg-[#191A2E] p-5 text-white sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
+              <p className="font-display text-[19px] font-extrabold">{walk ? 'Walk along with Shift' : 'Ride along with Shift'}</p>
+              <p className="mt-1 text-[15px] text-white/80">
+                On the day, Shift shows where the group is so you can catch up, and counts your {walk ? 'walk' : 'ride'} toward local rewards.
+              </p>
+            </div>
+            <RideStoreBadges code={ride.code} className="shrink-0" placement="ride_page" height={40} />
+          </div>
           </div>
         </div>
       </div>
     </div>
     </EventsToneProvider>
+  )
+}
+
+type TabId = 'about' | 'updates' | 'along' | 'host'
+
+/**
+ * The host's face (Keith 2026-11-06: the page needs one): a verified
+ * organization's logo, else the organizer's initials ("Keith A." is KA) on
+ * the brand's navy, else a bike or walker for a private profile.
+ */
+function HostFace({ name, logo, walk, small = false, large = false }: { name: string | null; logo: string | null; walk: boolean; small?: boolean; large?: boolean }) {
+  const box = small ? 'h-9 w-9 text-[13px]' : large ? 'h-16 w-16 text-[22px]' : 'h-14 w-14 text-[19px]'
+  if (logo) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img src={logo} alt="" className={`${box} shrink-0 rounded-full border border-(--ev-line-mid) bg-white object-contain p-1`} />
+    )
+  }
+  const person = name && !/^a /.test(name) ? name : null
+  const initials = person ? person.split(/\s+/).map((w) => w.replace(/[^A-Za-z]/g, '')).filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join('') : ''
+  return (
+    <span aria-hidden className={`${box} grid shrink-0 place-items-center rounded-full bg-[#191A2E] font-display font-extrabold text-[#BAF14D]`}>
+      {initials || (walk ? <Footprints size={small ? 16 : 24} /> : <Bike size={small ? 16 : 24} />)}
+    </span>
   )
 }

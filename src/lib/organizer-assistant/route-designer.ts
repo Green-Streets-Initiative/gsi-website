@@ -2,7 +2,7 @@ import 'server-only'
 import { unstable_cache } from 'next/cache'
 import { comfortableShare, concernTitle, newLaneNotes, relevantConcerns, type CalmFlag } from '@/components/commute/calm-route'
 import { PACE_MID_MPH, WALK_MPH } from '@/lib/organizers/ride-words'
-import { comfortBreakdown, routeFromPlan } from '@/lib/organizers/route-plan'
+import { calmestWay, comfortBreakdown, routeFromPlan } from '@/lib/organizers/route-plan'
 import { routeMiles, stopsFromCourse, type RouteCourse } from '@/lib/organizers/route-geo'
 import type { PlannedLegOption, PlannedRoute } from '@/lib/organizers/api'
 import type { LatLng } from '@/lib/organizers/types'
@@ -776,7 +776,7 @@ export async function designRoute(token: string, input: DesignInput): Promise<De
 /**
  * Re-plan a route someone brought in (a Ride with GPS link or a GPX file) on
  * comfortable streets along the same course: stops about every 1.5 miles,
- * the planner's first choice between each pair, the same as the editor's
+ * the calmest way between each pair, the same as the editor's
  * "Re-plan it on comfortable streets" button (RouteSection replanImported).
  */
 export async function replanCourse(
@@ -791,7 +791,7 @@ export async function replanCourse(
   const pins: (LatLng & { label?: string })[] = [{ lat: meetup.lat, lng: meetup.lng }, ...stopsFromCourse(course, meetup)]
   const plan = await planLegs(token, pins, pinPace, activity)
   if (plan.legs.some((l) => !l.options.length)) return { ok: false, notes: ["The planner couldn't connect one stretch of this route on calmer streets."] }
-  const chosen = plan.legs.map(() => 0)
+  const chosen = plan.legs.map((l) => calmestWay(l.options))
   const route = routeFromPlan(plan, chosen, pins)
   const total = routeMiles(route.waypoints)
   const segs = route.comfortSegments ?? []

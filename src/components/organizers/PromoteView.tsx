@@ -11,10 +11,11 @@ import { clock, dateLong, dateShort, dayShort, scheduleText } from '@/lib/rides/
 import { PROMO_CHANNELS, PROMO_LABEL, promoLink, type PromoChannel } from '@/lib/rides/promo'
 import { useRide } from './RideFrame'
 import { resume } from './StopRide'
-import { Button, Card, Notice, SectionTitle, Spinner, Toggle, copyText, cx } from './ui'
+import { Button, Card, Notice, SectionTitle, Spinner, Toggle, copyText, cx, tabPanel } from './ui'
 import { track } from '@/lib/organizers/track'
 
 type Post = Exclude<PromoChannel, 'qr' | 'cal'>
+type PromoTab = 'posts' | 'flyer' | 'calendars' | 'results'
 const POSTS = PROMO_CHANNELS.filter((c): c is { key: Post; label: string } => c.key !== 'qr' && c.key !== 'cal')
 
 /** One line on how each place treats links, shown under its caption. */
@@ -126,6 +127,13 @@ export default function PromoteView() {
   const [statsErr, setStatsErr] = useState<string | null>(null)
   const [done, setDone] = useState<Record<string, boolean>>({})
   const [making, setMaking] = useState(false)
+  const [tab, setTab] = useState<PromoTab>('posts')
+  // A link to #flyer, #calendars or #results opens that tab.
+  useEffect(() => {
+    const h = window.location.hash.slice(1)
+    const t = (['posts', 'flyer', 'calendars', 'results'] as const).find((x) => x === h)
+    if (t) setTab(t)
+  }, [])
 
   const doneKey = `promote-calendars-${r.id}`
   useEffect(() => {
@@ -259,9 +267,10 @@ export default function PromoteView() {
   const calsDone = CALENDARS.filter((c) => done[c.key]).length + (listed ? 1 : 0)
   const visits = (stats?.channels ?? []).reduce((a, c) => a + c.visits, 0)
   const people = (stats?.channels ?? []).reduce((a, c) => a + c.people, 0)
-  const steps: { id: string; n?: number; label: string; value: string }[] = [
-    { id: 'flyer', n: 1, label: 'Flyer', value: r.flyer_url ? 'Yours is up' : 'QR ready' },
-    { id: 'posts', n: 2, label: 'Social posts', value: `${POSTS.length} captions` },
+  // Posts first: it's what most organizers came for (the flyer is a one-time job).
+  const steps: { id: PromoTab; n?: number; label: string; value: string }[] = [
+    { id: 'posts', n: 1, label: 'Social posts', value: `${POSTS.length} captions` },
+    { id: 'flyer', n: 2, label: 'Flyer', value: r.flyer_url ? 'Yours is up' : 'QR ready' },
     { id: 'calendars', n: 3, label: 'Calendars', value: `${calsDone} of ${CALENDARS.length + 1}` },
     { id: 'results', label: 'Results', value: stats ? `${visits} visits, ${people} yes` : '–' },
   ]
@@ -290,19 +299,26 @@ export default function PromoteView() {
         </Notice>
       ))}
 
-      <nav aria-label="Promote steps" className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-        {steps.map((s) => (
-          <a key={s.id} href={`#${s.id}`}
-            className="flex min-h-[64px] flex-col justify-center rounded-xl border border-(--ev-line) bg-white px-4 py-2.5 hover:bg-(--ev-panel-faint)">
-            <span className="text-[14px] font-semibold text-(--ev-ink-75)">{s.n ? `${s.n}. ` : ''}{s.label}</span>
-            <span className="font-display text-[18px] font-extrabold leading-tight text-(--ev-ink)">{s.value}</span>
-          </a>
-        ))}
-      </nav>
+      {/* The four jobs as tabs, each showing where it stands (Keith 2026-11-06: no totem-pole pages). */}
+      <div role="tablist" aria-label="Promote" className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        {steps.map((s) => {
+          const on = s.id === tab
+          return (
+            <button key={s.id} type="button" role="tab" id={`promo-tab-${s.id}`} aria-selected={on} aria-controls={`promo-panel-${s.id}`}
+              onClick={() => setTab(s.id)}
+              className={cx('flex min-h-[64px] flex-col justify-center rounded-xl border px-4 py-2.5 text-left transition',
+                on ? 'border-(--ev-ink) bg-white shadow-[inset_0_0_0_1px_var(--ev-ink)]' : 'border-(--ev-line) bg-white/60 hover:bg-white')}>
+              <span className={cx('text-[14px] font-semibold', on ? 'text-(--ev-ink)' : 'text-(--ev-ink-75)')}>{s.n ? `${s.n}. ` : ''}{s.label}</span>
+              <span className="font-display text-[18px] font-extrabold leading-tight text-(--ev-ink)">{s.value}</span>
+            </button>
+          )
+        })}
+      </div>
 
-      <Card id="flyer">
+      <div {...tabPanel('promo', tab)}>
+      {tab === 'flyer' && <Card id="flyer">
         <SectionTitle hint="Put this QR on your own flyer or poster. It opens the ride page.">
-          <StepTitle n={1}>Flyer</StepTitle>
+          <StepTitle n={2}>Flyer</StepTitle>
         </SectionTitle>
         <div className="flex flex-wrap items-center gap-4">
           <div className="h-[132px] w-[132px] shrink-0 overflow-hidden rounded-xl border border-(--ev-line) bg-white">
@@ -327,11 +343,11 @@ export default function PromoteView() {
             <p className="text-[14px] text-(--ev-ink-75)">In the Shift app, people join with the code <b className="tracking-wider text-(--ev-ink)">{code}</b>.</p>
           </div>
         </div>
-      </Card>
+      </Card>}
 
-      <Card id="posts">
+      {tab === 'posts' && <Card id="posts">
         <SectionTitle hint="Each place gets its own link, so Results can show which posts bring people.">
-          <StepTitle n={2}>Social posts</StepTitle>
+          <StepTitle n={1}>Social posts</StepTitle>
         </SectionTitle>
         <div className="flex flex-wrap gap-2" role="group" aria-label="Where you're posting">
           {POSTS.map((c) => (
@@ -357,9 +373,9 @@ export default function PromoteView() {
           )}
           <span className="ml-auto break-all text-[14px] text-(--ev-ink-75)">{promoLink(code, post).replace('https://www.', '')}</span>
         </div>
-      </Card>
+      </Card>}
 
-      <Card id="calendars">
+      {tab === 'calendars' && <Card id="calendars">
         <SectionTitle
           hint="Copy the listing once, then paste it into each calendar."
           action={<CopyButton id="cal" text={calendarText} copied={copied} copy={copy} label="Copy listing" primary />}
@@ -407,15 +423,15 @@ export default function PromoteView() {
             </li>
           ))}
         </ul>
-      </Card>
+      </Card>}
 
-      <Card id="results">
+      {tab === 'results' && <Card id="results">
         <SectionTitle hint="Visits to each link, and people who said yes through it.">Results</SectionTitle>
         {statsErr ? <Notice tone="off">{statsErr}</Notice>
           : !stats ? <Spinner label="Counting visits" />
           : rows.length === 0 ? (
             <p className="text-[15px] text-(--ev-ink-85)">
-              No visits yet. <a href="#posts" className="font-semibold underline">Post your first link</a> and the counts start here.
+              No visits yet. <button type="button" onClick={() => setTab('posts')} className="font-semibold underline">Post your first link</button> and the counts start here.
             </p>
           ) : (
             <ul className="grid grid-cols-[minmax(0,1fr)] gap-2 sm:grid-cols-2 lg:grid-cols-3">
@@ -434,7 +450,8 @@ export default function PromoteView() {
         {stats && stats.direct_people > 0 && (
           <p className="mt-3 text-[14px] text-(--ev-ink-75)">Plus {stats.direct_people} who said yes from the plain ride page link.</p>
         )}
-      </Card>
+      </Card>}
+      </div>
     </div>
   )
 }

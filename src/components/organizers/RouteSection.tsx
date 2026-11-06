@@ -9,6 +9,7 @@ import { comfortableShare } from '@/components/commute/calm-route'
 import { elevationOf, haversineM, parseGpx, simplify, stopsAlong, toWaypoints } from '@/lib/organizers/route-geo'
 import type { LatLng, RouteDraft } from '@/lib/organizers/types'
 import RouteMap, { type MapFocus } from './RouteMap'
+import RouteChoices, { calmestWay, distinctWays } from './RouteChoices'
 import RouteReview, { readRoute } from './RouteReview'
 import { Button, Field, Input, Notice, cx } from './ui'
 import { track } from '@/lib/organizers/track'
@@ -17,7 +18,6 @@ type Mode = 'draw' | 'rwgps' | 'gpx'
 
 /** "Start to stop 1", "Stop 1 to stop 2", "Stop 3 to the end", "Stop 3 back to the start". */
 function legLabel(i: number, legs: number, pins: LatLng[]): string {
-  if (legs === 1) return 'Choose a way:'
   const from = i === 0 ? 'Start' : `Stop ${i}`
   const last = pins[pins.length - 1]
   const loop = i === legs - 1 && !!last && Math.abs(last.lat - pins[0].lat) < 1e-5 && Math.abs(last.lng - pins[0].lng) < 1e-5
@@ -26,13 +26,6 @@ function legLabel(i: number, legs: number, pins: LatLng[]): string {
 
 /** Calm share of a stretch or route, as a whole percent. */
 const calmPct = (segs: Parameters<typeof comfortableShare>[0]) => Math.round(comfortableShare(segs) * 100)
-
-/** A choice's chip: distance and main street, plus its calm share when two choices would read the same. */
-function optionLabels(options: PlannedRoute['legs'][number]['options']): string[] {
-  const base = options.map((o) => `${o.distanceMiles.toFixed(1)} mi${o.summary ? ` · ${o.summary}` : ''}`)
-  return base.map((b, j) => (base.some((x, k) => k !== j && x === b) && options[j].comfort_segments?.length
-    ? `${b} · ${calmPct(options[j].comfort_segments)}% calm` : b))
-}
 
 const MODES: { key: Mode; label: string }[] = [
   { key: 'draw', label: 'Plan with stops' },
@@ -142,7 +135,8 @@ export default function RouteSection({ route, onRoute, meetup, pace, activity = 
       const p = await planRoute(use, pace, activity)
       if (gen !== routeGen.current) return
       if (!p.legs?.length || p.legs.some((l) => !l.options?.length)) throw new Error("We couldn't find a route between those points. Try moving a stop onto a street.")
-      const pick = p.legs.map((l, i) => Math.min(over?.chosen[i] ?? 0, l.options.length - 1))
+      // A way someone picked before (the assistant's plan) stays; otherwise each leg starts on its calmest way.
+      const pick = p.legs.map((l, i) => Math.min(over?.chosen[i] ?? calmestWay(l.options), l.options.length - 1))
       setPlan(p)
       setChosen(pick)
       setFocus(null)
@@ -312,7 +306,7 @@ export default function RouteSection({ route, onRoute, meetup, pace, activity = 
                     const home = i === stops.length - 1 && Math.abs(st.lat - meetup.lat) < 1e-5 && Math.abs(st.lng - meetup.lng) < 1e-5
                     return (
                       <li key={i} className="inline-flex min-h-[36px] items-center gap-1.5 rounded-full border border-(--ev-line-strong) bg-white pl-1.5 pr-1 text-[14px] font-semibold text-(--ev-ink)">
-                        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#2966E5] text-[12px] text-white">{i + 1}</span>
+                        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#2966E5] text-[13px] text-white">{i + 1}</span>
                         {home ? 'Back to the start' : st.label || `Stop ${i + 1}`}
                         <button type="button" aria-label={`Remove stop ${i + 1}`} onClick={() => setStops((s) => s.filter((_, j) => j !== i))}
                           className="flex h-7 w-7 items-center justify-center rounded-full text-(--ev-ink-75) hover:bg-(--ev-panel)">
@@ -397,20 +391,11 @@ export default function RouteSection({ route, onRoute, meetup, pace, activity = 
         label={pickOnMap ? 'Route map. Click to add a stop.' : 'Route map'}
       />
 
-      {plan && plan.legs.length > 0 && plan.legs.some((l) => new Set(optionLabels(l.options)).size > 1) && (
-        <div className="mt-3 space-y-2">
-          {plan.legs.map((leg, i) => new Set(optionLabels(leg.options)).size > 1 && (
-            <div key={i} className="flex flex-wrap items-center gap-1.5">
-              <span className="text-[14px] font-semibold text-(--ev-ink-80)">{legLabel(i, plan.legs.length, pins)}</span>
-              {optionLabels(leg.options).map((label, j, all) => (all.indexOf(label) < j && chosen[i] !== j) ? null : (
-                // A choice that reads exactly like an earlier one is the same choice to the organizer: shown once.
-                <button key={j} type="button" aria-pressed={chosen[i] === j} onClick={() => choose(i, j)}
-                  className={cx('rounded-full border px-3 py-1 text-[14px] font-semibold',
-                    chosen[i] === j ? 'border-(--ev-accent-fill) bg-(--ev-accent-fill) text-(--ev-on-accent-fill)' : 'border-(--ev-line-strong) bg-white text-(--ev-ink-85) hover:bg-(--ev-panel)')}>
-                  {label}
-                </button>
-              ))}
-            </div>
+      {plan && plan.legs.some((l) => distinctWays(l.options, 0).length > 1) && (
+        <div className="mt-4 grid grid-cols-[minmax(0,1fr)] gap-4">
+          {plan.legs.map((leg, i) => (
+            <RouteChoices key={i} label={plan.legs.length > 1 ? legLabel(i, plan.legs.length, pins) : null}
+              options={leg.options} chosen={chosen[i] ?? 0} onChoose={(j) => choose(i, j)} pace={pace} activity={activity} />
           ))}
         </div>
       )}

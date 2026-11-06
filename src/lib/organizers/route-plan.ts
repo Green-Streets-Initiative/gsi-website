@@ -6,6 +6,7 @@
  */
 import type { PlannedLegOption, PlannedRoute } from './api'
 import type { ComfortSegment, LatLng, RouteDraft, RouteElevation } from './types'
+import { comfortableShare, protectedPct } from '@/components/commute/calm-route'
 
 export const COMFORT_ORDER = ['protected', 'bike_lane', 'quiet_street', 'shared_road'] as const
 export const COMFORT_LABELS: Record<string, string> = {
@@ -114,4 +115,26 @@ export function routeFromPlan(plan: PlannedRoute, chosen: number[], pins: (LatLn
 
 export function concernCount(flags: unknown[] | null | undefined): number {
   return (flags ?? []).filter((f) => (f as { type?: string })?.type === 'concern').length
+}
+
+/* ── Which way is calmest (RouteChoices, the assistant's re-plan) ── */
+
+const segs = (o: PlannedLegOption) => o.comfort_segments ?? []
+
+/** Same order as the app's calmerThan: more on calm streets, then more protected, then shorter. */
+export function calmer(a: PlannedLegOption, b: PlannedLegOption): boolean {
+  const sa = comfortableShare(segs(a))
+  const sb = comfortableShare(segs(b))
+  if (sa !== sb) return sa > sb
+  const pa = protectedPct(segs(a))
+  const pb = protectedPct(segs(b))
+  if (pa !== pb) return pa > pb
+  return a.distanceMiles < b.distanceMiles
+}
+
+/** The calmest way between two stops: what a fresh plan starts on, as the app's planner does. */
+export function calmestWay(options: PlannedLegOption[]): number {
+  let best = 0
+  for (let i = 1; i < options.length; i++) if (calmer(options[i], options[best])) best = i
+  return best
 }

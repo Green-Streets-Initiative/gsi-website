@@ -5,7 +5,7 @@
  * from events-tone.css, `events-tone events-tone-light`). Text never drops
  * below --ev-ink-75 for anything people read; --ev-ink-60 is placeholders only.
  */
-import { useEffect, useRef, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from 'react'
+import { useEffect, useRef, type ButtonHTMLAttributes, type InputHTMLAttributes, type KeyboardEvent, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from 'react'
 import { Loader2, X } from 'lucide-react'
 import { useModalFocus } from '@/lib/a11y/use-modal-focus'
 
@@ -112,6 +112,55 @@ export function Toggle({ on, onClick, children, className, ...rest }: { on: bool
   )
 }
 
+/**
+ * A row of tabs at the top of a page or card, the employer portal's TabStrip
+ * on the console's tokens (Keith 2026-11-06: no totem-pole pages; nothing
+ * found only by scrolling). Scrolls sideways on a phone instead of wrapping;
+ * arrow keys, Home and End move between tabs. The panel takes
+ * `tabPanel(prefix, id)`.
+ */
+export function Tabs<T extends string>({ tabs, value, onChange, label, prefix, className }: {
+  tabs: { id: T; label: string; count?: number }[]
+  value: T
+  onChange: (id: T) => void
+  label: string
+  prefix: string
+  className?: string
+}) {
+  const ref = useRef<HTMLDivElement>(null)
+  const key = (e: KeyboardEvent, i: number) => {
+    const n = e.key === 'ArrowRight' ? (i + 1) % tabs.length : e.key === 'ArrowLeft' ? (i - 1 + tabs.length) % tabs.length
+      : e.key === 'Home' ? 0 : e.key === 'End' ? tabs.length - 1 : null
+    if (n === null) return
+    e.preventDefault()
+    onChange(tabs[n].id)
+    ref.current?.querySelector<HTMLButtonElement>(`#${prefix}-tab-${tabs[n].id}`)?.focus()
+  }
+  return (
+    <div ref={ref} role="tablist" aria-label={label}
+      className={cx('flex gap-1 overflow-x-auto border-b border-(--ev-line-mid) [scrollbar-width:none] [&::-webkit-scrollbar]:hidden', className)}>
+      {tabs.map((t, i) => {
+        const on = t.id === value
+        return (
+          <button key={t.id} type="button" role="tab" id={`${prefix}-tab-${t.id}`} aria-selected={on} aria-controls={`${prefix}-panel-${t.id}`}
+            tabIndex={on ? 0 : -1} onClick={() => onChange(t.id)} onKeyDown={(e) => key(e, i)}
+            className={cx('-mb-px inline-flex min-h-[44px] shrink-0 items-center gap-2 whitespace-nowrap border-b-2 px-3.5 text-[15px] font-semibold outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-(--ev-accent)',
+              on ? 'border-(--ev-ink) text-(--ev-ink)' : 'border-transparent text-(--ev-ink-75) hover:text-(--ev-ink)')}>
+            {t.label}
+            {typeof t.count === 'number' && t.count > 0 && (
+              <span className={cx('rounded-full px-2 py-px text-[13px] font-bold', on ? 'bg-(--ev-ink) text-white' : 'bg-(--ev-panel) text-(--ev-ink-80)')}>{t.count}</span>
+            )}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+export function tabPanel(prefix: string, id: string) {
+  return { role: 'tabpanel' as const, id: `${prefix}-panel-${id}`, 'aria-labelledby': `${prefix}-tab-${id}` }
+}
+
 export type Tone = 'good' | 'warn' | 'off' | 'plain' | 'info'
 
 const TONE: Record<Tone, string> = {
@@ -123,7 +172,7 @@ const TONE: Record<Tone, string> = {
 }
 
 export function Badge({ tone = 'plain', children, className }: { tone?: Tone; children: ReactNode; className?: string }) {
-  return <span className={cx('inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[12px] font-semibold', TONE[tone], className)}>{children}</span>
+  return <span className={cx('inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[13px] font-semibold', TONE[tone], className)}>{children}</span>
 }
 
 export function Notice({ tone = 'plain', children, onClose }: { tone?: Tone; children: ReactNode; onClose?: () => void }) {
