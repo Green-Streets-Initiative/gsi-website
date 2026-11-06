@@ -10,7 +10,7 @@ import { repairToneClass } from './AroundYouLists'
 import type { BluebikeStationLive } from '@/lib/wayfinding/types'
 import { formatDistance, walkTimeMinutes, bikeTimeMinutes } from '@/lib/wayfinding/geo'
 import { directionsUrl, lineColor, lineTextColor, type RouteConnection } from '@/lib/nearby/transit-ui'
-import { BIKE_SHARE_SYSTEM_LINKS, cargobVendorLink } from '@/lib/nearby/bike-share-links'
+import { cargobVendorLink } from '@/lib/nearby/bike-share-links'
 import { CORRIDOR_UNSPLASH } from '@/lib/nearby/config'
 import { protectionLabel, laneTierCopy, LANE_SOURCE_LABEL } from '@/lib/nearby/bike-labels'
 import { bearingDegrees } from '@/lib/geo/polyline'
@@ -468,7 +468,8 @@ export function DetailContent({ selection, stationByKey, corridorById, docks, bo
             // Vendor action: the system's official smart link opens the
             // vendor app when installed (falls back to their site); systems
             // without one get a plain site link.
-            const links = BIKE_SHARE_SYSTEM_LINKS[d.system_id ?? 'bluebikes']
+            // The station row carries its system's links (bike_share_systems).
+            const links = d.site_url ? { appUrl: d.app_url ?? undefined, siteUrl: d.site_url } : null
             if (!links) return null
             return (
               <a
@@ -476,13 +477,13 @@ export function DetailContent({ selection, stationByKey, corridorById, docks, bo
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => posthog.capture('snapshot_vendor_app_clicked', {
-                  system: d.system_id ?? 'bluebikes',
+                  system: d.system_id,
                   target: links.appUrl ? 'app' : 'site',
                 })}
                 className="text-[0.8rem] font-semibold text-(--nb-accent) hover:opacity-80"
               >
                 {links.appUrl
-                  ? tr('detail.open_vendor_app', { system: d.system_name ?? 'Bluebikes' })
+                  ? tr('detail.open_vendor_app', { system: d.system_name ?? '' })
                   : tr('detail.open_site')}
               </a>
             )

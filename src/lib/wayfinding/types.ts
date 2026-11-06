@@ -62,6 +62,9 @@ export interface BluebikeStationLive {
   distance_meters: number
   system_id?: string
   system_name?: string
+  /** The system's smart link and site (bike_share_systems), for "Open the app". */
+  app_url?: string | null
+  site_url?: string
 }
 
 export interface MBTAStopLive {
