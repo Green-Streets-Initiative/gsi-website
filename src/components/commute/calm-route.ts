@@ -261,8 +261,17 @@ export function concernTitle(flag: CalmFlag): string {
 }
 
 /** What to do about it, one line; empty for text-only flags with no advice. */
-export function concernAdvice(flag: CalmFlag): string | null {
+export function concernAdvice(flag: CalmFlag, walk = false): string | null {
   const c = flag.crash
+  if (walk) {
+    // On foot: the same spots, said for someone walking (organizer walks, Shift 01660).
+    if (c?.meets === 'crossing_separated') return 'Cross with the walk signal, and keep the group together.'
+    if (c) return c.meets === 'crossing'
+      ? 'Cross with the walk signal and watch for turning drivers.'
+      : 'Keep to the sidewalk and walk in a line here. It\u2019s calmer outside rush hour.'
+    if (flag.kind === 'steep') return "Take it slowly; it's the one steep part."
+    return null
+  }
   if (c) {
     if (c.meets === 'crossing_separated') return 'Cross at the signal, and walk the bike across if traffic is heavy.'
     if (c.meets === 'crossing') return 'Wait for the green, watch for turning drivers, and walk the bike across if in doubt.'
@@ -276,7 +285,7 @@ export function concernAdvice(flag: CalmFlag): string | null {
 const plural = (n: number, one: string, other: string) => (n === 1 ? one : other.replace('{n}', String(n)))
 
 /** The "so what" for a whole route, from the same list the map markers use. */
-export function safetyVerdict(concerns: CalmFlag[], comfortablePct: number | null): SafetyVerdict {
+export function safetyVerdict(concerns: CalmFlag[], comfortablePct: number | null, walk = false): SafetyVerdict {
   if (comfortablePct != null && comfortablePct < COMFORTABLE_ENOUGH_PCT) {
     return { tone: 'shared', text: 'Mostly on streets shared with cars. The flagged spots are the ones to take carefully.' }
   }
@@ -293,8 +302,8 @@ export function safetyVerdict(concerns: CalmFlag[], comfortablePct: number | nul
     return {
       tone: 'ok',
       text: along.length === 1
-        ? `Comfortable except one busy stretch on ${streets}: take it slowly there, or walk the bike.`
-        : `Busy stretches on ${streets}: take those slowly, or walk the bike.`,
+        ? `Comfortable except one busy stretch on ${streets}: take it slowly there${walk ? '' : ', or walk the bike'}.`
+        : `Busy stretches on ${streets}: take those slowly${walk ? '' : ', or walk the bike'}.`,
     }
   }
   if (others.length === 0 && along.length === 0) {

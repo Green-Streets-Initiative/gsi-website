@@ -167,10 +167,13 @@ export default function PromoteView() {
     const nextLine = next ? `${dayShort(next.date)} ${dateShort(next.date)}, ${clock(next.start_time)}` : null
     const place = next?.meetup_name || r.meetup_name || next?.meetup_address || r.meetup_address || null
     const about = (r.description ?? '').trim().split(/(?<=[.!?])\s+/)[0]?.slice(0, 220) || ''
+    const walk = r.activity === 'walk'
     const pace = PACE_OPTIONS.find((o) => o.key === r.pace)
-    const extras = [pace ? `${pace.key === 'kids' ? "kids' pace" : `${pace.label.toLowerCase()} pace`} (${pace.mph})` : null, r.route_miles ? `about ${miles(r.route_miles)}` : null].filter(Boolean).join(', ')
+    // A walk's pace reads without a bike speed.
+    const paceText = pace ? `${pace.key === 'kids' ? "kids' pace" : `${pace.label.toLowerCase()} pace`}${walk ? '' : ` (${pace.mph})`}` : null
+    const extras = [paceText, r.route_miles ? `about ${miles(r.route_miles)}` : null].filter(Boolean).join(', ')
     const welcome = r.no_drop || r.tags.includes('beginner_friendly')
-      ? 'New to group rides? This is a good first one: nobody gets left behind.'
+      ? walk ? 'New to group walks? This is a good first one: nobody gets left behind.' : 'New to group rides? This is a good first one: nobody gets left behind.'
       : 'New faces always welcome.'
     return { when, nextLine, place, about, extras, welcome, repeats, upcoming: !!next }
   }, [detail.occurrences, r])
@@ -193,7 +196,7 @@ export default function PromoteView() {
       case 'nd':
         return lines(`Hi neighbors! Join us for ${r.name}, ${facts.when.replace(' · ', ' at ')}${at}.`, about, welcome, `Details and RSVP: ${link}`)
       case 'reddit':
-        return lines(`[${repeats ? 'Group ride' : 'Ride'}] ${r.name}, ${nextLine ?? when}`, '', `${when}${at}.`, about, extras && `${extras[0].toUpperCase()}${extras.slice(1)}.`, welcome, '', `RSVP and updates if plans change: ${link}`)
+        return lines(`[${r.activity === 'walk' ? (repeats ? 'Group walk' : 'Walk') : repeats ? 'Group ride' : 'Ride'}] ${r.name}, ${nextLine ?? when}`, '', `${when}${at}.`, about, extras && `${extras[0].toUpperCase()}${extras.slice(1)}.`, welcome, '', `RSVP and updates if plans change: ${link}`)
       case 'email':
         return lines(r.name, `${when}${at}`, about, welcome, `RSVP: ${link}`)
     }

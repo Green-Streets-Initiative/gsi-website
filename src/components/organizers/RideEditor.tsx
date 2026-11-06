@@ -8,7 +8,7 @@ import AddressAutocomplete from '@/components/AddressAutocomplete'
 import { errorText, getRideFundFor, saveRide, setEndShop, setRepliesToOrganizer, uploadFlyer, type RideFundHere } from '@/lib/organizers/api'
 import { takePrefill } from '@/lib/organizers/first-ride'
 import { decodePlan, draftOf, routePayload } from '@/lib/organizers/saved-route'
-import { DAY_LABELS, PACE_OPTIONS, TAG_OPTIONS, WEEK_OPTIONS, dateLabel, todayKey } from '@/lib/organizers/ride-words'
+import { DAY_LABELS, TAG_OPTIONS, WEEK_OPTIONS, dateLabel, paceOptionsFor, todayKey, type Activity } from '@/lib/organizers/ride-words'
 import { biweeklyStarts, scheduleDates } from '@/lib/organizers/schedule'
 import type { Frequency, Pace, RideRow, RouteDraft } from '@/lib/organizers/types'
 import { ROUTE_IMPORT_KEY, openAssistant } from './AssistantPanel'
@@ -38,6 +38,8 @@ interface Form {
   meetup_lng: number | null
   route: RouteDraft | null
   route_google_maps_url: string
+  /** A bike ride or a group walk (Shift 01660). */
+  activity: Activity
   pace: Pace | ''
   no_drop: boolean
   tags: string[]
@@ -63,7 +65,7 @@ function blank(): Form {
     season_start: '', season_end: '', start_time: '10:00', end_time: '',
     meetup_name: '', meetup_address: '', meetup_lat: null, meetup_lng: null,
     route: null, route_google_maps_url: '',
-    pace: '', no_drop: false, tags: [],
+    activity: 'bike', pace: '', no_drop: false, tags: [],
     registration_url: '', contact_url: '', replies_to_organizer: false, live_sharing: 'off',
     visibility: 'public', event_organizer_id: '', organizer_name: '', organizer_url: '',
     end_location_id: null,
@@ -81,6 +83,7 @@ function fromRow(r: RideRow): Form {
     meetup_lat: r.meetup_lat, meetup_lng: r.meetup_lng,
     route: draftOf(r),
     route_google_maps_url: r.route_google_maps_url ?? '',
+    activity: r.activity === 'walk' ? 'walk' : 'bike',
     pace: r.pace ?? '', no_drop: !!r.no_drop, tags: r.tags ?? [],
     registration_url: r.registration_url ?? '', contact_url: r.contact_url ?? '',
     replies_to_organizer: !!r.replies_to_organizer,
@@ -101,7 +104,7 @@ function toPayload(f: Form): Record<string, unknown> {
     start_time: f.start_time, end_time: f.end_time || null,
     meetup_name: f.meetup_name, meetup_address: f.meetup_address, meetup_lat: f.meetup_lat, meetup_lng: f.meetup_lng,
     ...routePayload(f.route, f.route_google_maps_url),
-    pace: f.pace || null, no_drop: f.no_drop, tags: f.tags,
+    activity: f.activity, pace: f.pace || null, no_drop: f.no_drop, tags: f.tags,
     registration_url: f.registration_url, contact_url: f.contact_url, live_sharing: f.live_sharing,
     visibility: f.visibility, event_organizer_id: f.event_organizer_id || null,
     organizer_name: f.organizer_name, organizer_url: f.organizer_url,
@@ -110,7 +113,7 @@ function toPayload(f: Form): Record<string, unknown> {
 
 /** What still stands between this form and a ride, in the app's words. */
 function blocking(f: Form): string | null {
-  if (!f.name.trim()) return 'Give the ride a name'
+  if (!f.name.trim()) return f.activity === 'walk' ? 'Give the walk a name' : 'Give the ride a name'
   if (f.schedule === 'one_time' && !f.ride_date) return 'Pick a date'
   if (f.schedule === 'recurring' && f.frequency !== 'daily' && f.days.length === 0) return 'Pick at least one day'
   if (!f.start_time) return 'Pick a start time'
@@ -131,10 +134,11 @@ type SectionId = (typeof MAIN_SECTIONS)[number][0] | (typeof MORE_SECTIONS)[numb
 /** Jump links: a sticky list beside the form on wide screens; on phones a
  *  sticky picker that names the section you're in, so no section hides off
  *  the edge of a sideways-scrolling strip. A folded section opens first. */
-function SectionNav({ more, coffee, onOpenMore }: { more: boolean; coffee: boolean; onOpenMore: () => void }) {
-  const SECTIONS: readonly (readonly [SectionId, string])[] = more
+function SectionNav({ more, coffee, walk, onOpenMore }: { more: boolean; coffee: boolean; walk: boolean; onOpenMore: () => void }) {
+  const SECTIONS: readonly (readonly [SectionId, string])[] = (more
     ? [...MAIN_SECTIONS, MORE_SECTIONS[0], ...(coffee ? [['sec-coffee', 'The stop at the end'] as const] : []), ...MORE_SECTIONS.slice(1)]
-    : [...MAIN_SECTIONS, ['sec-more', 'More details']]
+    : [...MAIN_SECTIONS, ['sec-more', 'More details'] as const]
+  ).map(([id, label]) => [id, id === 'sec-ride' && walk ? 'The walk' : label] as const)
   const [current, setCurrent] = useState<string>(SECTIONS[0][0])
   useEffect(() => {
     const els = SECTIONS.map(([id]) => document.getElementById(id)).filter((e): e is HTMLElement => !!e)
@@ -182,6 +186,8 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
   const draftKey = `shift-organizer-draft:${ride?.id ?? 'new'}`
   const initial = useMemo(() => (ride ? fromRow(ride) : blank()), [ride])
   const [f, setF] = useState<Form>(initial)
+  const walk = f.activity === 'walk'
+  const noun = walk ? 'walk' : 'ride'
   const [dirty, setDirty] = useState(false)
   const [restored, setRestored] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -277,6 +283,8 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
           ...prev,
           ...(moved ? { meetup_lat: lat, meetup_lng: lng, meetup_name: label || prev.meetup_name, meetup_address: moved ? '' : prev.meetup_address } : {}),
           pace: prev.pace || (j.pace as Pace | null) || prev.pace,
+          // A walk the assistant planned makes this a walk.
+          ...(j.walk ? { activity: 'walk' as const } : {}),
         }
       })
       setPlanned({ stops: j.p.slice(1).map(([la, ln, lb]) => ({ lat: la, lng: ln, ...(lb ? { label: lb } : {}) })), chosen: Array.isArray(j.c) ? j.c : [] })
@@ -430,11 +438,11 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
       <Link href={ride ? `/organizers/rides/${ride.id}` : '/organizers'} className="mb-3 inline-flex items-center gap-1.5 text-[14px] font-semibold text-(--ev-ink-80) hover:text-(--ev-ink)">
         <ArrowLeft className="h-4 w-4" aria-hidden />{ride ? ride.name : 'Your rides'}
       </Link>
-      <h1 className="font-display text-[clamp(28px,3.6vw,38px)] font-extrabold leading-tight">{ride ? 'Edit ride' : first ? 'Make your first ride' : 'New ride'}</h1>
+      <h1 className="font-display text-[clamp(28px,3.6vw,38px)] font-extrabold leading-tight">{ride ? (walk ? 'Edit walk' : 'Edit ride') : first ? 'Make your first ride' : walk ? 'New walk' : 'New ride'}</h1>
       <p className="mt-1 max-w-2xl text-[15px] leading-snug text-(--ev-ink-80)">
         {ride
           ? 'Changes show on your ride page and in the app right away. To change a single date, use that date on the ride page.'
-          : 'A ride you set up here shows up in the Shift app too, with a ride page you can share anywhere.'}
+          : `A ${noun} you set up here shows up in the Shift app too, with a page you can share anywhere.`}
       </p>
 
       {!ride && assistant && (
@@ -463,17 +471,29 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
       )}
 
       <div className="mt-6 lg:grid lg:grid-cols-[176px_minmax(0,1fr)] lg:gap-8">
-      <SectionNav more={more} coffee={showCoffee} onOpenMore={() => setMore(true)} />
+      <SectionNav more={more} coffee={showCoffee} walk={walk} onOpenMore={() => setMore(true)} />
       <div className="grid grid-cols-[minmax(0,1fr)] gap-5">
         <Card id="sec-ride">
-          <SectionTitle>The ride</SectionTitle>
+          <SectionTitle>{walk ? 'The walk' : 'The ride'}</SectionTitle>
           <div className="grid gap-4">
-            <Field label="Name" htmlFor="ride-name" error={tried && !f.name.trim() ? 'Give the ride a name' : null}>
-              <Input id="ride-name" value={f.name} maxLength={120} onChange={(e) => set('name', e.target.value)} placeholder="Saturday Coffee Ride" />
+            <Field label="Bike ride or walk">
+              <div className="flex flex-wrap gap-2">
+                <Toggle on={f.activity === 'bike'} onClick={() => set('activity', 'bike')}>Bike ride</Toggle>
+                <Toggle on={f.activity === 'walk'} onClick={() => {
+                  // Walks have no "fast" pace; brisk is the closest.
+                  setF((prev) => ({ ...prev, activity: 'walk', pace: prev.pace === 'fast' ? 'brisk' : prev.pace }))
+                  setDirty(true)
+                }}>Walk</Toggle>
+              </div>
+            </Field>
+            <Field label="Name" htmlFor="ride-name" error={tried && !f.name.trim() ? `Give the ${noun} a name` : null}>
+              <Input id="ride-name" value={f.name} maxLength={120} onChange={(e) => set('name', e.target.value)} placeholder={walk ? 'Saturday Morning Walk' : 'Saturday Coffee Ride'} />
             </Field>
             <Field label="Description" htmlFor="ride-desc" optional hint="What it's like, where it goes, what to bring.">
               <Textarea id="ride-desc" value={f.description} maxLength={4000} onChange={(e) => set('description', e.target.value)} rows={5}
-                placeholder="An easy loop along the river with a coffee stop halfway. Bring lights after October." />
+                placeholder={walk
+                  ? 'An easy loop along the river with a coffee stop halfway. Comfortable shoes, and a layer after October.'
+                  : 'An easy loop along the river with a coffee stop halfway. Bring lights after October.'} />
             </Field>
             <Field label="Flyer" optional hint="Shows on your ride page and in the app.">
               {f.flyer_url ? (
@@ -587,7 +607,7 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
         </Card>
 
         <Card id="sec-where">
-          <SectionTitle hint="Where people gather before you roll out.">Meeting point</SectionTitle>
+          <SectionTitle hint="Where people gather before you set off.">Meeting point</SectionTitle>
           <div className="grid gap-4 lg:grid-cols-[1fr_1fr]">
             <div className="grid content-start gap-4">
               <Field label="Search for the place" error={tried && !meetup ? 'Pick a meeting point' : null}>
@@ -635,19 +655,19 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
               <span className="block font-display text-[20px] font-extrabold leading-tight text-(--ev-ink)">More details</span>
               <span className="mt-1 block text-[14px] leading-snug text-(--ev-ink-75)">
                 {fund
-                  ? `Route, the stop at the end (funded by ${fund.funder_name}), pace, sign-up link, and who can find it. All optional; a new ride is public.`
-                  : 'Route, pace, sign-up link, and who can find it. All optional; a new ride is public.'}
+                  ? `Route, the stop at the end (funded by ${fund.funder_name}), pace, sign-up link, and who can find it. All optional; a new ${noun} is public.`
+                  : `Route, pace, sign-up link, and who can find it. All optional; a new ${noun} is public.`}
               </span>
             </span>
             <ChevronDown className="h-5 w-5 shrink-0 text-(--ev-ink-75)" aria-hidden />
           </button>
         ) : (<>
         <Card id="sec-route">
-          <SectionTitle hint="Optional. With a route, people see how far, how hilly and how comfortable the ride is before they come.">Route</SectionTitle>
+          <SectionTitle hint={`Optional. With a route, people see how far, how hilly and how comfortable the ${noun} is before they come.`}>Route</SectionTitle>
           {plannedMoved && (
             <div className="mb-3"><Notice tone="info">The assistant&rsquo;s route starts somewhere else, so the meeting point moved there. Change it above if that&rsquo;s not right.</Notice></div>
           )}
-          <RouteSection route={f.route} onRoute={(r) => set('route', r)} meetup={meetup} pace={f.pace || null} initialPlan={planned} initialImport={imported}
+          <RouteSection route={f.route} onRoute={(r) => set('route', r)} meetup={meetup} pace={f.pace || null} activity={f.activity} initialPlan={planned} initialImport={imported}
             onMeetAtStart={(p) => {
               setF((prev) => ({ ...prev, meetup_lat: p.lat, meetup_lng: p.lng, meetup_address: '', meetup_name: prev.meetup_name ? '' : prev.meetup_name }))
               setDirty(true)
@@ -666,10 +686,10 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
         <Card id="sec-expect">
           <SectionTitle>What to expect</SectionTitle>
           <div className="grid grid-cols-[minmax(0,1fr)] gap-5">
-            <Field label="Pace" hint="The average speed the group holds while riding.">
+            <Field label="Pace" hint={f.activity === 'walk' ? 'How quickly the group walks.' : 'The average speed the group holds while riding.'}>
               <div className="flex flex-wrap gap-2">
                 <Toggle on={f.pace === ''} onClick={() => set('pace', '')}>Not stated</Toggle>
-                {PACE_OPTIONS.map((p) => (
+                {paceOptionsFor(f.activity).map((p) => (
                   <Toggle key={p.key} on={f.pace === p.key} onClick={() => set('pace', p.key)} className="py-1.5">
                     <span className="block leading-tight">{p.label}</span>
                     <span className="block text-[13px] font-medium leading-tight opacity-80">{p.mph}</span>
@@ -715,8 +735,8 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
             <Field label="Live location on the day" htmlFor="live" hint="On the day, your phone shows where the group is, as one dot.">
               <Select id="live" value={f.live_sharing} onChange={(e) => set('live_sharing', e.target.value as Form['live_sharing'])} className="max-w-[320px]">
                 <option value="off">Off</option>
-                <option value="members">People on this ride</option>
-                <option value="link">Anyone with the ride link</option>
+                <option value="members">People on this {noun}</option>
+                <option value="link">Anyone with the {noun} link</option>
               </Select>
             </Field>
           </div>
@@ -729,7 +749,7 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
               <div className="grid gap-2 sm:grid-cols-2">
                 {([
                   ['public', 'Public', 'On the Green Streets events calendar and in the app, straight away.'],
-                  ['invite', 'Invite only', 'Only people with your ride link or code can find it.'],
+                  ['invite', 'Invite only', `Only people with your ${noun} link or code can find it.`],
                 ] as const).map(([v, label, hint]) => (
                   <button key={v} type="button" aria-pressed={f.visibility === v} onClick={() => set('visibility', v)}
                     className={cx('rounded-xl border p-3 text-left transition', f.visibility === v ? 'border-(--ev-accent-fill) bg-(--ev-panel) ring-1 ring-(--ev-accent-fill)' : 'border-(--ev-line-strong) bg-white hover:bg-(--ev-panel-faint)')}>
@@ -756,7 +776,7 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
             Cancel
           </Link>
           <Button variant="primary" onClick={() => void save()} busy={saving} disabled={!!ride && !dirty}>
-            {ride ? 'Save changes' : 'Create ride'}
+            {ride ? 'Save changes' : walk ? 'Create walk' : 'Create ride'}
           </Button>
         </div>
       </div>

@@ -175,6 +175,8 @@ export default function RidePage({ ride, host = null, ascentFt = null, initialDa
 
   const myAnswer = selected ? me.answers[selected.id] : undefined
   const ended = ride.status === 'archived'
+  const walk = ride.activity === 'walk'
+  const noun = walk ? 'walk' : 'ride'
   // A break ends on its own when its date comes: the banner goes with it.
   const paused = ride.status === 'paused' || (!!ride.break_until && ride.break_until > todayKey())
 
@@ -299,11 +301,11 @@ export default function RidePage({ ride, host = null, ascentFt = null, initialDa
           <div className="flex items-center gap-3">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={host.logo_url} alt={host.name} className="h-16 w-auto max-w-[200px] rounded-lg object-contain" />
-            <p className="text-[15px] font-medium text-(--ev-ink-75)">Group ride hosted by <span className="font-semibold text-(--ev-ink)">{host.name}</span></p>
+            <p className="text-[15px] font-medium text-(--ev-ink-75)">{walk ? 'Group walk' : 'Group ride'} hosted by <span className="font-semibold text-(--ev-ink)">{host.name}</span></p>
           </div>
         ) : (
           <p className="text-[14px] font-semibold text-(--ev-accent)">
-            Group ride{hostName ? <span className="font-medium text-(--ev-ink-75)"> hosted by {hostName}</span> : null}
+            {walk ? 'Group walk' : 'Group ride'}{hostName ? <span className="font-medium text-(--ev-ink-75)"> hosted by {hostName}</span> : null}
           </p>
         )}
         <h1 className="mt-2 font-display text-[clamp(30px,4vw,44px)] font-extrabold leading-[1.08] tracking-tight text-(--ev-ink)">
@@ -314,7 +316,7 @@ export default function RidePage({ ride, host = null, ascentFt = null, initialDa
         {(ended || paused) && (
           <div className={`mt-6 rounded-2xl px-5 py-4 ${ended ? TONE_STYLE.off : TONE_STYLE.warn}`}>
             <p className="text-[15px] font-semibold">
-              {ended ? 'This ride has ended' : `Taking a break${ride.break_until ? ` until ${dateLong(ride.break_until)}` : ''}`}
+              {ended ? (walk ? 'This walk has ended' : 'This ride has ended') : `Taking a break${ride.break_until ? ` until ${dateLong(ride.break_until)}` : ''}`}
             </p>
             {ride.stopped_note && <p className="mt-1 text-[14px]">&ldquo;{ride.stopped_note}&rdquo;</p>}
           </div>
@@ -329,11 +331,11 @@ export default function RidePage({ ride, host = null, ascentFt = null, initialDa
               {ride.occurrences.length === 0 ? (
                 <div>
                   <p className="text-[16px] font-bold text-(--ev-ink)">
-                    {ended ? 'No more dates' : pastOneOff ? 'This ride has happened' : paused && ride.break_until ? `Back on ${dateLong(ride.break_until)}` : 'No upcoming dates yet'}
+                    {ended ? 'No more dates' : pastOneOff ? (walk ? 'This walk has happened' : 'This ride has happened') : paused && ride.break_until ? `Back on ${dateLong(ride.break_until)}` : 'No upcoming dates yet'}
                   </p>
                   <p className="mt-1 text-[15px] text-(--ev-ink-80)">
                     {ended || pastOneOff
-                      ? <>See what else is on: <a href={hostHref ?? '/events?type=group_ride'} className="font-semibold text-(--ev-accent) hover:underline">{hostHref && hostName ? `more rides from ${hostName}` : 'group rides on the calendar'}</a>.</>
+                      ? <>See what else is on: <a href={hostHref ?? (walk ? '/events?type=walking_tour' : '/events?type=group_ride')} className="font-semibold text-(--ev-accent) hover:underline">{hostHref && hostName ? `more ${walk ? 'walks' : 'rides'} from ${hostName}` : walk ? 'walks on the calendar' : 'group rides on the calendar'}</a>.</>
                       : paused ? 'Dates open here when the break ends.' : 'Check back soon. New dates show up here.'}
                   </p>
                 </div>
@@ -511,8 +513,8 @@ export default function RidePage({ ride, host = null, ascentFt = null, initialDa
                                     {choice === 'not_going'
                                       ? 'We’ll let the organizer know.'
                                       : choice === 'maybe'
-                                        ? 'We’ll email you if the plan changes. People on this ride see your first name and last initial. Your email stays private.'
-                                        : 'We’ll email you the evening before and if the plan changes. People on this ride see your first name and last initial. Your email stays private.'}
+                                        ? `We’ll email you if the plan changes. People on this ${noun} see your first name and last initial. Your email stays private.`
+                                        : `We’ll email you the evening before and if the plan changes. People on this ${noun} see your first name and last initial. Your email stays private.`}
                                   </p>
                                   {error && <p role="alert" className="text-[14px] font-semibold text-(--ev-danger)">{error}</p>}
                                   <button type="submit" disabled={busy} className="min-h-[46px] w-full rounded-[10px] bg-(--ev-accent-fill) text-[15px] font-bold text-(--ev-on-accent-fill) transition-opacity hover:opacity-90 disabled:opacity-60">
@@ -531,7 +533,7 @@ export default function RidePage({ ride, host = null, ascentFt = null, initialDa
 
               <div className="mt-5 flex items-center gap-2 border-t border-(--ev-line) pt-4">
                 <button onClick={share} className="inline-flex items-center gap-1.5 rounded-[10px] border border-(--ev-line-strong) px-4 py-2 text-[14px] font-semibold text-(--ev-ink) hover:bg-(--ev-panel)">
-                  <Share2 size={14} /> {copied ? 'Link copied' : 'Share this ride'}
+                  <Share2 size={14} /> {copied ? 'Link copied' : `Share this ${noun}`}
                 </button>
               </div>
             </div>
@@ -569,10 +571,10 @@ export default function RidePage({ ride, host = null, ascentFt = null, initialDa
           </section>
 
           {/* ---- About, meeting point, organizer ---- */}
-          <section className="space-y-6" aria-label="About this ride">
+          <section className="space-y-6" aria-label={`About this ${noun}`}>
             {about && (
               <div>
-                <h2 className="font-display text-[22px] font-extrabold text-(--ev-ink)">About this ride</h2>
+                <h2 className="font-display text-[22px] font-extrabold text-(--ev-ink)">About this {noun}</h2>
                 <p className="mt-2 whitespace-pre-line text-[15px] leading-relaxed text-(--ev-ink-80)">{about}</p>
               </div>
             )}
@@ -617,7 +619,7 @@ export default function RidePage({ ride, host = null, ascentFt = null, initialDa
                 {route.length >= 2 && (
                   <button type="button" onClick={() => downloadGpx(ride, route, selected?.date ?? null)}
                     className="inline-flex items-center gap-1.5 text-[15px] font-semibold text-(--ev-accent) hover:underline">
-                    <Download size={15} /> GPX for a bike computer
+                    <Download size={15} /> {walk ? 'GPX for a phone or watch' : 'GPX for a bike computer'}
                   </button>
                 )}
               </div>
@@ -627,7 +629,8 @@ export default function RidePage({ ride, host = null, ascentFt = null, initialDa
 
             {hasNewInfra(newHere) && <RideNewInfra info={newHere} onRoute={route.length >= 2} />}
 
-            {perkStops.length > 0 && <RidePerks stops={perkStops} code={ride.code} />}
+            {/* Bicycle Benefits perks need a helmet sticker: rides only. */}
+            {!walk && perkStops.length > 0 && <RidePerks stops={perkStops} code={ride.code} />}
 
             {(hostName || ride.registration_url) && (
               <div className="space-y-2 text-[14px] text-(--ev-ink-80)">
@@ -637,7 +640,7 @@ export default function RidePage({ ride, host = null, ascentFt = null, initialDa
                     {hostHref && (
                       <>
                         {' · '}
-                        <a href={hostHref} className="font-semibold text-(--ev-accent) hover:underline">More rides from them</a>
+                        <a href={hostHref} className="font-semibold text-(--ev-accent) hover:underline">{walk ? 'More walks from them' : 'More rides from them'}</a>
                       </>
                     )}
                   </p>
@@ -659,9 +662,9 @@ export default function RidePage({ ride, host = null, ascentFt = null, initialDa
             )}
 
             <div className="rounded-2xl bg-(--ev-panel) p-5">
-              <p className="text-[16px] font-bold text-(--ev-ink)">Ride along with Shift</p>
+              <p className="text-[16px] font-bold text-(--ev-ink)">{walk ? 'Walk along with Shift' : 'Ride along with Shift'}</p>
               <p className="mt-1 text-[14px] text-(--ev-ink-80)">
-                On the day, Shift shows where the group is so you can catch up, and counts your ride toward local rewards.
+                On the day, Shift shows where the group is so you can catch up, and counts your {walk ? 'walk' : 'ride'} toward local rewards.
               </p>
               <RideStoreBadges code={ride.code} className="mt-3" placement="ride_page" height={40} />
             </div>

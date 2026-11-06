@@ -1,9 +1,9 @@
 import 'server-only'
 import { unstable_cache } from 'next/cache'
 import { comfortableShare, concernTitle, newLaneNotes, relevantConcerns, type CalmFlag } from '@/components/commute/calm-route'
-import { PACE_MID_MPH } from '@/lib/organizers/ride-words'
+import { PACE_MID_MPH, WALK_MPH } from '@/lib/organizers/ride-words'
 import { comfortBreakdown, routeFromPlan } from '@/lib/organizers/route-plan'
-import { routeMiles } from '@/lib/organizers/route-geo'
+import { routeMiles, stopsFromCourse, type RouteCourse } from '@/lib/organizers/route-geo'
 import type { PlannedLegOption, PlannedRoute } from '@/lib/organizers/api'
 import type { LatLng } from '@/lib/organizers/types'
 import { getBikeNetwork, haversineMeters, type BikeNetworkResponse } from '@/lib/server/bike-network'
@@ -51,6 +51,8 @@ export interface DesignInput {
   end?: Pt | null
   target_miles?: number | null
   pace?: string | null
+  /** A walk plans on walking streets and paths, at walking speed. */
+  activity?: 'bike' | 'walk'
   places?: string[]
   showcase?: 'protected' | 'new' | null
   near_station_miles?: number | null
@@ -62,7 +64,7 @@ export interface DesignResult {
   goals?: { goal: string; met: boolean; detail: string }[]
   notes: string[]
   /** For the editor link: stops in order (start first) and each leg's chosen option. */
-  plan?: { pins: { lat: number; lng: number; label?: string }[]; chosen: number[]; pace: string | null }
+  plan?: { pins: { lat: number; lng: number; label?: string }[]; chosen: number[]; pace: string | null; activity?: 'bike' | 'walk' }
 }
 
 const FUNCTIONS = `${(process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').replace(/\/$/, '')}/functions/v1`
@@ -448,13 +450,13 @@ function snapToLane(p: LatLng, lanes: Lane[]): LatLng {
 
 // ── Planning ────────────────────────────────────────────────────────────
 
-async function planLegs(token: string, pins: LatLng[], pace: string | null): Promise<PlannedRoute> {
+async function planLegs(token: string, pins: LatLng[], pace: string | null, activity: 'bike' | 'walk'): Promise<PlannedRoute> {
   const pairs = pins.slice(1).map((to, i) => [pins[i], to])
   const legs = await Promise.all(pairs.map(async ([a, b]) => {
     const res = await fetch(`${FUNCTIONS}/plan-ride-route`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ pins: [a, b], mode: 'bike', pace: pace ?? undefined }),
+      body: JSON.stringify({ pins: [a, b], mode: activity, pace: pace ?? undefined }),
       signal: AbortSignal.timeout(110_000),
     })
     const json = (await res.json().catch(() => ({}))) as PlannedRoute & { error?: string }
@@ -508,6 +510,7 @@ export async function designRoute(token: string, input: DesignInput): Promise<De
   const notes: string[] = []
   const start = input.start
   const pace = input.pace && PACE_MID_MPH[input.pace] ? input.pace : null
+  const walk = input.activity === 'walk'
   const target = input.target_miles && input.target_miles > 0 ? Math.min(60, input.target_miles) : null
   const reach = target ? Math.max(1, Math.min(8, target / 2.5)) : 3
   const end: LatLng = input.loop || !input.end ? start : input.end
@@ -626,7 +629,7 @@ export async function designRoute(token: string, input: DesignInput): Promise<De
   if (pins.length < 2 || (pins.length === 2 && miles(pins[0], pins[1]) < 0.05)) {
     return { ok: false, notes: [...notes, 'There is nothing to route yet: give a target distance, a place to pass, or lanes to show off.'] }
   }
-  let plan = await planLegs(token, pins, pace)
+  let plan = await planLegs(token, pins, pace, walk ? 'walk' : 'bike')
   const pick = () => plan.legs.map(() => 0)
   let route = routeFromPlan(plan, pick(), pins)
   let total = routeMiles(route.waypoints)
@@ -657,7 +660,7 @@ export async function designRoute(token: string, input: DesignInput): Promise<De
     }
     turnaround = radius != null ? { ...turnaround, radius: farStop ? turnaround.radius : radius } : null
     pins = buildPins(radius)
-    plan = await planLegs(token, pins, pace)
+    plan = await planLegs(token, pins, pace, walk ? 'walk' : 'bike')
     route = routeFromPlan(plan, pick(), pins)
     total = routeMiles(route.waypoints)
   }
@@ -737,14 +740,15 @@ export async function designRoute(token: string, input: DesignInput): Promise<De
     return { stop: p.name, programs }
   }).filter((x) => x.programs.length)
 
-  const rideMin = pace ? Math.round((total / PACE_MID_MPH[pace]) * 60) : null
+  const mph = walk ? WALK_MPH : pace ? PACE_MID_MPH[pace] : null
+  const rideMin = mph ? Math.round((total / mph) * 60) : null
   return {
     ok: true,
     notes,
     goals,
     summary: {
       miles: r1(total),
-      riding_minutes: rideMin,
+      [walk ? 'walking_minutes' : 'riding_minutes']: rideMin,
       climbing_ft: route.elevation ? Math.round(route.elevation.ascent_ft) : null,
       calm_streets_pct: calmPct,
       protected_or_path_pct: protectedPct,
@@ -764,13 +768,60 @@ export async function designRoute(token: string, input: DesignInput): Promise<De
       }),
       chosen: pick(),
       pace,
+      ...(walk ? { activity: 'walk' as const } : {}),
+    },
+  }
+}
+
+/**
+ * Re-plan a route someone brought in (a Ride with GPS link or a GPX file) on
+ * comfortable streets along the same course: stops about every 1.5 miles,
+ * the planner's first choice between each pair, the same as the editor's
+ * "Re-plan it on comfortable streets" button (RouteSection replanImported).
+ */
+export async function replanCourse(
+  token: string,
+  course: RouteCourse,
+  meetup: LatLng & { name?: string },
+  pace: string | null,
+  activity: 'bike' | 'walk',
+): Promise<DesignResult> {
+  const walk = activity === 'walk'
+  const pinPace = pace && PACE_MID_MPH[pace] ? pace : null
+  const pins: (LatLng & { label?: string })[] = [{ lat: meetup.lat, lng: meetup.lng }, ...stopsFromCourse(course, meetup)]
+  const plan = await planLegs(token, pins, pinPace, activity)
+  if (plan.legs.some((l) => !l.options.length)) return { ok: false, notes: ["The planner couldn't connect one stretch of this route on calmer streets."] }
+  const chosen = plan.legs.map(() => 0)
+  const route = routeFromPlan(plan, chosen, pins)
+  const total = routeMiles(route.waypoints)
+  const segs = route.comfortSegments ?? []
+  const mph = walk ? WALK_MPH : pinPace ? PACE_MID_MPH[pinPace] : null
+  return {
+    ok: true,
+    notes: [],
+    summary: {
+      miles: r1(total),
+      [walk ? 'walking_minutes' : 'riding_minutes']: mph ? Math.round((total / mph) * 60) : null,
+      climbing_ft: route.elevation ? Math.round(route.elevation.ascent_ft) : null,
+      calm_streets_pct: Math.round(comfortableShare(segs) * 100),
+      protected_or_path_pct: comfortBreakdown(segs).filter((c) => c.rating === 'protected' || c.rating === 'path').reduce((a, c) => a + c.pct, 0),
+      by_comfort: comfortBreakdown(segs).map((c) => `${c.pct}% ${c.rating.replace('_', ' ')}`),
+      stops_along_the_course: pins.length - 1,
+      spots_to_take_carefully: relevantConcerns(route.flags as CalmFlag[]).filter((f) => f.type === 'concern').map(concernTitle),
+      new_lanes_ridden: newLaneNotes(route.flags as CalmFlag[]),
+    },
+    plan: {
+      pins: pins.map((p) => ({ lat: Math.round(p.lat * 1e6) / 1e6, lng: Math.round(p.lng * 1e6) / 1e6, ...(p.label ? { label: p.label } : {}) })),
+      chosen,
+      pace: pinPace,
+      ...(walk ? { activity: 'walk' as const } : {}),
     },
   }
 }
 
 /** The editor link's `plan` parameter: compact, URL-safe. */
 export function encodePlan(plan: NonNullable<DesignResult['plan']>): string {
-  return Buffer.from(JSON.stringify({ p: plan.pins.map((p) => [p.lat, p.lng, p.label ?? '']), c: plan.chosen, pace: plan.pace })).toString('base64url')
+  return Buffer.from(JSON.stringify({ p: plan.pins.map((p) => [p.lat, p.lng, p.label ?? '']), c: plan.chosen, pace: plan.pace, ...(plan.activity === 'walk' ? { a: 'walk' } : {}) })).toString('base64url')
 }
 
 
@@ -784,11 +835,12 @@ export async function summarizeRoute(
   waypoints: LatLng[],
   pace: string | null,
   elevation: { ascent_ft: number } | null,
+  activity: 'bike' | 'walk' = 'bike',
 ): Promise<Record<string, unknown>> {
   const res = await fetch(`${FUNCTIONS}/plan-ride-route`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, Authorization: `Bearer ${token}` },
-    body: JSON.stringify({ pins: waypoints.slice(0, 2), polyline: waypoints, mode: 'bike', pace: pace && PACE_MID_MPH[pace] ? pace : undefined }),
+    body: JSON.stringify({ pins: waypoints.slice(0, 2), polyline: waypoints, mode: activity, pace: pace && PACE_MID_MPH[pace] ? pace : undefined }),
     signal: AbortSignal.timeout(110_000),
   })
   const s = (await res.json().catch(() => ({}))) as {
@@ -803,7 +855,9 @@ export async function summarizeRoute(
   const climb = elevation?.ascent_ft ?? s.elevation?.ascent_ft ?? null
   return {
     miles: r1(total),
-    riding_minutes: pace && PACE_MID_MPH[pace] ? Math.round((total / PACE_MID_MPH[pace]) * 60) : null,
+    ...(activity === 'walk'
+      ? { walking_minutes: Math.round((total / WALK_MPH) * 60) }
+      : { riding_minutes: pace && PACE_MID_MPH[pace] ? Math.round((total / PACE_MID_MPH[pace]) * 60) : null }),
     climbing_ft: climb != null ? Math.round(climb) : null,
     calm_streets_pct: Math.round(comfortableShare(segs) * 100),
     protected_or_path_pct: comfortBreakdown(segs).filter((c) => c.rating === 'protected' || c.rating === 'path').reduce((a, c) => a + c.pct, 0),

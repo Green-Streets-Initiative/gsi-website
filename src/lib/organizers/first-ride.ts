@@ -31,6 +31,8 @@ export interface CalendarListing {
   registration_url: string | null
   pace: string | null
   no_drop: boolean | null
+  /** A walking tour listing starts a walk (Shift 01660); missing on older servers. */
+  activity?: 'bike' | 'walk'
   upcoming: boolean
   dates: string[]
 }
@@ -91,7 +93,9 @@ export function prefillFrom(l: CalendarListing, org: FirstRideStart['organizer']
     meetup_lat: l.lat != null ? Number(l.lat) : null,
     meetup_lng: l.lng != null ? Number(l.lng) : null,
     registration_url: l.registration_url ?? '',
-    pace: PACES.includes(l.pace as Pace) ? l.pace : '',
+    activity: l.activity === 'walk' ? 'walk' : 'bike',
+    // Walks have no fast pace.
+    pace: PACES.includes(l.pace as Pace) ? (l.activity === 'walk' && l.pace === 'fast' ? 'brisk' : l.pace) : '',
     no_drop: !!l.no_drop,
     ...(org ? { event_organizer_id: org.id, organizer_name: org.name, organizer_url: org.url ?? '' } : {}),
   }

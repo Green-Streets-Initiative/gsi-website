@@ -1,6 +1,6 @@
 import type { ComponentType } from 'react'
 import { CurrencyDollar, Gift, HandHeart, Plant, Baby, UsersThree, ClipboardText } from '@phosphor-icons/react/dist/ssr'
-import { PACE_MID_MPH, PACE_OPTIONS, TAG_OPTIONS } from '@/lib/organizers/ride-words'
+import { PACE_OPTIONS, TAG_OPTIONS, WALK_PACE_OPTIONS, travelMph } from '@/lib/organizers/ride-words'
 import { RIDE_STYLE_BLURB, RIDE_STYLE_INK, RIDE_STYLE_LABEL, RIDE_STYLE_ORDER, rideStyle } from '@/lib/ride-style'
 import type { PublicRide } from '@/lib/rides/public'
 
@@ -47,16 +47,20 @@ export interface RideFactModel {
 
 /** The facts themselves, for the ride page here and the printed flyer. */
 export function rideFacts(ride: PublicRide, miles: number | null, ascentFt: number | null): RideFactModel {
-  const pace = PACE_OPTIONS.find((p) => p.key === ride.pace) ?? null
+  const walk = ride.activity === 'walk'
+  const pace = (walk ? WALK_PACE_OPTIONS : PACE_OPTIONS).find((p) => p.key === ride.pace) ?? null
   const tags = ride.tags ?? []
-  const ridingMin = miles && ride.pace && PACE_MID_MPH[ride.pace] ? (miles / PACE_MID_MPH[ride.pace]) * 60 : null
-  const level = rideStyle({ title: ride.name, description: ride.description, distanceText: miles ? `${miles} miles` : null, tags, pace: ride.pace, eventType: 'group_ride' })
+  const mph = travelMph(ride.pace, walk ? 'walk' : 'bike')
+  const ridingMin = miles && mph ? (miles / mph) * 60 : null
+  // A walk has no bike-ride level (rideStyle answers only for rides).
+  const level = rideStyle({ title: ride.name, description: ride.description, distanceText: miles ? `${miles} miles` : null, tags, pace: ride.pace, eventType: walk ? 'walking_tour' : 'group_ride' })
 
   const stats = [
     miles ? { label: 'Distance', value: `${miles < 10 ? miles.toFixed(1) : Math.round(miles)} mi` } : null,
-    pace ? { label: 'Pace', value: pace.mph, sub: pace.label } : null,
+    // A ride's pace reads as its speed; a walk's as its word, with what it means.
+    pace ? (walk ? { label: 'Pace', value: pace.label, sub: pace.mph } : { label: 'Pace', value: pace.mph, sub: pace.label }) : null,
     ascentFt != null && miles ? { label: 'Hills', value: hills(ascentFt, miles), sub: `${ascentFt.toLocaleString()} ft of climbing` } : null,
-    ridingMin ? { label: 'Riding time', value: `About ${duration(ridingMin)}`, sub: 'Plus any stops' } : null,
+    ridingMin ? { label: walk ? 'Walking time' : 'Riding time', value: `About ${duration(ridingMin)}`, sub: 'Plus any stops' } : null,
   ].filter(Boolean) as { label: string; value: string; sub?: string }[]
 
   const policies = [
@@ -64,9 +68,9 @@ export function rideFacts(ride: PublicRide, miles: number | null, ascentFt: numb
     // A ride the level calls Rec isn't beginner friendly whatever its tag
     // says (a "beginner road ride" is beginner at the sport): the same guard
     // the calendar sync applies (Shift sync-community-events, Keith 2026-09-14).
-    tags.includes('beginner_friendly') && level !== 'rec' ? { Icon: Plant, title: 'Beginner friendly', line: 'Good for a first group ride' } : null,
+    tags.includes('beginner_friendly') && level !== 'rec' ? { Icon: Plant, title: 'Beginner friendly', line: walk ? 'Good for a first group walk' : 'Good for a first group ride' } : null,
     tags.includes('family_friendly') ? { Icon: Baby, title: 'Family friendly', line: 'Kids are welcome' } : null,
-    tags.includes('free') ? { Icon: Gift, title: 'Free', line: 'No cost to ride' } : tags.includes('paid') ? { Icon: CurrencyDollar, title: 'Paid', line: 'The organizer charges a fee' } : null,
+    tags.includes('free') ? { Icon: Gift, title: 'Free', line: walk ? 'No cost to join' : 'No cost to ride' } : tags.includes('paid') ? { Icon: CurrencyDollar, title: 'Paid', line: 'The organizer charges a fee' } : null,
     tags.includes('registration_required') ? { Icon: ClipboardText, title: 'Sign-up required', line: 'Register with the organizer' } : null,
   ].filter(Boolean) as { Icon: Icon; title: string; line: string }[]
 

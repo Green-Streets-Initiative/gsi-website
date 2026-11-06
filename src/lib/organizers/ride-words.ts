@@ -31,6 +31,30 @@ export const PACE_OPTIONS: { key: Pace; label: string; mph: string; hint: string
 /** Riding speed used for time estimates, the middle of each band (app: PACE_BANDS.mid). */
 export const PACE_MID_MPH: Record<string, number> = { kids: 6, relaxed: 10, moderate: 13.5, brisk: 16.5, fast: 19 }
 
+/** A ride is a bike ride or a group walk (ride_series.activity, Shift 01660). */
+export type Activity = 'bike' | 'walk'
+
+/**
+ * A walk's paces. Walks have no "fast"; time estimates use one walking
+ * speed, the same 3 mph the app (lib/ride-pace.ts WALK_MPH), the planner and
+ * live sharing use.
+ */
+export const WALK_MPH = 3
+export const WALK_PACE_OPTIONS: { key: Pace; label: string; mph: string; hint: string }[] = [
+  { key: 'relaxed', label: 'Relaxed', mph: 'Strolling, with stops', hint: 'Chatty, plenty of stops' },
+  { key: 'moderate', label: 'Moderate', mph: 'A steady walk', hint: 'Steady, a few stops' },
+  { key: 'brisk', label: 'Brisk', mph: 'A good workout', hint: 'A good workout' },
+  { key: 'kids', label: 'Kids & families', mph: 'Small legs set the pace', hint: 'Small legs set the pace' },
+]
+
+export const paceOptionsFor = (activity: Activity) => (activity === 'walk' ? WALK_PACE_OPTIONS : PACE_OPTIONS)
+
+/** Speed for a time estimate: walking speed for a walk, the pace's middle for a ride, null when no pace is set. */
+export function travelMph(pace: string | null | undefined, activity: Activity): number | null {
+  if (activity === 'walk') return WALK_MPH
+  return pace && PACE_MID_MPH[pace] ? PACE_MID_MPH[pace] : null
+}
+
 export const DAY_LABELS: { key: number; short: string; long: string }[] = [
   { key: 1, short: 'Mon', long: 'Monday' },
   { key: 2, short: 'Tue', long: 'Tuesday' },

@@ -58,6 +58,8 @@ export interface PublicRide {
   code: string
   slug: string | null
   kind: 'group_ride'
+  /** A bike ride or a group walk (Shift 01660); older servers leave it out. */
+  activity?: 'bike' | 'walk'
   name: string
   description: string | null
   status: 'active' | 'paused' | 'archived'

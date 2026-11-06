@@ -164,3 +164,56 @@ export function parseGpx(xml: string): { name: string | null; points: TrackPoint
   const nameEl = doc.querySelector('trk > name, rte > name, metadata > name')
   return { name: nameEl?.textContent?.trim() || null, points }
 }
+
+/**
+ * Stops that follow a route's course, for re-planning an imported line on
+ * comfortable streets (Keith 2026-11-05: make imported routes easy to
+ * re-route). One stop about every 1.5 miles (at most 7 between the ends), the
+ * route's own start when it begins away from the meeting point, and its end,
+ * which becomes "back to the start" when a loop ends where it began. The
+ * planner then picks comfortable streets between neighbors, so the ride keeps
+ * its shape while the organizer can move or drop any stop.
+ */
+export function stopsAlong(line: LatLng[], meetup: LatLng): (LatLng & { label?: string })[] {
+  const course = courseOf(line)
+  return course ? stopsFromCourse(course, meetup) : []
+}
+
+/**
+ * A route's course in a few points: where it starts and ends, and points
+ * spaced along it (about every 1.5 miles, at most 7). Small enough for the
+ * organizer assistant to carry in a note and re-plan from later
+ * (replan_route), without keeping the whole line.
+ */
+export interface RouteCourse { from: LatLng; to: LatLng; via: LatLng[] }
+
+export function courseOf(line: LatLng[]): RouteCourse | null {
+  if (line.length < 2) return null
+  const cum: number[] = [0]
+  for (let i = 1; i < line.length; i++) cum.push(cum[i - 1] + haversineM(line[i - 1], line[i]))
+  const total = cum[cum.length - 1]
+  if (total < 50) return null
+  const between = Math.max(1, Math.min(7, Math.ceil(total / (1.5 * M_PER_MI)) - 1))
+  const at = (d: number): LatLng => {
+    const i = cum.findIndex((c) => c >= d)
+    if (i === 0) return line[0]
+    if (i < 0) return line[line.length - 1]
+    const span = cum[i] - cum[i - 1] || 1
+    const t = (d - cum[i - 1]) / span
+    return { lat: line[i - 1].lat + t * (line[i].lat - line[i - 1].lat), lng: line[i - 1].lng + t * (line[i].lng - line[i - 1].lng) }
+  }
+  const via: LatLng[] = []
+  for (let k = 1; k <= between; k++) via.push(at((total * k) / (between + 1)))
+  return { from: line[0], to: line[line.length - 1], via: toWaypoints(via) }
+}
+
+/** The stops to plan after the meeting point, from a course (see stopsAlong). */
+export function stopsFromCourse(course: RouteCourse, meetup: LatLng): (LatLng & { label?: string })[] {
+  const out: (LatLng & { label?: string })[] = []
+  const startsAway = haversineM(meetup, course.from) > 300
+  if (startsAway) out.push({ ...course.from, label: 'Route start' })
+  out.push(...course.via)
+  const loops = haversineM(course.to, course.from) < 200 && !startsAway
+  out.push(loops ? { lat: meetup.lat, lng: meetup.lng } : { ...course.to, label: 'Route end' })
+  return out
+}

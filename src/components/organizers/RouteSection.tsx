@@ -1,11 +1,12 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Route as RouteIcon, Trash2, Undo2, Upload, X } from 'lucide-react'
+import { Route as RouteIcon, Shuffle, Trash2, Undo2, Upload, X } from 'lucide-react'
 import AddressAutocomplete from '@/components/AddressAutocomplete'
 import { errorText, importRideWithGps, planRoute, scoreRoute, type PlannedRoute } from '@/lib/organizers/api'
 import { comfortRatingOf, routeFromPlan } from '@/lib/organizers/route-plan'
-import { elevationOf, haversineM, parseGpx, simplify, toWaypoints } from '@/lib/organizers/route-geo'
+import { comfortableShare } from '@/components/commute/calm-route'
+import { elevationOf, haversineM, parseGpx, simplify, stopsAlong, toWaypoints } from '@/lib/organizers/route-geo'
 import type { LatLng, RouteDraft } from '@/lib/organizers/types'
 import RouteMap, { type MapFocus } from './RouteMap'
 import RouteReview, { readRoute } from './RouteReview'
@@ -14,13 +15,23 @@ import { track } from '@/lib/organizers/track'
 
 type Mode = 'draw' | 'rwgps' | 'gpx'
 
-/** "Start to stop 1", "Stop 1 to stop 2", "Stop 3 back to the start". */
+/** "Start to stop 1", "Stop 1 to stop 2", "Stop 3 to the end", "Stop 3 back to the start". */
 function legLabel(i: number, legs: number, pins: LatLng[]): string {
   if (legs === 1) return 'Choose a way:'
   const from = i === 0 ? 'Start' : `Stop ${i}`
   const last = pins[pins.length - 1]
   const loop = i === legs - 1 && !!last && Math.abs(last.lat - pins[0].lat) < 1e-5 && Math.abs(last.lng - pins[0].lng) < 1e-5
-  return `${from} ${loop ? 'back to the start' : `to stop ${i + 1}`}:`
+  return `${from} ${loop ? 'back to the start' : i === legs - 1 ? 'to the end' : `to stop ${i + 1}`}:`
+}
+
+/** Calm share of a stretch or route, as a whole percent. */
+const calmPct = (segs: Parameters<typeof comfortableShare>[0]) => Math.round(comfortableShare(segs) * 100)
+
+/** A choice's chip: distance and main street, plus its calm share when two choices would read the same. */
+function optionLabels(options: PlannedRoute['legs'][number]['options']): string[] {
+  const base = options.map((o) => `${o.distanceMiles.toFixed(1)} mi${o.summary ? ` · ${o.summary}` : ''}`)
+  return base.map((b, j) => (base.some((x, k) => k !== j && x === b) && options[j].comfort_segments?.length
+    ? `${b} · ${calmPct(options[j].comfort_segments)}% calm` : b))
 }
 
 const MODES: { key: Mode; label: string }[] = [
@@ -29,7 +40,7 @@ const MODES: { key: Mode; label: string }[] = [
   { key: 'gpx', label: 'GPX file' },
 ]
 
-export default function RouteSection({ route, onRoute, meetup, pace, onMeetAtStart, initialPlan, initialImport }: {
+export default function RouteSection({ route, onRoute, meetup, pace, activity = 'bike', onMeetAtStart, initialPlan, initialImport }: {
   route: RouteDraft | null
   /** Stops and per-leg choices from the assistant's plan_route, planned on arrival. */
   initialPlan?: { stops: (LatLng & { label?: string })[]; chosen: number[] } | null
@@ -38,6 +49,8 @@ export default function RouteSection({ route, onRoute, meetup, pace, onMeetAtSta
   onRoute: (r: RouteDraft | null) => void
   meetup: (LatLng & { label?: string }) | null
   pace: string | null
+  /** A walk plans on walking streets and paths and reads in walking words. */
+  activity?: 'bike' | 'walk'
   /** Move the meeting point to where an imported route begins. */
   onMeetAtStart?: (p: LatLng) => void
 }) {
@@ -53,6 +66,13 @@ export default function RouteSection({ route, onRoute, meetup, pace, onMeetAtSta
   const [fitKey, setFitKey] = useState(0)
   const [scoring, setScoring] = useState<'idle' | 'busy' | 'failed'>('idle')
   const fileRef = useRef<HTMLInputElement>(null)
+  // The route as it was brought in, kept so a re-planned version can go back to it.
+  const original = useRef<RouteDraft | null>(null)
+  // Which route change is the latest, so a slow answer (the planner, or the
+  // score of an import) never replaces a newer route: re-planning while an
+  // import is still being scored used to put the import back on top.
+  const routeGen = useRef(0)
+  const importShownAt = useRef(-1)
   const boxRef = useRef<HTMLDivElement>(null)
 
   // A route brought to the assistant, loaded and scored on arrival.
@@ -115,10 +135,12 @@ export default function RouteSection({ route, onRoute, meetup, pace, onMeetAtSta
   async function findRoutes(over?: { pins: (LatLng & { label?: string })[]; chosen: number[] }) {
     const use = over?.pins ?? pins
     if (use.length < 2) return
+    const gen = ++routeGen.current
     setBusy(true)
     setErr(null)
     try {
-      const p = await planRoute(use, pace)
+      const p = await planRoute(use, pace, activity)
+      if (gen !== routeGen.current) return
       if (!p.legs?.length || p.legs.some((l) => !l.options?.length)) throw new Error("We couldn't find a route between those points. Try moving a stop onto a street.")
       const pick = p.legs.map((l, i) => Math.min(over?.chosen[i] ?? 0, l.options.length - 1))
       setPlan(p)
@@ -137,6 +159,7 @@ export default function RouteSection({ route, onRoute, meetup, pace, onMeetAtSta
   function choose(leg: number, opt: number) {
     if (!plan) return
     const next = chosen.map((c, i) => (i === leg ? opt : c))
+    routeGen.current++
     setChosen(next)
     setFocus(null)
     onRoute(routeFromPlan(plan, next, pins))
@@ -145,21 +168,27 @@ export default function RouteSection({ route, onRoute, meetup, pace, onMeetAtSta
   /** An imported line gets the planner's comfort score and safety check too. */
   async function takeImported(draft: RouteDraft) {
     track('organizer_route_imported', { source: draft.source, points: draft.waypoints.length })
+    original.current = draft
+    importShownAt.current = ++routeGen.current
     onRoute(draft)
     setPlan(null)
     setFitKey((k) => k + 1)
     setScoring('busy')
     try {
-      const s = await scoreRoute(draft.waypoints, pace)
+      const s = await scoreRoute(draft.waypoints, pace, activity)
       const segs = s.comfort_segments?.length ? s.comfort_segments : null
-      onRoute({
+      const scored: RouteDraft = {
         ...draft,
         flags: s.flags ?? [],
         comfortSegments: segs,
         comfortRating: s.comfort_rating ?? comfortRatingOf(segs),
         comfortSummary: s.comfort_summary ?? null,
         elevation: draft.elevation ?? s.elevation ?? null,
-      })
+      }
+      if (original.current !== draft) return // another import or Remove route since
+      original.current = scored
+      // Shown only if the import is still the route on screen (it may have been re-planned meanwhile).
+      if (importShownAt.current === routeGen.current) onRoute(scored)
       setScoring('idle')
     } catch {
       setScoring('failed')
@@ -198,7 +227,33 @@ export default function RouteSection({ route, onRoute, meetup, pace, onMeetAtSta
     }
   }
 
+  /** Turn the imported line into stops along its course and plan comfortable streets between them. */
+  function replanImported() {
+    if (!route || !meetup) return
+    const along = stopsAlong(route.waypoints, meetup)
+    if (!along.length) return
+    track('organizer_route_replanned', { source: route.source, stops: along.length })
+    setMode('draw')
+    setStops(along)
+    void findRoutes({ pins: [meetup, ...along], chosen: [] })
+  }
+
+  /** Back to the route as it was brought in, with its own score. */
+  function restoreImported() {
+    const o = original.current
+    if (!o) return
+    importShownAt.current = ++routeGen.current
+    setMode(o.source === 'ridewithgps' ? 'rwgps' : 'gpx')
+    setStops([])
+    setPlan(null)
+    setFocus(null)
+    onRoute(o)
+    setFitKey((k) => k + 1)
+  }
+
   function clearRoute() {
+    routeGen.current++
+    original.current = null
     setScoring('idle')
     onRoute(null)
     setPlan(null)
@@ -236,7 +291,7 @@ export default function RouteSection({ route, onRoute, meetup, pace, onMeetAtSta
           ) : (
             <>
               <p className="text-[14px] leading-snug text-(--ev-ink-80)">
-                Add the places you want to pass, in order: a café, a park, a new bike lane. Search by name or click the map.
+                Add the places you want to pass, in order: {activity === 'walk' ? 'a café, a park, a view' : 'a café, a park, a new bike lane'}. Search by name or click the map.
                 The planner picks the calmest streets between them.
               </p>
               <AddressAutocomplete
@@ -314,10 +369,13 @@ export default function RouteSection({ route, onRoute, meetup, pace, onMeetAtSta
 
       {err && <div className="mb-3"><Notice tone="off">{err}</Notice></div>}
 
-      <label className="mb-2 flex items-center gap-2 text-[14px] font-semibold text-(--ev-ink-85)">
-        <input type="checkbox" checked={showLanes} onChange={(e) => setShowLanes(e.target.checked)} className="h-4 w-4 accent-(--ev-accent-fill)" />
-        Show bike lanes and paths
-        <span className="flex items-center gap-1 font-normal text-(--ev-ink-75)" aria-hidden>
+      {/* The key wraps under the label on a phone instead of squeezing it. */}
+      <label className="mb-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[14px] font-semibold text-(--ev-ink-85)">
+        <span className="flex items-center gap-2">
+          <input type="checkbox" checked={showLanes} onChange={(e) => setShowLanes(e.target.checked)} className="h-4 w-4 accent-(--ev-accent-fill)" />
+          {activity === 'walk' ? 'Show paths and bike lanes' : 'Show bike lanes and paths'}
+        </span>
+        <span className="flex items-center gap-1 whitespace-nowrap font-normal text-(--ev-ink-75)" aria-hidden>
           <span className="ml-1 inline-block h-1 w-4 rounded bg-[#2E8B57] opacity-70" /> path
           <span className="ml-1 inline-block h-1 w-4 rounded bg-[#0E9F8E] opacity-70" /> protected
           <span className="ml-1 inline-block h-0 w-4 border-t-2 border-dashed border-[#2966E5] opacity-70" /> painted
@@ -339,16 +397,17 @@ export default function RouteSection({ route, onRoute, meetup, pace, onMeetAtSta
         label={pickOnMap ? 'Route map. Click to add a stop.' : 'Route map'}
       />
 
-      {plan && plan.legs.length > 0 && plan.legs.some((l) => l.options.length > 1) && (
+      {plan && plan.legs.length > 0 && plan.legs.some((l) => new Set(optionLabels(l.options)).size > 1) && (
         <div className="mt-3 space-y-2">
-          {plan.legs.map((leg, i) => leg.options.length > 1 && (
+          {plan.legs.map((leg, i) => new Set(optionLabels(leg.options)).size > 1 && (
             <div key={i} className="flex flex-wrap items-center gap-1.5">
               <span className="text-[14px] font-semibold text-(--ev-ink-80)">{legLabel(i, plan.legs.length, pins)}</span>
-              {leg.options.map((o, j) => (
+              {optionLabels(leg.options).map((label, j, all) => (all.indexOf(label) < j && chosen[i] !== j) ? null : (
+                // A choice that reads exactly like an earlier one is the same choice to the organizer: shown once.
                 <button key={j} type="button" aria-pressed={chosen[i] === j} onClick={() => choose(i, j)}
                   className={cx('rounded-full border px-3 py-1 text-[14px] font-semibold',
                     chosen[i] === j ? 'border-(--ev-accent-fill) bg-(--ev-accent-fill) text-(--ev-on-accent-fill)' : 'border-(--ev-line-strong) bg-white text-(--ev-ink-85) hover:bg-(--ev-panel)')}>
-                  {o.distanceMiles.toFixed(1)} mi{o.summary ? ` · ${o.summary}` : ''}
+                  {label}
                 </button>
               ))}
             </div>
@@ -365,17 +424,41 @@ export default function RouteSection({ route, onRoute, meetup, pace, onMeetAtSta
             </p>
             <Button size="sm" variant="ghost" onClick={clearRoute}><Trash2 className="h-4 w-4" aria-hidden />Remove route</Button>
           </div>
+          {(route.source === 'gpx' || route.source === 'ridewithgps') && meetup && (
+            <div className="mt-3 rounded-[12px] border border-(--ev-line-strong) bg-(--ev-panel) px-4 py-3">
+              <p className="text-[15px] font-semibold text-(--ev-ink)">Want to change part of this route?</p>
+              <p className="mt-1 text-[14px] leading-snug text-(--ev-ink-80)">
+                Shift turns it into stops along the same course and finds comfortable streets between them. Then you can move,
+                add or remove any stop.
+              </p>
+              <div className="mt-2">
+                <Button size="sm" variant="primary" onClick={replanImported} busy={busy}>
+                  <Shuffle className="h-4 w-4" aria-hidden />Re-plan it on comfortable streets
+                </Button>
+              </div>
+            </div>
+          )}
+          {route.source === 'drawn' && original.current && (
+            <div className="mt-2 flex flex-wrap items-center gap-2 text-[14px] text-(--ev-ink-85)">
+              <span>
+                Re-planned from {original.current.sourceName ?? 'the route you brought in'}
+                {route.comfortSegments?.length && original.current.comfortSegments?.length
+                  ? `: ${calmPct(route.comfortSegments)}% on calm streets, was ${calmPct(original.current.comfortSegments)}%.` : '.'}
+              </span>
+              <Button size="sm" onClick={restoreImported}>Go back to my original route</Button>
+            </div>
+          )}
           {startGapMi > 0.3 && (
             <div className="mt-2 flex flex-wrap items-center gap-2 text-[14px] text-(--ev-ink-85)">
               <span>This route starts {startGapMi < 10 ? startGapMi.toFixed(1) : Math.round(startGapMi)} miles from your meeting point.</span>
               {onMeetAtStart && <Button size="sm" onClick={() => onMeetAtStart(route.waypoints[0])}>Meet where the route starts</Button>}
             </div>
           )}
-          {scoring === 'busy' && <p className="mt-2 text-[14px] text-(--ev-ink-75)" role="status">Checking the streets on this route…</p>}
+          {scoring === 'busy' && route.source !== 'drawn' && <p className="mt-2 text-[14px] text-(--ev-ink-75)" role="status">Checking the streets on this route…</p>}
           {scoring === 'failed' && route.source !== 'drawn' && (
             <p className="mt-2 text-[14px] text-(--ev-ink-75)">We couldn&rsquo;t score this route&rsquo;s streets just now. You can save it as it is.</p>
           )}
-          {reading && <RouteReview route={route} reading={reading} pace={pace} focus={focus} onFocus={setFocus} />}
+          {reading && <RouteReview route={route} reading={reading} pace={pace} activity={activity} focus={focus} onFocus={setFocus} />}
         </div>
       )}
     </div>

@@ -475,6 +475,13 @@ function AssistantPanel({ seed, onSeedUsed, onClose }: { seed: { prompt: string 
 
         <div className="flex flex-col gap-3">
           {items.map((it, i) => {
+            // A tool's button ("See the route street by street") goes under the
+            // reply that talks about it, where the reply says it is, not above it.
+            const isUser = (x: (typeof items)[number]) => x.kind === 'user' || x.kind === 'user_image' || x.kind === 'user_file' || x.kind === 'carried'
+            const replyFollows = (at: number) => {
+              for (const x of items.slice(at + 1)) { if (isUser(x)) return false; if (x.kind === 'assistant') return true }
+              return false
+            }
             if (it.kind === 'user') return <div key={i} className="ml-8 self-end whitespace-pre-wrap rounded-2xl rounded-br-md bg-(--ev-accent-fill) px-3.5 py-2 text-[15px] leading-[1.5] text-(--ev-on-accent-fill)">{it.text}</div>
             if (it.kind === 'user_image') return (
               <a key={i} href={it.url} target="_blank" rel="noopener noreferrer" className="ml-8 self-end">
@@ -490,9 +497,20 @@ function AssistantPanel({ seed, onSeedUsed, onClose }: { seed: { prompt: string 
             if (it.kind === 'assistant') {
               const next = items.slice(i + 1).find((x) => x.kind !== 'tool')
               const endOfTurn = !next || next.kind !== 'assistant'
+              let turnStart = i - 1
+              while (turnStart >= 0 && !isUser(items[turnStart])) turnStart--
+              const links = endOfTurn
+                ? items.slice(turnStart + 1, i).flatMap((x) => (x.kind === 'tool' && x.link ? [x.link] : []))
+                  .filter((l, k, all) => all.findIndex((m) => m.href === l.href) === k)
+                : []
               return (
                 <div key={i} className="mr-4 text-[15px] leading-[1.55] text-(--ev-ink)">
                   <Rich text={it.text} />
+                  {links.length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {links.map((l) => <LinkButton key={l.href} link={l} onNavigate={() => narrow() && onClose()} />)}
+                    </div>
+                  )}
                   {it.msgId != null && endOfTurn && !busy && <RateReply key={it.msgId} rated={it.rated} onRate={(up, note) => rateReply(it.msgId!, up, note)} />}
                 </div>
               )
@@ -509,7 +527,7 @@ function AssistantPanel({ seed, onSeedUsed, onClose }: { seed: { prompt: string 
                       {it.card ? `${it.card.decision === 'approved' ? 'Approved' : 'Not approved'}: ${it.card.title.replace(/\?$/, '')}` : it.label}
                     </span>
                   )}
-                  {it.link && <LinkButton link={it.link} onNavigate={() => narrow() && onClose()} />}
+                  {it.link && !replyFollows(i) && <LinkButton link={it.link} onNavigate={() => narrow() && onClose()} />}
                 </div>
               )
             }

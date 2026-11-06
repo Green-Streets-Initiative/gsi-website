@@ -25,12 +25,12 @@ export function routePayload(d: RouteDraft | null, link: string) {
 }
 
 /** The assistant's ?plan= link: its stops in order (the first is the start), the option per leg, the pace. */
-export function decodePlan(raw: string): { p: [number, number, string][]; c: number[]; pace: string | null } | null {
+export function decodePlan(raw: string): { p: [number, number, string][]; c: number[]; pace: string | null; walk: boolean } | null {
   try {
     const b64 = raw.replace(/-/g, '+').replace(/_/g, '/')
-    const j = JSON.parse(decodeURIComponent(escape(atob(b64 + '='.repeat((4 - (b64.length % 4)) % 4))))) as { p: [number, number, string][]; c: number[]; pace: string | null }
+    const j = JSON.parse(decodeURIComponent(escape(atob(b64 + '='.repeat((4 - (b64.length % 4)) % 4))))) as { p: [number, number, string][]; c: number[]; pace: string | null; a?: string }
     if (!Array.isArray(j.p) || j.p.length < 2) return null
-    return { p: j.p, c: Array.isArray(j.c) ? j.c : [], pace: j.pace ?? null }
+    return { p: j.p, c: Array.isArray(j.c) ? j.c : [], pace: j.pace ?? null, walk: j.a === 'walk' }
   } catch {
     return null
   }

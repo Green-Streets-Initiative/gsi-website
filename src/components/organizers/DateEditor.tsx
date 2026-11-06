@@ -268,7 +268,7 @@ export default function DateEditor({ ride, date, dates, onSaved }: {
               {plannedElsewhere && (
                 <Notice tone="info">This route starts somewhere other than this date&rsquo;s meeting point. To move the meeting point, use Change on the ride page.</Notice>
               )}
-              <RouteSection key={routeKey} route={f.route} onRoute={(r) => set('route', r)} meetup={meetup} pace={ride.pace ?? null} initialPlan={planned} initialImport={imported} />
+              <RouteSection key={routeKey} route={f.route} onRoute={(r) => set('route', r)} meetup={meetup} pace={ride.pace ?? null} activity={ride.activity === 'walk' ? 'walk' : 'bike'} initialPlan={planned} initialImport={imported} />
               <Field label="Link to the route elsewhere" htmlFor="date-link" optional hint="Ride with GPS, Strava, Komoot or Google Maps, shown as a link."
                 error={!LINK_OK(f.link) ? 'Links start with https://' : null}>
                 <Input id="date-link" value={f.link} onChange={(e) => set('link', e.target.value)} placeholder="https://ridewithgps.com/routes/…" inputMode="url" />

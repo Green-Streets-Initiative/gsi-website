@@ -5,7 +5,8 @@ import { clock, scheduleText } from '@/lib/rides/public'
 import { inviteCoOrganizer } from '@/lib/organizers/invite'
 import { PACE_OPTIONS, TAG_OPTIONS, UPDATE_KIND_LABEL, dateLabel, todayKey } from '@/lib/organizers/ride-words'
 import type { DashboardRide, DetailDate, RideDetail, RideRow, RosterRow, Turnout } from '@/lib/organizers/types'
-import { designRoute, encodePlan, summarizeRoute } from './route-designer'
+import { designRoute, encodePlan, replanCourse, summarizeRoute } from './route-designer'
+import { courseOf, type RouteCourse } from '@/lib/organizers/route-geo'
 import { fetchRideWithGps } from '@/lib/organizers/rwgps'
 import { forecastLine, rideForecast } from '@/lib/rides/forecast'
 import { newInfraNear, newInfraOnRoute } from '@/lib/server/new-infra'
@@ -88,6 +89,21 @@ const placeSchema = {
   required: ['name', 'lat', 'lng'],
 } as const
 
+const latLngSchema = { type: 'object', properties: { lat: { type: 'number' }, lng: { type: 'number' } }, required: ['lat', 'lng'] } as const
+
+/** A course copied from an [Attached route] note, checked point by point. */
+function readCourse(v: unknown): RouteCourse | null {
+  const pt = (x: unknown) => {
+    const p = x as { lat?: unknown; lng?: unknown } | null
+    return p && typeof p.lat === 'number' && typeof p.lng === 'number' && Math.abs(p.lat) <= 90 && Math.abs(p.lng) <= 180 ? { lat: p.lat, lng: p.lng } : null
+  }
+  const c = v as { from?: unknown; to?: unknown; via?: unknown } | null
+  const from = pt(c?.from), to = pt(c?.to)
+  const via = Array.isArray(c?.via) ? c.via.slice(0, 9).map(pt) : []
+  if (!from || !to || via.some((x) => !x)) return null
+  return { from, to, via: via as { lat: number; lng: number }[] }
+}
+
 const rideFields = {
   name: { type: 'string', description: 'Short and welcoming, at most 120 characters.' },
   description: nullable('string', 'What the ride is like, where it goes, what to bring. Only what the organizer said.'),
@@ -101,7 +117,8 @@ const rideFields = {
   start_time: { type: 'string', description: 'HH:MM, 24-hour.' },
   end_time: nullable('string', 'HH:MM, optional: when people are back.'),
   meetup: placeSchema,
-  pace: nullable('string', 'relaxed (8–12 mph), moderate (12–15), brisk (15–18), fast (18+) or kids (5–8).'),
+  activity: { type: 'string', enum: ['bike', 'walk'], description: 'A bike ride (the default) or a group walk.' },
+  pace: nullable('string', 'relaxed (8–12 mph), moderate (12–15), brisk (15–18), fast (18+) or kids (5–8). A walk: relaxed, moderate, brisk or kids (no fast).'),
   no_drop: nullable('boolean', 'The group waits or regroups so nobody is left behind.'),
   tags: { type: 'array', items: { type: 'string', enum: TAG_OPTIONS.map((t) => t.key) } },
   visibility: { type: 'string', enum: ['public', 'invite'] },
@@ -199,6 +216,7 @@ export const TOOLS: Anthropic.Tool[] = [
         end: { ...placeSchema, description: 'For an A-to-B ride only.' },
         target_miles: nullable('number', 'About how long, in miles.'),
         pace: nullable('string', 'relaxed (8–12 mph), moderate (12–15), brisk (15–18), fast (18+) or kids (5–8). A speed they give maps to the band it falls in.'),
+        activity: { type: 'string', enum: ['bike', 'walk'], description: "walk plans on walking streets and paths at walking speed. With series_id it defaults to that ride's; otherwise bike." },
         places: { type: 'array', items: { type: 'string' }, description: 'Places to pass, in their words: "Bow Market", "a coffee shop near the halfway point", "Mystic River Reservation". At most six.' },
         showcase: { type: ['string', 'null'], enum: ['protected', 'new', null], description: 'protected: ride the best protected lanes and car-free paths nearby. new: ride lanes MassDOT lists as opened in the last six months.' },
         near_station_miles: nullable('number', 'Check that the start, and as much of the route as possible, is within this many miles of a Bluebikes dock or T station.'),
@@ -217,6 +235,23 @@ export const TOOLS: Anthropic.Tool[] = [
         occurrence_id: nullable('string', "With series_id: one date of that ride. Most groups ride somewhere new each time, so this opens that date's plan page and the route is saved for that date only."),
       },
       required: ['url'],
+    },
+  },
+  {
+    name: 'replan_route',
+    description: "Re-plan a route the organizer brought in (a Ride with GPS link, or a GPX file from its [Attached route] note) on calmer streets along the same course: Shift sets stops about every 1.5 miles along it and plans comfortable streets between them, the same as the editor's \"Re-plan it on comfortable streets\" button. Returns how the new version rides and a button that opens it in the editor, where they can move or drop stops and save it. Nothing is saved by this tool. Takes up to a minute.",
+    input_schema: {
+      type: 'object',
+      properties: {
+        url: nullable('string', 'A Ride with GPS link, as pasted.'),
+        course: {
+          type: ['object', 'null'],
+          description: 'For an attached GPX file: the course object from its [Attached route] note, copied as it is.',
+          properties: { from: latLngSchema, to: latLngSchema, via: { type: 'array', items: latLngSchema } },
+        },
+        series_id: nullable('string', "The ride it is for: starts at its meeting point, at its pace and activity, and the button opens that ride's editor."),
+        occurrence_id: nullable('string', "With series_id: one date of that ride; starts at that date's meeting point and the button opens that date's plan page."),
+      },
     },
   },
   // ── Approval needed ──
@@ -323,6 +358,7 @@ export const ACTIVITY: Record<string, string> = {
   find_place: 'Looking up the place',
   plan_route: 'Planning the route (up to a minute)',
   check_route_link: 'Checking the route',
+  replan_route: 'Re-planning on calmer streets',
   note_feedback: 'Passing it to the GSI team',
   create_ride: 'Creating the ride',
   update_ride: 'Saving the changes',
@@ -396,6 +432,7 @@ function trimDetail(d: RideDetail) {
     start: clock(r.start_time),
     end: r.end_time ? clock(r.end_time) : null,
     meeting_point: { name: r.meetup_name, address: r.meetup_address },
+    activity: r.activity === 'walk' ? 'walk' : 'bike',
     pace: r.pace,
     no_drop: r.no_drop,
     tags: r.tags,
@@ -440,7 +477,7 @@ function rowPayload(r: RideRow): Record<string, unknown> {
     route_waypoints: r.route_waypoints ?? [], route_pins: r.route_pins ?? [], route_flags: r.route_flags ?? [],
     comfort_segments: r.comfort_segments, comfort_rating: r.comfort_rating, comfort_summary: r.comfort_summary,
     route_elevation: r.route_elevation, route_google_maps_url: r.route_google_maps_url,
-    pace: r.pace, no_drop: r.no_drop ?? false, tags: r.tags ?? [],
+    activity: r.activity === 'walk' ? 'walk' : 'bike', pace: r.pace, no_drop: r.no_drop ?? false, tags: r.tags ?? [],
     registration_url: r.registration_url, contact_url: r.contact_url, live_sharing: r.live_sharing,
     visibility: r.visibility === 'invite' ? 'invite' : 'public', event_organizer_id: r.event_organizer_id,
     organizer_name: r.organizer_name, organizer_url: r.organizer_url,
@@ -451,7 +488,7 @@ type RideInput = Partial<{
   name: string; description: string | null; schedule: 'one_time' | 'recurring'; ride_date: string | null
   frequency: string; days: number[]; week_of_month: number | null; season_start: string | null; season_end: string | null
   start_time: string; end_time: string | null; meetup: { name: string; address?: string; lat: number; lng: number }
-  pace: string | null; no_drop: boolean | null; tags: string[]; visibility: 'public' | 'invite'
+  activity: 'bike' | 'walk'; pace: string | null; no_drop: boolean | null; tags: string[]; visibility: 'public' | 'invite'
   registration_url: string | null; contact_url: string | null; flyer_url: string | null
 }>
 
@@ -459,7 +496,7 @@ type RideInput = Partial<{
 function inputPayload(i: RideInput): Record<string, unknown> {
   const out: Record<string, unknown> = {}
   const copy = ['name', 'description', 'schedule', 'ride_date', 'frequency', 'days', 'week_of_month', 'season_start', 'season_end',
-    'start_time', 'end_time', 'pace', 'no_drop', 'tags', 'visibility', 'registration_url', 'contact_url', 'flyer_url'] as const
+    'start_time', 'end_time', 'activity', 'pace', 'no_drop', 'tags', 'visibility', 'registration_url', 'contact_url', 'flyer_url'] as const
   for (const k of copy) if (i[k] !== undefined) out[k] = i[k]
   if (i.meetup) {
     out.meetup_name = i.meetup.name
@@ -595,6 +632,7 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
         }
         let start = asPlace(input.start)
         let pace = typeof input.pace === 'string' ? input.pace : null
+        let activity: 'bike' | 'walk' | null = input.activity === 'walk' || input.activity === 'bike' ? input.activity : null
         let occ: string | null = null
         if (sid) {
           const d = await rpc<RideDetail>(ctx, 'organizer_ride_detail', { p_series_id: sid })
@@ -606,6 +644,7 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
           }
           if (!start && d.ride.meetup_lat != null && d.ride.meetup_lng != null) start = { lat: d.ride.meetup_lat, lng: d.ride.meetup_lng, name: d.ride.meetup_name ?? undefined }
           pace = pace ?? d.ride.pace
+          activity = activity ?? (d.ride.activity === 'walk' ? 'walk' : 'bike')
         }
         if (!start) return fail('Where does it start? Find the meeting point with find_place, or give the ride.')
         const res = await designRoute(ctx.token, {
@@ -614,6 +653,7 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
           end: asPlace(input.end),
           target_miles: typeof input.target_miles === 'number' ? input.target_miles : null,
           pace,
+          activity: activity ?? 'bike',
           places: Array.isArray(input.places) ? input.places.filter((x): x is string => typeof x === 'string') : [],
           showcase: input.showcase === 'protected' || input.showcase === 'new' ? input.showcase : null,
           near_station_miles: typeof input.near_station_miles === 'number' ? input.near_station_miles : null,
@@ -635,16 +675,51 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
         if (!r.ok) return fail(r.error)
         const sid = typeof input.series_id === 'string' && /^[0-9a-f-]{36}$/i.test(input.series_id) ? input.series_id : null
         let pace: string | null = null
+        let activity: 'bike' | 'walk' = 'bike'
         let occ: string | null = null
         if (sid) {
           const d = await rpc<RideDetail>(ctx, 'organizer_ride_detail', { p_series_id: sid })
           pace = d.ride.pace
+          if (d.ride.activity === 'walk') activity = 'walk'
           if (input.occurrence_id) occ = findDate(d, input.occurrence_id).id
         }
-        const summary = await summarizeRoute(ctx.token, r.waypoints, pace, r.elevation)
+        const summary = await summarizeRoute(ctx.token, r.waypoints, pace, r.elevation, activity)
         const q = `?rwgps=${encodeURIComponent(String(input.url).trim())}#sec-route`
         return ok({ name: r.name, ...summary, button: 'Shown under your reply: opens the route street by street, with Street View, in the editor. It is saved only when they press Save there.' },
           { href: sid && occ ? `/organizers/rides/${sid}/dates/${occ}${q}` : sid ? `/organizers/rides/${sid}/edit${q}` : `/organizers/rides/new${q}`, label: 'See the route street by street' })
+      }
+      case 'replan_route': {
+        let course: RouteCourse | null = null
+        if (typeof input.url === 'string' && input.url.trim()) {
+          const r = await fetchRideWithGps(input.url)
+          if (!r.ok) return fail(r.error)
+          course = courseOf(r.waypoints)
+        } else course = readCourse(input.course)
+        if (!course) return fail('Give the Ride with GPS link, or the course from the [Attached route] note.')
+        const sid = typeof input.series_id === 'string' && /^[0-9a-f-]{36}$/i.test(input.series_id) ? input.series_id : null
+        let meetup: { lat: number; lng: number } = course.from
+        let pace: string | null = null
+        let activity: 'bike' | 'walk' = 'bike'
+        let occ: string | null = null
+        if (sid) {
+          const d = await rpc<RideDetail>(ctx, 'organizer_ride_detail', { p_series_id: sid })
+          pace = d.ride.pace
+          if (d.ride.activity === 'walk') activity = 'walk'
+          const o = input.occurrence_id ? findDate(d, input.occurrence_id) : null
+          if (o && o.date < todayKey()) return fail('That date has passed.')
+          occ = o?.id ?? null
+          const lat = o?.meetup_lat ?? d.ride.meetup_lat, lng = o?.meetup_lng ?? d.ride.meetup_lng
+          if (lat != null && lng != null) meetup = { lat, lng }
+        }
+        const res = await replanCourse(ctx.token, course, meetup, pace, activity)
+        if (!res.ok || !res.plan) return ok({ replanned: false, notes: res.notes })
+        const q = encodePlan(res.plan)
+        const href = sid && occ ? `/organizers/rides/${sid}/dates/${occ}?plan=${q}`
+          : sid ? `/organizers/rides/${sid}/edit?plan=${q}#sec-route` : `/organizers/rides/new?plan=${q}`
+        return ok({
+          replanned: true, ...res.summary,
+          button: 'Shown under your reply: opens the re-planned route street by street, with Street View, in the editor. It is saved only when they press Save there; their original route is unchanged until then.',
+        }, { href, label: 'See the re-planned route' })
       }
       case 'open_page': {
         const s = typeof input.series_id === 'string' && /^[0-9a-f-]{36}$/i.test(input.series_id) ? input.series_id : null

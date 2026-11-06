@@ -6,10 +6,10 @@ import { AlertTriangle, Camera } from 'lucide-react'
 import { PanelPhoto } from '@/components/nearby/DetailPanel'
 import { ReportRouteLink, type RouteIssueStretch } from '@/components/commute/ReportRouteSheet'
 import {
-  COMFORT_LABELS, comfortPieces, comfortableShare, concernAdvice, concernTitle, formatStretchMiles, legPhotoSpec,
+  COMFORT_LABELS as BIKE_LABELS, comfortPieces, comfortableShare, concernAdvice, concernTitle, formatStretchMiles, legPhotoSpec,
   newLaneNotes, relevantConcerns, safetyVerdict, type CalmFlag, type CalmOption, type ComfortPiece,
 } from '@/components/commute/calm-route'
-import { PACE_MID_MPH, PACE_OPTIONS } from '@/lib/organizers/ride-words'
+import { paceOptionsFor, travelMph, type Activity } from '@/lib/organizers/ride-words'
 import { routeMiles } from '@/lib/organizers/route-geo'
 import { assessRouteRisk } from '@/lib/organizers/route-risk'
 import type { RouteDraft } from '@/lib/organizers/types'
@@ -34,6 +34,19 @@ export const MAP_COMFORT_COLORS: Record<string, string> = {
 }
 
 const TIER_ORDER = ['path', 'protected', 'bike_lane', 'quiet_street', 'shared_road']
+
+/**
+ * The same street types, described for people on foot (a walk, Shift 01660):
+ * a walker wants to know if it's a path or a quiet street, not how the bike
+ * lane is built.
+ */
+const WALK_LABELS: Record<string, string> = {
+  path: 'Path',
+  protected: 'Street with a protected lane',
+  bike_lane: 'Street with a bike lane',
+  quiet_street: 'Quiet street',
+  shared_road: 'Busier street',
+}
 
 /** The planner's output as Commute Advisor's helpers read it. */
 export function routeOption(route: RouteDraft): CalmOption {
@@ -113,10 +126,11 @@ function minutes(n: number): string {
   return m ? `${h} hr ${m} min` : `${h} hr`
 }
 
-export default function RouteReview({ route, reading, pace, focus, onFocus }: {
+export default function RouteReview({ route, reading, pace, activity = 'bike', focus, onFocus }: {
   route: RouteDraft
   reading: RouteReading
   pace: string | null
+  activity?: Activity
   focus: MapFocus
   onFocus: (f: MapFocus) => void
 }) {
@@ -124,9 +138,13 @@ export default function RouteReview({ route, reading, pace, focus, onFocus }: {
   const { option, pieces, concerns } = reading
   const miles = option.distanceMiles
   const comfortPct = pieces.length ? Math.round(comfortableShare(option.comfort_segments) * 100) : null
-  const verdict = safetyVerdict(concerns, comfortPct)
-  const paceOpt = PACE_OPTIONS.find((p) => p.key === pace)
-  const rideMin = pace && PACE_MID_MPH[pace] ? Math.round((miles / PACE_MID_MPH[pace]) * 60) : null
+  const walk = activity === 'walk'
+  const verdict = safetyVerdict(concerns, comfortPct, walk)
+  const COMFORT_LABELS = walk ? WALK_LABELS : BIKE_LABELS
+  const paceOpt = paceOptionsFor(activity).find((p) => p.key === pace)
+  const mph = travelMph(pace, activity)
+  const rideMin = mph ? Math.round((miles / mph) * 60) : null
+  const timeLabel = walk ? 'Walking time' : paceOpt ? `Riding time, ${paceOpt.label.toLowerCase()}` : 'Riding time'
 
   // Miles on each tier, for the bar.
   const tiers = useMemo(() => {
@@ -176,7 +194,7 @@ export default function RouteReview({ route, reading, pace, focus, onFocus }: {
         {([
           ['Distance', `${miles.toFixed(1)} mi`],
           ['Climbing', route.elevation ? `${Math.round(route.elevation.ascent_ft).toLocaleString()} ft` : '–'],
-          [paceOpt ? `Riding time, ${paceOpt.label.toLowerCase()}` : 'Riding time', rideMin ? `about ${minutes(rideMin)}` : 'Pick a pace'],
+          [timeLabel, rideMin ? `about ${minutes(rideMin)}` : 'Pick a pace'],
           ['On calm streets', comfortPct != null ? `${comfortPct}%` : '–'],
         ] as const).map(([k, v]) => (
           <div key={k} className="rounded-xl bg-(--ev-panel-faint) px-3.5 py-2.5">
@@ -204,11 +222,19 @@ export default function RouteReview({ route, reading, pace, focus, onFocus }: {
       )}
 
       {pieces.length > 0 && <p className="text-[15px] font-semibold text-(--ev-ink)">{verdict.text}</p>}
-      {assessRouteRisk(route.comfortSegments, route.flags as { type?: string; description?: string }[]).level === 'high' && (
-        <p className="rounded-xl bg-[#FFF4D6] px-4 py-3 text-[15px] text-[#6B4200]">
-          Most of this route is on streets shared with cars, with a crash history or fast traffic. People see this warning on the ride page. Try another street if you can.
-        </p>
-      )}
+      {(() => {
+        const risk = assessRouteRisk(route.comfortSegments, route.flags as { type?: string; description?: string }[], activity)
+        if (risk.level !== 'high') return null
+        const shared = risk.reasons.includes('mostly_shared')
+        return (
+          <p className="rounded-xl bg-[#FFF4D6] px-4 py-3 text-[15px] text-[#6B4200]">
+            {shared
+              ? 'Most of this route is on streets shared with cars, with a crash history or fast traffic.'
+              : 'Part of this walk is on a street with no sidewalk.'}{' '}
+            People see this warning on the ride page. Try another street if you can.
+          </p>
+        )
+      })()}
       {newLaneNotes(option.flags).length > 0 && (
         <ul className="grid gap-1">
           {newLaneNotes(option.flags).map((n) => (
@@ -235,7 +261,7 @@ export default function RouteReview({ route, reading, pace, focus, onFocus }: {
                           <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#E8833A] text-[12px] font-extrabold text-white">!</span>
                           <span className="min-w-0">
                             <span className="block text-[15px] font-semibold text-(--ev-ink)">{tidyName(concernTitle(c))}</span>
-                            {concernAdvice(c) && <span className="block text-[14px] text-(--ev-ink-75)">{concernAdvice(c)}</span>}
+                            {concernAdvice(c, walk) && <span className="block text-[14px] text-(--ev-ink-75)">{concernAdvice(c, walk)}</span>}
                           </span>
                         </button>
                       </li>
@@ -253,10 +279,13 @@ export default function RouteReview({ route, reading, pace, focus, onFocus }: {
                     return (
                       <li key={p.index}>
                         <button type="button" onClick={() => onFocus({ kind: 'piece', index: p.index })} aria-pressed={on}
-                          className={cx('flex min-h-[40px] w-full items-center gap-2.5 rounded-lg px-2.5 text-left', on ? 'bg-(--ev-panel)' : 'hover:bg-(--ev-panel-faint)')}>
-                          <span className="h-3 w-3 shrink-0 rounded-full" style={{ background: MAP_COMFORT_COLORS[p.rating] }} aria-hidden />
-                          <span className="min-w-0 flex-1 truncate text-[15px] font-semibold text-(--ev-ink)">{tidyName(p.label)}</span>
-                          <span className="shrink-0 text-[14px] text-(--ev-ink-75)">{COMFORT_LABELS[p.rating] ?? p.rating} · {formatStretchMiles(p.miles)}</span>
+                          className={cx('flex min-h-[44px] w-full items-start gap-2.5 rounded-lg px-2.5 py-1.5 text-left', on ? 'bg-(--ev-panel)' : 'hover:bg-(--ev-panel-faint)')}>
+                          <span className="mt-1.5 h-3 w-3 shrink-0 rounded-full" style={{ background: MAP_COMFORT_COLORS[p.rating] }} aria-hidden />
+                          {/* Name above, kind of street below: a long name or label never gets cut off. */}
+                          <span className="min-w-0 flex-1">
+                            <span className="block text-[15px] font-semibold leading-snug text-(--ev-ink)">{tidyName(p.label)}</span>
+                            <span className="block text-[14px] leading-snug text-(--ev-ink-75)">{COMFORT_LABELS[p.rating] ?? p.rating} · {formatStretchMiles(p.miles)}</span>
+                          </span>
                         </button>
                       </li>
                     )

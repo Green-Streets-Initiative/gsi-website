@@ -10,7 +10,7 @@ export const MOSTLY_SHARED_THRESHOLD = 0.6
 
 export interface RouteRisk {
   level: 'high' | 'ok'
-  reasons: ('mostly_shared' | 'crash_cluster' | 'high_speed')[]
+  reasons: ('mostly_shared' | 'crash_cluster' | 'high_speed' | 'no_sidewalks')[]
   /** Share of route miles on shared roads, 0..1. */
   sharedShare: number
 }
@@ -18,6 +18,8 @@ export interface RouteRisk {
 export function assessRouteRisk(
   segments: { rating: string; distance_mi: number }[] | null | undefined,
   flags: { type?: string; description?: string }[] | null | undefined,
+  /** A walk also counts a stretch with no sidewalks (compute_ride_route_risk's walk rule). */
+  activity: 'bike' | 'walk' = 'bike',
 ): RouteRisk {
   let total = 0
   let shared = 0
@@ -37,5 +39,6 @@ export function assessRouteRisk(
     if (crash) reasons.push('crash_cluster')
     if (speed) reasons.push('high_speed')
   }
+  if (activity === 'walk' && has(/^no sidewalks/i)) reasons.push('no_sidewalks')
   return { level: reasons.length ? 'high' : 'ok', reasons, sharedShare }
 }

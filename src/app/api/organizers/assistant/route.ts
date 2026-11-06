@@ -20,6 +20,7 @@ import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { SYSTEM_PROMPT, contextBlock, organizerPage } from '@/lib/organizer-assistant/prompt'
 import { ACTIVITY, NEEDS_APPROVAL, TOOLS, approvalCard, runApproved, runTool, type ApprovalCard, type ToolCtx, type ToolResult } from '@/lib/organizer-assistant/tools'
 import { summarizeRoute } from '@/lib/organizer-assistant/route-designer'
+import { courseOf } from '@/lib/organizers/route-geo'
 
 export const runtime = 'nodejs'
 export const maxDuration = 300
@@ -306,38 +307,44 @@ export async function POST(request: Request) {
   // Images: only this organizer's uploads, so the model never fetches an arbitrary URL.
   const imagePrefix = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/ride-flyers/${user.id}/`
   const attachments = (body?.attachments ?? []).filter((a) => typeof a?.url === 'string' && a.url.startsWith(imagePrefix)).slice(0, 3)
+  // Where they are, as a hidden note in their message (not the system block,
+  // so moving between pages keeps the prompt cache). A ride's name comes from
+  // the database as this person, which also checks the ride is theirs.
+  let pageNote: string | null = null
+  let pageRide: { pace?: string | null; activity?: string | null } | null = null
+  const page = organizerPage(body?.page)
+  if (page) {
+    let ride = ''
+    if (page.seriesId) {
+      const { data } = await userClient.rpc('organizer_ride_detail', { p_series_id: page.seriesId })
+      const r = (data as { ride?: { name?: string; id?: string; pace?: string | null; activity?: string | null } } | null)?.ride
+      if (r) pageRide = r
+      ride = r?.name ? ` of the ride "${r.name.replace(/"/g, "'").slice(0, 120)}" (series_id ${page.seriesId})` : ''
+    }
+    pageNote = `[Page: ${page.label}${ride}]`
+  }
+
   // A GPX route read in the browser: scored here, before anything is stored,
   // so a bad file is turned away with a reason. The browser keeps the line
-  // under its import id for the editor to load.
+  // under its import id for the editor to load; the note carries its course
+  // (a few points) so replan_route can re-plan it later. Scored as the ride
+  // whose page is open: a walk at walking speed, a ride at its pace.
   let routeNote: string | null = null
   const rf = body?.route_file
   if (rf && !body?.decision) {
     const pts = Array.isArray(rf.waypoints) ? rf.waypoints.filter((p) => Number.isFinite(p?.lat) && Number.isFinite(p?.lng)).slice(0, 2000) : []
     if (!/^[a-z0-9]{6,24}$/.test(String(rf.import_id ?? '')) || pts.length < 2) return Response.json({ error: "That route file couldn't be read." }, { status: 400 })
     try {
-      const summary = await summarizeRoute(token, pts, null, rf.elevation ?? null)
+      const activity = pageRide?.activity === 'walk' ? 'walk' : 'bike'
+      const summary = await summarizeRoute(token, pts, pageRide?.pace ?? null, rf.elevation ?? null, activity)
+      const course = courseOf(pts)
       const name = String(rf.name ?? 'Route').replace(/"/g, "'").slice(0, 120)
-      routeNote = `[Attached route "${name}" (import_id ${rf.import_id}). How it rides: ${JSON.stringify(summary)}. To open it street by street in the editor, use open_page edit (or new_ride) with this import_id; it is saved only when they press Save there.]`
+      routeNote = `[Attached route "${name}" (import_id ${rf.import_id}). How it rides: ${JSON.stringify(summary)}. To open it street by street in the editor, use open_page edit (or new_ride) with this import_id; it is saved only when they press Save there.${course ? ` To re-plan it on calmer streets along the same course, use replan_route with this course: ${JSON.stringify(course)}.` : ''}]`
     } catch {
       return Response.json({ error: "The route planner couldn't check that route just now. Try again in a minute." }, { status: 502 })
     }
   }
   if (!text && !body?.decision && attachments.length === 0 && !routeNote) return Response.json({ error: 'Say something first.' }, { status: 400 })
-
-  // Where they are, as a hidden note in their message (not the system block,
-  // so moving between pages keeps the prompt cache). A ride's name comes from
-  // the database as this person, which also checks the ride is theirs.
-  let pageNote: string | null = null
-  const page = organizerPage(body?.page)
-  if (page) {
-    let ride = ''
-    if (page.seriesId) {
-      const { data } = await userClient.rpc('organizer_ride_detail', { p_series_id: page.seriesId })
-      const r = (data as { ride?: { name?: string; id?: string } } | null)?.ride
-      ride = r?.name ? ` of the ride "${r.name.replace(/"/g, "'").slice(0, 120)}" (series_id ${page.seriesId})` : ''
-    }
-    pageNote = `[Page: ${page.label}${ride}]`
-  }
 
   // Caps: this person per rolling day, everyone per month.
   const monthStart = new Date()

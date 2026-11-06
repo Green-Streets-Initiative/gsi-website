@@ -427,17 +427,17 @@ export interface PlannedRoute {
 }
 
 /** Shift's comfort-scored route planner, the same one the app's "Plan route" uses. */
-export async function planRoute(pins: { lat: number; lng: number; label?: string }[], pace: string | null): Promise<PlannedRoute> {
+export async function planRoute(pins: { lat: number; lng: number; label?: string }[], pace: string | null, activity: 'bike' | 'walk' = 'bike'): Promise<PlannedRoute> {
   // The planner checks every street between two stops, one leg after
   // another; a three-stop loop took 109 s in one call (2026-10-23). Asking
   // for each leg on its own runs them side by side, and each leg caches
   // separately, so moving one stop re-plans only the legs it touches.
   const pairs = pins.slice(1).map((to, i) => [pins[i], to])
   const legs = await Promise.all(pairs.map(async (pair) => {
-    const p = await shiftFunction<PlannedRoute>('plan-ride-route', { pins: pair, mode: 'bike', pace: pace ?? undefined }, 90_000)
+    const p = await shiftFunction<PlannedRoute>('plan-ride-route', { pins: pair, mode: activity, pace: pace ?? undefined }, 90_000)
     return p.legs?.[0] ?? { options: [] }
   }))
-  track('organizer_route_planned', { stops: pins.length, found: legs.every((l) => l.options.length > 0) })
+  track('organizer_route_planned', { stops: pins.length, activity, found: legs.every((l) => l.options.length > 0) })
   return { legs }
 }
 
@@ -455,8 +455,8 @@ export interface ScoredRoute {
  * same comfort and crash-history checks a drawn route gets, so a risky route
  * gets the same warning whichever way it came in.
  */
-export const scoreRoute = (polyline: { lat: number; lng: number }[], pace: string | null) =>
-  shiftFunction<ScoredRoute>('plan-ride-route', { pins: polyline.slice(0, 2), polyline, mode: 'bike', pace: pace ?? undefined }, 90_000)
+export const scoreRoute = (polyline: { lat: number; lng: number }[], pace: string | null, activity: 'bike' | 'walk' = 'bike') =>
+  shiftFunction<ScoredRoute>('plan-ride-route', { pins: polyline.slice(0, 2), polyline, mode: activity, pace: pace ?? undefined }, 90_000)
 
 export interface ImportedRoute {
   name: string | null

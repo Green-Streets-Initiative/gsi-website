@@ -82,6 +82,8 @@ export interface RideRow {
   id: string
   slug: string
   kind: 'group_ride'
+  /** A bike ride or a group walk (Shift 01660); older rows read as a bike ride. */
+  activity?: 'bike' | 'walk'
   name: string
   description: string | null
   organizer_user_id: string
