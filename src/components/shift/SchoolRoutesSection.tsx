@@ -92,26 +92,6 @@ export default function SchoolRoutesSection({ schoolId, schoolName }: Props) {
         onSelect={setSelectedId}
       />
 
-      {spotOn && (
-        <div className="text-center">
-          <button
-            type="button"
-            onClick={openSpot}
-            aria-haspopup="dialog"
-            className="inline-flex min-h-[44px] cursor-pointer items-center text-[0.9375rem] font-semibold text-[#4A4D68] underline decoration-[rgba(74,77,104,0.45)] underline-offset-[3px] transition-colors hover:text-[#191A2E] focus-visible:rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2D6A4F]"
-          >
-            Report a spot on these routes
-          </button>
-          <ReportSpotSheet
-            surface="school_routes"
-            open={!!spotAt}
-            spot={spotAt ?? { lat: 0, lng: 0 }}
-            label={spotAt?.label ?? null}
-            onClose={() => setSpotAt(null)}
-          />
-        </div>
-      )}
-
       {routes.map((route, i) => {
         const badge = modeBadgeStyle(route.recommended_modes)
         const showCycling =
@@ -205,6 +185,26 @@ export default function SchoolRoutesSection({ schoolId, schoolName }: Props) {
           Download Route Map PDF
         </a>
       </div>
+
+      {spotOn && (
+        <div className="text-center">
+          <button
+            type="button"
+            onClick={openSpot}
+            aria-haspopup="dialog"
+            className="inline-flex min-h-[44px] cursor-pointer items-center text-[0.9375rem] font-semibold text-[#4A4D68] underline decoration-[rgba(74,77,104,0.45)] underline-offset-[3px] transition-colors hover:text-[#191A2E] focus-visible:rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2D6A4F]"
+          >
+            Report a spot on these routes
+          </button>
+          <ReportSpotSheet
+            surface="school_routes"
+            open={!!spotAt}
+            spot={spotAt ?? { lat: 0, lng: 0 }}
+            label={spotAt?.label ?? null}
+            onClose={() => setSpotAt(null)}
+          />
+        </div>
+      )}
     </div>
   )
 }
