@@ -10,13 +10,14 @@ import { resolvePlaceLabel } from '@/lib/nearby/neighborhood'
 import { supabase } from '@/lib/supabase'
 import PhotoLightbox from '@/components/walk-audit/PhotoLightbox'
 import {
-  NOTE_MAX, SPOT_KINDS, SPOT_LABELS, copiedText, isSpotKind,
-  type SpotChoice, type SpotDestination, type SpotSurface,
+  NOTE_MAX, NOT_FOR_TOWN, OWNER_NAMES, SPOT_DETAILS, SPOT_KINDS, SPOT_LABELS, copiedText, isSpotKind,
+  type SpotChoice, type SpotDestination, type SpotHeld, type SpotSurface,
 } from './spotCopy'
 
 /*
  * "Report a spot" (version 1) on gogreenstreets.org. One sheet, top to
- * bottom: an optional photo, one tap for what's wrong, the spot under a
+ * bottom: an optional photo, one tap for what's wrong (and a second for the
+ * kinds in SPOT_DETAILS), the spot under a
  * fixed pin, an optional note, then a line that says where it goes next,
  * and Send. Saved through /api/spot/report (Shift's report-route-issue).
  * Shift never submits to the town: when the town has a report page on
@@ -44,7 +45,7 @@ export interface ReportSpotSheetProps {
 
 type SendState = 'idle' | 'sending' | 'sent' | 'error' | 'too_many'
 type Photo = { status: 'none' } | { status: 'working' } | { status: 'failed' } | { status: 'ready'; blob: Blob; url: string }
-type Answer = { id: string | null; destination: SpotDestination | null }
+type Answer = { id: string | null; destination: SpotDestination | null; held: SpotHeld | null }
 
 /** The label passed in names the starting spot; past this, the pin is somewhere else. */
 const LABEL_RADIUS_M = 75
@@ -198,6 +199,8 @@ export default function ReportSpotSheet({ surface, open, onClose, spot, label }:
   const [photo, setPhoto] = useState<Photo>({ status: 'none' })
   const [lightbox, setLightbox] = useState(false)
   const [choice, setChoice] = useState<SpotChoice | null>(null)
+  const [detail, setDetail] = useState<string | null>(null)
+  const [access, setAccess] = useState(false)
   const [note, setNote] = useState('')
   const [pin, setPin] = useState<Spot>(spot)
   const [dest, setDest] = useState<SpotDestination | null>(null)
@@ -215,6 +218,8 @@ export default function ReportSpotSheet({ surface, open, onClose, spot, label }:
     setPhoto({ status: 'none' })
     setLightbox(false)
     setChoice(null)
+    setDetail(null)
+    setAccess(false)
     setNote('')
     setPin(spot)
     setDest(null)
@@ -322,12 +327,14 @@ export default function ReportSpotSheet({ surface, open, onClose, spot, label }:
   }
 
   const send = async () => {
-    if (!choice || state === 'sending' || photo.status === 'working') return
+    if (!choice || needsDetail || state === 'sending' || photo.status === 'working') return
     setState('sending')
     const form = new FormData()
     form.append('report', JSON.stringify({
       surface,
       kinds: [choice],
+      detail: choice === 'map_wrong' ? null : detail,
+      access_barrier: choice !== 'map_wrong' && access,
       note: note.trim() || null,
       segment: { lat: Number(pin.lat.toFixed(6)), lng: Number(pin.lng.toFixed(6)), ...(place ? { label: place.slice(0, 120) } : {}) },
     }))
@@ -337,15 +344,23 @@ export default function ReportSpotSheet({ surface, open, onClose, spot, label }:
       const data = await res.json().catch(() => null) as Record<string, unknown> | null
       if (res.ok && data?.ok) {
         const d = data.destination as SpotDestination | null | undefined
+        const h = data.held as { owner?: unknown; street?: unknown } | null | undefined
+        const held: SpotHeld | null = h && (h.owner === 'massdot' || h.owner === 'dcr' || h.owner === 'state')
+          ? { owner: h.owner, street: typeof h.street === 'string' ? h.street : null }
+          : null
         setAnswer({
           id: typeof data.id === 'string' ? data.id : null,
           destination: d && typeof d.town === 'string' ? d : null,
+          held,
         })
         setState('sent')
         // Never the note: what was picked, and what came with it.
         posthog.capture('spot_reported', {
           surface,
           kind: choice,
+          detail,
+          access_barrier: choice !== 'map_wrong' && access,
+          held: held?.owner ?? null,
           has_photo: photo.status === 'ready',
           has_note: !!note.trim(),
           has_town: !!d?.town,
@@ -364,9 +379,12 @@ export default function ReportSpotSheet({ surface, open, onClose, spot, label }:
 
   // Thanks: the town's page opens in a new tab with the words copied. A real
   // link, so no browser blocks it as a pop-up; the copy starts first.
-  const townUrl = safeUrl(answer?.destination?.url)
+  const kindDetails = choice && isSpotKind(choice) ? SPOT_DETAILS[choice] : undefined
+  const needsDetail = !!kindDetails && !detail
+  const notForTown = !!choice && NOT_FOR_TOWN.has(`${choice}:${detail ?? ''}`)
+  const townUrl = answer?.held || notForTown ? null : safeUrl(answer?.destination?.url)
   const town = answer?.destination?.town ?? null
-  const handoffText = choice && isSpotKind(choice) ? copiedText(choice, place, note, pin.lat, pin.lng) : ''
+  const handoffText = choice && isSpotKind(choice) ? copiedText(choice, detail, place, note, pin.lat, pin.lng, access) : ''
   const openTownPage = () => {
     void copyToClipboard(handoffText).then((ok) => setCopyFailed(!ok))
     if (answer?.id) {
@@ -383,6 +401,8 @@ export default function ReportSpotSheet({ surface, open, onClose, spot, label }:
   // The line above Send: what happens next.
   const nextLine = choice === 'map_wrong'
     ? 'This comes to Green Streets, and we’ll fix the map.'
+    : notForTown
+      ? 'We’ll save it and show it to people walking here.'
     : dest && safeUrl(dest.url)
       ? `Next: send it to ${dest.town}. We’ll open their report page with your words copied.`
       : dest
@@ -437,6 +457,14 @@ export default function ReportSpotSheet({ surface, open, onClose, spot, label }:
             <div className="px-5 pb-2 pt-6" role="status">
               {choice === 'map_wrong' ? (
                 <p className="text-[1.0625rem] font-bold">Thanks. We&apos;ll fix the map.</p>
+              ) : answer?.held ? (
+                <>
+                  <p className="text-[1.0625rem] font-bold">Thanks.</p>
+                  <p className="mt-1 text-[0.9375rem] text-[#4A4D68]">
+                    This street belongs to {OWNER_NAMES[answer.held.owner]}, not {town ?? 'the town'}, so {town ?? 'the town'} can&apos;t fix it.
+                    We&apos;ve saved it, and people walking here will see it on their route.
+                  </p>
+                </>
               ) : townUrl && town ? (
                 <>
                   <p className="text-[1.0625rem] font-bold">Saved. Now tell {town}.</p>
@@ -528,16 +556,29 @@ export default function ReportSpotSheet({ surface, open, onClose, spot, label }:
                   <span id={`${titleId}-what`} className="sr-only">What&apos;s wrong?</span>
                   <div className="flex flex-wrap gap-2">
                     {SPOT_KINDS.map((k) => (
-                      <button key={k} type="button" role="radio" aria-checked={choice === k} onClick={() => setChoice(k)} className={chip(choice === k)}>
+                      <button key={k} type="button" role="radio" aria-checked={choice === k} onClick={() => { setChoice(k); setDetail(null) }} className={chip(choice === k)}>
                         {SPOT_LABELS[k]}
                       </button>
                     ))}
                   </div>
+                  {/* The second tap, where it decides who fixes it */}
+                  {kindDetails && (
+                    <div className="mt-3">
+                      <p id={`${titleId}-which`} className="mb-2 text-[0.9375rem] text-[#4A4D68]">Which one?</p>
+                      <div role="radiogroup" aria-labelledby={`${titleId}-which`} className="flex flex-wrap gap-2">
+                        {kindDetails.map((d) => (
+                          <button key={d.key} type="button" role="radio" aria-checked={detail === d.key} onClick={() => setDetail(d.key)} className={chip(detail === d.key)}>
+                            {d.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   <button
                     type="button"
                     role="radio"
                     aria-checked={choice === 'map_wrong'}
-                    onClick={() => setChoice('map_wrong')}
+                    onClick={() => { setChoice('map_wrong'); setDetail(null) }}
                     className={`mt-2 inline-flex min-h-[44px] cursor-pointer items-center rounded-full px-1 text-[0.9375rem] font-semibold underline underline-offset-[3px] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2D6A4F] ${
                       choice === 'map_wrong' ? 'text-[#2D6A4F] decoration-[#2D6A4F]' : 'text-[#4A4D68] decoration-[rgba(74,77,104,0.45)] hover:text-[#191A2E]'
                     }`}
@@ -552,6 +593,18 @@ export default function ReportSpotSheet({ surface, open, onClose, spot, label }:
                 <p className="text-[0.875rem] text-[#4A4D68]">Move the map so the pin is on the spot.</p>
                 <SpotPinMap start={spot} onSettle={settle} />
                 {place && <p className="mt-1.5 text-[0.9375rem] text-[#191A2E]">Near {place}</p>}
+
+                {choice && choice !== 'map_wrong' && (
+                  <label className="mt-5 flex min-h-[44px] cursor-pointer items-center gap-3 text-[0.9375rem] text-[#191A2E]">
+                    <input
+                      type="checkbox"
+                      checked={access}
+                      onChange={(e) => setAccess(e.target.checked)}
+                      className="h-5 w-5 shrink-0 cursor-pointer accent-[#2D6A4F]"
+                    />
+                    It makes it hard for wheelchairs or strollers
+                  </label>
+                )}
 
                 {/* Note (optional) */}
                 <label className="mt-5 block text-[0.9375rem] font-bold" htmlFor={`${titleId}-note`}>
@@ -585,10 +638,10 @@ export default function ReportSpotSheet({ surface, open, onClose, spot, label }:
                 <button
                   type="button"
                   onClick={send}
-                  disabled={!choice || state === 'sending' || photo.status === 'working'}
+                  disabled={!choice || needsDetail || state === 'sending' || photo.status === 'working'}
                   className={primary}
                 >
-                  {state === 'sending' ? 'Sending…' : !choice ? 'Pick what’s wrong first' : 'Send'}
+                  {state === 'sending' ? 'Sending…' : !choice ? 'Pick what’s wrong first' : needsDetail ? 'Pick one above' : 'Send'}
                 </button>
               </div>
             </>

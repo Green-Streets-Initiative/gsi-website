@@ -11,7 +11,7 @@ import { createServerSupabaseClient } from '@/lib/supabase-server'
  * per visitor and saves it to route_feedback.
  *
  * Two bodies:
- *  - multipart/form-data: `report` (JSON: surface, kinds, note, segment)
+ *  - multipart/form-data: `report` (JSON: surface, kinds, detail, access_barrier, note, segment)
  *    and an optional `photo` (a JPEG the sheet already resized and
  *    re-encoded, which drops the camera's EXIF). Answers the function's
  *    { ok, id, destination } for a spot, { ok } for "This map is wrong".
@@ -187,6 +187,8 @@ export async function POST(req: NextRequest) {
   const body = {
     surface: report.surface,
     kinds: report.kinds,
+    detail: report.detail,
+    access_barrier: report.access_barrier === true,
     note: report.note,
     segment: report.segment,
     photo_path: photoPath,
@@ -200,6 +202,7 @@ export async function POST(req: NextRequest) {
         ok: true,
         ...(data.id !== undefined ? { id: data.id } : {}),
         ...(data.destination !== undefined ? { destination: data.destination } : {}),
+        ...(data.held ? { held: data.held } : {}),
       })
     }
     // Not saved: the photo has nothing to belong to.
