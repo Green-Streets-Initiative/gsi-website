@@ -679,7 +679,7 @@ export default function ReportSpotSheet({ surface, open, onClose, spot, label }:
                           <ImageIcon size={18} aria-hidden /> Choose a photo
                         </button>
                       </div>
-                      <p className="mt-1.5 text-[0.875rem] text-[#4A4D68]">A photo is optional. Leave out faces and license plates.</p>
+                      <p className="mt-1.5 text-[0.875rem] text-[#4A4D68]">A photo helps show what’s wrong. Try to keep people’s faces out.</p>
                       {photo.status === 'failed' && (
                         <p role="alert" className="mt-1 text-[0.9375rem] text-[#9B2C2C]">That photo didn&apos;t work. Try another.</p>
                       )}
