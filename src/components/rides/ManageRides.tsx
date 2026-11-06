@@ -26,6 +26,8 @@ interface GuestRide {
   every: string | null
   /** The organizer's group chat or email link, for people on the ride. */
   chat: RideChat | null
+  /** The ride has a group chat and the organizer hasn't let them in yet (Shift 01679). */
+  chat_waiting?: boolean
   dates: GuestDate[]
 }
 interface Overview {
@@ -201,7 +203,7 @@ export default function ManageRides() {
                 </div>
               </div>
             )}
-            {(r.every || r.chat) && (
+            {(r.every || r.chat || r.chat_waiting) && (
               <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
                 {r.every && (r.every_date ? (
                   <p className="text-[15px] text-(--ev-ink-85)">
@@ -222,6 +224,11 @@ export default function ManageRides() {
                     className="inline-flex min-h-[40px] items-center gap-1.5 rounded-[10px] border border-(--ev-line-strong) px-3 text-[14px] font-semibold text-(--ev-ink) hover:bg-(--ev-panel)">
                     <MessageCircle size={15} /> {r.chat.label}
                   </a>
+                )}
+                {!r.chat && r.chat_waiting && (
+                  <p className="inline-flex items-center gap-1.5 text-[15px] text-(--ev-ink-80)">
+                    <MessageCircle size={15} aria-hidden /> Group chat: the organizer lets you in
+                  </p>
                 )}
               </div>
             )}

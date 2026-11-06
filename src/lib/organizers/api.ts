@@ -96,6 +96,20 @@ export const getMembers = async (seriesId: string) =>
   (await rpc<{ member_id: string; user_id: string | null; role: string; display_name: string; is_you: boolean }[] | null>(
     'get_ride_roster', { p_series_id: seriesId },
   )) ?? []
+/**
+ * Who on the ride can see its group chat link (Shift 01679: the organizer
+ * lets people in one by one, and that covers all of their rides). needs_ok
+ * is false when there's nothing to approve (no link, or an email address).
+ * Null before 01679 is applied, so the list simply has no chat buttons.
+ */
+export const getChatAccess = async (seriesId: string) => {
+  try {
+    return (await rpc<{ member_id: string; chat_ok: boolean; needs_ok: boolean }[] | null>('organizer_chat_access', { p_series_id: seriesId })) ?? []
+  } catch {
+    return null
+  }
+}
+export const setChatAccess = (memberId: string, ok: boolean) => rpc<boolean>('set_ride_chat_access', { p_member_id: memberId, p_ok: ok })
 export const getCreditRequests = async (occurrenceId: string) =>
   (await rpc<CreditRequest[] | null>('get_ride_credit_requests', { p_occurrence_id: occurrenceId })) ?? []
 export const getTurnout = (seriesId: string) => rpc<Turnout>('organizer_ride_turnout', { p_series_id: seriesId })

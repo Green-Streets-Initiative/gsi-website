@@ -186,7 +186,7 @@ export default function RidePage({ ride, host = null, hostPerson = null, ascentF
   const [error, setError] = useState<string | null>(null)
   // `emailed` is the server's word on whether a confirmation went out (null
   // when it doesn't say), so the page never claims an email nobody sent.
-  const [done, setDone] = useState<{ status: RsvpStatus; first: string; emailed: boolean | null; every: string | null; chat: RideChat | null } | null>(null)
+  const [done, setDone] = useState<{ status: RsvpStatus; first: string; emailed: boolean | null; every: string | null; chat: RideChat | null; chatWaiting: boolean } | null>(null)
   // "Count me in every Saturday" (Shift 01598): Going on every date of a
   // repeating ride, including dates that open later.
   const [every, setEvery] = useState(false)
@@ -277,6 +277,8 @@ export default function RidePage({ ride, host = null, hostPerson = null, ascentF
         status: choice, first: data.first_name ?? first_name, emailed: typeof data.emailed === 'boolean' ? data.emailed : null,
         every: data.every_date && choice === 'going' && every ? (data.every ?? everyText) : null,
         chat: data.chat?.url ? data.chat : null,
+        // The ride has a group chat and the organizer lets people in one by one (Shift 01679).
+        chatWaiting: !data.chat?.url && data.chat_waiting === true,
       })
       setChoice(null)
       posthog.capture('ride_rsvp_submitted', { code: ride.code, status: choice, surface: 'web', every: choice === 'going' && every })
@@ -516,6 +518,12 @@ export default function RidePage({ ride, host = null, hostPerson = null, ascentF
                                   className="mt-3 flex min-h-[44px] items-center justify-center gap-2 rounded-[10px] bg-(--ev-accent-fill) px-4 text-[15px] font-bold text-(--ev-on-accent-fill) hover:opacity-90">
                                   <MessageCircle size={17} /> {done.chat.label}
                                 </a>
+                              )}
+                              {!done.chat && done.chatWaiting && done.status !== 'not_going' && (
+                                <p className="mt-3 flex items-start gap-2 rounded-[10px] bg-(--ev-panel) px-3 py-2.5 text-[15px] text-(--ev-ink-85)">
+                                  <MessageCircle size={17} className="mt-0.5 shrink-0" aria-hidden />
+                                  <span>The organizer lets people into the group chat. Once they do, the link shows here and in your ride emails.</span>
+                                </p>
                               )}
                               <div className="mt-3 flex flex-wrap gap-2">
                                 {done.status !== 'not_going' && (

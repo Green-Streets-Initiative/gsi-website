@@ -2,9 +2,9 @@
 
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Check, X } from 'lucide-react'
+import { Check, MessageCircle, X } from 'lucide-react'
 import { clock } from '@/lib/rides/public'
-import { errorText, getCreditRequests, getRoster, settleCredit } from '@/lib/organizers/api'
+import { errorText, getChatAccess, getCreditRequests, getRoster, setChatAccess, settleCredit } from '@/lib/organizers/api'
 import { dateLabel, plural, todayKey } from '@/lib/organizers/ride-words'
 import type { CreditRequest, RosterRow } from '@/lib/organizers/types'
 import { useRide } from './RideFrame'
@@ -17,7 +17,10 @@ const GROUPS: { key: 'going' | 'maybe' | 'none' | 'not_going'; label: string }[]
   { key: 'not_going', label: "Can't go" },
 ]
 
-function Person({ p, past }: { p: RosterRow; past: boolean }) {
+/** The person's group chat state, when the ride has a chat to let people into. */
+type Chat = { ok: boolean; busy: boolean; toggle: () => void } | null
+
+function Person({ p, past, chat }: { p: RosterRow; past: boolean; chat: Chat }) {
   return (
     <li className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2.5">
       <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-(--ev-panel) text-[14px] font-bold text-(--ev-ink-85)" aria-hidden>
@@ -34,6 +37,20 @@ function Person({ p, past }: { p: RosterRow; past: boolean }) {
         {past && p.attended && <Badge tone="good"><Check className="h-3 w-3" aria-hidden />Came</Badge>}
         {past && p.pending_state === 'claimed' && <Badge tone="warn">Asked for credit</Badge>}
       </span>
+      {chat && (
+        <span className="ml-auto">
+          {chat.ok ? (
+            <Button size="sm" variant="ghost" onClick={chat.toggle} busy={chat.busy} aria-label={`${p.display_name} is in the group chat. Take them out`}
+              className="text-(--ev-accent-90)">
+              <Check className="h-4 w-4" aria-hidden />In the chat
+            </Button>
+          ) : (
+            <Button size="sm" onClick={chat.toggle} busy={chat.busy}>
+              <MessageCircle className="h-4 w-4" aria-hidden />Let into chat
+            </Button>
+          )}
+        </span>
+      )}
     </li>
   )
 }
@@ -56,6 +73,9 @@ export default function Roster() {
   const [err, setErr] = useState<string | null>(null)
   const [settling, setSettling] = useState<string | null>(null)
   const [msg, setMsg] = useState<string | null>(null)
+  // Group chat access by person (Shift 01679); null = nothing to approve.
+  const [chatOk, setChatOk] = useState<Map<string, boolean> | null>(null)
+  const [chatBusy, setChatBusy] = useState<string | null>(null)
 
   const date = dates.find((d) => d.id === dateId) ?? null
   const past = !!date && date.date < today
@@ -77,6 +97,32 @@ export default function Roster() {
     }
   }, [dateId, canReview])
   useEffect(() => { void load() }, [load])
+
+  useEffect(() => {
+    let live = true
+    void getChatAccess(detail.ride.id).then((rows) => {
+      if (!live) return
+      setChatOk(rows && rows.some((r) => r.needs_ok) ? new Map(rows.map((r) => [r.member_id, r.chat_ok])) : null)
+    })
+    return () => { live = false }
+  }, [detail.ride.id])
+
+  async function toggleChat(p: RosterRow) {
+    const now = !(chatOk?.get(p.member_id) ?? false)
+    setChatBusy(p.member_id)
+    try {
+      const ok = await setChatAccess(p.member_id, now)
+      setChatOk((m) => new Map(m ?? []).set(p.member_id, !!ok))
+      setMsg(ok ? `${p.display_name} can see the group chat link now, on this ride and your others.` : `${p.display_name} no longer sees the group chat link.`)
+    } catch (e) {
+      setMsg(errorText(e))
+    } finally {
+      setChatBusy(null)
+    }
+  }
+  const chatFor = (p: RosterRow): Chat => !chatOk || p.role !== 'rider' || !chatOk.has(p.member_id) ? null
+    : { ok: !!chatOk.get(p.member_id), busy: chatBusy === p.member_id, toggle: () => void toggleChat(p) }
+  const waiting = chatOk ? (rows ?? []).filter((p) => p.role === 'rider' && (p.rsvp_status === 'going' || p.rsvp_status === 'maybe') && chatOk.get(p.member_id) === false).length : 0
 
   const pick = (id: string) => {
     setDateId(id)
@@ -174,7 +220,11 @@ export default function Roster() {
       {msg && !(canReview && requests.length > 0) && <Notice tone="good" onClose={() => setMsg(null)}>{msg}</Notice>}
 
       <Card>
-        <SectionTitle hint="First name and last initial. Shift messages everyone for you.">
+        <SectionTitle hint={chatOk && !past
+          ? waiting > 0
+            ? `${plural(waiting, 'person', 'people')} coming can't see your group chat link yet. Let them in one by one; it covers all your rides.`
+            : 'Everyone coming can see your group chat link. New people wait until you let them in.'
+          : 'First name and last initial. Shift messages everyone for you.'}>
           {past ? 'Who was on the list' : "Who's coming"}
         </SectionTitle>
         {err && <Notice tone="off">{err} <button type="button" className="font-semibold underline" onClick={() => void load()}>Try again</button></Notice>}
@@ -186,7 +236,7 @@ export default function Roster() {
               <section key={g.key} className={cx(g.key === 'none' || g.key === 'not_going' ? 'md:col-span-1' : '')}>
                 <h3 className="text-[15px] font-bold text-(--ev-ink-85)">{g.label} · {grouped[g.key].length}</h3>
                 <ul className="mt-1 divide-y divide-(--ev-line)">
-                  {grouped[g.key].map((p) => <Person key={p.member_id} p={p} past={past} />)}
+                  {grouped[g.key].map((p) => <Person key={p.member_id} p={p} past={past} chat={chatFor(p)} />)}
                 </ul>
               </section>
             ))}
