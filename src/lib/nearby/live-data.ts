@@ -248,15 +248,54 @@ async function loadStopTopology(lat: number, lng: number, opts: TopologyOptions)
   return topology
 }
 
+/** Where the train or bus behind a next departure is (last report, under a
+ *  minute old, only when it is already on that trip). */
+export interface ArrivalVehicle { id: string; lat: number; lng: number }
+
+/** /nearby only: how late each next departure is and which vehicle makes
+ *  it, keyed like the minutes. The same rules as the app's nearby-transit
+ *  (`lateMinutesFor`, `vehicleOnTrip` in shape.ts): late only for commuter
+ *  rail and buses, 5+ minutes behind the timetable; a vehicle only on that
+ *  very trip with a fix under 60 s old. KEEP IN SYNC until this page reads
+ *  nearby-transit (parity gap 9). */
+export interface PredictionExtras {
+  late: Map<string, number>
+  vehicles: Map<string, ArrivalVehicle>
+}
+const LATE_SHOW_MIN = 5
+const VEHICLE_FRESH_MS = 60_000
+
 /** Live next-departure minutes keyed `${stopId}-${routeId}-${directionId}`. */
-export async function fetchPredictions(stopIds: string[], routeTypes: string): Promise<Map<string, number>> {
+export async function fetchPredictions(stopIds: string[], routeTypes: string, extras?: PredictionExtras): Promise<Map<string, number>> {
   const predMap = new Map<string, number>()
   if (stopIds.length === 0) return predMap
 
   const predsRes = await fetch(
-    `https://api-v3.mbta.com/predictions?filter[stop]=${stopIds.join(',')}&filter[route_type]=${routeTypes}&sort=departure_time&page[limit]=100`
+    `https://api-v3.mbta.com/predictions?filter[stop]=${stopIds.join(',')}&filter[route_type]=${routeTypes}&sort=departure_time&page[limit]=100` +
+      (extras ? '&include=schedule,vehicle' : '')
   )
   const predsData = await predsRes.json()
+
+  // Timetable times and vehicle fixes from `included` (extras only).
+  const schedTimes = new Map<string, string>()
+  const vehicleRows = new Map<string, { fix: ArrivalVehicle; tripId: string | null; at: number }>()
+  if (extras) {
+    for (const row of predsData.included || []) {
+      if (row?.type === 'schedule') {
+        const t = row.attributes?.departure_time ?? row.attributes?.arrival_time
+        if (typeof t === 'string') schedTimes.set(row.id, t)
+      } else if (row?.type === 'vehicle') {
+        const a = row.attributes ?? {}
+        if (Number.isFinite(a.latitude) && Number.isFinite(a.longitude) && typeof a.updated_at === 'string') {
+          vehicleRows.set(row.id, {
+            fix: { id: String(row.id), lat: a.latitude, lng: a.longitude },
+            tripId: row.relationships?.trip?.data?.id ?? null,
+            at: Date.parse(a.updated_at),
+          })
+        }
+      }
+    }
+  }
 
   for (const pred of predsData.data || []) {
     const stopId = pred.relationships?.stop?.data?.id
@@ -270,14 +309,26 @@ export async function fetchPredictions(stopIds: string[], routeTypes: string): P
     if (diff < 0) continue
 
     const key = `${stopId}-${routeId}-${dirId}`
-    if (!predMap.has(key)) predMap.set(key, Math.round(diff))
+    if (predMap.has(key)) continue
+    predMap.set(key, Math.round(diff))
+    if (extras) {
+      const isBusOrCommuterRail = routeTypes === '3' || routeId.startsWith('CR-')
+      const sched = schedTimes.get(pred.relationships?.schedule?.data?.id ?? '')
+      if (isBusOrCommuterRail && sched) {
+        const late = Math.round((Date.parse(depTime) - Date.parse(sched)) / 60000)
+        if (Number.isFinite(late) && late >= LATE_SHOW_MIN) extras.late.set(key, late)
+      }
+      const v = vehicleRows.get(pred.relationships?.vehicle?.data?.id ?? '')
+      const tripId = pred.relationships?.trip?.data?.id
+      if (v && tripId && v.tripId === tripId && Date.now() - v.at <= VEHICLE_FRESH_MS) extras.vehicles.set(key, v.fix)
+    }
   }
 
   return predMap
 }
 
 /** One MBTAStopLive row per (stop × route × direction), sorted by distance. */
-export function mergePredictions(topology: StopTopology[], predMap: Map<string, number>): MBTAStopLive[] {
+export function mergePredictions(topology: StopTopology[], predMap: Map<string, number>, extras?: PredictionExtras): MBTAStopLive[] {
   const stops: MBTAStopLive[] = []
   for (const s of topology) {
     if (s.routes.length === 0) continue
@@ -294,6 +345,7 @@ export function mergePredictions(topology: StopTopology[], predMap: Map<string, 
           direction: route.directions[dirIdx] ?? '',
           next_arrival_minutes: predMap.get(predKey) ?? null,
           distance_meters: s.dist,
+          ...(extras ? { late_minutes: extras.late.get(predKey) ?? null, vehicle: extras.vehicles.get(predKey) ?? null } : {}),
         })
       }
     }
@@ -315,8 +367,10 @@ export async function fetchMBTAStops(
       server: overrides?.server ? 'bus' : undefined,
     })
     if (topology.length === 0) return []
-    const predMap = await fetchPredictions(topology.map(s => s.id), '3')
-    return mergePredictions(topology, predMap)
+    // The /nearby snapshot (server) also reads lateness and vehicles.
+    const extras: PredictionExtras | undefined = overrides?.server ? { late: new Map(), vehicles: new Map() } : undefined
+    const predMap = await fetchPredictions(topology.map(s => s.id), '3', extras)
+    return mergePredictions(topology, predMap, extras)
   } catch (err) {
     console.warn('[nearby] fetchMBTAStops failed:', err)
     return []
@@ -343,8 +397,9 @@ export async function fetchTrainStops(
       server: server ? 'rail' : undefined,
     })
     if (topology.length === 0) return []
-    const predMap = await fetchPredictions(topology.map(s => s.id), routeTypes)
-    return mergePredictions(topology, predMap)
+    const extras: PredictionExtras | undefined = server ? { late: new Map(), vehicles: new Map() } : undefined
+    const predMap = await fetchPredictions(topology.map(s => s.id), routeTypes, extras)
+    return mergePredictions(topology, predMap, extras)
   } catch (err) {
     console.warn('[nearby] fetchTrainStops failed:', err)
     return []

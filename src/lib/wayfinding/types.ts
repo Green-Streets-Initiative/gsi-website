@@ -74,6 +74,10 @@ export interface MBTAStopLive {
   direction: string
   next_arrival_minutes: number | null
   distance_meters: number
+  /** /nearby only: commuter rail or bus 5+ min behind its timetable. */
+  late_minutes?: number | null
+  /** /nearby only: the vehicle making the next departure, if tracked. */
+  vehicle?: { id: string; lat: number; lng: number } | null
 }
 
 export interface BikeParkingSpot {

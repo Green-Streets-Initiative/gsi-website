@@ -28,7 +28,7 @@ import { bikeshareLogoUrl, borrowLogoUrl } from '@/lib/nearby/provider-logos'
 import NearbyPromoCard from './NearbyPromoCard'
 import { NEARBY_COMFORT_COLORS } from './BikeComfortBlock'
 import {
-  type StationGroup, type ModeFilter, routeEndpoints, soonestAtStation, freqShort, isShuttleStation,
+  type StationGroup, type ModeFilter, routeEndpoints, soonestAtStation, soonestLate, freqShort, isShuttleStation,
 } from './useNearbyModel'
 
 /**
@@ -122,6 +122,7 @@ function RouteSummaryLine({ r, corridorById, alerts }: {
   const [open, setOpen] = useState(false)
   const corridor = corridorById.get(`transit:${r.id}`) as TransitCorridor | undefined
   const next = soonestAtStation(r)
+  const late = soonestLate(r)
   const ends = routeEndpoints(corridor, r)
   const routeAlerts = alertsForRoute(alerts, r.id)
   return (
@@ -148,6 +149,7 @@ function RouteSummaryLine({ r, corridorById, alerts }: {
         {next !== null && (
           <strong className="ml-auto shrink-0 text-[0.75rem] font-bold text-(--nb-accent)">
             {next === 0 ? tr('lists.now') : tr('lists.in_min', { min: next })}
+            {late ? <span className="text-(--nb-warn)"> · {tr('lists.late_min', { min: late })}</span> : null}
           </strong>
         )}
       </span>
@@ -204,6 +206,7 @@ function ExpandedRouteRow({ r, corridorById, highlightedCorridorId, onSelectRout
               {a.nextMin !== null && (
                 <strong className="shrink-0 text-[0.75rem] font-bold text-(--nb-accent)">
                   {a.nextMin === 0 ? tr('lists.now') : tr('lists.in_min', { min: a.nextMin })}
+                  {a.lateMin ? <span className="text-(--nb-warn)"> · {tr('lists.late_min', { min: a.lateMin })}</span> : null}
                 </strong>
               )}
             </span>

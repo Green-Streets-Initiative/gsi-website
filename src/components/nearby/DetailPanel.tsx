@@ -258,6 +258,7 @@ export function DetailContent({ selection, stationByKey, corridorById, docks, bo
                         {a.nextMin !== null && (
                           <strong className="shrink-0 text-[0.75rem] font-bold text-(--nb-accent)">
                             {a.nextMin === 0 ? tr('detail.now') : tr('detail.in_min', { minutes: a.nextMin })}
+                            {a.lateMin ? <span className="text-(--nb-warn)"> · {tr('lists.late_min', { min: a.lateMin })}</span> : null}
                           </strong>
                         )}
                       </span>
@@ -368,6 +369,7 @@ export function DetailContent({ selection, stationByKey, corridorById, docks, bo
                     {live?.nextMin != null && (
                       <strong className="shrink-0 text-[0.8rem] font-bold text-(--nb-accent)">
                         {live.nextMin === 0 ? tr('detail.now') : tr('detail.in_min', { minutes: live.nextMin })}
+                        {live.lateMin ? <span className="text-(--nb-warn)"> · {tr('lists.late_min', { min: live.lateMin })}</span> : null}
                       </strong>
                     )}
                   </div>
@@ -415,6 +417,7 @@ export function DetailContent({ selection, stationByKey, corridorById, docks, bo
                     {a.nextMin !== null && (
                       <strong className="shrink-0 text-[0.8rem] font-bold text-(--nb-accent)">
                         {a.nextMin === 0 ? tr('detail.now') : tr('detail.in_min', { minutes: a.nextMin })}
+                            {a.lateMin ? <span className="text-(--nb-warn)"> · {tr('lists.late_min', { min: a.lateMin })}</span> : null}
                       </strong>
                     )}
                   </div>

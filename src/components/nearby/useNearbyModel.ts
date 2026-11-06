@@ -4,10 +4,10 @@ import { useMemo, useState, useEffect, useCallback } from 'react'
 import posthog from 'posthog-js'
 import type { BluebikeStationLive, MBTAStopLive } from '@/lib/wayfinding/types'
 import type { TransitCorridor, BikeCorridor } from '@/lib/nearby/corridors'
-import { lineColor } from '@/lib/nearby/transit-ui'
+import { lineColor, lineTextColor } from '@/lib/nearby/transit-ui'
 import { isShuttleRouteId, shuttleAgencyLabel, shuttleAgencyFor, type ShuttleAgencyMeta } from '@/lib/nearby/shuttle-agencies'
 import type { NearbyMarker, LaneTapInfo } from './NearbyMap'
-import { userDotHtml, busStopHtml, trainStopHtml, ferryStopHtml, shuttleStopHtml, shuttleVehicleHtml, bluebikeHtml, borrowRentHtml, repairHtml } from './markers'
+import { userDotHtml, busStopHtml, trainStopHtml, ferryStopHtml, shuttleStopHtml, shuttleVehicleHtml, vehicleHtml, bluebikeHtml, borrowRentHtml, repairHtml } from './markers'
 import { nearbyBorrowRent } from '@/lib/nearby/borrow-rent'
 import { fetchRepairPlacesClient, nearbyRepair, type RepairPlace } from '@/lib/nearby/repair'
 import { shuttleVehicleLabel, type ShuttleVehicleLive } from '@/lib/nearby/live-data'
@@ -66,7 +66,38 @@ export interface StationGroup {
   /** Beyond the normal search radius — the nearest option, shown because
    *  nothing closer exists (Boston College's nearest MBTA bus is 0.8 mi). */
   farther?: boolean
-  routes: { id: string; name: string; arrivals: { direction: string; nextMin: number | null }[] }[]
+  routes: { id: string; name: string; arrivals: { direction: string; nextMin: number | null; lateMin?: number | null }[] }[]
+}
+
+/** At most this many moving vehicles on the map at once. */
+const MAP_VEHICLES_MAX = 8
+
+/** "Red Line" -> "Red", "Fitchburg Line" -> "Fitchburg"; "553" stays. The
+ *  pill's color and icon already say it is a line. */
+function transitVehicleLabel(routeName: string): string {
+  // Green Line branches go by their letter, as the app's badges do.
+  return routeName.replace(/^Green Line ([A-E])$/, '$1').replace(/\s+Line$/, '')
+}
+
+/** The trains and buses worth pinning: with a station open, every tracked
+ *  one coming to it; otherwise the next one on each line (and direction) in
+ *  the list, nearest stops first. Never every vehicle in the area. */
+function transitVehicles(rows: MBTAStopLive[], openKey: string | null, max: number) {
+  const out: { row: MBTAStopLive; vehicle: NonNullable<MBTAStopLive['vehicle']> }[] = []
+  const seenVehicle = new Set<string>()
+  const seenLine = new Set<string>()
+  const pool = openKey ? rows.filter(r => r.name.toLowerCase() === openKey) : rows
+  for (const row of [...pool].sort((a, b) => a.distance_meters - b.distance_meters)) {
+    if (out.length >= max) break
+    const v = row.vehicle
+    if (!v || seenVehicle.has(v.id)) continue
+    const line = `${row.route_id}|${row.direction}`
+    if (!openKey && seenLine.has(line)) continue
+    seenVehicle.add(v.id)
+    seenLine.add(line)
+    out.push({ row, vehicle: v })
+  }
+  return out
 }
 
 export function groupStops(rows: MBTAStopLive[], isRail: boolean, farther = false): StationGroup[] {
@@ -87,9 +118,10 @@ export function groupStops(rows: MBTAStopLive[], isRail: boolean, farther = fals
     }
     const arrival = route.arrivals.find(a => a.direction === row.direction)
     if (!arrival) {
-      route.arrivals.push({ direction: row.direction, nextMin: row.next_arrival_minutes })
+      route.arrivals.push({ direction: row.direction, nextMin: row.next_arrival_minutes, lateMin: row.late_minutes ?? null })
     } else if (row.next_arrival_minutes !== null && (arrival.nextMin === null || row.next_arrival_minutes < arrival.nextMin)) {
       arrival.nextMin = row.next_arrival_minutes
+      arrival.lateMin = row.late_minutes ?? null
     }
   }
   return [...groups.values()].sort((a, b) => a.dist - b.dist)
@@ -117,6 +149,12 @@ export function routeEndpoints(
 export function soonestAtStation(route: StationGroup['routes'][number]): number | null {
   const mins = route.arrivals.map(a => a.nextMin).filter((m): m is number => m !== null)
   return mins.length ? Math.min(...mins) : null
+}
+
+/** How late the soonest departure is (commuter rail and buses, 5+ min), or null. */
+export function soonestLate(route: StationGroup['routes'][number]): number | null {
+  const next = soonestAtStation(route)
+  return route.arrivals.find(a => a.nextMin === next)?.lateMin ?? null
 }
 
 /** Compact frequency for list rows: "every ~11 min" / "18 trips/day" */
@@ -521,7 +559,10 @@ export function useNearbyModel({
       dimmed: anyPointActive && !stationActive(g.key),
       zIndex: stationActive(g.key) ? 6 : 2,
     }))),
-    // Running shuttles move with the 30-second refresh; never tappable.
+    // Moving vehicles, on the 30-second refresh; never tappable, and under
+    // the stop pins (a train sits at the very station you'd tap). Shuttles,
+    // then the MBTA train or bus behind each line's next departure, or every
+    // tracked one coming to the open station. Eight at most: a glance.
     ...(routeFocused || !showBus ? [] : (shuttleVehicles ?? []).map(v => ({
       id: `vehicle-${v.id}`,
       lat: v.lat,
@@ -531,7 +572,27 @@ export function useNearbyModel({
       analyticsType: 'shuttle_vehicle',
       dimmed: false,
       noFit: true,
-      zIndex: 5,
+      zIndex: 1,
+    }))),
+    ...(routeFocused ? [] : transitVehicles(
+      [...(showRail ? rail : []), ...(showBus ? bus : [])],
+      selection?.type === 'station' ? selection.key : focusedStationKey,
+      Math.max(0, MAP_VEHICLES_MAX - (showBus ? (shuttleVehicles ?? []).length : 0)),
+    ).map(({ row, vehicle }) => ({
+      id: `vehicle-${vehicle.id}`,
+      lat: vehicle.lat,
+      lng: vehicle.lng,
+      html: vehicleHtml(
+        transitVehicleLabel(row.route_name),
+        lineColor(row.route_id),
+        lineTextColor(row.route_id),
+        rail.includes(row) ? 'train' : 'bus',
+      ),
+      tappable: false,
+      analyticsType: 'transit_vehicle',
+      dimmed: false,
+      noFit: true,
+      zIndex: 1,
     }))),
     ...(showBikePins ? docks.slice(0, 8).map(d => ({
       id: `dock-${d.station_id}`,
@@ -555,7 +616,7 @@ export function useNearbyModel({
       zIndex: bikePinsDuringRoute && d.station_id === startDockId ? 11 : dockActive(d.station_id) ? 6 : 1,
     })) : []),
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  ], [center, families, shuttleVehicles, showBus, docks, borrowRent, repairPlaces, showBike, showBikePins, showExtraPins, bikePinsDuringRoute, routeFocused, selection, stationActive, anyPointActive, focusedStationKey, startDockId, startDockLabel])
+  ], [center, families, shuttleVehicles, rail, bus, showRail, showBus, docks, borrowRent, repairPlaces, showBike, showBikePins, showExtraPins, bikePinsDuringRoute, routeFocused, selection, stationActive, anyPointActive, focusedStationKey, startDockId, startDockLabel])
 
   // Where the camera should ease when a point-like thing is tapped, so the
   // tapped marker stays visible above the detail card / sheet. Corridor-driven
