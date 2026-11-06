@@ -7,9 +7,10 @@ import type { TransitCorridor, BikeCorridor } from '@/lib/nearby/corridors'
 import { lineColor } from '@/lib/nearby/transit-ui'
 import { isShuttleRouteId, shuttleAgencyLabel, shuttleAgencyFor, type ShuttleAgencyMeta } from '@/lib/nearby/shuttle-agencies'
 import type { NearbyMarker, LaneTapInfo } from './NearbyMap'
-import { userDotHtml, busStopHtml, trainStopHtml, ferryStopHtml, shuttleStopHtml, bluebikeHtml, borrowRentHtml, repairHtml } from './markers'
+import { userDotHtml, busStopHtml, trainStopHtml, ferryStopHtml, shuttleStopHtml, shuttleVehicleHtml, bluebikeHtml, borrowRentHtml, repairHtml } from './markers'
 import { nearbyBorrowRent } from '@/lib/nearby/borrow-rent'
 import { fetchRepairPlacesClient, nearbyRepair, type RepairPlace } from '@/lib/nearby/repair'
+import { shuttleVehicleLabel, type ShuttleVehicleLive } from '@/lib/nearby/live-data'
 
 /**
  * Shared derivation layer for the corridor explorer: station grouping,
@@ -180,6 +181,8 @@ export interface NearbyModelInput {
   railFar?: MBTAStopLive[]
   busFar?: MBTAStopLive[]
   shuttles?: MBTAStopLive[]
+  /** Running shuttles where the operator's feed is live (Brandeis). */
+  shuttleVehicles?: ShuttleVehicleLive[]
   docks: BluebikeStationLive[]
   /** Page-wide mode filter — hidden modes drop out of markers, lines, AND lists */
   modeFilter?: ModeFilter
@@ -197,7 +200,7 @@ export interface NearbyModelInput {
 }
 
 export function useNearbyModel({
-  center, transitCorridors, bikeCorridors, rail, bus, railFar, busFar, shuttles, docks,
+  center, transitCorridors, bikeCorridors, rail, bus, railFar, busFar, shuttles, shuttleVehicles, docks,
   modeFilter, paintedVisible, onRequestCorridorShape, startDockLabel, extrasVisible = true,
 }: NearbyModelInput) {
   const mode = modeFilter ?? MODE_FILTER_DEFAULT
@@ -464,6 +467,9 @@ export function useNearbyModel({
       tappable: !bikePinsDuringRoute,
       analyticsType: 'repair',
       dimmed: (anyPointActive && !repairActive(p.id)) || bikePinsDuringRoute,
+      // Repair is searched up to 8 miles out; the first camera fit is for
+      // what is near you (a Brandeis map opened zoomed out to Somerville).
+      noFit: true,
       zIndex: repairActive(p.id) ? 6 : 1,
     })) : []),
     ...(routeFocused ? [] : families.rail.map(g => ({
@@ -515,6 +521,18 @@ export function useNearbyModel({
       dimmed: anyPointActive && !stationActive(g.key),
       zIndex: stationActive(g.key) ? 6 : 2,
     }))),
+    // Running shuttles move with the 30-second refresh; never tappable.
+    ...(routeFocused || !showBus ? [] : (shuttleVehicles ?? []).map(v => ({
+      id: `vehicle-${v.id}`,
+      lat: v.lat,
+      lng: v.lng,
+      html: shuttleVehicleHtml(shuttleVehicleLabel(v.route_name), v.color),
+      tappable: false,
+      analyticsType: 'shuttle_vehicle',
+      dimmed: false,
+      noFit: true,
+      zIndex: 5,
+    }))),
     ...(showBikePins ? docks.slice(0, 8).map(d => ({
       id: `dock-${d.station_id}`,
       lat: d.lat,
@@ -537,7 +555,7 @@ export function useNearbyModel({
       zIndex: bikePinsDuringRoute && d.station_id === startDockId ? 11 : dockActive(d.station_id) ? 6 : 1,
     })) : []),
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  ], [center, families, docks, borrowRent, repairPlaces, showBike, showBikePins, showExtraPins, bikePinsDuringRoute, routeFocused, selection, stationActive, anyPointActive, focusedStationKey, startDockId, startDockLabel])
+  ], [center, families, shuttleVehicles, showBus, docks, borrowRent, repairPlaces, showBike, showBikePins, showExtraPins, bikePinsDuringRoute, routeFocused, selection, stationActive, anyPointActive, focusedStationKey, startDockId, startDockLabel])
 
   // Where the camera should ease when a point-like thing is tapped, so the
   // tapped marker stays visible above the detail card / sheet. Corridor-driven

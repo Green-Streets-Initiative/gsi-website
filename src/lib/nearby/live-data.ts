@@ -491,6 +491,79 @@ export async function fetchShuttleStops(lat: number, lng: number): Promise<MBTAS
   }
 }
 
+/** A shuttle on the move, where its operator's feed can be read live
+ *  (Brandeis, through TripShot, since 2026-11-06). */
+export interface ShuttleVehicleLive {
+  id: string
+  route_id: string
+  route_name: string
+  color: string
+  lat: number
+  lng: number
+}
+
+export interface ShuttleLive {
+  /** "stopId|routeId" → minutes to the next live arrival. */
+  minutes: Map<string, number>
+  vehicles: ShuttleVehicleLive[]
+}
+
+/** Live shuttle times and positions from the Shift app's `nearby-transit`
+ *  edge function (`only: "shuttles"`), the one source both surfaces read.
+ *  Only live times are kept: this page shows no timetables, so a printed
+ *  time here would read as a live one. Never cached — it is the 30-second
+ *  refresh's job. Null on any failure; the cards then show what they always
+ *  did. */
+export async function fetchShuttleLive(lat: number, lng: number): Promise<ShuttleLive | null> {
+  const base = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  if (!base || !anonKey) return null
+  try {
+    const res = await fetch(`${base}/functions/v1/nearby-transit`, {
+      method: 'POST',
+      headers: { apikey: anonKey, Authorization: `Bearer ${anonKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ lat, lng, only: 'shuttles' }),
+    })
+    if (!res.ok) return null
+    const data = await res.json()
+    const minutes = new Map<string, number>()
+    for (const stop of Array.isArray(data?.stops) ? data.stops : []) {
+      for (const route of Array.isArray(stop?.routes) ? stop.routes : []) {
+        const first = (Array.isArray(route?.arrivals) ? route.arrivals : [])
+          .find((a: { is_realtime?: unknown; minutes_away?: unknown }) => a?.is_realtime === true && typeof a.minutes_away === 'number')
+        if (first) minutes.set(`${stop.id}|${route.route_id}`, first.minutes_away)
+      }
+    }
+    const vehicles: ShuttleVehicleLive[] = (Array.isArray(data?.shuttle_vehicles) ? data.shuttle_vehicles : [])
+      .filter((v: Record<string, unknown>) => typeof v?.id === 'string' && Number.isFinite(v.lat) && Number.isFinite(v.lng))
+      .map((v: Record<string, unknown>) => ({
+        id: v.id as string,
+        route_id: String(v.route_id ?? ''),
+        route_name: String(v.route_name ?? ''),
+        color: typeof v.color === 'string' && /^#[0-9a-f]{6}$/i.test(v.color) ? v.color : '#6366F1',
+        lat: v.lat as number,
+        lng: v.lng as number,
+      }))
+    return { minutes, vehicles }
+  } catch {
+    return null
+  }
+}
+
+/** Shuttle rows with their live minutes filled in (null stays null). */
+export function withShuttleLive(rows: MBTAStopLive[], live: ShuttleLive | null): MBTAStopLive[] {
+  if (!live || live.minutes.size === 0) return rows
+  return rows.map(r => {
+    const m = live.minutes.get(`${r.stop_id}|${r.route_id}`)
+    return m === undefined ? r : { ...r, next_arrival_minutes: m }
+  })
+}
+
+/** "Campus Shuttle (Mon-Fri)" → "Campus Shuttle" for the map label. */
+export function shuttleVehicleLabel(routeName: string): string {
+  return routeName.replace(/\s*\([^)]*\)\s*$/, '').trim() || routeName
+}
+
 export async function fetchBikeParking(lat: number, lng: number, radiusMeters = 1000): Promise<BikeParkingSpot[]> {
   try {
     const query = `

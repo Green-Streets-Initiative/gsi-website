@@ -6,7 +6,7 @@ import posthog from 'posthog-js'
 import AddressAutocomplete from '@/components/AddressAutocomplete'
 import { supabase } from '@/lib/supabase'
 import type { BluebikeStationLive, MBTAStopLive } from '@/lib/wayfinding/types'
-import { fetchBikeShareDocks, fetchMBTAStops, fetchTrainStops, fetchShuttleStops } from '@/lib/nearby/live-data'
+import { fetchBikeShareDocks, fetchMBTAStops, fetchTrainStops, fetchShuttleStops, fetchShuttleLive, withShuttleLive, type ShuttleLive } from '@/lib/nearby/live-data'
 import { fetchNearbyAlertsAndClosures, type SurfacedAlert, type NearbyPromo } from '@/lib/nearby/alerts'
 import { round3, parseSnapshotParams, parseTripDest, buildShareUrl, stickyParams, isOutsideArea } from '@/lib/nearby/share'
 import { buildAppHref, fetchNewRoutesOpen, isNewRoutesContext } from '@/lib/nearby/campaign'
@@ -105,6 +105,10 @@ export default function NearbySnapshot({ tone = 'dark' }: { tone?: NearbyTone } 
   const [rail, setRail] = useState<SectionData<MBTAStopLive[]>>({ status: 'loading', data: [] })
   const [bus, setBus] = useState<SectionData<MBTAStopLive[]>>({ status: 'loading', data: [] })
   const [shuttles, setShuttles] = useState<SectionData<MBTAStopLive[]>>({ status: 'loading', data: [] })
+  // Live shuttle times and positions (Brandeis, 2026-11-06), refreshed with
+  // the trains; the stop list itself is session-cached above.
+  const [shuttleLive, setShuttleLive] = useState<ShuttleLive | null>(null)
+  const shuttleRows = useMemo(() => withShuttleLive(shuttles.data, shuttleLive), [shuttles.data, shuttleLive])
   // The nearest option beyond the normal radius — filled ONLY when the
   // primary rail/bus fetch found nothing (Boston College has no MBTA bus
   // within 0.7 mi; the list must still say where the nearest one is).
@@ -370,6 +374,10 @@ export default function NearbySnapshot({ tone = 'dark' }: { tone?: NearbyTone } 
       setBusFar(far)
       posthog.capture('snapshot_section_loaded', { section: 'bus', count: rows.length, far: far.length })
     })
+    setShuttleLive(null)
+    fetchShuttleLive(lat, lng).then(live => {
+      if (loadSeqRef.current === seq) setShuttleLive(live)
+    })
     fetchShuttleStops(lat, lng).then(rows => {
       setShuttles({ status: 'ready', data: rows })
       if (rows.length) posthog.capture('snapshot_section_loaded', { section: 'shuttle', count: rows.length })
@@ -486,10 +494,11 @@ export default function NearbySnapshot({ tone = 'dark' }: { tone?: NearbyTone } 
       if (document.hidden || refreshBusyRef.current) return
       refreshBusyRef.current = true
       try {
-        const [railRows, busRows, bbRows] = await Promise.all([
+        const [railRows, busRows, bbRows, liveShuttles] = await Promise.all([
           fetchTrainStops(lat, lng, SNAPSHOT_RAIL_TYPES, SNAPSHOT_RAIL_PREFIX, SNAPSHOT_RAIL_MAX_STATIONS, 0.02, true),
           fetchMBTAStops(lat, lng, SNAPSHOT_BUS_OPTS),
           fetchBikeShareDocks(lat, lng),
+          fetchShuttleLive(lat, lng),
         ])
         // Far topology is session-cached, so a refresh of the nearest
         // option costs one /predictions call — same as a found stop would
@@ -506,6 +515,7 @@ export default function NearbySnapshot({ tone = 'dark' }: { tone?: NearbyTone } 
         setRailFar(railFarRows.filter(live))
         setBusFar(busFarRows.filter(live))
         setBluebikes({ status: 'ready', data: bbRows })
+        setShuttleLive(liveShuttles)
         setAlerts(alerts)
       } finally {
         refreshBusyRef.current = false
@@ -795,7 +805,8 @@ export default function NearbySnapshot({ tone = 'dark' }: { tone?: NearbyTone } 
     bus: bus.data,
     railFar,
     busFar,
-    shuttles: shuttles.data,
+    shuttles: shuttleRows,
+    shuttleVehicles: shuttleLive?.vehicles ?? [],
     docks: bluebikes.data,
     backgroundLines,
     transitStatus,

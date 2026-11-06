@@ -25,6 +25,9 @@ export interface NearbyMarker {
    *  within a block of each other and they are identical yellow dots — a ring
    *  on the chosen one isn't enough to find it until the rest recede. */
   dimmed?: boolean
+  /** Left out of the camera's first fit: a running shuttle across town is
+   *  not "what's near you", and it moves. */
+  noFit?: boolean
 }
 
 export type CorridorSelectSource = 'map-line' | 'map-stop' | 'map-stop-chip' | 'background'
@@ -422,10 +425,10 @@ export default function NearbyMap({
       // as "home" so deselecting a corridor can ease back to it. (Route maps
       // fit to their drawn lines instead — see fitToLines.) The user dot
       // alone doesn't count — wait for real data or the fit locks in early
-      const hasContent = markers.length > 1 || (extraFitPointsRef.current?.length ?? 0) > 0
+      const hasContent = markers.filter(m => !m.noFit).length > 1 || (extraFitPointsRef.current?.length ?? 0) > 0
       if (!didFitRef.current && hasContent && !fitToLinesRef.current) {
         didFitRef.current = true
-        const byDist = [...markers].sort((a, b) =>
+        const byDist = markers.filter(m => !m.noFit).sort((a, b) =>
           (Math.abs(a.lat - center.lat) + Math.abs(a.lng - center.lng)) -
           (Math.abs(b.lat - center.lat) + Math.abs(b.lng - center.lng))
         )

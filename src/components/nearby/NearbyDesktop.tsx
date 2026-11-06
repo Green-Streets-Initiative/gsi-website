@@ -35,6 +35,7 @@ import NearbyLanguagePill from './NearbyLanguagePill'
 import { useNearbyV2, wantsSignIn } from './useNearbyV2'
 import { NearbySignIn, V2Blocks, V2LayersButton, V2PlaceChips, type V2Layers } from './NearbyV2'
 import { useSpotPress } from '@/components/spot/useSpotPress'
+import type { ShuttleVehicleLive } from '@/lib/nearby/live-data'
 
 /**
  * The desktop (≥ lg) experience: a two-pane app layout. The map is a sticky
@@ -82,6 +83,7 @@ interface Props {
   railFar: MBTAStopLive[]
   busFar: MBTAStopLive[]
   shuttles: MBTAStopLive[]
+  shuttleVehicles?: ShuttleVehicleLive[]
   docks: BluebikeStationLive[]
   backgroundLines: GeoJSON.FeatureCollection | null
   transitStatus: SectionStatus
@@ -119,7 +121,7 @@ const RAIL_TAB_LABEL_KEYS: Record<RailTab, string> = {
 export default function NearbyDesktop({
   initialFocus, planFirst = false, planTo = null, center, displayLabel, subLabel, outside, copied, onCopyLink, onChangeLocation, onPrint,
   onPlanCommute, partnerLine, partner, partnerSlug, appHref, newRoutes,
-  transitCorridors, bikeCorridors, popularBikeStreetKeys, rail, bus, railFar, busFar, shuttles, docks,
+  transitCorridors, bikeCorridors, popularBikeStreetKeys, rail, bus, railFar, busFar, shuttles, shuttleVehicles, docks,
   backgroundLines, transitStatus, reach, community, guides, alerts, onRetry,
   onRequestCorridorShape,
 }: Props) {
@@ -149,7 +151,7 @@ export default function NearbyDesktop({
   const startDockLabel = useCallback(
     (d: BluebikeStationLive) => tr('dock.pin_bikes', { count: d.num_bikes_available }), [tr])
   const model = useNearbyModel({
-    center, transitCorridors, bikeCorridors, rail, bus, railFar, busFar, shuttles, docks,
+    center, transitCorridors, bikeCorridors, rail, bus, railFar, busFar, shuttles, shuttleVehicles, docks,
     modeFilter: isV2 ? 'all' : modeFilter, paintedVisible: paintedOn, onRequestCorridorShape, startDockLabel,
     extrasVisible: !isV2 || extrasLayer || moreBikeOpen,
   })

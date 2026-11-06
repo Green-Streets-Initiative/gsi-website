@@ -150,6 +150,20 @@ export function shuttleStopHtml(title: string, agencyLabel: string, selected = f
   )
 }
 
+/** A shuttle on the move (live, Brandeis): a pill in the route's color with
+ *  a lime ring, the page's "live" color, and the route's name, so two
+ *  shuttles on one campus can be told apart at a glance. Same look as the
+ *  app's Around You map. */
+export function shuttleVehicleHtml(name: string, color: string): string {
+  const safeColor = /^#[0-9a-f]{6}$/i.test(color) ? color : SHUTTLE_COLOR
+  return `<div title="${escapeAttr(name)}" style="
+      display:inline-flex;align-items:center;gap:4px;height:26px;max-width:140px;padding:0 9px;
+      border-radius:13px;background:${safeColor};border:2px solid #BAF14D;
+      box-shadow:0 2px 6px rgba(0,0,0,0.45);color:#fff;font:700 11px/1 system-ui,sans-serif;
+      white-space:nowrap;pointer-events:none;
+    ">${SHUTTLE_BUS_SVG}<span style="overflow:hidden;text-overflow:ellipsis">${escapeAttr(name)}</span></div>`
+}
+
 const BICYCLE_SVG = '<svg width="14" height="14" viewBox="0 0 256 256" fill="#191A2E"><path d="M208,112a47.81,47.81,0,0,0-16.93,3.09L165.93,72H192a8,8,0,0,1,8,8,8,8,0,0,0,16,0,24,24,0,0,0-24-24H152a8,8,0,0,0-6.91,12l11.65,20H99.26L82.91,60A8,8,0,0,0,76,56H48a8,8,0,0,0,0,16H71.41L85.12,95.51,69.41,119.1a48,48,0,1,0,13.32,8.89l11.81-17.72L125.6,164a8,8,0,0,0,13.84-8l-30.07-51.57h47.11l11.78,20.2A48,48,0,1,0,208,112ZM80,160a32,32,0,1,1-20.21-29.74l-16.45,24.67a8,8,0,0,0,13.32,8.88l16.44-24.66A31.87,31.87,0,0,1,80,160Zm128,32a32,32,0,0,1-15.62-59.91l11.71,20.08a8,8,0,1,0,13.82-8.06l-11.72-20.09A32,32,0,1,1,208,192Z"/></svg>'
 
 /** Gold circle for CargoB hubs / Community Pedal Power pickups — bikes you
