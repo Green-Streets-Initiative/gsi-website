@@ -12,6 +12,7 @@ import {
 import { getEventPicks } from '@/lib/towns/event-picks'
 import { itemProblem, sameMeeting } from '@/lib/towns/digest-preflight'
 import { infraKey } from '@/lib/towns/digest'
+import { closedPromos } from '@/lib/towns/digest-promos'
 import { newInfraInTown } from '@/lib/server/new-infra'
 import { NO_NEW_INFRA } from '@/lib/new-infra'
 
@@ -98,6 +99,8 @@ export async function GET(req: Request) {
   if (!apiKey) return new Response('RESEND_API_KEY not set', { status: 500 })
   const resend = new Resend(apiKey)
   const sb = createServerSupabaseClient()
+  // Offers that ran out (all free lessons taken) stay out of every town's email.
+  const closed = await closedPromos(sb)
 
   const url = new URL(req.url)
   const dryRun = url.searchParams.get('dry_run') === '1'
@@ -220,6 +223,7 @@ export async function GET(req: Request) {
         partners,
         newInfra,
         priorSendCount: (sends ?? []).length,
+        closedPromos: closed,
       })
       let content = build()
       for (let pass = 0; content && pass < 3; pass++) {
@@ -250,6 +254,7 @@ export async function GET(req: Request) {
           events,
           partners,
           priorSendCount: (sends ?? []).length,
+          closedPromos: closed,
           now: Date.now() - 30 * 86400000,
           horizonDays: 60,
         })

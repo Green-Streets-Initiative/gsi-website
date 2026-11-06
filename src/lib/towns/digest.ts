@@ -198,8 +198,10 @@ export function buildTownDigest(opts: {
   now?: number
   /** Selection window — dry-run widens it so the rewound clock still covers upcoming items. */
   horizonDays?: number
+  /** Promo keys whose offer has run out (closedPromos in digest-promos.ts). */
+  closedPromos?: string[]
 }): TownDigestContent | null {
-  const { town, qualifyingCount, civic, resources, events, partners, newInfra = [], priorSendCount, now = Date.now(), horizonDays = 30 } = opts
+  const { town, qualifyingCount, civic, resources, events, partners, newInfra = [], priorSendCount, now = Date.now(), horizonDays = 30, closedPromos = [] } = opts
   const townName = town.town_name
   const slug = town.slug
 
@@ -453,7 +455,7 @@ export function buildTownDigest(opts: {
 
   // A Green Streets offer for this town (lib/towns/digest-promos.ts): rides
   // along only, after the featured item and the other open items.
-  const promo = promoFor(slug, todayIso)
+  const promo = promoFor(slug, todayIso, closedPromos)
   const promoSection = promo
     ? `<tr><td style="padding:0 32px 24px;">
         <p style="margin:0 0 8px;font-family:${FONT_DISPLAY};font-size:12px;font-weight:700;letter-spacing:0.1em;color:#5A5C6E;">FROM GREEN STREETS</p>
