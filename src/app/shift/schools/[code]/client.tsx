@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
-import SchoolRoutesSection from '@/components/shift/SchoolRoutesSection'
+import SchoolRoutesSection, { type RoutesPreview } from '@/components/shift/SchoolRoutesSection'
 
 interface Props {
   schoolId: string
@@ -13,6 +13,8 @@ interface Props {
   // Set when the URL carried a classroom code; null for school-code URLs
   // (app Safe Routes link, printed route-map PDFs), which keep the code gate.
   enteredCode: string | null
+  // An admin's unpublished Safe Routes draft (/shift/schools/<code>/preview/<id>).
+  preview?: RoutesPreview
 }
 
 interface ClassroomStanding {
@@ -53,6 +55,7 @@ export default function SchoolPortalClient({
   gradeSpan,
   classroomCount,
   enteredCode,
+  preview,
 }: Props) {
   const [codeInput, setCodeInput] = useState('')
   const [verified, setVerified] = useState(false)
@@ -160,18 +163,24 @@ export default function SchoolPortalClient({
 
   return (
     <main className="min-h-screen bg-[#F4F8EE]">
+      {preview && (
+        <div role="status" className="bg-[#FF6B8A] px-6 py-3 text-center text-sm font-semibold text-[#191A2E]">
+          Preview: families can&apos;t see this yet. It goes live only when you publish in the
+          admin. This link stops working after 7 days.
+        </div>
+      )}
       {/* Header */}
       <div className="bg-[#191A2E] px-6 py-8 text-center">
         <div className="mx-auto max-w-[800px]">
           <div className="mb-2 flex items-center justify-center gap-2">
             <span className="font-display text-2xl font-extrabold text-white">Shift</span>
             <ShiftMark />
-            <span className="text-sm font-medium text-white/50">for Schools</span>
+            <span className="text-sm font-medium text-white/75">for Schools</span>
           </div>
           <h1 className="font-display text-xl font-bold text-white sm:text-2xl">
             {schoolName}
           </h1>
-          <p className="mt-1 text-sm text-white/60">
+          <p className="mt-1 text-sm text-white/75">
             {city} &middot; {gradeSpan}
           </p>
         </div>
@@ -284,14 +293,14 @@ export default function SchoolPortalClient({
         )}
 
         {/* Safe Routes section */}
-        <SchoolRoutesSection schoolId={schoolId} schoolName={schoolName} />
+        <SchoolRoutesSection schoolId={schoolId} schoolName={schoolName} preview={preview} />
 
         {/* Join section */}
         <div className="rounded-2xl bg-[#191A2E] p-8 text-center">
           <h2 className="font-display text-lg font-bold text-white">
             Want to follow your child&apos;s class?
           </h2>
-          <p className="mx-auto mt-2 max-w-md text-sm text-white/70">
+          <p className="mx-auto mt-2 max-w-md text-sm text-white/75">
             Download the Shift app and enter your classroom code to get weekly
             updates on how your child&apos;s class is doing.
           </p>

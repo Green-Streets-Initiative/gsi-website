@@ -23,6 +23,8 @@ export default function robots(): MetadataRoute.Robots {
           '/record',
           // Review harnesses (fake clocks, forced flags); each also carries noindex.
           '/preview',
+          // Admin previews of unpublished Safe Routes maps; each carries noindex.
+          '/shift/schools/*/preview',
         ],
       },
     ],

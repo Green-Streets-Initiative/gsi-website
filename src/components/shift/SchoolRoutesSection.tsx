@@ -15,16 +15,26 @@ import SchoolRoutesMap from './SchoolRoutesMap'
 import ReportSpotSheet from '@/components/spot/ReportSpotSheet'
 import { useSpotSwitch } from '@/components/spot/useSpotSwitch'
 
+/** An admin's unpublished draft (route_map_previews): the routes to draw and
+ *  the PDF link that draws the same draft. */
+export interface RoutesPreview {
+  routes: PublishedRouteCard[]
+  pdfUrl: string
+}
+
 interface Props {
   schoolId: string
   schoolName: string
+  preview?: RoutesPreview
 }
 
 // The family-facing Safe Routes section: one map of every published route
 // plus a card per route. Reads the family-safe published_route_cards view —
-// internal scores and notes are not in the payload at all.
-export default function SchoolRoutesSection({ schoolId, schoolName }: Props) {
-  const [routes, setRoutes] = useState<PublishedRouteCard[]>([])
+// internal scores and notes are not in the payload at all. With `preview`,
+// draws the admin's draft instead (same family-safe fields).
+export default function SchoolRoutesSection({ schoolId, schoolName, preview }: Props) {
+  const [fetched, setFetched] = useState<PublishedRouteCard[]>([])
+  const routes = preview?.routes ?? fetched
   const [selectedId, setSelectedId] = useState<string | null>(null)
   // Report a spot (behind the report_a_spot switch): closes the parity gap
   // gap-safe-routes-no-report. Starts on the picked route, else the school.
@@ -32,13 +42,14 @@ export default function SchoolRoutesSection({ schoolId, schoolName }: Props) {
   const [spotAt, setSpotAt] = useState<{ lat: number; lng: number; label: string | null } | null>(null)
 
   useEffect(() => {
+    if (preview) return
     supabase
       .from('published_route_cards')
       .select('*')
       .eq('school_id', schoolId)
       .order('sort_order')
-      .then(({ data }) => setRoutes((data ?? []) as PublishedRouteCard[]))
-  }, [schoolId])
+      .then(({ data }) => setFetched((data ?? []) as PublishedRouteCard[]))
+  }, [schoolId, preview])
 
   if (routes.length === 0) return null
 
@@ -177,7 +188,10 @@ export default function SchoolRoutesSection({ schoolId, schoolName }: Props) {
 
       <div className="text-center">
         <a
-          href={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/generate-asset?asset_type=route_map&school_id=${schoolId}`}
+          href={
+            preview?.pdfUrl ??
+            `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/generate-asset?asset_type=route_map&school_id=${schoolId}`
+          }
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center gap-2 text-sm font-medium text-[#2966E5] transition hover:text-[#2966E5]/80"
@@ -186,7 +200,7 @@ export default function SchoolRoutesSection({ schoolId, schoolName }: Props) {
         </a>
       </div>
 
-      {spotOn && (
+      {spotOn && !preview && (
         <div className="text-center">
           <button
             type="button"
