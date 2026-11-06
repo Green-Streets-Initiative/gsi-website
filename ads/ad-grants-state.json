@@ -1093,6 +1093,39 @@
       "month_end_math": "8.41% on 832 impr after 5 days; well above 5%.",
       "alerts": [],
       "emailed": false
+    },
+    {
+      "date": "2026-11-06",
+      "source": "scheduled quick check (ad-grants-pulse), ~10:10 ET, live account via authuser=walkrideday%40gmail.com (resolved to 5). This month = Nov 1-6.",
+      "mtd": {
+        "window": "2026-11-01..2026-11-06",
+        "impressions": 1163,
+        "clicks": 103,
+        "ctr_pct": 8.86,
+        "cost": 312.44,
+        "conversions": 11
+      },
+      "by_campaign": {
+        "How-to Guides": { "impressions": 961, "clicks": 94, "conversions": 11 },
+        "Venue Parking": { "impressions": 136, "clicks": 6, "conversions": 1, "note": "4.62%; day 3, under 300 impr and under 14 days, so no call yet; first venue conversion" },
+        "Town Walking & Biking": { "impressions": 68, "clicks": 3 },
+        "Shift App — Massachusetts": { "impressions": 6, "clicks": 0 },
+        "GSI — Brand": { "impressions": 0, "clicks": 0 },
+        "Shift Your Semester — Students": { "impressions": 0, "clicks": 0 },
+        "New Routes — Movers": { "impressions": 0, "clicks": 0, "note": "Paused 11-04 as approved" }
+      },
+      "campaign_status": "Status column did not render text; serving pattern unchanged from 11-05 (New Routes paused as approved). Account budget $365.00/day shown in the total row.",
+      "banners": "Only the known 'Apply for healthcare certification' and 'Protect your account' notices plus the 'Add broad match keywords' recommendation card (not applied). Nothing serving-related.",
+      "ads": {
+        "disapproved_seen": 0,
+        "limited_by_policy": 0,
+        "not_eligible": 0,
+        "poor": "6, all known (3 pinned Venue Parking Ad 1s, How to Pay for the T, Walking School Bus Ideas, Walk More Win More)"
+      },
+      "search_terms": "312 terms. Read top ~30 by impressions: all How-to Guides / Paying for the T fare and transit lookups (boston public transportation 3/22, charliecard 4/11 + 2/9, the t boston 1/11, charlie card 0/10 + 0/6, boston transit 0/9, mbta monthly pass 2/8, boston subway 0/6, public transportation boston 0/6) plus 'gillette stadium parking' 1/8 in Venue Parking. Zero-click rows are on-target. No negatives proposed.",
+      "month_end_math": "8.86% on 1,163 impr after 6 days; well above 5%. Venue Parking kill rule (account MTD < 6.5%) not triggered.",
+      "alerts": [],
+      "emailed": false
     }
   ],
   "snapshots": [
