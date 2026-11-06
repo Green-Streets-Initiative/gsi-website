@@ -91,7 +91,8 @@ function calendarEvent(ride: PublicRide, d: RideDate, hostName: string | null, m
   ].join(' · ')
   const about = (d.description || ride.description || '').trim()
   const notes = [
-    `${walk ? 'Group walk' : 'Group ride'}${hostName ? ` hosted by ${hostName}` : ''}.`,
+    // "Keith A." already ends the sentence.
+    `${walk ? 'Group walk' : 'Group ride'}${hostName ? ` hosted by ${hostName}` : ''}`.replace(/([^.])$/, '$1.'),
     `Say you're coming, or change your answer: ${page}`,
     ride.registration_url ? `The organizer's sign-up: ${ride.registration_url}` : null,
     [
