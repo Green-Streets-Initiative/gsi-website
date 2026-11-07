@@ -18,6 +18,7 @@ import Anthropic from '@anthropic-ai/sdk'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { SYSTEM_PROMPT, contextBlock, organizerPage } from '@/lib/organizer-assistant/prompt'
+import { appLanguage, localizer, translateToolItems, usageLogger } from '@/lib/assistant/app-language'
 import { ACTIVITY, NEEDS_APPROVAL, TOOLS, approvalCard, runApproved, runTool, type ApprovalCard, type ToolCtx, type ToolResult } from '@/lib/organizer-assistant/tools'
 import { summarizeRoute } from '@/lib/organizer-assistant/route-designer'
 import { courseOf } from '@/lib/organizers/route-geo'
@@ -244,7 +245,9 @@ export async function GET(request: Request) {
     auth.admin.from('ride_assistant_ratings').select('message_id, up').eq('thread_id', thread.id).eq('user_id', auth.user.id),
   ])
   const ratings = new Map(((rated.data ?? []) as { message_id: number; up: boolean }[]).map((r) => [Number(r.message_id), r.up]))
-  return Response.json({ thread_id: thread.id, items: transcript(messages, thread.pending, ratings), long: (await contextSize(auth.admin, thread.id)) > SOFT_CONTEXT })
+  // From the app's ride screen: step lines and buttons in its language; cards were saved in it.
+  const items = await translateToolItems(appLanguage(request), transcript(messages, thread.pending, ratings), usageLogger(auth.admin, 'organizer-assistant'))
+  return Response.json({ thread_id: thread.id, items, long: (await contextSize(auth.admin, thread.id)) > SOFT_CONTEXT })
 }
 
 // ── DELETE ──
@@ -399,6 +402,10 @@ export async function POST(request: Request) {
   const ctx: ToolCtx = {
     user: userClient, admin, token, userId: user.id, email: user.email!, isAdmin: !!me.is_admin, origin: new URL(request.url).origin,
   }
+  // Opened from the app's ride screen in Spanish, Portuguese or Chinese: cards,
+  // step lines and buttons in that language. The console stays English.
+  const tr = localizer(appLanguage(request), {}, usageLogger(admin, 'organizer-assistant'))
+  tr.warm([...new Set(Object.values(ACTIVITY))])
 
   const encoder = new TextEncoder()
   const stream = new ReadableStream({
@@ -433,9 +440,9 @@ export async function POST(request: Request) {
               c.decided = true
               let r: ToolResult
               if (body.decision.approve) {
-                emit({ type: 'tool', id: c.tool_use_id, label: ACTIVITY[c.name] ?? c.name })
+                emit({ type: 'tool', id: c.tool_use_id, label: await tr.label(ACTIVITY[c.name] ?? c.name) })
                 r = await runApproved(ctx, c.name, c.input)
-                emit({ type: 'tool_done', id: c.tool_use_id, ok: !r.isError, link: r.link })
+                emit({ type: 'tool_done', id: c.tool_use_id, ok: !r.isError, link: await tr.link(r.link) })
               } else {
                 r = { content: { declined: true, note: 'The organizer chose not to do this. Ask what they would like instead.' } }
               }
@@ -510,13 +517,13 @@ export async function POST(request: Request) {
             const input = (u.input ?? {}) as Record<string, unknown>
             if (NEEDS_APPROVAL.has(u.name)) {
               const a = await approvalCard(ctx, u.name, input)
-              if ('card' in a) cards.push({ tool_use_id: u.id, name: u.name, input: a.input, card: a.card })
+              if ('card' in a) cards.push({ tool_use_id: u.id, name: u.name, input: a.input, card: await tr.card(a.card) })
               else results[u.id] = resultBlock(u.id, a.result)
               continue
             }
-            if (ACTIVITY[u.name]) emit({ type: 'tool', id: u.id, label: ACTIVITY[u.name] })
+            if (ACTIVITY[u.name]) emit({ type: 'tool', id: u.id, label: await tr.label(ACTIVITY[u.name]) })
             const r = await runTool(ctx, u.name, input)
-            emit({ type: 'tool_done', id: u.id, ok: !r.isError, link: r.link })
+            emit({ type: 'tool_done', id: u.id, ok: !r.isError, link: await tr.link(r.link) })
             results[u.id] = resultBlock(u.id, r)
           }
           if (cards.length) {

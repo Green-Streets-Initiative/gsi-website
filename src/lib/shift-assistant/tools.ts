@@ -6,6 +6,7 @@ import { getTrip, getWalk, inServiceArea } from '@/lib/server/trip'
 import { haversineMiles } from '@/lib/nearby/share'
 import { decodePolyline, encodePolyline } from '@/lib/geo/polyline'
 import { eventModeOf } from '@/components/commute/event-card'
+import type { Fixed } from '@/lib/assistant/app-language'
 import { excerptOf } from '@/lib/commute/try-it-event'
 import { todayKey } from '@/lib/organizers/ride-words'
 import { getTownCivicEvents, getTownDirectory, getTownResources, townSlug } from '@/lib/towns/queries'
@@ -622,11 +623,11 @@ export const TOOLS: Anthropic.Tool[] = [
   },
   {
     name: 'open_link',
-    description: "A button to a web page: one item from get_town_info (a resource or a hearing, by its id), the town's page (kind town_page, id = the town name), a fare program (kind fare, its id from get_fare_help), a bike-to-try program (kind bike_to_try, id cargob or pedal_power), an event's sign-up or web page (kind event_signup, the event id from find_rides_and_events), or an MBTA accessibility page (kind accessibility, an id from get_accessibility's links). The address comes from our records; never write a web address yourself.",
+    description: "A button to a web page: one item from get_town_info (a resource or a hearing, by its id), the town's page (kind town_page, id = the town name), a fare program (kind fare, its id from get_fare_help), a bike-to-try program (kind bike_to_try, id cargob or pedal_power), an event's sign-up or web page (kind event_signup, the event id from find_rides_and_events), an MBTA accessibility page (kind accessibility, an id from get_accessibility's links), or Google Street View at a spot (kind street_view, id = \"lat,lng\" from find_place, a spot's at in get_ride_plan, or a meeting spot), for \"what does that corner look like?\" or a crossing they're nervous about. The address comes from our records; never write a web address yourself.",
     input_schema: {
       type: 'object',
       properties: {
-        kind: { type: 'string', enum: ['resource', 'hearing', 'town_page', 'fare', 'bike_to_try', 'event_signup', 'accessibility'] },
+        kind: { type: 'string', enum: ['resource', 'hearing', 'town_page', 'fare', 'bike_to_try', 'event_signup', 'accessibility', 'street_view'] },
         id: { type: 'string' },
         label: { type: 'string', description: 'The button text, a few words with a verb ("Report it to Somerville").' },
       },
@@ -1538,6 +1539,14 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
           const t = (await getTownDirectory()).find((x) => x.town_name.toLowerCase() === id.trim().toLowerCase())
           return t ? ok({ shown: true }, { href: `/shift/towns/${townSlug(t.town_name, t.state)}`, label }) : fail('No town page by that name.')
         }
+        // The same Street View link as the app's street photos (Shift components/RouteCrashMarkers streetViewUrl).
+        if (input.kind === 'street_view') {
+          const m = id.match(/^\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*$/)
+          const lat = m ? Number(m[1]) : NaN, lng = m ? Number(m[2]) : NaN
+          if (!Number.isFinite(lat) || !Number.isFinite(lng) || !inServiceArea(lat, lng)) return fail('Give the spot as "lat,lng" from find_place or get_ride_plan, in Massachusetts.')
+          return ok({ shown: true, note: 'Google Street View opens at that spot; the picture may be a few years old.' },
+            { href: `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${lat.toFixed(5)},${lng.toFixed(5)}`, label, external: true })
+        }
         if (input.kind === 'event_signup') {
           const { data } = await ctx.user.from('event_details').select('registration_url, event_url, content_items!inner(status)')
             .eq('content_id', id).eq('content_items.status', 'approved').maybeSingle()
@@ -2052,6 +2061,15 @@ export async function approvalCard(ctx: ToolCtx, name: string, input: Record<str
 
 /** The agreement on the app's sign-up checkbox (Shift locales partners.terms_check, Keith 2026-10-29). */
 const TOGETHER_TERMS = "I'm 18 or older. Green Streets introduces people but doesn't check or supervise them. If we meet, it's because we both agree to, in a public place, with bikes, cars and gear we get on our own. Getting around always carries some risk, and I'm responsible for my own safety."
+/** The same agreement in the app's own words (Shift locales partners.terms_check),
+ *  so a translated card never paraphrases what people accept. */
+export const CARD_FIXED: Fixed = {
+  [TOGETHER_TERMS]: {
+    es: 'Tengo 18 años o más. Green Streets presenta a las personas, pero no las verifica ni las supervisa. Si nos encontramos, es porque los dos lo acordamos, en un lugar público, con bicicletas, autos y equipo que conseguimos por nuestra cuenta. Moverse siempre tiene algún riesgo, y soy responsable de mi propia seguridad.',
+    'pt-BR': 'Tenho 18 anos ou mais. A Green Streets apresenta as pessoas, mas não as verifica nem as supervisiona. Se nos encontrarmos, é porque os dois concordamos, em um lugar público, com bicicletas, carros e equipamentos que providenciamos por conta própria. Deslocar-se sempre envolve algum risco, e sou responsável pela minha própria segurança.',
+    'zh-Hans': '我已年满 18 岁。Green Streets 只负责介绍，不会核查或监督任何人。如果我们见面，是双方都同意的，地点在公共场所，使用各自准备的自行车、汽车和装备。出行总有一定风险，我对自己的安全负责。',
+  },
+}
 const TOGETHER_WAYS: Record<string, string> = { walk: 'walking', bike: 'biking', transit: 'the bus or train', micro: 'a scooter' }
 const DAY_WORDS: Record<string, string> = { mon: 'Mon', tue: 'Tue', wed: 'Wed', thu: 'Thu', fri: 'Fri', sat: 'Sat', sun: 'Sun' }
 const SLOT_WORDS: Record<string, string> = { weekend_morning: 'weekend mornings', weekend_afternoon: 'weekend afternoons', weekday_evening: 'weekday evenings' }

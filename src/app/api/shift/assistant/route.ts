@@ -33,7 +33,8 @@ import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { choicesBesideButtons, choicesFilter, splitChoices } from '@/lib/assistant/choices'
 import { SYSTEM_PROMPT, contextBlock, screenLabel } from '@/lib/shift-assistant/prompt'
 import { DAILY_PERSON_CAP, MONTHLY_CAP } from '@/lib/shift-assistant/caps'
-import { ACTIVITY, NEEDS_APPROVAL, approvalCard, roamsNamedIn, roamsOffered, toolsFor, runApproved, runTool, type ApprovalCard, type ToolCtx, type ToolResult, type TrailCard, type TripCard } from '@/lib/shift-assistant/tools'
+import { appLanguage, localizer, translateToolItems } from '@/lib/assistant/app-language'
+import { ACTIVITY, CARD_FIXED, NEEDS_APPROVAL, approvalCard, roamsNamedIn, roamsOffered, toolsFor, runApproved, runTool, type ApprovalCard, type ToolCtx, type ToolResult, type TrailCard, type TripCard } from '@/lib/shift-assistant/tools'
 import { inServiceArea } from '@/lib/server/trip'
 import { claimUpload, foldersIn, imageMark, inboxPath, lastImage, markedPath, removeFolders, signedUrls, withImages } from '@/lib/shift-assistant/uploads'
 
@@ -280,7 +281,9 @@ export async function GET(request: Request) {
     ? (m.content as Record<string, unknown>[]).map((b) => (b.type === 'text' ? markedPath(b.text) : null)).filter((p): p is string => !!p)
     : [])
   const images = await signedUrls(auth.admin, pics, 3600)
-  return Response.json({ thread_id: thread.id, items: transcript(messages, thread.pending, ratings, images), long: (await contextSize(auth.admin, thread.id)) > SOFT_CONTEXT })
+  // Step lines and buttons in the app's language; cards were saved in it.
+  const items = await translateToolItems(appLanguage(request), transcript(messages, thread.pending, ratings, images), (m, u) => void logUsage(auth.admin, 'translate', m, u))
+  return Response.json({ thread_id: thread.id, items, long: (await contextSize(auth.admin, thread.id)) > SOFT_CONTEXT })
 }
 
 // ── DELETE ──
@@ -411,6 +414,9 @@ export async function POST(request: Request) {
     : null
   const screens = new Set(Array.isArray(body?.screens) ? body.screens.filter((x): x is string => typeof x === 'string').slice(0, 60) : [])
   const ctx: ToolCtx = { user: userClient, admin, token, userId: user.id, email: user.email ?? user.id, here, screens, threadId }
+  // Cards, step lines and buttons in the app's language (Spanish, Portuguese, Chinese).
+  const tr = localizer(appLanguage(request), CARD_FIXED, (m, u) => void logUsage(admin, 'translate', m, u))
+  tr.warm([...new Set(Object.values(ACTIVITY))])
 
   const encoder = new TextEncoder()
   const stream = new ReadableStream({
@@ -487,9 +493,9 @@ export async function POST(request: Request) {
               c.decided = true
               let r: ToolResult
               if (body.decision.approve) {
-                emit({ type: 'tool', id: c.tool_use_id, label: ACTIVITY[c.name] ?? c.name })
+                emit({ type: 'tool', id: c.tool_use_id, label: await tr.label(ACTIVITY[c.name] ?? c.name) })
                 r = once(await runApproved(ctx, c.name, c.input))
-                emit({ type: 'tool_done', id: c.tool_use_id, ok: !r.isError, link: r.link, trip: r.trip, trail: r.trail })
+                emit({ type: 'tool_done', id: c.tool_use_id, ok: !r.isError, link: await tr.link(r.link), trip: r.trip, trail: r.trail })
               } else {
                 r = { content: { declined: true, note: 'They chose not to do this. Ask what they would like instead.' } }
               }
@@ -624,15 +630,15 @@ export async function POST(request: Request) {
             }
             if (NEEDS_APPROVAL.has(u.name)) {
               const a = await approvalCard(ctx, u.name, input)
-              if ('card' in a) cards.push({ tool_use_id: u.id, name: u.name, input: a.input, card: a.card })
+              if ('card' in a) cards.push({ tool_use_id: u.id, name: u.name, input: a.input, card: await tr.card(a.card) })
               else results[u.id] = resultBlock(u.id, a.result)
               return
             }
-            if (ACTIVITY[u.name]) emit({ type: 'tool', id: u.id, label: stepLabel(u.name) })
+            if (ACTIVITY[u.name]) emit({ type: 'tool', id: u.id, label: await tr.label(stepLabel(u.name)) })
             const r = once(await runTool(ctx, u.name, input))
             if (r.trail) { buttons.push(r.trail.open_label); carded.add(r.trail.roam_id) }
             if (!r.isError) roamsSeen.push(...roamsOffered(u.name, r.content))
-            emit({ type: 'tool_done', id: u.id, ok: !r.isError, link: r.link, trip: r.trip, trail: r.trail })
+            emit({ type: 'tool_done', id: u.id, ok: !r.isError, link: await tr.link(r.link), trip: r.trip, trail: r.trail })
             results[u.id] = resultBlock(u.id, r)
           }))
           if (cards.length) {

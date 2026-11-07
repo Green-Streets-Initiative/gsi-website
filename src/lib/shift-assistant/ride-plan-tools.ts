@@ -59,6 +59,7 @@ type Result = { content: Record<string, unknown>; isError?: boolean; link?: { sc
 const FUNCTIONS = `${(process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').replace(/\/$/, '')}/functions/v1`
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 const GOALS = ['calmest', 'flattest', 'shortest'] as const
+const r5 = (n: number) => Math.round(Number(n) * 1e5) / 1e5
 const TRANSIT_GOALS = ['fewest_changes', 'fastest', 'least_walking'] as const
 type Goal = (typeof GOALS)[number] | (typeof TRANSIT_GOALS)[number]
 const r1 = (n: number) => Math.round(n * 10) / 10
@@ -472,7 +473,9 @@ export async function runRidePlanTool(ctx: Ctx, name: string, input: Record<stri
       ride_at: p?.ride_at && !hide ? fmt(p.ride_at) : null,
       ...(draft && !hide && p?.ride_at ? { not_sent_yet: 'The route and time are on the plan but not sent. The guide checks them on the plan screen and sends from there.' } : {}),
       ...(pp?.proposed_at ? { new_time_asked: { when: fmt(pp.proposed_at), by: pp.proposed_by, note: 'The other person says whether it works on the plan screen.' } } : {}),
-      spots_in_order: shown.map((s) => ({ what: spotPhrase(s, trip), guide_note: s.note ?? null })),
+      spots_in_order: shown.map((s) => ({ what: spotPhrase(s, trip), guide_note: s.note ?? null, at: `${r5(s.lat)},${r5(s.lng)}` })),
+      // The app's Your route opens a street photo for each spot and street (Shift 2df172d9).
+      ...(shown.length ? { street_photos: "Each spot and street in Your route on the plan screen opens its street photo when tapped. To show one spot here, open_link kind street_view with that spot's at." } : {}),
       after_the_ride: p?.status === 'ridden' ? { helped: p.helped, still_hard: p.unsure, riding_alone_on: p.solo_day } : null,
       meeting_spot_coords: p?.meet_lat != null ? { lat: p.meet_lat, lng: p.meet_lng } : null,
     })
