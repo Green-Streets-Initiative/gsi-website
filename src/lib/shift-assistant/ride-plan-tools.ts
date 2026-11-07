@@ -50,6 +50,8 @@ type View = {
     route: { waypoints: LatLng[]; distanceMiles?: number; transit?: Trip } | null
     spots: Spot[]; ride_at: string | null
     helped: string[]; unsure: string[]; solo_day: string | null
+    /** 01680: a bike plan on their own bike or the bike share (bike_system: bluebikes, valleybike...). */
+    bike?: 'own' | 'share' | null; bike_system?: string | null
   } | null
 }
 type Result = { content: Record<string, unknown>; isError?: boolean; link?: { screen: 'ride_plan'; params: Record<string, string>; label: string } }
@@ -96,9 +98,21 @@ export const RIDE_PLAN_ACTIVITY: Record<string, string> = {
   design_ride_plan_route: 'Planning the route (up to a minute)',
   save_ride_plan_route: 'Saving the plan',
   move_ride_plan_time: 'Asking to move the time',
+  get_my_go_together: 'Checking your Go together matches',
+  get_my_carpool_pickup: 'Reading the carpool pickup',
 }
 
 export const RIDE_PLAN_TOOLS: Anthropic.Tool[] = [
+  {
+    name: 'get_my_go_together',
+    description: "This person's Go together sign-ups and matches (the program is Shift Together; the app's Profile row and screen say Go together). Sign-ups: kind (newcomer = go with someone who knows the way, guide = show someone the way, carpool, practice = an easy practice bike ride near home, walk = someone to walk with), the ways, days and times, and whether it's still looking. Matches: match_id, kind, where it stands (proposed = waiting for answers, with whether each of them said yes; connected = both said yes; went_together; dropped = ended), the other person's first name, and for a carpool who drives and the detour. Use it for \"did I get a match?\" or \"what's next with my match?\", then get_ride_plan (guide, practice or walk matches) or get_my_carpool_pickup (carpool) with the match_id.",
+    input_schema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'get_my_carpool_pickup',
+    description: "A carpool match's pickup, by match_id from get_my_go_together: who drives, the spot, time and days, and where it stands (none yet; Shift's suggestion, a public spot near the rider where a car can pull over; sent and waiting for the other to confirm; confirmed; or one of them asked for a change), plus the other spots a car can pull over. Pickups are set on the matches screen (partner_matches button): one of them sends a spot, the other confirms or suggests a change. Only the rider can choose a home pickup; the driver sees the address only once it's confirmed.",
+    input_schema: { type: 'object', properties: { match_id: { type: 'string' } }, required: ['match_id'] },
+  },
   {
     name: 'get_ride_plan',
     description: "A Shift Together first trip plan (by bike, on foot or by transit), as this person sees it: the way, whether they are the guide or the learner, both first names, how the learner gets around now and what they want help with, the meeting spot and end spot (public places, never anyone's home or work), the route's length or the transit trip's lines, the spots shown on the way (in order, with the guide's notes), the day and time, any new time one of them asked for, and where it stands (learner_shared = the guide plans next; planned = waiting on the learner's OK; confirmed; ridden).",
@@ -355,6 +369,75 @@ function easternIso(date: string, time: string): string | null {
 
 // ── Running ─────────────────────────────────────────────────────────────
 
+const DAY_NAMES = ['', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+const clock = (t: string | null | undefined) => {
+  if (!t) return null
+  const [h, m] = t.split(':').map(Number)
+  return new Date(Date.UTC(2000, 0, 1, h, m || 0)).toLocaleTimeString('en-US', { timeZone: 'UTC', hour: 'numeric', minute: '2-digit' })
+}
+
+/** get_my_go_together and get_my_carpool_pickup: reads as the person, through Shift's own functions. */
+export async function runGoTogetherTool(ctx: Ctx, name: string, input: Record<string, unknown>): Promise<Result> {
+  if (name === 'get_my_go_together') {
+    const [reqs, matches] = await Promise.all([ctx.user.rpc('get_my_partner_requests'), ctx.user.rpc('get_my_partner_matches')])
+    if (reqs.error && matches.error) return fail("Couldn't read their Go together sign-ups right now.")
+    type Req = { kind: string; status: string; modes?: string[]; days?: string[]; time_of_day?: string[]; arrive_by?: string | null; leave_at?: string | null; carpool_role?: string | null; created_at?: string }
+    type Match = { id: string; kind: string; my_kind: string; status: string; my_answer: string | null; their_answer: string | null; i_drive: boolean | null; detour_minutes: number | null; other?: { first_name?: string | null; carpool_role?: string | null } }
+    const signups = ((reqs.data ?? []) as Req[]).map((r) => ({
+      kind: r.kind,
+      still_looking: r.status === 'open',
+      status: r.status,
+      ...(r.modes?.length ? { ways: r.modes } : {}),
+      ...(r.days?.length ? { days: r.days } : {}),
+      ...(r.kind === 'carpool' ? { arrive_by: clock(r.arrive_by), leave_at: clock(r.leave_at), would: r.carpool_role ?? null } : r.time_of_day?.length ? { times: r.time_of_day } : {}),
+      signed_up: r.created_at ? r.created_at.slice(0, 10) : null,
+    }))
+    const list = ((matches.data ?? []) as Match[]).map((m) => ({
+      match_id: m.id,
+      kind: m.kind,
+      you_are: m.my_kind,
+      status: m.status,
+      with: m.other?.first_name ?? null,
+      ...(m.status === 'proposed' ? { you_said: m.my_answer ?? 'not yet', they_said: m.their_answer ?? 'shown after you answer' } : {}),
+      ...(m.kind === 'carpool' ? { driver: m.i_drive == null ? 'not settled' : m.i_drive ? 'you' : m.other?.first_name ?? 'them', detour_minutes: m.detour_minutes } : {}),
+      next: m.status === 'proposed'
+        ? (m.my_answer ? 'Waiting on the other person to answer on their matches screen.' : 'They say yes or no on their matches screen (partner_matches).')
+        : m.status === 'connected'
+          ? (m.kind === 'carpool' ? 'Both said yes. Agree on the pickup (get_my_carpool_pickup) and the first day; they can email each other.' : 'Both said yes. Plan the first trip together (get_ride_plan with this match_id).')
+          : m.status === 'went_together' ? 'They went together.' : 'This match ended.',
+    }))
+    return ok({ signups, matches: list, ...(signups.length || list.length ? {} : { none: 'No sign-ups yet. join_shift_together signs them up.' }) })
+  }
+
+  // get_my_carpool_pickup
+  const matchId = input.match_id
+  if (typeof matchId !== 'string' || !UUID.test(matchId)) return fail('That match id is not valid. Get it from get_my_go_together.')
+  const { data, error } = await ctx.user.rpc('get_carpool_plan', { p_match_id: matchId })
+  if (error || !data || typeof data !== 'object') return fail("That carpool isn't one of theirs, or its pickup isn't ready yet.")
+  type Spot = { pickup_kind: string; pickup_label: string | null; pickup_time: string; days: number[]; status?: string; proposed_by_me?: boolean | null }
+  const d = data as { ok?: boolean; plan: Spot | null; i_drive: boolean; i_ride: boolean; other_name: string | null; can_offer_home: boolean; suggestion: Spot | null; spots?: { label: string; mi: number | null }[] }
+  if (d.ok === false) return fail("That carpool isn't one of theirs, or it has ended.")
+  const other = d.other_name ?? 'the other person'
+  const where = (s: Spot) => s.pickup_kind === 'rider_home' ? (d.i_ride ? 'your home' : `${other}'s home`) : s.pickup_label ?? 'a spot they picked'
+  const when = (s: Spot) => ({ time: clock(s.pickup_time), days: (s.days ?? []).map((x) => DAY_NAMES[x] ?? x) })
+  const p = d.plan
+  const stands = !p ? (d.suggestion ? 'suggested' : 'none_yet')
+    : p.status === 'confirmed' ? 'confirmed'
+    : p.status === 'declined' ? (p.proposed_by_me ? 'they_asked_for_a_change' : 'you_asked_for_a_change')
+    : p.proposed_by_me ? 'sent_waiting_for_them' : 'they_sent_it_to_you'
+  return ok({
+    driver: d.i_drive ? 'you' : other,
+    stands,
+    ...(p ? { pickup: { at: where(p), ...when(p) } } : d.suggestion ? { shift_suggests: { at: where(d.suggestion), ...when(d.suggestion), note: 'Not sent yet: either of them sends it from the matches screen, or picks another spot.' } } : {}),
+    next: stands === 'confirmed' ? 'Set. The matches screen has directions, and on pickup days a Find each other switch to share where they are with each other until they meet.'
+      : stands === 'they_sent_it_to_you' ? 'Say "Works for me" or suggest a change on the matches screen.'
+      : stands === 'sent_waiting_for_them' ? `Waiting for ${other} to confirm.`
+      : 'Send a pickup from the matches screen (Shift\'s suggestion, another pull-over spot, or a place they search for).',
+    ...(d.i_ride && d.can_offer_home ? { rider_can_choose_home: true } : {}),
+    other_pullover_spots: (d.spots ?? []).map((s) => s.label),
+  })
+}
+
 export async function runRidePlanTool(ctx: Ctx, name: string, input: Record<string, unknown>): Promise<Result> {
   const v = await readPlan(ctx, input.match_id)
   if (typeof v === 'string') return fail(v)
@@ -382,6 +465,8 @@ export async function runRidePlanTool(ctx: Ctx, name: string, input: Record<stri
       learner_rides: p?.skill ?? null,
       learner_wants_help_with: p?.worries ?? [],
       meeting_spot: p?.meet_label ?? null, end_spot: p?.end_label ?? null,
+      // 01680: on the bike share they meet and end at stations; the Day Pass is claimed on the plan screen.
+      ...((p?.way ?? 'bike') === 'bike' && p?.bike ? { bike: p.bike === 'share' ? { bike_share: p.bike_system ?? 'bluebikes', note: 'They meet and end at bike share stations. The plan screen shows open docks at the end station and a free Day Pass to claim while any are left.' } : 'their own bike' } : {}),
       miles: trip || hide ? null : p?.route?.distanceMiles ?? (p?.route?.waypoints?.length ? r1(routeMiles(p.route.waypoints)) : null),
       ...(trip ? { transit_trip: { lines: tripLines(trip), minutes: trip.minutes, changes: trip.changes, walking_minutes: trip.walkMinutes, fare_each: trip.fare } } : {}),
       ride_at: p?.ride_at && !hide ? fmt(p.ride_at) : null,

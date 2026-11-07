@@ -30,7 +30,7 @@ import { newInfraInTown, newInfraNear, newInfraOnRoute } from '@/lib/server/new-
 import { newInfraForAssistant } from '@/lib/new-infra'
 import { getActiveRoams, getNextRoamEvent, getRoamDetail, getRoamKeepGoing, getRoamTrailInfo, getRoamsInSeason } from '@/lib/roams/queries'
 import { ACCESS_LINKS, accessibleNear, ebikeMath, myRides, rsvpRide, shiftRideDates } from '@/lib/shift-assistant/audit-data'
-import { RIDE_PLAN_ACTIVITY, RIDE_PLAN_NEEDS_APPROVAL, RIDE_PLAN_TOOLS, ridePlanCard, runApprovedRidePlan, runRidePlanTool, type RidePlanCard } from '@/lib/shift-assistant/ride-plan-tools'
+import { RIDE_PLAN_ACTIVITY, RIDE_PLAN_NEEDS_APPROVAL, RIDE_PLAN_TOOLS, ridePlanCard, runApprovedRidePlan, runGoTogetherTool, runRidePlanTool, type RidePlanCard } from '@/lib/shift-assistant/ride-plan-tools'
 
 // The Shift assistant's tools, for everyone in the app (Keith 2026-10-24).
 // Most answer a question or offer a button to an app screen. A tool that
@@ -1294,6 +1294,9 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
       case 'get_ride_plan':
       case 'design_ride_plan_route':
         return await runRidePlanTool(ctx, name, input)
+      case 'get_my_go_together':
+      case 'get_my_carpool_pickup':
+        return await runGoTogetherTool(ctx, name, input)
       case 'get_my_activity': {
         const since30 = new Date(Date.now() - 30 * 864e5).toISOString()
         const [tripsQ, placesQ, userQ, badgesQ, rewardsQ, awardsQ, nr, sem] = await Promise.all([
