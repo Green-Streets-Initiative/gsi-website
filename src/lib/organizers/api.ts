@@ -154,7 +154,11 @@ export const getEndShops = async (lat: number, lng: number) =>
   (await rpc<EndShop[] | null>('get_ride_end_shops', { p_lat: lat, p_lng: lng })) ?? []
 
 /** Go Together (Shift 01460): the bigger event a ride or walk goes to. */
-export interface FeedTarget { id: string; title: string; event_date: string; event_time?: string | null; location_name?: string | null }
+export interface FeedTarget {
+  id: string; title: string; event_date: string; event_time?: string | null; location_name?: string | null
+  /** A game or concert (big_events, Shift 01691), not a calendar event. */
+  big?: boolean
+}
 export interface FeedCandidate extends FeedTarget { miles: number | null }
 /** A ride's destination: the next date's, else the one the leader picked. Same call as the app. */
 export const getSeriesFeedsTo = async (seriesId: string) =>
@@ -166,6 +170,35 @@ export const getFeedCandidates = async (opts: { date: string; lat?: number | nul
     p_query: opts.query?.trim() || null, p_series_id: opts.seriesId ?? null,
   })) ?? []).map((c) => ({ ...c, miles: c.miles == null ? null : Number(c.miles) }))
 
+// Games and concerts (Go Together phase 2, Shift 01691): their own list, never
+// the calendar, so they come from their own calls and save with setRideBigEvent.
+interface BigRow { id: string; title: string; starts_at: string; time_known: boolean; venue_name: string; miles?: number | null }
+const bostonDay = (iso: string) => new Date(iso).toLocaleDateString('en-CA', { timeZone: 'America/New_York' })
+const bostonTime = (iso: string) =>
+  new Date(iso).toLocaleTimeString('en-GB', { timeZone: 'America/New_York', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
+const bigTarget = (b: BigRow): FeedTarget => ({
+  id: b.id, title: b.title, event_date: bostonDay(b.starts_at),
+  event_time: b.time_known ? bostonTime(b.starts_at) : null, location_name: b.venue_name, big: true,
+})
+
+/** The game or concert a ride goes to, if any. */
+export const getSeriesBigEvent = async (seriesId: string) => {
+  const b = await rpc<BigRow | null>('get_series_big_event', { p_series_id: seriesId })
+  return b ? bigTarget(b) : null
+}
+
+/** Where a ride is heading: its game or concert, else its calendar event. */
+export const getSeriesDestination = async (seriesId: string): Promise<FeedTarget | null> => {
+  const [big, feed] = await Promise.all([getSeriesBigEvent(seriesId).catch(() => null), getSeriesFeedsTo(seriesId)])
+  return big ?? feed
+}
+
+/** Games and concerts on the ride's date (or, with a query, the next 60 days), nearest first. */
+export const getBigEventCandidates = async (opts: { date: string; lat?: number | null; lng?: number | null; query?: string }) =>
+  ((await rpc<BigRow[] | null>('big_event_candidates', {
+    p_date: opts.date, p_lat: opts.lat ?? null, p_lng: opts.lng ?? null, p_query: opts.query?.trim() || null,
+  })) ?? []).map((b): FeedCandidate => ({ ...bigTarget(b), miles: b.miles == null ? null : Number(b.miles) }))
+
 // ── Writes ─────────────────────────────────────────────────────────────
 
 /** The shop a ride ends at, where the Ride Fund buys the coffee. null clears it. */
@@ -175,6 +208,17 @@ export const setEndShop = (seriesId: string, locationId: string | null) =>
 /** Link the ride to the event it goes to, or clear it with null (Shift 01460). */
 export const setRideFeeds = (seriesId: string, targetId: string | null) =>
   rpc<number>('set_ride_feeds', { p_series_id: seriesId, p_target: targetId })
+
+/** Link the ride to a game or concert (clears any calendar event), or clear it with null (Shift 01691). */
+export const setRideBigEvent = (seriesId: string, id: string | null) =>
+  rpc<number>('set_ride_big_event', { p_series_id: seriesId, p_id: id })
+
+/** Save where a ride is heading, clearing whichever link it had before. */
+export async function saveRideDestination(seriesId: string, next: FeedTarget | null, prev: FeedTarget | null) {
+  if (next?.big) return setRideBigEvent(seriesId, next.id)
+  if (prev?.big) await setRideBigEvent(seriesId, null)
+  return setRideFeeds(seriesId, next?.id ?? null)
+}
 
 export interface SaveResult {
   id: string

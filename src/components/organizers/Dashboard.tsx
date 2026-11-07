@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { ArrowUp, CalendarDays, CalendarHeart, Check, ChevronRight, MapPin, Megaphone, MessageSquareText, Plus, Users } from 'lucide-react'
 import { ago, clock, scheduleText } from '@/lib/rides/public'
-import { errorText, getRides, getSeriesFeedsTo, type FeedTarget } from '@/lib/organizers/api'
+import { errorText, getRides, getSeriesDestination, type FeedTarget } from '@/lib/organizers/api'
 import { UPDATE_KIND_LABEL, dateLabel, plural, todayKey } from '@/lib/organizers/ride-words'
 import type { DashboardRide, NextDate } from '@/lib/organizers/types'
 import { ASSISTANT_CHANGED_EVENT, openAssistant } from './AssistantPanel'
@@ -300,7 +300,7 @@ export default function Dashboard() {
     if (!mineKey) return
     let live = true
     const ids = mineKey.split(',')
-    Promise.all(ids.map((id) => getSeriesFeedsTo(id).catch(() => null))).then((targets) => {
+    Promise.all(ids.map((id) => getSeriesDestination(id).catch(() => null))).then((targets) => {
       if (live) setGoingTo(Object.fromEntries(ids.map((id, i) => [id, targets[i]])))
     })
     return () => { live = false }

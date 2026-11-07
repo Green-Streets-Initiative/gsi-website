@@ -1,9 +1,9 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { Bike, CalendarHeart, Footprints, Search } from 'lucide-react'
+import { Bike, CalendarHeart, Footprints, Search, Ticket } from 'lucide-react'
 import { formatTime } from '@/lib/events'
-import { getFeedCandidates, type FeedCandidate, type FeedTarget } from '@/lib/organizers/api'
+import { getBigEventCandidates, getFeedCandidates, type FeedCandidate, type FeedTarget } from '@/lib/organizers/api'
 import { dateLabel } from '@/lib/organizers/ride-words'
 import { Button, Card, Input, SectionTitle, cx } from './ui'
 
@@ -15,8 +15,12 @@ import { Button, Card, Input, SectionTitle, cx } from './ui'
  * and the same words. A recurring ride picks once, for its next date; each
  * later date links to that event's row on the same day.
  *
- * Saved by the editor after the ride itself (set_ride_feeds), so a link that
- * fails never loses the ride.
+ * Games and concerts (Shift 01691) come first: their own list, never the
+ * calendar, saved with set_ride_big_event. The app's picker gains them in
+ * its next update.
+ *
+ * Saved by the editor after the ride itself, so a link that fails never
+ * loses the ride.
  */
 /** The nearest few first; the rest behind "Show more". */
 const SHOWN = 4
@@ -49,9 +53,15 @@ export default function GoingToEvent({ value, onChange, date, at, seriesId, walk
     if (!open || !date) return
     const n = ++req.current
     const t = setTimeout(() => {
-      getFeedCandidates({ date, lat: at?.lat, lng: at?.lng, query, seriesId }).then(
-        (r) => { if (n === req.current) setFound({ key, rows: r, failed: false }) },
-        () => { if (n === req.current) setFound({ key, rows: [], failed: true }) })
+      const opts = { date, lat: at?.lat, lng: at?.lng, query }
+      Promise.allSettled([getBigEventCandidates(opts), getFeedCandidates({ ...opts, seriesId })]).then(([big, cal]) => {
+        if (n !== req.current) return
+        const rows = [
+          ...(big.status === 'fulfilled' ? big.value : []),
+          ...(cal.status === 'fulfilled' ? cal.value : []),
+        ]
+        setFound({ key, rows, failed: big.status === 'rejected' && cal.status === 'rejected' })
+      })
     }, query ? 300 : 0)
     return () => clearTimeout(t)
   }, [open, key]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -59,7 +69,10 @@ export default function GoingToEvent({ value, onChange, date, at, seriesId, walk
   const day = date ? dateLabel(date) : null
   const hint = !date
     ? 'Optional. Your ride shows on its page.'
-    : recurring
+    : value?.big
+      // A game is one date: only that day's ride goes to it.
+      ? `Optional. On ${dateLabel(value.event_date)}, your ${walk ? 'walk' : 'ride'} shows on the game's page.`
+      : recurring
       ? `Optional. Each time it's on, starting ${day}, your ${walk ? 'walk' : 'ride'} shows on the event's page.`
       : `Optional. Your ${walk ? 'walk' : 'ride'} shows on the event's page.`
 
@@ -98,9 +111,9 @@ export default function GoingToEvent({ value, onChange, date, at, seriesId, walk
       {open && date && (
         <>
           <label className="relative mb-3 block">
-            <span className="sr-only">Search events on {day}</span>
+            <span className="sr-only">Search events, games and concerts</span>
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-(--ev-ink-75)" aria-hidden />
-            <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={`Search events on ${day}`} className="pl-9" />
+            <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={`Search events, games and concerts`} className="pl-9" />
           </label>
           {!query && (
             <p className="mb-2 text-[14px] text-(--ev-ink-75)">
@@ -120,7 +133,9 @@ export default function GoingToEvent({ value, onChange, date, at, seriesId, walk
                   onClick={() => { onChange(c); setPicking(false); setQuery(''); setAll(false) }}
                   className={cx('flex items-start gap-3 rounded-xl border p-3 text-left transition',
                     value?.id === c.id ? 'border-(--ev-accent-fill) bg-(--ev-panel) ring-1 ring-(--ev-accent-fill)' : 'border-(--ev-line-strong) bg-white hover:bg-(--ev-panel-faint)')}>
-                  <CalendarHeart className="mt-0.5 h-5 w-5 shrink-0 text-(--ev-accent)" aria-hidden />
+                  {c.big
+                    ? <Ticket className="mt-0.5 h-5 w-5 shrink-0 text-(--ev-accent)" aria-hidden />
+                    : <CalendarHeart className="mt-0.5 h-5 w-5 shrink-0 text-(--ev-accent)" aria-hidden />}
                   <span className="min-w-0">
                     <span className="block text-[15px] font-semibold text-(--ev-ink)">{c.title}</span>
                     <span className="mt-0.5 block text-[14px] leading-snug text-(--ev-ink-75)">

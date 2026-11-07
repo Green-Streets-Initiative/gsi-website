@@ -12,6 +12,9 @@ import { LiveAlertChip, LiveAlerts, LiveDepartures, LiveDocks, LiveProvider, Sta
 import VenueMap from './VenueMap'
 import TrackedLink from './TrackedLink'
 import { CalendarDots, Prohibit } from '@phosphor-icons/react/dist/ssr'
+import Link from 'next/link'
+import { supabase } from '@/lib/supabase'
+import { bigEventPath, bigEventWhen, loadBigEvents, type BigEvent } from '@/lib/big-events'
 
 /*
  * gogreenstreets.org/parking/<venue>: parking at a big Boston venue, for
@@ -147,6 +150,8 @@ export default async function VenueParkingPage({ params }: { params: Promise<{ v
   const stale = daysBetween(v.checked, today) > STALE_DAYS
   // With no booking button on the venue's own card (Fenway), comparing garages is the main action.
   const compareIsPrimary = !official?.book
+  // Go Together (Shift 01691): the next game or concert here, one line, never an empty list.
+  const [next] = await loadBigEvents(supabase, v.slug, 21)
 
   return (
     <div className="street min-h-screen bg-cream text-navy" style={{ fontFamily: GSI_FONT }}>
@@ -168,6 +173,7 @@ export default async function VenueParkingPage({ params }: { params: Promise<{ v
                 ))}
               </nav>
               <LiveAlertChip stopName={v.transit.stopName} names={stationNames} />
+              {next && <NextAtVenue e={next} />}
             </div>
           }
         />
@@ -624,5 +630,20 @@ function NoParkingSections({
         </div>
       </section>
     </>
+  )
+}
+
+/** "Next: Bruins vs. Panthers, Sun, Nov 8 · 1:00 PM", and the group rides going when there are any. */
+function NextAtVenue({ e }: { e: BigEvent }) {
+  const n = e.groups.length
+  return (
+    <p className="mt-4 flex items-start gap-2 text-[1rem] leading-snug text-navy">
+      <CalendarDots size={20} weight="bold" aria-hidden className="mt-0.5 shrink-0 text-forest" />
+      <span>
+        Next:{' '}
+        <Link href={bigEventPath(e)} className={LINK}>{e.title}</Link>, {bigEventWhen(e)}
+        {n > 0 && <> · {n === 1 ? 'a group ride is going' : `${n} group rides going`}</>}
+      </span>
+    </p>
   )
 }

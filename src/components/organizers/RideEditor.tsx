@@ -8,7 +8,7 @@ import { comfortableShare } from '@/components/commute/calm-route'
 import { scheduleText } from '@/lib/rides/public'
 import { routeMiles } from '@/lib/organizers/route-geo'
 import AddressAutocomplete from '@/components/AddressAutocomplete'
-import { errorText, getRideFundFor, getSeriesFeedsTo, saveRide, setEndShop, setRepliesToOrganizer, setRideFeeds, uploadFlyer, type FeedTarget, type RideFundHere } from '@/lib/organizers/api'
+import { errorText, getRideFundFor, getSeriesDestination, saveRide, saveRideDestination, setEndShop, setRepliesToOrganizer, uploadFlyer, type FeedTarget, type RideFundHere } from '@/lib/organizers/api'
 import { takePrefill } from '@/lib/organizers/first-ride'
 import { decodePlan, draftOf, routePayload } from '@/lib/organizers/saved-route'
 import { DAY_LABELS, TAG_OPTIONS, WEEK_OPTIONS, dateLabel, paceOptionsFor, todayKey, travelMph, type Activity } from '@/lib/organizers/ride-words'
@@ -295,17 +295,18 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
   const [tried, setTried] = useState(false)
   const [flyerBusy, setFlyerBusy] = useState(false)
   const [meetupFit, setMeetupFit] = useState(0)
-  // The event this ride goes to (Go Together, Shift 01460). Saved on its own
-  // after the ride, as in the app, so a link that fails never loses the ride.
+  // The event, game or concert this ride goes to (Go Together, Shift 01460
+  // and 01691). Saved on its own after the ride, as in the app, so a link
+  // that fails never loses the ride.
   const [feedsTo, setFeedsToRaw] = useState<FeedTarget | null>(null)
-  const feedsSaved = useRef<string | null>(null)
+  const feedsSaved = useRef<FeedTarget | null>(null)
   const setFeedsTo = (v: FeedTarget | null) => { setFeedsToRaw(v); setDirty(true) }
   useEffect(() => {
     if (!ride) return
     let live = true
-    getSeriesFeedsTo(ride.id).then((t) => {
+    getSeriesDestination(ride.id).then((t) => {
       if (!live) return
-      feedsSaved.current = t?.id ?? null
+      feedsSaved.current = t
       setFeedsToRaw(t)
     }, () => {})
     return () => { live = false }
@@ -493,10 +494,10 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
           }
         }
       }
-      if ((feedsTo?.id ?? null) !== feedsSaved.current) {
+      if ((feedsTo?.id ?? null) !== (feedsSaved.current?.id ?? null)) {
         try {
-          await setRideFeeds(res.id, feedsTo?.id ?? null)
-          feedsSaved.current = feedsTo?.id ?? null
+          await saveRideDestination(res.id, feedsTo, feedsSaved.current)
+          feedsSaved.current = feedsTo
         } catch (e) {
           if (ride) {
             setErr(errorText(e, feedsTo ? `The ride saved, but it couldn't be linked to ${feedsTo.title}. Try again.` : "The ride saved, but the event link didn't come off. Try again."))
