@@ -24,7 +24,7 @@ const SECTIONS: { heading: string; body: string[] }[] = [
   {
     heading: 'What it sees',
     body: [
-      'The conversation itself, and what the organizer tools already show that organizer: their rides, dates and updates, who is coming by first name and last initial, turnout totals, and the co-organizer invites they sent.',
+      'The conversation itself, and what the organizer tools already show that organizer: their rides, dates and updates, who is coming by first name and last initial, turnout totals, and the leader invites they sent.',
       'It never sees the email address or phone number of anyone who answered on a ride page. Organizers never see those either; Shift sends messages for them.',
       'To help pick a meeting point it looks places up with Google Maps, and for the weather it asks the National Weather Service for the forecast at the meeting point.',
     ],
@@ -33,14 +33,14 @@ const SECTIONS: { heading: string; body: string[] }[] = [
     heading: 'Who processes it',
     body: [
       'The assistant runs on Anthropic’s Claude models (Claude Opus 5.5 today; if it declines a request on safety grounds, Anthropic re-runs it on an earlier Claude model), through Anthropic’s commercial API. Under Anthropic’s commercial terms, your data is not used to train their models, and inputs and outputs are deleted from Anthropic’s systems within 30 days, except where content is flagged by their safety systems (kept up to 2 years) or the law requires longer.',
-      'The service providers the rest of Shift already uses handle the assistant too: Supabase stores the conversations (United States, Oregon); Vercel runs the website; Resend sends the emails that follow an approved action (updates to people who answered on the ride page, co-organizer invites).',
+      'The service providers the rest of Shift already uses handle the assistant too: Supabase stores the conversations (United States, Oregon); Vercel runs the website; Resend sends the emails that follow an approved action (updates to people who answered on the ride page, leader invites).',
       'The website’s usage analytics (PostHog) are kept out of the assistant: they record neither what anyone types nor what the assistant writes.',
     ],
   },
   {
     heading: 'What Green Streets keeps',
     body: [
-      'Conversations are private to the organizer who had them: co-organizers cannot read them. Green Streets staff may review conversations to improve the assistant. Each organizer can delete their own conversations at any time, from History in the assistant. Conversations are deleted automatically 12 months after their last message, with any thumbs up or down given to a reply.',
+      'Conversations are private to the organizer who had them: the ride's leaders cannot read them. Green Streets staff may review conversations to improve the assistant. Each organizer can delete their own conversations at any time, from History in the assistant. Conversations are deleted automatically 12 months after their last message, with any thumbs up or down given to a reply.',
       'When someone asks for something the tools do not do yet, or shares feedback, the assistant passes a short note to Green Streets. Green Streets keeps these notes, apart from the conversation, to decide what to build next.',
     ],
   },

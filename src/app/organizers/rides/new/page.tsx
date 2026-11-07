@@ -11,7 +11,7 @@ export default function NewRidePage() {
     return (
       <Card className="mx-auto max-w-lg">
         <p className="text-[15px] text-(--ev-ink-85)">
-          Setting up new rides is open to invited organizers for now. As a co-organizer you can post updates and see who&rsquo;s coming on the rides you help run.
+          Setting up new rides is open to invited organizers for now. As a leader you can post updates and see who&rsquo;s coming on the rides you help run.
         </p>
         <Link href="/organizers" className="mt-3 inline-block font-semibold underline">Your rides</Link>
       </Card>

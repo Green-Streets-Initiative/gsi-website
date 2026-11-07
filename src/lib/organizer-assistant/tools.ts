@@ -135,7 +135,7 @@ export const TOOLS: Anthropic.Tool[] = [
   },
   {
     name: 'get_ride',
-    description: 'One ride in full: details, dates from two months back to four months ahead (with ids, times, places, Going / Maybe / Can\'t go / came counts), recent updates, organizer and co-organizers, and what this person may change.',
+    description: 'One ride in full: details, dates from two months back to four months ahead (with ids, times, places, Going / Maybe / Can\'t go / came counts), recent updates, organizer and leaders, and what this person may change.',
     input_schema: { type: 'object', properties: { series_id: uuid }, required: ['series_id'] },
   },
   {
@@ -328,7 +328,7 @@ export const TOOLS: Anthropic.Tool[] = [
   },
   {
     name: 'invite_co_organizer',
-    description: "Invite someone by email to help run a ride. They get an email and become a co-organizer when they sign in with that address. Only on the organizer's own request, naming the address.",
+    description: "Invite someone by email to help run a ride. They get an email and become a leader when they sign in with that address. Only on the organizer's own request, naming the address.",
     input_schema: { type: 'object', properties: { series_id: uuid, email: { type: 'string' } }, required: ['series_id', 'email'] },
   },
   {
@@ -1039,13 +1039,13 @@ export async function approvalCard(ctx: ToolCtx, name: string, input: Record<str
       }
       case 'invite_co_organizer': {
         const d = await loadDetail(ctx, input.series_id)
-        if (d.my_role === 'leader') return { result: fail("Only the ride's organizer can invite co-organizers.") }
+        if (d.my_role === 'leader') return { result: fail("Only the ride's organizer can invite leaders.") }
         const email = String(input.email ?? '').trim().toLowerCase()
         if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return { result: fail("That email address doesn't look right.") }
         return {
           card: {
             title: `Invite ${email} to help run “${d.ride.name}”?`,
-            lines: ["They get an email from Shift with how to sign in.", "Co-organizers see who's coming and post updates, here or in the app."],
+            lines: ["They get an email from Shift with how to sign in.", "Leaders see who's coming and post updates, here or in the app."],
             cta: 'Send the invite', tone: 'primary',
           },
           input: { series_id: d.ride.id, email },
@@ -1177,7 +1177,7 @@ export async function runApproved(ctx: ToolCtx, name: string, input: Record<stri
       case 'invite_co_organizer': {
         const r = await inviteCoOrganizer(ctx.user, { seriesId: String(input.series_id), email: String(input.email), organizerEmail: ctx.email })
         if (!r.ok) return fail(r.error)
-        return ok({ status: r.status, emailed: r.emailed, already_emailed_today: r.alreadyEmailed }, { href: `/organizers/rides/${input.series_id}/team`, label: 'See co-organizers' })
+        return ok({ status: r.status, emailed: r.emailed, already_emailed_today: r.alreadyEmailed }, { href: `/organizers/rides/${input.series_id}/team`, label: 'See leaders' })
       }
       case 'set_chat_access': {
         const ids = (Array.isArray(input.member_ids) ? input.member_ids : []).map(String)

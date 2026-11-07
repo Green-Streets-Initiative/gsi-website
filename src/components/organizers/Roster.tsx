@@ -41,7 +41,7 @@ function Person({ p, past, chat }: { p: RosterRow; past: boolean; chat: Chat }) 
       <span className="text-[15px] font-semibold text-(--ev-ink)">{p.display_name}{p.is_you ? ' (you)' : ''}</span>
       <span className="flex flex-wrap gap-1">
         {p.role === 'organizer' && <Badge>Organizer</Badge>}
-        {p.role === 'leader' && <Badge>Co-organizer</Badge>}
+        {p.role === 'leader' && <Badge>Leader</Badge>}
         {p.is_guest && <Badge tone="info">Joined on the web</Badge>}
         {p.kids_count > 0 && <Badge>+{plural(p.kids_count, 'kid')}</Badge>}
         {p.first_time && p.role === 'rider' && <Badge tone="good">First time</Badge>}

@@ -34,9 +34,9 @@ export default function Team() {
       const who = email.trim()
       setMsg({
         tone: 'good',
-        text: res.status === 'invited' ? `Invited ${who}.${res.emailed ? ' They have an email with how to sign in.' : res.already_emailed ? ' We already emailed them today, so no new email went out.' : ''} Once they sign in here or in the app with that address, they're a co-organizer.`
-          : res.status === 'made_leader' ? `${who} was already on the ride and is now a co-organizer.${res.emailed ? " We've let them know." : ''}`
-            : res.status === 'already_leader' ? `${who} is already a co-organizer.` : `${who} organizes this ride.`,
+        text: res.status === 'invited' ? `Invited ${who}.${res.emailed ? ' They have an email with how to sign in.' : res.already_emailed ? ' We already emailed them today, so no new email went out.' : ''} Once they sign in here or in the app with that address, they're a leader.`
+          : res.status === 'made_leader' ? `${who} was already on the ride and is now a leader.${res.emailed ? " We've let them know." : ''}`
+            : res.status === 'already_leader' ? `${who} is already a leader.` : `${who} organizes this ride.`,
       })
       setEmail('')
       await reload()
@@ -68,7 +68,7 @@ export default function Team() {
       {msg && <Notice tone={msg.tone} onClose={() => setMsg(null)}>{msg.text}</Notice>}
 
       <Card>
-        <SectionTitle hint="Co-organizers see who's coming and post updates.">
+        <SectionTitle hint="Leaders see who's coming and post updates.">
           Who runs this ride
         </SectionTitle>
         <ul className="divide-y divide-(--ev-line)">
@@ -76,12 +76,12 @@ export default function Team() {
             <li key={l.member_id} className="flex flex-wrap items-center justify-between gap-3 py-3">
               <div className="flex items-center gap-2">
                 <span className="text-[15px] font-semibold text-(--ev-ink)">{l.name}{l.is_you ? ' (you)' : ''}</span>
-                <Badge tone={l.role === 'organizer' ? 'good' : 'plain'}>{l.role === 'organizer' ? 'Organizer' : 'Co-organizer'}</Badge>
+                <Badge tone={l.role === 'organizer' ? 'good' : 'plain'}>{l.role === 'organizer' ? 'Organizer' : 'Leader'}</Badge>
               </div>
               {canRename && l.role === 'leader' && (
                 <Button size="sm" variant="ghost" busy={busy === l.member_id}
-                  onClick={() => void act(l.member_id, () => setMemberRole(r.id, l.user_id, 'rider'), `${l.name} is no longer a co-organizer. They stay on the ride.`)}>
-                  Remove as co-organizer
+                  onClick={() => void act(l.member_id, () => setMemberRole(r.id, l.user_id, 'rider'), `${l.name} is no longer a leader. They stay on the ride.`)}>
+                  Remove as leader
                 </Button>
               )}
             </li>
@@ -106,7 +106,7 @@ export default function Team() {
       {manage && r.status !== 'archived' && (
         <Card>
           <SectionTitle hint="They get an email and sign in with that address.">
-            Invite a co-organizer
+            Invite a leader
           </SectionTitle>
           <form onSubmit={invite} className="flex flex-col gap-2 sm:flex-row sm:items-end">
             <div className="flex-1">
@@ -123,14 +123,14 @@ export default function Team() {
 
       {canRename && riders.length > 0 && (
         <Card>
-          <SectionTitle hint="People already on the ride with the Shift app.">Make someone on the ride a co-organizer</SectionTitle>
+          <SectionTitle hint="People already on the ride with the Shift app.">Make someone on the ride a leader</SectionTitle>
           <ul className="divide-y divide-(--ev-line)">
             {(allRiders ? riders : riders.slice(0, 6)).map((m) => (
               <li key={m.member_id} className="flex flex-wrap items-center justify-between gap-3 py-2.5">
                 <span className="text-[15px] text-(--ev-ink)">{m.display_name}</span>
                 <Button size="sm" busy={busy === m.member_id}
-                  onClick={() => void act(m.member_id, () => setMemberRole(r.id, m.user_id!, 'leader'), `${m.display_name} is now a co-organizer.`)}>
-                  Make co-organizer
+                  onClick={() => void act(m.member_id, () => setMemberRole(r.id, m.user_id!, 'leader'), `${m.display_name} is now a leader.`)}>
+                  Make a leader
                 </Button>
               </li>
             ))}

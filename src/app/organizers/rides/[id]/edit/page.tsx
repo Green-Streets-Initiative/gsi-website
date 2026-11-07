@@ -10,7 +10,7 @@ export default function EditRidePage() {
   if (!detail.can_edit) {
     return (
       <Card className="mx-auto max-w-lg">
-        <p className="text-[15px] text-(--ev-ink-85)">Only the ride&rsquo;s organizer can change its details. Co-organizers post updates and see who&rsquo;s coming.</p>
+        <p className="text-[15px] text-(--ev-ink-85)">Only the ride&rsquo;s organizer can change its details. Leaders post updates and see who&rsquo;s coming.</p>
         <Link href={`/organizers/rides/${detail.ride.id}`} className="mt-3 inline-block font-semibold underline">Back to the ride</Link>
       </Card>
     )

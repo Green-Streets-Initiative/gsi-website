@@ -18,7 +18,7 @@ export default function PlanDatePage({ params }: { params: Promise<{ id: string;
       <Card className="mx-auto max-w-lg">
         <p className="text-[15px] text-(--ev-ink-85)">
           {!detail.can_edit
-            ? 'Only the ride’s organizer can plan its dates. Co-organizers post updates and see who’s coming.'
+            ? 'Only the ride’s organizer can plan its dates. Leaders post updates and see who’s coming.'
             : 'That date isn’t on this ride’s schedule.'}
         </p>
         <Link href={back} className="mt-3 inline-block font-semibold underline">Back to the ride</Link>

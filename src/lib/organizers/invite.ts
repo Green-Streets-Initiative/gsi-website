@@ -21,16 +21,16 @@ function clip(s: string, max: number): string {
 
 function inviteHtml(inviter: string, rideName: string, already: boolean): string {
   const lead = already
-    ? `${esc(inviter)} made you a co-organizer of <b>${esc(rideName)}</b> on Shift.`
+    ? `${esc(inviter)} made you a leader on <b>${esc(rideName)}</b> on Shift.`
     : `${esc(inviter)} invited you to help run <b>${esc(rideName)}</b> on Shift.`
   return `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#F4F8EE;">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F4F8EE;padding:32px 12px;"><tr><td align="center">
 <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border-radius:16px;border:1px solid rgba(25,26,46,0.12);">
 <tr><td style="padding:28px 28px 8px;font-family:'Trebuchet MS','Lucida Grande',Verdana,sans-serif;">
 <img src="https://xyqcpgwbqrhykpgpqbdi.supabase.co/storage/v1/object/public/brand-assets/shift-wordmark-dark.png?v=20260422" alt="Shift" width="79" height="26" style="display:block;border:0;" />
-<h1 style="margin:22px 0 12px;font-size:24px;line-height:1.2;color:#191A2E;">You're a co-organizer</h1>
+<h1 style="margin:22px 0 12px;font-size:24px;line-height:1.2;color:#191A2E;">You're a ride leader</h1>
 <p style="margin:0 0 14px;font-size:16px;line-height:1.55;color:#191A2E;">${lead}</p>
-<p style="margin:0 0 20px;font-size:16px;line-height:1.55;color:#191A2E;">Co-organizers see who's coming to each date and post updates, like "It's on" or "Running late", that reach everyone on the ride.</p>
+<p style="margin:0 0 20px;font-size:16px;line-height:1.55;color:#191A2E;">Leaders see who's coming to each date and post updates, like "It's on" or "Running late", that reach everyone on the ride.</p>
 <table role="presentation" cellpadding="0" cellspacing="0"><tr><td bgcolor="#191A2E" style="border-radius:999px;">
 <a href="${CONSOLE_URL}" style="display:inline-block;padding:13px 26px;font-size:16px;font-weight:bold;color:#ffffff;text-decoration:none;border-radius:999px;">Open organizer tools</a>
 </td></tr></table>
@@ -69,7 +69,7 @@ export async function inviteCoOrganizer(
       to: email,
       replyTo: args.organizerEmail ?? undefined,
       subject: result.status === 'made_leader'
-        ? `You're now a co-organizer of ${rideName}`
+        ? `You're now a leader on ${rideName}`
         : `${inviter} invited you to help run ${rideName}`,
       html: inviteHtml(inviter, rideName, result.status === 'made_leader'),
     }).catch((e: unknown) => ({ error: e as Error }))

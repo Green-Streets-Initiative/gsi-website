@@ -24,7 +24,7 @@ export function rideStateBadges(r: Pick<DashboardRide, 'status' | 'visibility' |
         ? { tone: 'off', text: 'Not on the calendar' }
         : { tone: 'info', text: 'Off the calendar' })
   }
-  if (r.my_role === 'leader') out.push({ tone: 'plain', text: 'Co-organizer' })
+  if (r.my_role === 'leader') out.push({ tone: 'plain', text: 'Leader' })
   if (r.my_role === 'admin') out.push({ tone: 'plain', text: 'GSI admin view' })
   return out
 }
@@ -301,7 +301,7 @@ export default function Dashboard() {
       {claimNote > 0 && (
         <div className="mb-5">
           <Notice tone="good" onClose={() => setClaimNote(0)}>
-            You&rsquo;re now a co-organizer of {plural(claimNote, 'ride')}. It&rsquo;s below, and in the Shift app too.
+            You&rsquo;re now a leader on {plural(claimNote, 'ride')}. It&rsquo;s below, and in the Shift app too.
           </Notice>
         </div>
       )}
@@ -320,7 +320,7 @@ export default function Dashboard() {
         <Empty title={me?.can_create ? 'Set up your first ride' : 'No rides yet'} action={newRide}>
           {me?.can_create
             ? 'A one-off ride or a regular one, with a meeting point and a route. You get a ride page to share, and everyone who answers lands on your list.'
-            : 'When an organizer adds you as a co-organizer, their ride shows up here.'}
+            : 'When an organizer adds you as a leader, their ride shows up here.'}
         </Empty>
       )}
 
@@ -333,7 +333,7 @@ export default function Dashboard() {
               <ul className="space-y-3">{list.map((r) => <RideRow key={r.id} r={r} />)}</ul>
             ) : (
               <Empty title="Nothing coming up" action={newRide}>
-                {me?.can_create ? 'Set up the next one: a one-off or a regular ride, with its own page to share.' : 'When an organizer adds you as a co-organizer, their ride shows up here.'}
+                {me?.can_create ? 'Set up the next one: a one-off or a regular ride, with its own page to share.' : 'When an organizer adds you as a leader, their ride shows up here.'}
               </Empty>
             )}
           </div>
