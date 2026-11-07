@@ -153,11 +153,28 @@ export interface EndShop { location_id: string; merchant_id: string; name: strin
 export const getEndShops = async (lat: number, lng: number) =>
   (await rpc<EndShop[] | null>('get_ride_end_shops', { p_lat: lat, p_lng: lng })) ?? []
 
+/** Go Together (Shift 01460): the bigger event a ride or walk goes to. */
+export interface FeedTarget { id: string; title: string; event_date: string; event_time?: string | null; location_name?: string | null }
+export interface FeedCandidate extends FeedTarget { miles: number | null }
+/** A ride's destination: the next date's, else the one the leader picked. Same call as the app. */
+export const getSeriesFeedsTo = async (seriesId: string) =>
+  (await rpc<FeedTarget | null>('get_series_feeds_to', { p_series_id: seriesId })) ?? null
+/** Events on the ride's date, nearest to where it ends; with a query, a title search. Same call as the app. */
+export const getFeedCandidates = async (opts: { date: string; lat?: number | null; lng?: number | null; query?: string; seriesId?: string | null }) =>
+  ((await rpc<FeedCandidate[] | null>('feed_target_candidates', {
+    p_date: opts.date, p_lat: opts.lat ?? null, p_lng: opts.lng ?? null,
+    p_query: opts.query?.trim() || null, p_series_id: opts.seriesId ?? null,
+  })) ?? []).map((c) => ({ ...c, miles: c.miles == null ? null : Number(c.miles) }))
+
 // ── Writes ─────────────────────────────────────────────────────────────
 
 /** The shop a ride ends at, where the Ride Fund buys the coffee. null clears it. */
 export const setEndShop = (seriesId: string, locationId: string | null) =>
   rpc<{ ok: true }>('set_ride_end_shop', { p_series_id: seriesId, p_location_id: locationId })
+
+/** Link the ride to the event it goes to, or clear it with null (Shift 01460). */
+export const setRideFeeds = (seriesId: string, targetId: string | null) =>
+  rpc<number>('set_ride_feeds', { p_series_id: seriesId, p_target: targetId })
 
 export interface SaveResult {
   id: string

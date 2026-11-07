@@ -10,6 +10,7 @@ import { getEventRoams } from '@/lib/roams/queries'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { hostPath, hostQualifies } from '@/lib/hosts'
 import { getQualifyingTowns } from '@/lib/towns/queries'
+import { loadGoTogether } from '../_lib/go-together'
 
 export const dynamic = 'force-dynamic'
 
@@ -34,10 +35,11 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
   // page, so the page sends them there (exp-2026-11-1). Only Massachusetts
   // towns publish, so a same-named town elsewhere never matches.
   const townName = townFromAddress(event.location_address)
-  const [roamLinks, hasHostPage, towns] = await Promise.all([
+  const [roamLinks, hasHostPage, towns, goTogether] = await Promise.all([
     getEventRoams(event.id),
     organizerId ? hostQualifies(organizerId) : Promise.resolve(false),
     townName ? getQualifyingTowns() : Promise.resolve([]),
+    loadGoTogether(createServerSupabaseClient(), event.id),
   ])
   const hostHref = hasHostPage && organizerId ? hostPath(organizerId) : null
   const townMatch = townName ? towns.find((t) => t.town_name.toLowerCase() === townName.toLowerCase()) : undefined
@@ -61,7 +63,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
-        <EventDetail event={event} nextUp={nextUp} isPast={isPastEvent(event.event_date, event.event_end_date)} tone="light" sponsorLinks={sponsorLinks} roamLinks={roamLinks} rideCode={rideCode} hostHref={hostHref} town={town} />
+        <EventDetail event={event} nextUp={nextUp} isPast={isPastEvent(event.event_date, event.event_end_date)} tone="light" sponsorLinks={sponsorLinks} roamLinks={roamLinks} rideCode={rideCode} hostHref={hostHref} town={town} goTogether={goTogether} />
       </main>
       <Footer variant="light" />
     </>

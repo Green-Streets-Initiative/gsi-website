@@ -2,9 +2,9 @@
 
 import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
-import { ArrowUp, CalendarDays, Check, ChevronRight, MapPin, Megaphone, MessageSquareText, Plus, Users } from 'lucide-react'
+import { ArrowUp, CalendarDays, CalendarHeart, Check, ChevronRight, MapPin, Megaphone, MessageSquareText, Plus, Users } from 'lucide-react'
 import { ago, clock, scheduleText } from '@/lib/rides/public'
-import { errorText, getRides } from '@/lib/organizers/api'
+import { errorText, getRides, getSeriesFeedsTo, type FeedTarget } from '@/lib/organizers/api'
 import { UPDATE_KIND_LABEL, dateLabel, plural, todayKey } from '@/lib/organizers/ride-words'
 import type { DashboardRide, NextDate } from '@/lib/organizers/types'
 import { ASSISTANT_CHANGED_EVENT, openAssistant } from './AssistantPanel'
@@ -51,7 +51,7 @@ function DateChip({ d, rideId, phoneHidden }: { d: NextDate; rideId: string; pho
 }
 
 /** One ride as a row: what it is, its next dates, and the two things you do from here. */
-function RideRow({ r }: { r: DashboardRide }) {
+function RideRow({ r, goingTo }: { r: DashboardRide; goingTo?: FeedTarget | null }) {
   const over = r.status === 'archived' || (!!r.ride_date && r.next_dates.length === 0)
   const canPost = !over && (!r.ride_date || r.next_dates.length > 0)
   const badges = rideStateBadges(r)
@@ -67,6 +67,12 @@ function RideRow({ r }: { r: DashboardRide }) {
             {r.meetup_name && <span className="inline-flex items-center gap-1.5"><MapPin className="h-4 w-4" aria-hidden />{r.meetup_name}</span>}
             <span className="inline-flex items-center gap-1.5"><Users className="h-4 w-4" aria-hidden />{plural(r.members, 'person', 'people')}</span>
           </p>
+          {/* Go Together (Shift 01460): the bigger event this ride goes to. */}
+          {goingTo && (
+            <p className="mt-1 inline-flex items-center gap-1.5 text-[14px] font-semibold text-(--ev-accent)">
+              <CalendarHeart className="h-4 w-4" aria-hidden />Going to {goingTo.title}
+            </p>
+          )}
           {(badges.length > 0 || (r.my_role === 'admin' && r.organizer_person)) && (
             <div className="mt-2 flex flex-wrap gap-1.5">
               {badges.map((b) => <Badge key={b.text} tone={b.tone}>{b.text}</Badge>)}
@@ -286,6 +292,20 @@ export default function Dashboard() {
     }
   }, [rides])
 
+  // Where each upcoming ride is heading (Go Together), the same call the app's
+  // ride page makes; at most 20 rides, all at once.
+  const [goingTo, setGoingTo] = useState<Record<string, FeedTarget | null>>({})
+  const mineKey = groups.mine.slice(0, 20).map((r) => r.id).join(',')
+  useEffect(() => {
+    if (!mineKey) return
+    let live = true
+    const ids = mineKey.split(',')
+    Promise.all(ids.map((id) => getSeriesFeedsTo(id).catch(() => null))).then((targets) => {
+      if (live) setGoingTo(Object.fromEntries(ids.map((id, i) => [id, targets[i]])))
+    })
+    return () => { live = false }
+  }, [mineKey])
+
   const newRide = me?.can_create ? (
     <Link href="/organizers/rides/new" className="inline-flex min-h-[44px] items-center gap-1.5 rounded-[10px] bg-(--ev-accent-fill) px-4 text-[15px] font-semibold text-(--ev-on-accent-fill) hover:opacity-90">
       <Plus className="h-4 w-4" aria-hidden />New ride
@@ -343,7 +363,7 @@ export default function Dashboard() {
           <div {...tabPanel('rides', shown)} className="pt-4">
             {shown === 'all' && <p className="mb-3 text-[14px] text-(--ev-ink-75)">Every group ride on Shift. You see these as a GSI admin.</p>}
             {list.length > 0 ? (
-              <ul className="space-y-3">{list.map((r) => <RideRow key={r.id} r={r} />)}</ul>
+              <ul className="space-y-3">{list.map((r) => <RideRow key={r.id} r={r} goingTo={goingTo[r.id]} />)}</ul>
             ) : (
               <Empty title="Nothing coming up" action={newRide}>
                 {me?.can_create ? 'Set up the next one: a one-off or a regular ride, with its own page to share.' : 'When an organizer adds you as a leader, their ride shows up here.'}

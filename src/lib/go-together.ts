@@ -65,3 +65,40 @@ export function shortOrganizer(name: string | null): string | null {
   const short = name?.replace(/\s*\(.*\)\s*$/, '').trim()
   return short || null
 }
+
+/** A group going to an event, as its event page lists it (Shift
+ *  get_event_go_together, 01460), with the links the page needs. */
+export interface GoTogetherGroup {
+  id: string
+  title: string
+  event_date: string
+  event_time: string | null
+  event_type: string | null
+  location_name: string | null
+  distance_text: string | null
+  organizer_name: string | null
+  slug: string | null
+  /** A Shift ride's invite code: its own page takes RSVPs for the date. */
+  ride_code: string | null
+}
+
+export interface GoTogetherTarget {
+  id: string
+  title: string
+  event_date: string
+  slug: string | null
+}
+
+export interface GoTogetherData {
+  /** Where this listing goes, when it is itself a group going to an event. */
+  feeds: GoTogetherTarget | null
+  /** Approved rides and walks going to this listing, by start time. */
+  groups: GoTogetherGroup[]
+}
+
+export const NO_GO_TOGETHER: GoTogetherData = { feeds: null, groups: [] }
+
+/** A walk going to an event says "Walks to", a ride "Rides to". */
+export function isWalkGroup(eventType: string | null | undefined): boolean {
+  return eventType === 'walking_tour' || eventType === 'group_walk'
+}

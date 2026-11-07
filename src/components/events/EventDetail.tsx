@@ -23,6 +23,8 @@ import {
   eventImages,
 } from '@/lib/events'
 import EventImageCarousel from './EventImageCarousel'
+import { FeedsToLine, GoTogetherSection } from './GoTogether'
+import { NO_GO_TOGETHER, isWalkGroup, type GoTogetherData } from '@/lib/go-together'
 import { EventPageAlertSignup } from './EventAlertSignup'
 import { parseEventBody } from '@/lib/event-body'
 import { typeInk, tagInk, rideStyleInk, TINT } from '@/lib/events-tone'
@@ -142,9 +144,11 @@ interface EventDetailProps {
   hostHref?: string | null
   /** The town page for the event's address, when that town has one. */
   town?: { name: string; href: string } | null
+  /** Groups going to this event, and where this one goes (Go Together, Shift 01460). */
+  goTogether?: GoTogetherData
 }
 
-export default function EventDetail({ event, nextUp = null, isPast = false, tone = 'dark', hrefBase = '/events', sponsorLinks = {}, roamLinks = [], rideCode = null, hostHref = null, town = null }: EventDetailProps) {
+export default function EventDetail({ event, nextUp = null, isPast = false, tone = 'dark', hrefBase = '/events', sponsorLinks = {}, roamLinks = [], rideCode = null, hostHref = null, town = null, goTogether = NO_GO_TOGETHER }: EventDetailProps) {
   const meta = getTypeMeta(event.event_type)
   const Icon = EVENT_TYPE_ICONS[meta.icon] ?? Calendar
   // The type's color for this surface: the navy-tuned one, or its ink on cream.
@@ -331,6 +335,11 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
               {event.title}
             </h1>
 
+            {/* A group going to a bigger event says where (Go Together). */}
+            {goTogether.feeds && (
+              <FeedsToLine target={goTogether.feeds} walk={isWalkGroup(event.event_type)} fromId={event.id} />
+            )}
+
             {/* Ride facts: the organizer's own numbers */}
             {rideFacts.length > 0 && (
               <p className="-mt-2 mb-4 text-[14px] font-medium text-(--ev-ink-80)">
@@ -439,6 +448,9 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
                 <Share2 size={16} />
               </button>
             </div>
+
+            {/* The groups going here together, before the description, as in the app. */}
+            {!isPast && <GoTogetherSection eventId={event.id} groups={goTogether.groups} />}
 
             {/* Description */}
             {event.body && (
