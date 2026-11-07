@@ -66,7 +66,7 @@ const ALSO: { icon: typeof Bike; title: string; body: string }[] = [
   { icon: QrCode, title: 'Flyer and QR code', body: 'Plus ready captions and four calendars to post on.' },
   { icon: Download, title: 'GPX for bike computers', body: 'People load your route with one tap.' },
   { icon: Repeat, title: 'Every week', body: 'Regulars tick once and they’re on the list for every date.' },
-  { icon: Users, title: 'Co-organizers', body: 'Share the work with your ride leaders.' },
+  { icon: Users, title: 'Leaders', body: 'Share the work with your ride leaders.' },
   { icon: Gift, title: 'Bike shop perks', body: 'Shops and cafés near the ride with Bicycle Benefits discounts.' },
   { icon: Trophy, title: 'Their ride counts', body: 'People on Shift get Walk/Ride Day entries and challenges.' },
 ]
