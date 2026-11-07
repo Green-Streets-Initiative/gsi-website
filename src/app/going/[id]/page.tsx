@@ -10,6 +10,8 @@ import { feederPlace, isWalkGroup, shortOrganizer } from '@/lib/go-together'
 import { eventHref } from '@/lib/events-url'
 import { formatTime } from '@/lib/events'
 import { getVenue } from '@/lib/venues'
+import { Bicycle, CaretRight, PersonSimpleWalk } from '@phosphor-icons/react/dist/ssr'
+import Facts from '@/components/Facts'
 
 /*
  * gogreenstreets.org/going/<id>: one game or concert (Go Together phase 2,
@@ -55,7 +57,10 @@ export default async function BigEventPage({ params }: { params: Promise<{ id: s
         title={e.title}
         lede={
           <p>
-            {bigEventWhen(e, { weekday: 'long' })} at {e.venue_name}
+            {bigEventWhen(e, { weekday: 'long' })} at{' '}
+            {venue ? (
+              <Link href={`/parking/${venue.slug}`} className="font-bold underline underline-offset-4 hover:opacity-80">{e.venue_name}</Link>
+            ) : e.venue_name}
             {!e.time_known && '. The start time isn’t set yet'}
             {e.status === 'postponed' && '. Postponed: check the team for the new date'}
             {e.status === 'canceled' && '. Canceled'}
@@ -67,21 +72,30 @@ export default async function BigEventPage({ params }: { params: Promise<{ id: s
       <div className={`${CONTAINER} flex flex-col gap-6 pb-16`}>
         {e.groups.length > 0 && !past && (
           <section aria-labelledby="groups-title" className="rounded-[20px] border-2 border-forest bg-white p-5 sm:p-6">
-            <h2 id="groups-title" className={H3}>Group rides going</h2>
+            {/* Same rows and words as the event page's Go Together (src/components/events/GoTogether.tsx). */}
+            <h2 id="groups-title" className={H3}>Go Together</h2>
             <p className={`mt-1 ${BODY}`}>Meet a group near you and arrive together.</p>
-            <ul className="mt-4 flex flex-col gap-2">
+            <ul className="mt-3 flex flex-col gap-1">
               {e.groups.map((g) => {
                 const walk = isWalkGroup(g.event_type)
+                const Icon = walk ? PersonSimpleWalk : Bicycle
                 const details = [
                   g.event_time ? `Leaves ${formatTime(g.event_time)}` : null,
                   g.distance_text ? `${g.distance_text} ${walk ? 'walk' : 'ride'}` : null,
-                  shortOrganizer(g.organizer_name),
-                ].filter(Boolean).join(' · ')
+                ].filter((x): x is string => !!x)
+                const organizer = shortOrganizer(g.organizer_name)
                 return (
                   <li key={g.id}>
-                    <Link href={eventHref(g)} className="block rounded-[14px] bg-cream px-4 py-3 transition-colors hover:bg-forest/10">
-                      <span className="block text-[1.0625rem] font-bold text-navy">From {feederPlace(g.title, g.location_name)}</span>
-                      {details && <span className="block text-[0.9375rem] text-navy/80">{details}</span>}
+                    <Link href={eventHref(g)} className="flex min-h-[56px] items-center gap-3 rounded-[12px] px-2 py-2 transition-colors hover:bg-cream">
+                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-forest/10 text-forest">
+                        <Icon size={20} weight="bold" aria-hidden />
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-[1.0625rem] font-bold text-navy">From {feederPlace(g.title, g.location_name)}</span>
+                        {details.length > 0 && <span className="block text-[0.9375rem] text-navy/80"><Facts parts={details} /></span>}
+                        {organizer && <span className="block truncate text-[0.9375rem] text-navy/80">{organizer}</span>}
+                      </span>
+                      <CaretRight size={18} weight="bold" aria-hidden className="shrink-0 text-navy/60" />
                     </Link>
                   </li>
                 )
@@ -106,12 +120,15 @@ export default async function BigEventPage({ params }: { params: Promise<{ id: s
         {more.length > 0 && (
           <section aria-labelledby="more-title">
             <h2 id="more-title" className={H3}>Next at {e.venue_name}</h2>
-            <ul className="mt-3 flex flex-col gap-1">
+            <ul className="mt-3 divide-y divide-navy/10 rounded-[20px] bg-white px-5 sm:px-6">
               {more.map((m) => (
                 <li key={m.id}>
-                  <Link href={bigEventPath(m)} className="flex min-h-[48px] flex-wrap items-baseline gap-x-2 rounded-[12px] px-2 py-2 hover:bg-white">
-                    <span className="font-bold text-navy">{m.title}</span>
-                    <span className="text-[0.9375rem] text-navy/80">{bigEventWhen(m)}</span>
+                  <Link href={bigEventPath(m)} className="flex min-h-[56px] items-center gap-3 py-3 hover:opacity-80">
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-[1.0625rem] font-bold text-navy">{m.title}</span>
+                      <span className="block text-[0.9375rem] text-navy/80">{bigEventWhen(m)}</span>
+                    </span>
+                    <CaretRight size={18} weight="bold" aria-hidden className="shrink-0 text-navy/60" />
                   </Link>
                 </li>
               ))}

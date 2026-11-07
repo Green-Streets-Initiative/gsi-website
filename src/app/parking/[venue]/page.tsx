@@ -641,7 +641,7 @@ function NextAtVenue({ e }: { e: BigEvent }) {
       <CalendarDots size={20} weight="bold" aria-hidden className="mt-0.5 shrink-0 text-forest" />
       <span>
         Next:{' '}
-        <Link href={bigEventPath(e)} className={LINK}>{e.title}</Link>, {bigEventWhen(e)}
+        <Link href={bigEventPath(e)} className={LINK}>{e.title}</Link> · <span className="whitespace-nowrap">{bigEventWhen(e)}</span>
         {n > 0 && <> · {n === 1 ? 'a group ride is going' : `${n} group rides going`}</>}
       </span>
     </p>

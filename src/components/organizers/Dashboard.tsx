@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
-import { ArrowUp, CalendarDays, CalendarHeart, Check, ChevronRight, MapPin, Megaphone, MessageSquareText, Plus, Users } from 'lucide-react'
+import { ArrowUp, CalendarDays, CalendarHeart, Check, ChevronRight, MapPin, Megaphone, MessageSquareText, Plus, Ticket, Users } from 'lucide-react'
 import { ago, clock, scheduleText } from '@/lib/rides/public'
 import { errorText, getRides, getSeriesDestination, type FeedTarget } from '@/lib/organizers/api'
 import { UPDATE_KIND_LABEL, dateLabel, plural, todayKey } from '@/lib/organizers/ride-words'
@@ -70,7 +70,9 @@ function RideRow({ r, goingTo }: { r: DashboardRide; goingTo?: FeedTarget | null
           {/* Go Together (Shift 01460): the bigger event this ride goes to. */}
           {goingTo && (
             <p className="mt-1 inline-flex items-center gap-1.5 text-[14px] font-semibold text-(--ev-accent)">
-              <CalendarHeart className="h-4 w-4" aria-hidden />Going to {goingTo.title}
+              {goingTo.big ? <Ticket className="h-4 w-4" aria-hidden /> : <CalendarHeart className="h-4 w-4" aria-hidden />}
+              {/* A game is one date, so say which (a weekly ride goes to it once). */}
+              Going to {goingTo.title}{goingTo.big && ` on ${dateLabel(goingTo.event_date)}`}
             </p>
           )}
           {(badges.length > 0 || (r.my_role === 'admin' && r.organizer_person)) && (

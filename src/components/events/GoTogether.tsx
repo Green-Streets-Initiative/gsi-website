@@ -7,6 +7,7 @@ import { eventHref, eventPath } from '@/lib/events-url'
 import { formatTime } from '@/lib/events'
 import { feederPlace, isWalkGroup, shortOrganizer, type GoTogetherGroup, type GoTogetherTarget } from '@/lib/go-together'
 import { useEventsTone } from './EventsTone'
+import Facts from '@/components/Facts'
 
 /**
  * Go Together on an event's page (Shift 01460), the website twin of the
@@ -51,7 +52,7 @@ export function GoTogetherSection({ eventId, groups }: { eventId: string; groups
           const details = [
             g.event_time ? `Leaves ${formatTime(g.event_time)}` : null,
             g.distance_text ? `${g.distance_text} ${walk ? 'walk' : 'ride'}` : null,
-          ].filter(Boolean).join(' · ')
+          ].filter((x): x is string => !!x)
           const organizer = shortOrganizer(g.organizer_name)
           return (
             <li key={g.id}>
@@ -66,7 +67,7 @@ export function GoTogetherSection({ eventId, groups }: { eventId: string; groups
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="block text-[16px] font-bold text-(--ev-ink)">From {feederPlace(g.title, g.location_name)}</span>
-                  {details && <span className="block text-[14px] text-(--ev-ink-75)">{details}</span>}
+                  {details.length > 0 && <span className="block text-[14px] text-(--ev-ink-75)"><Facts parts={details} /></span>}
                   {organizer && <span className="block truncate text-[14px] text-(--ev-ink-75)">{organizer}</span>}
                 </span>
                 <ChevronRight size={16} className="shrink-0 text-(--ev-ink-75)" aria-hidden />

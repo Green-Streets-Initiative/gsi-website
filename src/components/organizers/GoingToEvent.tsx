@@ -6,6 +6,7 @@ import { formatTime } from '@/lib/events'
 import { getBigEventCandidates, getFeedCandidates, type FeedCandidate, type FeedTarget } from '@/lib/organizers/api'
 import { dateLabel } from '@/lib/organizers/ride-words'
 import { Button, Card, Input, SectionTitle, cx } from './ui'
+import Facts from '@/components/Facts'
 
 /**
  * "Going to an event?" (Go Together, Shift 01460): the leader picks the
@@ -25,11 +26,13 @@ import { Button, Card, Input, SectionTitle, cx } from './ui'
 /** The nearest few first; the rest behind "Show more". */
 const SHOWN = 4
 
-export default function GoingToEvent({ value, onChange, date, at, seriesId, walk, recurring }: {
+export default function GoingToEvent({ value, onChange, date, rideDays = [], at, seriesId, walk, recurring }: {
   value: FeedTarget | null
   onChange: (v: FeedTarget | null) => void
   /** The ride's next date; null until the schedule is set. */
   date: string | null
+  /** The ride's dates in the next 60 days: a game on another day can't be picked. */
+  rideDays?: string[]
   /** Where the ride ends, for "closest first". */
   at: { lat: number; lng: number } | null
   seriesId: string | null
@@ -47,7 +50,9 @@ export default function GoingToEvent({ value, onChange, date, at, seriesId, walk
   const open = picking
   // About 100 m of movement before asking again.
   const key = `${date}|${at ? `${at.lat.toFixed(3)},${at.lng.toFixed(3)}` : ''}|${query.trim()}`
-  const rows = found?.key === key ? found.rows : null
+  const offDay = (c: FeedCandidate) => !!c.big && !rideDays.includes(c.event_date)
+  // Games the ride can go to first; ones on other days after, marked.
+  const rows = found?.key === key ? [...found.rows].sort((a, b) => Number(offDay(a)) - Number(offDay(b))) : null
 
   useEffect(() => {
     if (!open || !date) return
@@ -128,27 +133,32 @@ export default function GoingToEvent({ value, onChange, date, at, seriesId, walk
             <p className="text-[14px] text-(--ev-ink-75)">{query ? 'No events match that.' : `No events on ${day} yet. Try a search.`}</p>
           ) : (
             <div className="grid gap-2 sm:grid-cols-2" role="radiogroup" aria-label="Event your ride goes to">
-              {(all || query ? rows : rows.slice(0, SHOWN)).map((c) => (
-                <button key={c.id} type="button" role="radio" aria-checked={value?.id === c.id}
+              {(all || query ? rows : rows.slice(0, SHOWN)).map((c) => {
+                const off = offDay(c)
+                return (
+                <button key={c.id} type="button" role="radio" aria-checked={value?.id === c.id} disabled={off}
                   onClick={() => { onChange(c); setPicking(false); setQuery(''); setAll(false) }}
                   className={cx('flex items-start gap-3 rounded-xl border p-3 text-left transition',
-                    value?.id === c.id ? 'border-(--ev-accent-fill) bg-(--ev-panel) ring-1 ring-(--ev-accent-fill)' : 'border-(--ev-line-strong) bg-white hover:bg-(--ev-panel-faint)')}>
+                    off ? 'cursor-not-allowed border-(--ev-line) bg-(--ev-panel-faint)'
+                    : value?.id === c.id ? 'border-(--ev-accent-fill) bg-(--ev-panel) ring-1 ring-(--ev-accent-fill)' : 'border-(--ev-line-strong) bg-white hover:bg-(--ev-panel-faint)')}>
                   {c.big
                     ? <Ticket className="mt-0.5 h-5 w-5 shrink-0 text-(--ev-accent)" aria-hidden />
                     : <CalendarHeart className="mt-0.5 h-5 w-5 shrink-0 text-(--ev-accent)" aria-hidden />}
                   <span className="min-w-0">
                     <span className="block text-[15px] font-semibold text-(--ev-ink)">{c.title}</span>
                     <span className="mt-0.5 block text-[14px] leading-snug text-(--ev-ink-75)">
-                      {[
+                      <Facts parts={[
                         c.event_date !== date ? dateLabel(c.event_date) : null,
                         c.event_time ? formatTime(c.event_time) : null,
                         c.location_name,
                         c.miles != null ? `${c.miles < 10 ? c.miles.toFixed(1) : Math.round(c.miles)} mi from the end` : null,
-                      ].filter(Boolean).join(' · ')}
+                      ]} />
                     </span>
+                    {off && <span className="mt-1 block text-[14px] font-semibold text-(--ev-ink)">Your {walk ? 'walk' : 'ride'} isn&rsquo;t on this day</span>}
                   </span>
                 </button>
-              ))}
+                )
+              })}
             </div>
           )}
           {rows && !query && !all && rows.length > SHOWN && (

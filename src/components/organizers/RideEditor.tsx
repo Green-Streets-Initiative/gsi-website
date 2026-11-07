@@ -573,6 +573,8 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
 
   // The ride's next date, for "Going to an event?": the date itself, or the schedule's first.
   const nextDate = f.schedule === 'one_time' ? (f.ride_date && f.ride_date >= today ? f.ride_date : null) : (firstDates[0] ?? null)
+  // Every date in the next 60 days (the picker's search window): a game links only the ride on its day.
+  const rideDays = f.schedule === 'one_time' ? (nextDate ? [nextDate] : []) : recurringReady ? scheduleDates(sched, today, { limit: 70, horizonDays: 61 }) : []
 
   const stepIndex = STEPS.findIndex((s) => s.id === step)
   const last = stepIndex === STEPS.length - 1
@@ -861,7 +863,7 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
 
         {showCoffee && <EndShopCard at={rideEnd} value={f.end_location_id} onChange={(id) => set('end_location_id', id)} fund={fund} />}
 
-        <GoingToEvent value={feedsTo} onChange={setFeedsTo} date={nextDate} at={rideEnd} seriesId={ride?.id ?? null} walk={walk} recurring={f.schedule === 'recurring'} />
+        <GoingToEvent value={feedsTo} onChange={setFeedsTo} date={nextDate} rideDays={rideDays} at={rideEnd} seriesId={ride?.id ?? null} walk={walk} recurring={f.schedule === 'recurring'} />
         </div>
 
         {step === 'expect' && (
