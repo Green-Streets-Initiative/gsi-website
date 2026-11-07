@@ -34,6 +34,32 @@ async function rpc<T>(fn: string, args?: Record<string, unknown>): Promise<T> {
   return data as T
 }
 
+/** One rider's ride-day status, from get_ride_rider_status (Shift 00885). The server computes distance; no coordinates reach the browser. */
+export interface RiderStatusRow {
+  member_id: string
+  display_name: string
+  avatar_url: string | null
+  status: 'here' | 'away' | 'unknown' | 'not_sharing' | null
+  distance_mi: number | null
+}
+
+export interface RideRiderStatus {
+  available: boolean
+  reason?: 'off' | 'no_meetup'
+  window_open?: boolean
+  expected?: number
+  here?: number
+  on_the_way?: number
+  riders?: RiderStatusRow[]
+}
+
+/** Who's here and who's on the way, 30 minutes before a date's start to 15 after. Null when this viewer can't see it (never an error). */
+export async function riderStatus(occurrenceId: string): Promise<RideRiderStatus | null> {
+  const { data, error } = await supabase.rpc('get_ride_rider_status', { p_occurrence_id: occurrenceId })
+  if (error) return null
+  return (data as RideRiderStatus | null) ?? null
+}
+
 export async function accessToken(): Promise<string> {
   const { data } = await supabase.auth.getSession()
   const token = data.session?.access_token

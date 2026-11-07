@@ -96,14 +96,14 @@ const STREET_WORDS: [RegExp, string][] = [
 ]
 
 /** "Cambridge Street" and "Cambridge St" are one street (the app's RouteStreetsList streetKey). */
-function streetKey(label: string): string {
+export function streetKey(label: string): string {
   let s = label.toLowerCase()
   for (const [re, short] of STREET_WORDS) s = s.replace(re, short)
   return s.replace(/[^a-z0-9]+/g, ' ').trim()
 }
 
 /** "Ma-28 S" → "Route 28", then the shouting fix. */
-function streetName(label: string): string {
+export function streetName(label: string): string {
   const route = /^(?:ma|us|rt|route)[- ]?(\d+[a-z]?)\b/i.exec(label.trim())
   return route ? `Route ${route[1].toUpperCase()}` : tidyName(label)
 }

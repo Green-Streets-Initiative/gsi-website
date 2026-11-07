@@ -10,6 +10,7 @@ import { UPDATE_KIND_LABEL, dateLabel, plural, todayKey } from '@/lib/organizers
 import type { DetailDate } from '@/lib/organizers/types'
 import { CancelDateDialog, ChangeDateDialog } from './DateDialogs'
 import PostUpdate from './PostUpdate'
+import { NoMeetupHint, RideDayRiders, useRideDay, useRideTime } from './RideDay'
 import { ridePageUrl, useRide } from './RideFrame'
 import { SkipDatesDialog } from './SkipDates'
 import { StopRideDialog, resume } from './StopRide'
@@ -178,6 +179,13 @@ export default function RideOverview() {
     return () => { live = false }
   }, [nextDate?.id, nextDate?.date, nextDate?.start_time, r.meetup_lat, r.meetup_lng]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Ride day: from 30 minutes before the start to 15 after, the card's
+  // numbers become here / on the way / going (RideDay.tsx, the app's
+  // RideDayCounts).
+  const rideTime = useRideTime(nextDate?.date ?? null, nextDate?.start_time ?? null) && !ended
+  const day = useRideDay(nextDate?.id ?? null, rideTime)
+  const dayOn = day && day !== 'no_meetup' ? day : null
+
   // The next date has its own card above; the list holds the rest.
   const heroShown = !!nextDate && !ended
   const later = heroShown ? upcoming.filter((d) => d.id !== nextDate!.id) : upcoming
@@ -194,8 +202,8 @@ export default function RideOverview() {
         <Card>
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <p className="text-[15px] font-semibold text-(--ev-ink-75)">Next ride</p>
-              <p className="font-display text-[26px] font-extrabold leading-tight">{dateLabel(nextDate.date)} · {clock(nextDate.start_time)}</p>
+              <p className="text-[15px] font-semibold text-(--ev-ink-75)">{rideTime ? 'Today' : 'Next ride'}</p>
+              <p className="font-display text-[26px] font-extrabold leading-tight">{rideTime ? clock(nextDate.start_time) : `${dateLabel(nextDate.date)} · ${clock(nextDate.start_time)}`}</p>
               {nextDate.title && <p className="mt-0.5 text-[17px] font-bold text-(--ev-ink)">{nextDate.title}</p>}
               <p className="mt-0.5 text-[15px] text-(--ev-ink-80)">{nextDate.meetup_name ?? r.meetup_name}{nextDate.time_moved || nextDate.place_moved ? ' (changed for this date)' : ''}</p>
               <span className="mt-2 inline-block"><RouteChip d={nextDate} usualMiles={r.route_miles} hasUsual={hasUsual} /></span>
@@ -203,14 +211,17 @@ export default function RideOverview() {
               {nextDate.confirmed && <span className="mt-2 inline-block"><Badge tone="good">It&rsquo;s on</Badge></span>}
             </div>
             <dl className="flex gap-6">
-              {([['Going', nextDate.going], ['Maybe', nextDate.maybe], ["Can't go", nextDate.cant]] as const).map(([k, v]) => (
+              {(dayOn ? dayOn.tiles.map((x) => [x.label, x.n, x.lead] as const)
+                : ([['Going', nextDate.going, false], ['Maybe', nextDate.maybe, false], ["Can't go", nextDate.cant, false]] as const)).map(([k, v, lead]) => (
                 <div key={k}>
                   <dt className="text-[14px] font-semibold text-(--ev-ink-75)">{k}</dt>
-                  <dd className="font-display text-[32px] font-extrabold leading-none">{v}</dd>
+                  <dd className={cx('font-display text-[32px] font-extrabold leading-none', lead && v > 0 && 'text-(--ev-accent-90)')}>{v}</dd>
                 </div>
               ))}
             </dl>
           </div>
+          {dayOn && dayOn.riders.length > 0 && <div className="mt-4"><RideDayRiders riders={dayOn.riders} /></div>}
+          {day === 'no_meetup' && <div className="mt-3"><NoMeetupHint /></div>}
           <div className="mt-4 flex flex-wrap gap-2">
             {detail.can_edit && (
               <Link href={`/organizers/rides/${r.id}/dates/${nextDate.id}`} className="inline-flex min-h-[44px] items-center gap-1.5 rounded-[10px] border border-(--ev-line-strong) bg-white px-4 text-[15px] font-semibold text-(--ev-ink) hover:bg-(--ev-panel)">

@@ -83,14 +83,17 @@ async function computeCrashClusters(
     ymax: lat3 + latDelta,
     spatialReference: { wkid: 4326 },
   })
+  // Layer 3 is pedestrian (2014–2023), as in route-scoring.ts. Layer 1 is
+  // every intersection crash, cars included; reading it as pedestrian
+  // steered /nearby away from busy car crossings it didn't need to avoid.
   const [ped, bike] = await Promise.all([
-    fetchLayer('1', 'pedestrian', envelope),
+    fetchLayer('3', 'pedestrian', envelope),
     fetchLayer('2', 'bicycle', envelope),
   ])
   return [...ped, ...bike]
 }
 
-const durableCrashClusters = unstable_cache(computeCrashClusters, ['nearby-crash-clusters-v1'], {
+const durableCrashClusters = unstable_cache(computeCrashClusters, ['nearby-crash-clusters-v2'], {
   revalidate: 24 * 60 * 60,
 })
 

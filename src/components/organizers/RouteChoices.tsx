@@ -5,7 +5,7 @@ import { comfortBreakdown, comfortableShare } from '@/components/commute/calm-ro
 import type { PlannedLegOption } from '@/lib/organizers/api'
 import { calmer } from '@/lib/organizers/route-plan'
 import { PACE_MID_MPH, paceOptionsFor, travelMph, type Activity } from '@/lib/organizers/ride-words'
-import { MAP_COMFORT_COLORS, tidyName } from './RouteReview'
+import { MAP_COMFORT_COLORS, streetKey, streetName } from './RouteReview'
 import { cx } from './ui'
 
 /**
@@ -41,6 +41,42 @@ export function distinctWays(options: PlannedLegOption[], chosen: number): numbe
   return keep
 }
 
+/** "Cambridge Street, Boston" → its key and the name to show, with miles per street on a way. */
+function streetMiles(o: PlannedLegOption): Map<string, { name: string; miles: number }> {
+  const m = new Map<string, { name: string; miles: number }>()
+  for (const s of segs(o)) {
+    const label = (s.label ?? '').split(',')[0].trim()
+    if (!label) continue
+    const key = streetKey(label)
+    const cur = m.get(key) ?? { name: streetName(label), miles: 0 }
+    cur.miles += Number(s.distance_mi) || 0
+    m.set(key, cur)
+  }
+  return m
+}
+
+/**
+ * Each way's name. Two ways the planner names alike ("via Cummins Hwy"
+ * twice) each add the longest street the other doesn't use, so no two rows
+ * read the same (the app's RouteWayList wayNames).
+ */
+export function wayNames(options: PlannedLegOption[], ways: number[]): Map<number, string | null> {
+  const miles = new Map(ways.map((i) => [i, streetMiles(options[i])]))
+  const out = new Map<number, string | null>()
+  for (const i of ways) {
+    const o = options[i]
+    if (!o.summary) { out.set(i, null); continue }
+    const own = streetKey(o.summary)
+    const twins = ways.filter((j) => j !== i && options[j].summary && streetKey(options[j].summary) === own)
+    if (twins.length === 0) { out.set(i, streetName(o.summary)); continue }
+    const extra = [...miles.get(i)!.entries()]
+      .filter(([key]) => key !== own && twins.every((j) => !miles.get(j)!.has(key)))
+      .sort((a, b) => b[1].miles - a[1].miles)[0]
+    out.set(i, extra ? `${streetName(o.summary)}, ${extra[1].name}` : streetName(o.summary))
+  }
+  return out
+}
+
 function MiniBar({ o }: { o: PlannedLegOption }) {
   const tiers = comfortBreakdown(segs(o))
   if (tiers.length === 0) return <span className="block h-2.5 w-full rounded-full bg-(--ev-track)" />
@@ -64,6 +100,7 @@ export default function RouteChoices({ label, options, chosen, onChoose, pace, a
 }) {
   const ways = distinctWays(options, chosen)
   if (ways.length < 2) return null
+  const names = wayNames(options, ways)
   const walk = activity === 'walk'
   const mph = travelMph(pace, activity) ?? PACE_MID_MPH.relaxed
   const paceName = paceOptionsFor(activity).find((p) => p.key === pace)?.label.toLowerCase()
@@ -96,7 +133,7 @@ export default function RouteChoices({ label, options, chosen, onChoose, pace, a
           const on = chosen === i
           const pct = Math.round(comfortableShare(segs(o)) * 100)
           const badge = i === calmest && i === fastest ? 'Calmest · Fastest' : i === calmest ? 'Calmest' : i === fastest ? 'Fastest' : null
-          const name = o.summary ? `via ${tidyName(o.summary)}` : `Way ${row + 1}`
+          const name = names.get(i) ? `via ${names.get(i)}` : `Way ${row + 1}`
           return (
             <button key={i} type="button" role="radio" aria-checked={on} onClick={() => onChoose(i)}
               aria-label={`${name}${badge ? `, ${badge.toLowerCase()}` : ''}: ${pct}% on calm streets, about ${minutesText(mins(o))}, ${o.distanceMiles.toFixed(1)} miles`}

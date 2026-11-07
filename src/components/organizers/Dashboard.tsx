@@ -10,6 +10,7 @@ import type { DashboardRide, NextDate } from '@/lib/organizers/types'
 import { ASSISTANT_CHANGED_EVENT, openAssistant } from './AssistantPanel'
 import { useConsole } from './ConsoleContext'
 import { FeedbackDueCard, FeedbackLink } from './Feedback'
+import { NoMeetupHint, RideDayRiders, useRideDay, useRideTime } from './RideDay'
 import { Badge, Card, Empty, Notice, Spinner, Tabs, cx, tabPanel, type Tone } from './ui'
 
 export function rideStateBadges(r: Pick<DashboardRide, 'status' | 'visibility' | 'calendar_status' | 'break_until' | 'my_role'>) {
@@ -136,6 +137,10 @@ function Readout({ n, label, word }: { n: ReactNode; label: string; word?: boole
 function NextUp({ r, d }: { r: DashboardRide; d: NextDate }) {
   const days = daysUntil(d.date)
   const when = days === 0 ? 'Today' : days === 1 ? 'Tomorrow' : dateLabel(d.date)
+  // Ride day (RideDay.tsx): here / on the way / going in place of the usual three.
+  const rideTime = useRideTime(d.status === 'canceled' ? null : d.date, d.start_time)
+  const day = useRideDay(d.id, rideTime)
+  const dayOn = day && day !== 'no_meetup' ? day : null
   return (
     <section aria-labelledby="next-up" className="mb-6 overflow-hidden rounded-2xl bg-[#191A2E] text-white">
       <div className="grid gap-5 p-5 sm:p-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,380px)] lg:items-center">
@@ -150,13 +155,21 @@ function NextUp({ r, d }: { r: DashboardRide; d: NextDate }) {
           </p>
         </div>
         <dl className="grid grid-cols-3 gap-2">
-          <Readout n={d.going} label="Going" />
-          <Readout n={d.maybe} label="Maybe" />
-          <Readout word label="It’s on?" n={d.confirmed
-            ? <span className="inline-flex items-center gap-1 text-[#BAF14D]"><Check className="h-5 w-5" strokeWidth={3} aria-hidden />Yes</span>
-            : 'Not yet'} />
+          {dayOn ? dayOn.tiles.map((x) => (
+            <Readout key={x.label} label={x.label} n={<span className={cx(x.lead && x.n > 0 && 'text-[#BAF14D]')}>{x.n}</span>} />
+          )) : (
+            <>
+              <Readout n={d.going} label="Going" />
+              <Readout n={d.maybe} label="Maybe" />
+              <Readout word label="It’s on?" n={d.confirmed
+                ? <span className="inline-flex items-center gap-1 text-[#BAF14D]"><Check className="h-5 w-5" strokeWidth={3} aria-hidden />Yes</span>
+                : 'Not yet'} />
+            </>
+          )}
         </dl>
       </div>
+      {dayOn && dayOn.riders.length > 0 && <div className="px-5 pb-3 sm:px-6"><RideDayRiders riders={dayOn.riders} dark /></div>}
+      {day === 'no_meetup' && <div className="px-5 pb-4 sm:px-6"><NoMeetupHint dark /></div>}
       <div className="flex flex-wrap gap-2 border-t border-white/10 px-5 py-4 sm:px-6">
         <Link href={`/organizers/rides/${r.id}?post=1`} className="inline-flex min-h-[44px] items-center gap-1.5 rounded-[10px] bg-[#BAF14D] px-4 text-[15px] font-bold text-[#191A2E] hover:opacity-90">
           <Megaphone className="h-4 w-4" aria-hidden />{d.confirmed ? 'Post an update' : `Say it’s on, or post an update`}
