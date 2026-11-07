@@ -246,7 +246,7 @@ export default function Roster() {
       <Card>
         <SectionTitle hint={chatOk && !past
           ? waiting > 0
-            ? `${plural(waiting, 'person', 'people')} coming don't have your chat invite yet. Anyone who came to one of your rides has it already.`
+            ? `${plural(waiting, 'person', 'people')} coming ${waiting === 1 ? "doesn't" : "don't"} have your chat invite yet. Anyone who came to one of your rides has it already.`
             : 'Everyone coming has your chat invite. You can see below when each person opened it.'
           : 'First name and last initial. Shift messages everyone for you.'}>
           {past ? 'Who was on the list' : "Who's coming"}
