@@ -69,7 +69,7 @@ function blank(): Form {
     meetup_name: '', meetup_address: '', meetup_lat: null, meetup_lng: null,
     route: null, route_google_maps_url: '',
     activity: 'bike', pace: '', no_drop: false, tags: [],
-    registration_url: '', contact_url: '', replies_to_organizer: false, live_sharing: 'off',
+    registration_url: '', contact_url: '', replies_to_organizer: false, live_sharing: 'members',
     visibility: 'public', event_organizer_id: '', organizer_name: '', organizer_url: '',
     end_location_id: null,
   }
@@ -802,6 +802,29 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
               <Input id="route-link" value={f.route_google_maps_url} onChange={(e) => set('route_google_maps_url', e.target.value)} placeholder="https://www.strava.com/routes/…" inputMode="url" />
             </Field>
           </div>
+          {/* Live location sits with the route, on by default (Keith 2026-11-07:
+              high value to ride leaders, and it was off and hidden). Same as the app. */}
+          <div className="mt-5 rounded-xl border border-(--ev-line-mid) bg-(--ev-panel) p-4">
+            <label className="flex cursor-pointer items-start gap-3">
+              <input type="checkbox" checked={f.live_sharing !== 'off'}
+                onChange={(e) => set('live_sharing', e.target.checked ? 'members' : 'off')}
+                className="mt-1 h-5 w-5 accent-(--ev-accent-fill)" />
+              <span>
+                <span className="block text-[15px] font-semibold text-(--ev-ink)">Share where the group is on {noun} day</span>
+                <span className="block text-[14px] text-(--ev-ink-75)">Anyone running late can find the group on the map.</span>
+              </span>
+            </label>
+            {f.live_sharing !== 'off' && (
+              <div className="mt-3 pl-8">
+                <Field label="Who sees it" htmlFor="live">
+                  <Select id="live" value={f.live_sharing} onChange={(e) => set('live_sharing', e.target.value as Form['live_sharing'])} className="max-w-[320px]">
+                    <option value="members">People on this {noun}</option>
+                    <option value="link">Anyone with the {noun} link</option>
+                  </Select>
+                </Field>
+              </div>
+            )}
+          </div>
         </Card>
 
         {showCoffee && <EndShopCard at={rideEnd} value={f.end_location_id} onChange={(id) => set('end_location_id', id)} fund={fund} />}
@@ -879,13 +902,6 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
                 <span className="block text-[14px] text-(--ev-ink-75)">People can answer an update by replying to its email. They&rsquo;ll see your sign-in email address.</span>
               </span>
             </label>
-            <Field label="Live location on the day" htmlFor="live" hint="On the day, your phone shows where the group is, as one dot.">
-              <Select id="live" value={f.live_sharing} onChange={(e) => set('live_sharing', e.target.value as Form['live_sharing'])} className="max-w-[320px]">
-                <option value="off">Off</option>
-                <option value="members">People on this {noun}</option>
-                <option value="link">Anyone with the {noun} link</option>
-              </Select>
-            </Field>
           </div>
         </Card>
         )}

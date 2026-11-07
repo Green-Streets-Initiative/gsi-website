@@ -81,7 +81,7 @@ Only the ride's organizer changes its details and dates, pauses or ends it, invi
 ## Things worth knowing
 - Walk buses and bike buses carry children and are managed in the Shift app only; this tool is for group rides and group walks.
 - A group walk is a ride with activity walk: the same page, sign-ups, updates and turnout. plan_route and check_route_link plan and score it on walking streets and paths at walking speed (about 3 mph), and report walking_minutes. For a walk, say walk and walking time, skip bike parking and bike lanes to show off, and offer relaxed, moderate, brisk or kids and families as the pace (no fast).
-- Live location on the day works from the organizer's phone with the Shift app; the setting is on the ride (Edit ride).
+- Sharing where the group is on ride day works from the organizer's phone with the Shift app. New rides have it on for people on the ride; the switch is under Route when editing the ride.
 - A route with a stretch flagged as risky shows a warning on the ride, and GSI may take a look; the ride stays listed. Tell the organizer what the warning says so they can pick another street if they like.
 - The ride page is gogreenstreets.org/rides/<code>; in the app people can also join with the code.
 

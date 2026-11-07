@@ -1124,7 +1124,13 @@ export async function runApproved(ctx: ToolCtx, name: string, input: Record<stri
       case 'create_ride':
       case 'update_ride': {
         const r = await rpc<{ id: string; invite_code: string; calendar_status: string; route_risk: string | null }>(
-          ctx, 'save_ride_series_web', { p_series_id: name === 'update_ride' ? input.series_id : null, p_ride: input.payload },
+          ctx, 'save_ride_series_web', {
+            p_series_id: name === 'update_ride' ? input.series_id : null,
+            // A new ride shares where the group is on ride day unless the organizer said otherwise (Keith 2026-11-07).
+            p_ride: name === 'create_ride'
+              ? { live_sharing: 'members', ...(input.payload as Record<string, unknown>) }
+              : input.payload,
+          },
         )
         await shiftFn(ctx, 'materialize-ride-occurrences', { series_id: r.id }).catch(() => null)
         return ok(
