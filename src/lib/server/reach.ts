@@ -82,6 +82,12 @@ interface ReachStep {
   /** Which way the vehicle is going, and how far you ride. */
   headsign?: string
   numStops?: number
+  /** What you ride, so the chip can show a bus or train icon (a bare "88"
+   *  tells a newcomer nothing; Keith 2026-11-06): GTFS route_type, 0 light
+   *  rail, 1 subway, 2 commuter rail, 3 bus, 4 ferry. Absent on bike steps. */
+  routeType?: number | null
+  /** An airport or private shuttle (drawn with a van, as Around You does). */
+  shuttle?: boolean
 }
 
 /** One drawable piece of the door-to-door transit trip: a transit leg in its
@@ -221,8 +227,26 @@ const LOGAN_EXPRESS: Record<string, string> = {
   DV: 'Danvers',
 }
 
-/** Map a Google transit line to a colored chip. */
+/** Google's vehicle type, when our name rules don't recognise the line. */
+function routeTypeFromVehicle(type: string | undefined): number | null {
+  switch (type) {
+    case 'BUS': case 'INTERCITY_BUS': case 'TROLLEYBUS': case 'SHARE_TAXI': return 3
+    case 'TRAM': case 'MONORAIL': case 'CABLE_CAR': case 'FUNICULAR': return 0
+    case 'SUBWAY': case 'METRO_RAIL': return 1
+    case 'RAIL': case 'HEAVY_RAIL': case 'COMMUTER_TRAIN': case 'HIGH_SPEED_TRAIN': case 'LONG_DISTANCE_TRAIN': return 2
+    case 'FERRY': return 4
+    default: return null
+  }
+}
+
+/** Map a Google transit line to a colored chip, and what kind of vehicle it is. */
 function toStep(line: GoogleTransitLine): ReachStep {
+  const chip = toChip(line)
+  if (chip.routeType == null) chip.routeType = routeTypeFromVehicle(line.vehicle?.type)
+  return chip
+}
+
+function toChip(line: GoogleTransitLine): ReachStep {
   const name = line.name ?? ''
   const short = line.nameShort ?? ''
 
@@ -232,21 +256,21 @@ function toStep(line: GoogleTransitLine): ReachStep {
     const lot = LOGAN_EXPRESS[short]
     // Massport's own route colors; its airport shuttles are numbered like
     // MBTA buses (there is an MBTA 55 too), so they must not wear MBTA yellow.
-    if (lot) return { label: `Logan Express – ${lot}`, color: line.color || '#E0592A', textColor: '#fff' }
-    return { label: `Airport shuttle ${short || name}`.trim(), color: '#0E3475', textColor: '#fff' }
+    if (lot) return { label: `Logan Express – ${lot}`, color: line.color || '#E0592A', textColor: '#fff', routeType: 3, shuttle: true }
+    return { label: `Airport shuttle ${short || name}`.trim(), color: '#0E3475', textColor: '#fff', routeType: 3, shuttle: true }
   }
 
   if (name.startsWith('Green Line')) {
     const branch = name.replace('Green Line', '').trim()
-    return { label: branch ? `Green ${branch}` : 'Green', color: '#00843D', textColor: '#fff' }
+    return { label: branch ? `Green ${branch}` : 'Green', color: '#00843D', textColor: '#fff', routeType: 0 }
   }
-  if (name.startsWith('Red Line') || name.startsWith('Mattapan')) return { label: 'Red', color: '#DA291C', textColor: '#fff' }
-  if (name.startsWith('Orange Line')) return { label: 'Orange', color: '#ED8B00', textColor: '#fff' }
-  if (name.startsWith('Blue Line')) return { label: 'Blue', color: '#003DA5', textColor: '#fff' }
-  if (name.startsWith('Silver Line') || /^SL\d/.test(short)) return { label: short || 'Silver', color: '#7C878E', textColor: '#fff' }
-  if (/ Line$/.test(name)) return { label: name.replace(/ Line$/, ''), color: '#80276C', textColor: '#fff' } // commuter rail
-  if (/^\d+$|^CT\d/.test(short)) return { label: short, color: '#FFC72C', textColor: '#191A2E' } // bus
-  if (name.toLowerCase().includes('ferry') || short.startsWith('Boat')) return { label: 'Ferry', color: '#008EAA', textColor: '#fff' }
+  if (name.startsWith('Red Line') || name.startsWith('Mattapan')) return { label: 'Red', color: '#DA291C', textColor: '#fff', routeType: 1 }
+  if (name.startsWith('Orange Line')) return { label: 'Orange', color: '#ED8B00', textColor: '#fff', routeType: 1 }
+  if (name.startsWith('Blue Line')) return { label: 'Blue', color: '#003DA5', textColor: '#fff', routeType: 1 }
+  if (name.startsWith('Silver Line') || /^SL\d/.test(short)) return { label: short || 'Silver', color: '#7C878E', textColor: '#fff', routeType: 3 }
+  if (/ Line$/.test(name)) return { label: name.replace(/ Line$/, ''), color: '#80276C', textColor: '#fff', routeType: 2 } // commuter rail
+  if (/^\d+$|^CT\d/.test(short)) return { label: short, color: '#FFC72C', textColor: '#191A2E', routeType: 3 } // bus
+  if (name.toLowerCase().includes('ferry') || short.startsWith('Boat')) return { label: 'Ferry', color: '#008EAA', textColor: '#fff', routeType: 4 }
   return { label: short || name || 'Transit', color: '#666666', textColor: '#fff' }
 }
 
@@ -255,6 +279,7 @@ interface GoogleTransitLine {
   nameShort?: string
   color?: string
   agencies?: Array<{ name?: string }>
+  vehicle?: { type?: string }
 }
 
 interface GoogleRoute {

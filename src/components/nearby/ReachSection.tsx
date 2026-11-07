@@ -13,6 +13,7 @@ import type { ReachRow, ReachStep, ReachSegment, BikeComfortTier, BikeComfortDat
 import { useNearbyT, useNearbyLocale } from './NearbyI18n'
 import { TripPerks } from './NearbyPerks'
 import { SpotCautionsList } from '@/components/spot/useSpotCautions'
+import { TrainIcon, BusIcon, FerryIcon, ShuttleIcon } from '@/components/wayfinding/WayfindingIcons'
 
 /** Comfort-tier → i18n key, so a tapped bike leg's tier reads in the page
  *  language (matches BikeComfortBlock's localized labels). */
@@ -63,6 +64,19 @@ export function RouteLegNote({ info }: { info: RouteLegTapInfo }) {
  * Bike corridor chains reuse this with `transfers={false}` — those steps are
  * streets you follow, not vehicles you change between.
  */
+/** What you ride, before the line's chip, as Around You's lists draw it
+ *  (a bare "88" tells a newcomer nothing; Keith 2026-11-06). Nothing for bike
+ *  steps or older answers without a route type. */
+export function LineIcon({ step, size = 13 }: { step: ReachStep; size?: number }) {
+  if (step.routeType == null) return null
+  const Icon = step.shuttle ? ShuttleIcon : step.routeType === 3 ? BusIcon : step.routeType === 4 ? FerryIcon : TrainIcon
+  return (
+    <span className="text-(--nb-ink-80)" aria-hidden="true">
+      <Icon size={size} />
+    </span>
+  )
+}
+
 export function TransitChain({ steps, transfers = true }: {
   steps: ReachStep[]
   transfers?: boolean
@@ -81,11 +95,14 @@ export function TransitChain({ steps, transfers = true }: {
                 ? <span className="text-[0.7rem] text-(--nb-ink-70)">{tr('reach.change_at', { stop: at })}</span>
                 : <span className="text-[0.7rem] text-(--nb-ink-70)">→</span>
             )}
-            <span
-              className="rounded px-1.5 py-0.5 text-[0.7rem] font-bold"
-              style={{ backgroundColor: s.color, color: s.textColor }}
-            >
-              {s.label}
+            <span className="flex items-center gap-1">
+              <LineIcon step={s} />
+              <span
+                className="rounded px-1.5 py-0.5 text-[0.7rem] font-bold"
+                style={{ backgroundColor: s.color, color: s.textColor }}
+              >
+                {s.label}
+              </span>
             </span>
           </span>
         )
@@ -271,11 +288,14 @@ export function TransitLegs({ steps, segments }: { steps: ReachStep[]; segments?
         ].filter(Boolean).join(' · ')
     return (
       <li key={`${s.label}-${i}`} className="flex items-start gap-2">
-        <span
-          className="mt-0.5 shrink-0 rounded px-1.5 py-0.5 text-[0.7rem] font-bold"
-          style={{ backgroundColor: s.color, color: s.textColor }}
-        >
-          {s.label}
+        <span className="mt-0.5 flex shrink-0 items-center gap-1">
+          <LineIcon step={s} />
+          <span
+            className="rounded px-1.5 py-0.5 text-[0.7rem] font-bold"
+            style={{ backgroundColor: s.color, color: s.textColor }}
+          >
+            {s.label}
+          </span>
         </span>
         <span className="min-w-0">
           {s.boardStop && (

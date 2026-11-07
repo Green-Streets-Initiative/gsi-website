@@ -46,6 +46,11 @@ export interface ReachStep {
   alightStop?: string
   headsign?: string
   numStops?: number
+  /** GTFS route_type (0 light rail, 1 subway, 2 commuter rail, 3 bus,
+   *  4 ferry) for the chip's icon; absent on bike_steps and older answers. */
+  routeType?: number | null
+  /** Airport or private shuttle: a van icon. */
+  shuttle?: boolean
 }
 
 /** Drawable piece of a door-to-door transit trip (from /api/nearby/reach) */
