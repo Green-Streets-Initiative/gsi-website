@@ -522,7 +522,7 @@ export default function RidePage({ ride, host = null, hostPerson = null, ascentF
                               {!done.chat && done.chatWaiting && done.status !== 'not_going' && (
                                 <p className="mt-3 flex items-start gap-2 rounded-[10px] bg-(--ev-panel) px-3 py-2.5 text-[15px] text-(--ev-ink-85)">
                                   <MessageCircle size={17} className="mt-0.5 shrink-0" aria-hidden />
-                                  <span>The organizer lets people into the group chat. Once they do, the link shows here and in your ride emails.</span>
+                                  <span>The organizer shares the group chat invite. Once they do, it shows here and in your ride emails.</span>
                                 </p>
                               )}
                               <div className="mt-3 flex flex-wrap gap-2">

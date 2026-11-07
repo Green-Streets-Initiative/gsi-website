@@ -342,7 +342,7 @@ export const TOOLS: Anthropic.Tool[] = [
   },
   {
     name: 'set_chat_access',
-    description: "Let people into the ride's group chat, or take them out (Shift 01686). Letting someone in covers all of this organizer's rides; anyone who came to one of their rides is already in. Pick people on one date: who 'came', 'going', 'going_or_maybe', or 'named' (names as get_whos_coming shows them). let_in false takes them out. Card first. The chat app (WhatsApp) still asks the organizer to approve each request; Shift sends a heads-up when each person opens the link.",
+    description: "Share the ride's group chat invite with people, or stop sharing it (Shift 01686). Sharing with someone covers all of this organizer's rides; anyone who came to one of their rides has it already. Pick people on one date: who 'came', 'going', 'going_or_maybe', or 'named' (names as get_whos_coming shows them). let_in false stops sharing it. Card first. The chat app (WhatsApp) still asks the organizer to approve each request; organizers with the Shift app get a notification when someone opens it.",
     input_schema: {
       type: 'object',
       properties: {
@@ -391,7 +391,7 @@ export const ACTIVITY: Record<string, string> = {
 /** Labels whose completion means a screen should reload. */
 export const CHANGES = new Set(['create_ride', 'update_ride', 'post_update', 'cancel_date', 'change_date', 'plan_date', 'stop_ride', 'resume_ride', 'invite_co_organizer', 'settle_credit', 'set_chat_access'].map((n) => ACTIVITY[n]))
 
-/** Who on the ride sees the group chat link (Shift 01686); null when there's nothing to let people into. */
+/** Who on the ride has the group chat invite (Shift 01686); null when there's nothing to share. */
 async function chatAccess(ctx: ToolCtx, seriesId: string): Promise<Map<string, { chat_ok: boolean }> | null> {
   try {
     const rows = (await rpc<{ member_id: string; chat_ok: boolean; needs_ok: boolean }[] | null>(ctx, 'organizer_chat_access', { p_series_id: seriesId })) ?? []
@@ -1055,7 +1055,7 @@ export async function approvalCard(ctx: ToolCtx, name: string, input: Record<str
         const d = await loadDetail(ctx, input.series_id)
         const o = findDate(d, input.occurrence_id)
         const chat = await chatAccess(ctx, d.ride.id)
-        if (!chat) return { result: fail("This ride has no group chat link to let people into (or it's an email address, which everyone on the ride gets). Add one with update_ride.") }
+        if (!chat) return { result: fail("This ride has no group chat invite to share (or it's an email address, which everyone on the ride gets). Add one with update_ride.") }
         const rows = ((await rpc<RosterRow[] | null>(ctx, 'organizer_date_roster', { p_occurrence_id: o.id })) ?? []).filter((r) => r.role === 'rider')
         const letIn = input.let_in !== false
         const wanted = (Array.isArray(input.names) ? input.names : []).map((n) => String(n).trim().toLowerCase()).filter(Boolean)
@@ -1066,21 +1066,21 @@ export async function approvalCard(ctx: ToolCtx, name: string, input: Record<str
             : wanted.some((w) => r.display_name.toLowerCase().startsWith(w) || r.display_name.toLowerCase() === w))
         const change = picked.filter((r) => (chat.get(r.member_id)?.chat_ok ?? false) !== letIn)
         if (picked.length === 0) return { result: fail(input.who === 'named' ? 'Nobody on that date goes by those names. Use get_whos_coming.' : `Nobody on ${dateLabel(o.date)} matches that.`) }
-        if (change.length === 0) return { result: ok({ nothing_to_do: true, already: letIn ? 'in the group chat' : 'out of the group chat', people: picked.map((r) => r.display_name) }) }
+        if (change.length === 0) return { result: ok({ nothing_to_do: true, already: letIn ? 'have the chat invite' : "don't have the chat invite", people: picked.map((r) => r.display_name) }) }
         const list = change.map((r) => r.display_name)
         const shown = list.length > 8 ? [...list.slice(0, 8), `and ${list.length - 8} more`] : list
         return {
           card: {
             title: letIn
-              ? `Let ${list.length === 1 ? list[0] : plural(list.length, 'person', 'people')} into the group chat?`
-              : `Take ${list.length === 1 ? list[0] : plural(list.length, 'person', 'people')} out of the group chat?`,
+              ? `Share the chat invite with ${list.length === 1 ? list[0] : plural(list.length, 'person', 'people')}?`
+              : `Stop sharing the chat invite with ${list.length === 1 ? list[0] : plural(list.length, 'person', 'people')}?`,
             lines: [
               ...(list.length > 1 ? [shown.join(', ')] : []),
               letIn
-                ? 'It covers all your rides. Your chat app still asks you to approve each one; you get a heads-up when they open the link.'
-                : "They stop seeing the link on all your rides. Anyone already in the chat itself stays until you remove them there.",
+                ? 'It covers all your rides. Your chat app still asks you to approve each one.'
+                : "They stop seeing the invite on all your rides. Anyone already in the chat stays until you remove them there.",
             ],
-            cta: letIn ? 'Let them in' : 'Take them out', tone: letIn ? 'primary' : 'danger',
+            cta: letIn ? 'Share it' : 'Stop sharing', tone: letIn ? 'primary' : 'danger',
           },
           input: { series_id: d.ride.id, member_ids: change.map((r) => r.member_id), let_in: letIn },
         }
@@ -1176,7 +1176,7 @@ export async function runApproved(ctx: ToolCtx, name: string, input: Record<stri
       case 'set_chat_access': {
         const ids = (Array.isArray(input.member_ids) ? input.member_ids : []).map(String)
         const results = await Promise.all(ids.map((id) => rpc<boolean>(ctx, 'set_ride_chat_access', { p_member_id: id, p_ok: input.let_in !== false })))
-        return ok({ changed: results.length, can_see_chat_link: results.filter(Boolean).length, note: 'They can see the chat link now; they are in the chat itself once the organizer approves their request in the chat app. Say it that way.' }, { href: `/organizers/rides/${input.series_id}/roster`, label: "See who's coming" })
+        return ok({ changed: results.length, can_see_chat_link: results.filter(Boolean).length, note: 'They have the chat invite now; they are in the chat itself once the organizer approves their request in the chat app. Say it that way.' }, { href: `/organizers/rides/${input.series_id}/roster`, label: "See who's coming" })
       }
       case 'settle_credit': {
         const r = await rpc<{ ok: boolean; state: string; remaining: number }>(ctx, 'settle_ride_credit_request', {

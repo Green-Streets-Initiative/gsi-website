@@ -88,11 +88,11 @@ export default function ChatDoor({ chatKey }: { chatKey: string }) {
     return shell(
       <div className="rounded-2xl border border-(--ev-line-mid) bg-(--ev-card) p-6">
         <h1 className="font-display text-[26px] font-extrabold leading-tight text-(--ev-ink)">
-          {peek.reason === 'not_in' ? 'This chat link isn’t open to you yet' : 'This chat link doesn’t work anymore'}
+          {peek.reason === 'not_in' ? 'The chat invite isn’t shared with you yet' : 'This chat link doesn’t work anymore'}
         </h1>
         <p className="mt-2 text-[16px] text-(--ev-ink-85)">
           {peek.reason === 'not_in'
-            ? `${peek.host ?? 'The organizer'} lets people into the group chat. Once they let you in, this link works.`
+            ? `${peek.host ?? 'The organizer'} shares the chat invite with people on the ride. Once they share it with you, this link works.`
             : 'Open the ride for its latest details.'}
         </p>
         {peek.code && (
@@ -108,7 +108,7 @@ export default function ChatDoor({ chatKey }: { chatKey: string }) {
   const last = dayLabel(peek.last_came)
   const trust = peek.came > 0
     ? (peek.came === 1 ? `Came to 1 ride${last ? `, ${last}` : ''}` : `Came to ${peek.came} rides${last ? `, last ${last}` : ''}`)
-    : 'Let in by the organizer'
+    : 'Invited by the organizer'
 
   return shell(
     <div className="rounded-2xl border border-(--ev-line-mid) bg-(--ev-card) p-6">
@@ -130,7 +130,7 @@ export default function ChatDoor({ chatKey }: { chatKey: string }) {
       </div>
 
       <p className="mt-4 text-[16px] text-(--ev-ink-85)">
-        {peek.host} approves each request in {app}. Tap below and we&rsquo;ll tell them it&rsquo;s you, so they can let you in quickly.
+        {peek.host} approves each request in {app}. Tap below and we&rsquo;ll tell them it&rsquo;s you, so they can approve you quickly.
       </p>
 
       <button onClick={open} disabled={going}

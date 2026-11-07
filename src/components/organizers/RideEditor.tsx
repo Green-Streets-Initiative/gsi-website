@@ -862,14 +862,14 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
               error={!LINK_OK(f.registration_url) ? 'Links start with https://' : null}>
               <Input id="reg" value={f.registration_url} onChange={(e) => set('registration_url', e.target.value)} placeholder="https://…" inputMode="url" />
             </Field>
-            <Field label="Your group chat" htmlFor="contact" optional hint="A WhatsApp, Signal, GroupMe or Discord invite link, or an email link. Only people you let in, and anyone who came to one of your rides, get it."
+            <Field label="Your group chat" htmlFor="contact" optional hint="A WhatsApp, Signal, GroupMe or Discord invite link, or an email link. Only people you share it with, and anyone who came to one of your rides, get it."
               error={!LINK_OK(f.contact_url, true) ? 'Start with https:// or mailto:' : null}>
               <Input id="contact" value={f.contact_url} onChange={(e) => set('contact_url', e.target.value)} placeholder="https://chat.whatsapp.com/…" inputMode="url" />
             </Field>
             {/^https:\/\//i.test(f.contact_url.trim()) && (
               // Shift 01686: people hold their own Shift link to the chat, so a new link reaches everyone at once.
               <p className="-mt-2 text-[14px] text-(--ev-ink-75)">
-                Getting spam requests? Reset the invite link in your chat app, then paste the new one here. Everyone you&rsquo;ve let in keeps their way in.
+                Getting spam requests? Reset the invite link in your chat app, then paste the new one here. Everyone you&rsquo;ve shared it with gets the new one.
               </p>
             )}
             <label className="flex cursor-pointer items-start gap-3">

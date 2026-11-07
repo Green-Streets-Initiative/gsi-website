@@ -52,13 +52,13 @@ function Person({ p, past, chat }: { p: RosterRow; past: boolean; chat: Chat }) 
       {chat && (
         <span className="ml-auto">
           {chat.ok ? (
-            <Button size="sm" variant="ghost" onClick={chat.toggle} busy={chat.busy} aria-label={`${p.display_name} is in the group chat. Take them out`}
+            <Button size="sm" variant="ghost" onClick={chat.toggle} busy={chat.busy} aria-label={`${p.display_name} has the chat invite. Stop sharing it`}
               className="text-(--ev-accent-90)">
-              <Check className="h-4 w-4" aria-hidden />In the chat
+              <Check className="h-4 w-4" aria-hidden />Invite shared
             </Button>
           ) : (
             <Button size="sm" onClick={chat.toggle} busy={chat.busy}>
-              <MessageCircle className="h-4 w-4" aria-hidden />{chat.takenOut ? 'Let back in' : 'Let into chat'}
+              <MessageCircle className="h-4 w-4" aria-hidden />{chat.takenOut ? 'Share again' : 'Share chat invite'}
             </Button>
           )}
         </span>
@@ -66,8 +66,8 @@ function Person({ p, past, chat }: { p: RosterRow; past: boolean; chat: Chat }) 
       {chat && (chat.openedAt || (chat.ok && chat.came) || chat.takenOut) && (
         <span className="basis-full pl-11 text-[14px] text-(--ev-ink-75)">
           {[
-            chat.ok && chat.came ? 'In because they came to one of your rides' : null,
-            chat.takenOut ? 'You took them out of the chat' : null,
+            chat.ok && chat.came ? 'Shared because they came to one of your rides' : null,
+            chat.takenOut ? 'You stopped sharing the invite' : null,
             chat.openedAt ? `Opened the chat link ${openedLabel(chat.openedAt)}` : null,
           ].filter(Boolean).join(' · ')}
         </span>
@@ -137,7 +137,7 @@ export default function Roster() {
     try {
       const ok = await setChatAccess(p.member_id, now)
       setChatOk((m) => new Map(m ?? []).set(p.member_id, { ok: !!ok, came: was?.came ?? false, takenOut: !now, openedAt: was?.openedAt ?? null }))
-      setMsg(ok ? `${p.display_name} can see the group chat link now, on this ride and your others.` : `${p.display_name} no longer sees the group chat link.`)
+      setMsg(ok ? `You shared the chat invite with ${p.display_name}, for this ride and your others.` : `${p.display_name} no longer sees the chat invite.`)
     } catch (e) {
       setMsg(errorText(e))
     } finally {
@@ -246,8 +246,8 @@ export default function Roster() {
       <Card>
         <SectionTitle hint={chatOk && !past
           ? waiting > 0
-            ? `${plural(waiting, 'person', 'people')} coming can't see your group chat link yet. Anyone who came to one of your rides is in already.`
-            : "Everyone coming can see your group chat link. When someone opens it, you get a heads-up, so you know who's asking to join."
+            ? `${plural(waiting, 'person', 'people')} coming don't have your chat invite yet. Anyone who came to one of your rides has it already.`
+            : 'Everyone coming has your chat invite. You can see below when each person opened it.'
           : 'First name and last initial. Shift messages everyone for you.'}>
           {past ? 'Who was on the list' : "Who's coming"}
         </SectionTitle>

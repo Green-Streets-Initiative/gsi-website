@@ -227,7 +227,7 @@ export default function ManageRides() {
                 )}
                 {!r.chat && r.chat_waiting && (
                   <p className="inline-flex items-center gap-1.5 text-[15px] text-(--ev-ink-80)">
-                    <MessageCircle size={15} aria-hidden /> Group chat: the organizer lets you in
+                    <MessageCircle size={15} aria-hidden /> Group chat: the organizer shares the invite
                   </p>
                 )}
               </div>
