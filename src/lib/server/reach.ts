@@ -38,7 +38,7 @@ import { PRICES } from '@/lib/facts/prices'
  * while local testing (which deletes .next and varies coordinates) missed
  * both stale layers entirely. One constant, four call sites, no drift.
  */
-export const REACH_ROW_VERSION = 'v19' // v19: comfort scored against the lane map along the whole ride, not 3 mi around the start
+export const REACH_ROW_VERSION = 'v20' // v20: transit steps carry routeType + shuttle (the mode icon before each line chip)
 
 const GOOGLE_ROUTES_KEY = process.env.GOOGLE_ROUTES_API_KEY
 
