@@ -40,7 +40,7 @@ const SECTIONS: { heading: string; body: string[] }[] = [
   {
     heading: 'What Green Streets keeps',
     body: [
-      'Conversations are private to the organizer who had them: the ride's leaders cannot read them. Green Streets staff may review conversations to improve the assistant. Each organizer can delete their own conversations at any time, from History in the assistant. Conversations are deleted automatically 12 months after their last message, with any thumbs up or down given to a reply.',
+      'Conversations are private to the organizer who had them: the ride’s leaders cannot read them. Green Streets staff may review conversations to improve the assistant. Each organizer can delete their own conversations at any time, from History in the assistant. Conversations are deleted automatically 12 months after their last message, with any thumbs up or down given to a reply.',
       'When someone asks for something the tools do not do yet, or shares feedback, the assistant passes a short note to Green Streets. Green Streets keeps these notes, apart from the conversation, to decide what to build next.',
     ],
   },
