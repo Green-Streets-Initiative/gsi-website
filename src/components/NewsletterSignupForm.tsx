@@ -2,10 +2,13 @@
 
 import { useState } from 'react'
 import { gaEvent } from '@/lib/ga'
+import { translator, type SiteLocale } from '@/lib/site-i18n'
+import { chromeStrings } from '@/lib/site-strings/chrome'
 
 type Variant = 'dark' | 'light'
 
-export default function NewsletterSignupForm({ variant = 'dark' }: { variant?: Variant } = {}) {
+export default function NewsletterSignupForm({ variant = 'dark', locale = 'en' }: { variant?: Variant; locale?: SiteLocale } = {}) {
+  const tr = translator(chromeStrings, locale)
   const light = variant === 'light'
   const fieldCls = light
     ? 'min-h-[48px] flex-1 rounded-xl border border-navy/15 bg-white px-4 py-3 text-[0.9375rem] text-navy outline-none transition-colors placeholder:text-ink-soft focus:border-forest'
@@ -25,7 +28,7 @@ export default function NewsletterSignupForm({ variant = 'dark' }: { variant?: V
     const trimmedEmail = email.trim()
     if (!trimmedEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
       setStatus('error')
-      setErrorMsg('Please enter a valid email address.')
+      setErrorMsg(tr('news.invalid_email'))
       return
     }
 
@@ -48,7 +51,8 @@ export default function NewsletterSignupForm({ variant = 'dark' }: { variant?: V
       gaEvent('newsletter_signup')
     } catch (err: unknown) {
       setStatus('error')
-      setErrorMsg(err instanceof Error ? err.message : 'Something went wrong. Please try again.')
+      // The server's message is English; other languages get the plain retry line.
+      setErrorMsg(locale === 'en' && err instanceof Error ? err.message : tr('news.error'))
     }
   }
 
@@ -56,7 +60,7 @@ export default function NewsletterSignupForm({ variant = 'dark' }: { variant?: V
     return (
       <div className={light ? "rounded-2xl border border-forest/25 bg-forest/[0.06] px-6 py-5" : "rounded-2xl border border-lime/20 bg-lime/[0.06] px-6 py-5"}>
         <p className={light ? "text-sm font-bold text-forest" : "font-display text-sm font-bold text-lime"}>
-          Thanks for subscribing. We&apos;ll send you stories about how Massachusetts is moving better.
+          {tr('news.thanks')}
         </p>
       </div>
     )
@@ -72,7 +76,7 @@ export default function NewsletterSignupForm({ variant = 'dark' }: { variant?: V
             setFirstName(e.target.value)
             if (status === 'error') setStatus('idle')
           }}
-          placeholder="First name"
+          placeholder={tr('news.first_name')}
           autoComplete="given-name"
           className={`${fieldCls} sm:max-w-[40%]`}
         />
@@ -83,7 +87,7 @@ export default function NewsletterSignupForm({ variant = 'dark' }: { variant?: V
             setEmail(e.target.value)
             if (status === 'error') setStatus('idle')
           }}
-          placeholder="you@email.com"
+          placeholder={tr('news.email')}
           autoComplete="email"
           required
           className={fieldCls}
@@ -94,7 +98,7 @@ export default function NewsletterSignupForm({ variant = 'dark' }: { variant?: V
         disabled={status === 'submitting'}
         className={buttonCls}
       >
-        {status === 'submitting' ? 'Subscribing…' : 'Subscribe'}
+        {status === 'submitting' ? tr('news.subscribing') : tr('news.subscribe')}
       </button>
       {/* Honeypot — hidden from users, visible to bots */}
       <input
@@ -109,7 +113,7 @@ export default function NewsletterSignupForm({ variant = 'dark' }: { variant?: V
         <p className="mt-3 text-sm text-red-400">{errorMsg}</p>
       )}
       <p className={`mt-3 text-xs ${light ? "text-ink-soft" : "text-white/75"}`}>
-        We&apos;ll send occasional stories and impact updates. Unsubscribe anytime.
+        {tr('news.fine_print')}
       </p>
     </form>
   )

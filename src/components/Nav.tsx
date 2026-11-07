@@ -2,6 +2,8 @@
 
 import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
+import { translator, withLang, type SiteLocale } from '@/lib/site-i18n'
+import { chromeStrings } from '@/lib/site-strings/chrome'
 
 /**
  * Nav IA (Keith, 07-14): Towns is civic information relevant to anyone in
@@ -33,37 +35,38 @@ import { useEffect, useRef, useState } from 'react'
 
 type Variant = 'dark' | 'light'
 
-type NavItem = [href: string, label: string, wideOnly?: boolean]
+type NavKey = keyof typeof chromeStrings.en
+type NavItem = [href: string, label: NavKey, wideOnly?: boolean]
 
 const TOP_ITEMS: NavItem[] = [
-  ['/challenges', 'Challenges'],
-  ['/events', 'Events'],
+  ['/challenges', 'nav.challenges'],
+  ['/events', 'nav.events'],
   // The /plan short address 308s here; the nav links the destination
   // directly so crawlers and people skip the hop. /nearby's canonical is
   // param-free, so this URL never competes with it in search.
-  ['/nearby?plan=1', 'Plan a route'],
+  ['/nearby?plan=1', 'nav.plan'],
   // Trail seekers are one of the strongest search audiences (personas.md);
   // /trails had no way in from the menu (site review 2026-11-04).
   // Top bar from xl up only: at lg it crowds the wordmark. Always in the menu.
-  ['/trails', 'Trails', true],
-  ['/guides', 'Guides'],
-  ['/shift/towns', 'Towns'],
+  ['/trails', 'nav.trails', true],
+  ['/guides', 'nav.guides'],
+  ['/shift/towns', 'nav.towns'],
 ]
 
 const ABOUT_ITEMS: NavItem[] = [
-  ['/about', 'About GSI'],
-  ['/programs', 'Programs'],
-  ['/get-involved', 'Get involved'],
-  ['/contact', 'Contact'],
+  ['/about', 'nav.about_gsi'],
+  ['/programs', 'nav.programs'],
+  ['/get-involved', 'nav.get_involved'],
+  ['/contact', 'nav.contact'],
 ]
 
 const SHIFT_APP_ITEMS: NavItem[] = [
-  ['/shift', 'About Shift'],
-  ['/nearby', "What's near you"],
-  ['/shift/schools', 'Shift for Schools'],
-  ['/shift/roams', 'Roams'],
-  ['/commute-advisor', 'Commute Advisor'],
-  ['/shift/employers/login', 'Employer login'],
+  ['/shift', 'nav.about_shift'],
+  ['/nearby', 'nav.near_you'],
+  ['/shift/schools', 'nav.schools'],
+  ['/shift/roams', 'nav.roams'],
+  ['/commute-advisor', 'nav.advisor'],
+  ['/shift/employers/login', 'nav.employer_login'],
 ]
 
 const THEME: Record<Variant, {
@@ -112,8 +115,11 @@ const THEME: Record<Variant, {
 
 type Menu = 'about' | 'app' | null
 
-export default function Nav({ variant = 'dark', street = false }: { variant?: Variant; street?: boolean }) {
+/** `locale`: a translated page passes its language; every other page stays English. */
+export default function Nav({ variant = 'dark', street = false, locale = 'en' }: { variant?: Variant; street?: boolean; locale?: SiteLocale }) {
   const t = THEME[variant]
+  const tr = translator(chromeStrings, locale)
+  const href = (h: string) => withLang(h, locale)
   // Street-sign look: sentence-case group label instead of spaced caps.
   const groupCls = street ? 'mb-2 text-[13px] font-bold' : 'mb-2 text-[11px] font-bold uppercase tracking-widest'
   const linkCls = `whitespace-nowrap text-[0.8125rem] font-medium ${t.link} transition-opacity hover:opacity-80`
@@ -164,15 +170,15 @@ export default function Nav({ variant = 'dark', street = false }: { variant?: Va
           className={`absolute right-0 top-full mt-2 min-w-[190px] rounded-xl border ${t.border} py-2 shadow-xl backdrop-blur-xl`}
           style={{ background: t.panelBg }}
         >
-          {items.map(([href, text]) => (
+          {items.map(([to, text]) => (
             <Link
-              key={href}
-              href={href}
+              key={to}
+              href={href(to)}
               role="menuitem"
               className={`block px-4 py-2 text-[0.8125rem] font-medium ${t.link} transition-colors ${t.panelHover}`}
               onClick={() => setOpen(null)}
             >
-              {text}
+              {tr(text)}
             </Link>
           ))}
         </div>
@@ -194,26 +200,26 @@ export default function Nav({ variant = 'dark', street = false }: { variant?: Va
 
         {/* Desktop nav */}
         <div ref={barRef} className="hidden items-center gap-4 xl:gap-5 lg:flex">
-          {TOP_ITEMS.map(([href, label, wideOnly]) => (
-            <Link key={href} href={href} className={wideOnly ? `${linkCls} hidden xl:inline` : linkCls}>
-              {label}
+          {TOP_ITEMS.map(([to, label, wideOnly]) => (
+            <Link key={to} href={href(to)} className={wideOnly ? `${linkCls} hidden xl:inline` : linkCls}>
+              {tr(label)}
             </Link>
           ))}
 
-          {dropdown('about', 'About', ABOUT_ITEMS)}
-          {dropdown('app', 'Shift app', SHIFT_APP_ITEMS)}
+          {dropdown('about', tr('nav.about'), ABOUT_ITEMS)}
+          {dropdown('app', tr('nav.shift_app'), SHIFT_APP_ITEMS)}
 
           <Link
-            href="/donate"
+            href={href('/donate')}
             className={`whitespace-nowrap rounded-full border px-3.5 py-1.5 text-[0.8125rem] font-semibold transition-colors ${t.donate}`}
           >
-            Donate
+            {tr('nav.donate')}
           </Link>
           <Link
-            href="/shift"
+            href={href('/shift')}
             className={`whitespace-nowrap rounded-full px-3.5 py-1.5 text-[0.8125rem] font-semibold transition-opacity ${t.download}`}
           >
-            Download Shift
+            {tr('nav.download')}
           </Link>
         </div>
 
@@ -221,7 +227,7 @@ export default function Nav({ variant = 'dark', street = false }: { variant?: Va
         <button
           className="flex flex-col gap-1.5 lg:hidden"
           onClick={() => setMenuOpen(!menuOpen)}
-          aria-label="Toggle menu"
+          aria-label={tr('nav.toggle')}
           aria-expanded={menuOpen}
         >
           <span className={`block h-0.5 w-6 ${t.burger} transition-transform ${menuOpen ? 'translate-y-2 rotate-45' : ''}`} />
@@ -234,27 +240,27 @@ export default function Nav({ variant = 'dark', street = false }: { variant?: Va
       {menuOpen && (
         <div className={`border-t ${t.border} px-6 py-4 lg:hidden`}>
           <div className="flex flex-col gap-4">
-            {TOP_ITEMS.map(([href, label]) => (
-              <Link key={href} href={href} className={mobileLink} onClick={() => setMenuOpen(false)}>
-                {label}
+            {TOP_ITEMS.map(([to, label]) => (
+              <Link key={to} href={href(to)} className={mobileLink} onClick={() => setMenuOpen(false)}>
+                {tr(label)}
               </Link>
             ))}
 
-            {([['About', ABOUT_ITEMS], ['Shift app', SHIFT_APP_ITEMS]] as Array<[string, NavItem[]]>).map(([label, items]) => (
+            {([[tr('nav.about'), ABOUT_ITEMS], [tr('nav.shift_app'), SHIFT_APP_ITEMS]] as Array<[string, NavItem[]]>).map(([label, items]) => (
               <div key={label} className={`mt-1 border-t ${t.border} pt-3`}>
                 <p className={`${groupCls} ${t.groupLabel}`}>{label}</p>
                 <div className="flex flex-col gap-3 pl-1">
-                  {items.map(([href, text]) => (
-                    <Link key={href} href={href} className={mobileLink} onClick={() => setMenuOpen(false)}>
-                      {text}
+                  {items.map(([to, text]) => (
+                    <Link key={to} href={href(to)} className={mobileLink} onClick={() => setMenuOpen(false)}>
+                      {tr(text)}
                     </Link>
                   ))}
                 </div>
               </div>
             ))}
 
-            <Link href="/donate" className={`mt-2 inline-block rounded-full border px-4 py-2 text-center text-sm font-semibold ${t.donate}`} onClick={() => setMenuOpen(false)}>Donate</Link>
-            <Link href="/shift" className={`inline-block rounded-full px-4 py-2 text-center text-sm font-semibold ${t.download}`} onClick={() => setMenuOpen(false)}>Download Shift</Link>
+            <Link href={href('/donate')} className={`mt-2 inline-block rounded-full border px-4 py-2 text-center text-sm font-semibold ${t.donate}`} onClick={() => setMenuOpen(false)}>{tr('nav.donate')}</Link>
+            <Link href={href('/shift')} className={`inline-block rounded-full px-4 py-2 text-center text-sm font-semibold ${t.download}`} onClick={() => setMenuOpen(false)}>{tr('nav.download')}</Link>
           </div>
         </div>
       )}

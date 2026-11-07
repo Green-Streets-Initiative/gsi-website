@@ -1,5 +1,7 @@
 import Link from 'next/link'
 import NewsletterSignupForm from './NewsletterSignupForm'
+import { SITE_LOCALES, SITE_LOCALE_NAMES, SITE_LOCALE_TAG, translator, withLang, type SiteLocale } from '@/lib/site-i18n'
+import { chromeStrings } from '@/lib/site-strings/chrome'
 
 /**
  * `variant="light"` is the cream-page treatment that pairs with Nav's light
@@ -39,8 +41,15 @@ const THEME: Record<Variant, {
   },
 }
 
-export default function Footer({ variant = 'dark' }: { variant?: Variant } = {}) {
+/**
+ * `locale`: a translated page passes its language, which also shows the
+ * language switch. Every other page leaves it out and stays English.
+ */
+export default function Footer({ variant = 'dark', locale }: { variant?: Variant; locale?: SiteLocale } = {}) {
   const t = THEME[variant]
+  const lang = locale ?? 'en'
+  const tr = translator(chromeStrings, lang)
+  const href = (h: string) => withLang(h, lang)
   return (
     <footer className={`${t.shell} px-8 pb-8 pt-14`}>
       <div className="mx-auto max-w-[1120px]">
@@ -48,83 +57,83 @@ export default function Footer({ variant = 'dark' }: { variant?: Variant } = {})
         <div id="newsletter" className={`scroll-mt-24 mb-12 border-b ${t.rule} pb-12 md:mb-14 md:pb-14`}>
           <div className="grid gap-8 md:grid-cols-2 md:items-center md:gap-12">
             <div>
-              <h3 className={`text-2xl font-bold ${t.heading} sm:text-3xl`}>Stay in touch</h3>
+              <h3 className={`text-2xl font-bold ${t.heading} sm:text-3xl`}>{tr('footer.stay_title')}</h3>
               <p className={`mt-3 text-sm leading-relaxed ${t.body}`}>
-                Get our newsletter for stories, impact updates, and new ways to move better.
+                {tr('footer.stay_body')}
               </p>
             </div>
-            <NewsletterSignupForm variant={variant} />
+            <NewsletterSignupForm variant={variant} locale={lang} />
           </div>
         </div>
 
         <div className="grid gap-12 md:grid-cols-5">
           {/* Brand */}
           <div className="md:col-span-1">
-            <Link href="/" className="mb-4 inline-flex items-center no-underline">
+            <Link href={href('/')} className="mb-4 inline-flex items-center no-underline">
               <span className="text-base tracking-[0.3px]" style={{ fontFamily: "'Trebuchet MS', 'Lucida Grande', Verdana, sans-serif" }}>
                 <span className={`font-bold ${t.brandA}`}>Green Streets</span>{' '}
                 <span className={`font-normal ${t.brandB}`}>Initiative</span>
               </span>
             </Link>
             <p className={`mt-3 text-sm leading-relaxed ${t.body}`}>
-              Helping people move better in Massachusetts since 2006.
+              {tr('footer.tagline')}
             </p>
           </div>
 
           {/* Shift app */}
           <div>
             <h4 className={`mb-4 text-xs font-semibold uppercase tracking-widest ${t.heading}`}>
-              Shift app
+              {tr('footer.shift_app')}
             </h4>
             <ul className="flex flex-col gap-2.5">
               <li>
-                <Link href="/shift" className={`text-sm transition-colors ${t.link}`}>
-                  Download
+                <Link href={href('/shift')} className={`text-sm transition-colors ${t.link}`}>
+                  {tr('footer.download')}
                 </Link>
               </li>
               <li>
-                <Link href="/shift/employers" className={`text-sm transition-colors ${t.link}`}>
-                  For employers
+                <Link href={href('/shift/employers')} className={`text-sm transition-colors ${t.link}`}>
+                  {tr('footer.employers')}
                 </Link>
               </li>
               <li>
-                <Link href="/shift/schools" className={`text-sm transition-colors ${t.link}`}>
-                  For schools
+                <Link href={href('/shift/schools')} className={`text-sm transition-colors ${t.link}`}>
+                  {tr('footer.schools')}
                 </Link>
               </li>
               <li>
-                <Link href="/shift/rewards-partners" className={`text-sm transition-colors ${t.link}`}>
-                  Rewards partners
+                <Link href={href('/shift/rewards-partners')} className={`text-sm transition-colors ${t.link}`}>
+                  {tr('footer.rewards_partners')}
                 </Link>
               </li>
               <li>
-                <Link href="/nearby" className={`text-sm transition-colors ${t.link}`}>
-                  What&rsquo;s near you
+                <Link href={href('/nearby')} className={`text-sm transition-colors ${t.link}`}>
+                  {tr('footer.near_you')}
                 </Link>
               </li>
               <li>
-                <Link href="/commute-advisor" className={`text-sm transition-colors ${t.link}`}>
-                  Commute Advisor
+                <Link href={href('/commute-advisor')} className={`text-sm transition-colors ${t.link}`}>
+                  {tr('footer.advisor')}
                 </Link>
               </li>
               <li>
-                <Link href="/guides" className={`text-sm transition-colors ${t.link}`}>
-                  Guides
+                <Link href={href('/guides')} className={`text-sm transition-colors ${t.link}`}>
+                  {tr('footer.guides')}
                 </Link>
               </li>
               <li>
-                <Link href="/trails" className={`text-sm transition-colors ${t.link}`}>
-                  Bike paths and rail trails
+                <Link href={href('/trails')} className={`text-sm transition-colors ${t.link}`}>
+                  {tr('footer.trails')}
                 </Link>
               </li>
               <li>
-                <Link href="/events" className={`text-sm transition-colors ${t.link}`}>
-                  Community events
+                <Link href={href('/events')} className={`text-sm transition-colors ${t.link}`}>
+                  {tr('footer.events')}
                 </Link>
               </li>
               <li>
-                <Link href="/challenges" className={`text-sm transition-colors ${t.link}`}>
-                  Challenges
+                <Link href={href('/challenges')} className={`text-sm transition-colors ${t.link}`}>
+                  {tr('footer.challenges')}
                 </Link>
               </li>
             </ul>
@@ -133,57 +142,57 @@ export default function Footer({ variant = 'dark' }: { variant?: Variant } = {})
           {/* Shift Towns — civic pages; also crawler equity */}
           <div>
             <h4 className={`mb-4 text-xs font-semibold uppercase tracking-widest ${t.heading}`}>
-              Shift Towns
+              {tr('footer.towns')}
             </h4>
             <ul className="flex flex-col gap-2.5">
               <li>
-                <Link href="/shift/towns/somerville-ma" className={`text-sm transition-colors ${t.link}`}>
+                <Link href={href('/shift/towns/somerville-ma')} className={`text-sm transition-colors ${t.link}`}>
                   Somerville
                 </Link>
               </li>
               <li>
-                <Link href="/shift/towns/cambridge-ma" className={`text-sm transition-colors ${t.link}`}>
+                <Link href={href('/shift/towns/cambridge-ma')} className={`text-sm transition-colors ${t.link}`}>
                   Cambridge
                 </Link>
               </li>
               <li>
-                <Link href="/shift/towns/boston-ma" className={`text-sm transition-colors ${t.link}`}>
+                <Link href={href('/shift/towns/boston-ma')} className={`text-sm transition-colors ${t.link}`}>
                   Boston
                 </Link>
               </li>
               <li>
-                <Link href="/shift/towns/medford-ma" className={`text-sm transition-colors ${t.link}`}>
+                <Link href={href('/shift/towns/medford-ma')} className={`text-sm transition-colors ${t.link}`}>
                   Medford
                 </Link>
               </li>
               <li>
-                <Link href="/shift/towns/arlington-ma" className={`text-sm transition-colors ${t.link}`}>
+                <Link href={href('/shift/towns/arlington-ma')} className={`text-sm transition-colors ${t.link}`}>
                   Arlington
                 </Link>
               </li>
               <li>
-                <Link href="/shift/towns/brookline-ma" className={`text-sm transition-colors ${t.link}`}>
+                <Link href={href('/shift/towns/brookline-ma')} className={`text-sm transition-colors ${t.link}`}>
                   Brookline
                 </Link>
               </li>
               <li>
-                <Link href="/shift/towns/watertown-ma" className={`text-sm transition-colors ${t.link}`}>
+                <Link href={href('/shift/towns/watertown-ma')} className={`text-sm transition-colors ${t.link}`}>
                   Watertown
                 </Link>
               </li>
               <li>
-                <Link href="/shift/towns/everett-ma" className={`text-sm transition-colors ${t.link}`}>
+                <Link href={href('/shift/towns/everett-ma')} className={`text-sm transition-colors ${t.link}`}>
                   Everett
                 </Link>
               </li>
               <li>
-                <Link href="/shift/towns/newton-ma" className={`text-sm transition-colors ${t.link}`}>
+                <Link href={href('/shift/towns/newton-ma')} className={`text-sm transition-colors ${t.link}`}>
                   Newton
                 </Link>
               </li>
               <li>
-                <Link href="/shift/towns" className={`text-sm font-semibold transition-colors ${t.link}`}>
-                  All towns &rarr;
+                <Link href={href('/shift/towns')} className={`text-sm font-semibold transition-colors ${t.link}`}>
+                  {tr('footer.all_towns')}
                 </Link>
               </li>
             </ul>
@@ -192,32 +201,32 @@ export default function Footer({ variant = 'dark' }: { variant?: Variant } = {})
           {/* Programs */}
           <div>
             <h4 className={`mb-4 text-xs font-semibold uppercase tracking-widest ${t.heading}`}>
-              Programs
+              {tr('footer.programs')}
             </h4>
             <ul className="flex flex-col gap-2.5">
               <li>
-                <Link href="/programs/walk-ride-days" className={`text-sm transition-colors ${t.link}`}>
-                  Walk/Ride Days
+                <Link href={href('/programs/walk-ride-days')} className={`text-sm transition-colors ${t.link}`}>
+                  {tr('footer.wrd')}
                 </Link>
               </li>
               <li>
-                <Link href="/programs/what-moves-us" className={`text-sm transition-colors ${t.link}`}>
-                  What Moves Us
+                <Link href={href('/programs/what-moves-us')} className={`text-sm transition-colors ${t.link}`}>
+                  {tr('footer.wmu')}
                 </Link>
               </li>
               <li>
-                <Link href="/programs/corporate-challenge" className={`text-sm transition-colors ${t.link}`}>
-                  Corporate Challenge
+                <Link href={href('/programs/corporate-challenge')} className={`text-sm transition-colors ${t.link}`}>
+                  {tr('footer.corporate')}
                 </Link>
               </li>
               <li>
-                <Link href="/shift/schools" className={`text-sm transition-colors ${t.link}`}>
-                  Shift for Schools
+                <Link href={href('/shift/schools')} className={`text-sm transition-colors ${t.link}`}>
+                  {tr('footer.schools_program')}
                 </Link>
               </li>
               <li>
-                <Link href="/events/submit" className={`text-sm transition-colors ${t.link}`}>
-                  Submit an event
+                <Link href={href('/events/submit')} className={`text-sm transition-colors ${t.link}`}>
+                  {tr('footer.submit_event')}
                 </Link>
               </li>
             </ul>
@@ -226,64 +235,81 @@ export default function Footer({ variant = 'dark' }: { variant?: Variant } = {})
           {/* Organization */}
           <div>
             <h4 className={`mb-4 text-xs font-semibold uppercase tracking-widest ${t.heading}`}>
-              Organization
+              {tr('footer.organization')}
             </h4>
             <ul className="flex flex-col gap-2.5">
               <li>
-                <Link href="/about" className={`text-sm transition-colors ${t.link}`}>
-                  Our story
+                <Link href={href('/about')} className={`text-sm transition-colors ${t.link}`}>
+                  {tr('footer.story')}
                 </Link>
               </li>
               <li>
-                <Link href="/press" className={`text-sm transition-colors ${t.link}`}>
-                  Press
+                <Link href={href('/press')} className={`text-sm transition-colors ${t.link}`}>
+                  {tr('footer.press')}
                 </Link>
               </li>
               <li>
-                <Link href="/get-involved" className={`text-sm transition-colors ${t.link}`}>
-                  Volunteer
+                <Link href={href('/get-involved')} className={`text-sm transition-colors ${t.link}`}>
+                  {tr('footer.volunteer')}
                 </Link>
               </li>
               <li>
-                <Link href="/donate" className={`text-sm transition-colors ${t.link}`}>
-                  Donate
+                <Link href={href('/donate')} className={`text-sm transition-colors ${t.link}`}>
+                  {tr('footer.donate')}
                 </Link>
               </li>
               <li>
-                <Link href="/contact" className={`text-sm transition-colors ${t.link}`}>
-                  Sponsor an event
+                <Link href={href('/contact')} className={`text-sm transition-colors ${t.link}`}>
+                  {tr('footer.sponsor')}
                 </Link>
               </li>
               <li>
-                <Link href="/help" className={`text-sm transition-colors ${t.link}`}>
-                  Help
+                <Link href={href('/help')} className={`text-sm transition-colors ${t.link}`}>
+                  {tr('footer.help')}
                 </Link>
               </li>
               <li>
-                <Link href="/privacy" className={`text-sm transition-colors ${t.link}`}>
-                  Privacy
+                <Link href={href('/privacy')} className={`text-sm transition-colors ${t.link}`}>
+                  {tr('footer.privacy')}
                 </Link>
               </li>
               <li>
-                <Link href="/terms" className={`text-sm transition-colors ${t.link}`}>
-                  Terms
+                <Link href={href('/terms')} className={`text-sm transition-colors ${t.link}`}>
+                  {tr('footer.terms')}
                 </Link>
               </li>
             </ul>
           </div>
         </div>
 
-        <div className={`mt-14 flex flex-col items-center justify-between gap-4 border-t ${t.rule} pt-8 text-xs ${t.fine} md:flex-row`}>
-          <p>&copy; 2026 Green Streets Initiative. Somerville, MA. 501(c)(3) nonprofit.</p>
+        {locale ? (
+          <nav aria-label={tr('footer.language')} className={`mt-14 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm ${t.body} md:justify-start`}>
+            {SITE_LOCALES.map((l) => (
+              <a
+                key={l}
+                href={`?lang=${l}`}
+                hrefLang={SITE_LOCALE_TAG[l]}
+                lang={SITE_LOCALE_TAG[l]}
+                aria-current={l === locale ? 'true' : undefined}
+                className={l === locale ? 'font-bold underline underline-offset-4' : `transition-colors ${t.link}`}
+              >
+                {SITE_LOCALE_NAMES[l]}
+              </a>
+            ))}
+          </nav>
+        ) : null}
+
+        <div className={`${locale ? 'mt-6' : 'mt-14'} flex flex-col items-center justify-between gap-4 border-t ${t.rule} pt-8 text-xs ${t.fine} md:flex-row`}>
+          <p>{tr('footer.copyright')}</p>
           <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 md:justify-end">
-            <Link href="/privacy" className={`transition-colors ${t.link}`}>
-              Privacy policy
+            <Link href={href('/privacy')} className={`transition-colors ${t.link}`}>
+              {tr('footer.privacy_policy')}
             </Link>
-            <Link href="/terms" className={`transition-colors ${t.link}`}>
-              Terms of use
+            <Link href={href('/terms')} className={`transition-colors ${t.link}`}>
+              {tr('footer.terms_of_use')}
             </Link>
-            <Link href="/contact" className={`transition-colors ${t.link}`}>
-              Contact
+            <Link href={href('/contact')} className={`transition-colors ${t.link}`}>
+              {tr('footer.contact')}
             </Link>
             <a href="mailto:info@gogreenstreets.org" className={`transition-colors ${t.link}`}>
               info@gogreenstreets.org
