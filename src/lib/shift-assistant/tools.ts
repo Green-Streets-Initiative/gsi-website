@@ -20,6 +20,8 @@ import { HELP_TOPICS, helpIndex, helpTopic } from '@/lib/help/faq'
 import { ALWAYS as FARES_FOR_EVERYONE, fareProgram, farePrograms } from '@/lib/facts/fare-programs'
 import { PRICES, usd } from '@/lib/facts/prices'
 import { VENUES } from '@/lib/venues'
+import { bigEventPath, bigEventWhen, loadBigEvents } from '@/lib/big-events'
+import { feederPlace, shortOrganizer } from '@/lib/go-together'
 import { BORROW_RENT_BLURB, nearbyBorrowRent } from '@/lib/nearby/borrow-rent'
 import { getBikeShareDocks } from '@/lib/server/bluebikes'
 import { bikePerkPool } from '@/lib/server/bike-perks'
@@ -1626,10 +1628,25 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
         const official = v.garages.find((g) => g.official)
         const checked = new Date(`${v.checked}T12:00:00Z`).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
         const trains = v.transit.eventTrains
+        // Go Together (Shift 01691): the next game or show here, and only the
+        // ones a group ride is going to (never an empty "no one is going").
+        const coming = await loadBigEvents(ctx.user, v.slug, 21)
+        const withGroups = coming.filter((e) => e.groups.length > 0).slice(0, 3)
         return ok(
           {
             venue: v.name,
             answer: v.lede,
+            ...(coming[0] ? { next_event_here: { title: coming[0].title, when: bigEventWhen(coming[0], { weekday: 'long' }) } } : {}),
+            ...(withGroups.length
+              ? {
+                  group_rides_going: withGroups.map((e) => ({
+                    event: e.title,
+                    when: bigEventWhen(e, { weekday: 'long' }),
+                    page: `https://www.gogreenstreets.org${bigEventPath(e)}`,
+                    rides: e.groups.slice(0, 3).map((g) => ({ from: feederPlace(g.title, g.location_name), leaves: g.event_time, organizer: shortOrganizer(g.organizer_name) })),
+                  })),
+                }
+              : {}),
             official_parking: official
               ? { name: official.name, where: official.where ?? null, walk_minutes: official.walkMin, prices: official.prices ?? [], facts: official.facts ?? [] }
               : null,
@@ -1653,7 +1670,7 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
             rideshare: v.rideshare,
             next: v.noParking
               ? 'Answer parking first, as asked: there is no fan parking; the free shuttles from the three stations, or a satellite lot bought with the ticket for people driving in from outside Boston. Say team_plays_now if they ask about a game soon. Never say what is not_decided_yet as if it were set. The button opens the page with live trains at each shuttle station and the Bluebikes docks.'
-              : 'Answer parking first, as asked: the official garage or lot, its price and "checked <prices_checked>", then the train as a plain fact in one sentence (never argue against driving). Prices only from here. The button opens the page with the other garages, walk times and live trains; for a door-to-door plan from them, check_trip to the venue.',
+              : 'Answer parking first, as asked: the official garage or lot, its price and "checked <prices_checked>", then the train as a plain fact in one sentence (never argue against driving). Prices only from here. The button opens the page with the other garages, walk times and live trains; for a door-to-door plan from them, check_trip to the venue. When group_rides_going names the game or show they mean, add one sentence: a group ride is going from <from> (and when it leaves), with its page.',
           },
           { href: `https://www.gogreenstreets.org/parking/${v.slug}?utm_source=assistant`, label: `Parking at ${v.name}`, external: true },
         )
