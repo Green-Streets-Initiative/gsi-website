@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import posthog from 'posthog-js'
 import { Check, MessageCircle } from 'lucide-react'
 import { toneClass } from '@/components/events/EventsTone'
+import '@/components/events/events-tone.css'
 import { FUNCTIONS_BASE } from '@/lib/rides/public'
 
 /**

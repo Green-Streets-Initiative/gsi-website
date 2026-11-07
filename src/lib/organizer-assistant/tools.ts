@@ -1176,7 +1176,7 @@ export async function runApproved(ctx: ToolCtx, name: string, input: Record<stri
       case 'set_chat_access': {
         const ids = (Array.isArray(input.member_ids) ? input.member_ids : []).map(String)
         const results = await Promise.all(ids.map((id) => rpc<boolean>(ctx, 'set_ride_chat_access', { p_member_id: id, p_ok: input.let_in !== false })))
-        return ok({ changed: results.length, in_group_chat: results.filter(Boolean).length }, { href: `/organizers/rides/${input.series_id}/roster`, label: "See who's coming" })
+        return ok({ changed: results.length, can_see_chat_link: results.filter(Boolean).length, note: 'They can see the chat link now; they are in the chat itself once the organizer approves their request in the chat app. Say it that way.' }, { href: `/organizers/rides/${input.series_id}/roster`, label: "See who's coming" })
       }
       case 'settle_credit': {
         const r = await rpc<{ ok: boolean; state: string; remaining: number }>(ctx, 'settle_ride_credit_request', {
