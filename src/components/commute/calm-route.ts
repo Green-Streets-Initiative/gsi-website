@@ -210,9 +210,14 @@ export function pickCalmRoute(all: CalmOption[]): CalmRoute | null {
 
 /* ── Concern copy (lib/concern-copy.ts) ── */
 
-export function concernMatters(flag: CalmFlag): boolean {
+export function concernMatters(flag: CalmFlag, mode?: 'bike' | 'walk'): boolean {
   if (flag.type !== 'concern') return false
   const c = flag.crash
+  // How the group travels (the app's lib/concern-copy, Keith 2026-11-07): a
+  // bike ride isn't warned about crossings where pedestrians were hit, nor
+  // told a street has no sidewalk; a walk isn't warned about bike crashes.
+  if (mode && c && (c.type === 'pedestrian') !== (mode === 'walk')) return false
+  if (mode === 'bike' && flag.kind === 'sidewalks') return false
   if (!c) return true
   if (c.meets === 'along') return true
   if (c.severe >= 1) return true
@@ -250,10 +255,10 @@ function stronger(a: CalmFlag, b: CalmFlag): CalmFlag {
 }
 
 /** The concerns worth a rider's attention on this route, one per place. */
-export function relevantConcerns(flags: CalmFlag[] | null | undefined): CalmFlag[] {
+export function relevantConcerns(flags: CalmFlag[] | null | undefined, mode?: 'bike' | 'walk'): CalmFlag[] {
   const out: CalmFlag[] = []
   for (const f of flags ?? []) {
-    if (!concernMatters(f)) continue
+    if (!concernMatters(f, mode)) continue
     const i = out.findIndex((o) => sameConcern(o, f))
     if (i < 0) out.push(f)
     else out[i] = stronger(out[i], f)

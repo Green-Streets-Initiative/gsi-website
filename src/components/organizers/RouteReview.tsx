@@ -65,11 +65,11 @@ export interface RouteReading {
   mapSpots: MapSpot[]
 }
 
-export function readRoute(route: RouteDraft | null): RouteReading | null {
+export function readRoute(route: RouteDraft | null, activity: Activity = 'bike'): RouteReading | null {
   if (!route || route.waypoints.length < 2) return null
   const option = routeOption(route)
   const pieces = route.comfortSegments?.length ? comfortPieces(option) : []
-  const concerns = relevantConcerns(option.flags)
+  const concerns = relevantConcerns(option.flags, activity === 'walk' ? 'walk' : 'bike')
     .filter((f): f is CalmFlag & { lat: number; lng: number } => f.type === 'concern' && typeof f.lat === 'number' && typeof f.lng === 'number')
     .map((f, i) => ({ ...f, n: i + 1 }))
   return {
@@ -88,6 +88,26 @@ export function tidyName(s: string): string {
 
 interface StreetRow { label: string; miles: number; rating: string; index: number }
 
+const STREET_WORDS: [RegExp, string][] = [
+  [/\bstreet\b/g, 'st'], [/\bavenue\b/g, 'ave'], [/\broad\b/g, 'rd'], [/\bway\b/g, 'wy'],
+  [/\bhighway\b/g, 'hwy'], [/\bboulevard\b/g, 'blvd'], [/\bdrive\b/g, 'dr'], [/\bplace\b/g, 'pl'],
+  [/\bparkway\b/g, 'pkwy'], [/\bsquare\b/g, 'sq'], [/\blane\b/g, 'ln'], [/\bcourt\b/g, 'ct'],
+  [/\bterrace\b/g, 'ter'],
+]
+
+/** "Cambridge Street" and "Cambridge St" are one street (the app's RouteStreetsList streetKey). */
+function streetKey(label: string): string {
+  let s = label.toLowerCase()
+  for (const [re, short] of STREET_WORDS) s = s.replace(re, short)
+  return s.replace(/[^a-z0-9]+/g, ' ').trim()
+}
+
+/** "Ma-28 S" → "Route 28", then the shouting fix. */
+function streetName(label: string): string {
+  const route = /^(?:ma|us|rt|route)[- ]?(\d+[a-z]?)\b/i.exec(label.trim())
+  return route ? `Route ${route[1].toUpperCase()}` : tidyName(label)
+}
+
 /**
  * The list a person reads: back-to-back pieces of the same street become one
  * row (named for the comfort most of it has), and slivers under 0.15 mi fold
@@ -97,7 +117,7 @@ function streetRows(pieces: ComfortPiece[]): StreetRow[] {
   const rows: (StreetRow & { byRating: Record<string, number>; longest: number })[] = []
   for (const p of pieces) {
     const last = rows[rows.length - 1]
-    const same = last && last.label.toLowerCase() === p.label.toLowerCase()
+    const same = last && streetKey(last.label) === streetKey(p.label)
     if (last && (same || p.distanceMi < 0.15)) {
       last.miles += p.distanceMi
       last.byRating[p.rating] = (last.byRating[p.rating] ?? 0) + p.distanceMi
@@ -157,7 +177,7 @@ export default function RouteReview({ route, reading, pace, activity = 'bike', f
   const photo = spot ? { lat: spot.lat, lng: spot.lng } : piece ? legPhotoSpec(option, piece.index) : null
   const caption = spot
     ? tidyName(concernTitle(spot))
-    : piece ? `${tidyName(piece.label)}, ${formatStretchMiles(rows.find((r) => r.index === piece.index)?.miles ?? piece.distanceMi)}, ${(COMFORT_LABELS[piece.rating] ?? piece.rating).toLowerCase()}` : ''
+    : piece ? `${streetName(piece.label)}, ${formatStretchMiles(rows.find((r) => r.index === piece.index)?.miles ?? piece.distanceMi)}, ${(COMFORT_LABELS[piece.rating] ?? piece.rating).toLowerCase()}` : ''
 
   const list = allStretches ? rows : rows.slice(0, 10)
 
@@ -167,12 +187,12 @@ export default function RouteReview({ route, reading, pace, activity = 'bike', f
   const shownAs = row ? (COMFORT_LABELS[row.rating] ?? row.rating).toLowerCase() : ''
   const reportStretch: RouteIssueStretch | null = row ? {
     index: row.index,
-    label: tidyName(row.label),
+    label: streetName(row.label),
     miles: row.miles,
     lat: mid?.lat ?? null,
     lng: mid?.lng ?? null,
     rating: row.rating,
-    phrase: `${tidyName(row.label)}, ${formatStretchMiles(row.miles)}, shown as ${shownAs}`,
+    phrase: `${streetName(row.label)}, ${formatStretchMiles(row.miles)}, shown as ${shownAs}`,
     color: MAP_COMFORT_COLORS[row.rating] ?? MAP_COMFORT_COLORS.shared_road,
     dashed: false,
     detail: `${formatStretchMiles(row.miles)} · shown as ${shownAs}`,
@@ -277,7 +297,7 @@ export default function RouteReview({ route, reading, pace, activity = 'bike', f
                           <span className="mt-1.5 h-3 w-3 shrink-0 rounded-full" style={{ background: MAP_COMFORT_COLORS[p.rating] }} aria-hidden />
                           {/* Name above, kind of street below: a long name or label never gets cut off. */}
                           <span className="min-w-0 flex-1">
-                            <span className="block text-[15px] font-semibold leading-snug text-(--ev-ink)">{tidyName(p.label)}</span>
+                            <span className="block text-[15px] font-semibold leading-snug text-(--ev-ink)">{streetName(p.label)}</span>
                             <span className="block text-[14px] leading-snug text-(--ev-ink-75)">{COMFORT_LABELS[p.rating] ?? p.rating} · {formatStretchMiles(p.miles)}</span>
                           </span>
                         </button>

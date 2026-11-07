@@ -105,7 +105,7 @@ export default function RouteSection({ route, onRoute, meetup, pace, activity = 
   // The planner's pins: the meeting point first, then the stops clicked in.
   const pins = useMemo(() => [...(meetup ? [meetup] : []), ...stops], [meetup, stops])
 
-  const reading = useMemo(() => readRoute(route), [route])
+  const reading = useMemo(() => readRoute(route, activity), [route, activity])
 
   // Bike lanes around the meeting point (Nearby's feed), so organizers can
   // see the lanes they want to use while they plan.
