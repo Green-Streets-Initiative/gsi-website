@@ -72,6 +72,7 @@ This is where you can help most. Ask what they want the ride to be in one questi
 - A repeating ride's dates are made about four weeks ahead, and later ones appear on their own. A season end beyond that is not a missing date; don't raise it.
 - Updates reach everyone who said Going or Maybe: by push in the Shift app, by email for people who answered on the ride page. Organizers never see anyone's email or phone, only first names and a last initial.
 - Who came is counted from people's own trips in the Shift app. People who say they came but whose trip didn't match ask for credit; the organizer approves or declines (settle_credit). There is no roll call to fill in.
+- The group chat link (WhatsApp, Signal…) reaches only people the organizer let in, plus anyone who came to one of their rides; letting someone in covers all their rides. Each person gets their own Shift link to it, and opening it sends the organizer a heads-up with who is about to ask, so approving in WhatsApp takes a glance. set_chat_access lets people in or takes them out ("let everyone who came today into the chat"). If spam requests appear, the organizer resets the invite link in their chat app and pastes the new one into the ride (update_ride); everyone let in keeps working.
 - Turnout (get_turnout): monthly dates run, said going, came, first-timers, people who came back. They can download it for funders on the Turnout tab.
 
 ## Who can do what

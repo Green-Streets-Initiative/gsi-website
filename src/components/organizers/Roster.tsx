@@ -18,7 +18,19 @@ const GROUPS: { key: 'going' | 'maybe' | 'none' | 'not_going'; label: string }[]
 ]
 
 /** The person's group chat state, when the ride has a chat to let people into. */
-type Chat = { ok: boolean; busy: boolean; toggle: () => void } | null
+type Chat = { ok: boolean; came: boolean; takenOut: boolean; openedAt: string | null; busy: boolean; toggle: () => void } | null
+type ChatState = { ok: boolean; came: boolean; takenOut: boolean; openedAt: string | null }
+
+/** "Today 2:14 PM", "Sat 2:14 PM", "Nov 2". */
+function openedLabel(iso: string): string {
+  const d = new Date(iso)
+  const now = new Date()
+  const time = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'America/New_York' })
+  const days = (now.getTime() - d.getTime()) / 86_400_000
+  if (d.toDateString() === now.toDateString()) return `today ${time}`
+  if (days < 6) return `${d.toLocaleDateString('en-US', { weekday: 'short', timeZone: 'America/New_York' })} ${time}`
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'America/New_York' })
+}
 
 function Person({ p, past, chat }: { p: RosterRow; past: boolean; chat: Chat }) {
   return (
@@ -46,9 +58,18 @@ function Person({ p, past, chat }: { p: RosterRow; past: boolean; chat: Chat }) 
             </Button>
           ) : (
             <Button size="sm" onClick={chat.toggle} busy={chat.busy}>
-              <MessageCircle className="h-4 w-4" aria-hidden />Let into chat
+              <MessageCircle className="h-4 w-4" aria-hidden />{chat.takenOut ? 'Let back in' : 'Let into chat'}
             </Button>
           )}
+        </span>
+      )}
+      {chat && (chat.openedAt || (chat.ok && chat.came) || chat.takenOut) && (
+        <span className="basis-full pl-11 text-[14px] text-(--ev-ink-75)">
+          {[
+            chat.ok && chat.came ? 'In because they came to one of your rides' : null,
+            chat.takenOut ? 'You took them out of the chat' : null,
+            chat.openedAt ? `Opened the chat link ${openedLabel(chat.openedAt)}` : null,
+          ].filter(Boolean).join(' · ')}
         </span>
       )}
     </li>
@@ -74,7 +95,7 @@ export default function Roster() {
   const [settling, setSettling] = useState<string | null>(null)
   const [msg, setMsg] = useState<string | null>(null)
   // Group chat access by person (Shift 01679); null = nothing to approve.
-  const [chatOk, setChatOk] = useState<Map<string, boolean> | null>(null)
+  const [chatOk, setChatOk] = useState<Map<string, ChatState> | null>(null)
   const [chatBusy, setChatBusy] = useState<string | null>(null)
 
   const date = dates.find((d) => d.id === dateId) ?? null
@@ -102,17 +123,20 @@ export default function Roster() {
     let live = true
     void getChatAccess(detail.ride.id).then((rows) => {
       if (!live) return
-      setChatOk(rows && rows.some((r) => r.needs_ok) ? new Map(rows.map((r) => [r.member_id, r.chat_ok])) : null)
+      setChatOk(rows && rows.some((r) => r.needs_ok)
+        ? new Map(rows.map((r) => [r.member_id, { ok: r.chat_ok, came: !!r.came, takenOut: !!r.taken_out, openedAt: r.opened_at ?? null }]))
+        : null)
     })
     return () => { live = false }
   }, [detail.ride.id])
 
   async function toggleChat(p: RosterRow) {
-    const now = !(chatOk?.get(p.member_id) ?? false)
+    const was = chatOk?.get(p.member_id)
+    const now = !(was?.ok ?? false)
     setChatBusy(p.member_id)
     try {
       const ok = await setChatAccess(p.member_id, now)
-      setChatOk((m) => new Map(m ?? []).set(p.member_id, !!ok))
+      setChatOk((m) => new Map(m ?? []).set(p.member_id, { ok: !!ok, came: was?.came ?? false, takenOut: !now, openedAt: was?.openedAt ?? null }))
       setMsg(ok ? `${p.display_name} can see the group chat link now, on this ride and your others.` : `${p.display_name} no longer sees the group chat link.`)
     } catch (e) {
       setMsg(errorText(e))
@@ -121,8 +145,8 @@ export default function Roster() {
     }
   }
   const chatFor = (p: RosterRow): Chat => !chatOk || p.role !== 'rider' || !chatOk.has(p.member_id) ? null
-    : { ok: !!chatOk.get(p.member_id), busy: chatBusy === p.member_id, toggle: () => void toggleChat(p) }
-  const waiting = chatOk ? (rows ?? []).filter((p) => p.role === 'rider' && (p.rsvp_status === 'going' || p.rsvp_status === 'maybe') && chatOk.get(p.member_id) === false).length : 0
+    : { ...chatOk.get(p.member_id)!, busy: chatBusy === p.member_id, toggle: () => void toggleChat(p) }
+  const waiting = chatOk ? (rows ?? []).filter((p) => p.role === 'rider' && (p.rsvp_status === 'going' || p.rsvp_status === 'maybe') && chatOk.get(p.member_id)?.ok === false).length : 0
 
   const pick = (id: string) => {
     setDateId(id)
@@ -222,8 +246,8 @@ export default function Roster() {
       <Card>
         <SectionTitle hint={chatOk && !past
           ? waiting > 0
-            ? `${plural(waiting, 'person', 'people')} coming can't see your group chat link yet. Let them in one by one; it covers all your rides.`
-            : 'Everyone coming can see your group chat link. New people wait until you let them in.'
+            ? `${plural(waiting, 'person', 'people')} coming can't see your group chat link yet. Anyone who came to one of your rides is in already.`
+            : "Everyone coming can see your group chat link. When someone opens it, you get a heads-up, so you know who's asking to join."
           : 'First name and last initial. Shift messages everyone for you.'}>
           {past ? 'Who was on the list' : "Who's coming"}
         </SectionTitle>

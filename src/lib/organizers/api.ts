@@ -104,7 +104,7 @@ export const getMembers = async (seriesId: string) =>
  */
 export const getChatAccess = async (seriesId: string) => {
   try {
-    return (await rpc<{ member_id: string; chat_ok: boolean; needs_ok: boolean }[] | null>('organizer_chat_access', { p_series_id: seriesId })) ?? []
+    return (await rpc<{ member_id: string; chat_ok: boolean; needs_ok: boolean; came?: boolean; taken_out?: boolean; opened_at?: string | null }[] | null>('organizer_chat_access', { p_series_id: seriesId })) ?? []
   } catch {
     return null
   }

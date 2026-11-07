@@ -3,7 +3,7 @@ import type Anthropic from '@anthropic-ai/sdk'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { clock, scheduleText } from '@/lib/rides/public'
 import { inviteCoOrganizer } from '@/lib/organizers/invite'
-import { PACE_OPTIONS, TAG_OPTIONS, UPDATE_KIND_LABEL, dateLabel, todayKey } from '@/lib/organizers/ride-words'
+import { PACE_OPTIONS, TAG_OPTIONS, UPDATE_KIND_LABEL, dateLabel, plural, todayKey } from '@/lib/organizers/ride-words'
 import type { DashboardRide, DetailDate, RideDetail, RideRow, RosterRow, Turnout } from '@/lib/organizers/types'
 import { designRoute, encodePlan, replanCourse, summarizeRoute } from './route-designer'
 import { courseOf, type RouteCourse } from '@/lib/organizers/route-geo'
@@ -340,10 +340,25 @@ export const TOOLS: Anthropic.Tool[] = [
       required: ['series_id', 'occurrence_id', 'member_id', 'approve'],
     },
   },
+  {
+    name: 'set_chat_access',
+    description: "Let people into the ride's group chat, or take them out (Shift 01686). Letting someone in covers all of this organizer's rides; anyone who came to one of their rides is already in. Pick people on one date: who 'came', 'going', 'going_or_maybe', or 'named' (names as get_whos_coming shows them). let_in false takes them out. Card first. The chat app (WhatsApp) still asks the organizer to approve each request; Shift sends a heads-up when each person opens the link.",
+    input_schema: {
+      type: 'object',
+      properties: {
+        series_id: uuid,
+        occurrence_id: uuid,
+        who: { type: 'string', enum: ['came', 'going', 'going_or_maybe', 'named'] },
+        names: { type: 'array', items: { type: 'string' }, description: "For who 'named': the people's names." },
+        let_in: { type: 'boolean' },
+      },
+      required: ['series_id', 'occurrence_id', 'who', 'let_in'],
+    },
+  },
 ]
 
 export const NEEDS_APPROVAL = new Set([
-  'create_ride', 'update_ride', 'post_update', 'cancel_date', 'change_date', 'plan_date', 'stop_ride', 'resume_ride', 'invite_co_organizer', 'settle_credit',
+  'create_ride', 'update_ride', 'post_update', 'cancel_date', 'change_date', 'plan_date', 'stop_ride', 'resume_ride', 'invite_co_organizer', 'settle_credit', 'set_chat_access',
 ])
 
 /** What the panel shows while a tool runs. */
@@ -370,10 +385,21 @@ export const ACTIVITY: Record<string, string> = {
   resume_ride: 'Starting it again',
   invite_co_organizer: 'Sending the invite',
   settle_credit: 'Settling the request',
+  set_chat_access: 'Updating the group chat',
 }
 
 /** Labels whose completion means a screen should reload. */
-export const CHANGES = new Set(['create_ride', 'update_ride', 'post_update', 'cancel_date', 'change_date', 'plan_date', 'stop_ride', 'resume_ride', 'invite_co_organizer', 'settle_credit'].map((n) => ACTIVITY[n]))
+export const CHANGES = new Set(['create_ride', 'update_ride', 'post_update', 'cancel_date', 'change_date', 'plan_date', 'stop_ride', 'resume_ride', 'invite_co_organizer', 'settle_credit', 'set_chat_access'].map((n) => ACTIVITY[n]))
+
+/** Who on the ride sees the group chat link (Shift 01686); null when there's nothing to let people into. */
+async function chatAccess(ctx: ToolCtx, seriesId: string): Promise<Map<string, { chat_ok: boolean }> | null> {
+  try {
+    const rows = (await rpc<{ member_id: string; chat_ok: boolean; needs_ok: boolean }[] | null>(ctx, 'organizer_chat_access', { p_series_id: seriesId })) ?? []
+    return rows.some((r) => r.needs_ok) ? new Map(rows.map((r) => [r.member_id, r])) : null
+  } catch {
+    return null
+  }
+}
 
 // ── Shapes for the model: small, and never more than the screens show ──
 
@@ -578,7 +604,10 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
       case 'get_whos_coming': {
         const d = await loadDetail(ctx, input.series_id)
         const o = findDate(d, input.occurrence_id)
-        const rows = (await rpc<RosterRow[] | null>(ctx, 'organizer_date_roster', { p_occurrence_id: o.id })) ?? []
+        const [rows, chat] = await Promise.all([
+          rpc<RosterRow[] | null>(ctx, 'organizer_date_roster', { p_occurrence_id: o.id }).then((r) => r ?? []),
+          chatAccess(ctx, d.ride.id),
+        ])
         const names = (f: (r: RosterRow) => boolean) => rows.filter(f).map((r) => `${r.display_name}${r.is_guest ? ' (ride page)' : ''}${r.first_time && r.role === 'rider' ? ' (first time)' : ''}${r.kids_count ? ` +${r.kids_count} kids` : ''}`)
         return ok({
           date: o.date, day: dateLabel(o.date), status: o.status,
@@ -587,6 +616,7 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
           cant_go: names((r) => r.rsvp_status === 'not_going'),
           no_answer_yet: rows.filter((r) => !r.rsvp_status && r.role === 'rider').length,
           came: o.date < todayKey() ? names((r) => !!r.attended) : undefined,
+          not_in_group_chat: chat ? names((r) => r.role === 'rider' && !!r.rsvp_status && r.rsvp_status !== 'not_going' && chat.get(r.member_id)?.chat_ok === false) : undefined,
         })
       }
       case 'get_credit_requests': {
@@ -1021,6 +1051,40 @@ export async function approvalCard(ctx: ToolCtx, name: string, input: Record<str
           input: { series_id: d.ride.id, email },
         }
       }
+      case 'set_chat_access': {
+        const d = await loadDetail(ctx, input.series_id)
+        const o = findDate(d, input.occurrence_id)
+        const chat = await chatAccess(ctx, d.ride.id)
+        if (!chat) return { result: fail("This ride has no group chat link to let people into (or it's an email address, which everyone on the ride gets). Add one with update_ride.") }
+        const rows = ((await rpc<RosterRow[] | null>(ctx, 'organizer_date_roster', { p_occurrence_id: o.id })) ?? []).filter((r) => r.role === 'rider')
+        const letIn = input.let_in !== false
+        const wanted = (Array.isArray(input.names) ? input.names : []).map((n) => String(n).trim().toLowerCase()).filter(Boolean)
+        const picked = rows.filter((r) =>
+          input.who === 'came' ? !!r.attended
+            : input.who === 'going' ? r.rsvp_status === 'going'
+            : input.who === 'going_or_maybe' ? r.rsvp_status === 'going' || r.rsvp_status === 'maybe'
+            : wanted.some((w) => r.display_name.toLowerCase().startsWith(w) || r.display_name.toLowerCase() === w))
+        const change = picked.filter((r) => (chat.get(r.member_id)?.chat_ok ?? false) !== letIn)
+        if (picked.length === 0) return { result: fail(input.who === 'named' ? 'Nobody on that date goes by those names. Use get_whos_coming.' : `Nobody on ${dateLabel(o.date)} matches that.`) }
+        if (change.length === 0) return { result: ok({ nothing_to_do: true, already: letIn ? 'in the group chat' : 'out of the group chat', people: picked.map((r) => r.display_name) }) }
+        const list = change.map((r) => r.display_name)
+        const shown = list.length > 8 ? [...list.slice(0, 8), `and ${list.length - 8} more`] : list
+        return {
+          card: {
+            title: letIn
+              ? `Let ${list.length === 1 ? list[0] : plural(list.length, 'person', 'people')} into the group chat?`
+              : `Take ${list.length === 1 ? list[0] : plural(list.length, 'person', 'people')} out of the group chat?`,
+            lines: [
+              ...(list.length > 1 ? [shown.join(', ')] : []),
+              letIn
+                ? 'It covers all your rides. Your chat app still asks you to approve each one; you get a heads-up when they open the link.'
+                : "They stop seeing the link on all your rides. Anyone already in the chat itself stays until you remove them there.",
+            ],
+            cta: letIn ? 'Let them in' : 'Take them out', tone: letIn ? 'primary' : 'danger',
+          },
+          input: { series_id: d.ride.id, member_ids: change.map((r) => r.member_id), let_in: letIn },
+        }
+      }
       case 'settle_credit': {
         const d = await loadDetail(ctx, input.series_id)
         if (d.my_role === 'leader') return { result: fail("Only the ride's organizer can settle credit requests.") }
@@ -1108,6 +1172,11 @@ export async function runApproved(ctx: ToolCtx, name: string, input: Record<stri
         const r = await inviteCoOrganizer(ctx.user, { seriesId: String(input.series_id), email: String(input.email), organizerEmail: ctx.email })
         if (!r.ok) return fail(r.error)
         return ok({ status: r.status, emailed: r.emailed, already_emailed_today: r.alreadyEmailed }, { href: `/organizers/rides/${input.series_id}/team`, label: 'See co-organizers' })
+      }
+      case 'set_chat_access': {
+        const ids = (Array.isArray(input.member_ids) ? input.member_ids : []).map(String)
+        const results = await Promise.all(ids.map((id) => rpc<boolean>(ctx, 'set_ride_chat_access', { p_member_id: id, p_ok: input.let_in !== false })))
+        return ok({ changed: results.length, in_group_chat: results.filter(Boolean).length }, { href: `/organizers/rides/${input.series_id}/roster`, label: "See who's coming" })
       }
       case 'settle_credit': {
         const r = await rpc<{ ok: boolean; state: string; remaining: number }>(ctx, 'settle_ride_credit_request', {
