@@ -18,6 +18,8 @@ export type LoganMatch = {
   meet_at: string
   meet_station: string | null
   meet_place: string | null
+  /** A Logan Express lot, when there's no T station near both (Shift 01703). meet_place then has the words. */
+  meet_lx: string | null
   miles: number | null
   my_answer: 'yes' | 'no' | null
   their_answer: 'yes' | 'no' | 'waiting' | null

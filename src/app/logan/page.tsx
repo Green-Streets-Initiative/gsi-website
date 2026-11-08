@@ -25,7 +25,7 @@ const noPlace: Place = { address: '', lat: null, lng: null }
 
 const WAYS_LOGAN: { id: TripWay; label: string }[] = [
   { id: 'either', label: 'Either' },
-  { id: 'transit', label: 'The T together' },
+  { id: 'transit', label: 'The T or Logan Express' },
   { id: 'split', label: 'Share a taxi or ride app' },
 ]
 const TERMINALS: Terminal[] = ['A', 'B', 'C', 'E']
@@ -364,6 +364,11 @@ function TripCard({ trip, onChange, onEdit }: { trip: LoganTrip; onChange: () =>
 
 /** The plan in one line: where, when, how. */
 function planLine(trip: LoganTrip, m: LoganMatch): string {
+  if (m.meet_lx && m.meet_place) {
+    const out = trip.kind === 'airport_out'
+    const where = m.meet_place.charAt(0).toUpperCase() + m.meet_place.slice(1)
+    return `${where} ${out ? 'by' : 'about'} ${clockText(m.meet_at)} and ${out ? 'take the bus to Logan together' : 'ride home together'}.`
+  }
   const how = trip.kind === 'airport_out'
     ? (m.way === 'split' ? 'share a taxi or ride app, splitting the fare' : 'take the T together')
     : (m.way === 'split' ? 'share a ride home, splitting the fare' : 'take the T home together')
@@ -449,6 +454,12 @@ function Plan({ trip, m, onChange }: { trip: LoganTrip; m: LoganMatch; onChange:
         {busBoard ? (
           <p className="mt-2 text-[15px] leading-snug text-(--ev-ink-85)">
             The Silver Line stops at Terminal A, then B, C and E. Whoever’s terminal comes first gets on and texts the other which bus.
+          </p>
+        ) : null}
+        {m.meet_lx ? (
+          <p className="mt-2 text-[15px] leading-snug text-(--ev-ink-85)">
+            Each of you buys your own Logan Express ticket. Bus times are at{' '}
+            <a href="https://www.massport.com/logan-airport/getting-to-logan/logan-express" target="_blank" rel="noopener noreferrer" className="font-semibold underline underline-offset-2">massport.com</a>.
           </p>
         ) : null}
         {m.way === 'split' ? (
