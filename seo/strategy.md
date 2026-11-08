@@ -129,6 +129,13 @@ bed.
 One line per verdict or hard-won observation, newest first. Next hypotheses
 come from here.
 
+- 2026-11-08 (verdict, cargo e-bike cost guide, lost): six weeks, ≤4
+  impressions a week. A general price guide on a wedge topic finds nobody;
+  what ranks for us is local and specific (an event, a route, a Boston fare).
+- 2026-11-08 (observed): when the event season ends, guides and their
+  translations carry the impressions (53%) at ~0.45% CTR. Winter's click lever
+  is guide and locale titles, not more events.
+
 - 2026-11-01 (verdict, events in sitemap, won): /events grew from 299 to
   4,159 impressions a week and its CTR held at ~2.5%. Event listings are the
   site's growth engine. Getting each one found fast is worth more than any

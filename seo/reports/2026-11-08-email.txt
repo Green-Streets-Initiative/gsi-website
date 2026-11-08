@@ -1,0 +1,35 @@
+The event season is ending, so search clicks slipped (146 to 117) even as impressions hit a record. Guides and their translations now carry the impressions but get few clicks. This week's one decision is to put "Boston" in the translated guides' search titles.
+
+SCOREBOARD (each vs the 4-week average)
+- North star: 29 app-intent sessions in the week of Oct 26 (avg 16, +81%). 27 of the 29 came from the Meta ads. This week so far: 16 in 6 days.
+- Search (Oct 31 to Nov 6): 117 clicks (avg 115, +2%), 10,598 impressions (a record, +49%). Click rate 1.10%, down from 1.40%. The drop comes from the change in which pages show up, not from pages getting worse.
+- Visits by channel (week of Oct 26): search 218, Ad Grants 108, other paid 578, AI assistants 0. Share that went toward the app: 0.5%, 0.9%, 4.7%.
+- Ad Grants Nov 1-4 (snapshot from Nov 4): 8.63% click rate (the floor is 5%), 4 conversions.
+- Searches that weren't for GSI by name: 711 impressions (last week 1,863). The 4-week average is +152%, so this isn't flat. Google showed the search wording for only 7% of impressions this week, so this number is soft. I'm watching it.
+
+DECISION
+1. Put Boston in the titles of the translated guides (Spanish, Portuguese, Chinese). Recommendation: ship.
+   Why: the 84 translated guides got 2,912 impressions and 16 clicks this week (0.55%), which is 27% of all site impressions. Most of those searches come from people anywhere looking for a generic answer. The top one is the Portuguese bus-transfers guide, which shows for "baldeação ônibus" (bus transfer) and has no Boston in its title. The change is one template: the title ending "— Green Streets Initiative" becomes "— guía de Boston" / "— guia de Boston" / "— 波士顿指南". It doesn't touch the page text or the English pages. Goal: click rate of 1% or more, even if impressions fall.
+   Cost of waiting: about 3,000 impressions a week clicked at half the English rate.
+   To ship: open Claude Code and say "ship SEO item 1" (or "decline SEO item 1").
+
+EXPERIMENT BOARD
+- Verdict this week: cargo e-bike cost guide (decision date Nov 9) LOST. After six weeks it gets 4 or fewer impressions a week. Learning: a general price guide finds nobody. What ranks for us is local and specific.
+- Boston winter biking guide (Dec 14): 76 impressions, 1 click, average position 5.3. Above the target of 50 a week as the season starts. Leaning toward a win.
+- "How to pay for the T" title (Nov 23): the English page still gets almost no search impressions. Ad Grants sends it about 108 visits a week. Leaning toward a loss.
+- Event pages link to the town page (Dec 13): one week in, too early to read.
+- New search description on the drive-time guide (Dec 13): impressions up 64% (1,204), position 5.9, 2 clicks. Google may not be showing the new description yet.
+- Venue parking pages (Dec 30): in their first week indexed they got 695 impressions and 4 clicks with no ads running (Gillette 355, TD Garden 213, Fenway 111). The ads still wait for your "approve launch venue-parking".
+Five experiments are running, above the target of 2 to 4, so I'm not starting anything else.
+
+NEXT HYPOTHESES
+- Group rides, walking groups and "this weekend" listing pages for the winter, from the calendar plan.
+- The Brandeis page answers "shuttle to Boston". This is time-sensitive: searches for the Thanksgiving "turkey shuttle" peak in the next two weeks.
+- A better search title for the Boston parking-costs page (336 impressions, 2 clicks, position 8.2).
+
+HEALTH
+Sitemap 631 pages (it went up: the 30 trail pages are new). llms.txt now has 10 sections. robots.txt changed for a harmless reason (the new Safe Routes preview pages are blocked, as intended). Key pages are fine and IndexNow accepted all 631. GSI didn't appear in any of the 6 live searches I checked. I fixed the PostHog pull, which timed out five times: it now retries and reads fewer events, and it gave the same numbers as last week's pull.
+Full report: https://github.com/Green-Streets-Initiative/gsi-website/blob/main/seo/reports/2026-11-08.md
+
+Skipped: building the item 1 branch. An unattended run can't create the work copy it needs. The exact steps are saved for the "ship SEO item 1" session.
+Skipped: the AI answer sample. It runs monthly and needs a browser.

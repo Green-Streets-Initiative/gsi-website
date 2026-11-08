@@ -100,16 +100,36 @@ function loadKey() {
   }
 }
 
+// PostHog's query API returns 504 (max execution time) and 503 (capacity)
+// intermittently. Both were the cause of failed runs on 2026-10-19, 11-01 and
+// 11-08. Retry those a few times with a growing wait before giving up.
+const RETRY_STATUSES = new Set([502, 503, 504])
+const RETRY_WAITS_MS = [20_000, 60_000, 120_000]
+
 async function api(cred, pathname, init = {}) {
-  const res = await fetch(`${cred.host}${pathname}`, {
-    ...init,
-    headers: {
-      Authorization: `Bearer ${cred.key}`,
-      'Content-Type': 'application/json',
-      ...(init.headers || {}),
-    },
-  })
-  const body = await res.text()
+  let res
+  let body
+  for (let attempt = 0; ; attempt++) {
+    try {
+      res = await fetch(`${cred.host}${pathname}`, {
+        ...init,
+        headers: {
+          Authorization: `Bearer ${cred.key}`,
+          'Content-Type': 'application/json',
+          ...(init.headers || {}),
+        },
+      })
+      body = await res.text()
+    } catch (e) {
+      if (attempt >= RETRY_WAITS_MS.length) die(`fetch failed on ${pathname}: ${e.message}`)
+      console.error(`note: fetch failed (${e.message}); retrying in ${RETRY_WAITS_MS[attempt] / 1000}s`)
+      await new Promise((r) => setTimeout(r, RETRY_WAITS_MS[attempt]))
+      continue
+    }
+    if (!RETRY_STATUSES.has(res.status) || attempt >= RETRY_WAITS_MS.length) break
+    console.error(`note: ${res.status} on ${pathname}; retrying in ${RETRY_WAITS_MS[attempt] / 1000}s`)
+    await new Promise((r) => setTimeout(r, RETRY_WAITS_MS[attempt]))
+  }
   if (!res.ok) {
     // 401/403 are the two that actually happen: wrong key, or a key without
     // query:read. Say which so the blocker email is one line, not a hunt.
@@ -238,6 +258,11 @@ const OUTCOME_TRACKING_START = '2026-09-14'
 // likewise matches nothing until those pages ship.
 const ACTIVATION_EVENTS = `'advisor_results_shown', 'snapshot_viewed', 'event_outbound_click', 'event_town_click', 'venue_trip_planned'`
 const APP_INTENT_EVENTS = `'shift_store_click', 'snapshot_app_cta_clicked', 'advisor_app_cta_clicked'`
+// The session queries only need pageviews (referrer + click ids live on them)
+// and the outcome events. Scanning every web event (autocapture, web vitals,
+// etc.) over 12 weeks hit PostHog's max execution time on every attempt
+// 2026-11-08; filtering to these is the same result for a fraction of the scan.
+const SESSION_EVENTS = `'$pageview', ${ACTIVATION_EVENTS}, ${APP_INTENT_EVENTS}`
 
 const channelSessionsQuery = `
   SELECT week_start, channel, count() AS sessions,
@@ -259,6 +284,7 @@ const channelSessionsQuery = `
       countIf(event IN (${APP_INTENT_EVENTS})) > 0 AS app_intent
     FROM events
     WHERE timestamp >= toStartOfWeek(now(), 1) - INTERVAL ${WEEKS} WEEK
+      AND event IN (${SESSION_EVENTS})
       AND properties.$lib = 'web'
       AND properties.$session_id IS NOT NULL${SCANNER_EXCLUSION}
     GROUP BY sid
@@ -317,6 +343,7 @@ const landingOutcomesQuery = `
       countIf(event IN (${APP_INTENT_EVENTS})) > 0 AS app_intent
     FROM events
     WHERE timestamp >= greatest(toStartOfWeek(now(), 1) - INTERVAL 8 WEEK, toDateTime('${OUTCOME_TRACKING_START}'))
+      AND event IN (${SESSION_EVENTS})
       AND properties.$lib = 'web'
       AND properties.$session_id IS NOT NULL${SCANNER_EXCLUSION}
     GROUP BY sid
@@ -352,7 +379,11 @@ async function main() {
     channelSessionsQuery, paidLandingQuery, landingOutcomesQuery,
   ]
   const results = []
-  for (const q of queries) results.push(await hogql(cred, projectId, q))
+  const names = ['weekly sessions', 'landing pages', 'answer engines', 'channels', 'paid landings', 'landing outcomes']
+  for (const [i, q] of queries.entries()) {
+    console.error(`query ${i + 1}/${queries.length}: ${names[i]}`)
+    results.push(await hogql(cred, projectId, q))
+  }
   const [sessionRows, landingRows, answerRows, channelRows, paidLandingRows, landingOutcomeRows] = results
 
   // { 'YYYY-MM-DD': { organic_search: {sessions, activated, app_intent}, ... } }
