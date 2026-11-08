@@ -2,7 +2,7 @@
 
 ```yaml
 id: mg_t_backup_plans
-reviewed: 2026-10-17
+reviewed: 2026-11-08
 title: "Plano B para quando o T atrasa ou está fechado"
 summary: "O T chega no horário muito mais vezes do que há dois anos, mas as linhas ainda fecham às vezes. Como escolher um plano B antes de precisar dele."
 slug: backup-plans-for-the-t
@@ -24,7 +24,7 @@ Não. Ele está mais confiável do que há alguns anos. A MBTA considera que uma
 
 Em dezembro de 2024, a MBTA acabou com mais de 220 zonas de velocidade reduzida, trechos onde os trens precisam andar mais devagar por segurança ([MBTA](https://www.mbta.com/projects/track-improvement-program)). Desde então, algumas zonas curtas para consertos apareceram e sumiram. Nos últimos dados publicados, de maio de 2026, havia poucas, entre elas uma zona de 10 milhas por hora (mph, ou 16 km/h) em Braintree ([TransitMatters](https://dashboard.transitmatters.org/system/slowzones)).
 
-Fechamentos programados para obras ainda acontecem, como o fechamento da Linha Vermelha entre Alewife e Park Street de 21 a 30 de julho de 2026.
+Fechamentos programados para obras ainda acontecem, como o fechamento da Linha Vermelha entre Alewife e Park Street de 21 a 30 de julho de 2026, e o fechamento do túnel central da Linha Verde de 7 a 15 de novembro de 2026. A MBTA planeja outro fechamento de quatro dias na Linha Verde em dezembro e vai anunciar as datas com algumas semanas de antecedência ([StreetsblogMASS](https://mass.streetsblog.org/2026/11/03/another-week-long-green-line-closure-begins-saturday-and-there-are-still-more-to-come)).
 
 ### O que os passageiros fizeram durante o fechamento da Linha Vermelha em julho de 2026?
 
@@ -49,7 +49,7 @@ Não, na maioria das viagens. Em viagens de 0.75 a 2 milhas (1.2 a 3.2 km), a ve
 
 ### Vale a pena comprar uma bicicleta elétrica ou um patinete?
 
-Em Massachusetts, as bicicletas elétricas que param de ajudar no pedal quando chegam a 20 mph (32 km/h) não exigem habilitação. Você pode andar com elas nas ruas, nas ciclofaixas e na maioria dos caminhos pavimentados, mas não nas calçadas ([guia de bicicletas elétricas da MassBike](https://www.massbike.org/ebikesfaq)). Patinetes e scooters motorizados exigem carteira de motorista ou permissão de aprendiz (learner's permit) e capacete, e não podem ser usados entre o pôr do sol e o nascer do sol ([lei estadual](https://malegislature.gov/Laws/GeneralLaws/PartI/TitleXIV/Chapter90/Section1E)). Um projeto de lei que atualizaria essas regras ainda está em discussão na Assembleia Legislativa do estado. O programa estadual de reembolso para comprar bicicleta elétrica está fechado em 2026.
+Em Massachusetts, as bicicletas elétricas que param de ajudar no pedal quando chegam a 20 mph (32 km/h) não exigem habilitação. Você pode andar com elas nas ruas, nas ciclofaixas e na maioria dos caminhos pavimentados, mas não nas calçadas ([guia de bicicletas elétricas da MassBike](https://www.massbike.org/ebikesfaq)). Patinetes e scooters motorizados exigem carteira de motorista ou permissão de aprendiz (learner's permit) e capacete, e não podem ser usados entre o pôr do sol e o nascer do sol ([lei estadual](https://malegislature.gov/Laws/GeneralLaws/PartI/TitleXIV/Chapter90/Section1E)). Um projeto de lei que atualizaria essas regras ([S.3168](https://malegislature.gov/Bills/194/S3168)) parou quando as sessões formais da Assembleia Legislativa terminaram em julho de 2026, então as regras atuais continuam valendo. O programa estadual de vales para comprar bicicleta elétrica está fechado, e nenhuma nova rodada foi anunciada ([MassCEC](https://goclean.masscec.com/)).
 
 ### Experimente primeiro
 

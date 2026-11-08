@@ -2,7 +2,7 @@
 
 ```yaml
 id: mg_t_backup_plans
-reviewed: 2026-10-17
+reviewed: 2026-11-08
 title: "T 晚点或停运时的备用方案"
 summary: "现在 T 准点的次数比两年前多得多，但线路还是会停运。怎样在需要之前先选好备用方案。"
 slug: backup-plans-for-the-t
@@ -24,7 +24,7 @@ related: [mg_bluebikes, mg_subway_vs_bus, mg_transit_planning]
 
 2024年12月，MBTA 取消了 220 多个限速区。限速区是指为了安全，列车必须放慢速度的路段（[MBTA](https://www.mbta.com/projects/track-improvement-program)）。从那以后，为了维修而设的短限速区时有时无。在最近公布的 2026年5月数据中，还有几个限速区，包括 Braintree 一个 10 英里/小时（16 公里/小时）的限速区（[TransitMatters](https://dashboard.transitmatters.org/system/slowzones)）。
 
-计划中的维修停运还是会有，比如 2026年7月21日至30日，红线 Alewife 到 Park Street 一段停运。
+计划中的维修停运还是会有，比如 2026年7月21日至30日，红线 Alewife 到 Park Street 一段停运；2026年11月7日至15日，绿线中央隧道也停运了。MBTA 计划12月再让绿线停运四天，会提前几周公布日期（[StreetsblogMASS](https://mass.streetsblog.org/2026/11/03/another-week-long-green-line-closure-begins-saturday-and-there-are-still-more-to-come)）。
 
 ### 2026年7月红线停运期间，乘客是怎么出行的？
 
@@ -49,7 +49,7 @@ related: [mg_bluebikes, mg_subway_vs_bus, mg_transit_planning]
 
 ### 我应该买电动自行车或电动滑板车吗？
 
-在麻省（马萨诸塞州），速度到 20 英里/小时（32 公里/小时）就停止助力的电动自行车，不需要驾照。你可以在马路上、自行车道上和大多数铺好的小路上骑，但不能在人行道上骑（[MassBike 的电动自行车指南](https://www.massbike.org/ebikesfaq)）。电动滑板车需要驾照或学习驾照（learner's permit），还要戴头盔，而且日落到日出之间不能骑（[州法律](https://malegislature.gov/Laws/GeneralLaws/PartI/TitleXIV/Chapter90/Section1E)）。州议会还在讨论一项更新这些规定的法案。州政府的电动自行车购车补贴，2026年已经停止申请。
+在麻省（马萨诸塞州），速度到 20 英里/小时（32 公里/小时）就停止助力的电动自行车，不需要驾照。你可以在马路上、自行车道上和大多数铺好的小路上骑，但不能在人行道上骑（[MassBike 的电动自行车指南](https://www.massbike.org/ebikesfaq)）。电动滑板车需要驾照或学习驾照（learner's permit），还要戴头盔，而且日落到日出之间不能骑（[州法律](https://malegislature.gov/Laws/GeneralLaws/PartI/TitleXIV/Chapter90/Section1E)）。一项更新这些规定的法案（[S.3168](https://malegislature.gov/Bills/194/S3168)）在 2026年7月州议会正式会期结束时没有通过，所以现行规定继续有效。州政府的电动自行车购车补贴已经停止申请，也还没有宣布新一轮（[MassCEC](https://goclean.masscec.com/)）。
 
 ### 先试试这个
 

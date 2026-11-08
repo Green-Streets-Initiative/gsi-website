@@ -2,7 +2,7 @@
 
 ```yaml
 id: mg_boston_parking_costs
-reviewed: 2026-10-17
+reviewed: 2026-11-08
 title: "Quanto custa estacionar em Boston, e jeitos mais baratos de chegar"
 summary: "Um dia de trabalho numa garagem no centro custa de $30 a $47. Quanto custa estacionar numa estação do T, como seu empregador pode ajudar e se vale a pena pagar o estacionamento da faculdade."
 slug: boston-parking-costs
@@ -45,7 +45,7 @@ De todas as viagens ao centro em dias úteis feitas por pessoas que usam o Shift
 
 ### Meu empregador pode ajudar a pagar?
 
-O seu empregador pode deixar você pagar o T com até {{price:parking.irsTransitMonthly}} por mês descontados do salário antes dos impostos, e muitos pagam parte do passe direto ([IRS, limites de 2026](https://www.irs.gov/pub/irs-drop/rp-25-32.pdf)). Massachusetts também deixa você descontar do imposto de renda o que você mesmo pagou de passagens do T e de bicicletas compartilhadas, até {{price:parking.maDeductionCap}} por ano, na parte que passar de $150 ([Mass.gov](https://www.mass.gov/info-details/commuter-tax-deduction-income-exclusion-and-pre-tax-savings)).
+O seu empregador pode deixar você pagar o T com até {{price:parking.irsTransitMonthly}} por mês descontados do salário antes dos impostos, e muitos pagam parte do passe direto ([IRS, limites de 2026](https://www.irs.gov/pub/irs-drop/rp-25-32.pdf)). Em 2027 o limite sobe para $350 ([IRS](https://www.irs.gov/pub/irs-drop/rp-26-35.pdf)). Massachusetts também deixa você descontar do imposto de renda o que você mesmo pagou de passagens do T e de bicicletas compartilhadas, até {{price:parking.maDeductionCap}} por ano, na parte que passar de $150 ([Mass.gov](https://www.mass.gov/info-details/commuter-tax-deduction-income-exclusion-and-pre-tax-savings)).
 
 ### Vale a pena pagar o estacionamento de estudante?
 

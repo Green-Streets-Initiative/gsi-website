@@ -2,7 +2,7 @@
 
 ```yaml
 id: mg_boston_parking_costs
-reviewed: 2026-10-17
+reviewed: 2026-11-08
 title: "波士顿停车要花多少钱，以及更省钱的进城方式"
 summary: "在市中心的停车楼停一个工作日要 $30 到 $47。在 T 站停车要多少钱，雇主能怎样帮你，以及学校停车证值不值得买。"
 slug: boston-parking-costs
@@ -45,7 +45,7 @@ related: [mg_pay_for_t, mg_transit_time, mg_bluebikes]
 
 ### 雇主能帮我付车费吗？
 
-雇主可以让你每月最多用 {{price:parking.irsTransitMonthly}} 的税前工资来付 T 的车费，很多雇主还会直接帮你付一部分月票钱（[IRS（美国国税局），2026年上限](https://www.irs.gov/pub/irs-drop/rp-25-32.pdf)）。麻省还允许你抵扣自己付的 T 车费和共享单车费用：超过 $150 的部分可以抵扣，每年最多 {{price:parking.maDeductionCap}}（[Mass.gov](https://www.mass.gov/info-details/commuter-tax-deduction-income-exclusion-and-pre-tax-savings)）。
+雇主可以让你每月最多用 {{price:parking.irsTransitMonthly}} 的税前工资来付 T 的车费，很多雇主还会直接帮你付一部分月票钱（[IRS（美国国税局），2026年上限](https://www.irs.gov/pub/irs-drop/rp-25-32.pdf)）。2027年这个上限提高到 $350（[IRS](https://www.irs.gov/pub/irs-drop/rp-26-35.pdf)）。麻省还允许你抵扣自己付的 T 车费和共享单车费用：超过 $150 的部分可以抵扣，每年最多 {{price:parking.maDeductionCap}}（[Mass.gov](https://www.mass.gov/info-details/commuter-tax-deduction-income-exclusion-and-pre-tax-savings)）。
 
 ### 学生停车证值得买吗？
 

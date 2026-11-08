@@ -1223,7 +1223,7 @@ Pick one day next week to make your usual trip a different way: [park at a T sta
 
 ```yaml
 id: mg_boston_parking_costs
-reviewed: 2026-10-17
+reviewed: 2026-11-08
 title: "What parking costs in Boston, and cheaper ways in"
 summary: "A workday in a downtown garage costs $30 to $47. What parking at a T station costs instead, how your employer can help, and whether a campus permit is worth it."
 slug: boston-parking-costs
@@ -1265,7 +1265,7 @@ Of all weekday trips into downtown by people using Shift, about 1 in 9 was a dri
 
 ### Can my employer help pay?
 
-Employers can let you pay for the T with up to {{price:parking.irsTransitMonthly}} a month taken out before taxes, and many pay for part of the pass outright ([IRS, 2026 limits](https://www.irs.gov/pub/irs-drop/rp-25-32.pdf)). Massachusetts also lets you deduct T fares and bike-share costs you paid yourself, up to {{price:parking.maDeductionCap}} a year, for the part above $150 ([Mass.gov](https://www.mass.gov/info-details/commuter-tax-deduction-income-exclusion-and-pre-tax-savings)).
+Employers can let you pay for the T with up to {{price:parking.irsTransitMonthly}} a month taken out before taxes, and many pay for part of the pass outright ([IRS, 2026 limits](https://www.irs.gov/pub/irs-drop/rp-25-32.pdf)); the limit rises to $350 in 2027 ([IRS](https://www.irs.gov/pub/irs-drop/rp-26-35.pdf)). Massachusetts also lets you deduct T fares and bike-share costs you paid yourself, up to {{price:parking.maDeductionCap}} a year, for the part above $150 ([Mass.gov](https://www.mass.gov/info-details/commuter-tax-deduction-income-exclusion-and-pre-tax-savings)).
 
 ### Is a student parking permit worth it?
 
@@ -1348,7 +1348,7 @@ Cancel the registration online with your MyMassGov account, which is free, and s
 
 ```yaml
 id: mg_t_backup_plans
-reviewed: 2026-10-17
+reviewed: 2026-11-08
 title: "Backup plans for when the T is late or closed"
 summary: "The T runs on time far more often than it did two years ago, but closures still happen. How to pick a backup before you need one."
 slug: backup-plans-for-the-t
@@ -1369,7 +1369,7 @@ No. It's more reliable than it was a few years ago. The MBTA counts a Red, Orang
 
 In December 2024 the MBTA cleared more than 220 slow zones, stretches where trains must go slower for safety ([MBTA](https://www.mbta.com/projects/track-improvement-program)). Short ones for repairs have come and gone since. In the last published data, from May 2026, there were a few, including a 10 mph zone at Braintree ([TransitMatters](https://dashboard.transitmatters.org/system/slowzones)).
 
-Planned repair closures still happen, like the Red Line's closure from Alewife to Park Street on July 21 to 30, 2026.
+Planned repair closures still happen, like the Red Line's closure from Alewife to Park Street on July 21 to 30, 2026, and the Green Line's central tunnel closure on November 7 to 15, 2026. The MBTA plans another four-day Green Line closure in December and says it will announce the dates a few weeks ahead ([StreetsblogMASS](https://mass.streetsblog.org/2026/11/03/another-week-long-green-line-closure-begins-saturday-and-there-are-still-more-to-come)).
 
 ### What did riders do during the July 2026 Red Line closure?
 
@@ -1394,7 +1394,7 @@ No, for most trips. On trips of 0.75 to 2 miles, Green Line rides recorded by pe
 
 ### Should I get an e-bike or a scooter?
 
-In Massachusetts, e-bikes that stop helping at 20 mph need no license. You can ride them on roads, in bike lanes and on most paved paths, but not on sidewalks ([MassBike's e-bike guide](https://www.massbike.org/ebikesfaq)). Motorized scooters need a driver's license or learner's permit and a helmet, and can't be ridden between sunset and sunrise ([state law](https://malegislature.gov/Laws/GeneralLaws/PartI/TitleXIV/Chapter90/Section1E)). A bill that would update these rules is still being worked out at the State House. The state's e-bike rebate is closed for 2026.
+In Massachusetts, e-bikes that stop helping at 20 mph need no license. You can ride them on roads, in bike lanes and on most paved paths, but not on sidewalks ([MassBike's e-bike guide](https://www.massbike.org/ebikesfaq)). Motorized scooters need a driver's license or learner's permit and a helmet, and can't be ridden between sunset and sunrise ([state law](https://malegislature.gov/Laws/GeneralLaws/PartI/TitleXIV/Chapter90/Section1E)). A bill that would update these rules ([S.3168](https://malegislature.gov/Bills/194/S3168)) stalled when the Legislature's formal sessions ended in July 2026, so today's rules stand. The state's e-bike voucher is closed, and no new round has been announced ([MassCEC](https://goclean.masscec.com/)).
 
 ### Try this first
 

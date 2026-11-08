@@ -2,7 +2,7 @@
 
 ```yaml
 id: mg_t_backup_plans
-reviewed: 2026-10-16
+reviewed: 2026-11-08
 title: "Tu plan B para cuando el T llega tarde o está cerrado"
 summary: "El T llega a tiempo mucho más seguido que hace dos años, pero todavía hay cierres. Cómo elegir un plan B antes de necesitarlo."
 slug: backup-plans-for-the-t
@@ -24,7 +24,7 @@ No. Es más confiable que hace unos años. La MBTA cuenta un viaje en la Línea 
 
 En diciembre de 2024, la MBTA quitó más de 220 zonas lentas, tramos donde los trenes tienen que ir más despacio por seguridad ([MBTA](https://www.mbta.com/projects/track-improvement-program)). Desde entonces han aparecido y desaparecido algunas zonas cortas por reparaciones. En los últimos datos publicados, de mayo de 2026, había unas pocas, entre ellas una zona de 10 millas por hora (mph, o 16 km/h) en Braintree ([TransitMatters](https://dashboard.transitmatters.org/system/slowzones)).
 
-Todavía hay cierres programados para reparaciones, como el cierre de la Línea Roja entre Alewife y Park Street del 21 al 30 de julio de 2026.
+Todavía hay cierres programados para reparaciones, como el cierre de la Línea Roja entre Alewife y Park Street del 21 al 30 de julio de 2026, y el cierre del túnel central de la Línea Verde del 7 al 15 de noviembre de 2026. La MBTA planea otro cierre de cuatro días en la Línea Verde en diciembre y anunciará las fechas con unas semanas de anticipación ([StreetsblogMASS](https://mass.streetsblog.org/2026/11/03/another-week-long-green-line-closure-begins-saturday-and-there-are-still-more-to-come)).
 
 ### ¿Qué hicieron los pasajeros durante el cierre de la Línea Roja en julio de 2026?
 
@@ -49,7 +49,7 @@ No, en la mayoría de los viajes. En viajes de 0.75 a 2 millas (1.2 a 3.2 km), l
 
 ### ¿Me conviene una bici eléctrica o un scooter?
 
-En Massachusetts, las bicis eléctricas que dejan de ayudarte al llegar a 20 mph (32 km/h) no necesitan licencia. Puedes usarlas en la calle, en los carriles para bici y en la mayoría de los caminos pavimentados, pero no en las aceras ([guía de MassBike sobre bicis eléctricas](https://www.massbike.org/ebikesfaq)). Para un scooter con motor necesitas licencia de manejar o permiso de aprendiz, y casco. Además, no puedes usarlo entre la puesta del sol y el amanecer ([ley estatal](https://malegislature.gov/Laws/GeneralLaws/PartI/TitleXIV/Chapter90/Section1E)). En la Legislatura estatal todavía se está negociando un proyecto de ley que cambiaría estas reglas. El reembolso del estado para comprar una bici eléctrica está cerrado en 2026.
+En Massachusetts, las bicis eléctricas que dejan de ayudarte al llegar a 20 mph (32 km/h) no necesitan licencia. Puedes usarlas en la calle, en los carriles para bici y en la mayoría de los caminos pavimentados, pero no en las aceras ([guía de MassBike sobre bicis eléctricas](https://www.massbike.org/ebikesfaq)). Para un scooter con motor necesitas licencia de manejar o permiso de aprendiz, y casco. Además, no puedes usarlo entre la puesta del sol y el amanecer ([ley estatal](https://malegislature.gov/Laws/GeneralLaws/PartI/TitleXIV/Chapter90/Section1E)). Un proyecto de ley que cambiaría estas reglas ([S.3168](https://malegislature.gov/Bills/194/S3168)) quedó detenido cuando terminaron las sesiones formales de la Legislatura en julio de 2026, así que las reglas actuales siguen vigentes. El bono del estado para comprar una bici eléctrica está cerrado y no se ha anunciado una nueva ronda ([MassCEC](https://goclean.masscec.com/)).
 
 ### Prueba esto primero
 

@@ -19,7 +19,7 @@ No. Es más confiable que hace unos años. La MBTA cuenta un viaje en la Línea 
 
 En diciembre de 2024, la MBTA quitó más de 220 zonas lentas, tramos donde los trenes tienen que ir más despacio por seguridad ([MBTA](https://www.mbta.com/projects/track-improvement-program)). Desde entonces han aparecido y desaparecido algunas zonas cortas por reparaciones. En los últimos datos publicados, de mayo de 2026, había unas pocas, entre ellas una zona de 10 millas por hora (mph, o 16 km/h) en Braintree ([TransitMatters](https://dashboard.transitmatters.org/system/slowzones)).
 
-Todavía hay cierres programados para reparaciones, como el cierre de la Línea Roja entre Alewife y Park Street del 21 al 30 de julio de 2026.
+Todavía hay cierres programados para reparaciones, como el cierre de la Línea Roja entre Alewife y Park Street del 21 al 30 de julio de 2026, y el cierre del túnel central de la Línea Verde del 7 al 15 de noviembre de 2026. La MBTA planea otro cierre de cuatro días en la Línea Verde en diciembre y anunciará las fechas con unas semanas de anticipación ([StreetsblogMASS](https://mass.streetsblog.org/2026/11/03/another-week-long-green-line-closure-begins-saturday-and-there-are-still-more-to-come)).
 
 ### ¿Qué hicieron los pasajeros durante el cierre de la Línea Roja en julio de 2026?
 
@@ -44,7 +44,7 @@ No, en la mayoría de los viajes. En viajes de 0.75 a 2 millas (1.2 a 3.2 km), l
 
 ### ¿Me conviene una bici eléctrica o un scooter?
 
-En Massachusetts, las bicis eléctricas que dejan de ayudarte al llegar a 20 mph (32 km/h) no necesitan licencia. Puedes usarlas en la calle, en los carriles para bici y en la mayoría de los caminos pavimentados, pero no en las aceras ([guía de MassBike sobre bicis eléctricas](https://www.massbike.org/ebikesfaq)). Para un scooter con motor necesitas licencia de manejar o permiso de aprendiz, y casco. Además, no puedes usarlo entre la puesta del sol y el amanecer ([ley estatal](https://malegislature.gov/Laws/GeneralLaws/PartI/TitleXIV/Chapter90/Section1E)). En la Legislatura estatal todavía se está negociando un proyecto de ley que cambiaría estas reglas. El reembolso del estado para comprar una bici eléctrica está cerrado en 2026.
+En Massachusetts, las bicis eléctricas que dejan de ayudarte al llegar a 20 mph (32 km/h) no necesitan licencia. Puedes usarlas en la calle, en los carriles para bici y en la mayoría de los caminos pavimentados, pero no en las aceras ([guía de MassBike sobre bicis eléctricas](https://www.massbike.org/ebikesfaq)). Para un scooter con motor necesitas licencia de manejar o permiso de aprendiz, y casco. Además, no puedes usarlo entre la puesta del sol y el amanecer ([ley estatal](https://malegislature.gov/Laws/GeneralLaws/PartI/TitleXIV/Chapter90/Section1E)). Un proyecto de ley que cambiaría estas reglas ([S.3168](https://malegislature.gov/Bills/194/S3168)) quedó detenido cuando terminaron las sesiones formales de la Legislatura en julio de 2026, así que las reglas actuales siguen vigentes. El bono del estado para comprar una bici eléctrica está cerrado y no se ha anunciado una nueva ronda ([MassCEC](https://goclean.masscec.com/)).
 
 ### Prueba esto primero
 
@@ -60,7 +60,7 @@ No. Es más confiable que hace unos años. La MBTA cuenta un viaje en la Línea 
 
 En diciembre de 2024, la MBTA quitó más de 220 zonas lentas, tramos donde los trenes tienen que ir más despacio por seguridad ([MBTA](https://www.mbta.com/projects/track-improvement-program)). Desde entonces han aparecido y desaparecido algunas zonas cortas por reparaciones. En los últimos datos publicados, de mayo de 2026, había unas pocas, entre ellas una zona de 10 millas por hora (mph, o 16 km/h) en Braintree ([TransitMatters](https://dashboard.transitmatters.org/system/slowzones)).
 
-Todavía hay cierres programados para reparaciones, como el cierre de la Línea Roja entre Alewife y Park Street del 21 al 30 de julio de 2026.
+Todavía hay cierres programados para reparaciones, como el cierre de la Línea Roja entre Alewife y Park Street del 21 al 30 de julio de 2026, y el cierre del túnel central de la Línea Verde del 7 al 15 de noviembre de 2026. La MBTA planea otro cierre de cuatro días en la Línea Verde en diciembre y anunciará las fechas con unas semanas de anticipación ([StreetsblogMASS](https://mass.streetsblog.org/2026/11/03/another-week-long-green-line-closure-begins-saturday-and-there-are-still-more-to-come)).
 
 ### ¿Qué hicieron los pasajeros durante el cierre de la Línea Roja en julio de 2026?
 
@@ -85,7 +85,7 @@ No, en la mayoría de los viajes. En viajes de 0.75 a 2 millas (1.2 a 3.2 km), l
 
 ### ¿Me conviene una bici eléctrica o un scooter?
 
-En Massachusetts, las bicis eléctricas que dejan de ayudarte al llegar a 20 mph (32 km/h) no necesitan licencia. Puedes usarlas en la calle, en los carriles para bici y en la mayoría de los caminos pavimentados, pero no en las aceras ([guía de MassBike sobre bicis eléctricas](https://www.massbike.org/ebikesfaq)). Para un scooter con motor necesitas licencia de manejar o permiso de aprendiz, y casco. Además, no puedes usarlo entre la puesta del sol y el amanecer ([ley estatal](https://malegislature.gov/Laws/GeneralLaws/PartI/TitleXIV/Chapter90/Section1E)). En la Legislatura estatal todavía se está negociando un proyecto de ley que cambiaría estas reglas. El reembolso del estado para comprar una bici eléctrica está cerrado en 2026.
+En Massachusetts, las bicis eléctricas que dejan de ayudarte al llegar a 20 mph (32 km/h) no necesitan licencia. Puedes usarlas en la calle, en los carriles para bici y en la mayoría de los caminos pavimentados, pero no en las aceras ([guía de MassBike sobre bicis eléctricas](https://www.massbike.org/ebikesfaq)). Para un scooter con motor necesitas licencia de manejar o permiso de aprendiz, y casco. Además, no puedes usarlo entre la puesta del sol y el amanecer ([ley estatal](https://malegislature.gov/Laws/GeneralLaws/PartI/TitleXIV/Chapter90/Section1E)). Un proyecto de ley que cambiaría estas reglas ([S.3168](https://malegislature.gov/Bills/194/S3168)) quedó detenido cuando terminaron las sesiones formales de la Legislatura en julio de 2026, así que las reglas actuales siguen vigentes. El bono del estado para comprar una bici eléctrica está cerrado y no se ha anunciado una nueva ronda ([MassCEC](https://goclean.masscec.com/)).
 
 ### Prueba esto primero
 
@@ -93,7 +93,7 @@ Prepara tu plan B ahora, antes de necesitarlo.
 
 1. [Planea tu viaje de siempre](https://www.gogreenstreets.org/es/guides/backup-plans-for-the-t#trip-planner). Verás el autobús o el tren y la ruta en bici. El mapa muestra las llegadas en vivo y las estaciones Bluebikes más cercanas.
 2. [Suscríbete a T-Alerts](https://alerts.mbta.com/) (en inglés) para tu línea, así te enteras de un cierre antes de salir de casa.$guidebody$,
-    timezone('America/New_York', '2026-10-17 12:00'::timestamp),
+    timezone('America/New_York', '2026-11-08 12:00'::timestamp),
     'ai',
     NULL
   ),
@@ -441,7 +441,7 @@ De todos los viajes al centro que hicieron de lunes a viernes las personas que u
 
 ### ¿Me puede ayudar mi empleador a pagar?
 
-Tu empleador puede dejarte pagar el T con hasta $340 al mes de tu sueldo antes de impuestos. Muchos empleadores también pagan parte del pase ([IRS, límites de 2026](https://www.irs.gov/pub/irs-drop/rp-25-32.pdf)). Massachusetts también te deja deducir de tus impuestos lo que pagaste tú en el T y en bicis compartidas, hasta $750 al año, por la parte que pase de $150 ([Mass.gov](https://www.mass.gov/info-details/commuter-tax-deduction-income-exclusion-and-pre-tax-savings)).
+Tu empleador puede dejarte pagar el T con hasta $340 al mes de tu sueldo antes de impuestos. Muchos empleadores también pagan parte del pase ([IRS, límites de 2026](https://www.irs.gov/pub/irs-drop/rp-25-32.pdf)). En 2027 el límite sube a $350 ([IRS](https://www.irs.gov/pub/irs-drop/rp-26-35.pdf)). Massachusetts también te deja deducir de tus impuestos lo que pagaste tú en el T y en bicis compartidas, hasta $750 al año, por la parte que pase de $150 ([Mass.gov](https://www.mass.gov/info-details/commuter-tax-deduction-income-exclusion-and-pre-tax-savings)).
 
 ### ¿Vale la pena un permiso de estacionamiento para estudiantes?
 
@@ -486,7 +486,7 @@ De todos los viajes al centro que hicieron de lunes a viernes las personas que u
 
 ### ¿Me puede ayudar mi empleador a pagar?
 
-Tu empleador puede dejarte pagar el T con hasta {{price:parking.irsTransitMonthly}} al mes de tu sueldo antes de impuestos. Muchos empleadores también pagan parte del pase ([IRS, límites de 2026](https://www.irs.gov/pub/irs-drop/rp-25-32.pdf)). Massachusetts también te deja deducir de tus impuestos lo que pagaste tú en el T y en bicis compartidas, hasta {{price:parking.maDeductionCap}} al año, por la parte que pase de $150 ([Mass.gov](https://www.mass.gov/info-details/commuter-tax-deduction-income-exclusion-and-pre-tax-savings)).
+Tu empleador puede dejarte pagar el T con hasta {{price:parking.irsTransitMonthly}} al mes de tu sueldo antes de impuestos. Muchos empleadores también pagan parte del pase ([IRS, límites de 2026](https://www.irs.gov/pub/irs-drop/rp-25-32.pdf)). En 2027 el límite sube a $350 ([IRS](https://www.irs.gov/pub/irs-drop/rp-26-35.pdf)). Massachusetts también te deja deducir de tus impuestos lo que pagaste tú en el T y en bicis compartidas, hasta {{price:parking.maDeductionCap}} al año, por la parte que pase de $150 ([Mass.gov](https://www.mass.gov/info-details/commuter-tax-deduction-income-exclusion-and-pre-tax-savings)).
 
 ### ¿Vale la pena un permiso de estacionamiento para estudiantes?
 
@@ -502,7 +502,7 @@ Muchas universidades venden el pase del T con 11% de descuento a través del [MB
 
 1. [Encuentra el estacionamiento de una estación del T](https://www.gogreenstreets.org/es/guides/boston-parking-costs#station-parking) más cercano a donde empieza tu viaje en auto.
 2. Un día de la semana que viene, estaciona ahí y sigue el viaje en el T. Compara el costo y el tiempo con un día normal.$guidebody$,
-    timezone('America/New_York', '2026-10-17 12:00'::timestamp),
+    timezone('America/New_York', '2026-11-08 12:00'::timestamp),
     'ai',
     NULL
   ),
@@ -2030,7 +2030,7 @@ Não. Ele está mais confiável do que há alguns anos. A MBTA considera que uma
 
 Em dezembro de 2024, a MBTA acabou com mais de 220 zonas de velocidade reduzida, trechos onde os trens precisam andar mais devagar por segurança ([MBTA](https://www.mbta.com/projects/track-improvement-program)). Desde então, algumas zonas curtas para consertos apareceram e sumiram. Nos últimos dados publicados, de maio de 2026, havia poucas, entre elas uma zona de 10 milhas por hora (mph, ou 16 km/h) em Braintree ([TransitMatters](https://dashboard.transitmatters.org/system/slowzones)).
 
-Fechamentos programados para obras ainda acontecem, como o fechamento da Linha Vermelha entre Alewife e Park Street de 21 a 30 de julho de 2026.
+Fechamentos programados para obras ainda acontecem, como o fechamento da Linha Vermelha entre Alewife e Park Street de 21 a 30 de julho de 2026, e o fechamento do túnel central da Linha Verde de 7 a 15 de novembro de 2026. A MBTA planeja outro fechamento de quatro dias na Linha Verde em dezembro e vai anunciar as datas com algumas semanas de antecedência ([StreetsblogMASS](https://mass.streetsblog.org/2026/11/03/another-week-long-green-line-closure-begins-saturday-and-there-are-still-more-to-come)).
 
 ### O que os passageiros fizeram durante o fechamento da Linha Vermelha em julho de 2026?
 
@@ -2055,7 +2055,7 @@ Não, na maioria das viagens. Em viagens de 0.75 a 2 milhas (1.2 a 3.2 km), a ve
 
 ### Vale a pena comprar uma bicicleta elétrica ou um patinete?
 
-Em Massachusetts, as bicicletas elétricas que param de ajudar no pedal quando chegam a 20 mph (32 km/h) não exigem habilitação. Você pode andar com elas nas ruas, nas ciclofaixas e na maioria dos caminhos pavimentados, mas não nas calçadas ([guia de bicicletas elétricas da MassBike](https://www.massbike.org/ebikesfaq)). Patinetes e scooters motorizados exigem carteira de motorista ou permissão de aprendiz (learner's permit) e capacete, e não podem ser usados entre o pôr do sol e o nascer do sol ([lei estadual](https://malegislature.gov/Laws/GeneralLaws/PartI/TitleXIV/Chapter90/Section1E)). Um projeto de lei que atualizaria essas regras ainda está em discussão na Assembleia Legislativa do estado. O programa estadual de reembolso para comprar bicicleta elétrica está fechado em 2026.
+Em Massachusetts, as bicicletas elétricas que param de ajudar no pedal quando chegam a 20 mph (32 km/h) não exigem habilitação. Você pode andar com elas nas ruas, nas ciclofaixas e na maioria dos caminhos pavimentados, mas não nas calçadas ([guia de bicicletas elétricas da MassBike](https://www.massbike.org/ebikesfaq)). Patinetes e scooters motorizados exigem carteira de motorista ou permissão de aprendiz (learner's permit) e capacete, e não podem ser usados entre o pôr do sol e o nascer do sol ([lei estadual](https://malegislature.gov/Laws/GeneralLaws/PartI/TitleXIV/Chapter90/Section1E)). Um projeto de lei que atualizaria essas regras ([S.3168](https://malegislature.gov/Bills/194/S3168)) parou quando as sessões formais da Assembleia Legislativa terminaram em julho de 2026, então as regras atuais continuam valendo. O programa estadual de vales para comprar bicicleta elétrica está fechado, e nenhuma nova rodada foi anunciada ([MassCEC](https://goclean.masscec.com/)).
 
 ### Experimente primeiro
 
@@ -2071,7 +2071,7 @@ Não. Ele está mais confiável do que há alguns anos. A MBTA considera que uma
 
 Em dezembro de 2024, a MBTA acabou com mais de 220 zonas de velocidade reduzida, trechos onde os trens precisam andar mais devagar por segurança ([MBTA](https://www.mbta.com/projects/track-improvement-program)). Desde então, algumas zonas curtas para consertos apareceram e sumiram. Nos últimos dados publicados, de maio de 2026, havia poucas, entre elas uma zona de 10 milhas por hora (mph, ou 16 km/h) em Braintree ([TransitMatters](https://dashboard.transitmatters.org/system/slowzones)).
 
-Fechamentos programados para obras ainda acontecem, como o fechamento da Linha Vermelha entre Alewife e Park Street de 21 a 30 de julho de 2026.
+Fechamentos programados para obras ainda acontecem, como o fechamento da Linha Vermelha entre Alewife e Park Street de 21 a 30 de julho de 2026, e o fechamento do túnel central da Linha Verde de 7 a 15 de novembro de 2026. A MBTA planeja outro fechamento de quatro dias na Linha Verde em dezembro e vai anunciar as datas com algumas semanas de antecedência ([StreetsblogMASS](https://mass.streetsblog.org/2026/11/03/another-week-long-green-line-closure-begins-saturday-and-there-are-still-more-to-come)).
 
 ### O que os passageiros fizeram durante o fechamento da Linha Vermelha em julho de 2026?
 
@@ -2096,7 +2096,7 @@ Não, na maioria das viagens. Em viagens de 0.75 a 2 milhas (1.2 a 3.2 km), a ve
 
 ### Vale a pena comprar uma bicicleta elétrica ou um patinete?
 
-Em Massachusetts, as bicicletas elétricas que param de ajudar no pedal quando chegam a 20 mph (32 km/h) não exigem habilitação. Você pode andar com elas nas ruas, nas ciclofaixas e na maioria dos caminhos pavimentados, mas não nas calçadas ([guia de bicicletas elétricas da MassBike](https://www.massbike.org/ebikesfaq)). Patinetes e scooters motorizados exigem carteira de motorista ou permissão de aprendiz (learner's permit) e capacete, e não podem ser usados entre o pôr do sol e o nascer do sol ([lei estadual](https://malegislature.gov/Laws/GeneralLaws/PartI/TitleXIV/Chapter90/Section1E)). Um projeto de lei que atualizaria essas regras ainda está em discussão na Assembleia Legislativa do estado. O programa estadual de reembolso para comprar bicicleta elétrica está fechado em 2026.
+Em Massachusetts, as bicicletas elétricas que param de ajudar no pedal quando chegam a 20 mph (32 km/h) não exigem habilitação. Você pode andar com elas nas ruas, nas ciclofaixas e na maioria dos caminhos pavimentados, mas não nas calçadas ([guia de bicicletas elétricas da MassBike](https://www.massbike.org/ebikesfaq)). Patinetes e scooters motorizados exigem carteira de motorista ou permissão de aprendiz (learner's permit) e capacete, e não podem ser usados entre o pôr do sol e o nascer do sol ([lei estadual](https://malegislature.gov/Laws/GeneralLaws/PartI/TitleXIV/Chapter90/Section1E)). Um projeto de lei que atualizaria essas regras ([S.3168](https://malegislature.gov/Bills/194/S3168)) parou quando as sessões formais da Assembleia Legislativa terminaram em julho de 2026, então as regras atuais continuam valendo. O programa estadual de vales para comprar bicicleta elétrica está fechado, e nenhuma nova rodada foi anunciada ([MassCEC](https://goclean.masscec.com/)).
 
 ### Experimente primeiro
 
@@ -2104,7 +2104,7 @@ Prepare o seu plano B agora, antes de precisar dele.
 
 1. [Planeje o seu trajeto de sempre](https://www.gogreenstreets.org/pt-BR/guides/backup-plans-for-the-t#trip-planner). Você vai ver o ônibus ou o trem e o caminho de bicicleta, e o mapa mostra as chegadas em tempo real e as estações Bluebikes mais próximas.
 2. [Cadastre-se nos T-Alerts](https://alerts.mbta.com/) (em inglês) para a sua linha, para saber de um fechamento antes de sair de casa.$guidebody$,
-    timezone('America/New_York', '2026-10-17 12:00'::timestamp),
+    timezone('America/New_York', '2026-11-08 12:00'::timestamp),
     'ai',
     NULL
   ),
@@ -2452,7 +2452,7 @@ De todas as viagens ao centro em dias úteis feitas por pessoas que usam o Shift
 
 ### Meu empregador pode ajudar a pagar?
 
-O seu empregador pode deixar você pagar o T com até $340 por mês descontados do salário antes dos impostos, e muitos pagam parte do passe direto ([IRS, limites de 2026](https://www.irs.gov/pub/irs-drop/rp-25-32.pdf)). Massachusetts também deixa você descontar do imposto de renda o que você mesmo pagou de passagens do T e de bicicletas compartilhadas, até $750 por ano, na parte que passar de $150 ([Mass.gov](https://www.mass.gov/info-details/commuter-tax-deduction-income-exclusion-and-pre-tax-savings)).
+O seu empregador pode deixar você pagar o T com até $340 por mês descontados do salário antes dos impostos, e muitos pagam parte do passe direto ([IRS, limites de 2026](https://www.irs.gov/pub/irs-drop/rp-25-32.pdf)). Em 2027 o limite sobe para $350 ([IRS](https://www.irs.gov/pub/irs-drop/rp-26-35.pdf)). Massachusetts também deixa você descontar do imposto de renda o que você mesmo pagou de passagens do T e de bicicletas compartilhadas, até $750 por ano, na parte que passar de $150 ([Mass.gov](https://www.mass.gov/info-details/commuter-tax-deduction-income-exclusion-and-pre-tax-savings)).
 
 ### Vale a pena pagar o estacionamento de estudante?
 
@@ -2497,7 +2497,7 @@ De todas as viagens ao centro em dias úteis feitas por pessoas que usam o Shift
 
 ### Meu empregador pode ajudar a pagar?
 
-O seu empregador pode deixar você pagar o T com até {{price:parking.irsTransitMonthly}} por mês descontados do salário antes dos impostos, e muitos pagam parte do passe direto ([IRS, limites de 2026](https://www.irs.gov/pub/irs-drop/rp-25-32.pdf)). Massachusetts também deixa você descontar do imposto de renda o que você mesmo pagou de passagens do T e de bicicletas compartilhadas, até {{price:parking.maDeductionCap}} por ano, na parte que passar de $150 ([Mass.gov](https://www.mass.gov/info-details/commuter-tax-deduction-income-exclusion-and-pre-tax-savings)).
+O seu empregador pode deixar você pagar o T com até {{price:parking.irsTransitMonthly}} por mês descontados do salário antes dos impostos, e muitos pagam parte do passe direto ([IRS, limites de 2026](https://www.irs.gov/pub/irs-drop/rp-25-32.pdf)). Em 2027 o limite sobe para $350 ([IRS](https://www.irs.gov/pub/irs-drop/rp-26-35.pdf)). Massachusetts também deixa você descontar do imposto de renda o que você mesmo pagou de passagens do T e de bicicletas compartilhadas, até {{price:parking.maDeductionCap}} por ano, na parte que passar de $150 ([Mass.gov](https://www.mass.gov/info-details/commuter-tax-deduction-income-exclusion-and-pre-tax-savings)).
 
 ### Vale a pena pagar o estacionamento de estudante?
 
@@ -2513,7 +2513,7 @@ Muitas faculdades vendem o passe do T com 11% de desconto pelo [MBTA Semester Pa
 
 1. [Encontre o estacionamento de estação do T](https://www.gogreenstreets.org/pt-BR/guides/boston-parking-costs#station-parking) mais perto de onde o seu trajeto de carro começa.
 2. Num dia da semana que vem, estacione lá e siga de T. Compare o custo e o tempo com um dia normal.$guidebody$,
-    timezone('America/New_York', '2026-10-17 12:00'::timestamp),
+    timezone('America/New_York', '2026-11-08 12:00'::timestamp),
     'ai',
     NULL
   ),
@@ -4041,7 +4041,7 @@ Olhe para trás antes de mudar de posição na faixa. Dê uma olhada rápida por
 
 2024年12月，MBTA 取消了 220 多个限速区。限速区是指为了安全，列车必须放慢速度的路段（[MBTA](https://www.mbta.com/projects/track-improvement-program)）。从那以后，为了维修而设的短限速区时有时无。在最近公布的 2026年5月数据中，还有几个限速区，包括 Braintree 一个 10 英里/小时（16 公里/小时）的限速区（[TransitMatters](https://dashboard.transitmatters.org/system/slowzones)）。
 
-计划中的维修停运还是会有，比如 2026年7月21日至30日，红线 Alewife 到 Park Street 一段停运。
+计划中的维修停运还是会有，比如 2026年7月21日至30日，红线 Alewife 到 Park Street 一段停运；2026年11月7日至15日，绿线中央隧道也停运了。MBTA 计划12月再让绿线停运四天，会提前几周公布日期（[StreetsblogMASS](https://mass.streetsblog.org/2026/11/03/another-week-long-green-line-closure-begins-saturday-and-there-are-still-more-to-come)）。
 
 ### 2026年7月红线停运期间，乘客是怎么出行的？
 
@@ -4066,7 +4066,7 @@ Olhe para trás antes de mudar de posição na faixa. Dê uma olhada rápida por
 
 ### 我应该买电动自行车或电动滑板车吗？
 
-在麻省（马萨诸塞州），速度到 20 英里/小时（32 公里/小时）就停止助力的电动自行车，不需要驾照。你可以在马路上、自行车道上和大多数铺好的小路上骑，但不能在人行道上骑（[MassBike 的电动自行车指南](https://www.massbike.org/ebikesfaq)）。电动滑板车需要驾照或学习驾照（learner's permit），还要戴头盔，而且日落到日出之间不能骑（[州法律](https://malegislature.gov/Laws/GeneralLaws/PartI/TitleXIV/Chapter90/Section1E)）。州议会还在讨论一项更新这些规定的法案。州政府的电动自行车购车补贴，2026年已经停止申请。
+在麻省（马萨诸塞州），速度到 20 英里/小时（32 公里/小时）就停止助力的电动自行车，不需要驾照。你可以在马路上、自行车道上和大多数铺好的小路上骑，但不能在人行道上骑（[MassBike 的电动自行车指南](https://www.massbike.org/ebikesfaq)）。电动滑板车需要驾照或学习驾照（learner's permit），还要戴头盔，而且日落到日出之间不能骑（[州法律](https://malegislature.gov/Laws/GeneralLaws/PartI/TitleXIV/Chapter90/Section1E)）。一项更新这些规定的法案（[S.3168](https://malegislature.gov/Bills/194/S3168)）在 2026年7月州议会正式会期结束时没有通过，所以现行规定继续有效。州政府的电动自行车购车补贴已经停止申请，也还没有宣布新一轮（[MassCEC](https://goclean.masscec.com/)）。
 
 ### 先试试这个
 
@@ -4082,7 +4082,7 @@ Olhe para trás antes de mudar de posição na faixa. Dê uma olhada rápida por
 
 2024年12月，MBTA 取消了 220 多个限速区。限速区是指为了安全，列车必须放慢速度的路段（[MBTA](https://www.mbta.com/projects/track-improvement-program)）。从那以后，为了维修而设的短限速区时有时无。在最近公布的 2026年5月数据中，还有几个限速区，包括 Braintree 一个 10 英里/小时（16 公里/小时）的限速区（[TransitMatters](https://dashboard.transitmatters.org/system/slowzones)）。
 
-计划中的维修停运还是会有，比如 2026年7月21日至30日，红线 Alewife 到 Park Street 一段停运。
+计划中的维修停运还是会有，比如 2026年7月21日至30日，红线 Alewife 到 Park Street 一段停运；2026年11月7日至15日，绿线中央隧道也停运了。MBTA 计划12月再让绿线停运四天，会提前几周公布日期（[StreetsblogMASS](https://mass.streetsblog.org/2026/11/03/another-week-long-green-line-closure-begins-saturday-and-there-are-still-more-to-come)）。
 
 ### 2026年7月红线停运期间，乘客是怎么出行的？
 
@@ -4107,7 +4107,7 @@ Olhe para trás antes de mudar de posição na faixa. Dê uma olhada rápida por
 
 ### 我应该买电动自行车或电动滑板车吗？
 
-在麻省（马萨诸塞州），速度到 20 英里/小时（32 公里/小时）就停止助力的电动自行车，不需要驾照。你可以在马路上、自行车道上和大多数铺好的小路上骑，但不能在人行道上骑（[MassBike 的电动自行车指南](https://www.massbike.org/ebikesfaq)）。电动滑板车需要驾照或学习驾照（learner's permit），还要戴头盔，而且日落到日出之间不能骑（[州法律](https://malegislature.gov/Laws/GeneralLaws/PartI/TitleXIV/Chapter90/Section1E)）。州议会还在讨论一项更新这些规定的法案。州政府的电动自行车购车补贴，2026年已经停止申请。
+在麻省（马萨诸塞州），速度到 20 英里/小时（32 公里/小时）就停止助力的电动自行车，不需要驾照。你可以在马路上、自行车道上和大多数铺好的小路上骑，但不能在人行道上骑（[MassBike 的电动自行车指南](https://www.massbike.org/ebikesfaq)）。电动滑板车需要驾照或学习驾照（learner's permit），还要戴头盔，而且日落到日出之间不能骑（[州法律](https://malegislature.gov/Laws/GeneralLaws/PartI/TitleXIV/Chapter90/Section1E)）。一项更新这些规定的法案（[S.3168](https://malegislature.gov/Bills/194/S3168)）在 2026年7月州议会正式会期结束时没有通过，所以现行规定继续有效。州政府的电动自行车购车补贴已经停止申请，也还没有宣布新一轮（[MassCEC](https://goclean.masscec.com/)）。
 
 ### 先试试这个
 
@@ -4115,7 +4115,7 @@ Olhe para trás antes de mudar de posição na faixa. Dê uma olhada rápida por
 
 1. [规划你平常的行程](https://www.gogreenstreets.org/zh-Hans/guides/backup-plans-for-the-t#trip-planner)。你会看到可以坐的公交车或火车，还有骑自行车的路线，地图上也会显示实时到站时间和最近的 Bluebikes 站点。
 2. 为你常坐的线路[订阅 T-Alerts](https://alerts.mbta.com/)（英文），这样有停运时，你出门前就会知道。$guidebody$,
-    timezone('America/New_York', '2026-10-17 12:00'::timestamp),
+    timezone('America/New_York', '2026-11-08 12:00'::timestamp),
     'ai',
     NULL
   ),
@@ -4463,7 +4463,7 @@ Bluebikes 也是试试冬天骑车的简单办法，不用一开始就让自己�
 
 ### 雇主能帮我付车费吗？
 
-雇主可以让你每月最多用 $340 的税前工资来付 T 的车费，很多雇主还会直接帮你付一部分月票钱（[IRS（美国国税局），2026年上限](https://www.irs.gov/pub/irs-drop/rp-25-32.pdf)）。麻省还允许你抵扣自己付的 T 车费和共享单车费用：超过 $150 的部分可以抵扣，每年最多 $750（[Mass.gov](https://www.mass.gov/info-details/commuter-tax-deduction-income-exclusion-and-pre-tax-savings)）。
+雇主可以让你每月最多用 $340 的税前工资来付 T 的车费，很多雇主还会直接帮你付一部分月票钱（[IRS（美国国税局），2026年上限](https://www.irs.gov/pub/irs-drop/rp-25-32.pdf)）。2027年这个上限提高到 $350（[IRS](https://www.irs.gov/pub/irs-drop/rp-26-35.pdf)）。麻省还允许你抵扣自己付的 T 车费和共享单车费用：超过 $150 的部分可以抵扣，每年最多 $750（[Mass.gov](https://www.mass.gov/info-details/commuter-tax-deduction-income-exclusion-and-pre-tax-savings)）。
 
 ### 学生停车证值得买吗？
 
@@ -4508,7 +4508,7 @@ Bluebikes 也是试试冬天骑车的简单办法，不用一开始就让自己�
 
 ### 雇主能帮我付车费吗？
 
-雇主可以让你每月最多用 {{price:parking.irsTransitMonthly}} 的税前工资来付 T 的车费，很多雇主还会直接帮你付一部分月票钱（[IRS（美国国税局），2026年上限](https://www.irs.gov/pub/irs-drop/rp-25-32.pdf)）。麻省还允许你抵扣自己付的 T 车费和共享单车费用：超过 $150 的部分可以抵扣，每年最多 {{price:parking.maDeductionCap}}（[Mass.gov](https://www.mass.gov/info-details/commuter-tax-deduction-income-exclusion-and-pre-tax-savings)）。
+雇主可以让你每月最多用 {{price:parking.irsTransitMonthly}} 的税前工资来付 T 的车费，很多雇主还会直接帮你付一部分月票钱（[IRS（美国国税局），2026年上限](https://www.irs.gov/pub/irs-drop/rp-25-32.pdf)）。2027年这个上限提高到 $350（[IRS](https://www.irs.gov/pub/irs-drop/rp-26-35.pdf)）。麻省还允许你抵扣自己付的 T 车费和共享单车费用：超过 $150 的部分可以抵扣，每年最多 {{price:parking.maDeductionCap}}（[Mass.gov](https://www.mass.gov/info-details/commuter-tax-deduction-income-exclusion-and-pre-tax-savings)）。
 
 ### 学生停车证值得买吗？
 
@@ -4524,7 +4524,7 @@ Bluebikes 也是试试冬天骑车的简单办法，不用一开始就让自己�
 
 1. [找到离你开车出发的地方最近的 T 站停车场](https://www.gogreenstreets.org/zh-Hans/guides/boston-parking-costs#station-parking)。
 2. 下周挑一天，把车停在那里，再坐车进城。比一比这一天和平常一天的花费和时间。$guidebody$,
-    timezone('America/New_York', '2026-10-17 12:00'::timestamp),
+    timezone('America/New_York', '2026-11-08 12:00'::timestamp),
     'ai',
     NULL
   ),
