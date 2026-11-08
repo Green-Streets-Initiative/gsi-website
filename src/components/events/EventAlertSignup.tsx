@@ -73,6 +73,49 @@ export default function EventAlertSignup({ filters: f, source, className = '', i
 }
 
 /**
+ * A kind page's box (/events/group-rides...): that kind every Thursday,
+ * around Boston or statewide. The page passes the filter; same topic and
+ * confirmation as the calendar's box.
+ */
+export function KindPageAlertSignup({ kind, type, near, summary, id, className = '' }: {
+  kind: string
+  id?: string
+  type: string | null
+  near: { lat: number; lng: number; place: string; dist: number } | null
+  summary: string
+  className?: string
+}) {
+  const { locale, t } = useEventsI18n()
+  const filters = {
+    lat: near?.lat ?? null,
+    lng: near?.lng ?? null,
+    place: near?.place ?? null,
+    dist: near?.dist ?? null,
+    type,
+    level: null,
+    tags: [],
+    audience: [],
+  }
+  return (
+    <EmailSignup
+      topic="event_alerts"
+      source="events_kind_page"
+      details={{ filters }}
+      title={t('alert.page_title')}
+      lede={t('alert.lede')}
+      summary={summary}
+      cta={t('alert.cta')}
+      done={t('alert.done')}
+      fine={t('alert.page_fine')}
+      locale={locale}
+      track={{ kind, type, near: !!near }}
+      id={id}
+      className={className}
+    />
+  )
+}
+
+/**
  * The event page's box, under Register: more of this kind of event near this
  * one's town, every Thursday. Statewide when the listing has no town or point.
  */

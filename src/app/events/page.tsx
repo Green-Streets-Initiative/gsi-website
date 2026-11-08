@@ -5,6 +5,7 @@ import HtmlLang from '@/components/HtmlLang'
 import { siteLocale } from '@/lib/site-locale'
 import EventsPage from '@/components/events/EventsPage'
 import { TownChipsStrip } from '@/components/towns/TownsCrossLink'
+import KindChips from '@/components/events/KindChips'
 import { loadEventsListing } from './_lib/load'
 import { buildEventsListingMetadata, type EventsSearchParams } from '@/lib/events-listing-seo'
 
@@ -38,6 +39,12 @@ export default async function EventsListingPage({ searchParams }: { searchParams
         <Suspense fallback={null}>
           <EventsPage events={events} tone="light" locale={locale} />
         </Suspense>
+        {/* The kind pages (/events/group-rides...) are English only so far. */}
+        {locale === 'en' && (
+          <section className="border-t border-navy/10 bg-cream px-6 py-8">
+            <KindChips className="mx-auto max-w-[960px]" />
+          </section>
+        )}
         <TownChipsStrip tone="light" locale={locale} />
       </main>
       <Footer variant="light" locale={locale} />

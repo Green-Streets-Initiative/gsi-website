@@ -54,6 +54,11 @@ const STATIC_PAGES: { path: string; changeFrequency: ChangeFreq; priority: numbe
   // Events
   { path: '/events', changeFrequency: 'daily', priority: 0.7 },
   { path: '/events/shift-your-summer', changeFrequency: 'weekly', priority: 0.7 },
+  // Kind pages (calendar growth plan bet 4, exp-2026-11-7)
+  { path: '/events/group-rides', changeFrequency: 'daily', priority: 0.7 },
+  { path: '/events/walking-groups', changeFrequency: 'daily', priority: 0.7 },
+  { path: '/events/bike-repair', changeFrequency: 'daily', priority: 0.7 },
+  { path: '/events/this-weekend', changeFrequency: 'daily', priority: 0.7 },
   // Campaigns
   { path: '/shift-your-semester', changeFrequency: 'weekly', priority: 0.8 },
   { path: '/newsletter', changeFrequency: 'monthly', priority: 0.5 },

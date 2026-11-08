@@ -194,6 +194,29 @@ export async function loadEventsListing({ withCancelled = false }: { withCancell
 }
 
 /**
+ * The kind pages' read (/events/group-rides, /events/this-weekend...):
+ * approved events still running on or after `from` (today by default), of
+ * these types when given, starting on or before `to` when given. Soonest
+ * first, capped, so a kind page never reads the whole calendar.
+ */
+export async function loadKindEvents(
+  { types, from, to, limit = 200 }: { types?: string[] | null; from?: string; to?: string; limit?: number },
+): Promise<CommunityEvent[]> {
+  const supabase = createServerSupabaseClient()
+  const today = todayEt()
+  let q = supabase
+    .from('event_details')
+    .select(LISTING_SELECT)
+    .eq('content_items.status', 'approved')
+    .eq('content_items.content_type', 'community_event')
+    .or(stillRunning(from && from > today ? from : today))
+  if (types?.length) q = q.in('event_type', types)
+  if (to) q = q.lte('event_date', to)
+  const { data } = await q.order('event_date', { ascending: true }).order('event_time', { ascending: true }).limit(limit)
+  return withRideCodes(supabase, ((data ?? []) as unknown as EventRow[]).map(toCommunityEvent))
+}
+
+/**
  * One host's approved events: upcoming soonest first, or past newest first.
  * Feeds the host page (/events/organizers/<id>) and its calendar feed.
  */

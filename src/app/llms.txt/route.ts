@@ -197,6 +197,10 @@ export async function GET() {
   // the page is.
   L.push('## Parking at big venues')
   for (const v of Object.values(VENUES)) {
+  L.push(`- [Group bike rides in Boston](${SITE_URL}/events/group-rides): Upcoming group rides anyone can join, with pace, no-drop and where each starts.`)
+  L.push(`- [Walking groups near Boston](${SITE_URL}/events/walking-groups): Weekly walking groups, nature walks and walking tours, with meeting points and hosts.`)
+  L.push(`- [Free bike repair near Boston](${SITE_URL}/events/bike-repair): Open shops and repair workshops where you fix your bike with tools and help on hand.`)
+  L.push(`- [This weekend around Boston](${SITE_URL}/events/this-weekend): Group walks, bike rides and community events this Saturday and Sunday.`)
     L.push(
       v.noParking
         ? `- [Parking at ${v.name}](${SITE_URL}/parking/${v.slug}): ${v.lede} The City's game-day travel plan with the team: satellite lots, shuttle stops, bike valet, Bluebikes and walks (checked ${v.checked}).${v.notice ? ` ${v.notice.text}` : ''}`
