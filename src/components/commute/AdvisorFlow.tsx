@@ -19,6 +19,7 @@ import { useIsWide } from '@/components/commute/useIsWide'
 import LoadingMessages from '@/components/commute/LoadingMessages'
 import CommutePlanPrint from '@/components/commute/CommutePlanPrint'
 import TagAlong from '@/components/commute/TagAlong'
+import StoreBadges from '@/components/StoreBadges'
 import type { AskTrip } from '@/components/commute/AskAboutTrip'
 import { haversineMeters } from '@/lib/geo/measure'
 import { COMFORT_COLORS, comfortLabel, comfortPieces, fetchCalmRoute, formatStretchMiles, legPhotoSpec, type CalmRoute } from '@/components/commute/calm-route'
@@ -120,6 +121,8 @@ const SESSION_KEY = 'commute-advisor-state'
 /** Two steps: the addresses (with costs collapsed under them), then the plan. */
 export const PLAN_STEP = 2
 const DEFAULT_ARRIVE_BY = '09:00'
+/** Play Store link that tells Play the install came from the advisor. */
+const ADVISOR_PLAY_URL = 'https://play.google.com/store/apps/details?id=org.greenstreets.shift&referrer=utm_source%3Dgogreenstreets%26utm_medium%3Dwebsite%26utm_campaign%3Dadvisor'
 const JOIN_MODES: { value: CurrentCommuteMode; label: string }[] = [
   { value: 'new', label: "I'm new here, just compare" },
   { value: 'drive', label: 'Drive' },
@@ -595,6 +598,18 @@ export default function AdvisorFlow({
     return names.map((n) => (/^\d+$/.test(n) ? t('flow.bus_n', { n }) : n)).join(t('flow.then_sep'))
   }
 
+  /** The app's pitch in the words of the way they're looking at: the line's next train or bus, the calm bike route, the walk. */
+  const appPitch = (p: AdvisorResult, mode: string | null) => {
+    const m = mode ?? ''
+    if (m.includes('bike')) return t('flow.app_bike')
+    if (m === 'walk') return t('flow.app_walk')
+    if (m.includes('transit') || m === 'bus' || m === 'park_ride') {
+      const n = p.transit_legs.map((l) => l.route_name).find(Boolean)
+      if (n) return t('flow.app_transit', { line: /^\d+$/.test(n) ? t('flow.bus_n', { n }) : n })
+    }
+    return t('flow.app_any')
+  }
+
   const toggleRow = (key: string) => {
     setHighlightedLeg(null)
     setSelectedDock(null)
@@ -880,6 +895,16 @@ export default function AdvisorFlow({
   const pickedKey = expanded ?? plan?.recommended_mode ?? null
   const pickedMode = pickedKey?.startsWith('shuttle:') || pickedKey?.startsWith('employer-shuttle-') ? 'shuttle' : pickedKey
 
+  // The Shift app card under the plan (public pages; an employer's page offers its invite code instead).
+  const appShownRef = useRef<string | null>(null)
+  useEffect(() => {
+    if (!plan || joinLink) return
+    const key = `${plan.route_date}|${plan.distance_miles}|${plan.recommended_mode}`
+    if (appShownRef.current === key) return
+    appShownRef.current = key
+    track('advisor_app_card_shown', { mode: plan.recommended_mode })
+  }, [plan, joinLink, track])
+
   /* ── The morning's weather under the headline, for the picked way in's leave-by ── */
   const headWeather = plan && pickedKey ? weatherAt(plan.modes[pickedKey]?.leave_by) : null
   // Logged once per plan and forecast: the flags and the rows they touch, never a place.
@@ -1014,10 +1039,10 @@ export default function AdvisorFlow({
                             </button>
                           </>
                         ) : (
-                          <>
-                            <Link href={withLang('/shift', locale)} target="_blank" rel="noopener" onClick={() => track('advisor_app_cta_clicked', { has_invite_code: false })} className="block text-[1rem] font-bold text-[#2D6A4F] hover:underline">{t('flow.try_app')}</Link>
-                            <span className="text-[#4A4D68]">{t('flow.try_app_sub')}</span>
-                          </>
+                          <div onClickCapture={(ev) => { const a = (ev.target as HTMLElement).closest('a'); if (a) track('advisor_app_cta_clicked', { has_invite_code: false, where: 'save_menu', store: a.href.includes('apple.com') ? 'ios' : 'android', mode: pickedMode ?? plan.recommended_mode }) }}>
+                            <span className="block text-[1rem] font-bold text-[#191A2E]">{t('flow.app_title')}</span>
+                            <StoreBadges height={40} androidUrl={ADVISOR_PLAY_URL} className="mt-2" />
+                          </div>
                         )}
                       </div>
                     </div>
@@ -1050,6 +1075,20 @@ export default function AdvisorFlow({
                       locale={locale}
                     />
                   </div>
+                </div>
+              )}
+
+              {/* The Shift app, said for the way in they're looking at (Keith
+                  2026-11-08: the pitch sat inside the Save menu and nobody
+                  opened it). An employer's page offers its invite instead. */}
+              {!joinLink && (
+                <div
+                  className="mt-3.5 rounded-[12px] border border-[rgba(45,106,79,0.25)] bg-[#F4F8EE] px-3.5 py-3"
+                  onClickCapture={(ev) => { const a = (ev.target as HTMLElement).closest('a'); if (a) track('advisor_app_cta_clicked', { has_invite_code: false, where: 'card', store: a.href.includes('apple.com') ? 'ios' : 'android', mode: pickedMode ?? plan.recommended_mode }) }}
+                >
+                  <div className="text-[1rem] font-bold text-[#191A2E]">{t('flow.app_title')}</div>
+                  <p className="mt-0.5 text-[0.9375rem] leading-snug text-[#191A2E]">{appPitch(plan, pickedMode ?? plan.recommended_mode)}</p>
+                  <StoreBadges height={40} androidUrl={ADVISOR_PLAY_URL} className="mt-2.5" />
                 </div>
               )}
 
