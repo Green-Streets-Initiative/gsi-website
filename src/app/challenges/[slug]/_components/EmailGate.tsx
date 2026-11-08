@@ -35,7 +35,7 @@ export default function EmailGate({ slug, preview, intro, onVerified, onCancel, 
     setBusy(true)
     setError(null)
     try {
-      const r = await post<{ ok: boolean; needs_name?: boolean }>({ action: 'code', email: email.trim(), slug, preview })
+      const r = await post<{ ok: boolean; needs_name?: boolean }>({ action: 'code', email: email.trim(), slug, preview, locale })
       setNeedsName(!!r.needs_name)
       setCode('')
       if (step === 'code') setResent(true)

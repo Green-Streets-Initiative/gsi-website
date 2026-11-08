@@ -174,6 +174,7 @@ function EntryForm({ c, preview, person, onDone, onSignOut, locale }: {
         action: 'enter', slug: c.slug, preview, ...(upload ? { upload } : { link: link.trim() }), title, says, category,
         last_name: lastName, town, credit_name: credit.trim() || defaultCredit,
         confirm: { adult: eligible, resident: eligible, rights, people: rights, rules },
+        locale,
       }, person.token)
       writePerson({ ...person, last_name: lastName.trim(), town: town.trim() })
       if (newsletter) joinNewsletter(person.email, person.first_name)

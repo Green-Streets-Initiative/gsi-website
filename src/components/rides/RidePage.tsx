@@ -266,6 +266,8 @@ export default function RidePage({ ride, host = null, hostPerson = null, ascentF
           // The Promote tab's short link they came in on, if any.
           via: new URLSearchParams(window.location.search).get('via') ?? undefined,
           every: choice === 'going' && every && !!everyText,
+          // The confirmation email follows the page language (translation plan, batch 7).
+          locale,
         }),
       })
       const data = await res.json().catch(() => ({}))
