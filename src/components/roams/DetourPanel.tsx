@@ -5,6 +5,8 @@ import dynamic from 'next/dynamic'
 import { Navigation, ChevronDown } from 'lucide-react'
 import { gaEvent } from '@/lib/ga'
 import type { TrailDetour } from '@/lib/roams/queries'
+import { translator, type SiteLocale } from '@/lib/site-i18n'
+import { roamStrings } from '@/lib/site-strings/roams'
 
 const DetourMap = dynamic(() => import('./DetourMap'), { ssr: false })
 
@@ -33,6 +35,7 @@ export default function DetourPanel({
   detours,
   closed,
   bare = false,
+  locale = 'en',
 }: {
   id: string
   detours: TrailDetour[]
@@ -40,7 +43,9 @@ export default function DetourPanel({
   closed: [number, number][] | null
   /** Already inside an opened notice: show the detour with no toggle of its own. */
   bare?: boolean
+  locale?: SiteLocale
 }) {
+  const t = translator(roamStrings, locale)
   const [toggled, setOpen] = useState(false)
   const open = bare || toggled
   const [dir, setDir] = useState(0)
@@ -64,7 +69,7 @@ export default function DetourPanel({
         }}
         className="inline-flex min-h-[44px] items-center gap-1 text-[0.9375rem] font-semibold text-[#9A3412] underline underline-offset-4"
       >
-        {open ? 'Hide the detour' : 'Show the detour'}
+        {open ? t('detour.hide') : t('detour.show')}
         <ChevronDown size={15} className={`transition-transform ${open ? 'rotate-180' : ''}`} aria-hidden />
       </button>
       )}
@@ -73,7 +78,7 @@ export default function DetourPanel({
         <div id={`detour-${id}`} className={`${bare ? "mt-3" : "mt-1"} grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]`}>
           <div className="min-w-0">
             {detours.length > 1 ? (
-              <div className="flex flex-wrap gap-2" role="group" aria-label="Direction">
+              <div className="flex flex-wrap gap-2" role="group" aria-label={t('detour.direction_aria')}>
                 {detours.map((x, i) => (
                   <button
                     key={i}
@@ -82,7 +87,7 @@ export default function DetourPanel({
                     onClick={() => setDir(i)}
                     className={`min-h-[36px] rounded-full border px-3 text-[0.8125rem] font-semibold ${i === dir ? 'border-navy bg-navy text-white' : 'border-navy/20 bg-white text-navy'}`}
                   >
-                    {x.label ?? `Direction ${i + 1}`}
+                    {x.label ?? t('detour.direction_n', { n: i + 1 })}
                   </button>
                 ))}
               </div>
@@ -108,7 +113,7 @@ export default function DetourPanel({
                 onClick={() => gaEvent('roam_detour_maps_opened', { disruption: id })}
                 className="mt-3 inline-flex min-h-[44px] items-center gap-2 rounded-full bg-navy px-4 text-[0.9375rem] font-semibold text-white hover:bg-navy/90"
               >
-                <Navigation size={15} aria-hidden /> Open the detour in Google Maps
+                <Navigation size={15} aria-hidden /> {t('detour.open_maps')}
               </a>
             )}
           </div>
@@ -118,8 +123,8 @@ export default function DetourPanel({
                 <DetourMap detour={geometry} closed={closed} />
               </div>
               <p className="mt-1.5 flex flex-wrap gap-x-3 text-[0.8125rem] text-ink-soft">
-                <span className="inline-flex items-center gap-1.5"><span className="inline-block h-1 w-4 rounded bg-[#2966E5]" aria-hidden /> Detour</span>
-                {closed && <span className="inline-flex items-center gap-1.5"><span className="inline-block h-1 w-4 rounded bg-[#B91C1C]" aria-hidden /> Closed</span>}
+                <span className="inline-flex items-center gap-1.5"><span className="inline-block h-1 w-4 rounded bg-[#2966E5]" aria-hidden /> {t('detour.legend')}</span>
+                {closed && <span className="inline-flex items-center gap-1.5"><span className="inline-block h-1 w-4 rounded bg-[#B91C1C]" aria-hidden /> {t('detour.closed')}</span>}
               </p>
             </div>
           )}

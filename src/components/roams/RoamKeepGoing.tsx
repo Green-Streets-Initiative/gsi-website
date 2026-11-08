@@ -7,6 +7,8 @@ import 'maplibre-gl/dist/maplibre-gl.css'
 import { gaEvent } from '@/lib/ga'
 import type { KeepGoingRow } from '@/lib/roams/queries'
 import { QUIET_STYLE, LABEL_FONT_BOLD, quietBasemap } from '@/lib/maps/quietBasemap'
+import { translator, withLang, type SiteLocale } from '@/lib/site-i18n'
+import { roamStrings } from '@/lib/site-strings/roams'
 
 /**
  * "Keep going" (Keith 2026-10-20): from either end of this roam, where you can
@@ -53,6 +55,7 @@ export default function RoamKeepGoing({
   places = [],
   rows,
   closed,
+  locale = 'en',
 }: {
   roamId: string
   roamName: string
@@ -67,7 +70,9 @@ export default function RoamKeepGoing({
   rows: KeepGoingRow[]
   /** closed stretches near this roam ([lng, lat][] each) */
   closed: LngLat[][]
+  locale?: SiteLocale
 }) {
+  const t = translator(roamStrings, locale)
   const mapEl = useRef<HTMLDivElement>(null)
   const mapRef = useRef<import('maplibre-gl').Map | null>(null)
   const [open, setOpen] = useState<string | null>(null)
@@ -170,18 +175,18 @@ export default function RoamKeepGoing({
   return (
     <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-start">
       <div className="overflow-hidden rounded-[18px] bg-white shadow-[0_1px_2px_rgba(25,26,46,0.05),0_0_0_1px_rgba(25,26,46,0.06)] lg:sticky lg:top-[124px]">
-        <div ref={mapEl} className="h-[300px] w-full sm:h-[380px] lg:h-[460px]" role="img" aria-label={`Map of bike paths around the ${roamName}, with the routes you can take from its ends`} />
+        <div ref={mapEl} className="h-[300px] w-full sm:h-[380px] lg:h-[460px]" role="img" aria-label={t('kg.map_aria', { name: roamName })} />
         <p className="flex flex-wrap gap-x-4 gap-y-1 border-t border-navy/[0.07] px-4 py-2.5 text-[0.8125rem] text-ink-soft">
-          <span className="inline-flex items-center gap-1.5"><i className="inline-block h-1 w-4 rounded bg-[#2966E5]" aria-hidden /> {subject === 'trail' ? 'This trail' : 'This roam'}</span>
-          <span className="inline-flex items-center gap-1.5"><i className="inline-block h-1 w-4 rounded bg-[#2D6A4F]" aria-hidden /> Where you can keep going</span>
-          {closed.length > 0 && <span className="inline-flex items-center gap-1.5"><i className="inline-block h-1 w-4 rounded bg-[#C2410C]" aria-hidden /> Closed</span>}
-          <span className="inline-flex items-center gap-1.5"><i className="inline-block h-1 w-4 rounded bg-[#5E8466]/60" aria-hidden /> Other bike paths</span>
+          <span className="inline-flex items-center gap-1.5"><i className="inline-block h-1 w-4 rounded bg-[#2966E5]" aria-hidden /> {subject === 'trail' ? t('kg.this_trail') : t('kg.this_roam')}</span>
+          <span className="inline-flex items-center gap-1.5"><i className="inline-block h-1 w-4 rounded bg-[#2D6A4F]" aria-hidden /> {t('kg.where')}</span>
+          {closed.length > 0 && <span className="inline-flex items-center gap-1.5"><i className="inline-block h-1 w-4 rounded bg-[#C2410C]" aria-hidden /> {t('kg.closed')}</span>}
+          <span className="inline-flex items-center gap-1.5"><i className="inline-block h-1 w-4 rounded bg-[#5E8466]/60" aria-hidden /> {t('kg.other')}</span>
         </p>
       </div>
 
       <div className="overflow-hidden rounded-[18px] bg-white shadow-[0_1px_2px_rgba(25,26,46,0.05),0_0_0_1px_rgba(25,26,46,0.06)]">
         <div className="hidden grid-cols-[minmax(0,1fr)_128px_86px_16px] gap-x-3 border-b border-navy/[0.07] px-5 py-2.5 text-[0.8125rem] font-semibold text-ink-soft sm:grid" aria-hidden>
-          <span>Where to</span><span>Starts at</span><span>Length</span><span />
+          <span>{t('kg.col_where')}</span><span>{t('kg.col_starts')}</span><span>{t('kg.col_length')}</span><span />
         </div>
         <ul>
           {rows.map((r, i) => {
@@ -206,7 +211,7 @@ export default function RoamKeepGoing({
                 >
                   <span className="col-span-2 text-[1rem] font-semibold text-navy sm:col-span-1">{r.title}</span>
                   <span className="col-start-1 row-start-2 text-[0.875rem] text-navy sm:col-start-auto sm:row-start-auto">
-                    <span className="sm:hidden">Starts at </span>{r.start_label}
+                    <span className="sm:hidden">{t('kg.starts_at')}</span>{r.start_label}
                     {r.start_note && <span className="ml-1.5 text-[0.8125rem] text-ink-soft sm:ml-0 sm:block">{r.start_note}</span>}
                   </span>
                   <span className="col-start-2 row-start-2 text-right text-[0.875rem] font-semibold tabular-nums text-navy sm:col-start-auto sm:row-start-auto sm:text-left">{r.length_label}</span>
@@ -236,18 +241,18 @@ export default function RoamKeepGoing({
                     {r.linked_trail_id && (
                       <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
                         <Link
-                          href={`/trails/${r.linked_trail_id}`}
+                          href={withLang(`/trails/${r.linked_trail_id}`, locale)}
                           onClick={() => gaEvent('trail_keep_going_trail_link', { from: roamId, to: r.linked_trail_id })}
                           className="inline-flex min-h-[44px] items-center rounded-full bg-navy px-5 text-[0.9375rem] font-semibold text-white hover:bg-navy/90"
                         >
-                          {r.link_label ?? 'See the trail'} →
+                          {r.link_label ?? t('kg.see_trail')} →
                         </Link>
                         {/* No "or ride it as a roam": the linked trail's roam lives on its trail page now (2026-11-04). */}
                       </div>
                     )}
                     {!r.linked_trail_id && r.linked_roam_id && r.link_label && (
                       <Link
-                        href={`/shift/roams/${r.linked_roam_id}`}
+                        href={withLang(`/shift/roams/${r.linked_roam_id}`, locale)}
                         onClick={() => gaEvent('roam_keep_going_roam_link', { roam_id: roamId, to: r.linked_roam_id })}
                         className="mt-3 inline-flex min-h-[44px] items-center rounded-full bg-navy px-5 text-[0.9375rem] font-semibold text-white hover:bg-navy/90"
                       >

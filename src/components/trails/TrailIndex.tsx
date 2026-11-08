@@ -7,6 +7,8 @@ import { ArrowRight, TriangleAlert } from 'lucide-react'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import type { TrailSummary } from '@/lib/trails/queries'
 import { QUIET_STYLE, LABEL_FONT_BOLD, quietBasemap } from '@/lib/maps/quietBasemap'
+import { translator, withLang, type SiteLocale } from '@/lib/site-i18n'
+import { trailStrings } from '@/lib/site-strings/trails'
 
 let maplibrePromise: Promise<typeof import('maplibre-gl')> | null = null
 function loadMaplibre() {
@@ -54,8 +56,9 @@ function boundsOf(lines: LngLat[][]): [LngLat, LngLat] | null {
  * the map to it, pointing at a row lights its trail, and tapping a trail on
  * the map opens its page.
  */
-export default function TrailIndex({ regions, network }: { regions: Region[]; network: NetworkTrail[] }) {
+export default function TrailIndex({ regions, network, locale = 'en' }: { regions: Region[]; network: NetworkTrail[]; locale?: SiteLocale }) {
   const router = useRouter()
+  const tr = translator(trailStrings, locale)
   const mapEl = useRef<HTMLDivElement>(null)
   const mapRef = useRef<maplibregl.Map | null>(null)
   const [ready, setReady] = useState(false)
@@ -211,7 +214,7 @@ export default function TrailIndex({ regions, network }: { regions: Region[]; ne
         })
         map.on('click', 'trails-hit', (e) => {
           const id = e.features?.[0]?.properties?.id as string | undefined
-          if (id) router.push(`/trails/${id}`)
+          if (id) router.push(withLang(`/trails/${id}`, locale))
         })
         setReady(true)
       })
@@ -235,24 +238,24 @@ export default function TrailIndex({ regions, network }: { regions: Region[]; ne
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] lg:items-start">
       <div className="overflow-hidden rounded-[18px] bg-white shadow-[0_1px_2px_rgba(25,26,46,0.05),0_0_0_1px_rgba(25,26,46,0.06)] lg:sticky lg:top-[84px]">
-        <div ref={mapEl} className="h-[280px] w-full sm:h-[440px] lg:h-[clamp(420px,calc(100vh-200px),640px)]" role="img" aria-label="Map of the trails on this page" />
+        <div ref={mapEl} className="h-[280px] w-full sm:h-[440px] lg:h-[clamp(420px,calc(100vh-200px),640px)]" role="img" aria-label={tr('ti.map_aria')} />
         <p className="flex flex-wrap gap-x-5 gap-y-1 border-t border-navy/[0.07] px-4 py-2.5 text-[0.8125rem] text-ink-soft">
-          <span className="inline-flex items-center gap-1.5"><i className="inline-block h-1 w-5 rounded" style={{ background: GREEN }} aria-hidden /> Trails on this page</span>
+          <span className="inline-flex items-center gap-1.5"><i className="inline-block h-1 w-5 rounded" style={{ background: GREEN }} aria-hidden /> {tr('ti.legend_trails')}</span>
           {hasClosed && (
             <span className="inline-flex items-center gap-1.5">
               <i className="inline-flex w-5 justify-between" aria-hidden>
                 {[0, 1, 2].map((i) => <i key={i} className="inline-block h-1 w-1 rounded-full" style={{ background: CLOSED }} />)}
               </i>{' '}
-              Closed
+              {tr('ti.closed')}
             </span>
           )}
-          <span className="inline-flex items-center gap-1.5"><i className="inline-block h-[2px] w-5 rounded" style={{ background: '#B9C7B7' }} aria-hidden /> Other bike paths</span>
-          <span className="inline-flex items-center gap-1.5"><i className="inline-block h-2.5 w-2.5 rounded-full border-2 bg-white" style={{ borderColor: NAVY }} aria-hidden /> Places along the trails</span>
+          <span className="inline-flex items-center gap-1.5"><i className="inline-block h-[2px] w-5 rounded" style={{ background: '#B9C7B7' }} aria-hidden /> {tr('ti.other')}</span>
+          <span className="inline-flex items-center gap-1.5"><i className="inline-block h-2.5 w-2.5 rounded-full border-2 bg-white" style={{ borderColor: NAVY }} aria-hidden /> {tr('ti.places')}</span>
         </p>
       </div>
       <div className="min-w-0">
         {/* One row that scrolls sideways on phones, so the list starts on the first screen. */}
-        <div role="tablist" aria-label="Area" className="-mx-6 flex gap-2 overflow-x-auto px-6 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0">
+        <div role="tablist" aria-label={tr('ti.area')} className="-mx-6 flex gap-2 overflow-x-auto px-6 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0">
 
           {regions.map((r) => (
             <button
@@ -274,7 +277,7 @@ export default function TrailIndex({ regions, network }: { regions: Region[]; ne
           {current?.trails.map((t) => (
             <li key={t.id} onMouseEnter={() => setHover(t.id)} onMouseLeave={() => setHover(null)}>
               <Link
-                href={`/trails/${t.id}`}
+                href={withLang(`/trails/${t.id}`, locale)}
                 onFocus={() => setHover(t.id)}
                 onBlur={() => setHover(null)}
                 className={`group grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 px-4 py-3.5 transition-colors sm:px-5 ${hover === t.id ? 'bg-[#EDB93C]/[0.10]' : 'hover:bg-navy/[0.02]'}`}
@@ -282,16 +285,16 @@ export default function TrailIndex({ regions, network }: { regions: Region[]; ne
                 <span className="min-w-0">
                   <span className="block text-[1rem] font-semibold leading-snug text-navy">{t.name}</span>
                   <span className="mt-0.5 block text-[0.875rem] leading-snug text-ink-soft">
-                    {t.from_label && t.to_label ? `${t.from_label} to ${t.to_label}` : t.towns.join(', ')}
+                    {t.from_label && t.to_label ? tr('ti.from_to', { from: t.from_label, to: t.to_label }) : t.towns.join(', ')}
                   </span>
                   {t.closed && (
                     <span className="mt-1 inline-flex items-center gap-1 text-[0.8125rem] font-semibold text-[#9A3412]">
-                      <TriangleAlert size={12} aria-hidden /> Part of it is closed
+                      <TriangleAlert size={12} aria-hidden /> {tr('ti.part_closed')}
                     </span>
                   )}
                 </span>
                 <span className="flex items-center gap-3">
-                  {t.full_miles ? <span className="text-[0.9375rem] font-semibold tabular-nums text-navy">{miles(t.full_miles)} mi</span> : null}
+                  {t.full_miles ? <span className="text-[0.9375rem] font-semibold tabular-nums text-navy">{tr('ti.mi', { mi: miles(t.full_miles) })}</span> : null}
                   <ArrowRight size={16} className="text-forest transition-transform group-hover:translate-x-0.5" aria-hidden />
                 </span>
               </Link>

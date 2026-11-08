@@ -1,6 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { translator, type SiteLocale } from '@/lib/site-i18n'
+import { roamStrings } from '@/lib/site-strings/roams'
 
 /**
  * Sticky in-page navigation for a roam page, so the visitor sees what the page
@@ -8,7 +10,7 @@ import { useEffect, useState } from 'react'
  * current section is underlined as you scroll. Links are plain #anchors, so it
  * works without JavaScript too.
  */
-export default function RoamSectionNav({ sections }: { sections: Array<{ id: string; label: string; phoneHidden?: boolean }> }) {
+export default function RoamSectionNav({ sections, locale = 'en' }: { sections: Array<{ id: string; label: string; phoneHidden?: boolean }>; locale?: SiteLocale }) {
   const [active, setActive] = useState(sections[0]?.id ?? '')
 
   useEffect(() => {
@@ -45,7 +47,7 @@ export default function RoamSectionNav({ sections }: { sections: Array<{ id: str
 
   return (
     <nav
-      aria-label="On this page"
+      aria-label={translator(roamStrings, locale)('section.aria')}
       className="sticky top-[60px] z-20 mt-6 border-b border-navy/10 bg-cream/95 backdrop-blur"
     >
       <div className="mx-auto flex max-w-[1120px] flex-wrap gap-x-1 px-4 sm:px-6 lg:px-8">

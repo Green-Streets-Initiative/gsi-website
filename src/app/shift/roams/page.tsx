@@ -9,6 +9,12 @@ import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
 import { getRoamsInSeason, getUpcomingRoamEvents } from '@/lib/roams/queries'
 import { getTourTrails, roamHref } from '@/lib/trails/tours'
+import HtmlLang from '@/components/HtmlLang'
+import { siteLocale } from '@/lib/site-locale'
+import { translator, withLang } from '@/lib/site-i18n'
+import { roamStrings } from '@/lib/site-strings/roams'
+
+type PageProps = { searchParams: Promise<{ lang?: string | string[] }> }
 
 export const revalidate = 3600
 
@@ -18,19 +24,21 @@ const SITE_URL = 'https://www.gogreenstreets.org'
 // trails massachusetts") since the trail pages launched (Keith 2026-11-04),
 // so this hub is titled for what a roam is: a self-guided route in the app.
 // exp-2026-10-4 (the bike-paths title here) was withdrawn for it.
-const SEARCH_TITLE = 'Self-guided bike rides, walks and day trips around Boston'
+// The title is hub.search_title in site-strings/roams.ts.
 
 const roamsOnce = cache(getRoamsInSeason)
 
-export async function generateMetadata(): Promise<Metadata> {
-  const roams = await roamsOnce()
-  const description = `${roams.length} self-guided rides, walks and transit day trips around Boston and across Massachusetts, each with its distance, time and stops. Follow any of them in the free Shift app.`
+export async function generateMetadata({ searchParams }: PageProps): Promise<Metadata> {
+  const [roams, locale] = await Promise.all([roamsOnce(), searchParams.then((p) => siteLocale(p.lang))])
+  const tr = translator(roamStrings, locale)
+  const title = tr('hub.search_title')
+  const description = tr('hub.description', { count: roams.length })
   return {
-    title: SEARCH_TITLE,
+    title,
     description,
     alternates: { canonical: `${SITE_URL}/shift/roams` },
     openGraph: {
-      title: SEARCH_TITLE,
+      title,
       description,
       url: `${SITE_URL}/shift/roams`,
       siteName: 'Green Streets Initiative',
@@ -42,16 +50,19 @@ export async function generateMetadata(): Promise<Metadata> {
 /** The hub groups routes by how you travel them, in this order. Any mode not
  *  listed lands in the last group so a new roam never disappears. */
 const GROUPS = [
-  { id: 'bike', label: 'Bike rides', modes: ['bike'], blurb: 'Rail trails, river paths and greenways, most of them flat and on paths of their own.' },
-  { id: 'walk', label: 'Walks', modes: ['walk'], blurb: 'Routes on foot, from the Freedom Trail to a wildlife refuge boardwalk.' },
-  { id: 'transit', label: 'Transit and walking', modes: ['transit', 'multi'], blurb: 'Day trips by T, commuter rail or ferry, with short walks between the stops.' },
+  { id: 'bike', label: 'hub.group_bike', modes: ['bike'], blurb: 'hub.group_bike_blurb' },
+  { id: 'walk', label: 'hub.group_walk', modes: ['walk'], blurb: 'hub.group_walk_blurb' },
+  { id: 'transit', label: 'hub.group_transit', modes: ['transit', 'multi'], blurb: 'hub.group_transit_blurb' },
 ] as const
 
-export default async function RoamsIndexPage() {
-  const [roams, upcoming, tours] = await Promise.all([roamsOnce(), getUpcomingRoamEvents(), getTourTrails()])
+export default async function RoamsIndexPage({ searchParams }: PageProps) {
+  const [roams, upcoming, tours, locale] = await Promise.all([roamsOnce(), getUpcomingRoamEvents(), getTourTrails(), searchParams.then((p) => siteLocale(p.lang))])
+  const tr = translator(roamStrings, locale)
   const known = new Set<string>(GROUPS.flatMap((g) => [...g.modes]))
   const groups = GROUPS.map((g, i) => ({
     ...g,
+    label: tr(g.label),
+    blurb: tr(g.blurb),
     roams: roams.filter((r) =>
       (g.modes as readonly string[]).includes(r.mode) || (i === GROUPS.length - 1 && !known.has(r.mode)),
     ),
@@ -61,7 +72,7 @@ export default async function RoamsIndexPage() {
   const itemList = {
     '@context': 'https://schema.org',
     '@type': 'ItemList',
-    name: SEARCH_TITLE,
+    name: tr('hub.search_title'),
     numberOfItems: roams.length,
     itemListElement: groups.flatMap((g) => g.roams).map((r, i) => ({
       '@type': 'ListItem',
@@ -74,30 +85,28 @@ export default async function RoamsIndexPage() {
   return (
     <>
       <JsonLd data={itemList} />
-      <Nav variant="light" />
+      <HtmlLang locale={locale} />
+      <Nav variant="light" locale={locale} />
       <main style={{ paddingTop: '60px' }} className="bg-cream">
         <section className="px-6 pb-8 pt-12 md:pt-16 lg:px-8">
           <div className="mx-auto max-w-[860px] text-center">
             <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.14em] text-forest">
-              Shift Roams
+              {tr('hub.eyebrow')}
             </p>
             <h1 className="mb-5 font-serif text-[clamp(2.5rem,6vw,4.25rem)] font-normal leading-[1.02] tracking-[-0.01em] text-navy">
-              Routes worth roaming
+              {tr('hub.h1')}
             </h1>
             <p className="mx-auto max-w-[600px] text-[1.0625rem] leading-[1.65] text-ink-soft">
-              Walking, biking and transit routes across Massachusetts, from rail trails and
-              greenways to harbor loops and food crawls. Look at any route here, then follow it in
-              the free Shift app, which checks you in at each stop. Finish the route to unlock its
-              badge.
+              {tr('hub.lede')}
             </p>
             <Link
-              href="/trails"
+              href={withLang('/trails', locale)}
               className="mt-4 inline-flex items-center gap-1.5 text-[0.9375rem] font-semibold text-forest underline-offset-4 hover:underline"
             >
-              Bike paths and rail trails: maps, parking, closures <ArrowRight size={15} aria-hidden />
+              {tr('hub.trails_link')} <ArrowRight size={15} aria-hidden />
             </Link>
             {/* Jump links: 25 routes is a long scroll on a phone. */}
-            <nav aria-label="Route types" className="mt-7 flex flex-wrap justify-center gap-2.5">
+            <nav aria-label={tr('hub.route_types')} className="mt-7 flex flex-wrap justify-center gap-2.5">
               {groups.map((g) => (
                 <a
                   key={g.id}
@@ -109,7 +118,7 @@ export default async function RoamsIndexPage() {
                 </a>
               ))}
             </nav>
-            <RoamHubFilters total={roams.length} />
+            <RoamHubFilters total={roams.length} locale={locale} />
           </div>
         </section>
 
@@ -127,7 +136,8 @@ export default async function RoamsIndexPage() {
                     roam={r}
                     tone="light"
                     filterable
-                    href={roamHref(r.id, tours)}
+                    href={withLang(roamHref(r.id, tours), locale)}
+                    locale={locale}
                     // upcoming covers preview roams too (service role); r is public by construction.
                     nextGroupDate={upcoming.get(r.id)?.event_date ?? null}
                   />
@@ -137,7 +147,7 @@ export default async function RoamsIndexPage() {
           ))}
         </div>
       </main>
-      <Footer variant="light" />
+      <Footer variant="light" locale={locale} />
     </>
   )
 }

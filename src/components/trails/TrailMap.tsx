@@ -3,6 +3,8 @@
 import { useEffect, useRef } from 'react'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { QUIET_STYLE, LABEL_FONT_BOLD, quietBasemap } from '@/lib/maps/quietBasemap'
+import { translator, type SiteLocale } from '@/lib/site-i18n'
+import { trailStrings } from '@/lib/site-strings/trails'
 
 let maplibrePromise: Promise<typeof import('maplibre-gl')> | null = null
 function loadMaplibre() {
@@ -13,6 +15,8 @@ function loadMaplibre() {
 type LngLat = [number, number]
 
 interface Props {
+  /** The page's language, for the map's labels. */
+  locale?: SiteLocale
   name: string
   /** The trail, [lng, lat] lines */
   lines: LngLat[][]
@@ -35,7 +39,8 @@ function esc(s: string) {
  *  its access points numbered to match the list beside it, place names for
  *  orientation, the faint network of other bike paths, closures in orange,
  *  and stretches reported after snow in their condition's color. */
-export default function TrailMap({ name, lines, points, closed = [], places = [], reports = [] }: Props) {
+export default function TrailMap({ locale = 'en', name, lines, points, closed = [], places = [], reports = [] }: Props) {
+  const t = translator(trailStrings, locale)
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<maplibregl.Map | null>(null)
 
@@ -162,7 +167,7 @@ export default function TrailMap({ name, lines, points, closed = [], places = []
         el.style.cssText =
           'width:26px;height:26px;border-radius:50%;background:#191A2E;border:2px solid #FFFFFF;display:flex;align-items:center;justify-content:center;font:700 12px system-ui;color:#FFFFFF;box-shadow:0 1px 4px rgba(25,26,46,0.35);cursor:pointer'
         el.textContent = String(i + 1)
-        el.setAttribute('aria-label', `${i + 1}. ${p.name}${p.parking ? ', parking' : ''}`)
+        el.setAttribute('aria-label', t(p.parking ? 'map.pin_parking' : 'map.pin', { n: i + 1, name: p.name }))
         if (p.parking) {
           const badge = document.createElement('span')
           badge.style.cssText =
@@ -191,5 +196,5 @@ export default function TrailMap({ name, lines, points, closed = [], places = []
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  return <div ref={containerRef} className="h-full w-full" role="img" aria-label={`Map of the ${name} with its access points numbered`} />
+  return <div ref={containerRef} className="h-full w-full" role="img" aria-label={t('map.aria', { name })} />
 }

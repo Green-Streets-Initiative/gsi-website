@@ -17,10 +17,17 @@ import { getTrailLines } from '@/lib/trails/geometry'
 import { MAP_PLACES } from '@/lib/trails/places'
 import { RAIL_HOME } from '@/lib/trails/railHome'
 import { getPathConditions } from '@/lib/trails/conditions'
-import { CLEARED_SHORT, CONDITION_COLOR, headline, isWintry, reportLine, snowLine, timeOf } from '@/lib/trails/conditionText'
+import { clearedShort, CONDITION_COLOR, headline, isWintry, reportLine, snowLine, timeOf } from '@/lib/trails/conditionText'
 import { getBluebikesDocks } from '@/lib/server/bluebikes'
 import { withUtm } from '@/lib/utm'
 import { getTourTrails, roamHref } from '@/lib/trails/tours'
+import HtmlLang from '@/components/HtmlLang'
+import { siteLocale } from '@/lib/site-locale'
+import { siteDate, translator, withLang, type SiteLocale, type T } from '@/lib/site-i18n'
+import { trailStrings, type TrailKey } from '@/lib/site-strings/trails'
+
+type TT = T<TrailKey>
+type PageProps = { params: Promise<{ slug: string }>; searchParams: Promise<{ lang?: string | string[] }> }
 
 // Ten minutes: path conditions after snow change through the morning.
 export const revalidate = 600
@@ -36,23 +43,23 @@ function miles(n: number): string {
 }
 
 /** "Oct 19, 2026" from a YYYY-MM-DD date. */
-function day(d: string): string {
-  return new Date(`${d}T12:00:00-04:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'America/New_York' })
+function day(d: string, locale: SiteLocale = 'en'): string {
+  return siteDate(locale, `${d}T12:00:00-04:00`, { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'America/New_York' })
 }
 
 /** Research text as one clean sentence: dates as "Dec 31, 2026", one closing period. */
-function sentence(s: string): string {
-  const t = s.replace(/\b(\d{4}-\d{2}-\d{2})\b/g, (d) => day(d)).trim().replace(/\.+$/, '')
+function sentence(s: string, locale: SiteLocale = 'en'): string {
+  const t = s.replace(/\b(\d{4}-\d{2}-\d{2})\b/g, (d) => day(d, locale)).trim().replace(/\.+$/, '')
   return `${t}.`
 }
 
 /** 110 -> "1 hr 50 min", 42 -> "42 min" */
-function duration(min: number): string {
+function duration(min: number, t: TT): string {
   const m = Math.round(min)
-  if (m < 60) return `${m} min`
+  if (m < 60) return t('dur.min', { m })
   const h = Math.floor(m / 60)
   const rest = Math.round((m % 60) / 5) * 5
-  return rest ? `${h} hr ${rest} min` : `${h} hr`
+  return rest ? t('dur.hr_min', { h, m: rest }) : t('dur.hr', { h })
 }
 
 /** "Alewife Station, Cambridge" -> "Alewife Station"; "North end, Old Colony Road, downtown Mansfield" -> "downtown Mansfield" */
@@ -63,32 +70,33 @@ function place(name: string): string {
 }
 
 /** The surface as one or two words for the summary tile; the full sentence is in About. */
-function surfaceTile(s: string | null): { value: string; sub: string | null } | null {
+function surfaceTile(s: string | null, tr: TT): { value: string; sub: string | null } | null {
   if (!s) return null
   const t = s.trim()
-  if (/^mixed/i.test(t)) return { value: 'Mixed', sub: 'paved and unpaved' }
-  if (/^mostly paved/i.test(t)) return { value: 'Mostly paved', sub: null }
+  if (/^mixed/i.test(t)) return { value: tr('surf.mixed'), sub: tr('surf.paved_unpaved') }
+  if (/^mostly paved/i.test(t)) return { value: tr('surf.mostly_paved'), sub: null }
   if (/^paved/i.test(t)) {
-    if (/\bexcept\b/i.test(t)) return { value: 'Mostly paved', sub: null }
-    return { value: 'Paved', sub: /whole (way|length|loop)/i.test(t) ? 'the whole way' : null }
+    if (/\bexcept\b/i.test(t)) return { value: tr('surf.mostly_paved'), sub: null }
+    return { value: tr('surf.paved'), sub: /whole (way|length|loop)/i.test(t) ? tr('surf.whole_way') : null }
   }
-  if (/stone|dirt|sand|clay|gravel|crushed/i.test(t)) return { value: 'Unpaved', sub: /stone dust|crushed stone/i.test(t) ? 'stone dust' : null }
+  if (/stone|dirt|sand|clay|gravel|crushed/i.test(t)) return { value: tr('surf.unpaved'), sub: /stone dust|crushed stone/i.test(t) ? tr('surf.stone_dust') : null }
   return null
 }
 
-function townsLine(towns: string[]): string {
+function townsLine(towns: string[], t: TT): string {
   if (towns.length <= 3) return towns.join(', ')
-  return `${towns.slice(0, 3).join(', ')} and ${towns.length - 3} more`
+  return t('towns.more', { list: towns.slice(0, 3).join(', '), count: towns.length - 3 })
 }
 
-export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+export async function generateMetadata({ params, searchParams }: PageProps): Promise<Metadata> {
   const { slug } = await params
+  const tr = translator(trailStrings, await siteLocale((await searchParams).lang))
   const data = await getTrail(decodeURIComponent(slug))
-  if (!data) return { title: 'Trail not found' }
+  if (!data) return { title: tr('meta.not_found') }
   const t = data.trail
   const pts = t.access_points
-  const title = searchTitle(t.name, t.full_miles, pts.some((p) => !!p.parking) || !!t.parking_note)
-  const description = searchDescription(t.summary, t.name)
+  const title = searchTitle(t.name, t.full_miles, pts.some((p) => !!p.parking) || !!t.parking_note, tr)
+  const description = searchDescription(t.summary, t.name, tr)
   return {
     title,
     description,
@@ -103,16 +111,15 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
  * The length rides along in brackets only when it fits; the roam title test
  * (exp-2026-09-5) found a distance in the title bought no clicks.
  */
-function searchTitle(name: string, fullMiles: number | null, hasParking: boolean): string {
-  const what = hasParking ? 'map, parking and where to get on' : 'map and where to get on'
-  const withLen = fullMiles ? `${name} (${miles(fullMiles)} mi): ${what}` : null
-  return withLen && withLen.length <= 62 ? withLen : `${name}: ${what}`
+function searchTitle(name: string, fullMiles: number | null, hasParking: boolean, t: TT): string {
+  const withLen = fullMiles ? t(hasParking ? 'meta.title_len_parking' : 'meta.title_len', { name, miles: miles(fullMiles) }) : null
+  return withLen && withLen.length <= 62 ? withLen : t(hasParking ? 'meta.title_parking' : 'meta.title', { name })
 }
 
 /** The summary's opening sentences up to ~155 characters, then what only the page has. */
-function searchDescription(summary: string | null, name: string): string {
-  const tail = 'Map, places to get on, parking, transit and closures.'
-  if (!summary) return `${name}: ${tail.charAt(0).toLowerCase()}${tail.slice(1)}`
+function searchDescription(summary: string | null, name: string, t: TT): string {
+  const tail = t('meta.tail')
+  if (!summary) return t('meta.no_summary', { name })
   const sentences = summary.match(/[^.!?]+[.!?]+(\s|$)/g) ?? [summary]
   let out = ''
   for (const x of sentences) {
@@ -129,7 +136,7 @@ function searchDescription(summary: string | null, name: string): string {
  * sentence per card). Plain <details>, so it works without JavaScript and
  * the full text stays in the page for search.
  */
-function Brief({ text }: { text: string }) {
+function Brief({ text, t }: { text: string; t: TT }) {
   const m = text.match(/^.+?[.!?](?=\s+[A-Z(])/)
   const head = m ? m[0] : text
   const rest = m ? text.slice(head.length).trim() : ''
@@ -139,8 +146,8 @@ function Brief({ text }: { text: string }) {
       {head}
       <details className="group/more mt-1">
         <summary className="inline-flex min-h-[32px] cursor-pointer list-none items-center text-[0.875rem] font-semibold text-forest [&::-webkit-details-marker]:hidden">
-          <span className="group-open/more:hidden">More</span>
-          <span className="hidden group-open/more:inline">Less</span>
+          <span className="group-open/more:hidden">{t('brief.more')}</span>
+          <span className="hidden group-open/more:inline">{t('brief.less')}</span>
         </summary>
         <p className="m-0">{rest}</p>
       </details>
@@ -148,7 +155,7 @@ function Brief({ text }: { text: string }) {
   )
 }
 
-function NoticeList({ items }: { items: TrailNotice[] }) {
+function NoticeList({ items, t, locale }: { items: TrailNotice[]; t: TT; locale: SiteLocale }) {
   return (
     <ul className="space-y-3">
       {items.map((n, i) => (
@@ -157,13 +164,13 @@ function NoticeList({ items }: { items: TrailNotice[] }) {
           {n.where && <p className="mt-0.5 text-[0.875rem] text-ink-soft">{n.where}</p>}
           {(n.end || n.detour) && (
             <p className="mt-1 text-[0.875rem] leading-relaxed text-ink-soft">
-              {n.end ? <>{/^\d{4}-\d{2}-\d{2}$/.test(n.end) ? `Until ${day(n.end)}.` : sentence(n.end)} </> : null}
-              {n.detour ? <>{sentence(n.detour)}</> : null}
+              {n.end ? <>{/^\d{4}-\d{2}-\d{2}$/.test(n.end) ? t('notices.until', { date: day(n.end, locale) }) : sentence(n.end, locale)} </> : null}
+              {n.detour ? <>{sentence(n.detour, locale)}</> : null}
             </p>
           )}
           {n.source_url && (
             <a href={n.source_url} target="_blank" rel="noopener noreferrer" className="mt-1 inline-flex items-center gap-1 text-[0.8125rem] font-semibold text-forest underline underline-offset-4">
-              Source <ExternalLink size={11} aria-hidden />
+              {t('notices.source')} <ExternalLink size={11} aria-hidden />
             </a>
           )}
         </li>
@@ -190,8 +197,10 @@ function shortUrl(url: string): string {
   }
 }
 
-export default async function TrailPage({ params }: { params: Promise<{ slug: string }> }) {
+export default async function TrailPage({ params, searchParams }: PageProps) {
   const { slug } = await params
+  const locale = await siteLocale((await searchParams).lang)
+  const tr = translator(trailStrings, locale)
   const data = await getTrail(decodeURIComponent(slug))
   if (!data) notFound()
   const { trail: t, disruptions, roams, keepGoing } = data
@@ -225,17 +234,17 @@ export default async function TrailPage({ params }: { params: Promise<{ slug: st
   const iosUrl = withUtm(IOS_URL, utm) ?? IOS_URL
   const androidUrl = withUtm(ANDROID_URL, utm) ?? ANDROID_URL
 
-  const surface = surfaceTile(t.surface)
+  const surface = surfaceTile(t.surface, tr)
   const tiles = [
-    t.full_miles ? { icon: Ruler, label: 'Length', value: `${miles(t.full_miles)} mi`, sub: t.kind } : null,
-    surface ? { icon: Route, label: 'Surface', value: surface.value, sub: surface.sub } : null,
-    pts.length > 0 ? { icon: MapPin, label: 'Get on at', value: `${pts.length} ${pts.length === 1 ? 'place' : 'places'}`, sub: 'on the map' } : null,
+    t.full_miles ? { icon: Ruler, label: tr('tile.length'), value: tr('tile.mi', { mi: miles(t.full_miles) }), sub: t.kind } : null,
+    surface ? { icon: Route, label: tr('tile.surface'), value: surface.value, sub: surface.sub } : null,
+    pts.length > 0 ? { icon: MapPin, label: tr('tile.get_on'), value: tr(pts.length === 1 ? 'tile.places_one' : 'tile.places_other', { count: pts.length }), sub: tr('tile.on_map') } : null,
   ].filter((x): x is { icon: typeof Ruler; label: string; value: string; sub: string | null } => !!x)
   const loop = isLoopLike(pts)
   const spanLine = first && last && !loop
-    ? `From ${place(first.name)} to ${place(last.name)}`
+    ? tr('span.from_to', { from: place(first.name), to: place(last.name) })
     : loop && t.towns.length > 0
-      ? t.towns.length === 1 ? `A loop in ${t.towns[0]}` : `Loops through ${townsLine(t.towns)}`
+      ? t.towns.length === 1 ? tr('span.loop_in', { town: t.towns[0] }) : tr('span.loops_through', { towns: townsLine(t.towns, tr) })
       : null
 
   const walkMin = (m: number) => Math.max(1, Math.round(m / 80))
@@ -246,9 +255,9 @@ export default async function TrailPage({ params }: { params: Promise<{ slug: st
 
   const amen = t.amenities ?? {}
   const amenities = [
-    amen.restrooms ? { label: 'Restrooms', body: amen.restrooms } : null,
-    amen.water ? { label: 'Water', body: amen.water } : null,
-    amen.food ? { label: 'Food', body: amen.food } : null,
+    amen.restrooms ? { label: tr('about.restrooms'), body: amen.restrooms } : null,
+    amen.water ? { label: tr('about.water'), body: amen.water } : null,
+    amen.food ? { label: tr('about.food'), body: amen.food } : null,
   ].filter((x): x is { label: string; body: string } => !!x)
 
   // Drivers' first question: can I park where I get on?
@@ -259,8 +268,8 @@ export default async function TrailPage({ params }: { params: Promise<{ slug: st
   const railFrom = rail && railPoint ? rail.from ?? place(railPoint.name) : null
   const railReach = rail && railFrom
     ? rail.meters <= 400
-      ? railFrom.includes(rail.station) ? 'right on the trail' : `right on the trail at ${railFrom}`
-      : `${miles(rail.meters / 1609)} miles from ${railFrom}`
+      ? railFrom.includes(rail.station) ? tr('rail.right_on') : tr('rail.right_on_at', { place: railFrom })
+      : tr('rail.miles_from', { miles: miles(rail.meters / 1609), place: railFrom })
     : null
 
   // Who clears snow: in About all year, and in the overview from November to
@@ -271,8 +280,8 @@ export default async function TrailPage({ params }: { params: Promise<{ slug: st
   const now = new Date()
   const month = Number(now.toLocaleDateString('en-US', { month: 'numeric', timeZone: 'America/New_York' }))
   const winterSeason = month >= 11 || month <= 3
-  const winterShort = winter ? CLEARED_SHORT[winter.cleared] : null
-  const nowLine = headline(cond, now)
+  const winterShort = winter ? clearedShort(winter.cleared, locale) : null
+  const nowLine = headline(cond, now, locale)
   const reportLines = (cond?.reports ?? []).flatMap((r) => (r.line ?? []).map((l) => ({ line: l, color: CONDITION_COLOR[r.condition] })))
   const hasWinterRow = !!winter || !!nowLine
 
@@ -280,11 +289,11 @@ export default async function TrailPage({ params }: { params: Promise<{ slug: st
   const getThereCols = [t.transit_note, t.bike_share_note || dockGroups.length > 0, t.parking_note].filter(Boolean).length
   const hasGetThere = !!(t.transit_note || t.bike_share_note || t.parking_note || dockGroups.length > 0 || railReach)
   const sections = [
-    { id: 'map', label: 'Map' },
-    hasGetThere ? { id: 'get-there', label: 'Get there' } : null,
-    roams.length > 0 ? { id: 'roams', label: 'Roams' } : null,
-    keepGoing.length > 0 ? { id: 'keep-going', label: 'Keep going', phoneHidden: roams.length > 0 } : null,
-    { id: 'about', label: 'About' },
+    { id: 'map', label: tr('section.map') },
+    hasGetThere ? { id: 'get-there', label: tr('section.get_there') } : null,
+    roams.length > 0 ? { id: 'roams', label: tr('section.roams') } : null,
+    keepGoing.length > 0 ? { id: 'keep-going', label: tr('section.keep_going'), phoneHidden: roams.length > 0 } : null,
+    { id: 'about', label: tr('section.about') },
   ].filter((x): x is { id: string; label: string; phoneHidden?: boolean } => !!x)
 
   const breadcrumbJsonLd = {
@@ -341,11 +350,11 @@ export default async function TrailPage({ params }: { params: Promise<{ slug: st
       <a href="#notices" className="group flex min-h-[48px] items-center gap-3 rounded-[14px] bg-[#FFFAEB] px-4 py-2.5 text-[0.9375rem] text-navy ring-1 ring-[#8A6D1F]/20 transition-colors hover:bg-[#FFF4D6]">
         <Info size={17} className="shrink-0 text-[#8A6D1F]" aria-hidden />
         <span className="line-clamp-2 min-w-0 flex-1 leading-snug">
-          <span className="font-semibold">{t.notices.length === 1 ? 'Notice' : `${t.notices.length} notices`}:</span>{' '}
+          <span className="font-semibold">{tr(t.notices.length === 1 ? 'status.notice_one' : 'status.notice_other', { count: t.notices.length })}</span>{' '}
           <span className="text-ink-soft">
             {t.notices[0].what}
             {t.notices[0].where ? `, ${t.notices[0].where.charAt(0).toLowerCase()}${t.notices[0].where.slice(1)}` : ''}
-            {t.notices[0].end && /^\d{4}-\d{2}-\d{2}$/.test(t.notices[0].end) ? `, until ${day(t.notices[0].end)}` : ''}
+            {t.notices[0].end && /^\d{4}-\d{2}-\d{2}$/.test(t.notices[0].end) ? `, ${tr('status.until', { date: day(t.notices[0].end, locale) })}` : ''}
           </span>
         </span>
         <ArrowRight size={16} className="shrink-0 text-[#8A6D1F] transition-transform group-hover:translate-x-0.5" aria-hidden />
@@ -354,14 +363,15 @@ export default async function TrailPage({ params }: { params: Promise<{ slug: st
       <p className="flex items-center gap-2 text-[0.9375rem] text-navy">
         <CircleCheck size={16} className="shrink-0 text-forest" aria-hidden />
         <span>
-          <span className="font-semibold">Open.</span> <span className="text-ink-soft">No closures as of {day(t.closures_checked_on)}.</span>
+          <span className="font-semibold">{tr('status.open')}</span> <span className="text-ink-soft">{tr('status.no_closures', { date: day(t.closures_checked_on, locale) })}</span>
         </span>
       </p>
     ) : null
 
   return (
     <>
-      <Nav variant="light" />
+      <HtmlLang locale={locale} />
+      <Nav variant="light" locale={locale} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(placeJsonLd) }} />
       <main style={{ paddingTop: '60px' }} className="bg-cream">
@@ -389,8 +399,8 @@ export default async function TrailPage({ params }: { params: Promise<{ slug: st
             )}
             <div className="min-w-0">
               <nav aria-label="Breadcrumb" className="text-[0.875rem] text-ink-soft">
-                <Link href="/trails" className="font-semibold text-forest underline-offset-4 hover:underline">Trails</Link>
-                {t.towns.length > 0 ? <span> · {townsLine(t.towns)}</span> : null}
+                <Link href={withLang('/trails', locale)} className="font-semibold text-forest underline-offset-4 hover:underline">{tr('crumb.trails')}</Link>
+                {t.towns.length > 0 ? <span> · {townsLine(t.towns, tr)}</span> : null}
               </nav>
               <h1 className="mt-1.5 font-serif text-[clamp(2.25rem,5vw,3.5rem)] font-normal leading-[1.04] tracking-[-0.01em] text-navy">{t.name}</h1>
               {t.summary && <p className="mt-2.5 max-w-[60ch] text-[1.0625rem] leading-[1.55] text-ink-soft">{t.summary}</p>}
@@ -418,13 +428,13 @@ export default async function TrailPage({ params }: { params: Promise<{ slug: st
                   <ParkingCircle size={15} className="mt-[3px] shrink-0 text-ink-soft" aria-hidden />
                   <span>
                     {parkingCount === 0
-                      ? 'Parking nearby'
+                      ? tr('park.nearby')
                       : parkingCount === pts.length
-                        ? 'Parking at every place to get on'
-                        : `Parking at ${parkingCount} of the ${pts.length} places to get on`}
+                        ? tr('park.every')
+                        : tr('park.some', { count: parkingCount, total: pts.length })}
                     {' · '}
                     <a href={parkingCount > 0 ? '#map' : '#get-there'} className="font-semibold text-forest underline-offset-4 hover:underline">
-                      {parkingCount > 0 ? 'See where' : 'Where to park'}
+                      {parkingCount > 0 ? tr('park.see') : tr('park.where')}
                     </a>
                   </span>
                 </p>
@@ -433,8 +443,8 @@ export default async function TrailPage({ params }: { params: Promise<{ slug: st
                 <p className="mt-2 flex items-start gap-2 text-[0.9375rem] leading-snug text-navy">
                   <TrainFront size={15} className="mt-[3px] shrink-0 text-ink-soft" aria-hidden />
                   <span>
-                    Train back from {rail.station} station{' · '}
-                    <a href="#train-home" className="font-semibold text-forest underline-offset-4 hover:underline">Next trains</a>
+                    {tr('rail.back', { station: rail.station })}{' · '}
+                    <a href="#train-home" className="font-semibold text-forest underline-offset-4 hover:underline">{tr('rail.next')}</a>
                   </span>
                 </p>
               )}
@@ -446,9 +456,9 @@ export default async function TrailPage({ params }: { params: Promise<{ slug: st
                     : <Snowflake size={15} className="mt-[3px] shrink-0 text-ink-soft" aria-hidden />}
                   <span>
                     <span className="font-semibold">{nowLine.text}</span>
-                    {nowLine.kind === 'report' ? ` · Reported by a rider, ${nowLine.when}` : ''}
+                    {nowLine.kind === 'report' ? ` · ${tr('now.reported_by', { when: nowLine.when })}` : ''}
                     {' · '}
-                    <a href="#winter" className="font-semibold text-forest underline-offset-4 hover:underline">Conditions</a>
+                    <a href="#winter" className="font-semibold text-forest underline-offset-4 hover:underline">{tr('now.conditions')}</a>
                   </span>
                 </p>
               )}
@@ -457,13 +467,13 @@ export default async function TrailPage({ params }: { params: Promise<{ slug: st
                   <Snowflake size={15} className="mt-[3px] shrink-0 text-ink-soft" aria-hidden />
                   <span>
                     {winterShort}{' · '}
-                    <a href="#winter" className="font-semibold text-forest underline-offset-4 hover:underline">Who clears it</a>
+                    <a href="#winter" className="font-semibold text-forest underline-offset-4 hover:underline">{tr('now.who_clears')}</a>
                   </span>
                 </p>
               )}
 
               <div className="mt-4 space-y-2.5">
-                <RoamDisruptions items={disruptions} subject="trail" />
+                <RoamDisruptions items={disruptions} subject="trail" locale={locale} />
                 {statusRow}
               </div>
 
@@ -473,7 +483,7 @@ export default async function TrailPage({ params }: { params: Promise<{ slug: st
                     href="#roams"
                     className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-full bg-navy px-6 text-[0.9375rem] font-semibold text-white transition-colors hover:bg-navy/90"
                   >
-                    {tour.mode === 'walk' ? 'Walk' : 'Ride'} it as a roam <ArrowRight size={16} aria-hidden />
+                    {tr(tour.mode === 'walk' ? 'cta.walk_roam' : 'cta.ride_roam')} <ArrowRight size={16} aria-hidden />
                   </Link>
                 ) : null}
                 {first && (
@@ -483,7 +493,7 @@ export default async function TrailPage({ params }: { params: Promise<{ slug: st
                     rel="noopener noreferrer"
                     className={`inline-flex min-h-[48px] items-center justify-center gap-2 rounded-full px-6 text-[0.9375rem] font-semibold transition-colors ${tour ? 'bg-white text-navy ring-1 ring-navy/15 hover:bg-navy/[0.04]' : 'bg-navy text-white hover:bg-navy/90'}`}
                   >
-                    <Navigation size={16} aria-hidden /> {place(first.name).length <= 18 ? `Directions to ${place(first.name)}` : 'Directions to the trail'}
+                    <Navigation size={16} aria-hidden /> {place(first.name).length <= 18 ? tr('cta.directions_to', { place: place(first.name) }) : tr('cta.directions_trail')}
                   </a>
                 )}
               </div>
@@ -491,30 +501,31 @@ export default async function TrailPage({ params }: { params: Promise<{ slug: st
           </div>
         </section>
 
-        <RoamSectionNav sections={sections} />
+        <RoamSectionNav sections={sections} locale={locale} />
 
         {/* ── Map and the places to get on ── */}
         <section id="map" aria-labelledby="map-h" className="scroll-mt-28 px-6 pt-8 lg:px-8">
           <div className="mx-auto max-w-[1120px]">
-            <h2 id="map-h" className="font-serif text-[clamp(1.75rem,3.2vw,2.25rem)] font-normal leading-[1.1] text-navy">Where to get on</h2>
+            <h2 id="map-h" className="font-serif text-[clamp(1.75rem,3.2vw,2.25rem)] font-normal leading-[1.1] text-navy">{tr('map.h2')}</h2>
             <div className="mt-5 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-start">
               <div className="lg:sticky lg:top-[124px]">
                 <div className="h-[320px] overflow-hidden rounded-[18px] border border-navy/10 sm:h-[400px] lg:h-[min(560px,calc(100vh-240px))]">
-                  <TrailMap name={t.name} lines={lines} points={pts.map((p) => ({ name: p.name, lat: p.lat, lng: p.lng, parking: !!p.parking }))} closed={closedLines} places={places} reports={reportLines} />
+                  <TrailMap locale={locale} name={t.name} lines={lines} points={pts.map((p) => ({ name: p.name, lat: p.lat, lng: p.lng, parking: !!p.parking }))} closed={closedLines} places={places} reports={reportLines} />
                 </div>
                 <div className="mt-2 flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
                   <p className="text-[0.875rem] text-ink-soft">
-                    Numbers match the list{parkingCount > 0 ? '; P has parking' : ''}{closedLines.length > 0 ? '. The orange dashes are closed.' : '.'}
+                    {tr(parkingCount > 0 ? (closedLines.length > 0 ? 'map.legend_p_closed' : 'map.legend_p') : closedLines.length > 0 ? 'map.legend_closed' : 'map.legend')}
                   </p>
                   {lines.length > 0 && (
                     <GpxLink
                       trailId={t.id}
+                      label={tr('map.gpx')}
                       className="inline-flex min-h-[40px] items-center gap-1.5 text-[0.9375rem] font-semibold text-forest underline-offset-4 hover:underline"
                     />
                   )}
                 </div>
                 {lines.length > 0 && (
-                  <p className="text-[0.875rem] text-ink-soft">For Ride with GPS, Strava, Komoot or a bike computer.</p>
+                  <p className="text-[0.875rem] text-ink-soft">{tr('map.gpx_for')}</p>
                 )}
               </div>
               <ol className="divide-y divide-navy/[0.07] rounded-[16px] bg-white shadow-[0_1px_2px_rgba(25,26,46,0.05),0_0_0_1px_rgba(25,26,46,0.06)]">
@@ -528,13 +539,13 @@ export default async function TrailPage({ params }: { params: Promise<{ slug: st
                         <dl className="mt-2 space-y-1 text-[0.875rem] leading-snug">
                           {p.transit && (
                             <div className="flex gap-2">
-                              <dt className="shrink-0"><TrainFront size={14} className="mt-[2px] text-forest" aria-label="Transit" /></dt>
+                              <dt className="shrink-0"><TrainFront size={14} className="mt-[2px] text-forest" aria-label={tr('pt.transit')} /></dt>
                               <dd className="m-0 text-navy">{p.transit}</dd>
                             </div>
                           )}
                           {p.parking && (
                             <div className="flex gap-2">
-                              <dt className="shrink-0"><ParkingCircle size={14} className="mt-[2px] text-forest" aria-label="Parking" /></dt>
+                              <dt className="shrink-0"><ParkingCircle size={14} className="mt-[2px] text-forest" aria-label={tr('pt.parking')} /></dt>
                               <dd className="m-0 text-navy">{p.parking}</dd>
                             </div>
                           )}
@@ -546,7 +557,7 @@ export default async function TrailPage({ params }: { params: Promise<{ slug: st
                         rel="noopener noreferrer"
                         className="mt-2 inline-flex min-h-[36px] items-center gap-1.5 text-[0.875rem] font-semibold text-forest underline-offset-4 hover:underline"
                       >
-                        <Navigation size={13} aria-hidden /> Directions
+                        <Navigation size={13} aria-hidden /> {tr('pt.directions')}
                       </a>
                     </div>
                   </li>
@@ -560,31 +571,31 @@ export default async function TrailPage({ params }: { params: Promise<{ slug: st
         {hasGetThere && (
           <section id="get-there" aria-labelledby="get-there-h" className="scroll-mt-28 px-6 pt-12 lg:px-8">
             <div className="mx-auto max-w-[1120px]">
-              <h2 id="get-there-h" className="font-serif text-[clamp(1.75rem,3.2vw,2.25rem)] font-normal leading-[1.1] text-navy">Getting there</h2>
+              <h2 id="get-there-h" className="font-serif text-[clamp(1.75rem,3.2vw,2.25rem)] font-normal leading-[1.1] text-navy">{tr('get.h2')}</h2>
               {getThereCols > 0 && (
               <dl className={`mt-5 grid gap-px overflow-hidden rounded-[16px] bg-navy/[0.07] shadow-[0_1px_2px_rgba(25,26,46,0.05),0_0_0_1px_rgba(25,26,46,0.06)] ${getThereCols === 3 ? 'lg:grid-cols-3' : getThereCols === 2 ? 'lg:grid-cols-2' : ''}`}>
                 {t.transit_note && (
                   <div className="bg-white px-5 py-4">
-                    <dt className="flex items-center gap-2 text-[0.9375rem] font-semibold text-navy"><TrainFront size={15} className="text-forest" aria-hidden /> By transit</dt>
-                    <Brief text={t.transit_note} />
+                    <dt className="flex items-center gap-2 text-[0.9375rem] font-semibold text-navy"><TrainFront size={15} className="text-forest" aria-hidden /> {tr('get.transit')}</dt>
+                    <Brief text={t.transit_note} t={tr} />
                   </div>
                 )}
                 {(t.bike_share_note || dockGroups.length > 0) && (
                   <div className="bg-white px-5 py-4">
-                    <dt className="flex items-center gap-2 text-[0.9375rem] font-semibold text-navy"><Bike size={15} className="text-forest" aria-hidden /> Bike share</dt>
+                    <dt className="flex items-center gap-2 text-[0.9375rem] font-semibold text-navy"><Bike size={15} className="text-forest" aria-hidden /> {tr('get.bike_share')}</dt>
                     {/* The live docks at each end say it better; the note is for trails with none nearby. */}
-                    {t.bike_share_note && dockGroups.length === 0 && <Brief text={t.bike_share_note} />}
+                    {t.bike_share_note && dockGroups.length === 0 && <Brief text={t.bike_share_note} t={tr} />}
                     {dockGroups.length > 0 && (
                       <dd className="m-0 mt-3 space-y-3">
                         {dockGroups.map((g) => (
                           <div key={g.label}>
-                            <p className="text-[0.8125rem] font-semibold text-navy">Near {g.label}, right now</p>
+                            <p className="text-[0.8125rem] font-semibold text-navy">{tr('get.near', { place: g.label })}</p>
                             <ul className="mt-1 space-y-1.5">
                               {g.docks.map((d) => (
                                 <li key={d.station_id} className="text-[0.875rem] leading-snug">
                                   <span className="text-navy">{d.name}</span>
                                   <span className="block tabular-nums text-ink-soft">
-                                    {walkMin(d.distance_meters)} min walk · {d.num_bikes_available === 0 ? 'no bikes right now' : `${d.num_bikes_available} ${d.num_bikes_available === 1 ? 'bike' : 'bikes'}`}
+                                    {tr('dock.walk', { min: walkMin(d.distance_meters) })} · {d.num_bikes_available === 0 ? tr('dock.no_bikes') : tr(d.num_bikes_available === 1 ? 'dock.bikes_one' : 'dock.bikes_other', { count: d.num_bikes_available })}
                                   </span>
                                 </li>
                               ))}
@@ -597,8 +608,8 @@ export default async function TrailPage({ params }: { params: Promise<{ slug: st
                 )}
                 {t.parking_note && (
                   <div className="bg-white px-5 py-4">
-                    <dt className="flex items-center gap-2 text-[0.9375rem] font-semibold text-navy"><ParkingCircle size={15} className="text-forest" aria-hidden /> Parking</dt>
-                    <Brief text={t.parking_note} />
+                    <dt className="flex items-center gap-2 text-[0.9375rem] font-semibold text-navy"><ParkingCircle size={15} className="text-forest" aria-hidden /> {tr('get.parking')}</dt>
+                    <Brief text={t.parking_note} t={tr} />
                   </div>
                 )}
               </dl>
@@ -606,12 +617,12 @@ export default async function TrailPage({ params }: { params: Promise<{ slug: st
               {rail && railReach && (
                 <div id="train-home" className="mt-8 grid scroll-mt-28 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-start lg:gap-12">
                   <div>
-                    <h3 className="text-[1.25rem] font-semibold text-navy">Ride out, train home</h3>
+                    <h3 className="text-[1.25rem] font-semibold text-navy">{tr('train.h3')}</h3>
                     <p className="mt-1.5 max-w-[52ch] text-[1rem] leading-relaxed text-ink-soft">
-                      Ride the trail one way and take the Commuter Rail back. {rail.station} station is {railReach}.
+                      {tr('train.body', { station: rail.station, reach: railReach })}
                     </p>
                   </div>
-                  <TrainsHome stopId={rail.stop_id} routeId={rail.route_id} directionId={rail.direction_id} headed={false} />
+                  <TrainsHome stopId={rail.stop_id} routeId={rail.route_id} directionId={rail.direction_id} headed={false} locale={locale} />
                 </div>
               )}
             </div>
@@ -623,17 +634,17 @@ export default async function TrailPage({ params }: { params: Promise<{ slug: st
           <section id="roams" aria-labelledby="roams-h" className="scroll-mt-28 px-6 pt-12 lg:px-8">
             <div className="mx-auto max-w-[1120px]">
               <h2 id="roams-h" className="font-serif text-[clamp(1.75rem,3.2vw,2.25rem)] font-normal leading-[1.1] text-navy">
-                {roams.length === 1 ? 'A roam on this trail' : 'Roams on this trail'}
+                {tr(roams.length === 1 ? 'roams.h2_one' : 'roams.h2_other')}
               </h2>
               <p className="mt-2 max-w-[62ch] text-[1rem] leading-relaxed text-ink-soft">
-                A roam is a self-guided route with stops along the way. The free Shift app checks you in at each stop, and you unlock a badge at the end.
+                {tr('roams.lede')}
               </p>
               <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {[...(tour ? [tour] : []), ...otherRoams, ...connectRoams].map((r) => {
                   // This trail's own tour roams live on this page (their roam pages forward
                   // here), so their cards point at the app; a roam that tours another
                   // trail goes to that trail's page.
-                  const href = tours.get(r.id) === t.id ? null : roamHref(r.id, tours)
+                  const href = tours.get(r.id) === t.id ? null : withLang(roamHref(r.id, tours), locale)
                   return (
                   <div
                     key={r.id}
@@ -655,19 +666,19 @@ export default async function TrailPage({ params }: { params: Promise<{ slug: st
                     ) : null}
                     <div className="flex flex-1 flex-col px-4 py-3.5">
                       <p className="text-[0.8125rem] font-semibold text-forest">
-                        {r.is_tour ? 'The whole trail' : r.relation === 'connects' ? 'Starts nearby' : r.miles_on_trail ? `${miles(r.miles_on_trail)} mi on this trail` : 'Uses this trail'}
+                        {r.is_tour ? tr('roams.whole') : r.relation === 'connects' ? tr('roams.nearby') : r.miles_on_trail ? tr('roams.mi_on', { mi: miles(r.miles_on_trail) }) : tr('roams.uses')}
                       </p>
                       <h3 className="mt-0.5 text-[1.0625rem] font-semibold leading-snug text-navy">
                         {href ? <Link href={href} className="after:absolute after:inset-0 after:content-['']">{r.name}</Link> : r.name}
                       </h3>
                       {r.hook && <p className="mt-1 line-clamp-2 text-[0.875rem] leading-relaxed text-ink-soft">{r.hook}</p>}
                       <p className="mt-auto flex items-center gap-3 pt-3 text-[0.8125rem] tabular-nums text-ink-soft">
-                        {r.distance_miles ? <span className="inline-flex items-center gap-1"><Ruler size={12} aria-hidden /> {miles(r.distance_miles)} mi</span> : null}
-                        {r.estimated_minutes ? <span className="inline-flex items-center gap-1"><Clock size={12} aria-hidden /> {duration(r.estimated_minutes)}</span> : null}
+                        {r.distance_miles ? <span className="inline-flex items-center gap-1"><Ruler size={12} aria-hidden /> {tr('roams.mi', { mi: miles(r.distance_miles) })}</span> : null}
+                        {r.estimated_minutes ? <span className="inline-flex items-center gap-1"><Clock size={12} aria-hidden /> {duration(r.estimated_minutes, tr)}</span> : null}
                         {href ? (
                           <ArrowRight size={14} className="ml-auto text-forest transition-transform group-hover:translate-x-0.5" aria-hidden />
                         ) : (
-                          <span className="ml-auto font-semibold text-forest">In the Shift app</span>
+                          <span className="ml-auto font-semibold text-forest">{tr('roams.in_app')}</span>
                         )}
                       </p>
                     </div>
@@ -677,8 +688,8 @@ export default async function TrailPage({ params }: { params: Promise<{ slug: st
               </div>
               <div className="mt-5 flex flex-col gap-4 rounded-[14px] border border-navy/10 bg-white px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
                 <p className="max-w-[52ch] text-[0.9375rem] text-navy">
-                  <span className="font-semibold">Get Shift, free.</span>{' '}
-                  <span className="text-ink-soft">Follow a roam with turn-by-turn directions to each stop, and see closures on your trails before you go.</span>
+                  <span className="font-semibold">{tr('roams.get_shift')}</span>{' '}
+                  <span className="text-ink-soft">{tr('roams.get_shift_body')}</span>
                 </p>
                 <StoreButtons iosUrl={iosUrl} androidUrl={androidUrl} placement="trail_roams" tone="light" className="shrink-0 [&>a]:max-[420px]:basis-full" />
               </div>
@@ -690,11 +701,11 @@ export default async function TrailPage({ params }: { params: Promise<{ slug: st
         {keepGoing.length > 0 && (
           <section id="keep-going" aria-labelledby="keep-going-h" className="scroll-mt-28 px-6 pt-12 lg:px-8">
             <div className="mx-auto max-w-[1120px]">
-              <h2 id="keep-going-h" className="font-serif text-[clamp(1.75rem,3.2vw,2.25rem)] font-normal leading-[1.1] text-navy">Keep going</h2>
+              <h2 id="keep-going-h" className="font-serif text-[clamp(1.75rem,3.2vw,2.25rem)] font-normal leading-[1.1] text-navy">{tr('keep.h2')}</h2>
               <p className="mt-2 max-w-[62ch] text-[1rem] leading-relaxed text-ink-soft">
-                The {t.name} {/s$/.test(t.name) ? 'join' : 'joins'} other paths and protected bike lanes. Pick a direction to see it on the map.
+                {tr(/s$/.test(t.name) ? 'keep.body_many' : 'keep.body_one', { name: t.name })}
               </p>
-              <RoamKeepGoing roamId={t.id} roamName={t.name} subject="trail" quiet places={places} route={null} routeLines={lines} rows={keepGoing} closed={closedLines} />
+              <RoamKeepGoing locale={locale} roamId={t.id} roamName={t.name} subject="trail" quiet places={places} route={null} routeLines={lines} rows={keepGoing} closed={closedLines} />
             </div>
           </section>
         )}
@@ -702,21 +713,21 @@ export default async function TrailPage({ params }: { params: Promise<{ slug: st
         {/* ── About: what it's like, the rules, who runs it, where the facts come from ── */}
         <section id="about" aria-labelledby="about-h" className="scroll-mt-28 px-6 pb-20 pt-14 lg:px-8 lg:pb-24">
           <div className="mx-auto max-w-[1120px]">
-            <h2 id="about-h" className="font-serif text-[clamp(1.75rem,3.2vw,2.25rem)] font-normal leading-[1.1] text-navy">About the {t.name}</h2>
+            <h2 id="about-h" className="font-serif text-[clamp(1.75rem,3.2vw,2.25rem)] font-normal leading-[1.1] text-navy">{tr('about.h2', { name: t.name })}</h2>
             <div className="mt-5 grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-12">
               <dl className="min-w-0 divide-y divide-navy/[0.07] self-start rounded-[16px] bg-white shadow-[0_1px_2px_rgba(25,26,46,0.05),0_0_0_1px_rgba(25,26,46,0.06)]">
-                {t.surface && <AboutRow label="Surface" body={t.surface} />}
-                {t.rules_note && <AboutRow label="Rules" body={t.rules_note} />}
+                {t.surface && <AboutRow label={tr('about.surface')} body={t.surface} />}
+                {t.rules_note && <AboutRow label={tr('about.rules')} body={t.rules_note} />}
                 {hasWinterRow && (
                   <div id="winter" className="scroll-mt-28 px-5 py-4">
-                    <dt className="text-[0.9375rem] font-semibold text-navy">In winter</dt>
+                    <dt className="text-[0.9375rem] font-semibold text-navy">{tr('about.winter')}</dt>
                     {(cond?.reports.length ?? 0) > 0 && (
                       <dd className="m-0 mt-2">
                         <ul className="space-y-1.5">
                           {cond!.reports.slice(0, 4).map((r, i) => (
                             <li key={i} className="flex items-start gap-2 text-[0.9375rem] leading-snug text-navy">
                               <i className="mt-[5px] inline-block h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: CONDITION_COLOR[r.condition] }} aria-hidden />
-                              <span><span className="font-semibold">{reportLine(r)}</span> · {timeOf(r.rode_at, now)}</span>
+                              <span><span className="font-semibold">{reportLine(r, locale)}</span> · {timeOf(r.rode_at, now, locale)}</span>
                             </li>
                           ))}
                         </ul>
@@ -724,46 +735,46 @@ export default async function TrailPage({ params }: { params: Promise<{ slug: st
                     )}
                     {isWintry(cond?.weather ?? null) && (
                       <dd className="m-0 mt-2 flex items-start gap-2 text-[0.9375rem] leading-snug text-navy">
-                        <Snowflake size={14} className="mt-[3px] shrink-0 text-ink-soft" aria-hidden /> {snowLine(cond!.weather!, now)}
+                        <Snowflake size={14} className="mt-[3px] shrink-0 text-ink-soft" aria-hidden /> {snowLine(cond!.weather!, now, locale)}
                       </dd>
                     )}
                     {winter && (
                       <dd className="m-0 mt-2 text-[0.9375rem] leading-relaxed text-ink-soft">
                         {winter.note}{' '}
                         <a href={winter.source} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 whitespace-nowrap font-semibold text-forest underline-offset-4 hover:underline">
-                          Source{winter.as_of ? `, ${winter.as_of}` : ''} <ExternalLink size={11} aria-hidden />
+                          {winter.as_of ? tr('about.source_as_of', { date: winter.as_of }) : tr('about.source')} <ExternalLink size={11} aria-hidden />
                         </a>
                       </dd>
                     )}
                     <dd className="m-0 mt-2 text-[0.9375rem]">
-                      <Link href="/trails/conditions" className="inline-flex items-center gap-1 font-semibold text-forest underline-offset-4 hover:underline">
-                        Conditions on every path <ArrowRight size={14} aria-hidden />
+                      <Link href={withLang('/trails/conditions', locale)} className="inline-flex items-center gap-1 font-semibold text-forest underline-offset-4 hover:underline">
+                        {tr('about.all_conditions')} <ArrowRight size={14} aria-hidden />
                       </Link>
                     </dd>
                   </div>
                 )}
                 {amenities.map((a) => <AboutRow key={a.label} label={a.label} body={a.body} />)}
-                {t.agency && <AboutRow label="Who looks after it" body={t.agency} />}
-                {t.aka.length > 0 && <AboutRow label="Also called" body={t.aka.join(', ')} />}
+                {t.agency && <AboutRow label={tr('about.agency')} body={t.agency} />}
+                {t.aka.length > 0 && <AboutRow label={tr('about.aka')} body={t.aka.join(', ')} />}
               </dl>
               <div className="min-w-0 space-y-8">
                 {t.notices.length > 0 && (
                   <div id="notices" className="scroll-mt-28">
-                    <h3 className="text-[1.0625rem] font-semibold text-navy">Notices</h3>
-                    <p className="mt-1 text-[0.9375rem] text-ink-soft">Work and changes along the trail, with the way around where there is one.</p>
+                    <h3 className="text-[1.0625rem] font-semibold text-navy">{tr('notices.h3')}</h3>
+                    <p className="mt-1 text-[0.9375rem] text-ink-soft">{tr('notices.body')}</p>
                     <div className="mt-3">
-                      <NoticeList items={t.notices} />
+                      <NoticeList items={t.notices} t={tr} locale={locale} />
                     </div>
                   </div>
                 )}
                 {(t.official_url || t.friends_url) && (
                   <div>
-                    <h3 className="text-[1.0625rem] font-semibold text-navy">More about the trail</h3>
+                    <h3 className="text-[1.0625rem] font-semibold text-navy">{tr('more.h3')}</h3>
                     <ul className="mt-2 space-y-1.5 text-[0.9375rem]">
                       {t.official_url && (
                         <li>
                           <a href={t.official_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 font-semibold text-forest underline-offset-4 hover:underline">
-                            Official page <ExternalLink size={12} aria-hidden />
+                            {tr('more.official')} <ExternalLink size={12} aria-hidden />
                           </a>
                           <span className="text-ink-soft"> · {hostOf(t.official_url)}</span>
                         </li>
@@ -771,7 +782,7 @@ export default async function TrailPage({ params }: { params: Promise<{ slug: st
                       {t.friends_url && t.friends_url !== t.official_url && (
                         <li>
                           <a href={t.friends_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 font-semibold text-forest underline-offset-4 hover:underline">
-                            Friends of the trail <ExternalLink size={12} aria-hidden />
+                            {tr('more.friends')} <ExternalLink size={12} aria-hidden />
                           </a>
                           <span className="text-ink-soft"> · {hostOf(t.friends_url)}</span>
                         </li>
@@ -782,8 +793,8 @@ export default async function TrailPage({ params }: { params: Promise<{ slug: st
                 {t.sources.length > 0 && (
                   <details className="group rounded-[14px] bg-navy/[0.03] px-4 py-3">
                     <summary className="flex min-h-[36px] cursor-pointer list-none items-center justify-between gap-3 text-[0.9375rem] font-semibold text-navy">
-                      Where these facts come from
-                      <span className="text-[0.8125rem] font-medium text-ink-soft">{t.facts_checked_on ? `Checked ${day(t.facts_checked_on)}` : null}</span>
+                      {tr('facts.summary')}
+                      <span className="text-[0.8125rem] font-medium text-ink-soft">{t.facts_checked_on ? tr('facts.checked', { date: day(t.facts_checked_on, locale) }) : null}</span>
                     </summary>
                     <ul className="mt-2 space-y-1 text-[0.875rem]">
                       {t.sources.map((s) => (
@@ -799,7 +810,7 @@ export default async function TrailPage({ params }: { params: Promise<{ slug: st
           </div>
         </section>
       </main>
-      <Footer variant="light" />
+      <Footer variant="light" locale={locale} />
     </>
   )
 }

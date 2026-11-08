@@ -1,6 +1,8 @@
 'use client'
 
 import { useState } from 'react'
+import { translator, type SiteLocale } from '@/lib/site-i18n'
+import { roamStrings } from '@/lib/site-strings/roams'
 
 /** First two sentences of a description, and whether there is more after them. */
 function split(text: string): [string, string] {
@@ -16,7 +18,7 @@ function split(text: string): [string, string] {
  * otherwise the description's first two sentences; "Read more" opens the
  * rest of the description in place. The full text is always in the page.
  */
-export default function RoamLede({ hook, description }: { hook: string | null; description: string | null }) {
+export default function RoamLede({ hook, description, locale = 'en' }: { hook: string | null; description: string | null; locale?: SiteLocale }) {
   const [open, setOpen] = useState(false)
   const desc = description?.trim() || null
   if (!hook && !desc) return null
@@ -41,7 +43,7 @@ export default function RoamLede({ hook, description }: { hook: string | null; d
               aria-expanded={false}
               className="inline font-semibold text-forest underline-offset-4 hover:underline"
             >
-              Read more
+              {translator(roamStrings, locale)('lede.read_more')}
             </button>
           </>
         )}

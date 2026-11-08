@@ -11,6 +11,8 @@
 import { useEffect, useState } from 'react'
 import { Train, TriangleAlert, ArrowRight } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { siteDate, siteTime, translator, type SiteLocale } from '@/lib/site-i18n'
+import { roamStrings } from '@/lib/site-strings/roams'
 
 interface Answer {
   stop_name: string
@@ -22,21 +24,26 @@ interface Answer {
   notice: string | null
 }
 
-function clock(iso: string): string {
+function clock(iso: string, locale: SiteLocale): string {
   // Schedule times arrive in Eastern time with an offset; read them as written.
   const [h, m] = iso.slice(11, 16).split(':').map(Number)
+  if (locale !== 'en') {
+    // The wall-clock time, formatted in the page's language (read in UTC so no zone shifts it).
+    return siteTime(locale, `2000-01-01T${iso.slice(11, 16)}:00Z`, { hour: 'numeric', minute: '2-digit', timeZone: 'UTC' })
+  }
   const suffix = h >= 12 ? 'PM' : 'AM'
   return `${h % 12 || 12}:${String(m).padStart(2, '0')} ${suffix}`
 }
 
-function weekday(date: string): string {
-  return new Date(`${date}T12:00:00-05:00`).toLocaleDateString('en-US', {
+function weekday(date: string, locale: SiteLocale): string {
+  return siteDate(locale, `${date}T12:00:00-05:00`, {
     weekday: 'long', month: 'long', day: 'numeric', timeZone: 'America/New_York',
   })
 }
 
 /** `headed={false}` drops the small title, for a page that gives the box its own heading (trail pages). */
-export default function TrainsHome({ stopId, routeId, directionId, headed = true }: { stopId: string; routeId: string; directionId: 0 | 1; headed?: boolean }) {
+export default function TrainsHome({ stopId, routeId, directionId, headed = true, locale = 'en' }: { stopId: string; routeId: string; directionId: 0 | 1; headed?: boolean; locale?: SiteLocale }) {
+  const t = translator(roamStrings, locale)
   const [answer, setAnswer] = useState<Answer | null>(null)
 
   useEffect(() => {
@@ -54,35 +61,36 @@ export default function TrainsHome({ stopId, routeId, directionId, headed = true
   if (!answer) return null
 
   // Name the destination ("to North Station") so riders know these head home.
-  const to = answer.trains[0]?.to ? ` to ${answer.trains[0].to}` : ''
+  const to = answer.trains[0]?.to ?? null
+  const stop = answer.stop_name
   const lead =
     answer.trains.length === 0
-      ? `No trains from ${answer.stop_name} take bikes in the next few days.`
+      ? t('trains.none', { stop })
       : answer.day === 'today'
-        ? `Next trains from ${answer.stop_name}${to} that take bikes:`
-        : `No trains from ${answer.stop_name}${to} take bikes for the rest of today. The next ones that do:`
+        ? to ? t('trains.today_to', { stop, to }) : t('trains.today', { stop })
+        : to ? t('trains.later_to', { stop, to }) : t('trains.later', { stop })
   // The service date sits right above the times, so readers can see the list is fresh.
   const dateLine =
     answer.trains.length > 0 && answer.day_date
-      ? answer.day === 'today' ? `Today, ${weekday(answer.day_date)}` : weekday(answer.day_date)
+      ? answer.day === 'today' ? t('trains.date_today', { day: weekday(answer.day_date, locale) }) : weekday(answer.day_date, locale)
       : null
 
   return (
-    <section aria-labelledby={headed ? 'trains-home' : undefined} aria-label={headed ? undefined : 'Trains home that take bikes'} className={`${headed ? 'mb-5' : ''} rounded-[14px] border border-navy/10 bg-white px-5 py-4`}>
+    <section aria-labelledby={headed ? 'trains-home' : undefined} aria-label={headed ? undefined : t('trains.title')} className={`${headed ? 'mb-5' : ''} rounded-[14px] border border-navy/10 bg-white px-5 py-4`}>
       {headed && (
         <h2 id="trains-home" className="text-[0.75rem] font-semibold uppercase tracking-[0.1em] text-forest">
-          Trains home that take bikes
+          {t('trains.title')}
         </h2>
       )}
       <p className={`${headed ? 'mt-2' : ''} text-[0.9375rem] leading-relaxed text-navy`}>{lead}</p>
       {dateLine && <p className="mt-2 text-[0.875rem] font-semibold text-ink-soft">{dateLine}</p>}
       {answer.trains.length > 0 && (
         <ul className="mt-1 divide-y divide-navy/10">
-          {answer.trains.map((t) => (
-            <li key={`${t.departs_at}-${t.train}`} className="flex items-center gap-3 py-2">
+          {answer.trains.map((x) => (
+            <li key={`${x.departs_at}-${x.train}`} className="flex items-center gap-3 py-2">
               <Train size={16} className="shrink-0 text-forest" aria-hidden />
-              <span className="min-w-[5rem] text-[0.9375rem] font-semibold tabular-nums text-navy">{clock(t.departs_at)}</span>
-              {t.train && <span className="text-[0.875rem] text-ink-soft">Train {t.train}</span>}
+              <span className="min-w-[5rem] text-[0.9375rem] font-semibold tabular-nums text-navy">{clock(x.departs_at, locale)}</span>
+              {x.train && <span className="text-[0.875rem] text-ink-soft">{t('trains.train', { train: x.train })}</span>}
             </li>
           ))}
         </ul>
@@ -94,14 +102,14 @@ export default function TrainsHome({ stopId, routeId, directionId, headed = true
         </p>
       )}
       <p className="mt-3 text-[0.8125rem] leading-relaxed text-ink-soft">
-        From the MBTA schedule. On a crowded train, the conductor can still say no to bikes.{' '}
+        {t('trains.note')}{' '}
         <a
           href={`https://www.mbta.com/schedules/${encodeURIComponent(answer.route_id)}/timetable`}
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center gap-1 font-semibold text-forest underline-offset-4 hover:underline"
         >
-          Full schedule <ArrowRight size={13} aria-hidden />
+          {t('trains.schedule')} <ArrowRight size={13} aria-hidden />
         </a>
       </p>
     </section>

@@ -8,6 +8,12 @@ import { getTrails, type TrailSummary } from '@/lib/trails/queries'
 import { getNetworkLines } from '@/lib/trails/geometry'
 import JsonLd from '@/components/JsonLd'
 import { cache } from 'react'
+import HtmlLang from '@/components/HtmlLang'
+import { siteLocale } from '@/lib/site-locale'
+import { translator, withLang } from '@/lib/site-i18n'
+import { trailStrings } from '@/lib/site-strings/trails'
+
+type PageProps = { searchParams: Promise<{ lang?: string | string[] }> }
 
 export const revalidate = 3600
 
@@ -15,18 +21,20 @@ const SITE_URL = 'https://www.gogreenstreets.org'
 
 // /trails owns the general trail searches ("bike paths boston", "rail trails
 // massachusetts"); the roams hub is titled for self-guided routes (Keith 2026-11-04).
-const SEARCH_TITLE = 'Bike paths and rail trails in Boston and Massachusetts'
+// The title is index.search_title in site-strings/trails.ts.
 
 const trailsOnce = cache(getTrails)
 
-export async function generateMetadata(): Promise<Metadata> {
-  const trails = await trailsOnce()
-  const description = `${trails.length} bike paths, rail trails and greenways around Boston and across Massachusetts, each with a map, places to get on, parking, transit and closures.`
+export async function generateMetadata({ searchParams }: PageProps): Promise<Metadata> {
+  const [trails, locale] = await Promise.all([trailsOnce(), searchParams.then((p) => siteLocale(p.lang))])
+  const tr = translator(trailStrings, locale)
+  const title = tr('index.search_title')
+  const description = tr('index.description', { count: trails.length })
   return {
-    title: SEARCH_TITLE,
+    title,
     description,
     alternates: { canonical: `${SITE_URL}/trails` },
-    openGraph: { title: SEARCH_TITLE, description, url: `${SITE_URL}/trails`, siteName: 'Green Streets Initiative', type: 'website' },
+    openGraph: { title, description, url: `${SITE_URL}/trails`, siteName: 'Green Streets Initiative', type: 'website' },
   }
 }
 
@@ -40,15 +48,16 @@ function regionOf(lat: number, lng: number): string {
   return 'boston'
 }
 
-const REGION_LABELS: Record<string, string> = {
-  boston: 'Greater Boston',
-  'north-shore': 'North Shore',
-  'central-west': 'Central and West',
-  south: 'South and the Cape',
-}
+const REGION_KEYS = {
+  boston: 'region.boston',
+  'north-shore': 'region.north_shore',
+  'central-west': 'region.central_west',
+  south: 'region.south',
+} as const
 
-export default async function TrailsPage() {
-  const [trails, network] = await Promise.all([trailsOnce(), getNetworkLines()])
+export default async function TrailsPage({ searchParams }: PageProps) {
+  const [trails, network, locale] = await Promise.all([trailsOnce(), getNetworkLines(), searchParams.then((p) => siteLocale(p.lang))])
+  const tr = translator(trailStrings, locale)
   const shown = new Set(trails.map((t) => t.id))
   const lines = network.filter((n) => shown.has(n.id) && n.lines.length > 0)
 
@@ -61,7 +70,7 @@ export default async function TrailsPage() {
   }
   const regions: Region[] = ['boston', 'north-shore', 'central-west', 'south']
     .filter((k) => (groups.get(k)?.length ?? 0) > 0)
-    .map((k) => ({ id: k, label: REGION_LABELS[k], trails: groups.get(k)! }))
+    .map((k) => ({ id: k, label: tr(REGION_KEYS[k as keyof typeof REGION_KEYS]), trails: groups.get(k)! }))
 
   const closedCount = trails.filter((t) => t.closed).length
 
@@ -69,7 +78,7 @@ export default async function TrailsPage() {
   const itemList = {
     '@context': 'https://schema.org',
     '@type': 'ItemList',
-    name: SEARCH_TITLE,
+    name: tr('index.search_title'),
     numberOfItems: trails.length,
     itemListElement: regions.flatMap((r) => r.trails).map((t, i) => ({
       '@type': 'ListItem',
@@ -82,27 +91,28 @@ export default async function TrailsPage() {
   return (
     <>
       <JsonLd data={itemList} />
-      <Nav variant="light" />
+      <HtmlLang locale={locale} />
+      <Nav variant="light" locale={locale} />
       <main style={{ paddingTop: '60px' }} className="bg-cream">
         <section className="px-6 pb-20 pt-6 lg:px-8 lg:pb-24 lg:pt-10">
           <div className="mx-auto max-w-[1120px]">
-            <h1 className="font-serif text-[clamp(2.25rem,5vw,3.5rem)] font-normal leading-[1.04] tracking-[-0.01em] text-navy">Bike paths and rail trails</h1>
+            <h1 className="font-serif text-[clamp(2.25rem,5vw,3.5rem)] font-normal leading-[1.04] tracking-[-0.01em] text-navy">{tr('index.h1')}</h1>
             <p className="mt-2.5 max-w-[62ch] text-[1.0625rem] leading-[1.55] text-ink-soft">
-              {trails.length} rail trails, river paths and greenways, each with where to get on and how to get there.
-              {closedCount > 0 ? ` ${closedCount === 1 ? 'One is' : `${closedCount} are`} partly closed today.` : ''}
+              {tr('index.lede', { count: trails.length })}
+              {closedCount > 0 ? ` ${tr(closedCount === 1 ? 'index.closed_one' : 'index.closed_other', { count: closedCount })}` : ''}
             </p>
             <p className="mt-2 text-[0.9375rem]">
-              <Link href="/trails/conditions" className="inline-flex items-center gap-1.5 font-semibold text-forest underline-offset-4 hover:underline">
-                <Snowflake size={14} aria-hidden /> Path and bike lane conditions after snow
+              <Link href={withLang('/trails/conditions', locale)} className="inline-flex items-center gap-1.5 font-semibold text-forest underline-offset-4 hover:underline">
+                <Snowflake size={14} aria-hidden /> {tr('index.conditions_link')}
               </Link>
             </p>
             <div className="mt-6">
-              <TrailIndex regions={regions} network={lines} />
+              <TrailIndex regions={regions} network={lines} locale={locale} />
             </div>
           </div>
         </section>
       </main>
-      <Footer variant="light" />
+      <Footer variant="light" locale={locale} />
     </>
   )
 }

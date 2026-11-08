@@ -3,6 +3,8 @@
 import { useEffect, useRef } from 'react'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { escapeHtml } from '@/lib/html'
+import { translator, type SiteLocale } from '@/lib/site-i18n'
+import { roamStrings } from '@/lib/site-strings/roams'
 
 let maplibrePromise: Promise<typeof import('maplibre-gl')> | null = null
 function loadMaplibre() {
@@ -19,12 +21,15 @@ export interface RoamMapCheckpoint {
 }
 
 interface Props {
+  /** The page's language, for the bonus-stop label. */
+  locale?: SiteLocale
   /** GeoJSON-order [lng, lat] coordinates for the route line */
   routeCoordinates: [number, number][] | null
   checkpoints: RoamMapCheckpoint[]
 }
 
-export default function RoamMap({ routeCoordinates, checkpoints }: Props) {
+export default function RoamMap({ routeCoordinates, checkpoints, locale = 'en' }: Props) {
+  const bonusLabel = translator(roamStrings, locale)('map.bonus_stop')
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<maplibregl.Map | null>(null)
 
@@ -125,7 +130,7 @@ export default function RoamMap({ routeCoordinates, checkpoints }: Props) {
           .setLngLat([c.lng, c.lat])
           .setPopup(
             new maplibregl.Popup({ offset: 14, closeButton: false }).setHTML(
-              `<div style="font-size:13px;font-weight:600;color:#191A2E;padding:2px 4px">${escapeHtml(c.label)} <span style="font-weight:500;color:#8a6d1f">· bonus stop</span></div>`,
+              `<div style="font-size:13px;font-weight:600;color:#191A2E;padding:2px 4px">${escapeHtml(c.label)} <span style="font-weight:500;color:#8a6d1f">· ${escapeHtml(bonusLabel)}</span></div>`,
             ),
           )
           .addTo(map)

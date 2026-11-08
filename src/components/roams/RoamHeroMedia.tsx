@@ -5,6 +5,20 @@ import { useEffect, useRef, useState } from 'react'
 import { Play, X } from 'lucide-react'
 import { parseVideoEmbed } from './CreatorVideo'
 import { gaEvent } from '@/lib/ga'
+import { translator, type SiteLocale } from '@/lib/site-i18n'
+import { roamStrings } from '@/lib/site-strings/roams'
+
+/** A sentence with one `{credit}` slot filled by a link (or any node). */
+function withNode(sentence: string, node: React.ReactNode): React.ReactNode {
+  const [before, after = ''] = sentence.split('{credit}')
+  return (
+    <>
+      {before}
+      {node}
+      {after}
+    </>
+  )
+}
 
 /**
  * The roam's photo slot. When a creator has made a video of the route, a
@@ -22,6 +36,7 @@ export default function RoamHeroMedia({
   videoUrl,
   videoCredit,
   videoCreditUrl,
+  locale = 'en',
 }: {
   roamId: string
   name: string
@@ -31,7 +46,9 @@ export default function RoamHeroMedia({
   videoUrl: string | null
   videoCredit: string | null
   videoCreditUrl: string | null
+  locale?: SiteLocale
 }) {
+  const t = translator(roamStrings, locale)
   const embed = parseVideoEmbed(videoUrl)
   const [open, setOpen] = useState(false)
   const closeRef = useRef<HTMLButtonElement>(null)
@@ -61,7 +78,7 @@ export default function RoamHeroMedia({
       className="inline-flex min-h-[44px] items-center gap-2 rounded-full bg-white px-4 text-[0.9375rem] font-semibold text-navy shadow-[0_2px_10px_rgba(25,26,46,0.25)] hover:bg-cream"
     >
       <Play size={16} className="fill-navy" aria-hidden />
-      Watch the video{videoCredit ? ` by ${videoCredit}` : ''}
+      {videoCredit ? t('video.watch_by', { name: videoCredit }) : t('video.watch')}
     </button>
   ) : null
 
@@ -86,7 +103,7 @@ export default function RoamHeroMedia({
         <div
           role="dialog"
           aria-modal="true"
-          aria-label={`${name}: video${videoCredit ? ` by ${videoCredit}` : ''}`}
+          aria-label={videoCredit ? t('video.aria_by', { name, credit: videoCredit }) : t('video.aria', { name })}
           className="fixed inset-0 z-[60] flex justify-center overflow-y-auto bg-navy/80 p-4"
           onClick={(e) => e.target === e.currentTarget && setOpen(false)}
         >
@@ -95,7 +112,7 @@ export default function RoamHeroMedia({
               ref={closeRef}
               type="button"
               onClick={() => setOpen(false)}
-              aria-label="Close the video"
+              aria-label={t('video.close')}
               className="absolute right-0 top-0 flex h-11 w-11 items-center justify-center rounded-full bg-white text-navy"
             >
               <X size={20} aria-hidden />
@@ -103,22 +120,24 @@ export default function RoamHeroMedia({
             {/* Tall enough for the platform's header, video and footer, so it never scrolls inside. */}
             <iframe
               src={embed.src}
-              title={`${name}: video${videoCredit ? ` by ${videoCredit}` : ''}`}
+              title={videoCredit ? t('video.aria_by', { name, credit: videoCredit }) : t('video.aria', { name })}
               allow="encrypted-media; picture-in-picture; autoplay"
               allowFullScreen
               scrolling="no"
               className={`w-full rounded-[12px] border-0 bg-white ${embed.vertical ? 'h-[min(860px,calc(100vh-150px))]' : 'aspect-video'}`}
             />
             <p className="mt-2 text-center text-[0.875rem] text-white">
-              Video by{' '}
-              {videoCreditUrl ? (
-                <a href={videoCreditUrl} target="_blank" rel="noopener noreferrer" className="font-semibold underline underline-offset-4">
-                  {videoCredit ?? embed.platform}
-                </a>
-              ) : (
-                <span className="font-semibold">{videoCredit ?? embed.platform}</span>
+              {withNode(
+                videoCredit ? t('video.credit_on', { platform: embed.platform }) : t('video.credit'),
+                videoCreditUrl ? (
+                  <a href={videoCreditUrl} target="_blank" rel="noopener noreferrer" className="font-semibold underline underline-offset-4">
+                    {videoCredit ?? embed.platform}
+                  </a>
+                ) : (
+                  <span className="font-semibold">{videoCredit ?? embed.platform}</span>
+                ),
               )}
-              {videoCredit ? ` on ${embed.platform}` : ''}.{videoCreditUrl ? ' Follow them for more rides like this.' : ''}
+              {videoCreditUrl ? ` ${t('video.follow')}` : ''}
             </p>
           </div>
         </div>

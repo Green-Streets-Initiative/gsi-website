@@ -3,7 +3,11 @@
  * picture per trail, shared by the trail pages, /trails/conditions and the
  * open feed. Data from get_path_conditions() (Shift migration 01568); see
  * lib/trails/conditions.ts. No server imports, so client maps can use it.
+ * Words take an optional page language (site-strings/trails.ts); English is the default.
  */
+
+import { siteDate, siteTime, translator, type SiteLocale } from '@/lib/site-i18n'
+import { trailStrings } from '@/lib/site-strings/trails'
 
 export type Condition = 'clear' | 'snowy' | 'icy' | 'not_cleared'
 export type Cleared = 'yes' | 'partly' | 'no'
@@ -96,57 +100,91 @@ export function isWintry(w: TrailWeather | null): w is TrailWeather {
   return !!w && (w.snow_72h_cm >= 1 || w.snow_depth_cm >= 1 || w.freezing_72h)
 }
 
-function inches(cm: number): string {
+/* The words below take the page's language; English (the default) is what the
+   open feed and every untranslated caller get, unchanged. */
+
+export function conditionLabel(c: Condition, locale: SiteLocale = 'en'): string {
+  return locale === 'en' ? CONDITION_LABEL[c] : translator(trailStrings, locale)(`cond.${c}`)
+}
+
+export function clearedLabel(k: ClearedKey, locale: SiteLocale = 'en'): string {
+  return locale === 'en' ? CLEARED_STYLE[k].label : translator(trailStrings, locale)(`cleared.${k}`)
+}
+
+export function clearedShort(k: Cleared, locale: SiteLocale = 'en'): string {
+  return locale === 'en' ? CLEARED_SHORT[k] : translator(trailStrings, locale)(`cleared_short.${k}`)
+}
+
+export function laneLabel(locale: SiteLocale = 'en'): string {
+  return locale === 'en' ? LANE_STYLE.label : translator(trailStrings, locale)('cond.lane')
+}
+
+/** `upTo`: "Up to 4 inches", for the regional line on /trails/conditions. */
+function inches(cm: number, locale: SiteLocale, upTo = false): string {
+  const t = translator(trailStrings, locale)
   const n = Math.round(cm / 2.54)
-  return n < 1 ? 'Under an inch' : n === 1 ? '1 inch' : `${n} inches`
+  if (upTo) return n < 1 ? t('inch.up_to_under') : n === 1 ? t('inch.up_to_one') : t('inch.up_to_other', { n })
+  return n < 1 ? t('inch.under') : n === 1 ? t('inch.one') : t('inch.other', { n })
 }
 
 const tz = 'America/New_York'
-function dayName(iso: string, now = new Date()): string {
+function dayKey(iso: string, now = new Date()): 'today' | 'yesterday' | null {
   const d = new Date(iso)
   const key = (x: Date) => x.toLocaleDateString('en-US', { timeZone: tz })
   if (key(d) === key(now)) return 'today'
   if (key(d) === key(new Date(now.getTime() - 86_400_000))) return 'yesterday'
-  return d.toLocaleDateString('en-US', { weekday: 'long', timeZone: tz })
+  return null
+}
+function weekdayName(iso: string, locale: SiteLocale): string {
+  return siteDate(locale, iso, { weekday: 'long', timeZone: tz })
 }
 
-export function timeOf(iso: string, now = new Date()): string {
-  const t = new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: tz })
-  const day = dayName(iso, now)
-  return day === 'today' ? t : `${day} ${t}`
+export function timeOf(iso: string, now = new Date(), locale: SiteLocale = 'en'): string {
+  const t = siteTime(locale, iso, { hour: 'numeric', minute: '2-digit', timeZone: tz })
+  const k = dayKey(iso, now)
+  if (k === 'today') return t
+  const tr = translator(trailStrings, locale)
+  return k === 'yesterday' ? tr('time.yesterday', { time: t }) : tr('time.weekday', { day: weekdayName(iso, locale), time: t })
 }
 
 /** "4 inches of snow since Tuesday", "Freezing rain since yesterday", "Snow on the ground". */
-export function snowLine(w: TrailWeather, now = new Date()): string {
+export function snowLine(w: TrailWeather, now = new Date(), locale: SiteLocale = 'en', upTo = false): string {
+  const t = translator(trailStrings, locale)
   if (w.snow_72h_cm >= 1) {
-    const day = w.last_snow_at ? dayName(w.last_snow_at, now) : null
-    return `${inches(w.snow_72h_cm)} of snow${day ? (day === 'today' ? ' today' : ` since ${day}`) : ' in the last three days'}`
+    const amount = inches(w.snow_72h_cm, locale, upTo)
+    if (!w.last_snow_at) return t('snow.recent', { amount })
+    const k = dayKey(w.last_snow_at, now)
+    if (k === 'today') return t('snow.today', { amount })
+    if (k === 'yesterday') return t('snow.yesterday', { amount })
+    return t('snow.since', { amount, day: weekdayName(w.last_snow_at, locale) })
   }
-  if (w.freezing_72h) return 'Freezing rain in the last three days'
-  return 'Snow on the ground'
+  if (w.freezing_72h) return t('snow.freezing')
+  return t('snow.ground')
 }
 
 /** "between Arlington Center and Lexington Center", "near Davis Square", or "". */
-export function stretchWords(r: Pick<ConditionReport, 'from_label' | 'to_label'>): string {
-  if (r.from_label && r.to_label) return `between ${r.from_label} and ${r.to_label}`
-  if (r.from_label) return `near ${r.from_label}`
+export function stretchWords(r: Pick<ConditionReport, 'from_label' | 'to_label'>, locale: SiteLocale = 'en'): string {
+  const t = translator(trailStrings, locale)
+  if (r.from_label && r.to_label) return t('stretch.between', { from: r.from_label, to: r.to_label })
+  if (r.from_label) return t('stretch.near', { from: r.from_label })
   return ''
 }
 
 /** "Icy between X and Y" */
-export function reportLine(r: ConditionReport): string {
-  const where = stretchWords(r)
-  return where ? `${CONDITION_LABEL[r.condition]} ${where}` : CONDITION_LABEL[r.condition]
+export function reportLine(r: ConditionReport, locale: SiteLocale = 'en'): string {
+  const where = stretchWords(r, locale)
+  const condition = conditionLabel(r.condition, locale)
+  return where ? translator(trailStrings, locale)('report.line', { condition, where }) : condition
 }
 
 /** The one line a trail shows now: the newest report, else recent snow, else nothing. */
-export function headline(c: TrailConditions | null, now = new Date()):
+export function headline(c: TrailConditions | null, now = new Date(), locale: SiteLocale = 'en'):
   | { kind: 'report'; text: string; when: string; condition: Condition }
   | { kind: 'snow'; text: string }
   | null {
   if (!c) return null
   const r = c.reports[0]
-  if (r) return { kind: 'report', text: reportLine(r), when: timeOf(r.rode_at, now), condition: r.condition }
-  if (isWintry(c.weather)) return { kind: 'snow', text: `${snowLine(c.weather, now)}. No reports from riders yet` }
+  if (r) return { kind: 'report', text: reportLine(r, locale), when: timeOf(r.rode_at, now, locale), condition: r.condition }
+  if (isWintry(c.weather)) return { kind: 'snow', text: translator(trailStrings, locale)('head.snow', { snow: snowLine(c.weather, now, locale) }) }
   return null
 }

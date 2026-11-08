@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react'
 import { LocateFixed, X } from 'lucide-react'
 import { gaEvent } from '@/lib/ga'
+import { translator, type SiteLocale } from '@/lib/site-i18n'
+import { roamStrings } from '@/lib/site-strings/roams'
 
 /**
  * Filters for the /shift/roams hub. Every card is already in the server HTML
@@ -57,7 +59,8 @@ const chipBase =
 const chipOff = 'border-navy/15 bg-white text-navy hover:border-navy/40'
 const chipOn = 'border-navy bg-navy text-white'
 
-export default function RoamHubFilters({ total }: { total: number }) {
+export default function RoamHubFilters({ total, locale = 'en' }: { total: number; locale?: SiteLocale }) {
+  const t = translator(roamStrings, locale)
   const [origin, setOrigin] = useState<Origin | null>(null)
   const [placeId, setPlaceId] = useState('')
   const [underHour, setUnderHour] = useState(false)
@@ -69,6 +72,7 @@ export default function RoamHubFilters({ total }: { total: number }) {
   const active = !!origin || underHour || group
 
   useEffect(() => {
+    const tr = translator(roamStrings, locale)
     const cards = Array.from(document.querySelectorAll<HTMLElement>('[data-roam-card]'))
     let visible = 0
     for (const card of cards) {
@@ -85,7 +89,7 @@ export default function RoamHubFilters({ total }: { total: number }) {
       const slot = card.querySelector<HTMLElement>('[data-roam-distance]')
       if (slot) {
         slot.hidden = !(origin && dist != null)
-        slot.textContent = origin && dist != null ? `${milesLabel(dist)} mi away · ` : ''
+        slot.textContent = origin && dist != null ? tr('filters.mi_away', { mi: milesLabel(dist) }) : ''
       }
       if (ok) visible++
     }
@@ -98,7 +102,7 @@ export default function RoamHubFilters({ total }: { total: number }) {
       if (link) link.hidden = count === 0
     }
     setShown(visible)
-  }, [origin, underHour, group])
+  }, [origin, underHour, group, locale])
 
   const useMyLocation = () => {
     if (origin && !placeId) {
@@ -147,11 +151,11 @@ export default function RoamHubFilters({ total }: { total: number }) {
 
   return (
     <div className="mx-auto mt-6 max-w-[860px] rounded-2xl border border-navy/10 bg-white/70 px-4 py-4">
-      <div className="flex flex-wrap items-center justify-center gap-2.5" role="group" aria-label="Filter routes">
-        <span className="text-[15px] font-semibold text-navy">Filter:</span>
+      <div className="flex flex-wrap items-center justify-center gap-2.5" role="group" aria-label={t('filters.aria')}>
+        <span className="text-[15px] font-semibold text-navy">{t('filters.label')}</span>
         <button type="button" onClick={useMyLocation} aria-pressed={nearOn} className={`${chipBase} ${nearOn ? chipOn : chipOff}`}>
           <LocateFixed size={16} aria-hidden />
-          {locating ? 'Finding you…' : 'Near me'}
+          {locating ? t('filters.finding') : t('filters.near_me')}
         </button>
         <button
           type="button"
@@ -162,7 +166,7 @@ export default function RoamHubFilters({ total }: { total: number }) {
           }}
           className={`${chipBase} ${underHour ? chipOn : chipOff}`}
         >
-          Under 1 hr
+          {t('filters.under_hour')}
         </button>
         <button
           type="button"
@@ -173,18 +177,18 @@ export default function RoamHubFilters({ total }: { total: number }) {
           }}
           className={`${chipBase} ${group ? chipOn : chipOff}`}
         >
-          Group ride soon
+          {t('filters.group_soon')}
         </button>
         <label className="inline-flex min-h-[44px] items-center gap-2 text-[15px] text-ink-soft">
-          <span>or start from</span>
+          <span>{t('filters.or_start_from')}</span>
           <select
             id="roam-hub-place"
-            aria-label="Start from a place"
+            aria-label={t('filters.start_from_aria')}
             value={placeId}
             onChange={(e) => pickPlace(e.target.value)}
             className="min-h-[44px] rounded-full border border-navy/15 bg-white px-3 text-[15px] font-semibold text-navy focus-visible:outline-2 focus-visible:outline-navy"
           >
-            <option value="">a place…</option>
+            <option value="">{t('filters.a_place')}</option>
             {PLACES.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.label}
@@ -198,20 +202,26 @@ export default function RoamHubFilters({ total }: { total: number }) {
         className={`${active || locError ? 'mt-2' : ''} flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[15px] text-ink-soft`}
         aria-live="polite"
       >
-        {locError && <span>We couldn&apos;t get your location. Pick a place instead.</span>}
+        {locError && <span>{t('filters.loc_error')}</span>}
         {active && !locError && (
           <span>
             {shown === 0
               ? origin
-                ? `No routes start within ${NEAR_MILES} miles of ${origin.label === 'you' ? 'you' : origin.label} with these filters.`
-                : 'No routes match these filters.'
-              : `Showing ${shown} of ${total} routes${origin ? `, closest to ${origin.label === 'you' ? 'you' : origin.label} first` : ''}.`}
+                ? origin.label === 'you'
+                  ? t('filters.none_near_you', { miles: NEAR_MILES })
+                  : t('filters.none_near_place', { miles: NEAR_MILES, place: origin.label })
+                : t('filters.none')
+              : origin
+                ? origin.label === 'you'
+                  ? t('filters.showing_near_you', { shown, total })
+                  : t('filters.showing_near_place', { shown, total, place: origin.label })
+                : t('filters.showing', { shown, total })}
           </span>
         )}
         {active && (
           <button type="button" onClick={clear} className="inline-flex min-h-[44px] items-center gap-1 font-semibold text-forest underline-offset-4 hover:underline">
             <X size={14} aria-hidden />
-            Clear filters
+            {t('filters.clear')}
           </button>
         )}
       </div>

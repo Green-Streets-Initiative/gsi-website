@@ -4,7 +4,9 @@ import { useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { QUIET_STYLE, LABEL_FONT_BOLD, quietBasemap } from '@/lib/maps/quietBasemap'
-import { CLEARED_STYLE, CONDITION_COLOR, CONDITION_LABEL, LANE_STYLE, type ClearedKey, type Condition } from '@/lib/trails/conditionText'
+import { CLEARED_STYLE, CONDITION_COLOR, LANE_STYLE, clearedLabel, conditionLabel, laneLabel, type ClearedKey, type Condition } from '@/lib/trails/conditionText'
+import { translator, withLang, type SiteLocale } from '@/lib/site-i18n'
+import { trailStrings } from '@/lib/site-strings/trails'
 
 let maplibrePromise: Promise<typeof import('maplibre-gl')> | null = null
 function loadMaplibre() {
@@ -50,8 +52,9 @@ function esc(s: string) {
  * violet underneath (Keith 2026-11-04: "Yes, add lanes"). Opens on Greater
  * Boston, where most trails, lanes and riders are; tapping a trail opens its page.
  */
-export default function ConditionsMap({ trails, lanes = [] }: { trails: ConditionsTrail[]; lanes?: ConditionsLane[] }) {
+export default function ConditionsMap({ trails, lanes = [], locale = 'en' }: { trails: ConditionsTrail[]; lanes?: ConditionsLane[]; locale?: SiteLocale }) {
   const router = useRouter()
+  const tr = translator(trailStrings, locale)
   const mapEl = useRef<HTMLDivElement>(null)
   const mapRef = useRef<maplibregl.Map | null>(null)
 
@@ -171,7 +174,7 @@ export default function ConditionsMap({ trails, lanes = [] }: { trails: Conditio
         }
         map.on('click', 'trails-hit', (e) => {
           const id = e.features?.[0]?.properties?.id as string | undefined
-          if (id) router.push(`/trails/${id}#winter`)
+          if (id) router.push(withLang(`/trails/${id}#winter`, locale))
         })
       })
     })()
@@ -189,20 +192,20 @@ export default function ConditionsMap({ trails, lanes = [] }: { trails: Conditio
 
   return (
     <div className="overflow-hidden rounded-[18px] bg-white shadow-[0_1px_2px_rgba(25,26,46,0.05),0_0_0_1px_rgba(25,26,46,0.06)]">
-      <div ref={mapEl} className="h-[300px] w-full sm:h-[440px] lg:h-[clamp(420px,calc(100vh-220px),620px)]" role="img" aria-label="Map of path and protected bike lane conditions in Massachusetts" />
+      <div ref={mapEl} className="h-[300px] w-full sm:h-[440px] lg:h-[clamp(420px,calc(100vh-220px),620px)]" role="img" aria-label={tr('cm.map_aria')} />
       <div className="space-y-1.5 border-t border-navy/[0.07] px-4 py-3 text-[0.8125rem] text-navy">
         {reportKinds.length > 0 && (
           <p className="flex flex-wrap gap-x-4 gap-y-1">
-            <span className="font-semibold">Reported today:</span>
+            <span className="font-semibold">{tr('cm.reported_today')}</span>
             {reportKinds.map((k) => (
               <span key={k} className="inline-flex items-center gap-1.5">
-                <i className="inline-block h-1.5 w-5 rounded" style={{ background: CONDITION_COLOR[k] }} aria-hidden /> {CONDITION_LABEL[k]}
+                <i className="inline-block h-1.5 w-5 rounded" style={{ background: CONDITION_COLOR[k] }} aria-hidden /> {conditionLabel(k, locale)}
               </span>
             ))}
           </p>
         )}
         <p className="flex flex-wrap gap-x-4 gap-y-1">
-          <span className="font-semibold">In winter:</span>
+          <span className="font-semibold">{tr('cm.in_winter')}</span>
           {(Object.keys(CLEARED_STYLE) as ClearedKey[]).map((k) => {
             const st = CLEARED_STYLE[k]
             return (
@@ -210,20 +213,20 @@ export default function ConditionsMap({ trails, lanes = [] }: { trails: Conditio
                 <svg width="22" height="6" aria-hidden>
                   <line x1="1" y1="3" x2="21" y2="3" stroke={st.color} strokeWidth="3" strokeDasharray={st.dash ? st.dash.map((d) => d * 3).join(' ') : undefined} strokeLinecap={st.dash ? 'butt' : 'round'} />
                 </svg>
-                {st.label}
+                {clearedLabel(k, locale)}
               </span>
             )
           })}
           {lanes.length > 0 && (
             <span className="inline-flex items-center gap-1.5">
               <svg width="22" height="6" aria-hidden><line x1="1" y1="3" x2="21" y2="3" stroke={LANE_STYLE.color} strokeWidth="2.6" strokeLinecap="round" /></svg>
-              {LANE_STYLE.label}
+              {laneLabel(locale)}
             </span>
           )}
           {hasClosed && (
             <span className="inline-flex items-center gap-1.5">
               <svg width="22" height="6" aria-hidden><line x1="2" y1="3" x2="21" y2="3" stroke={CLOSED} strokeWidth="3.5" strokeDasharray="1 5" strokeLinecap="round" /></svg>
-              Closed
+              {tr('cm.closed')}
             </span>
           )}
         </p>
