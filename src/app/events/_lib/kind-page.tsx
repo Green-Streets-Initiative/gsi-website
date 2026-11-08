@@ -266,8 +266,8 @@ export async function KindPage({ slug }: { slug: EventKindSlug }) {
                       </Link>
                     </div>
                   ) : (
-                    // On phones the email box follows the first area, not the whole list.
-                    <KindEventList kind={slug} sections={sections} inset={signup('kind-alert', 'lg:hidden')} />
+                    // On phones the email box follows the first five events, not the whole list.
+                    <KindEventList kind={slug} sections={sections} inset={signup('kind-alert', 'mt-2.5 lg:hidden')} />
                   )}
                   {sections.length === 0 && signup('kind-alert', 'mt-8 lg:hidden')}
                   <p className="mt-8 text-[15px]">

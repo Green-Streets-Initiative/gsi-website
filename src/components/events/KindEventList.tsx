@@ -23,18 +23,23 @@ export interface KindSection {
   more?: { count: number; href: string; label: string }
 }
 
+/** On phones the email box sits after this many events, as on the calendar. */
+const INSET_AFTER = 5
+
 export default function KindEventList({ kind, sections, inset }: { kind: string; sections: KindSection[]; inset?: ReactNode }) {
   let position = 0
+  const total = sections.reduce((n, s) => n + s.items.length, 0)
+  const insetAt = Math.min(INSET_AFTER, total) - 1
   return (
     <div className="flex flex-col gap-10">
-      {sections.map((s, si) => {
+      {sections.map((s) => {
         const groups: { day: string; items: KindSection['items'] }[] = []
         for (const it of s.items) {
           if (groups[groups.length - 1]?.day !== it.day) groups.push({ day: it.day, items: [] })
           groups[groups.length - 1].items.push(it)
         }
         return (
-          <div key={s.id} className="flex flex-col gap-8">
+          <div key={s.id}>
             <section aria-labelledby={`${s.id}-h`}>
               <h2 id={`${s.id}-h`} className="font-display text-[22px] font-extrabold text-(--ev-ink)">{s.title}</h2>
               <div className="mt-3 flex flex-col gap-6">
@@ -49,13 +54,15 @@ export default function KindEventList({ kind, sections, inset }: { kind: string;
                       {g.items.map(({ event }) => {
                         const pos = position++
                         return (
-                          <EventCard
-                            key={event.id}
-                            event={event}
-                            userLat={DEFAULT_LOCATION.lat}
-                            userLng={DEFAULT_LOCATION.lng}
-                            onOpen={() => trackEvents('events_card_clicked', { id: event.id, type: event.event_type, position: pos, kind })}
-                          />
+                          <div key={event.id}>
+                            <EventCard
+                              event={event}
+                              userLat={DEFAULT_LOCATION.lat}
+                              userLng={DEFAULT_LOCATION.lng}
+                              onOpen={() => trackEvents('events_card_clicked', { id: event.id, type: event.event_type, position: pos, kind })}
+                            />
+                            {pos === insetAt && inset}
+                          </div>
                         )
                       })}
                     </div>
@@ -68,7 +75,6 @@ export default function KindEventList({ kind, sections, inset }: { kind: string;
                 </Link>
               )}
             </section>
-            {si === 0 && inset}
           </div>
         )
       })}
