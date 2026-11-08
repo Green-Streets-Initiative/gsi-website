@@ -295,7 +295,12 @@
         "everett community fair",
         "massdot video contest",
         "community bike safety event",
-        "walking tour somerville"
+        "walking tour somerville",
+        "boston group rides",
+        "group bike rides boston",
+        "walking groups boston",
+        "free bike repair boston",
+        "boston events this weekend"
       ],
       "gsc_patterns": [
         "(bike|cycling|walk|walking|transit) .*(event|class|clinic|workshop|repair|tour|ride|meetup|fair|festival)",
@@ -308,19 +313,31 @@
         "\\bconference\\b",
         "\\bcentury\\b",
         "slow ?roll|block party|ride ?out\\b|\\bride for\\b",
-        "somerstreets|monster mash|tour de streets|critical mass|moving together|bike to the sea|halloween (parade|ride)|trick.or.treat ride"
+        "somerstreets|monster mash|tour de streets|critical mass|moving together|bike to the sea|halloween (parade|ride)|trick.or.treat ride",
+        "\\bgroup (bike |cycling )?rides?\\b|\\b(bike|cycling) (club|group)s?\\b",
+        "\\bwalking (groups?|clubs?)\\b|\\bgroup walks?\\b",
+        "\\b(free )?bike (repair|fix|tune)",
+        "\\b(events?|things to do|what'?s on)\\b.*\\b(this weekend|today|tonight)\\b|\\b(this weekend|today|tonight)\\b.*\\bevents?\\b"
       ],
       "target_urls": [
         "/events",
         "/programs",
-        "/programs/walk-ride-days"
+        "/programs/walk-ride-days",
+        "/events/group-rides",
+        "/events/walking-groups",
+        "/events/bike-repair",
+        "/events/this-weekend"
       ],
       "proposed_assets": [
+        "Kind pages /events/group-rides, /events/walking-groups, /events/bike-repair, /events/this-weekend (live 2026-11-08, exp-2026-11-7): kind-and-place searches land there instead of on one event",
         "The event pages already exist and already rank at positions 3.6-7.7. First lever is discovery, not content: 33 of them earn impressions while the sitemap lists two and llms.txt lists none (see the 2026-09-21 report, item 2)."
       ],
       "aeo_questions": [
         "Where can I get my bike fixed for free in Boston?",
-        "Is there a learn-to-ride class in Cambridge this month?"
+        "Is there a learn-to-ride class in Cambridge this month?",
+        "Where can I find group bike rides in Boston?",
+        "Are there walking groups near me in Boston?",
+        "What walks and bike rides are on this weekend around Boston?"
       ],
       "messaging_notes": "These searchers have already decided to come to something; answer the practical question first — what it is, when, where, whether it costs anything, whether you need to register — and let the event do the inviting. Placed AFTER students-campus and roams-trails because bucketing takes the first match and a campus bike-kitchen event belongs with the campus pages it shares a searcher with; placed BEFORE town-commuters so 'learn to bike cambridge' does not read as town-page demand. Pattern maintenance (2026-09-28): coverage fell 81% -> 58% in one week because searchers name an event, not a category — 'fluff fest', 'open streets allston', 'bu sustainability festival' carried ~200 impressions between them and matched nothing, since every pattern above needs a bike/walk word or a town in front. The inventory churns weekly, so a name list would decay faster than the Roam list did; the added patterns are the generic shapes of an event name instead (fest/festival, open streets, '<year> schedule'). Read the cluster alongside the page table: a big festival run by someone else can put hundreds of impressions on one of our listing pages at near-zero CTR, because the searcher wants the organizer."
     },
