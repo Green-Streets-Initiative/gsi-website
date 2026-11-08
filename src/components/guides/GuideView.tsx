@@ -81,6 +81,14 @@ export const searchMeta: Record<string, { title?: string; description: string; h
     title: 'How much is parking in Boston? Garages, meters, tickets and T lots',
     description: `Boston Common Garage is ${usd(PRICES.parking.bostonCommonDay)} for 3 to 10 hours, meters ${usd(PRICES.parking.meterStandard)} an hour, an expired meter a ${usd(PRICES.parking.meterTicket)} ticket, and T lots like Oak Grove and Alewife ${usd(PRICES.parking.mbtaGarageDay)} a weekday. What a year of parking adds up to, and cheaper ways in.`,
   },
+  // 2026-11-08 (SEO play 5): the Shift Together guide goes live at the launch
+  // flip. "Showing someone the way" names no search; people look for a first
+  // bike ride or T trip with someone who knows the way. Heading unchanged.
+  'showing-someone-the-way': {
+    title: 'Your first bike ride or T trip, with someone who knows the way',
+    description:
+      'How to make a first trip together go well, whether a neighbor is showing you the way around Boston or you are showing them.',
+  },
 }
 
 // The answer, first. An ad visitor typed a fare or pass question and wants the

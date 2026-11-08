@@ -9,8 +9,12 @@ import type { CarpoolRole, PartnerDay, PartnerLanguage, PartnerTime, PartnerWay,
 
 export const togetherStrings = defineStrings(
   {
-    'meta.title': 'Shift Together | Green Streets',
-    'meta.description': 'Have a neighbor show you how to bike, walk or take transit, show someone else how, or share a drive. Free, no app needed.',
+    // 2026-11-08 (SEO play 5, Keith "Ship 1–8"): titled for the searches
+    // ("someone to bike with in Boston", "ride the T with someone the first
+    // time") rather than the program name. Takes effect once the page is
+    // indexed at the launch flip.
+    'meta.title': 'Find someone to bike, walk or ride the T with around Boston | Shift Together',
+    'meta.description': 'A neighbor shows you the way the first time: a bike route, a walk, your first T trip, or a shared drive. Or show someone else. Free, no app needed.',
 
     // The frame: the bar under the site menu, the steps, the sign-in.
     'shell.your_signup': 'Your sign-up',
@@ -356,7 +360,7 @@ export const togetherStrings = defineStrings(
   },
   {
     es: {
-      'meta.title': 'Shift Together | Green Streets',
+      'meta.title': 'Encuentra con quién ir en bici, caminar o tomar el T en Boston | Shift Together',
       'meta.description': 'Que un vecino te enseñe a ir en bici, caminar o usar el transporte público, enséñale tú a alguien, o comparte el auto. Gratis, sin app.',
 
       'shell.your_signup': 'Tu inscripción',
@@ -695,7 +699,7 @@ export const togetherStrings = defineStrings(
       'practice.trip_q': '¿Listo para un trayecto que haces, como al trabajo o a la escuela?',
     },
     'pt-BR': {
-      'meta.title': 'Shift Together | Green Streets',
+      'meta.title': 'Encontre alguém para pedalar, caminhar ou pegar o T em Boston | Shift Together',
       'meta.description': 'Um vizinho te mostra como pedalar, caminhar ou usar o transporte público, você mostra para alguém, ou vocês dividem o carro. Grátis, sem app.',
 
       'shell.your_signup': 'Sua inscrição',
@@ -1034,7 +1038,7 @@ export const togetherStrings = defineStrings(
       'practice.trip_q': 'Pronto para um trajeto que você faz, como até o trabalho ou a escola?',
     },
     'zh-Hans': {
-      'meta.title': 'Shift Together | Green Streets',
+      'meta.title': '在波士顿找人陪你骑车、步行或第一次坐地铁 | Shift Together',
       'meta.description': '请邻居教你骑车、步行或乘坐公共交通，教别人怎么走，或者一起拼车。免费，无需下载 App。',
 
       'shell.your_signup': '你的报名',
