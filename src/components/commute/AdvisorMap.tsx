@@ -9,7 +9,9 @@ import { SHUTTLE_COLOR } from '@/lib/nearby/shuttle-agencies'
 import { decodePolyline } from '@/lib/geo/polyline'
 import type { BluebikeStationLive } from '@/lib/wayfinding/types'
 import type { AdvisorResult, BikeParkingSpot, BluebikeStation } from '@/lib/types/commute'
-import { COMFORT_COLORS, COMFORT_LABELS, comfortPieces, type CalmRoute } from './calm-route'
+import { translator, type SiteLocale } from '@/lib/site-i18n'
+import { advisorStrings } from '@/lib/site-strings/advisor'
+import { COMFORT_COLORS, COMFORT_LABELS, comfortLabel, comfortPieces, type CalmRoute } from './calm-route'
 import { mergeRacks, rackDistancePhrase, routeTypesFor, transitWalkLegs, type LegLive, type ShuttleLine } from './plan-data'
 
 /**
@@ -75,11 +77,30 @@ function bikeParkingHtml(title: string): string {
   return `<div title="${title.replace(/"/g, '&quot;')}" style="display:flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:6px;background:${RACK_COLOR};border:2px solid #fff;box-shadow:0 2px 5px rgba(0,0,0,0.35)">${rackGlyph(14)}</div>`
 }
 
+/** The generic rack names plan-data and the recommend route give, in the page's language. */
+const RACK_NAMES = {
+  'Bike rack': 'map.rack_name_rack',
+  'Covered bike parking': 'map.rack_name_covered',
+  'Indoor bike parking': 'map.rack_name_indoor',
+  'Bike parking': 'map.rack_name_parking',
+} as const
+
 /** "Bike rack, 38 spaces, 0.12 mi from the door" for the pin's tooltip. */
-function rackTitle(p: { name: string; capacity?: number | null; distance_miles: number }): string {
-  const cap = p.capacity ? `, ${p.capacity} space${p.capacity === 1 ? '' : 's'}` : ''
-  const where = rackDistancePhrase(p)
-  return `${p.name}${cap}, ${where === 'at the door' ? 'at the door' : `${where.replace(' away', '')} from the door`}`
+function rackTitle(p: { name: string; capacity?: number | null; distance_miles: number }, locale: SiteLocale = 'en'): string {
+  if (locale === 'en') {
+    const cap = p.capacity ? `, ${p.capacity} space${p.capacity === 1 ? '' : 's'}` : ''
+    const where = rackDistancePhrase(p)
+    return `${p.name}${cap}, ${where === 'at the door' ? 'at the door' : `${where.replace(' away', '')} from the door`}`
+  }
+  const t = translator(advisorStrings, locale)
+  const nameKey = RACK_NAMES[p.name as keyof typeof RACK_NAMES]
+  const name = nameKey ? t(nameKey) : p.name
+  // The English phrase says whether the rack is at the door; the miles are its own figure.
+  const atDoor = rackDistancePhrase(p) === 'at the door'
+  const miles = p.distance_miles.toFixed(2).replace(/0$/, '')
+  const n = p.capacity || 0
+  if (atDoor) return n ? t(n === 1 ? 'map.rack_door_cap_one' : 'map.rack_door_cap_other', { name, n }) : t('map.rack_door', { name })
+  return n ? t(n === 1 ? 'map.rack_away_cap_one' : 'map.rack_away_cap_other', { name, n, miles }) : t('map.rack_away', { name, miles })
 }
 
 export const ADVISOR_CORRIDOR = (mode: string) => `reach:advisor:${mode}`
@@ -150,6 +171,7 @@ export default function AdvisorMap({
   onDockTap,
   layout = 'card',
   fitPadding,
+  locale = 'en',
 }: {
   home: { lat: number; lng: number; label: string }
   office: { lat: number; lng: number; label: string }
@@ -181,7 +203,10 @@ export default function AdvisorMap({
   layout?: 'card' | 'stage'
   /** Camera padding so fits land above the phone sheet. */
   fitPadding?: FitPadding
+  /** The page's language for the legend and tooltips; place names stay as they are. */
+  locale?: SiteLocale
 }) {
+  const t = translator(advisorStrings, locale)
   const { trafficOn, toggleTraffic } = useTrafficPreference()
   const trafficAvailable = useTrafficAvailable(trafficOn, home)
 
@@ -232,7 +257,7 @@ export default function AdvisorMap({
         const key = `${p.lat.toFixed(5)},${p.lng.toFixed(5)}`
         if (seen.has(key)) continue
         seen.add(key)
-        out.push({ id: `rack-${key}`, lat: p.lat, lng: p.lng, html: bikeParkingHtml(rackTitle(p)), zIndex: 2 })
+        out.push({ id: `rack-${key}`, lat: p.lat, lng: p.lng, html: bikeParkingHtml(rackTitle(p, locale)), zIndex: 2 })
       }
     }
     if (focus === 'transit') {
@@ -269,7 +294,7 @@ export default function AdvisorMap({
       out.push({ id: `${focusedShuttle.key}-office`, lat: focusedShuttle.stopLat, lng: focusedShuttle.stopLng, html: shuttleStopHtml(focusedShuttle.stopName, focusedShuttle.agencyLabel, true), zIndex: 6 })
     }
     return out
-  }, [home, office, plan, legs, racks, docks, selectedDock, focus, focusedShuttle, comboLegs])
+  }, [home, office, plan, legs, racks, docks, selectedDock, focus, focusedShuttle, comboLegs, locale])
 
   const lines = useMemo<GeoJSON.FeatureCollection>(() => {
     const features: GeoJSON.Feature[] = []
@@ -373,33 +398,33 @@ export default function AdvisorMap({
 
   const legend = (
     <>
-            <span className="flex items-center gap-1.5"><span aria-hidden className="inline-block h-3 w-3 rounded-full border-2 border-[#191A2E] bg-[#BAF14D]" />Home</span>
-            <span className="flex items-center gap-1.5"><span aria-hidden className="inline-block h-3 w-3 rounded-full border-2 border-[#191A2E] bg-white" />Work</span>
+            <span className="flex items-center gap-1.5"><span aria-hidden className="inline-block h-3 w-3 rounded-full border-2 border-[#191A2E] bg-[#BAF14D]" />{t('map.home')}</span>
+            <span className="flex items-center gap-1.5"><span aria-hidden className="inline-block h-3 w-3 rounded-full border-2 border-[#191A2E] bg-white" />{t('map.work')}</span>
             {showWalkKey && (
-              <span className="flex items-center gap-1.5"><span aria-hidden className="inline-block h-0 w-4 border-t-2 border-dashed" style={{ borderColor: WALK_COLOR }} />Walk</span>
+              <span className="flex items-center gap-1.5"><span aria-hidden className="inline-block h-0 w-4 border-t-2 border-dashed" style={{ borderColor: WALK_COLOR }} />{t('map.walk')}</span>
             )}
             {showDriveKey && (
-              <span className="flex items-center gap-1.5"><span aria-hidden className="inline-block h-[3px] w-4 rounded" style={{ backgroundColor: DRIVE_COLOR }} />Drive</span>
+              <span className="flex items-center gap-1.5"><span aria-hidden className="inline-block h-[3px] w-4 rounded" style={{ backgroundColor: DRIVE_COLOR }} />{t('map.drive')}</span>
             )}
             {showShuttleKey && (
-              <span className="flex items-center gap-1.5"><span aria-hidden className="inline-block h-[3px] w-4 rounded" style={{ backgroundColor: SHUTTLE_COLOR }} />Shuttle</span>
+              <span className="flex items-center gap-1.5"><span aria-hidden className="inline-block h-[3px] w-4 rounded" style={{ backgroundColor: SHUTTLE_COLOR }} />{t('map.shuttle')}</span>
             )}
             {showBikeLegKey && (
-              <span className="flex items-center gap-1.5"><span aria-hidden className="inline-block h-[3px] w-4 rounded" style={{ backgroundColor: COMFORT_COLORS.path }} />Bike to the station</span>
+              <span className="flex items-center gap-1.5"><span aria-hidden className="inline-block h-[3px] w-4 rounded" style={{ backgroundColor: COMFORT_COLORS.path }} />{t('map.bike_to_station')}</span>
             )}
             {showDocksKey && (
-              <span className="flex items-center gap-1.5"><span aria-hidden className="inline-block h-3 w-3 rounded-full bg-[#2B6CB0]" />Bluebikes</span>
+              <span className="flex items-center gap-1.5"><span aria-hidden className="inline-block h-3 w-3 rounded-full bg-[#2B6CB0]" />{t('map.bluebikes')}</span>
             )}
             {showRacksKey && (
               <span className="flex items-center gap-1.5">
                 <span aria-hidden className="inline-flex h-3.5 w-3.5 items-center justify-center rounded-[3px]" style={{ backgroundColor: RACK_COLOR }} dangerouslySetInnerHTML={{ __html: rackGlyph(10) }} />
-                Bike racks
+                {t('map.bike_racks')}
               </span>
             )}
             {legendTiers.map((r) => (
               <span key={r} className="flex items-center gap-1.5">
                 <span aria-hidden className="inline-block h-[3px] w-4 rounded" style={{ backgroundColor: COMFORT_COLORS[r] }} />
-                {COMFORT_LABELS[r]}
+                {comfortLabel(r, locale)}
               </span>
             ))}
     </>
@@ -440,7 +465,7 @@ export default function AdvisorMap({
             <TrafficToggle on={trafficOn} onToggle={toggleTraffic} />
           </div>
           {trafficOn && trafficAvailable === false && (
-            <p className="absolute left-3 top-14 z-10 rounded-full bg-white/90 px-3 py-1 text-[0.9375rem] font-semibold text-[#8A5A00]">Traffic not available right now.</p>
+            <p className="absolute left-3 top-14 z-10 rounded-full bg-white/90 px-3 py-1 text-[0.9375rem] font-semibold text-[#8A5A00]">{t('map.traffic_unavailable')}</p>
           )}
         </NearbyToneProvider>
       </div>
@@ -457,7 +482,7 @@ export default function AdvisorMap({
           <TrafficToggle on={trafficOn} onToggle={toggleTraffic} />
         </div>
         {trafficOn && trafficAvailable === false && (
-          <p className="px-3 pb-2 text-[0.9375rem] font-semibold text-[#8A5A00]">Traffic not available right now.</p>
+          <p className="px-3 pb-2 text-[0.9375rem] font-semibold text-[#8A5A00]">{t('map.traffic_unavailable')}</p>
         )}
         {trafficOn && trafficAvailable !== false && <TrafficLegend className="px-3 pb-2" />}
         <div className="relative">
@@ -485,7 +510,7 @@ export default function AdvisorMap({
                 <button
                   type="button"
                   onClick={() => onDockTap(null)}
-                  aria-label="Close details"
+                  aria-label={t('map.close_details')}
                   className="shrink-0 rounded-lg border border-(--nb-line-mid) px-2.5 py-1 text-[0.9rem] font-bold text-(--nb-ink-80) transition-colors hover:bg-(--nb-panel-raised) hover:text-(--nb-ink)"
                 >
                   ✕

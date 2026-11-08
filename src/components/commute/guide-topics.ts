@@ -18,6 +18,8 @@
 
 import type { GuideLink } from '@/lib/types/commute'
 import type { StageLabel } from './trip-stages'
+import { translator, type SiteLocale } from '@/lib/site-i18n'
+import { advisorStrings } from '@/lib/site-strings/advisor'
 
 export type GuideQuestion =
   | 'What to wear'
@@ -82,10 +84,35 @@ export function contentModeFor(mode: string | null | undefined): string | null {
 }
 
 /** "biking", "walking", "the bus and train" for the card title. */
-export function contentModeWord(contentMode: string): string {
-  if (contentMode === 'cycling') return 'biking'
-  if (contentMode === 'walking') return 'walking'
-  return 'the bus and train'
+export function contentModeWord(contentMode: string, locale: SiteLocale = 'en'): string {
+  const t = translator(advisorStrings, locale)
+  if (contentMode === 'cycling') return t('guide.word_cycling')
+  if (contentMode === 'walking') return t('guide.word_walking')
+  return t('guide.word_transit')
+}
+
+/** "All guides for biking": the link under an open stage's guides, one sentence per language. */
+export function guidesMoreLabel(contentMode: string, locale: SiteLocale = 'en'): string {
+  const t = translator(advisorStrings, locale)
+  if (contentMode === 'cycling') return t('guide.more_cycling')
+  if (contentMode === 'walking') return t('guide.more_walking')
+  return t('guide.more_transit')
+}
+
+const QUESTION_KEY = {
+  'What to wear': 'guide.q_wear',
+  'Getting a bike': 'guide.q_bike',
+  'Carrying things': 'guide.q_carry',
+  'Planning the route': 'guide.q_route',
+  'Riding with traffic': 'guide.q_traffic',
+  'Taking the bus': 'guide.q_bus',
+  'Arriving at work': 'guide.q_arrive',
+  'Locking up and parking': 'guide.q_lock',
+} as const satisfies Record<GuideQuestion, string>
+
+/** A question as the reader sees it. The English question stays the id (events, tests). */
+export function questionLabel(q: GuideQuestion, locale: SiteLocale = 'en'): string {
+  return translator(advisorStrings, locale)(QUESTION_KEY[q])
 }
 
 const BARRIER_QUESTION: Record<string, GuideQuestion> = {

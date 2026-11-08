@@ -3,50 +3,46 @@ import Footer from '@/components/Footer'
 import FAQ from '@/components/FAQ'
 import JsonLd from '@/components/JsonLd'
 import { faqPageSchema } from '@/lib/structured-data'
-import { faqSections } from '@/lib/help/faq'
+import HtmlLang from '@/components/HtmlLang'
+import { faqSectionsFor } from '@/lib/help/faq'
+import { siteLocale } from '@/lib/site-locale'
+import { translator } from '@/lib/site-i18n'
+import { helpStrings } from '@/lib/site-strings/help'
 
-export const metadata = {
-  title: 'Help — Green Streets Initiative',
-  description:
-    'Everything you need to know about using Shift, unlocking rewards, running a schools challenge, or joining as a partner.',
+type SearchParams = Promise<Record<string, string | string[] | undefined>>
+
+// The app's Help & FAQ row opens this page with ?lang=; otherwise the browser's language decides.
+export async function generateMetadata({ searchParams }: { searchParams: SearchParams }) {
+  const t = translator(helpStrings, await siteLocale((await searchParams).lang))
+  return {
+    title: t('help.meta_title'),
+    description: t('help.meta_description'),
+  }
 }
 
 /* ------------------------------------------------------------------ */
 /*  Quick-link card data                                               */
 /* ------------------------------------------------------------------ */
 
+// Each card lists sections by id; a link reads its section's title.
 const quickLinks = [
   {
-    label: 'App Users',
-    sections: [
-      { name: 'Getting Started', anchor: '#getting-started' },
-      { name: 'Tracking Your Trips', anchor: '#trip-tracking' },
-      { name: 'Getting Around', anchor: '#getting-around' },
-      { name: 'XP & Rewards', anchor: '#points-rewards' },
-      { name: 'Badges, Streaks & Tiers', anchor: '#badges-streaks-tiers' },
-      { name: 'Roams', anchor: '#roams' },
-      { name: 'Drawings & Challenges', anchor: '#competitions' },
-      { name: 'Privacy & Data', anchor: '#privacy-data' },
-      { name: 'Account & Settings', anchor: '#account-settings' },
-    ],
+    label: 'help.card_app_users',
+    sections: ['getting-started', 'trip-tracking', 'getting-around', 'points-rewards', 'badges-streaks-tiers', 'roams', 'competitions', 'privacy-data', 'account-settings'],
   },
-  {
-    label: 'Rewards Partners',
-    sections: [
-      { name: 'For Rewards Partners', anchor: '#for-rewards-partners' },
-    ],
-  },
-  {
-    label: 'Schools',
-    sections: [{ name: 'For Schools', anchor: '#for-schools' }],
-  },
-]
+  { label: 'help.card_partners', sections: ['for-rewards-partners'] },
+  { label: 'help.card_schools', sections: ['for-schools'] },
+] as const
 
 /* ------------------------------------------------------------------ */
 /*  Page                                                               */
 /* ------------------------------------------------------------------ */
 
-export default function HelpPage() {
+export default async function HelpPage({ searchParams }: { searchParams: SearchParams }) {
+  const locale = await siteLocale((await searchParams).lang)
+  const t = translator(helpStrings, locale)
+  const faqSections = faqSectionsFor(locale)
+  const titleOf = (id: string) => faqSections.find((s) => s.id === id)?.title ?? id
   // FAQPage structured data. Only string answers are included so the markup
   // matches the visible text verbatim; ~16 answers are JSX (they embed links)
   // and are intentionally omitted. TODO: convert those to plain-text-first
@@ -58,18 +54,18 @@ export default function HelpPage() {
 
   return (
     <>
-      <Nav variant="light" />
+      <HtmlLang locale={locale} />
+      <Nav variant="light" locale={locale} />
       <JsonLd data={faqPageSchema(faqSchemaItems)} />
       <main className="bg-cream" style={{ paddingTop: '60px' }}>
         {/* ---- Hero ---- */}
         <section className="bg-cream px-6 pb-8 pt-12 md:pt-16 lg:px-8 lg:pb-10">
           <div className="mx-auto max-w-[1120px] text-center">
             <h1 className="font-serif text-[clamp(2.5rem,6vw,4.25rem)] font-normal leading-[1.02] tracking-[-0.01em] text-navy">
-              How can we help?
+              {t('help.title')}
             </h1>
             <p className="mx-auto mt-5 max-w-[640px] text-[1.0625rem] leading-[1.65] text-ink-soft">
-              Everything you need to know about using Shift, unlocking rewards,
-              running a schools challenge, or joining as a partner.
+              {t('help.intro')}
             </p>
           </div>
         </section>
@@ -83,16 +79,16 @@ export default function HelpPage() {
                 className="rounded-[14px] border border-navy/10 bg-white p-6"
               >
                 <h2 className="font-serif text-[1.375rem] leading-tight text-navy">
-                  {card.label}
+                  {t(card.label)}
                 </h2>
                 <ul className="mt-3 flex flex-col gap-1.5">
-                  {card.sections.map((s) => (
-                    <li key={s.anchor}>
+                  {card.sections.map((id) => (
+                    <li key={id}>
                       <a
-                        href={s.anchor}
+                        href={`#${id}`}
                         className="text-sm font-semibold text-forest underline-offset-4 hover:underline"
                       >
-                        {s.name}
+                        {titleOf(id)}
                       </a>
                     </li>
                   ))}
@@ -124,18 +120,17 @@ export default function HelpPage() {
         <section className="bg-cream px-6 pb-20 pt-8 lg:px-8 lg:pb-24 lg:pt-10">
           <div className="mx-auto max-w-[1120px] text-center">
             <h2 className="font-serif text-[clamp(1.75rem,3.5vw,2.5rem)] font-normal leading-[1.1] text-navy">
-              Still need help?
+              {t('help.still_title')}
             </h2>
             <p className="mx-auto mt-4 max-w-[520px] text-[1.0625rem] leading-[1.65] text-ink-soft">
-              We&rsquo;re a small team and we read every message. Reach out and
-              we&rsquo;ll get back to you as quickly as we can.
+              {t('help.still_body')}
             </p>
             <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
               <a
                 href="mailto:info@gogreenstreets.org"
                 className="inline-flex min-h-[48px] items-center justify-center rounded-full bg-navy px-7 text-[15px] font-semibold text-white transition-opacity hover:opacity-90"
               >
-                General Support
+                {t('help.general_support')}
                 <svg
                   width="14"
                   height="14"
@@ -156,7 +151,7 @@ export default function HelpPage() {
           </div>
         </section>
       </main>
-      <Footer variant="light" />
+      <Footer variant="light" locale={locale} />
     </>
   )
 }

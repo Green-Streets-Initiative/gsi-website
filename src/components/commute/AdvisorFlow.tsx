@@ -20,9 +20,9 @@ import LoadingMessages from '@/components/commute/LoadingMessages'
 import CommutePlanPrint from '@/components/commute/CommutePlanPrint'
 import TagAlong from '@/components/commute/TagAlong'
 import { haversineMeters } from '@/lib/geo/measure'
-import { COMFORT_COLORS, COMFORT_LABELS, comfortPieces, fetchCalmRoute, formatStretchMiles, legPhotoSpec, type CalmRoute } from '@/components/commute/calm-route'
+import { COMFORT_COLORS, comfortLabel, comfortPieces, fetchCalmRoute, formatStretchMiles, legPhotoSpec, type CalmRoute } from '@/components/commute/calm-route'
 import { ReportRouteLink, type RouteIssueStretch, type RouteIssueSurface } from '@/components/commute/ReportRouteSheet'
-import { contentModeFor, contentModeWord, guidesByStage } from '@/components/commute/guide-topics'
+import { contentModeFor, guidesByStage, guidesMoreLabel } from '@/components/commute/guide-topics'
 import { eventKindLine, eventModeForRow, eventWhenLine, eventWhereLine, walkRideDayWhen } from '@/components/commute/event-card'
 import {
   directionsUrl,
@@ -40,6 +40,9 @@ import { CAR_MODES, WORKDAYS, asCarChoice, asVehicle, formatClock, headlineFor, 
 import { chipFor, flagsForMode, morningWeather, summaryFor, type MorningWeather, type WeatherHour } from '@/lib/commute/weather'
 import { employerNearbyUrl, locationAsOffice } from '@/lib/employer/office-links'
 import { eventPath } from '@/lib/events-url'
+import { NearbyI18nProvider } from '@/components/nearby/NearbyI18n'
+import { siteDate, translator, withLang, type SiteLocale, type T } from '@/lib/site-i18n'
+import { advisorStrings } from '@/lib/site-strings/advisor'
 import type {
   AdvisorResult,
   BikeParkingSpot,
@@ -106,6 +109,8 @@ export interface AdvisorFlowProps {
   companyName?: string | null
   /** The host page hears each step change, so its hero can get out of the plan's way on step 3. */
   onStepChange?: (step: number) => void
+  /** The page's language (the public page, the employer pages and the demo pass it). */
+  locale?: SiteLocale
 }
 
 const SESSION_KEY = 'commute-advisor-state'
@@ -125,14 +130,23 @@ const PUBLIC_GROUP: EmployerGroup = {
   id: 'public', name: 'Green Streets Initiative', slug: 'commute-advisor', logo_url: null, tier: 'basic', employer_benefits: {},
 }
 
+type AdvisorT = T<keyof (typeof advisorStrings)['en'] & string>
+
+/** A translated sentence with one slot filled by a node (a link), so word order stays the language's own. */
+function withNode(text: string, slot: string, node: ReactNode): ReactNode {
+  const at = text.indexOf(`{${slot}}`)
+  if (at < 0) return text
+  return <>{text.slice(0, at)}{node}{text.slice(at + slot.length + 2)}</>
+}
+
 const clockRe = /^([01]\d|2[0-3]):[0-5]\d$/
 const asClock = (v: unknown): string | null => (typeof v === 'string' && clockRe.test(v.slice(0, 5)) ? v.slice(0, 5) : null)
 
 /** The parking figure an employer's benefits imply, per day. Never a guess: 0 when nothing is known. */
-function parkingFromBenefits(b: EmployerBenefits): { perDay: number; hint: string | null } {
-  if (b.free_parking) return { perDay: 0, hint: 'Free parking at the office.' }
+function parkingFromBenefits(b: EmployerBenefits, t: AdvisorT): { perDay: number; hint: string | null } {
+  if (b.free_parking) return { perDay: 0, hint: t('flow.parking_hint_free') }
   if (b.parking_cost_monthly && b.parking_cost_monthly > 0) {
-    return { perDay: Math.round(b.parking_cost_monthly / (WORKDAYS / 12)), hint: `From a monthly parking cost of $${b.parking_cost_monthly}.` }
+    return { perDay: Math.round(b.parking_cost_monthly / (WORKDAYS / 12)), hint: t('flow.parking_hint_monthly', { amount: `$${b.parking_cost_monthly}` }) }
   }
   return { perDay: 0, hint: null }
 }
@@ -219,7 +233,9 @@ export default function AdvisorFlow({
   afterPlan,
   companyName = null,
   onStepChange,
+  locale = 'en',
 }: AdvisorFlowProps) {
+  const t = translator(advisorStrings, locale)
   const track = useCallback((event: string, props?: Record<string, unknown>) => {
     try { posthog.capture(event, { advisor_variant: variant, ...trackProps, ...props }) } catch { /* analytics never blocks */ }
   }, [variant, trackProps])
@@ -247,7 +263,8 @@ export default function AdvisorFlow({
   const [motivation, setMotivation] = useState<Motivation | null>(null)
   const [vehicle, setVehicle] = useState<CarChoice>('gas')
   const noCar = vehicle === 'none'
-  const parkingDefault = useMemo(() => parkingFromBenefits(benefits), [benefits])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const parkingDefault = useMemo(() => parkingFromBenefits(benefits, t), [benefits, locale])
   const [parkingPerDay, setParkingPerDay] = useState(parkingDefault.perDay)
   const [daysPerWeek, setDaysPerWeek] = useState(5)
 
@@ -421,7 +438,7 @@ export default function AdvisorFlow({
         return
       }
       if (!res.ok || data.error || !data.modes) {
-        setError('We could not build your plan just now. Try again in a moment.')
+        setError('failed')
         track('advisor_results_failed', { reason: 'error' })
         return
       }
@@ -447,7 +464,7 @@ export default function AdvisorFlow({
         combos_shown: Object.keys(shown.modes).filter(isComboKey),
       })
     } catch {
-      setError('We could not build your plan just now. Try again in a moment.')
+      setError('failed')
       track('advisor_results_failed', { reason: 'error' })
     } finally {
       setLoading(false)
@@ -499,11 +516,11 @@ export default function AdvisorFlow({
     }
     if (result.modes.bike || result.modes.ebike) {
       setCalmLoading(true)
-      fetchCalmRoute(home, office, ctrl.signal)
+      fetchCalmRoute(home, office, ctrl.signal, locale)
         .then((c) => { if (!ctrl.signal.aborted) setCalm(c) })
         .catch(() => { /* optional */ })
         .finally(() => { if (!ctrl.signal.aborted) setCalmLoading(false) })
-      fetchOfficeBikeParking(office)
+      fetchOfficeBikeParking(office, locale)
         .then((spots) => { if (!ctrl.signal.aborted) setBikeParking(spots) })
         .catch(() => { /* optional */ })
     }
@@ -511,11 +528,11 @@ export default function AdvisorFlow({
     // the employer lists among its benefits) AND could ride from this
     // home: a stop within 0.6 mi of home and 0.4 mi of the office.
     const listed = benefits.shuttle_routes ?? []
-    fetchShuttleLines(home, office, ctrl.signal, (line) => isPublicShuttle(line) || employerListsShuttle(line, listed))
+    fetchShuttleLines(home, office, ctrl.signal, (line) => isPublicShuttle(line) || employerListsShuttle(line, listed), locale)
       .then((lines) => { if (!ctrl.signal.aborted) setShuttleLines(lines) })
       .catch(() => { /* optional */ })
     return () => ctrl.abort()
-  }, [result, home, office, benefits.shuttle_routes])
+  }, [result, home, office, benefits.shuttle_routes, locale])
 
   /* ── The forecast near home for the plan's morning (product item 17) ──
    * The point is rounded to about 1 km before it is sent. Optional: without
@@ -555,9 +572,10 @@ export default function AdvisorFlow({
     // The route built its headline for the motivation it was sent; it is
     // reused as long as nothing changed since. The leave-by fallback and a
     // chip tapped on the plan re-run the same function the route uses.
-    if (plan.motivation === motivation && engineLeaveBy && plan.headline) return plan.headline
-    return headlineFor(plan, motivation)
-  }, [plan, motivation, engineLeaveBy])
+    // The route's headline is English; other languages always rebuild it here.
+    if (locale === 'en' && plan.motivation === motivation && engineLeaveBy && plan.headline) return plan.headline
+    return headlineFor(plan, motivation, locale)
+  }, [plan, motivation, engineLeaveBy, locale])
   const office4Links = office && workAddress ? { lat: office.lat, lng: office.lng, label: officeOptions.find((l) => l.id === locationId)?.name ?? workAddress.split(',')[0] } : null
   const nearbyUrl = plan?.nearby_url
     ?? (variant === 'employer' && group?.slug && office4Links ? employerNearbyUrl(group.slug, locationAsOffice({ address: workAddress, lat: office4Links.lat, lng: office4Links.lng })) : null)
@@ -569,8 +587,8 @@ export default function AdvisorFlow({
 
   const legTitle = (p: AdvisorResult) => {
     const names = p.transit_legs.map((l) => l.route_name).filter(Boolean)
-    if (names.length === 0) return p.transit_summary || modeName('transit')
-    return names.map((n) => (/^\d+$/.test(n) ? `${n} bus` : n)).join(', then ')
+    if (names.length === 0) return p.transit_summary || modeName('transit', locale)
+    return names.map((n) => (/^\d+$/.test(n) ? t('flow.bus_n', { n }) : n)).join(t('flow.then_sep'))
   }
 
   const toggleRow = (key: string) => {
@@ -670,7 +688,7 @@ export default function AdvisorFlow({
     const stageGuidesFor = (mode: string): Pick<PlanGridRow, 'stageGuides' | 'guidesMore'> => {
       const cm = contentModeFor(mode)
       if (!cm || !plan.guides) return {}
-      return { stageGuides: guidesByStage(plan.guides, cm), guidesMore: { href: `/guides?mode=${cm}`, label: `All guides for ${contentModeWord(cm)}` } }
+      return { stageGuides: guidesByStage(plan.guides, cm), guidesMore: { href: withLang(`/guides?mode=${cm}`, locale), label: guidesMoreLabel(cm, locale) } }
     }
     // "Report a problem with this route" under each way in we route (product
     // item 15). The bike row names the stretch the reader picked. Not on a
@@ -690,7 +708,9 @@ export default function AdvisorFlow({
       let stretch: RouteIssueStretch | null = null
       let sources: string[] = []
       if (surface === 'advisor_bike' && calm) {
-        const pieces = comfortPieces(calm.calm)
+        const pieces = comfortPieces(calm.calm, locale)
+        // The saved report keeps English labels ("Path"); the sheet shows the reader's.
+        const enPieces = locale === 'en' ? pieces : comfortPieces(calm.calm)
         const index = highlightedLeg?.startsWith('bike:') ? Number(highlightedLeg.slice(5)) : null
         const piece = index != null ? pieces.find((p) => p.index === index) : undefined
         if (piece) {
@@ -699,18 +719,19 @@ export default function AdvisorFlow({
           // point goes in rounded to about 100 m, so a report never pins an address.
           const atEnd = piece.index === 0 || piece.index === pieces.length - 1
           const round = (v: number | undefined) => (v == null ? null : Number(v.toFixed(atEnd ? 3 : 5)))
-          const shown = (COMFORT_LABELS[piece.rating] ?? piece.rating).toLowerCase()
+          const shown = (comfortLabel(piece.rating, locale) ?? piece.rating).toLowerCase()
           stretch = {
             index: piece.index,
             label: piece.label,
+            ...(locale === 'en' ? {} : { sentLabel: enPieces.find((p) => p.index === piece.index)?.label ?? piece.label }),
             miles: piece.distanceMi,
             lat: round(mid?.lat),
             lng: round(mid?.lng),
             rating: piece.rating,
-            phrase: `${piece.label}, ${formatStretchMiles(piece.distanceMi)}, shown as ${shown}`,
+            phrase: t('flow.stretch_phrase', { label: piece.label, miles: formatStretchMiles(piece.distanceMi, locale), rating: shown }),
             color: COMFORT_COLORS[piece.rating] ?? COMFORT_COLORS.shared_road,
             dashed: piece.rating === 'bike_lane',
-            detail: `${formatStretchMiles(piece.distanceMi)} · shown as ${shown}`,
+            detail: t('flow.stretch_detail', { miles: formatStretchMiles(piece.distanceMi, locale), rating: shown }),
           }
           sources = piece.sources
         } else {
@@ -728,6 +749,7 @@ export default function AdvisorFlow({
           routePoints={surface === 'advisor_bike' && calm ? calm.calm.waypoints : null}
           employerSlug={variant === 'employer' ? group?.slug ?? null : null}
           track={track}
+          locale={locale}
         />
       )
     }
@@ -747,42 +769,42 @@ export default function AdvisorFlow({
       const first = plan.transit_legs[0]
       const last = plan.transit_legs[plan.transit_legs.length - 1]
       const sub = m.combo
-        ? mode === 'park_ride' ? `Park at ${m.combo.station.name}` : `Bike to ${m.combo.station.name}`
+        ? mode === 'park_ride' ? t('flow.sub_park_at', { station: m.combo.station.name }) : t('flow.sub_bike_to', { station: m.combo.station.name })
         : mode === 'transit'
         ? first && last ? `${first.departure_stop_name} → ${last.arrival_stop_name}` : plan.transit_summary
         : mode === 'bike' || mode === 'ebike'
-          ? calm ? `Quieter streets, ${calm.calm.distanceMiles.toFixed(1)} mi` : m.miles != null ? `${m.miles.toFixed(1)} mi` : 'Quieter streets'
+          ? calm ? t('flow.sub_quiet_miles', { miles: calm.calm.distanceMiles.toFixed(1) }) : m.miles != null ? t('flow.sub_miles', { miles: m.miles.toFixed(1) }) : t('flow.sub_quiet')
           : mode === 'drive'
-            ? m.miles != null ? `${m.miles.toFixed(1)} mi by road, with parking` : 'With parking'
-            : m.miles != null ? `${m.miles.toFixed(1)} mi on foot` : null
+            ? m.miles != null ? t('flow.sub_drive_miles', { miles: m.miles.toFixed(1) }) : t('flow.sub_with_parking')
+            : m.miles != null ? t('flow.sub_walk_miles', { miles: m.miles.toFixed(1) }) : null
       const drawer = (mode === 'park_ride' || mode === 'bike_ride') && m.combo ? (
-        <ComboDrawer plan={plan} mode={mode} legsLive={comboLegsLive[mode] ?? []} officeName={officeLabel} benefits={benefits} companyName={companyName} highlightedLeg={highlightedLeg} onLegTap={(leg) => tapLeg(mode, leg)} directionsHref={href} onDirections={onDirections} />
+        <ComboDrawer plan={plan} mode={mode} legsLive={comboLegsLive[mode] ?? []} officeName={officeLabel} benefits={benefits} companyName={companyName} highlightedLeg={highlightedLeg} onLegTap={(leg) => tapLeg(mode, leg)} directionsHref={href} onDirections={onDirections} locale={locale} />
       ) : mode === 'transit' ? (
-        <TransitDrawer plan={plan} legsLive={legsLive} home={home} office={office} officeName={officeLabel} benefits={benefits} companyName={companyName} highlightedLeg={highlightedLeg} onLegTap={(leg) => tapLeg(mode, leg)} directionsHref={href} onDirections={onDirections} />
+        <TransitDrawer plan={plan} legsLive={legsLive} home={home} office={office} officeName={officeLabel} benefits={benefits} companyName={companyName} highlightedLeg={highlightedLeg} onLegTap={(leg) => tapLeg(mode, leg)} directionsHref={href} onDirections={onDirections} locale={locale} />
       ) : mode === 'bike' || mode === 'ebike' ? (
-        <BikeDrawer plan={plan} calm={calm} calmLoading={calmLoading} bikeParking={bikeParking} benefits={benefits} companyName={companyName} highlightedLeg={highlightedLeg} onLegTap={(leg) => tapLeg(mode, leg)} directionsHref={href} onDirections={onDirections} lessonNearby={lessonNearby} onLesson={() => track('advisor_lesson_tapped', { mode })} />
+        <BikeDrawer plan={plan} calm={calm} calmLoading={calmLoading} bikeParking={bikeParking} benefits={benefits} companyName={companyName} highlightedLeg={highlightedLeg} onLegTap={(leg) => tapLeg(mode, leg)} directionsHref={href} onDirections={onDirections} lessonNearby={lessonNearby} onLesson={() => track('advisor_lesson_tapped', { mode })} locale={locale} />
       ) : mode === 'drive' ? (
-        <DriveDrawer plan={plan} benefits={benefits} onAddParking={openCosts} onNoCar={() => chooseCar('none', 'plan')} directionsHref={href} onDirections={onDirections} />
+        <DriveDrawer plan={plan} benefits={benefits} onAddParking={openCosts} onNoCar={() => chooseCar('none', 'plan')} directionsHref={href} onDirections={onDirections} locale={locale} />
       ) : (
-        <WalkDrawer plan={plan} benefits={benefits} directionsHref={href} onDirections={onDirections} />
+        <WalkDrawer plan={plan} benefits={benefits} directionsHref={href} onDirections={onDirections} locale={locale} />
       )
       const report = reportFor(mode, m.combo?.station.name ?? null, first && last ? `${first.departure_stop_name} to ${last.arrival_stop_name}` : null)
       const w = weatherAt(m.leave_by)
       out.push({
         key: mode,
         mode,
-        name: mode === 'transit' ? lineName ?? modeName(mode) : modeName(mode),
+        name: mode === 'transit' ? lineName ?? modeName(mode, locale) : modeName(mode, locale),
         sub,
         recommended: mode === plan.recommended_mode,
         today,
-        leaveBy: m.leave_by ? formatClock(m.leave_by) : null,
-        leaveByTraffic: mode === 'drive' && m.leave_by_traffic ? formatClock(m.leave_by_traffic) : null,
+        leaveBy: m.leave_by ? formatClock(m.leave_by, locale) : null,
+        leaveByTraffic: mode === 'drive' && m.leave_by_traffic ? formatClock(m.leave_by_traffic, locale) : null,
         minutes: m.minutes,
         minutesMax: mode === 'drive' ? m.minutes_max ?? null : null,
         costPerDay: m.cost_per_day,
         emissionsPct: m.emissions_share_pct,
-        weather: chipFor(w, mode),
-        stages: stagesFor(mode, plan, benefits, { calm, bikeParking, lineName, combo: m.combo ?? null, weather: w }),
+        weather: chipFor(w, mode, locale),
+        stages: stagesFor(mode, plan, benefits, { calm, bikeParking, lineName, combo: m.combo ?? null, weather: w }, locale),
         ...stageGuidesFor(mode),
         drawer: report ? <>{drawer}{report}</> : drawer,
       })
@@ -795,15 +817,15 @@ export default function AdvisorFlow({
       out.push({
         key,
         mode: 'shuttle',
-        name: s.name ? `${s.name} shuttle` : `Shuttle from ${s.from_stop}`,
-        sub: s.from_stop ? `From ${s.from_stop}` : s.schedule || null,
+        name: s.name ? t('flow.shuttle_named', { name: s.name }) : t('flow.shuttle_from', { stop: s.from_stop }),
+        sub: s.from_stop ? t('flow.from_stop', { stop: s.from_stop }) : s.schedule || null,
         leaveBy: null,
         minutes: null,
         costPerDay: 0,
         emissionsPct: null,
-        weather: chipFor(shuttleWeather, 'shuttle'),
-        stages: stagesFor('shuttle', plan, benefits, { shuttle: s.from_stop ? { stopName: s.from_stop, distanceMiles: 0 } : null, weather: shuttleWeather }),
-        drawer: <EmployerShuttleDrawer route={s} companyName={companyName} />,
+        weather: chipFor(shuttleWeather, 'shuttle', locale),
+        stages: stagesFor('shuttle', plan, benefits, { shuttle: s.from_stop ? { stopName: s.from_stop, distanceMiles: 0 } : null, weather: shuttleWeather }, locale),
+        drawer: <EmployerShuttleDrawer route={s} companyName={companyName} locale={locale} />,
       })
     })
     for (const s of shuttleLines) {
@@ -811,15 +833,15 @@ export default function AdvisorFlow({
         key: s.key,
         mode: 'shuttle',
         name: s.routeName.toLowerCase().startsWith(s.agencyLabel.toLowerCase()) ? s.routeName : `${s.agencyLabel} ${s.routeName}`.trim(),
-        sub: `From ${s.homeStopName} to ${s.stopName}`,
+        sub: t('flow.from_to', { from: s.homeStopName, to: s.stopName }),
         leaveBy: s.nextTimes.length > 0 && !s.nextDay ? s.nextTimes[0] : null,
         minutes: s.totalMinutes,
         costPerDay: s.access === 'public-fare' ? null : 0,
-        costLabel: s.access === 'public-fare' ? 'Fare' : null,
+        costLabel: s.access === 'public-fare' ? t('flow.fare') : null,
         emissionsPct: null,
-        weather: chipFor(shuttleWeather, 'shuttle'),
-        stages: stagesFor('shuttle', plan, benefits, { shuttle: { stopName: s.stopName, distanceMiles: s.distanceMiles }, weather: shuttleWeather }),
-        drawer: <ShuttleDrawer line={s} officeName={officeLabel} highlightedLeg={highlightedLeg} onLegTap={(leg) => tapLeg(s.key, leg)} />,
+        weather: chipFor(shuttleWeather, 'shuttle', locale),
+        stages: stagesFor('shuttle', plan, benefits, { shuttle: { stopName: s.stopName, distanceMiles: s.distanceMiles }, weather: shuttleWeather }, locale),
+        drawer: <ShuttleDrawer line={s} officeName={officeLabel} highlightedLeg={highlightedLeg} onLegTap={(leg) => tapLeg(s.key, leg)} locale={locale} />,
       })
     }
     // The T plus a shuttle Google leaves out, when about as quick as the T
@@ -835,20 +857,20 @@ export default function AdvisorFlow({
         // The shuttle is the name ("The Grid A5"); the T part is the line under it.
         name: (s.legs.find((l) => l.operator)?.line ?? s.route_name).replace(/:.*$/, ''),
         sub: s.shape === 'transit_then_shuttle'
-          ? `${s.legs[0]?.route_name ?? 'The T'} to ${s.board_stop.name} first`
-          : `Then the ${s.legs[s.legs.length - 1]?.route_name ?? 'T'} from ${s.alight_stop.name}`,
-        leaveBy: s.leave_by ? formatClock(s.leave_by) : null,
+          ? s.legs[0]?.route_name != null ? t('flow.transfer_first', { line: s.legs[0].route_name, stop: s.board_stop.name }) : t('flow.transfer_first_t', { stop: s.board_stop.name })
+          : s.legs[s.legs.length - 1]?.route_name != null ? t('flow.transfer_then', { line: s.legs[s.legs.length - 1].route_name, stop: s.alight_stop.name }) : t('flow.transfer_then_t', { stop: s.alight_stop.name }),
+        leaveBy: s.leave_by ? formatClock(s.leave_by, locale) : null,
         minutes: s.minutes_total,
         costPerDay: Math.round(s.fare_per_trip * 2 * 100) / 100,
         emissionsPct: null,
-        weather: chipFor(w, 'shuttle'),
-        stages: stagesFor('shuttle', plan, benefits, { shuttle: { stopName: s.board_stop.name, distanceMiles: 0 }, weather: w }),
-        drawer: <ShuttleTransferDrawer s={s} plan={plan} officeName={officeLabel} companyName={companyName} />,
+        weather: chipFor(w, 'shuttle', locale),
+        stages: stagesFor('shuttle', plan, benefits, { shuttle: { stopName: s.board_stop.name, distanceMiles: 0 }, weather: w }, locale),
+        drawer: <ShuttleTransferDrawer s={s} plan={plan} officeName={officeLabel} companyName={companyName} locale={locale} />,
       })
     }
     return out
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [plan, home, office, office4Links, order, calm, calmLoading, legsLive, comboLegsLive, bikeParking, benefits, companyName, highlightedLeg, commuteMode, employerShuttles, shuttleLines, weatherAt, isDraft, variant, group?.slug])
+  }, [plan, home, office, office4Links, order, calm, calmLoading, legsLive, comboLegsLive, bikeParking, benefits, companyName, highlightedLeg, commuteMode, employerShuttles, shuttleLines, weatherAt, isDraft, variant, group?.slug, locale])
 
   /* ── The picked way in: the open row, else our pick ── */
   const pickedKey = expanded ?? plan?.recommended_mode ?? null
@@ -919,24 +941,24 @@ export default function AdvisorFlow({
               {/* Headline: the winner and the tradeoff, arrive-by, the chips */}
               <div className="mb-3">
                 {/* The host page's header already names the company on the plan; this says what the block is. */}
-                {!inSheet && <div className="mb-1 text-[0.8125rem] font-bold uppercase tracking-[0.14em] text-[#2D6A4F]">Your plan</div>}
+                {!inSheet && <div className="mb-1 text-[0.8125rem] font-bold uppercase tracking-[0.14em] text-[#2D6A4F]">{t('flow.your_plan')}</div>}
                 <h2 ref={headlineRef} tabIndex={-1} className="text-[1.25rem] font-extrabold leading-snug tracking-tight text-[#191A2E] outline-none sm:text-[1.5rem]">{headline}</h2>
                 <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[0.875rem] text-[#191A2E]">
-                  <ArriveBy value={arriveBy} onChange={(v) => { changeArriveBy(v, 'plan'); run({ arriveBy: v, motivation }) }} />
-                  {loading && <span className="text-[#4A4D68]">Updating…</span>}
+                  <ArriveBy value={arriveBy} onChange={(v) => { changeArriveBy(v, 'plan'); run({ arriveBy: v, motivation }) }} locale={locale} />
+                  {loading && <span className="text-[#4A4D68]">{t('flow.updating')}</span>}
                   {/* The rows that need a car are off the plan; say so, with the way back. */}
                   {noCar && (
                     <span className="text-[#191A2E]">
-                      <span aria-hidden className="mr-3 text-[#4A4D68]">·</span>No car{' '}
-                      <button type="button" onClick={() => chooseCar('gas', 'plan')} className="font-semibold text-[#2D6A4F] hover:underline">show driving</button>
+                      <span aria-hidden className="mr-3 text-[#4A4D68]">·</span>{t('flow.no_car')}{' '}
+                      <button type="button" onClick={() => chooseCar('gas', 'plan')} className="font-semibold text-[#2D6A4F] hover:underline">{t('flow.show_driving')}</button>
                     </span>
                   )}
                 </div>
-                {headWeather && <WeatherLine weather={headWeather} leaveBy={pickedKey ? plan.modes[pickedKey]?.leave_by ?? pickLeave : pickLeave} />}
+                {headWeather && <WeatherLine weather={headWeather} leaveBy={pickedKey ? plan.modes[pickedKey]?.leave_by ?? pickLeave : pickLeave} locale={locale} />}
                 {/* The plan's own miles live on each row (the crow-flies figure contradicted them). */}
                 <div className="mt-2.5 flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
-                  <span className="text-[0.9375rem] font-semibold text-[#191A2E]">Put first:</span>
-                  <MotivationChips value={motivation} onChange={(m) => { setMotivation(m); track('advisor_motivation_changed', { motivation: m }) }} compact />
+                  <span className="text-[0.9375rem] font-semibold text-[#191A2E]">{t('flow.put_first')}</span>
+                  <MotivationChips value={motivation} onChange={(m) => { setMotivation(m); track('advisor_motivation_changed', { motivation: m }) }} compact locale={locale} />
                 </div>
                 {/* What a reader wants once the plan is up: keep it, or change
                     something (Keith 2026-10-21: "Keep this plan" sat under the
@@ -950,7 +972,7 @@ export default function AdvisorFlow({
                     className="inline-flex min-h-[44px] items-center gap-2 rounded-full bg-[#2D6A4F] px-5 text-[1rem] font-bold text-white transition-colors hover:bg-[#1F4D3A]"
                   >
                     <BookmarkSimple size={18} weight="bold" aria-hidden />
-                    Save this plan
+                    {t('flow.save_plan')}
                     <CaretDown size={14} weight="bold" className={`transition-transform ${saveOpen ? 'rotate-180' : ''}`} aria-hidden />
                   </button>
                   <button
@@ -959,7 +981,7 @@ export default function AdvisorFlow({
                     className="inline-flex min-h-[44px] items-center gap-2 rounded-full border border-[#2D6A4F] bg-white px-5 text-[1rem] font-bold text-[#2D6A4F] transition-colors hover:bg-[#E7F0EA]"
                   >
                     <PencilSimple size={18} weight="bold" aria-hidden />
-                    Change something
+                    {t('flow.change')}
                   </button>
                 </div>
                 {saveOpen && (
@@ -971,8 +993,8 @@ export default function AdvisorFlow({
                     >
                       <FilePdf size={26} weight="regular" className="mt-0.5 shrink-0 text-[#2D6A4F]" aria-hidden />
                       <span>
-                        <span className="block text-[1rem] font-bold text-[#191A2E]">Save as PDF</span>
-                        <span className="block text-[0.9375rem] leading-snug text-[#4A4D68]">One page to print or keep on your phone</span>
+                        <span className="block text-[1rem] font-bold text-[#191A2E]">{t('flow.save_pdf')}</span>
+                        <span className="block text-[0.9375rem] leading-snug text-[#4A4D68]">{t('flow.save_pdf_sub')}</span>
                       </span>
                     </button>
                     <div className="flex items-start gap-3 rounded-[10px] border border-[rgba(25,26,46,0.12)] px-3.5 py-3">
@@ -980,17 +1002,17 @@ export default function AdvisorFlow({
                       <div className="min-w-0 text-[0.9375rem] leading-snug text-[#191A2E]">
                         {joinLink && group ? (
                           <>
-                            <a href={joinLink} target="_blank" rel="noopener" onClick={() => track('advisor_app_cta_clicked', { has_invite_code: true })} className="block text-[1rem] font-bold text-[#2D6A4F] hover:underline">Join {group.name} in the Shift app</a>
-                            <span className="text-[#4A4D68]">Free, with the code </span>
-                            <button type="button" onClick={copyCode} aria-label="Copy the invite code" className="inline-flex items-center gap-1 rounded border border-[rgba(25,26,46,0.15)] bg-[#FAFBF8] px-1.5 py-px font-mono text-[0.9375rem] font-bold tracking-wide text-[#191A2E]">
+                            <a href={joinLink} target="_blank" rel="noopener" onClick={() => track('advisor_app_cta_clicked', { has_invite_code: true })} className="block text-[1rem] font-bold text-[#2D6A4F] hover:underline">{t('flow.join_group', { name: group.name })}</a>
+                            <span className="text-[#4A4D68]">{t('flow.free_with_code')}</span>
+                            <button type="button" onClick={copyCode} aria-label={t('flow.copy_code')} className="inline-flex items-center gap-1 rounded border border-[rgba(25,26,46,0.15)] bg-[#FAFBF8] px-1.5 py-px font-mono text-[0.9375rem] font-bold tracking-wide text-[#191A2E]">
                               {group.invite_code}
                               {codeCopied ? <Check size={14} weight="bold" className="text-[#2D6A4F]" aria-hidden /> : <Copy size={14} weight="bold" aria-hidden />}
                             </button>
                           </>
                         ) : (
                           <>
-                            <Link href="/shift" target="_blank" rel="noopener" onClick={() => track('advisor_app_cta_clicked', { has_invite_code: false })} className="block text-[1rem] font-bold text-[#2D6A4F] hover:underline">Try it in the Shift app</Link>
-                            <span className="text-[#4A4D68]">Free. See every walk, ride and transit trip add up.</span>
+                            <Link href={withLang('/shift', locale)} target="_blank" rel="noopener" onClick={() => track('advisor_app_cta_clicked', { has_invite_code: false })} className="block text-[1rem] font-bold text-[#2D6A4F] hover:underline">{t('flow.try_app')}</Link>
+                            <span className="text-[#4A4D68]">{t('flow.try_app_sub')}</span>
                           </>
                         )}
                       </div>
@@ -1001,14 +1023,14 @@ export default function AdvisorFlow({
 
               {/* The grid; on a wide screen the map beside it, on a phone the map is the stage behind this sheet */}
               {inSheet ? (
-                <PlanGrid rows={rows} expanded={expanded} onToggle={toggleRow} stickyTopClass="top-0" onGuideEvent={track} />
+                <PlanGrid rows={rows} expanded={expanded} onToggle={toggleRow} stickyTopClass="top-0" onGuideEvent={track} locale={locale} />
               ) : (
               <div className="grid items-start gap-3.5 min-[900px]:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]">
-                  <PlanGrid rows={rows} expanded={expanded} onToggle={toggleRow} onGuideEvent={track} />
+                  <PlanGrid rows={rows} expanded={expanded} onToggle={toggleRow} onGuideEvent={track} locale={locale} />
                   <div className="min-w-0 min-[900px]:sticky min-[900px]:top-[72px]">
                     <AdvisorMap
                       key={`${home.lat},${home.lng}-${office.lat},${office.lng}`}
-                      home={{ lat: home.lat, lng: home.lng, label: 'Home' }}
+                      home={{ lat: home.lat, lng: home.lng, label: t('flow.home') }}
                       office={office4Links}
                       plan={plan}
                       legs={legsLive}
@@ -1021,6 +1043,7 @@ export default function AdvisorFlow({
                       onLegTap={tapMapLeg}
                       selectedDock={selectedDock}
                       onDockTap={tapDock}
+                      locale={locale}
                     />
                   </div>
                 </div>
@@ -1031,31 +1054,30 @@ export default function AdvisorFlow({
                   stages. */}
               <div className="mt-3.5">
                 <div className="min-w-0 rounded-[12px] border border-[rgba(25,26,46,0.12)] bg-white px-3.5 py-3">
-                  <div className="mb-0.5 text-[0.8125rem] font-bold uppercase tracking-[0.12em] text-[#4A4D68]">Try it with others</div>
+                  <div className="mb-0.5 text-[0.8125rem] font-bold uppercase tracking-[0.12em] text-[#4A4D68]">{t('flow.try_others')}</div>
                   {tryItCard === 'loading' ? (
-                    <p className="text-[0.9375rem] leading-snug text-[#4A4D68]" aria-live="polite">Finding one near the office…</p>
+                    <p className="text-[0.9375rem] leading-snug text-[#4A4D68]" aria-live="polite">{t('flow.finding_event')}</p>
                   ) : tryItCard?.event ? (
                     <>
                       {/* The plan is the work in progress; everything that leaves it opens in a new tab. */}
-                      <Link href={eventPath(tryItCard.event)} target="_blank" rel="noopener" className="block text-[1rem] font-bold leading-snug text-[#191A2E] hover:text-[#2D6A4F]">{tryItCard.event.content_items.title}</Link>
+                      <Link href={withLang(eventPath(tryItCard.event), locale)} target="_blank" rel="noopener" className="block text-[1rem] font-bold leading-snug text-[#191A2E] hover:text-[#2D6A4F]">{tryItCard.event.content_items.title}</Link>
                       {tryItCard.event.organizer_name && <p className="mt-0.5 text-[0.9375rem] leading-snug text-[#4A4D68]">{tryItCard.event.organizer_name}</p>}
-                      <p className="mt-1 text-[0.9375rem] leading-snug text-[#191A2E]">{eventKindLine(tryItCard.event)}</p>
-                      <p className="text-[0.9375rem] leading-snug text-[#191A2E]">{eventWhenLine(tryItCard.event)}</p>
-                      {eventWhereLine(tryItCard.event) && <p className="text-[0.9375rem] leading-snug text-[#191A2E]">{eventWhereLine(tryItCard.event)}</p>}
+                      <p className="mt-1 text-[0.9375rem] leading-snug text-[#191A2E]">{eventKindLine(tryItCard.event, locale)}</p>
+                      <p className="text-[0.9375rem] leading-snug text-[#191A2E]">{eventWhenLine(tryItCard.event, locale)}</p>
+                      {eventWhereLine(tryItCard.event, locale) && <p className="text-[0.9375rem] leading-snug text-[#191A2E]">{eventWhereLine(tryItCard.event, locale)}</p>}
                       {tryItCard.event.excerpt && <p className="mt-1 text-[0.9375rem] leading-snug text-[#4A4D68]">{tryItCard.event.excerpt}</p>}
-                      <Link href={eventPath(tryItCard.event)} target="_blank" rel="noopener" onClick={() => track('advisor_event_clicked', { event_id: tryItCard.event?.id, event_mode: tryItCard.mode })} className="mt-1 inline-block text-[0.9375rem] font-semibold text-[#2D6A4F] hover:underline">Event details</Link>
+                      <Link href={withLang(eventPath(tryItCard.event), locale)} target="_blank" rel="noopener" onClick={() => track('advisor_event_clicked', { event_id: tryItCard.event?.id, event_mode: tryItCard.mode })} className="mt-1 inline-block text-[0.9375rem] font-semibold text-[#2D6A4F] hover:underline">{t('flow.event_details')}</Link>
                     </>
                   ) : tryItCard?.walk_ride_day ? (
                     <>
-                      <Link href={tryItCard.walk_ride_day.href} target="_blank" rel="noopener" className="block text-[1rem] font-bold leading-snug text-[#191A2E] hover:text-[#2D6A4F]">{tryItCard.walk_ride_day.title}</Link>
-                      <p className="mt-1 text-[0.9375rem] leading-snug text-[#191A2E]">{walkRideDayWhen(tryItCard.walk_ride_day.date)}</p>
+                      <Link href={withLang(tryItCard.walk_ride_day.href, locale)} target="_blank" rel="noopener" className="block text-[1rem] font-bold leading-snug text-[#191A2E] hover:text-[#2D6A4F]">{tryItCard.walk_ride_day.title}</Link>
+                      <p className="mt-1 text-[0.9375rem] leading-snug text-[#191A2E]">{walkRideDayWhen(tryItCard.walk_ride_day.date, locale)}</p>
                       <p className="mt-1 text-[0.9375rem] leading-snug text-[#4A4D68]">{tryItCard.walk_ride_day.blurb}</p>
-                      <Link href={tryItCard.walk_ride_day.href} target="_blank" rel="noopener" onClick={() => track('advisor_event_clicked', { event_id: 'walk-ride-day', event_mode: tryItCard.mode })} className="mt-1 inline-block text-[0.9375rem] font-semibold text-[#2D6A4F] hover:underline">About Walk/Ride Day</Link>
+                      <Link href={withLang(tryItCard.walk_ride_day.href, locale)} target="_blank" rel="noopener" onClick={() => track('advisor_event_clicked', { event_id: 'walk-ride-day', event_mode: tryItCard.mode })} className="mt-1 inline-block text-[0.9375rem] font-semibold text-[#2D6A4F] hover:underline">{t('flow.about_wrd')}</Link>
                     </>
                   ) : (
                     <p className="text-[0.9375rem] leading-snug text-[#4A4D68]">
-                      Walks, rides and transit meetups near you are on the{' '}
-                      <Link href="/events" target="_blank" rel="noopener" className="font-semibold text-[#2D6A4F]">events calendar</Link>.
+                      {withNode(t('flow.events_line'), 'link', <Link href={withLang('/events', locale)} target="_blank" rel="noopener" className="font-semibold text-[#2D6A4F]">{t('flow.events_calendar')}</Link>)}
                     </p>
                   )}
                   <TagAlong
@@ -1067,6 +1089,7 @@ export default function AdvisorFlow({
                     companyName={companyName}
                     disabled={isDemo || isDraft}
                     onTrack={track}
+                    locale={locale}
                   />
                 </div>
               </div>
@@ -1076,11 +1099,11 @@ export default function AdvisorFlow({
               <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1.5 text-[0.9375rem]">
                 {nearbyUrl && (
                   <a href={nearbyUrl} target="_blank" rel="noopener noreferrer" onClick={() => track('advisor_nearby_clicked')} className="inline-flex items-center gap-1 font-semibold text-[#2D6A4F] hover:underline">
-                    Transit, bike lanes and docks around this office <ArrowSquareOut size={15} weight="bold" aria-hidden />
+                    {t('flow.nearby_office')} <ArrowSquareOut size={15} weight="bold" aria-hidden />
                   </a>
                 )}
                 {/* The plan is kept in this browser for a week; on a shared computer this is the way to leave nothing behind. */}
-                <button type="button" onClick={startOver} className="font-semibold text-[#4A4D68] hover:underline">Start over and forget my addresses</button>
+                <button type="button" onClick={startOver} className="font-semibold text-[#4A4D68] hover:underline">{t('flow.start_over')}</button>
               </div>
       </>
     )
@@ -1088,6 +1111,7 @@ export default function AdvisorFlow({
 
   /* ── Render ── */
   return (
+    <NearbyI18nProvider locale={locale}>
     <div ref={flowRef} className="advisor-flow">
       {/* Step indicator */}
       <div className="mx-auto mb-4 flex max-w-[480px] items-center justify-center gap-2 px-4 sm:px-8">
@@ -1097,7 +1121,7 @@ export default function AdvisorFlow({
               type="button"
               onClick={() => s < step && setStep(s)}
               disabled={s > step}
-              aria-label={`Step ${s}`}
+              aria-label={t('flow.step_n', { n: s })}
               className={`flex h-7 w-7 items-center justify-center rounded-full text-sm font-bold transition-colors ${
                 s === step ? 'bg-[#2D6A4F] text-white' : s < step ? 'bg-[#E7F0EA] text-[#2D6A4F] hover:bg-[#d5e5d9]' : 'bg-[rgba(25,26,46,0.06)] text-[#5A5C6E]'
               }`}
@@ -1113,21 +1137,21 @@ export default function AdvisorFlow({
       {step === 1 && (
         <div className="mx-auto max-w-[520px] px-4 sm:px-8">
           <div className="rounded-[14px] border border-[rgba(25,26,46,0.09)] bg-white p-5 shadow-[0_1px_2px_rgba(25,26,46,0.05)] sm:p-8">
-            <div className="mb-6 text-[1.125rem] font-bold text-[#191A2E]">Where is your commute?</div>
+            <div className="mb-6 text-[1.125rem] font-bold text-[#191A2E]">{t('flow.where_commute')}</div>
             <div className="mb-5 space-y-4">
               <AddressAutocomplete
                 value={homeAddress}
                 onChange={(val) => { setHomeAddress(val); if (!val) setHomePlaceData(null) }}
                 onPlaceSelected={(p) => setHomePlaceData({ placeId: p.placeId, lat: p.lat, lng: p.lng })}
-                label="Home address"
+                label={t('flow.home_address')}
                 variant="light"
-                placeholder="Where do you live?"
+                placeholder={t('flow.home_placeholder')}
               />
 
               {variant === 'employer' && officeOptions.length > 1 && (
                 <div>
                   <label htmlFor="advisor-location" className="mb-1.5 block text-[0.9375rem] font-semibold text-[#191A2E]">
-                    Which {companyName ?? 'office'} location?
+                    {companyName ? t('flow.which_company_location', { company: companyName }) : t('flow.which_office_location')}
                   </label>
                   <select
                     id="advisor-location"
@@ -1146,7 +1170,7 @@ export default function AdvisorFlow({
                 <div className="flex items-start gap-2.5 rounded-[10px] border border-[rgba(25,26,46,0.09)] bg-[#FAFBF8] px-3.5 py-3">
                   <MapPin size={18} weight="fill" className="mt-0.5 shrink-0 text-[#2D6A4F]" aria-hidden />
                   <div>
-                    <div className="text-[0.8125rem] font-semibold uppercase tracking-wider text-[#5A5C6E]">Work</div>
+                    <div className="text-[0.8125rem] font-semibold uppercase tracking-wider text-[#5A5C6E]">{t('flow.work')}</div>
                     <div className="text-[0.9375rem] text-[#191A2E]">{officeOptions[0].name ? `${officeOptions[0].name}, ` : ''}{officeOptions[0].address}</div>
                   </div>
                 </div>
@@ -1157,13 +1181,13 @@ export default function AdvisorFlow({
                   value={workAddress}
                   onChange={(val) => { setWorkAddress(val); if (!val) setWorkPlaceData(null) }}
                   onPlaceSelected={(p) => setWorkPlaceData({ placeId: p.placeId, lat: p.lat, lng: p.lng })}
-                  label="Work address"
+                  label={t('flow.work_address')}
                   variant="light"
-                  placeholder="Where do you work?"
+                  placeholder={t('flow.work_placeholder')}
                 />
               )}
 
-              <ArriveBy value={arriveBy} onChange={(v) => changeArriveBy(v, 'step1')} />
+              <ArriveBy value={arriveBy} onChange={(v) => changeArriveBy(v, 'step1')} locale={locale} />
 
               {/* Collapsed: the car, parking and days a week, prefilled from
                   the employer's benefits. "Add a parking cost" on the plan
@@ -1176,12 +1200,14 @@ export default function AdvisorFlow({
                 parkingPerDay={parkingPerDay}
                 onParkingPerDay={setParkingPerDay}
                 parkingHint={parkingDefault.hint}
+                parkingFree={!!benefits.free_parking}
                 daysPerWeek={daysPerWeek}
                 onDaysPerWeek={setDaysPerWeek}
+                locale={locale}
               />
 
               <p className="text-[0.875rem] leading-snug text-[#5A5C6E]">
-                Addresses are only used to look up routes. They are never saved to a profile or shared.
+                {t('flow.privacy')}
               </p>
             </div>
 
@@ -1191,7 +1217,7 @@ export default function AdvisorFlow({
               disabled={!homePlaceData || !workPlaceData}
               className="mt-6 w-full rounded-[10px] bg-[#2D6A4F] py-3 text-[0.9375rem] font-bold text-white transition-colors hover:bg-[#1F4D3A] disabled:opacity-30"
             >
-              See my plan
+              {t('flow.see_plan')}
             </button>
 
             {/* The employer's benefits list reads under the button, never between the fields and it. */}
@@ -1206,24 +1232,23 @@ export default function AdvisorFlow({
           {outsideArea && (
             <div className="mx-auto max-w-[680px] rounded-[14px] border border-[rgba(25,26,46,0.09)] bg-white p-6 shadow-[0_1px_2px_rgba(25,26,46,0.05)]">
               <p className="text-[0.9375rem] text-[#191A2E]">
-                The advisor covers trips in Massachusetts. For other places, try{' '}
-                <a href="https://www.google.com/maps" target="_blank" rel="noopener noreferrer" className="text-[#2D6A4F] underline">Google Maps</a> or a local transit app.
+                {withNode(t('flow.outside_ma'), 'maps', <a href="https://www.google.com/maps" target="_blank" rel="noopener noreferrer" className="text-[#2D6A4F] underline">Google Maps</a>)}
               </p>
-              <button type="button" onClick={() => setStep(1)} className="mt-4 text-sm font-semibold text-[#2D6A4F]">Change addresses</button>
+              <button type="button" onClick={() => setStep(1)} className="mt-4 text-sm font-semibold text-[#2D6A4F]">{t('flow.change_addresses')}</button>
             </div>
           )}
 
           {error && (
             <div className="mx-auto max-w-[680px] rounded-[14px] border border-[rgba(25,26,46,0.09)] bg-white p-6 shadow-[0_1px_2px_rgba(25,26,46,0.05)]">
-              <p className="text-[0.9375rem] text-[#191A2E]">{error}</p>
-              <button type="button" onClick={() => run({ arriveBy, motivation })} className="mt-3 text-sm font-semibold text-[#2D6A4F]">Try again</button>
+              <p className="text-[0.9375rem] text-[#191A2E]">{t('flow.error')}</p>
+              <button type="button" onClick={() => run({ arriveBy, motivation })} className="mt-3 text-sm font-semibold text-[#2D6A4F]">{t('flow.try_again')}</button>
             </div>
           )}
 
           {!loading && !plan && !error && !outsideArea && (
             <div className="mx-auto max-w-[680px] rounded-[14px] border border-[rgba(25,26,46,0.09)] bg-white p-6 text-center shadow-[0_1px_2px_rgba(25,26,46,0.05)]">
-              <p className="text-[0.9375rem] text-[#191A2E]">Add your home and work addresses and we will build your plan.</p>
-              <button type="button" onClick={() => setStep(1)} className="mt-4 text-sm font-semibold text-[#2D6A4F]">Back to step 1</button>
+              <p className="text-[0.9375rem] text-[#191A2E]">{t('flow.need_addresses')}</p>
+              <button type="button" onClick={() => setStep(1)} className="mt-4 text-sm font-semibold text-[#2D6A4F]">{t('flow.back_step1')}</button>
             </div>
           )}
 
@@ -1232,7 +1257,7 @@ export default function AdvisorFlow({
               <div className="h-7 w-3/4 max-w-[520px] animate-pulse rounded bg-[rgba(25,26,46,0.08)]" />
               <div className="flex items-center gap-3">
                 <div className="h-4 w-4 animate-spin rounded-full border-2 border-[rgba(25,26,46,0.12)] border-t-[#2D6A4F]" />
-                <LoadingMessages theme="light" />
+                <LoadingMessages theme="light" locale={locale} />
               </div>
               <PlanGridSkeleton />
             </div>
@@ -1251,7 +1276,7 @@ export default function AdvisorFlow({
             <AdvisorMap
               key={`stage-${home.lat},${home.lng}-${office.lat},${office.lng}`}
               layout="stage"
-              home={{ lat: home.lat, lng: home.lng, label: 'Home' }}
+              home={{ lat: home.lat, lng: home.lng, label: t('flow.home') }}
               office={office4Links}
               plan={plan}
               legs={legsLive}
@@ -1265,6 +1290,7 @@ export default function AdvisorFlow({
               selectedDock={selectedDock}
               onDockTap={tapDock}
               fitPadding={stagePadding}
+              locale={locale}
             />
             <NearbySheet
               snap={snap}
@@ -1273,9 +1299,9 @@ export default function AdvisorFlow({
                 const pick = rows.find((r) => r.key === pickedKey) ?? rows[0]
                 return (
                   <div className="px-4 pb-2.5">
-                    <div className="text-[0.8125rem] font-bold uppercase tracking-[0.14em] text-[#2D6A4F]">Your plan</div>
+                    <div className="text-[0.8125rem] font-bold uppercase tracking-[0.14em] text-[#2D6A4F]">{t('flow.your_plan')}</div>
                     <div className="truncate text-[1.0625rem] font-extrabold leading-snug text-[#191A2E]">
-                      {pick ? `${pick.name}${pick.leaveBy ? `, leave by ${pick.leaveBy}` : ''}` : headline}
+                      {pick ? (pick.leaveBy ? t('flow.sheet_pick_leave', { name: pick.name, time: pick.leaveBy }) : pick.name) : headline}
                     </div>
                   </div>
                 )
@@ -1287,7 +1313,7 @@ export default function AdvisorFlow({
                 if (!liveDocks.some((d) => d.station_id === selectedDock)) return null
                 return (
                   <div className="mb-3 rounded-xl border border-[rgba(25,26,46,0.12)] bg-white px-3.5 py-3">
-                    <button type="button" onClick={() => tapDock(null)} className="mb-1.5 text-[0.9375rem] font-semibold text-[#2D6A4F]">Back to the plan</button>
+                    <button type="button" onClick={() => tapDock(null)} className="mb-1.5 text-[0.9375rem] font-semibold text-[#2D6A4F]">{t('flow.back_plan')}</button>
                     <DetailContent
                       selection={{ type: 'dock', id: selectedDock }}
                       stationByKey={new Map()}
@@ -1319,20 +1345,43 @@ export default function AdvisorFlow({
           driveDays={daysPerWeek}
           joinLink={joinLink}
           motivation={motivation}
+          locale={locale}
         />
       )}
     </div>
+    </NearbyI18nProvider>
   )
 }
 
 /** "Tomorrow at 8:12 AM: 41°F, light rain" with an icon for the worst of it. */
-function WeatherLine({ weather, leaveBy }: { weather: MorningWeather; leaveBy: string | null }) {
+function WeatherLine({ weather, leaveBy, locale = 'en' }: { weather: MorningWeather; leaveBy: string | null; locale?: SiteLocale }) {
   const f = weather.flags
   const I = f.includes('severe') ? Warning : f.includes('snow') ? Snowflake : f.includes('rain') ? CloudRain : f.includes('cold') ? ThermometerCold : f.includes('heat') ? ThermometerHot : CloudSun
   return (
     <p className="mt-2 flex items-center gap-2 text-[0.9375rem] leading-snug text-[#191A2E]">
       <I size={20} weight="regular" className="shrink-0 text-[#2D6A4F]" aria-hidden />
-      <span><span className="font-bold">{leaveBy ? `${weather.dayLabel === 'This morning' ? 'Today' : weather.dayLabel.replace(/ morning$/, '')} at ${formatClock(leaveBy)}` : weather.dayLabel}:</span> {summaryFor(weather)}</span>
+      {locale === 'en' ? (
+        <span><span className="font-bold">{leaveBy ? `${weather.dayLabel === 'This morning' ? 'Today' : weather.dayLabel.replace(/ morning$/, '')} at ${formatClock(leaveBy)}` : weather.dayLabel}:</span> {summaryFor(weather)}</span>
+      ) : (
+        <span><span className="font-bold">{weatherDayLabel(weather, leaveBy, locale)}</span> {summaryFor(weather, locale)}</span>
+      )}
     </p>
   )
+}
+
+/**
+ * The bold lead of the weather line in another language. weather.dayLabel is
+ * English ("This morning", "Tomorrow morning", "Monday morning"); it says
+ * which kind of day, and the weekday comes from weather.date.
+ */
+function weatherDayLabel(weather: MorningWeather, leaveBy: string | null, locale: SiteLocale): string {
+  const t = translator(advisorStrings, locale)
+  const kind = weather.dayLabel === 'This morning' ? 'today' : weather.dayLabel === 'Tomorrow morning' ? 'tomorrow' : 'day'
+  const weekday = siteDate(locale, `${weather.date}T12:00:00Z`, { weekday: 'long', timeZone: 'UTC' })
+  const label = leaveBy
+    ? kind === 'today' ? t('flow.wx_today_at', { time: formatClock(leaveBy, locale) })
+      : kind === 'tomorrow' ? t('flow.wx_tomorrow_at', { time: formatClock(leaveBy, locale) })
+      : t('flow.wx_day_at', { day: weekday, time: formatClock(leaveBy, locale) })
+    : kind === 'today' ? t('flow.wx_this_morning') : kind === 'tomorrow' ? t('flow.wx_tomorrow_morning') : t('flow.wx_day_morning', { day: weekday })
+  return t('flow.wx_label', { label: label.charAt(0).toLocaleUpperCase(locale) + label.slice(1) })
 }

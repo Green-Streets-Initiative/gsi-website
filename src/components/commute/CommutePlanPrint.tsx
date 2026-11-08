@@ -13,6 +13,8 @@ import {
   modeName,
   modeOrderFor,
 } from '@/lib/employer/commute-costs'
+import { siteDate, translator, type SiteLocale } from '@/lib/site-i18n'
+import { advisorStrings } from '@/lib/site-strings/advisor'
 
 /*
  * The one-page commute plan a person can save as a PDF from the employer
@@ -44,6 +46,8 @@ interface Props {
   joinLink: string | null
   /** The "what matters most" chip, if one is on; orders the rows and frames the headline. */
   motivation?: Motivation | null
+  /** The page's language; the employer's own words (benefit labels, HR contact) stay as written. */
+  locale?: SiteLocale
 }
 
 /** A pre-tax transit benefit is worth the tax it saves, about 30%. Same rule as the on-screen savings. */
@@ -76,7 +80,7 @@ function clip(text: string, max: number): string {
   return `${cut.slice(0, Math.max(cut.lastIndexOf(' '), 40))}...`
 }
 
-const fmtDay = (n: number) => (n <= 0 ? 'Free' : `$${n.toFixed(2).replace(/\.00$/, '')}`)
+const fmtDay = (n: number, free = 'Free') => (n <= 0 ? free : `$${n.toFixed(2).replace(/\.00$/, '')}`)
 
 export default function CommutePlanPrint({
   group,
@@ -88,7 +92,11 @@ export default function CommutePlanPrint({
   driveDays,
   joinLink,
   motivation = null,
+  locale = 'en',
 }: Props) {
+  const t = translator(advisorStrings, locale)
+  const en = locale === 'en'
+  const day = (n: number) => fmtDay(n, t('print.free'))
   const { modes, transit_legs: legs, costs } = recommendation
   const primaryMode = modes[recommendation.recommended_mode] ? recommendation.recommended_mode : recommendation.mode_order[0]
   const primary = modes[primaryMode]
@@ -97,10 +105,10 @@ export default function CommutePlanPrint({
   const transitLabel =
     legs.length > 0
       ? legs.length === 1
-        ? `${legs[0].route_name} from ${legs[0].departure_stop_name}`
-        : legs.map((l) => l.route_name).filter(Boolean).join(' to ')
+        ? t('print.transit_from', { line: legs[0].route_name, stop: legs[0].departure_stop_name })
+        : legs.map((l) => l.route_name).filter(Boolean).join(en ? ' to ' : ' → ')
       : recommendation.transit_summary
-  const labelFor = (mode: string) => (mode === 'transit' && transitLabel ? transitLabel : modeName(mode))
+  const labelFor = (mode: string) => (mode === 'transit' && transitLabel ? transitLabel : modeName(mode, locale))
 
   // A day's cost with this employer's benefits applied.
   const subsidyMonthly =
@@ -119,68 +127,78 @@ export default function CommutePlanPrint({
     return {
       mode,
       label: labelFor(mode),
-      leaveBy: m.leave_by ? formatClock(m.leave_by) : null,
+      leaveBy: m.leave_by ? formatClock(m.leave_by, locale) : null,
       minutes: m.minutes,
       minutesMax: mode === 'drive' ? m.minutes_max ?? null : null,
       day: dayWithBenefits(mode, m.cost_per_day),
-      share: formatCo2Share(m.emissions_share_pct),
+      share: formatCo2Share(m.emissions_share_pct, locale),
+      sharePct: m.emissions_share_pct,
     }
   })
   const primaryRow = rows.find((r) => r.mode === primaryMode)
-  const headline = recommendation.headline || headlineFor(recommendation, motivation)
-  const arriveBy = recommendation.arrive_by ? formatClock(recommendation.arrive_by) : null
+  // The route's headline is written in English; other languages build it here.
+  const headline = (en ? recommendation.headline : '') || headlineFor(recommendation, motivation, locale)
+  const arriveBy = recommendation.arrive_by ? formatClock(recommendation.arrive_by, locale) : null
 
   // The employer's perks, the same list the results page shows.
   const perks: string[] = []
   if (benefits.transit_subsidy_monthly && benefits.transit_subsidy_monthly > 0) {
-    perks.push(benefits.transit_subsidy_label || `$${benefits.transit_subsidy_monthly} a month toward transit`)
+    perks.push(benefits.transit_subsidy_label || t('print.subsidy_line', { amount: benefits.transit_subsidy_monthly }))
   }
   if (benefits.bikeshare_subsidized) perks.push(bikeShareBenefitLine(benefits, group.name))
-  if (benefits.bike_parking) perks.push(benefits.bike_parking_details ? `Bike parking: ${benefits.bike_parking_details}` : 'Bike parking at the office')
-  if (benefits.showers) perks.push(benefits.shower_details ? `Showers: ${benefits.shower_details}` : 'Showers at the office')
+  if (benefits.bike_parking) perks.push(benefits.bike_parking_details ? t('print.bike_parking_details', { details: benefits.bike_parking_details }) : t('print.bike_parking'))
+  if (benefits.showers) perks.push(benefits.shower_details ? t('print.showers_details', { details: benefits.shower_details }) : t('print.showers'))
   for (const r of benefits.shuttle_routes ?? []) {
-    if (r.name || r.from_stop) perks.push(`Free shuttle from ${r.from_stop || r.name}${r.schedule ? `, ${r.schedule}` : ''}`)
+    if (r.name || r.from_stop) perks.push(r.schedule ? t('print.shuttle_schedule', { from: r.from_stop || r.name, schedule: r.schedule }) : t('print.shuttle', { from: r.from_stop || r.name }))
   }
   if (benefits.other_benefits?.trim()) perks.push(benefits.other_benefits.trim())
 
   // First week: three concrete steps. The mode step first, then the guide
   // and event the advisor already fetched for this mode, then the team.
   const steps: string[] = []
-  const eachWay = primary?.minutes ? ` It takes about ${primary.minutes} minutes each way.` : ''
-  const leaveBy = primary?.leave_by ? ` Leave by ${formatClock(primary.leave_by)}${arriveBy ? ` to arrive by ${arriveBy}` : ''}.` : ''
+  // Each step is one sentence per language; the leave-by and minutes pieces are whole sentences of their own.
+  const eachWay = primary?.minutes ? t('print.each_way', { minutes: primary.minutes }) : ''
+  const leaveTime = primary?.leave_by ? formatClock(primary.leave_by, locale) : null
+  const leaveBy = leaveTime ? (arriveBy ? t('print.leave_by_arrive', { time: leaveTime, arrive: arriveBy }) : t('print.leave_by', { time: leaveTime })) : ''
   if (primaryMode === 'transit' || primaryMode === 'bus') {
-    steps.push(`Try it once on a day with no early meetings: ${labelFor(primaryMode)}.${leaveBy}${eachWay}`)
+    steps.push(t('print.step_transit', { line: labelFor(primaryMode), leave: leaveBy, each: eachWay }))
     steps.push(
-      `Set up a CharlieCard or the MBTA Go app before the first trip. A monthly LinkPass is $${PRICES.mbta.linkPassMonthly}${
-        subsidyMonthly > 0 ? `, before the ${group.name} transit benefit` : ''
-      }.`,
+      subsidyMonthly > 0
+        ? t('print.step_card_benefit', { price: PRICES.mbta.linkPassMonthly, company: group.name })
+        : t('print.step_card', { price: PRICES.mbta.linkPassMonthly }),
     )
   } else if (primaryMode === 'bike' || primaryMode === 'ebike') {
     const dock = recommendation.nearby.docks_home[0]
     if (dock) {
-      steps.push(`Your nearest Bluebikes station is ${dock.name}, ${dock.distance_miles.toFixed(1)} miles from home. Try a ride there first.`)
+      steps.push(t('print.step_dock', { dock: dock.name, miles: dock.distance_miles.toFixed(1) }))
     } else {
-      steps.push('Check the bike before the first ride: tires, brakes, lights and a lock.')
+      steps.push(t('print.step_check_bike'))
     }
-    steps.push(`Ride the route once on a quiet day.${leaveBy}${eachWay}`)
+    steps.push(t('print.step_ride', { leave: leaveBy, each: eachWay }))
   } else if (primaryMode === 'walk') {
-    steps.push(`Walk it once at the weekend to learn the way.${leaveBy}${eachWay}`)
-    steps.push('Keep a pair of comfortable shoes at your desk for the way home.')
+    steps.push(t('print.step_walk', { leave: leaveBy, each: eachWay }))
+    steps.push(t('print.step_shoes'))
   } else {
-    steps.push(`Pick one day this week to try ${rows.find((o) => o.mode !== 'drive')?.label.toLowerCase() ?? 'another way in'}.`)
+    const other = rows.find((o) => o.mode !== 'drive')?.label
+    steps.push(t('print.step_try', { way: other ? (en ? other.toLowerCase() : other) : t('print.another_way') }))
   }
+  // The guide's title and summary and the event's name and place are stored content, as written.
   const guide = recommendation.guide
-  if (guide) steps.push(`Read the guide "${guide.title}": ${clip(guide.summary, 120)}`)
+  if (guide) steps.push(t('print.step_guide', { title: guide.title, summary: clip(guide.summary, 120) }))
   const event = recommendation.event
   if (event) {
-    steps.push(`Try it with others on ${formatEventDate(event.event_date)}: ${event.content_items.title}${event.location_name ? `, ${event.location_name}` : ''}.`)
+    const date = formatEventDate(event.event_date, {}, locale)
+    steps.push(event.location_name
+      ? t('print.step_event_place', { date, title: event.content_items.title, place: event.location_name })
+      : t('print.step_event', { date, title: event.content_items.title }))
   }
   if (group.invite_code) {
-    steps.push(`Join ${group.name} on Shift with invite code ${group.invite_code} so every trip counts toward the team challenge.`)
+    steps.push(t('print.step_join', { company: group.name, code: group.invite_code }))
   }
   const firstWeek = steps.slice(0, 3)
 
-  const preparedOn = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+  const preparedFmt: Intl.DateTimeFormatOptions = { month: 'long', day: 'numeric', year: 'numeric' }
+  const preparedOn = en ? new Date().toLocaleDateString('en-US', preparedFmt) : siteDate(locale, new Date(), preparedFmt)
   const start = streetAndTown(homeAddress)
   const office = locationName ? `${locationName}, ${firstTwoParts(workAddress)}` : firstTwoParts(workAddress)
   const anyShare = rows.some((r) => r.share)
@@ -212,7 +230,7 @@ export default function CommutePlanPrint({
             ) : (
               <span className="text-[17px] font-bold">{group.name}</span>
             )}
-            <span className="text-[13px] text-[#4A4D68]">Commute plan · prepared with Shift</span>
+            <span className="text-[13px] text-[#4A4D68]">{t('print.header_sub')}</span>
           </div>
           <p className="text-[15px] leading-none">
             <span className="font-bold">Green Streets</span> Initiative
@@ -222,16 +240,16 @@ export default function CommutePlanPrint({
         {/* From, to and when */}
         <section className={`plan-section mb-3 grid ${arriveBy ? 'grid-cols-3' : 'grid-cols-2'} gap-4 rounded-[14px] border border-[rgba(25,26,46,0.12)] bg-white px-5 py-3.5`}>
           <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-[#4A4D68]">Start</p>
-            <p className="mt-0.5 text-[14px] font-semibold">{start || 'Home'}</p>
+            <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-[#4A4D68]">{t('print.start')}</p>
+            <p className="mt-0.5 text-[14px] font-semibold">{start || t('print.home')}</p>
           </div>
           <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-[#4A4D68]">Office</p>
+            <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-[#4A4D68]">{t('print.office')}</p>
             <p className="mt-0.5 text-[14px] font-semibold">{office || group.name}</p>
           </div>
           {arriveBy && (
             <div>
-              <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-[#4A4D68]">Arrive by</p>
+              <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-[#4A4D68]">{t('print.arrive_by')}</p>
               <p className="mt-0.5 text-[14px] font-semibold">{arriveBy}</p>
             </div>
           )}
@@ -239,31 +257,31 @@ export default function CommutePlanPrint({
 
         {/* The recommendation */}
         <section className="plan-section mb-3 rounded-[18px] bg-[#2D6A4F] px-6 pb-5 pt-5 text-white">
-          <p className="text-[13px] font-semibold text-white">The recommended way to get there</p>
+          <p className="text-[13px] font-semibold text-white">{t('print.recommended')}</p>
           <h1 className="mt-1 font-headline text-[32px] font-extrabold leading-[1.05] tracking-[-0.01em] text-white">
             {labelFor(primaryMode)}
           </h1>
           {headline && <p className="mt-2.5 text-[15px] leading-[1.45] text-white">{headline}</p>}
           <p className="mt-1.5 text-[12.5px] text-white">
-            {primaryRow?.minutes != null && (
-              <>About {primaryRow.minutes}{primaryRow.minutesMax != null && primaryRow.minutesMax > primaryRow.minutes ? ` to ${primaryRow.minutesMax}` : ''} minutes each way · </>
-            )}
-            {primaryRow ? `${fmtDay(primaryRow.day)} a day with your ${group.name} benefits · ` : ''}
-            {recommendation.distance_miles.toFixed(1)} miles each way, {driveDays} days a week.
+            {primaryRow?.minutes != null && (primaryRow.minutesMax != null && primaryRow.minutesMax > primaryRow.minutes
+              ? t('print.about_minutes_range', { minutes: primaryRow.minutes, max: primaryRow.minutesMax })
+              : t('print.about_minutes', { minutes: primaryRow.minutes }))}
+            {primaryRow ? t('print.day_with_benefits', { day: day(primaryRow.day), company: group.name }) : ''}
+            {t('print.miles_days', { miles: recommendation.distance_miles.toFixed(1), days: driveDays })}
           </p>
         </section>
 
         {/* Options table */}
         <section className="plan-section mb-3 rounded-[14px] border border-[rgba(25,26,46,0.12)] bg-white px-5 py-4">
-          <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.1em] text-[#4A4D68]">Your options{arriveBy ? `, arriving by ${arriveBy}` : ''}</p>
+          <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.1em] text-[#4A4D68]">{arriveBy ? t('print.options_arriving', { time: arriveBy }) : t('print.options')}</p>
           <table className="w-full text-left text-[13px]">
             <thead>
               <tr className="text-[11.5px] font-semibold text-[#4A4D68]">
-                <th className="pb-1.5 font-semibold">How</th>
-                <th className="pb-1.5 text-right font-semibold">Leave by</th>
-                <th className="pb-1.5 text-right font-semibold">Each way</th>
-                <th className="pb-1.5 text-right font-semibold">A day, with benefits</th>
-                {anyShare && <th className="pb-1.5 text-right font-semibold">Commute emissions shifted</th>}
+                <th className="pb-1.5 font-semibold">{t('print.col_how')}</th>
+                <th className="pb-1.5 text-right font-semibold">{t('print.col_leave_by')}</th>
+                <th className="pb-1.5 text-right font-semibold">{t('print.col_each_way')}</th>
+                <th className="pb-1.5 text-right font-semibold">{t('print.col_day')}</th>
+                {anyShare && <th className="pb-1.5 text-right font-semibold">{t('print.col_share')}</th>}
               </tr>
             </thead>
             <tbody>
@@ -271,29 +289,29 @@ export default function CommutePlanPrint({
                 <tr key={o.mode} className={`border-t border-[rgba(25,26,46,0.1)] ${o.mode === primaryMode ? 'font-bold' : ''}`}>
                   <td className="py-1.5 pr-3">
                     {o.label}
-                    {o.mode === primaryMode && <span className="ml-2 rounded-full bg-[#E7F0EA] px-2 py-0.5 text-[10px] font-bold uppercase text-[#2D6A4F]">Best</span>}
+                    {o.mode === primaryMode && <span className="ml-2 rounded-full bg-[#E7F0EA] px-2 py-0.5 text-[10px] font-bold uppercase text-[#2D6A4F]">{t('print.best')}</span>}
                   </td>
                   <td className="whitespace-nowrap py-1.5 pr-3 text-right">{o.leaveBy ?? '—'}</td>
                   <td className="whitespace-nowrap py-1.5 pr-3 text-right">
-                    {o.minutes == null ? '—' : o.minutesMax != null && o.minutesMax > o.minutes ? `${o.minutes} to ${o.minutesMax} min` : `${o.minutes} min`}
+                    {o.minutes == null ? '—' : o.minutesMax != null && o.minutesMax > o.minutes ? t('print.min_range', { minutes: o.minutes, max: o.minutesMax }) : t('print.min', { minutes: o.minutes })}
                   </td>
-                  <td className="whitespace-nowrap py-1.5 pr-3 text-right">{fmtDay(o.day)}</td>
+                  <td className="whitespace-nowrap py-1.5 pr-3 text-right">{day(o.day)}</td>
                   {anyShare && (
-                    <td className="whitespace-nowrap py-1.5 text-right">{o.share ? o.share.replace(/^shifts /, '') : ''}</td>
+                    <td className="whitespace-nowrap py-1.5 text-right">{!o.share || o.sharePct == null ? '' : o.sharePct >= 98 ? t('print.share_all') : t('print.share_pct', { pct: Math.round(o.sharePct) })}</td>
                   )}
                 </tr>
               ))}
             </tbody>
           </table>
           {costs.parking_per_day > 0 && (
-            <p className="mt-2 text-[11.5px] text-[#4A4D68]">Driving includes {fmtMoney(costs.parking_per_day)} a day parking.</p>
+            <p className="mt-2 text-[11.5px] text-[#4A4D68]">{t('print.parking_note', { amount: fmtMoney(costs.parking_per_day) })}</p>
           )}
         </section>
 
         <div className="mb-3 grid grid-cols-2 gap-3">
           {/* Perks */}
           <section className="plan-section rounded-[14px] border border-[rgba(25,26,46,0.12)] bg-white px-5 py-4">
-            <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.1em] text-[#4A4D68]">What {group.name} offers</p>
+            <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.1em] text-[#4A4D68]">{t('print.offers', { company: group.name })}</p>
             {perks.length > 0 ? (
               <ul className="grid gap-1.5 text-[13px] leading-[1.4]">
                 {perks.map((p, i) => (
@@ -304,13 +322,13 @@ export default function CommutePlanPrint({
                 ))}
               </ul>
             ) : (
-              <p className="text-[13px] text-[#4A4D68]">Ask HR what commute benefits apply to you.</p>
+              <p className="text-[13px] text-[#4A4D68]">{t('print.ask_hr')}</p>
             )}
           </section>
 
           {/* First week */}
           <section className="plan-section rounded-[14px] border border-[rgba(45,106,79,0.25)] bg-[#E7F0EA] px-5 py-4">
-            <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.1em] text-[#2D6A4F]">Your first week</p>
+            <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.1em] text-[#2D6A4F]">{t('print.first_week')}</p>
             <ol className="grid gap-2 text-[13px] leading-[1.4]">
               {firstWeek.map((s, i) => (
                 <li key={i} className="flex gap-2.5">
@@ -325,20 +343,20 @@ export default function CommutePlanPrint({
         {/* Team and HR */}
         <section className="plan-section mb-3 grid grid-cols-2 gap-4 rounded-[14px] border border-[rgba(25,26,46,0.12)] bg-white px-5 py-3.5 text-[13px]">
           <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-[#4A4D68]">Join {group.name} on Shift</p>
+            <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-[#4A4D68]">{t('print.join', { company: group.name })}</p>
             {group.invite_code && joinLink ? (
               <>
                 <p className="mt-0.5">
-                  Invite code <span className="font-mono font-bold tracking-wide">{group.invite_code}</span>
+                  {t('print.invite_code')} <span className="font-mono font-bold tracking-wide">{group.invite_code}</span>
                 </p>
                 <p className="text-[#4A4D68]">{joinLink.replace(/^https?:\/\//, '')}</p>
               </>
             ) : (
-              <p className="mt-0.5 text-[#4A4D68]">Download Shift at gogreenstreets.org/shift</p>
+              <p className="mt-0.5 text-[#4A4D68]">{t('print.download')}</p>
             )}
           </div>
           <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-[#4A4D68]">Questions about benefits</p>
+            <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-[#4A4D68]">{t('print.questions')}</p>
             {benefits.hr_contact_name || benefits.hr_contact_email ? (
               <p className="mt-0.5">
                 {benefits.hr_contact_name}
@@ -346,15 +364,15 @@ export default function CommutePlanPrint({
                 {benefits.hr_contact_email}
               </p>
             ) : (
-              <p className="mt-0.5 text-[#4A4D68]">Ask your HR team.</p>
+              <p className="mt-0.5 text-[#4A4D68]">{t('print.ask_hr_team')}</p>
             )}
           </div>
         </section>
 
         <footer className="text-[11.5px] text-[#4A4D68]">
-          Green Streets Initiative · gogreenstreets.org · prepared {preparedOn}. Times and costs are estimates
-          {costs.gas_price ? ` at $${costs.gas_price.toFixed(2)} a gallon` : ''}; emissions are the share of your own commute
-          emissions each way shifts, using EPA 2025 factors.
+          {costs.gas_price
+            ? t('print.footer_gas', { date: preparedOn, gas: costs.gas_price.toFixed(2) })
+            : t('print.footer', { date: preparedOn })}
         </footer>
       </article>
     </div>

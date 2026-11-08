@@ -2,12 +2,14 @@
 
 import { Clock, CurrencyDollar, Heartbeat, Leaf } from '@phosphor-icons/react'
 import type { Motivation } from '@/lib/types/commute'
+import { translator, type SiteLocale } from '@/lib/site-i18n'
+import { advisorStrings } from '@/lib/site-strings/advisor'
 
-const CHIPS: { value: Motivation; label: string; Icon: typeof Clock }[] = [
-  { value: 'time', label: 'Time', Icon: Clock },
-  { value: 'money', label: 'Money', Icon: CurrencyDollar },
-  { value: 'health', label: 'Health', Icon: Heartbeat },
-  { value: 'climate', label: 'Climate', Icon: Leaf },
+const CHIPS: { value: Motivation; label: 'motiv.time' | 'motiv.money' | 'motiv.health' | 'motiv.climate'; Icon: typeof Clock }[] = [
+  { value: 'time', label: 'motiv.time', Icon: Clock },
+  { value: 'money', label: 'motiv.money', Icon: CurrencyDollar },
+  { value: 'health', label: 'motiv.health', Icon: Heartbeat },
+  { value: 'climate', label: 'motiv.climate', Icon: Leaf },
 ]
 
 /**
@@ -19,13 +21,16 @@ export default function MotivationChips({
   value,
   onChange,
   compact = false,
+  locale = 'en',
 }: {
   value: Motivation | null
   onChange: (next: Motivation | null) => void
   compact?: boolean
+  locale?: SiteLocale
 }) {
+  const t = translator(advisorStrings, locale)
   return (
-    <div className="flex flex-wrap gap-2" role="group" aria-label="What matters most to you">
+    <div className="flex flex-wrap gap-2" role="group" aria-label={t('motiv.aria')}>
       {CHIPS.map(({ value: v, label, Icon }) => {
         const on = value === v
         return (
@@ -39,7 +44,7 @@ export default function MotivationChips({
             } ${on ? 'border-[#2D6A4F] bg-[#2D6A4F] text-white' : 'border-[rgba(25,26,46,0.15)] bg-white text-[#191A2E] hover:border-[rgba(25,26,46,0.3)]'}`}
           >
             <Icon size={16} weight="regular" aria-hidden />
-            {label}
+            {t(label)}
           </button>
         )
       })}

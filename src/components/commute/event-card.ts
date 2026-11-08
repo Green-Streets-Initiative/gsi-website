@@ -8,17 +8,57 @@
 import { formatTime, getTypeMeta, isNoDrop, getTagMeta } from '@/lib/events'
 import { parseLocalDate } from '@/lib/employer/commute-costs'
 import type { EventWithDetails } from '@/lib/types/commute'
+import { siteDate, siteTime, translator, type SiteLocale } from '@/lib/site-i18n'
+import { advisorStrings } from '@/lib/site-strings/advisor'
+
+// Each line takes an optional locale; 'en' (the recommend route, the
+// assistant) keeps today's words exactly. Organizer text (the title, the
+// ride's own distance) is stored content and stays as written.
+const tr = (locale: SiteLocale) => translator(advisorStrings, locale)
+
+const TYPE_KEYS = {
+  guided_ride: 'event.type.guided_ride', group_ride: 'event.type.group_ride', class: 'event.type.class',
+  ebike_demo: 'event.type.ebike_demo', cargo_bike_demo: 'event.type.cargo_bike_demo', bike_repair: 'event.type.bike_repair',
+  bike_rodeo: 'event.type.bike_rodeo', bike_bus: 'event.type.bike_bus', walking_tour: 'event.type.walking_tour',
+  transit_buddy: 'event.type.transit_buddy', civic_action: 'event.type.civic_action', talk: 'event.type.talk',
+  festival: 'event.type.festival', open_streets: 'event.type.open_streets', contest: 'event.type.contest',
+  challenge: 'event.type.challenge', other: 'event.type.other',
+} as const
+type TypeKey = (typeof TYPE_KEYS)[keyof typeof TYPE_KEYS]
+
+const PACE_KEYS = {
+  kids: 'event.pace.kids', relaxed: 'event.pace.relaxed', moderate: 'event.pace.moderate', brisk: 'event.pace.brisk', fast: 'event.pace.fast',
+} as const
+type PaceKey = (typeof PACE_KEYS)[keyof typeof PACE_KEYS]
+
+const TAG_KEYS = {
+  family_friendly: 'event.tag.family_friendly', women: 'event.tag.women', seniors: 'event.tag.seniors', students: 'event.tag.students',
+  lgbtq: 'event.tag.lgbtq', spanish: 'event.tag.spanish', bilingual: 'event.tag.bilingual', free: 'event.tag.free',
+} as const
+type TagKey = (typeof TAG_KEYS)[keyof typeof TAG_KEYS]
+
+/** "9:30 AM" in English (lib/events formatTime), the page's own clock otherwise. */
+function eventClock(time: string, locale: SiteLocale): string {
+  if (locale === 'en') return formatTime(time)
+  const [h, m] = time.split(':').map(Number)
+  return siteTime(locale, new Date(2000, 0, 1, h || 0, m || 0), { hour: 'numeric', minute: '2-digit' })
+}
 
 /**
  * "Group ride", "Walking tour", "Transit buddy" (sentence case). A ride
  * type whose primary_mode is walking is a walk ("Group walk"): the North
  * Shore walking group is listed as a guided_ride tagged walking.
  */
-export function eventKindWord(eventType: string | null | undefined, primaryMode?: string | null): string {
+export function eventKindWord(eventType: string | null | undefined, primaryMode?: string | null, locale: SiteLocale = 'en'): string {
+  const t = tr(locale)
   const label = getTypeMeta(eventType ?? 'other').label
-  if (!eventType || eventType === 'other') return 'Event'
+  if (!eventType || eventType === 'other') return t('event.type.other')
   if (primaryMode === 'walking' && (eventType === 'guided_ride' || eventType === 'group_ride')) {
-    return eventType === 'guided_ride' ? 'Guided walk' : 'Group walk'
+    return t(eventType === 'guided_ride' ? 'event.guided_walk' : 'event.group_walk')
+  }
+  if (locale !== 'en') {
+    const key = (TYPE_KEYS as Record<string, TypeKey>)[eventType]
+    return t(key ?? 'event.type.other')
   }
   return label.charAt(0) + label.slice(1).toLowerCase()
 }
@@ -39,40 +79,47 @@ const AUDIENCE_TAGS = ['beginner_friendly', 'family_friendly', 'women', 'seniors
  * said only when the organizer promises nobody is dropped or tagged the
  * event beginner-friendly; a tag the organizer did not set never appears.
  */
-export function eventKindLine(ev: EventWithDetails): string {
-  const parts: string[] = [eventKindWord(ev.event_type, ev.content_items?.primary_mode)]
-  const pace = ev.pace ? PACE_WORD[ev.pace] : null
+export function eventKindLine(ev: EventWithDetails, locale: SiteLocale = 'en'): string {
+  const tl = tr(locale)
+  const en = locale === 'en'
+  const parts: string[] = [eventKindWord(ev.event_type, ev.content_items?.primary_mode, locale)]
+  const paceKey = ev.pace ? (PACE_KEYS as Record<string, PaceKey>)[ev.pace] : undefined
+  const pace = ev.pace ? (en ? PACE_WORD[ev.pace] : paceKey ? tl(paceKey) : null) : null
   if (pace) parts.push(pace)
   const tags = ev.tags ?? []
   const noDrop = isNoDrop({ title: ev.content_items.title, body: ev.excerpt ?? null, no_drop: ev.no_drop ?? null, event_type: ev.event_type ?? 'other' })
-  if (noDrop) parts.push('no one gets dropped')
-  if (tags.includes('beginner_friendly')) parts.push('all welcome')
+  if (noDrop) parts.push(tl('event.no_drop'))
+  if (tags.includes('beginner_friendly')) parts.push(tl('event.all_welcome'))
   for (const t of AUDIENCE_TAGS) {
     if (t === 'beginner_friendly' || !tags.includes(t)) continue
-    parts.push(getTagMeta(t).label.toLowerCase())
+    const tagKey = (TAG_KEYS as Record<string, TagKey>)[t]
+    parts.push(en || !tagKey ? getTagMeta(t).label.toLowerCase() : tl(tagKey))
   }
   if (ev.distance_text) parts.push(ev.distance_text.replace(/\s*-\s*/g, '–'))
-  return parts.join(', ')
+  return parts.join(locale === 'zh-Hans' ? '，' : ', ')
 }
 
 /** "Saturday, October 11, 9:30 AM" (the DATE string as a local day, never through new Date()). */
-export function eventWhenLine(ev: Pick<EventWithDetails, 'event_date' | 'event_time' | 'event_end_time'>): string {
+export function eventWhenLine(ev: Pick<EventWithDetails, 'event_date' | 'event_time' | 'event_end_time'>, locale: SiteLocale = 'en'): string {
   const d = parseLocalDate(ev.event_date)
+  const fmt: Intl.DateTimeFormatOptions = { weekday: 'long', month: 'long', day: 'numeric' }
   const day = Number.isNaN(d.getTime())
     ? ev.event_date
-    : d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
+    : locale === 'en' ? d.toLocaleDateString('en-US', fmt) : siteDate(locale, d, fmt)
   if (!ev.event_time) return day
-  const start = formatTime(ev.event_time)
-  const end = ev.event_end_time ? formatTime(ev.event_end_time) : null
-  return end ? `${day}, ${start} to ${end}` : `${day}, ${start}`
+  const start = eventClock(ev.event_time, locale)
+  const end = ev.event_end_time ? eventClock(ev.event_end_time, locale) : null
+  const t = tr(locale)
+  return end ? t('event.when_range', { day, start, end }) : t('event.when_at', { day, start })
 }
 
 /** "Davis Square, 1.2 mi from the office" / "Boston Common, at the office". */
-export function eventWhereLine(ev: Pick<EventWithDetails, 'location_name' | 'miles_from_office'>): string | null {
+export function eventWhereLine(ev: Pick<EventWithDetails, 'location_name' | 'miles_from_office'>, locale: SiteLocale = 'en'): string | null {
+  const t = tr(locale)
   const place = ev.location_name?.trim() || null
   const miles = ev.miles_from_office
-  const dist = miles == null ? null : miles < 0.1 ? 'by the office' : `${miles < 10 ? miles.toFixed(1) : Math.round(miles)} mi from the office`
-  if (place && dist) return `${place}, ${dist}`
+  const dist = miles == null ? null : miles < 0.1 ? t('event.by_office') : t('event.mi_from_office', { miles: miles < 10 ? miles.toFixed(1) : Math.round(miles) })
+  if (place && dist) return t('event.where', { place, dist })
   return place ?? dist
 }
 
@@ -129,6 +176,6 @@ export function eventModeForRow(rowMode: string | null | undefined): EventMode |
 }
 
 /** "Friday, October 30" for the Walk/Ride Day card (the date string as a local day). */
-export function walkRideDayWhen(date: string): string {
-  return eventWhenLine({ event_date: date, event_time: null, event_end_time: null })
+export function walkRideDayWhen(date: string, locale: SiteLocale = 'en'): string {
+  return eventWhenLine({ event_date: date, event_time: null, event_end_time: null }, locale)
 }

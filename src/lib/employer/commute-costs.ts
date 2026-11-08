@@ -15,6 +15,13 @@
  */
 
 import type { AdvisorCombo, AdvisorMode, AdvisorResult, CarChoice, Motivation, TransitLeg, Vehicle } from '../types/commute'
+// Relative with the extension, like the type import above, so node --test
+// still runs this file as is. Every sentence takes an optional locale; the
+// default 'en' keeps the API routes, the portal and the tests unchanged.
+import { siteDate, siteTime, translator, type SiteLocale } from '../site-i18n.ts'
+import { advisorStrings } from '../site-strings/advisor.ts'
+
+const tr = (locale: SiteLocale) => translator(advisorStrings, locale)
 
 /** Commuting days in a year; the same figure the employer dashboard uses. */
 export const WORKDAYS = 260
@@ -207,10 +214,11 @@ export const COMBO_KEYS: readonly string[] = ['park_ride', 'bike_ride']
 export const isComboKey = (k: string | null | undefined): boolean => k != null && COMBO_KEYS.includes(k)
 
 /** "shifts about 85% of your commute emissions"; '' when there is nothing worth saying. */
-export function formatCo2Share(pct: number | null | undefined): string {
+export function formatCo2Share(pct: number | null | undefined, locale: SiteLocale = 'en'): string {
   if (pct == null || pct < 10) return ''
-  if (pct >= 98) return 'shifts all of your commute emissions'
-  return `shifts about ${Math.round(pct)}% of your commute emissions`
+  const t = tr(locale)
+  if (pct >= 98) return t('cost.share_all')
+  return t('cost.share_pct', { pct: Math.round(pct) })
 }
 
 /* ── Dates and clocks ── */
@@ -228,19 +236,22 @@ export function parseLocalDate(value: string): Date {
 }
 
 /** "2026-10-05" -> "October 5" (or "October 5, 2026" with the year). */
-export function formatEventDate(value: string, opts: { year?: boolean } = {}): string {
+export function formatEventDate(value: string, opts: { year?: boolean } = {}, locale: SiteLocale = 'en'): string {
   const d = parseLocalDate(value)
   if (Number.isNaN(d.getTime())) return value
-  return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', ...(opts.year ? { year: 'numeric' } : {}) })
+  const fmt: Intl.DateTimeFormatOptions = { month: 'long', day: 'numeric', ...(opts.year ? { year: 'numeric' } : {}) }
+  if (locale !== 'en') return siteDate(locale, d, fmt)
+  return d.toLocaleDateString('en-US', fmt)
 }
 
-/** "08:12" -> "8:12"; "13:05" -> "1:05 pm". Morning times carry no suffix. */
-export function formatClock(hhmm: string | null | undefined): string {
+/** "08:12" -> "8:12 AM"; "13:05" -> "1:05 PM". Other languages: their own clock (siteTime). */
+export function formatClock(hhmm: string | null | undefined, locale: SiteLocale = 'en'): string {
   if (!hhmm) return ''
   const m = /^(\d{1,2}):(\d{2})/.exec(hhmm)
   if (!m) return hhmm
   const h = Number(m[1])
   const min = m[2]
+  if (locale !== 'en') return siteTime(locale, new Date(2000, 0, 1, h, Number(min)), { hour: 'numeric', minute: '2-digit' })
   // Always say AM or PM (Keith 2026-10-05: "We're not on 24-hr time in the U.S.").
   if (h === 0) return `12:${min} AM`
   if (h < 12) return `${h}:${min} AM`
@@ -296,84 +307,93 @@ export function modeOrderFor(motivation: Motivation | null | undefined, modes: R
 }
 
 /** "the Red Line", "the 77 bus"; a bus named "Route 85" is "the 85 bus", never "the Route 85". */
-function lineNoun(name: string): string {
+function lineNoun(name: string, locale: SiteLocale = 'en'): string {
   const bus = name.match(/^(?:route\s+)?(\d+[a-z]?)$/i)
-  return bus ? `the ${bus[1]} bus` : `the ${name}`
+  const t = tr(locale)
+  return bus ? t('cost.line_bus', { n: bus[1] }) : t('cost.line_named', { name })
 }
 
 /** "the Orange Line" for a combo's rail leg (the first one), "the 77 bus" for a bus. */
-export function comboLineName(combo: Pick<AdvisorCombo, 'transit_legs'> | null | undefined): string {
+export function comboLineName(combo: Pick<AdvisorCombo, 'transit_legs'> | null | undefined, locale: SiteLocale = 'en'): string {
   const name = combo?.transit_legs?.[0]?.route_name?.trim()
-  if (!name) return 'the train'
-  return lineNoun(name)
+  if (!name) return tr(locale)('cost.line_train')
+  return lineNoun(name, locale)
 }
 
 /** "on the Red Line", "by bike", "on foot", "by car", "driving to Oak Grove and the Orange Line". */
-export function modePhrase(mode: string, legs?: TransitLeg[] | null, combo?: AdvisorCombo | null): string {
+export function modePhrase(mode: string, legs?: TransitLeg[] | null, combo?: AdvisorCombo | null, locale: SiteLocale = 'en'): string {
+  const t = tr(locale)
   switch (mode) {
     case 'park_ride':
-      return combo ? `driving to ${combo.station.name} and ${comboLineName(combo)}` : 'driving to the station and the train'
+      return combo ? t('cost.how_park_ride', { station: combo.station.name, line: comboLineName(combo, locale) }) : t('cost.how_park_ride_generic')
     case 'bike_ride':
-      return combo ? `biking to ${combo.station.name} and ${comboLineName(combo)}` : 'biking to the station and the train'
+      return combo ? t('cost.how_bike_ride', { station: combo.station.name, line: comboLineName(combo, locale) }) : t('cost.how_bike_ride_generic')
     case 'transit': {
       const first = legs?.[0]
       const name = first?.route_name?.trim()
-      if (name) return `on ${lineNoun(name)}`
-      return 'by bus or train'
+      if (name) return t('cost.how_transit_line', { line: lineNoun(name, locale) })
+      return t('cost.how_transit')
     }
     case 'bus':
-      return 'by bus'
+      return t('cost.how_bus')
     // "Leave by 8:49 AM on a bike", not "by 8:49 AM by bike".
     case 'bike':
-      return 'on a bike'
+      return t('cost.how_bike')
     case 'ebike':
-      return 'on an e-bike'
+      return t('cost.how_ebike')
     case 'walk':
-      return 'on foot'
+      return t('cost.how_walk')
     case 'carpool':
-      return 'in a carpool'
+      return t('cost.how_carpool')
     case 'drive':
-      return 'in the car'
+      return t('cost.how_drive')
     default:
-      return `by ${mode}`
+      return t('cost.how_other', { mode })
   }
 }
 
 /** The mode as the thing being compared against: "driving", "the Red Line", "biking". */
-export function modeNoun(mode: string, legs?: TransitLeg[] | null, combo?: AdvisorCombo | null): string {
+export function modeNoun(mode: string, legs?: TransitLeg[] | null, combo?: AdvisorCombo | null, locale: SiteLocale = 'en'): string {
+  const t = tr(locale)
   switch (mode) {
     case 'park_ride':
     case 'bike_ride':
-      return modePhrase(mode, legs, combo)
+      return modePhrase(mode, legs, combo, locale)
     case 'drive':
-      return 'driving'
+      return t('cost.noun_drive')
     case 'transit': {
       const name = legs?.[0]?.route_name?.trim()
-      if (name) return lineNoun(name)
-      return 'the bus or train'
+      if (name) return lineNoun(name, locale)
+      return t('cost.noun_transit')
     }
     case 'bus':
-      return 'the bus'
+      return t('cost.noun_bus')
     case 'bike':
-      return 'biking'
+      return t('cost.noun_bike')
     case 'ebike':
-      return 'the e-bike'
+      return t('cost.noun_ebike')
     case 'walk':
-      return 'walking'
+      return t('cost.noun_walk')
     case 'carpool':
-      return 'carpooling'
+      return t('cost.noun_carpool')
     default:
       return mode
   }
 }
 
+const MODE_NAME_KEYS = {
+  walk: 'cost.name_walk', bike: 'cost.name_bike', ebike: 'cost.name_ebike', transit: 'cost.name_transit', bus: 'cost.name_bus',
+  drive: 'cost.name_drive', carpool: 'cost.name_carpool', park_ride: 'cost.name_park_ride', bike_ride: 'cost.name_bike_ride',
+} as const
+
 /** Plan-row name: "Walk", "Bike", "Bus or train", "Drive", "Drive, then train". */
-export function modeName(mode: string): string {
-  const names: Record<string, string> = {
-    walk: 'Walk', bike: 'Bike', ebike: 'E-bike', transit: 'Bus or train', bus: 'Bus', drive: 'Drive', carpool: 'Carpool',
-    park_ride: 'Drive, then train', bike_ride: 'Bike, then train',
-  }
-  return names[mode] ?? mode.charAt(0).toUpperCase() + mode.slice(1)
+export function modeName(mode: string, locale: SiteLocale = 'en'): string {
+  const key = (MODE_NAME_KEYS as Record<string, (typeof MODE_NAME_KEYS)[keyof typeof MODE_NAME_KEYS]>)[mode]
+  if (key) return tr(locale)(key)
+  // English names any other row by capitalizing its key ("Rideshare", "Shuttle").
+  if (locale !== 'en' && mode === 'rideshare') return tr(locale)('cost.name_rideshare')
+  if (locale !== 'en' && mode === 'shuttle') return tr(locale)('cost.name_shuttle')
+  return mode.charAt(0).toUpperCase() + mode.slice(1)
 }
 
 export const fmtMoney = (n: number): string => `$${Math.round(n).toLocaleString('en-US')}`
@@ -393,8 +413,10 @@ function fastestOf(modes: Record<string, AdvisorMode>, keys: string[]): string |
 }
 
 /** The subject of the headline: the recommended mode, or, when that is
- *  driving, the alternative closest to it in time. */
-export function headlineSubject(result: HeadlineInput): string | null {
+ *  driving, the alternative closest to it in time. (No words; `locale` is
+ *  accepted so every headline helper takes the same trailing argument.) */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function headlineSubject(result: HeadlineInput, locale: SiteLocale = 'en'): string | null {
   const keys = Object.keys(result.modes)
   if (keys.length === 0) return null
   const rec = result.modes[result.recommended_mode] ? result.recommended_mode : keys[0]
@@ -403,43 +425,54 @@ export function headlineSubject(result: HeadlineInput): string | null {
   return fastestOf(result.modes, others) ?? others[0] ?? 'drive'
 }
 
-function timeClause(result: HeadlineInput, subject: string, fastest: string | null): string {
+function timeClause(result: HeadlineInput, subject: string, fastest: string | null, locale: SiteLocale): string {
+  const t = tr(locale)
   const s = result.modes[subject]
   if (s.minutes == null) return ''
   if (fastest == null || fastest === subject) {
-    return Object.keys(result.modes).length > 1 ? 'the fastest way in' : `about ${s.minutes} minutes`
+    return Object.keys(result.modes).length > 1 ? t('cost.clause_fastest') : t('cost.clause_about_minutes', { minutes: s.minutes })
   }
   const f = result.modes[fastest]
   const diff = s.minutes - (f.minutes as number)
-  const bench = modeNoun(fastest, result.transit_legs, f.combo)
-  if (diff <= 2) return `about the same time as ${bench}`
+  const bench = modeNoun(fastest, result.transit_legs, f.combo, locale)
+  if (diff <= 2) return t('cost.clause_same_time', { bench })
   // Driving's number is a clear morning; when the pick beats its traffic
   // time, say so. That is the sentence a regular driver is reading for.
   if (fastest === 'drive' && f.minutes_max != null && f.minutes_max > s.minutes) {
-    return `${diff} minutes slower than driving on a clear morning but faster in traffic`
+    return t('cost.clause_slower_traffic', { diff })
   }
-  return `${diff} minutes slower than ${bench}`
+  return t('cost.clause_slower', { diff, bench })
 }
 
-function costClause(result: HeadlineInput, subject: string, benchmark: string | null, nameIt = false): string {
+function costClause(result: HeadlineInput, subject: string, benchmark: string | null, nameIt = false, locale: SiteLocale = 'en'): string {
   if (benchmark == null) return ''
+  const t = tr(locale)
   const s = result.modes[subject]
   const b = result.modes[benchmark]
   const delta = b.cost_per_day - s.cost_per_day
-  const parking = benchmark === 'drive' && (result.costs.parking_per_day ?? 0) > 0 ? ' with parking' : ''
+  const parking = benchmark === 'drive' && (result.costs.parking_per_day ?? 0) > 0
   // Driving is the comparison a reader assumes; any other benchmark is named
   // unless the time clause just named it (a plan with no car, item 17).
-  const than = nameIt && benchmark !== 'drive' ? ` than ${modeNoun(benchmark, result.transit_legs, b.combo)}` : ''
-  if (delta >= 1) return `${fmtMoney(delta)} a day cheaper${parking}${than}`
-  if (delta <= -1) return `${fmtMoney(-delta)} a day more${than}`
-  return `about the same cost as ${modeNoun(benchmark, result.transit_legs, b.combo)}`
+  // (Parking only ever goes with driving, which is never named: one or the other.)
+  const than = nameIt && benchmark !== 'drive' ? modeNoun(benchmark, result.transit_legs, b.combo, locale) : null
+  if (delta >= 1) {
+    const amount = fmtMoney(delta)
+    if (than) return t('cost.clause_cheaper_than', { amount, bench: than })
+    return parking ? t('cost.clause_cheaper_parking', { amount }) : t('cost.clause_cheaper', { amount })
+  }
+  if (delta <= -1) {
+    const amount = fmtMoney(-delta)
+    return than ? t('cost.clause_more_than', { amount, bench: than }) : t('cost.clause_more', { amount })
+  }
+  return t('cost.clause_same_cost', { bench: modeNoun(benchmark, result.transit_legs, b.combo, locale) })
 }
 
-function healthClause(result: HeadlineInput, subject: string): string {
+function healthClause(result: HeadlineInput, subject: string, locale: SiteLocale): string {
   const s = result.modes[subject]
   if (s.minutes == null) return ''
-  if (subject === 'walk') return `${s.minutes} minutes of walking each way`
-  if (subject === 'bike' || subject === 'ebike') return `${s.minutes} minutes of riding each way`
+  const t = tr(locale)
+  if (subject === 'walk') return t('cost.clause_walking', { minutes: s.minutes })
+  if (subject === 'bike' || subject === 'ebike') return t('cost.clause_riding', { minutes: s.minutes })
   return ''
 }
 
@@ -452,8 +485,10 @@ function healthClause(result: HeadlineInput, subject: string): string {
  *  - climate: "... shifts about 85% of your commute emissions and 5 minutes slower than driving."
  * When driving is recommended it is the benchmark and the closest
  * alternative leads. Mode-neutral: never "vs driving alone" or "instead of driving".
+ * Each language has its own sentence templates (cost.headline_*, cost.clause_*).
  */
-export function headlineFor(result: HeadlineInput, motivation: Motivation | null | undefined): string {
+export function headlineFor(result: HeadlineInput, motivation: Motivation | null | undefined, locale: SiteLocale = 'en'): string {
+  const t = tr(locale)
   const subject = headlineSubject(result)
   if (!subject) return ''
   const s = result.modes[subject]
@@ -463,28 +498,27 @@ export function headlineFor(result: HeadlineInput, motivation: Motivation | null
     : subject !== 'drive' && result.modes.drive ? 'drive'
     : fastestOf(result.modes, keys.filter((k) => k !== subject))
 
-  const phrase = modePhrase(subject, result.transit_legs, s.combo)
+  const phrase = modePhrase(subject, result.transit_legs, s.combo, locale)
   const lead = s.leave_by
-    ? `Leave by ${formatClock(s.leave_by)} ${phrase}`
+    ? t('cost.lead_leave', { time: formatClock(s.leave_by, locale), how: phrase })
     : s.minutes != null
-      ? `${capitalize(phrase)}, about ${s.minutes} minutes`
+      ? capitalize(t('cost.lead_minutes', { how: phrase, minutes: s.minutes }))
       : capitalize(phrase)
 
   if (subject === 'drive') {
-    const range = s.minutes != null && s.minutes_max != null && s.minutes_max > s.minutes
-      ? `, ${s.minutes} to ${s.minutes_max} minutes in traffic`
-      : s.minutes != null ? `, about ${s.minutes} minutes` : ''
-    return `${lead}${range}.`
+    if (s.minutes != null && s.minutes_max != null && s.minutes_max > s.minutes) return t('cost.headline_drive_range', { lead, min: s.minutes, max: s.minutes_max })
+    if (s.minutes != null) return t('cost.headline_drive', { lead, min: s.minutes })
+    return t('cost.headline_lead', { lead })
   }
 
-  const time = timeClause(result, subject, fastest)
+  const time = timeClause(result, subject, fastest, locale)
   // The time clause names the fastest way in when it isn't the subject
   // ("$3 a day cheaper and 5 minutes slower than the Red Line"); otherwise
   // the cost clause names its own benchmark.
   const timeNamesBenchmark = fastest === benchmark && fastest !== subject && !!time
-  const cost = costClause(result, subject, benchmark, !timeNamesBenchmark)
-  const climate = formatCo2Share(s.emissions_share_pct)
-  const health = healthClause(result, subject)
+  const cost = costClause(result, subject, benchmark, !timeNamesBenchmark, locale)
+  const climate = formatCo2Share(s.emissions_share_pct, locale)
+  const health = healthClause(result, subject, locale)
 
   let clauses: string[]
   switch (motivation) {
@@ -501,8 +535,9 @@ export function headlineFor(result: HeadlineInput, motivation: Motivation | null
       clauses = [time, cost]
   }
   const parts = clauses.filter(Boolean)
-  if (parts.length === 0) return `${lead}.`
-  return `${lead}, ${parts.join(' and ')}.`
+  if (parts.length === 0) return t('cost.headline_lead', { lead })
+  if (parts.length === 1) return t('cost.headline_one', { lead, a: parts[0] })
+  return t('cost.headline_two', { lead, a: parts[0], b: parts[1] })
 }
 
 /**
@@ -510,44 +545,44 @@ export function headlineFor(result: HeadlineInput, motivation: Motivation | null
  * time (a range for driving), the money for a day and a year, and the fact
  * that matters for this mode (the legs, the calm route, the walk, parking as
  * a fact). The emissions share closes when it is worth saying.
+ * The combo summary, comfort summary and detail come from the engine and
+ * stay in English.
  */
-export function reasonLinesFor(result: HeadlineInput, mode: string): string[] {
+export function reasonLinesFor(result: HeadlineInput, mode: string, locale: SiteLocale = 'en'): string[] {
   const m = result.modes[mode]
   if (!m) return []
+  const t = tr(locale)
   const lines: string[] = []
 
   if (m.minutes != null) {
     if (mode === 'drive' && m.minutes_max != null && m.minutes_max > m.minutes) {
-      lines.push(`${m.minutes} to ${m.minutes_max} minutes each way, depending on traffic`)
+      lines.push(t('cost.reason_drive_range', { min: m.minutes, max: m.minutes_max }))
     } else {
-      lines.push(`About ${m.minutes} minutes each way`)
+      lines.push(t('cost.reason_minutes', { minutes: m.minutes }))
     }
   }
 
   const annual = annualCost(m.cost_per_trip, 2) + (mode === 'drive' ? Math.round((result.costs.parking_per_day ?? 0) * WORKDAYS) : 0)
     + (mode === 'park_ride' ? Math.round((m.combo?.cost_breakdown.lot ?? 0) * WORKDAYS) : 0)
+  const money = { day: fmtMoney(m.cost_per_day), year: fmtMoney(annual) }
   if (m.cost_per_day <= 0) {
-    lines.push('No fare or fuel')
+    lines.push(t('cost.reason_free'))
   } else if (mode === 'park_ride' && m.combo) {
-    const fuel = result.costs.vehicle === 'ev' ? 'charging' : 'gas'
+    const fuel = t(result.costs.vehicle === 'ev' ? 'cost.fuel_charging' : 'cost.fuel_gas')
     const lot = m.combo.cost_breakdown.lot
     lines.push(
       lot != null && lot > 0
-        ? `${fmtMoney(m.cost_per_day)} a day for ${fuel}, car wear, the lot and the fare, about ${fmtMoney(annual)} a year`
+        ? t('cost.reason_park_ride_lot', { ...money, fuel })
         : lot === 0
-          ? `${fmtMoney(m.cost_per_day)} a day for ${fuel}, car wear and the fare, about ${fmtMoney(annual)} a year. The lot is free.`
-          : `${fmtMoney(m.cost_per_day)} a day for ${fuel}, car wear and the fare, about ${fmtMoney(annual)} a year, before the lot`,
+          ? t('cost.reason_park_ride_free_lot', { ...money, fuel })
+          : t('cost.reason_park_ride_unknown_lot', { ...money, fuel }),
     )
   } else if (mode === 'drive') {
     const parking = result.costs.parking_per_day ?? 0
-    const fuel = result.costs.vehicle === 'ev' ? 'charging' : 'gas'
-    lines.push(
-      parking > 0
-        ? `${fmtMoney(m.cost_per_day)} a day for ${fuel}, car wear and parking, about ${fmtMoney(annual)} a year`
-        : `${fmtMoney(m.cost_per_day)} a day for ${fuel} and car wear, about ${fmtMoney(annual)} a year. Parking is free.`,
-    )
+    const fuel = t(result.costs.vehicle === 'ev' ? 'cost.fuel_charging' : 'cost.fuel_gas')
+    lines.push(parking > 0 ? t('cost.reason_drive_parking', { ...money, fuel }) : t('cost.reason_drive_free_parking', { ...money, fuel }))
   } else {
-    lines.push(`${fmtMoney(m.cost_per_day)} a day, about ${fmtMoney(annual)} a year`)
+    lines.push(t('cost.reason_cost', money))
   }
 
   if (isComboKey(mode) && m.combo) {
@@ -556,14 +591,14 @@ export function reasonLinesFor(result: HeadlineInput, mode: string): string[] {
     const first = result.transit_legs[0]
     const last = result.transit_legs[result.transit_legs.length - 1]
     const names = result.transit_legs.map((l) => l.route_name).filter(Boolean)
-    lines.push(`${names.join(' to ')} from ${first.departure_stop_name} to ${last.arrival_stop_name}`)
+    lines.push(t('cost.reason_lines', { lines: names.join(locale === 'en' ? ' to ' : ' → '), from: first.departure_stop_name, to: last.arrival_stop_name }))
   } else if ((mode === 'bike' || mode === 'ebike') && m.comfort_summary) {
     lines.push(m.comfort_summary)
   } else if (m.detail && mode !== 'drive') {
     lines.push(m.detail)
   }
 
-  const share = formatCo2Share(m.emissions_share_pct)
+  const share = formatCo2Share(m.emissions_share_pct, locale)
   if (share) lines.push(capitalize(share))
 
   return lines.slice(0, 4)

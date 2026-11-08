@@ -2,6 +2,8 @@
 
 import { useState } from 'react'
 import { UsersThree } from '@phosphor-icons/react'
+import { translator, type SiteLocale } from '@/lib/site-i18n'
+import { advisorStrings } from '@/lib/site-strings/advisor'
 
 // Keith 2026-10-06: hidden until the program is defined. The API route
 // (/api/commute/tag-along) and the held Shift migration 01134 stay as they
@@ -26,11 +28,13 @@ export interface TagAlongProps {
   /** Draft previews and demos write nothing. */
   disabled?: boolean
   onTrack: (event: string, props?: Record<string, unknown>) => void
+  locale?: SiteLocale
 }
 
 type State = 'idle' | 'sending' | 'done' | 'failed'
 
-export default function TagAlong({ groupId, locationId, mode, distanceCategory, variant, companyName, disabled = false, onTrack }: TagAlongProps) {
+export default function TagAlong({ groupId, locationId, mode, distanceCategory, variant, companyName, disabled = false, onTrack, locale = 'en' }: TagAlongProps) {
+  const t = translator(advisorStrings, locale)
   const [state, setState] = useState<State>('idle')
   if (!TAG_ALONG_ENABLED) return null
 
@@ -57,11 +61,11 @@ export default function TagAlong({ groupId, locationId, mode, distanceCategory, 
     <div className="mt-2.5 border-t border-dashed border-[rgba(25,26,46,0.12)] pt-2.5">
       {state === 'done' ? (
         <p className="text-[0.9375rem] leading-snug text-[#191A2E]">
-          Noted. We&rsquo;ll reach out through {through} when a partner is ready.
+          {t('tag.done', { through })}
         </p>
       ) : (
         <>
-          <p className="text-[0.9375rem] leading-snug text-[#191A2E]">Want a commute partner for this trip?</p>
+          <p className="text-[0.9375rem] leading-snug text-[#191A2E]">{t('tag.question')}</p>
           <button
             type="button"
             onClick={send}
@@ -69,10 +73,10 @@ export default function TagAlong({ groupId, locationId, mode, distanceCategory, 
             className="mt-1.5 inline-flex min-h-[40px] items-center gap-1.5 rounded-full border border-[#2D6A4F] bg-white px-3 text-[0.875rem] font-bold text-[#2D6A4F] transition-colors hover:bg-[#E7F0EA] disabled:opacity-60"
           >
             <UsersThree size={15} weight="regular" aria-hidden />
-            {state === 'sending' ? 'Noting…' : 'Ask for a commute partner'}
+            {state === 'sending' ? t('tag.noting') : t('tag.ask')}
           </button>
           {state === 'failed' && (
-            <p className="mt-1.5 text-[0.875rem] leading-snug text-[#8A5A00]">We could not note that just now. Try again in a moment.</p>
+            <p className="mt-1.5 text-[0.875rem] leading-snug text-[#8A5A00]">{t('tag.failed')}</p>
           )}
         </>
       )}

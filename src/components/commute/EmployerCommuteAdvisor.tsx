@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { Fragment, useMemo, useState, type ReactNode } from 'react'
 import Link from 'next/link'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
@@ -8,6 +8,16 @@ import AdvisorFlow, { PLAN_STEP, type AdvisorLocation } from '@/components/commu
 import EmployerBenefits from '@/components/commute/EmployerBenefits'
 import type { AdvisorDraftPayload } from '@/app/shift/employers/portal/advisor/advisor-draft'
 import type { EmployerGroup } from '@/lib/types/commute'
+import { translator, type SiteLocale } from '@/lib/site-i18n'
+import { advisorStrings } from '@/lib/site-strings/advisor'
+
+/** A translated template with React nodes in its {slots}, in the order the language puts them. */
+function withNodes(template: string, nodes: Record<string, ReactNode>): ReactNode {
+  return template.split(/(\{\w+\})/).map((part, i) => {
+    const m = /^\{(\w+)\}$/.exec(part)
+    return <Fragment key={i}>{m && m[1] in nodes ? nodes[m[1]] : part}</Fragment>
+  })
+}
 
 interface Props {
   group: EmployerGroup
@@ -18,6 +28,7 @@ interface Props {
   startTimes?: Record<string, string>
   /** Portal preview of unsaved benefits and offices (?draft=). Nothing is logged. */
   draft?: AdvisorDraftPayload | null
+  locale?: SiteLocale
 }
 
 /**
@@ -26,7 +37,9 @@ interface Props {
  * line under the plan. The plan's "Keep this plan" card carries the
  * join-on-Shift link and the team code.
  */
-export default function EmployerCommuteAdvisor({ group, isDemo, initialLocationId, startTimes = {}, draft = null }: Props) {
+export default function EmployerCommuteAdvisor({ group, isDemo, initialLocationId, startTimes = {}, draft = null, locale = 'en' }: Props) {
+  const t = translator(advisorStrings, locale)
+  const brand = <span className="font-semibold text-[#2D6A4F]">Green Streets</span>
   const benefits = draft?.benefits ?? group.employer_benefits
   const locations = useMemo<AdvisorLocation[]>(() => {
     if (draft) {
@@ -55,14 +68,21 @@ export default function EmployerCommuteAdvisor({ group, isDemo, initialLocationI
 
   const afterPlan = benefits.hr_contact_name && benefits.hr_contact_email ? (
     <div className="text-center text-[0.9375rem] text-[#5A5C6E]">
-      Questions about your commute benefits? Contact {benefits.hr_contact_name} at{' '}
-      <a href={`mailto:${benefits.hr_contact_email}`} className="text-[#2D6A4F] underline">{benefits.hr_contact_email}</a>
+      {locale === 'en' ? (
+        <>
+          Questions about your commute benefits? Contact {benefits.hr_contact_name} at{' '}
+          <a href={`mailto:${benefits.hr_contact_email}`} className="text-[#2D6A4F] underline">{benefits.hr_contact_email}</a>
+        </>
+      ) : withNodes(t('emp.hr_contact'), {
+        name: benefits.hr_contact_name,
+        email: <a href={`mailto:${benefits.hr_contact_email}`} className="text-[#2D6A4F] underline">{benefits.hr_contact_email}</a>,
+      })}
     </div>
   ) : null
 
   return (
     <div className="advisor-root">
-      <Nav />
+      <Nav locale={locale} />
       <main className="bg-[#F4F6F1]" style={{ paddingTop: '60px' }}>
         {draft && (
           <div className="bg-[#8A5A00] px-6 py-2.5 text-center text-[0.9375rem] font-semibold text-white">
@@ -82,22 +102,28 @@ export default function EmployerCommuteAdvisor({ group, isDemo, initialLocationI
           <div className="mx-auto flex max-w-[1080px] flex-wrap items-center gap-x-3 gap-y-1 px-4 pb-3 pt-4 sm:px-8">
             {logo}
             <span className="text-[0.9375rem] text-[#5A5C6E]">
-              Commute Advisor · powered by <span className="font-semibold text-[#2D6A4F]">Green Streets</span> Initiative
+              {locale === 'en' ? (
+                <>Commute Advisor · powered by <span className="font-semibold text-[#2D6A4F]">Green Streets</span> Initiative</>
+              ) : withNodes(t('emp.powered_line'), { brand })}
             </span>
-            <h1 className="sr-only">Find your best commute</h1>
+            <h1 className="sr-only">{t('page.hero_sr')}</h1>
           </div>
         ) : (
           <div className="mx-auto max-w-[640px] px-4 pb-4 pt-7 text-center sm:px-8">
             <div className="mb-3">
               {logo}
               <div className="mt-1.5 text-[0.875rem] tracking-[0.3px] text-[#5A5C6E]">
-                powered by <span className="font-semibold text-[#2D6A4F]">Green Streets</span> Initiative
+                {locale === 'en' ? (
+                  <>powered by <span className="font-semibold text-[#2D6A4F]">Green Streets</span> Initiative</>
+                ) : withNodes(t('emp.powered'), { brand })}
               </div>
             </div>
             <h1 className="mb-1.5 text-[clamp(1.5rem,3vw,2.25rem)] font-extrabold leading-[1.15] tracking-tighter text-[#191A2E]">
-              Find your <em className="not-italic text-[#2D6A4F]">best commute</em>
+              {locale === 'en' ? (
+                <>Find your <em className="not-italic text-[#2D6A4F]">best commute</em></>
+              ) : withNodes(t('page.hero_title'), { em: <em className="not-italic text-[#2D6A4F]">{t('page.hero_title_em')}</em> })}
             </h1>
-            <p className="text-[0.9375rem] text-[#5A5C6E]">Commute Advisor for {group.name} staff</p>
+            <p className="text-[0.9375rem] text-[#5A5C6E]">{locale === 'en' ? <>Commute Advisor for {group.name} staff</> : t('emp.staff', { company: group.name })}</p>
           </div>
         )}
 
@@ -112,14 +138,15 @@ export default function EmployerCommuteAdvisor({ group, isDemo, initialLocationI
           persistSession={!draft}
           trackProps={trackProps}
           companyName={group.name}
-          step1Extra={!isDemo ? <EmployerBenefits companyName={group.name} benefits={benefits} /> : null}
+          step1Extra={!isDemo ? <EmployerBenefits companyName={group.name} benefits={benefits} locale={locale} /> : null}
           afterPlan={afterPlan}
           onStepChange={setStep}
+          locale={locale}
         />
 
         <div className="h-16" />
       </main>
-      <Footer />
+      <Footer locale={locale} />
     </div>
   )
 }

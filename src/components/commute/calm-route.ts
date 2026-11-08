@@ -10,7 +10,17 @@
  *
  * Pure functions apart from fetchCalmRoute. Keep the constants in step with
  * the app: CALM_DETOUR_RATIO / CALM_DETOUR_MINUTES / FASTER_BY_MINUTES.
+ *
+ * Words: English by default (the organizer console, rides and the
+ * assistants call these with no locale). The Commute Advisor passes its
+ * page's language; the translations live in src/lib/site-strings/advisor.ts
+ * (calm.*) and follow the app's ride preview.
  */
+
+import { translator, type SiteLocale } from '@/lib/site-i18n'
+import { advisorStrings } from '@/lib/site-strings/advisor'
+
+const tr = (locale: SiteLocale) => translator(advisorStrings, locale)
 
 export interface CrashDetail {
   count: number
@@ -127,6 +137,21 @@ export const COMFORT_LABELS: Record<string, string> = {
   shared_road: 'Shared road',
 }
 
+const COMFORT_LABEL_KEYS = {
+  path: 'calm.tier_path',
+  protected: 'calm.tier_protected',
+  bike_lane: 'calm.tier_bike_lane',
+  quiet_street: 'calm.tier_quiet_street',
+  shared_road: 'calm.tier_shared_road',
+} as const
+
+/** COMFORT_LABELS in the page's language; an unknown rating comes back as itself. */
+export function comfortLabel(rating: string, locale: SiteLocale = 'en'): string {
+  if (locale === 'en') return COMFORT_LABELS[rating] ?? rating
+  const key = COMFORT_LABEL_KEYS[rating as keyof typeof COMFORT_LABEL_KEYS]
+  return key ? tr(locale)(key) : rating
+}
+
 export function comfortBreakdown(segments: CalmSegment[] | null | undefined): { rating: string; miles: number; pct: number }[] {
   if (!segments || segments.length === 0) return []
   const miles: Record<string, number> = {}
@@ -187,7 +212,7 @@ export function rankOptions(options: Pick<CalmOption, 'distanceMiles' | 'duratio
 }
 
 /** Lead with the calmest route within a reasonable detour of the quickest. */
-export function pickCalmRoute(all: CalmOption[]): CalmRoute | null {
+export function pickCalmRoute(all: CalmOption[], locale: SiteLocale = 'en'): CalmRoute | null {
   const options = all.slice(0, OPTION_SLOTS).filter((o) => o.waypoints.length >= 2)
   if (options.length === 0) return null
   const quickest = Math.min(...options.map((o) => o.durationMinutes))
@@ -203,7 +228,7 @@ export function pickCalmRoute(all: CalmOption[]): CalmRoute | null {
     fastest,
     slowerBy: Math.max(0, Math.round(calm.durationMinutes - fastest.durationMinutes)),
     concerns,
-    verdict: safetyVerdict(concerns, calm.comfort_segments.length > 0 ? comfortablePct : null),
+    verdict: safetyVerdict(concerns, calm.comfort_segments.length > 0 ? comfortablePct : null, false, locale),
     comfortablePct,
   }
 }
@@ -266,84 +291,95 @@ export function relevantConcerns(flags: CalmFlag[] | null | undefined, mode?: 'b
   return out
 }
 
-/** Headline for one concern: the place, not the body count. */
-export function concernTitle(flag: CalmFlag): string {
+/**
+ * Headline for one concern: the place, not the body count. A text-only
+ * flag's description is the planner's own (English) words.
+ * `locale` also accepts the index `.map(concernTitle)` passes, read as English.
+ */
+export function concernTitle(flag: CalmFlag, locale: SiteLocale | number = 'en'): string {
   const c = flag.crash
   if (!c) return flag.description
+  const t = tr(typeof locale === 'string' ? locale : 'en')
   const streets = c.streets.length > 0 ? c.streets.join(' & ') : null
-  if (c.meets === 'along') return streets ? `Busy stretch: ${c.streets[0]}` : 'Busy stretch'
-  return streets ? `Busy crossing: ${streets}` : 'Busy crossing'
+  if (c.meets === 'along') return streets ? t('calm.concern_along', { street: c.streets[0] }) : t('calm.concern_along_unnamed')
+  return streets ? t('calm.concern_crossing', { streets }) : t('calm.concern_crossing_unnamed')
 }
 
 /** What to do about it, one line; empty for text-only flags with no advice. */
-export function concernAdvice(flag: CalmFlag, walk = false): string | null {
+export function concernAdvice(flag: CalmFlag, walk = false, locale: SiteLocale = 'en'): string | null {
   const c = flag.crash
+  const t = tr(locale)
   if (walk) {
     // On foot: the same spots, said for someone walking (organizer walks, Shift 01660).
-    if (c?.meets === 'crossing_separated') return 'Cross with the walk signal, and keep the group together.'
+    if (c?.meets === 'crossing_separated') return t('calm.advice_walk_crossing_separated')
     if (c) return c.meets === 'crossing'
-      ? 'Cross with the walk signal and watch for turning drivers.'
-      : 'Keep to the sidewalk and walk in a line here. It\u2019s calmer outside rush hour.'
-    if (flag.kind === 'steep') return "Take it slowly; it's the one steep part."
+      ? t('calm.advice_walk_crossing')
+      : t('calm.advice_walk_along')
+    if (flag.kind === 'steep') return t('calm.advice_walk_steep')
     return null
   }
   if (c) {
-    if (c.meets === 'crossing_separated') return 'Cross at the signal, and walk the bike across if traffic is heavy.'
-    if (c.meets === 'crossing') return 'Wait for the green, watch for turning drivers, and walk the bike across if in doubt.'
-    return "Ride slowly here and hold a straight line. It's calmer outside rush hour, and you can always walk the bike on the sidewalk."
+    if (c.meets === 'crossing_separated') return t('calm.advice_crossing_separated')
+    if (c.meets === 'crossing') return t('calm.advice_crossing')
+    return t('calm.advice_along')
   }
-  if (flag.kind === 'steep') return "Walking the bike up is fine; it's the one steep part."
-  if (flag.kind === 'wrong_way') return 'Walk the bike on the sidewalk for this bit.'
+  if (flag.kind === 'steep') return t('calm.advice_steep')
+  if (flag.kind === 'wrong_way') return t('calm.advice_wrong_way')
   return null
 }
 
-const plural = (n: number, one: string, other: string) => (n === 1 ? one : other.replace('{n}', String(n)))
+type CalmKey = Parameters<ReturnType<typeof tr>>[0]
+
+/** One of a pair of keys (`<base>_one` / `<base>_other`) by count, {n} filled. */
+const plural = (t: ReturnType<typeof tr>, n: number, one: CalmKey, other: CalmKey) => t(n === 1 ? one : other, { n })
 
 /** The "so what" for a whole route, from the same list the map markers use. */
-export function safetyVerdict(concerns: CalmFlag[], comfortablePct: number | null, walk = false): SafetyVerdict {
+export function safetyVerdict(concerns: CalmFlag[], comfortablePct: number | null, walk = false, locale: SiteLocale = 'en'): SafetyVerdict {
+  const t = tr(locale)
   if (comfortablePct != null && comfortablePct < COMFORTABLE_ENOUGH_PCT) {
-    return { tone: 'shared', text: 'Mostly on streets shared with cars. The flagged spots are the ones to take carefully.' }
+    return { tone: 'shared', text: t('calm.verdict_shared') }
   }
   const list = concerns.filter((f) => f.type === 'concern')
-  if (list.length === 0) return { tone: 'none', text: 'No safety flags on this route.' }
+  if (list.length === 0) return { tone: 'none', text: t('calm.verdict_none') }
 
   const isCrash = (f: CalmFlag) => !!f.crash || /crashes reported/i.test(f.description)
   const along = list.filter((f) => isCrash(f) && f.crash?.meets === 'along')
   const crossings = list.filter((f) => isCrash(f) && f.crash?.meets !== 'along')
   const others = list.filter((f) => !isCrash(f))
-  const streets = Array.from(new Set(along.map((f) => f.crash?.streets[0] || f.description))).join(', ')
+  const sep = t('calm.list_sep')
+  const streets = Array.from(new Set(along.map((f) => f.crash?.streets[0] || f.description))).join(sep)
 
   if (others.length === 0 && crossings.length === 0) {
     return {
       tone: 'ok',
       text: along.length === 1
-        ? `Comfortable except one busy stretch on ${streets}: take it slowly there${walk ? '' : ', or walk the bike'}.`
-        : `Busy stretches on ${streets}: take those slowly${walk ? '' : ', or walk the bike'}.`,
+        ? t(walk ? 'calm.verdict_along_one_walk' : 'calm.verdict_along_one', { streets })
+        : t(walk ? 'calm.verdict_along_other_walk' : 'calm.verdict_along_other', { streets }),
     }
   }
   if (others.length === 0 && along.length === 0) {
-    return { tone: 'ok', text: `Comfortable overall, with ${plural(crossings.length, '1 busy crossing', '{n} busy crossings')} to take carefully.` }
+    return { tone: 'ok', text: plural(t, crossings.length, 'calm.verdict_crossings_one', 'calm.verdict_crossings_other') }
   }
 
   const parts: string[] = []
-  if (crossings.length > 0) parts.push(plural(crossings.length, '1 busy crossing', '{n} busy crossings'))
-  if (along.length > 0) parts.push(along.length === 1 ? `a busy stretch on ${streets}` : `busy stretches on ${streets}`)
+  if (crossings.length > 0) parts.push(plural(t, crossings.length, 'calm.part_crossings_one', 'calm.part_crossings_other'))
+  if (along.length > 0) parts.push(t(along.length === 1 ? 'calm.part_along_one' : 'calm.part_along_other', { streets }))
   const byKind = new Map<string, number>()
   for (const f of others) {
     const k = f.kind === 'wrong_way' || f.kind === 'steep' || f.kind === 'sidewalks' ? f.kind : 'other'
     byKind.set(k, (byKind.get(k) ?? 0) + 1)
   }
-  const kindWords: Record<string, [string, string]> = {
-    wrong_way: ['a stretch against one-way traffic', '{n} stretches against one-way traffic'],
-    steep: ['a steep climb', '{n} steep climbs'],
-    sidewalks: ['a stretch with no sidewalks', '{n} stretches with no sidewalks'],
-    other: ['1 other flag', '{n} other flags'],
+  const kindWords: Record<string, [CalmKey, CalmKey]> = {
+    wrong_way: ['calm.part_wrong_way_one', 'calm.part_wrong_way_other'],
+    steep: ['calm.part_steep_one', 'calm.part_steep_other'],
+    sidewalks: ['calm.part_sidewalks_one', 'calm.part_sidewalks_other'],
+    other: ['calm.part_other_one', 'calm.part_other_other'],
   }
-  for (const [k, count] of byKind) parts.push(plural(count, kindWords[k][0], kindWords[k][1]))
+  for (const [k, count] of byKind) parts.push(plural(t, count, kindWords[k][0], kindWords[k][1]))
 
   const last = parts.pop() as string
-  const joined = parts.length ? `${parts.join(', ')} and ${last}` : last
-  return { tone: 'ok', text: `Comfortable overall, with ${joined} to take carefully.` }
+  const joined = parts.length ? t('calm.list_and', { list: parts.join(sep), last }) : last
+  return { tone: 'ok', text: t('calm.verdict_summary', { list: joined }) }
 }
 
 /* ── The route split into coloured stretches, for the map and the leg chips ── */
@@ -371,16 +407,16 @@ export interface ComfortPiece {
 }
 
 /** "Webster Ave", else "Path" on a path or protected lane, else "Side streets". */
-export function stretchLabel(label: string | null | undefined, rating: string): string {
+export function stretchLabel(label: string | null | undefined, rating: string, locale: SiteLocale = 'en'): string {
   const name = (label ?? '').trim()
   if (name && !/^route$/i.test(name)) return name
-  return comfortGroup(rating) === 'path' ? 'Path' : 'Side streets'
+  return tr(locale)(comfortGroup(rating) === 'path' ? 'calm.stretch_path' : 'calm.stretch_side_streets')
 }
 
 /** "0.3 mi", "0.05 mi": one decimal, two under a tenth. */
-export function formatStretchMiles(mi: number): string {
-  if (mi >= 0.095) return `${mi.toFixed(1)} mi`
-  return `${Math.max(0.01, mi).toFixed(2)} mi`
+export function formatStretchMiles(mi: number, locale: SiteLocale = 'en'): string {
+  const miles = mi >= 0.095 ? mi.toFixed(1) : Math.max(0.01, mi).toFixed(2)
+  return tr(locale)('calm.miles', { miles })
 }
 
 const EARTH_MILES = 3958.8
@@ -411,7 +447,7 @@ const sameStreet = (a: string, b: string) => a.toLowerCase().replace(/[^a-z0-9]+
  * (supabase/functions/_shared/comfort-segments.ts). Nothing here collapses
  * further.
  */
-export function comfortPieces(option: CalmOption): ComfortPiece[] {
+export function comfortPieces(option: CalmOption, locale: SiteLocale = 'en'): ComfortPiece[] {
   const w = option.waypoints
   const segs = option.comfort_segments.filter((s) => s && typeof s.rating === 'string')
   if (w.length < 2) return []
@@ -423,7 +459,7 @@ export function comfortPieces(option: CalmOption): ComfortPiece[] {
   }
   if (segs.length === 0) {
     const rating = option.comfort_rating && option.comfort_rating !== 'mixed' ? option.comfort_rating : 'shared_road'
-    return [{ coords: toCoords(w), rating, index: -1, label: stretchLabel(option.summary, rating), distanceMi: length(w), sources: [] }]
+    return [{ coords: toCoords(w), rating, index: -1, label: stretchLabel(option.summary, rating, locale), distanceMi: length(w), sources: [] }]
   }
 
   const runs: { pts: { lat: number; lng: number }[]; seg: CalmSegment }[] = []
@@ -456,7 +492,7 @@ export function comfortPieces(option: CalmOption): ComfortPiece[] {
   // Merge only consecutive runs on the same street with the same comfort.
   const out: ComfortPiece[] = []
   for (const run of runs) {
-    const label = stretchLabel(run.seg.label, run.seg.rating)
+    const label = stretchLabel(run.seg.label, run.seg.rating, locale)
     const last = out[out.length - 1]
     if (last && last.rating === run.seg.rating && sameStreet(last.label, label)) {
       const joined = [...last.coords, ...toCoords(run.pts.slice(1))]
@@ -503,6 +539,7 @@ export async function fetchCalmRoute(
   home: { lat: number; lng: number },
   office: { lat: number; lng: number },
   signal?: AbortSignal,
+  locale: SiteLocale = 'en',
 ): Promise<CalmRoute | null> {
   const base = process.env.NEXT_PUBLIC_SUPABASE_URL
   const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -534,5 +571,5 @@ export async function fetchCalmRoute(
       comfort_rating: o.comfort_rating ?? '',
       comfort_summary: o.comfort_summary ?? '',
     }))
-  return pickCalmRoute(options)
+  return pickCalmRoute(options, locale)
 }

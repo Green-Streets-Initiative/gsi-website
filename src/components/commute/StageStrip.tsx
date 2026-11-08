@@ -3,8 +3,10 @@
 import { useId, useLayoutEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { Armchair, ArrowRight, Backpack, BookOpenText, FlagCheckered, Key, Lock, PathIcon, TShirt, X, type Icon } from '@phosphor-icons/react'
-import type { StageLabel, TripStage } from './trip-stages'
-import { guideHref, type GuideGroup } from './guide-topics'
+import { stageLabel, type StageLabel, type TripStage } from './trip-stages'
+import { guideHref, questionLabel, type GuideGroup } from './guide-topics'
+import { translator, type SiteLocale } from '@/lib/site-i18n'
+import { advisorStrings } from '@/lib/site-strings/advisor'
 
 /**
  * The six stages of one way in as an icon strip under its row: Wear,
@@ -38,8 +40,9 @@ export const STAGE_ICONS: Record<StageLabel, Icon> = {
   Store: Lock,
 }
 
-export default function StageStrip({ stages, open = false, guides, more, onGuideEvent }: {
+export default function StageStrip({ stages, open = false, guides, more, onGuideEvent, locale = 'en' }: {
   stages: TripStage[]
+  locale?: SiteLocale
   open?: boolean
   /** The open row's guides, by the stage they open from. */
   guides?: Partial<Record<StageLabel, GuideGroup[]>>
@@ -47,6 +50,7 @@ export default function StageStrip({ stages, open = false, guides, more, onGuide
   more?: { href: string; label: string } | null
   onGuideEvent?: (name: 'advisor_stage_guides_opened' | 'advisor_guide_clicked', props: Record<string, unknown>) => void
 }) {
+  const t = translator(advisorStrings, locale)
   const [active, setActive] = useState<StageLabel | null>(null)
   const base = useId()
   const panelId = `${base}-guides`
@@ -80,12 +84,13 @@ export default function StageStrip({ stages, open = false, guides, more, onGuide
       <div
         className="flex flex-wrap justify-center gap-y-1 px-3 py-3 min-[560px]:grid min-[560px]:grid-cols-[repeat(6,minmax(0,1fr))] min-[560px]:gap-x-1"
         role="group"
-        aria-label="The trip, stage by stage"
+        aria-label={t('stage.aria_strip')}
       >
         {stages.map((s) => {
           const I = STAGE_ICONS[s.label]
           const count = (guides?.[s.label] ?? []).reduce((n, g) => n + g.guides.length, 0)
           const isOn = active === s.label
+          const label = stageLabel(s.label, locale)
           const body = (
             <>
               {/* A muted stage fades its icon; the text itself stays at full contrast (portal review A11Y-10). */}
@@ -97,7 +102,7 @@ export default function StageStrip({ stages, open = false, guides, more, onGuide
                   </span>
                 )}
               </span>
-              <span className={`text-[0.875rem] font-bold leading-tight ${s.muted ? 'text-[#4A4D68]' : 'text-[#191A2E]'}`}>{s.label}</span>
+              <span className={`text-[0.875rem] font-bold leading-tight ${s.muted ? 'text-[#4A4D68]' : 'text-[#191A2E]'}`}>{label}</span>
               <span className="mt-0.5 text-[0.875rem] leading-snug text-[#4A4D68]">{s.fact}</span>
             </>
           )
@@ -112,7 +117,7 @@ export default function StageStrip({ stages, open = false, guides, more, onGuide
               type="button"
               aria-expanded={isOn}
               aria-controls={panelId}
-              aria-label={`${s.label}: ${s.fact}. ${count} guide${count === 1 ? '' : 's'}`}
+              aria-label={t(count === 1 ? 'stage.aria_cell_one' : 'stage.aria_cell_many', { label, fact: s.fact, count })}
               onClick={() => {
                 const next = isOn ? null : s.label
                 setActive(next)
@@ -141,9 +146,9 @@ export default function StageStrip({ stages, open = false, guides, more, onGuide
               <section key={grp.question} className={gi > 0 ? 'pt-3' : ''}>
                 <div className="mb-1 flex items-center gap-2">
                   <ActiveIcon size={20} weight="regular" className="shrink-0 text-[#2D6A4F]" aria-hidden />
-                  <h4 className="m-0 flex-1 text-[1rem] font-extrabold text-[#191A2E]">{grp.question}</h4>
+                  <h4 className="m-0 flex-1 text-[1rem] font-extrabold text-[#191A2E]">{questionLabel(grp.question, locale)}</h4>
                   {gi === 0 && (
-                    <button type="button" onClick={() => setActive(null)} aria-label="Close the guides" className="-my-2 -mr-3 flex h-11 w-11 items-center justify-center rounded-full text-[#4A4D68] hover:bg-[#F4F8EE] hover:text-[#191A2E]">
+                    <button type="button" onClick={() => setActive(null)} aria-label={t('stage.close_guides')} className="-my-2 -mr-3 flex h-11 w-11 items-center justify-center rounded-full text-[#4A4D68] hover:bg-[#F4F8EE] hover:text-[#191A2E]">
                       <X size={18} weight="bold" aria-hidden />
                     </button>
                   )}

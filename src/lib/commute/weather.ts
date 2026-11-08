@@ -7,7 +7,16 @@
  *
  * Pure except fetchNwsHours, which the /api/commute/weather route calls.
  * Nothing here sees an address: the route gets a point rounded to ~1 km.
+ *
+ * Words take an optional locale (default 'en', which the tests and the
+ * rides forecast use). Imports are relative with the extension so
+ * node --test runs this file as is.
  */
+
+import { siteDate, translator, type SiteLocale } from '../site-i18n.ts'
+import { advisorStrings } from '../site-strings/advisor.ts'
+
+const tr = (locale: SiteLocale) => translator(advisorStrings, locale)
 
 export interface WeatherHour {
   /** NWS startTime, local to the point ("2026-10-22T08:00:00-04:00"). */
@@ -113,20 +122,30 @@ function addDays(ymd: string, n: number): string {
 
 const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 
+/** "Monday morning" for a weekday (0 = Sunday) in the page's language. */
+function weekdayMorning(wd: number, locale: SiteLocale): string {
+  if (locale === 'en') return `${WEEKDAYS[wd]} morning`
+  // 2026-11-01 was a Sunday; noon UTC keeps the day the same in every zone the site runs in.
+  const day = siteDate(locale, Date.UTC(2026, 10, 1 + wd, 12), { weekday: 'long', timeZone: 'UTC' })
+  const label = tr(locale)('wx.weekday_morning', { day })
+  return label.charAt(0).toUpperCase() + label.slice(1)
+}
+
 /**
  * The morning a plan is for: today if it is a weekday and the person hasn't
  * left yet, else the next weekday. `leaveBy` is "HH:MM".
  */
-export function planMorning(leaveBy: string, now: Date = new Date()): { date: string; dayLabel: string } {
+export function planMorning(leaveBy: string, now: Date = new Date(), locale: SiteLocale = 'en'): { date: string; dayLabel: string } {
+  const t = tr(locale)
   const b = bostonNow(now)
   const isWeekday = (wd: number) => wd >= 1 && wd <= 5
-  if (isWeekday(b.weekday) && b.hhmm < leaveBy) return { date: b.date, dayLabel: 'This morning' }
+  if (isWeekday(b.weekday) && b.hhmm < leaveBy) return { date: b.date, dayLabel: t('wx.this_morning') }
   for (let n = 1; n <= 7; n++) {
     const wd = (b.weekday + n) % 7
     if (!isWeekday(wd)) continue
-    return { date: addDays(b.date, n), dayLabel: n === 1 ? 'Tomorrow morning' : `${WEEKDAYS[wd]} morning` }
+    return { date: addDays(b.date, n), dayLabel: n === 1 ? t('wx.tomorrow_morning') : weekdayMorning(wd, locale) }
   }
-  return { date: addDays(b.date, 1), dayLabel: 'Tomorrow morning' }
+  return { date: addDays(b.date, 1), dayLabel: t('wx.tomorrow_morning') }
 }
 
 /** The forecast hour that holds `hhmm` on `date`; NWS times are local to the point (Eastern here). */
@@ -136,12 +155,13 @@ export function hourAt(hours: WeatherHour[], date: string, hhmm: string): Weathe
 }
 
 /** "This morning", "Tomorrow morning" or "Monday morning" for a "YYYY-MM-DD". */
-export function dayLabelFor(date: string, now: Date = new Date()): string {
+export function dayLabelFor(date: string, now: Date = new Date(), locale: SiteLocale = 'en'): string {
+  const t = tr(locale)
   const today = bostonNow(now).date
-  if (date === today) return 'This morning'
-  if (date === addDays(today, 1)) return 'Tomorrow morning'
+  if (date === today) return t('wx.this_morning')
+  if (date === addDays(today, 1)) return t('wx.tomorrow_morning')
   const [y, m, d] = date.split('-').map(Number)
-  return `${WEEKDAYS[new Date(Date.UTC(y, m - 1, d)).getUTCDay()]} morning`
+  return weekdayMorning(new Date(Date.UTC(y, m - 1, d)).getUTCDay(), locale)
 }
 
 /**
@@ -150,15 +170,15 @@ export function dayLabelFor(date: string, now: Date = new Date()): string {
  * engine routed for; a stale one (a plan kept from last week) gives way to
  * the next commute morning.
  */
-export function morningWeather(hours: WeatherHour[], leaveBy: string, routeDate?: string | null, now: Date = new Date()): MorningWeather | null {
+export function morningWeather(hours: WeatherHour[], leaveBy: string, routeDate?: string | null, now: Date = new Date(), locale: SiteLocale = 'en'): MorningWeather | null {
   if (hours.length === 0 || !/^\d{2}:\d{2}$/.test(leaveBy)) return null
   const today = bostonNow(now).date
   const { date, dayLabel } = routeDate && /^\d{4}-\d{2}-\d{2}$/.test(routeDate) && routeDate >= today
-    ? { date: routeDate, dayLabel: dayLabelFor(routeDate, now) }
-    : planMorning(leaveBy, now)
+    ? { date: routeDate, dayLabel: dayLabelFor(routeDate, now, locale) }
+    : planMorning(leaveBy, now, locale)
   const hour = hourAt(hours, date, leaveBy)
   // The routed morning's hour has passed (a plan made at 8 for 8:10): the next commute morning.
-  if (!hour) return routeDate ? morningWeather(hours, leaveBy, null, now) : null
+  if (!hour) return routeDate ? morningWeather(hours, leaveBy, null, now, locale) : null
   const nextHH = String(Math.min(23, Number(leaveBy.slice(0, 2)) + 1)).padStart(2, '0')
   const next = hourAt(hours, date, `${nextHH}:00`)
   const flags = new Set<WeatherFlag>([...flagsFor(hour), ...(next ? flagsFor(next) : [])])
@@ -193,35 +213,90 @@ export function flagsForMode(w: MorningWeather | null | undefined, mode: string)
  * The Wear stage from the forecast, four words at most. Null when there is
  * no forecast, so the caller can fall back.
  */
-export function wearFor(w: MorningWeather | null | undefined, mode: string): string | null {
+export function wearFor(w: MorningWeather | null | undefined, mode: string, locale: SiteLocale = 'en'): string | null {
   if (!w) return null
+  const t = tr(locale)
   const ex = exposureFor(mode)
-  if (ex === 'none') return 'Anything'
+  if (ex === 'none') return t('wx.wear_anything')
   const f = new Set(flagsForMode(w, mode))
-  if (f.has('snow')) return 'Boots and warm layers'
-  if (f.has('rain') && f.has('cold')) return 'Rain gear and layers'
-  if (f.has('rain')) return ex === 'wait' ? 'Umbrella or rain jacket' : 'Rain gear'
-  if (f.has('cold')) return ex === 'wait' ? 'Layers for the wait' : 'Layers and gloves'
-  if (f.has('heat')) return 'Light clothes, water'
-  return 'Anything'
+  if (f.has('snow')) return t('wx.wear_snow')
+  if (f.has('rain') && f.has('cold')) return t('wx.wear_rain_cold')
+  if (f.has('rain')) return t(ex === 'wait' ? 'wx.wear_rain_wait' : 'wx.wear_rain')
+  if (f.has('cold')) return t(ex === 'wait' ? 'wx.wear_cold_wait' : 'wx.wear_cold')
+  if (f.has('heat')) return t('wx.wear_heat')
+  return t('wx.wear_anything')
 }
 
 /** "Rain", "34°F" and the like: the short chip a row shows when the weather matters to it. */
-export function chipFor(w: MorningWeather | null | undefined, mode: string): { flag: WeatherFlag; label: string } | null {
+export function chipFor(w: MorningWeather | null | undefined, mode: string, locale: SiteLocale = 'en'): { flag: WeatherFlag; label: string } | null {
   const f = flagsForMode(w, mode)
   if (!w || f.length === 0) return null
-  if (f.includes('severe')) return { flag: 'severe', label: 'Rough weather' }
-  if (f.includes('snow')) return { flag: 'snow', label: 'Snow' }
-  if (f.includes('rain')) return { flag: 'rain', label: 'Rain' }
+  const t = tr(locale)
+  if (f.includes('severe')) return { flag: 'severe', label: t('wx.chip_severe') }
+  if (f.includes('snow')) return { flag: 'snow', label: t('wx.chip_snow') }
+  if (f.includes('rain')) return { flag: 'rain', label: t('wx.chip_rain') }
   if (f.includes('cold')) return { flag: 'cold', label: `${w.hour.tempF}°F` }
   if (f.includes('heat')) return { flag: 'heat', label: `${w.hour.tempF}°F` }
   return null
 }
 
 /** "41°F, light rain" for the line under the headline. */
-export function summaryFor(w: MorningWeather): string {
+export function summaryFor(w: MorningWeather, locale: SiteLocale = 'en'): string {
   const cond = w.hour.condition.replace(/^(slight )?chance /, '').trim()
-  const rain = w.hour.precipPct >= RAIN_PCT && !/rain|shower|thunder|drizzle|snow|sleet/.test(cond) ? `, ${w.hour.precipPct}% chance of rain` : ''
-  const chance = /^(slight )?chance /.test(w.hour.condition) && w.hour.precipPct > 0 ? `, ${w.hour.precipPct}% chance` : ''
-  return `${w.hour.tempF}°F, ${cond || 'no forecast detail'}${chance}${rain}`
+  const showRain = w.hour.precipPct >= RAIN_PCT && !/rain|shower|thunder|drizzle|snow|sleet/.test(cond)
+  const showChance = /^(slight )?chance /.test(w.hour.condition) && w.hour.precipPct > 0
+  if (locale === 'en') {
+    const rain = showRain ? `, ${w.hour.precipPct}% chance of rain` : ''
+    const chance = showChance ? `, ${w.hour.precipPct}% chance` : ''
+    return `${w.hour.tempF}°F, ${cond || 'no forecast detail'}${chance}${rain}`
+  }
+  // Other languages: the forecast's words come from NWS in English, so only
+  // the common ones are said (CONDITION_KEYS); any other reads as the
+  // temperature alone, never as English in the middle of the sentence.
+  const t = tr(locale)
+  const vars = { temp: w.hour.tempF, pct: w.hour.precipPct }
+  const known = conditionWords(cond, locale)
+  if (!known) return showRain || showChance ? t('wx.summary_temp_rain', vars) : t('wx.summary_temp', vars)
+  if (showRain) return t('wx.summary_rain', { ...vars, cond: known })
+  if (showChance) return t('wx.summary_chance', { ...vars, cond: known })
+  return t('wx.summary', { ...vars, cond: known })
+}
+
+/** NWS shortForecast wording (lowercased, "chance" already stripped) the site can say in every language. */
+const CONDITION_KEYS = {
+  'sunny': 'wx.cond.sunny',
+  'mostly sunny': 'wx.cond.mostly_sunny',
+  'partly sunny': 'wx.cond.partly_sunny',
+  'clear': 'wx.cond.clear',
+  'mostly clear': 'wx.cond.mostly_clear',
+  'partly cloudy': 'wx.cond.partly_cloudy',
+  'mostly cloudy': 'wx.cond.mostly_cloudy',
+  'cloudy': 'wx.cond.cloudy',
+  'fog': 'wx.cond.fog',
+  'areas of fog': 'wx.cond.patchy_fog',
+  'patchy fog': 'wx.cond.patchy_fog',
+  'drizzle': 'wx.cond.drizzle',
+  'light rain': 'wx.cond.light_rain',
+  'rain': 'wx.cond.rain',
+  'heavy rain': 'wx.cond.heavy_rain',
+  'rain showers': 'wx.cond.rain_showers',
+  'light snow': 'wx.cond.light_snow',
+  'snow': 'wx.cond.snow',
+  'heavy snow': 'wx.cond.heavy_snow',
+  'snow showers': 'wx.cond.snow_showers',
+  'rain and snow': 'wx.cond.rain_and_snow',
+  'rain and snow showers': 'wx.cond.rain_and_snow',
+  'sleet': 'wx.cond.sleet',
+  'freezing rain': 'wx.cond.freezing_rain',
+  'thunderstorms': 'wx.cond.thunderstorms',
+  'showers and thunderstorms': 'wx.cond.showers_and_thunderstorms',
+  'windy': 'wx.cond.windy',
+} as const
+
+function conditionWords(cond: string, locale: SiteLocale): string | null {
+  // "rain likely", "patchy drizzle", "light rain then cloudy": the first, plain part.
+  const c = cond.replace(/\s+likely$/, '').split(/ then | and areas of /)[0].trim()
+  const key = (CONDITION_KEYS as Record<string, (typeof CONDITION_KEYS)[keyof typeof CONDITION_KEYS]>)[c]
+    ?? (CONDITION_KEYS as Record<string, (typeof CONDITION_KEYS)[keyof typeof CONDITION_KEYS]>)[c.replace(/^(patchy|isolated|scattered|areas of) /, '')]
+  return key ? tr(locale)(key) : null
 }

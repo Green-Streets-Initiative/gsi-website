@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { X } from '@phosphor-icons/react'
+import { translator, type SiteLocale } from '@/lib/site-i18n'
+import { advisorStrings } from '@/lib/site-strings/advisor'
 
 /*
  * "Report a problem with this route" (Shift product item 15). A quiet link
@@ -24,15 +26,16 @@ export type RouteIssueSurface =
 
 type Kind = 'comfort_wrong' | 'lane_changed' | 'closed' | 'unsafe_spot' | 'wrong_name' | 'bad_route' | 'other'
 
-const KIND_LABELS: Record<Kind, string> = {
-  comfort_wrong: 'The comfort rating is wrong',
-  lane_changed: 'A bike lane is missing or new',
-  closed: 'Road closed or construction',
-  unsafe_spot: 'An unsafe spot',
-  wrong_name: 'Wrong street name',
-  bad_route: 'A bad route choice',
-  other: 'Something else',
-}
+/** The chip labels (report.kind_*); the kinds sent to the server stay these ids. */
+const KIND_LABELS = {
+  comfort_wrong: 'report.kind_comfort_wrong',
+  lane_changed: 'report.kind_lane_changed',
+  closed: 'report.kind_closed',
+  unsafe_spot: 'report.kind_unsafe_spot',
+  wrong_name: 'report.kind_wrong_name',
+  bad_route: 'report.kind_bad_route',
+  other: 'report.kind_other',
+} as const satisfies Record<Kind, string>
 
 /** Only the choices that fit the way in: no comfort rating where we show none. */
 const KINDS_FOR: Record<RouteIssueSurface, Kind[]> = {
@@ -48,20 +51,22 @@ const KINDS_FOR: Record<RouteIssueSurface, Kind[]> = {
 const NOTE_MAX = 280
 
 /** The note's example, in the words of that way in. */
-const NOTE_EXAMPLE: Record<RouteIssueSurface, string> = {
-  advisor_bike: 'For example: the new bike lane opened in September.',
-  advisor_bike_transit: 'For example: there is no bike rack at the station.',
-  advisor_walk: 'For example: the sidewalk is closed on one side.',
-  advisor_transit: 'For example: the stop moved across the street.',
-  advisor_park_ride: 'For example: the lot fills up by 7:30 AM.',
-  advisor_drive: 'For example: this road is closed until spring.',
-  app_plan_route: 'For example: the path is closed for repairs until May.',
-}
+const NOTE_EXAMPLE = {
+  advisor_bike: 'report.example_advisor_bike',
+  advisor_bike_transit: 'report.example_advisor_bike_transit',
+  advisor_walk: 'report.example_advisor_walk',
+  advisor_transit: 'report.example_advisor_transit',
+  advisor_park_ride: 'report.example_advisor_park_ride',
+  advisor_drive: 'report.example_advisor_drive',
+  app_plan_route: 'report.example_app_plan_route',
+} as const satisfies Record<RouteIssueSurface, string>
 
 export interface RouteIssueStretch {
   /** Index of the stretch in the drawer's list. */
   index: number
   label: string
+  /** The English label for the saved report, when `label` is shown in another language. */
+  sentLabel?: string
   miles: number
   lat: number | null
   lng: number | null
@@ -88,6 +93,8 @@ export interface ReportRouteLinkProps {
   routePoints?: { lat: number; lng: number }[] | null
   employerSlug?: string | null
   track: (event: string, props?: Record<string, unknown>) => void
+  /** The page's language for the link and the sheet; the report itself is sent as is. English when left out (the organizer console). */
+  locale?: SiteLocale
 }
 
 async function hashRoute(points: { lat: number; lng: number }[]): Promise<string | null> {
@@ -105,7 +112,8 @@ type SendState = 'idle' | 'sending' | 'sent' | 'error' | 'too_many' | 'bad_email
 /** The same shape the server checks, so a typo is caught here, not after a round trip. */
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
 
-export function ReportRouteLink({ surface, stretch, routeLabel, sources, routePoints, employerSlug, track }: ReportRouteLinkProps) {
+export function ReportRouteLink({ surface, stretch, routeLabel, sources, routePoints, employerSlug, track, locale = 'en' }: ReportRouteLinkProps) {
+  const t = translator(advisorStrings, locale)
   const dialogRef = useRef<HTMLDialogElement>(null)
   const linkRef = useRef<HTMLButtonElement>(null)
   const openedAt = useRef(0)
@@ -120,7 +128,7 @@ export function ReportRouteLink({ surface, stretch, routeLabel, sources, routePo
   const [state, setState] = useState<SendState>('idle')
 
   const choices = KINDS_FOR[surface]
-  const subject = stretch ? stretch.phrase : routeLabel ? `the whole route, ${routeLabel}` : 'the whole route'
+  const subject = stretch ? stretch.phrase : routeLabel ? t('report.whole_route_named', { route: routeLabel }) : t('report.whole_route')
   const titleId = `route-issue-title-${surface}`
 
   const openSheet = () => {
@@ -165,8 +173,8 @@ export function ReportRouteLink({ surface, stretch, routeLabel, sources, routePo
 
   useEffect(() => {
     if (state !== 'sent') return
-    const t = setTimeout(() => close('auto'), 2600)
-    return () => clearTimeout(t)
+    const timer = setTimeout(() => close('auto'), 2600)
+    return () => clearTimeout(timer)
   }, [state])
 
   const toggle = (k: Kind) => setKinds((cur) => (cur.includes(k) ? cur.filter((x) => x !== k) : [...cur, k]))
@@ -186,7 +194,7 @@ export function ReportRouteLink({ surface, stretch, routeLabel, sources, routePo
       email: email.trim() || null,
       route_hash,
       segment: stretch
-        ? { index: stretch.index, label: stretch.label, miles: Number(stretch.miles.toFixed(2)), lat: stretch.lat, lng: stretch.lng, rating: stretch.rating }
+        ? { index: stretch.index, label: stretch.sentLabel ?? stretch.label, miles: Number(stretch.miles.toFixed(2)), lat: stretch.lat, lng: stretch.lng, rating: stretch.rating }
         : routeLabel ? { label: routeLabel } : null,
       sources: sources && sources.length > 0 ? sources : null,
       employer_slug: employerSlug ?? null,
@@ -229,7 +237,7 @@ export function ReportRouteLink({ surface, stretch, routeLabel, sources, routePo
         aria-haspopup="dialog"
         className="mt-3 inline-flex min-h-[44px] cursor-pointer items-center text-[0.875rem] font-semibold text-[#4A4D68] underline decoration-[rgba(74,77,104,0.45)] underline-offset-[3px] transition-colors hover:text-[#191A2E] focus-visible:rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2D6A4F]"
       >
-        Report a problem with this route
+        {t('report.link')}
       </button>
 
       <dialog
@@ -245,10 +253,10 @@ export function ReportRouteLink({ surface, stretch, routeLabel, sources, routePo
           <div className="flex max-h-[92vh] flex-col">
             <div className="flex items-start justify-between gap-3 border-b border-[rgba(25,26,46,0.08)] px-5 pb-3 pt-4">
               <div className="min-w-0">
-                <h2 id={titleId} className="text-[1.0625rem] font-extrabold leading-snug">Report a problem with this route</h2>
+                <h2 id={titleId} className="text-[1.0625rem] font-extrabold leading-snug">{t('report.title')}</h2>
                 {stretch?.color ? (
                   <p className="mt-1.5 flex flex-wrap items-center gap-1.5 text-[0.9375rem] leading-snug text-[#4A4D68]">
-                    About
+                    {t('report.about')}
                     <span className="inline-flex max-w-full flex-wrap items-center gap-x-1.5 gap-y-0.5 rounded-lg border border-[rgba(25,26,46,0.12)] bg-white px-2.5 py-1 text-[0.9375rem]">
                       <span
                         aria-hidden
@@ -260,13 +268,13 @@ export function ReportRouteLink({ surface, stretch, routeLabel, sources, routePo
                     </span>
                   </p>
                 ) : (
-                  <p className="mt-0.5 text-[0.9375rem] leading-snug text-[#4A4D68]">About {subject}</p>
+                  <p className="mt-0.5 text-[0.9375rem] leading-snug text-[#4A4D68]">{t('report.about_subject', { subject })}</p>
                 )}
               </div>
               <button
                 type="button"
                 onClick={() => close('close')}
-                aria-label="Close"
+                aria-label={t('report.close')}
                 className="flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-full border border-[rgba(25,26,46,0.15)] text-[#4A4D68] transition-colors hover:bg-[#F4F8EE] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2D6A4F]"
               >
                 <X size={18} weight="bold" aria-hidden />
@@ -275,14 +283,14 @@ export function ReportRouteLink({ surface, stretch, routeLabel, sources, routePo
 
             {state === 'sent' ? (
               <div className="px-5 py-8" role="status">
-                <p className="text-[1.0625rem] font-bold">Thanks.</p>
-                <p className="mt-1 text-[0.9375rem] text-[#4A4D68]">We check every report against the map data.</p>
+                <p className="text-[1.0625rem] font-bold">{t('report.thanks_title')}</p>
+                <p className="mt-1 text-[0.9375rem] text-[#4A4D68]">{t('report.thanks_body')}</p>
               </div>
             ) : (
               <>
                 <div className="flex-1 overflow-y-auto overscroll-contain px-5 py-4">
                   <fieldset className="m-0 border-0 p-0">
-                    <legend className="mb-2 text-[0.9375rem] font-bold">What&apos;s wrong? Pick any.</legend>
+                    <legend className="mb-2 text-[0.9375rem] font-bold">{t('report.whats_wrong')}</legend>
                     <div className="flex flex-wrap gap-2">
                       {choices.map((k) => {
                         const on = kinds.includes(k)
@@ -296,7 +304,7 @@ export function ReportRouteLink({ surface, stretch, routeLabel, sources, routePo
                               on ? 'border-[#2D6A4F] bg-[#2D6A4F] text-white' : 'border-[rgba(25,26,46,0.18)] bg-white text-[#191A2E] hover:border-[#2D6A4F]'
                             }`}
                           >
-                            {KIND_LABELS[k]}
+                            {t(KIND_LABELS[k])}
                           </button>
                         )
                       })}
@@ -304,7 +312,7 @@ export function ReportRouteLink({ surface, stretch, routeLabel, sources, routePo
                   </fieldset>
 
                   <label className="mt-5 block text-[0.9375rem] font-bold" htmlFor={`${titleId}-note`}>
-                    Anything to add? <span className="font-normal text-[#4A4D68]">(optional)</span>
+                    {t('report.note_label')} <span className="font-normal text-[#4A4D68]">{t('report.optional')}</span>
                   </label>
                   <textarea
                     id={`${titleId}-note`}
@@ -312,18 +320,18 @@ export function ReportRouteLink({ surface, stretch, routeLabel, sources, routePo
                     onChange={(e) => setNote(e.target.value.slice(0, NOTE_MAX))}
                     maxLength={NOTE_MAX}
                     rows={3}
-                    placeholder={NOTE_EXAMPLE[surface]}
+                    placeholder={t(NOTE_EXAMPLE[surface])}
                     aria-describedby={`${titleId}-count`}
                     className="mt-1.5 block w-full resize-none rounded-[10px] border-[1.5px] border-[rgba(25,26,46,0.15)] bg-white px-3 py-2.5 text-[1rem] text-[#191A2E] outline-none placeholder:text-[#6B6E85] focus:border-[#2D6A4F]"
                   />
                   <p id={`${titleId}-count`} className="mt-1 text-right text-[0.875rem] tabular-nums text-[#4A4D68]">
-                    {NOTE_MAX - note.length} left
+                    {t('report.left', { count: NOTE_MAX - note.length })}
                   </p>
 
                   <label className="mt-3 block text-[0.9375rem] font-bold" htmlFor={`${titleId}-email`}>
-                    Your email <span className="font-normal text-[#4A4D68]">(optional)</span>
+                    {t('report.email_label')} <span className="font-normal text-[#4A4D68]">{t('report.optional')}</span>
                   </label>
-                  <p id={`${titleId}-email-why`} className="text-[0.875rem] text-[#4A4D68]">Only if you&apos;d like to hear back.</p>
+                  <p id={`${titleId}-email-why`} className="text-[0.875rem] text-[#4A4D68]">{t('report.email_why')}</p>
                   <input
                     id={`${titleId}-email`}
                     type="email"
@@ -341,10 +349,10 @@ export function ReportRouteLink({ surface, stretch, routeLabel, sources, routePo
                   {(state === 'error' || state === 'too_many' || state === 'bad_email') && (
                     <p role="alert" className="mb-2 text-[0.9375rem] text-[#9B2C2C]">
                       {state === 'too_many'
-                        ? "That's a lot of reports from here in one hour. Please try again later."
+                        ? t('report.too_many')
                         : state === 'bad_email'
-                          ? 'Check your email address, or leave it blank.'
-                          : "That didn't send. Please try again in a minute."}
+                          ? t('report.bad_email')
+                          : t('report.failed')}
                     </p>
                   )}
                   <button
@@ -353,7 +361,7 @@ export function ReportRouteLink({ surface, stretch, routeLabel, sources, routePo
                     disabled={kinds.length === 0 || state === 'sending'}
                     className="min-h-[48px] w-full cursor-pointer rounded-full bg-[#2D6A4F] text-[1rem] font-bold text-white transition-colors hover:bg-[#1F4D3A] disabled:cursor-not-allowed disabled:bg-[rgba(25,26,46,0.12)] disabled:text-[#4A4D68] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2D6A4F]"
                   >
-                    {state === 'sending' ? 'Sending…' : kinds.length === 0 ? "Pick what's wrong to send" : 'Send report'}
+                    {state === 'sending' ? t('report.sending') : kinds.length === 0 ? t('report.pick_first') : t('report.send')}
                   </button>
                 </div>
               </>

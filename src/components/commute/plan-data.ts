@@ -11,7 +11,12 @@ import type { AdvisorResult, BikeParkingSpot, MBTAStop, TransitLeg } from '@/lib
 import { fetchBikeParking, fetchPredictions, type ShuttleDeparture, type StopTopology } from '@/lib/nearby/live-data'
 import { shuttleAgencyFor, type ShuttleAccess } from '@/lib/nearby/shuttle-agencies'
 import { decodePolyline } from '@/lib/geo/polyline'
-import { shiftClock } from '@/lib/employer/commute-costs'
+import { formatClock, shiftClock } from '@/lib/employer/commute-costs'
+import { translator, type SiteLocale } from '@/lib/site-i18n'
+import { advisorStrings } from '@/lib/site-strings/advisor'
+
+// Phrases take an optional locale; 'en' keeps every existing caller unchanged.
+const tr = (locale: SiteLocale) => translator(advisorStrings, locale)
 
 export type LatLng = { lat: number; lng: number }
 
@@ -224,9 +229,11 @@ export async function fetchLegLive(leg: TransitLeg, stops: MBTAStop[], signal?: 
 }
 
 /** "every 6 min at rush hour" from the corridor's weekday headway. */
-export function headwayPhrase(live: LegLive | null | undefined): string | null {
+export function headwayPhrase(live: LegLive | null | undefined, locale: SiteLocale = 'en'): string | null {
   if (!live) return null
-  if (live.headwayMin != null) return `every ${live.headwayMin} min at rush hour`
+  if (live.headwayMin != null) return tr(locale)('data.headway', { min: live.headwayMin })
+  // The corridor's own label is English data; other languages say nothing rather than mix.
+  if (locale !== 'en') return null
   return live.headwayLabel ? live.headwayLabel.replace(/^Runs /, '').replace(/ on weekdays$/, ' on weekdays') : null
 }
 
@@ -271,11 +278,12 @@ export function transitWalkLegs(plan: AdvisorResult, home: LatLng, office: LatLn
 }
 
 /** "Route 85" for a numbered bus, else the line's name ("the Red Line"). */
-export function legRideName(leg: TransitLeg): string {
+export function legRideName(leg: TransitLeg, locale: SiteLocale = 'en'): string {
+  const t = tr(locale)
   const name = leg.route_name.trim()
-  if (/^\d+$/.test(name)) return `Route ${name}`
-  if (/^(sl|ct)\d/i.test(name)) return `the ${name.toUpperCase()}`
-  return /line$/i.test(name) ? `the ${name}` : name
+  if (/^\d+$/.test(name)) return t('data.route_n', { n: name })
+  if (/^(sl|ct)\d/i.test(name)) return t('data.the_line', { name: name.toUpperCase() })
+  return /line$/i.test(name) ? t('data.the_line', { name }) : name
 }
 
 /** One step of a transit trip: a walk, or a ride on one line. */
@@ -299,7 +307,7 @@ export type ItineraryStep =
  * remainder (waits, the transfer) was split into the two end walks, and a
  * stop around the corner read as a 9-minute walk.
  */
-export function transitItinerary(plan: AdvisorResult, home: LatLng, office: LatLng, officeName: string): ItineraryStep[] {
+export function transitItinerary(plan: AdvisorResult, home: LatLng, office: LatLng, officeName: string, locale: SiteLocale = 'en'): ItineraryStep[] {
   const legs = plan.transit_legs
   if (legs.length === 0) return []
   const t = plan.modes.transit ?? plan.modes.bus
@@ -315,7 +323,7 @@ export function transitItinerary(plan: AdvisorResult, home: LatLng, office: LatL
     return null
   }
   const walks = transitWalkLegs(plan, home, office, officeName)
-  const officeWord = officeName === 'Work' || /^\d/.test(officeName) ? 'the office' : officeName
+  const officeWord = officeName === 'Work' || /^\d/.test(officeName) ? tr(locale)('data.the_office') : officeName
   const out: ItineraryStep[] = []
   legs.forEach((leg, i) => {
     let walk: number | null = leg.walk_before_minutes ?? null
@@ -417,7 +425,15 @@ const clockOf = (secs: number) => {
   return `${h - 12}:${mm} PM`
 }
 
-function nextDepartures(deps: ShuttleDeparture[], routeId: string): Pick<ShuttleLine, 'nextTimes' | 'nextMinutes' | 'nextDay' | 'headsign'> {
+/** clockOf in English; the page's own clock otherwise. */
+function clockIn(secs: number, locale: SiteLocale): string {
+  if (locale === 'en') return clockOf(secs)
+  const h = Math.floor(secs / 3600) % 24
+  const m = Math.floor((secs % 3600) / 60)
+  return formatClock(`${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`, locale)
+}
+
+function nextDepartures(deps: ShuttleDeparture[], routeId: string, locale: SiteLocale = 'en'): Pick<ShuttleLine, 'nextTimes' | 'nextMinutes' | 'nextDay' | 'headsign'> {
   const mine = deps.filter((d) => d.route === routeId)
   const headsign = mine.find((d) => d.headsign)?.headsign ?? null
   if (mine.length === 0) return { nextTimes: [], nextMinutes: [], nextDay: false, headsign }
@@ -425,7 +441,7 @@ function nextDepartures(deps: ShuttleDeparture[], routeId: string): Pick<Shuttle
   const today = mine.filter((d) => (d.dow & dowBit(day)) !== 0 && d.secs >= secs).sort((a, b) => a.secs - b.secs).slice(0, 3)
   if (today.length > 0) {
     return {
-      nextTimes: today.map((d) => clockOf(d.secs)),
+      nextTimes: today.map((d) => clockIn(d.secs, locale)),
       nextMinutes: today.map((d) => Math.round((d.secs - secs) / 60)),
       nextDay: false,
       headsign,
@@ -436,7 +452,7 @@ function nextDepartures(deps: ShuttleDeparture[], routeId: string): Pick<Shuttle
     const d = (day + ahead) % 7
     const runs = mine.filter((x) => (x.dow & dowBit(d)) !== 0).sort((a, b) => a.secs - b.secs).slice(0, 3)
     if (runs.length > 0) {
-      return { nextTimes: runs.map((r) => clockOf(r.secs)), nextMinutes: [], nextDay: true, headsign }
+      return { nextTimes: runs.map((r) => clockIn(r.secs, locale)), nextMinutes: [], nextDay: true, headsign }
     }
   }
   return { nextTimes: [], nextMinutes: [], nextDay: false, headsign }
@@ -513,6 +529,7 @@ export async function fetchShuttleLines(
   office: LatLng,
   signal?: AbortSignal,
   eligible: (line: ShuttleLine) => boolean = isPublicShuttle,
+  locale: SiteLocale = 'en',
 ): Promise<ShuttleLine[]> {
   let atHome: Topology
   let atOffice: Topology
@@ -554,8 +571,8 @@ export async function fetchShuttleLines(
       key: `shuttle:${routeId}`,
       routeId,
       routeName: route.name,
-      agencyLabel: officeStop.agency?.label ?? agency?.label ?? 'Shuttle',
-      agencyName: officeStop.agency?.name ?? agency?.name ?? 'Shuttle',
+      agencyLabel: officeStop.agency?.label ?? agency?.label ?? tr(locale)('data.shuttle'),
+      agencyName: officeStop.agency?.name ?? agency?.name ?? tr(locale)('data.shuttle'),
       access: officeStop.agency?.access ?? agency?.access ?? null,
       url: agency?.url ?? null,
       stopName: officeStop.name,
@@ -572,7 +589,7 @@ export async function fetchShuttleLines(
       rideEstimated: fromTimetable == null,
       totalMinutes: walkToMinutes + rideMinutes + walkFromMinutes,
       shape: path.map((p) => [p.lng, p.lat] as [number, number]),
-      ...nextDepartures(homeStop.departures ?? [], routeId),
+      ...nextDepartures(homeStop.departures ?? [], routeId, locale),
     })
   }
   return lines
@@ -613,16 +630,17 @@ export function liveDeparturesUrl(leg: TransitLeg): string {
 }
 
 /** Who may board, in plain words. */
-export function shuttleAccessNote(line: Pick<ShuttleLine, 'access' | 'agencyName'>): string {
+export function shuttleAccessNote(line: Pick<ShuttleLine, 'access' | 'agencyName'>, locale: SiteLocale = 'en'): string {
+  const t = tr(locale)
   switch (line.access) {
     case 'public':
-      return 'Open to everyone, no fare.'
+      return t('data.access_public')
     case 'public-fare':
-      return 'Open to everyone; a fare is charged.'
+      return t('data.access_public_fare')
     case 'id':
-      return `${idName(line.agencyName)} ID needed to board.`
+      return t('data.access_id', { id: idName(line.agencyName) })
     default:
-      return 'The operator does not say who may board; an ID may be needed.'
+      return t('data.access_unknown')
   }
 }
 
@@ -635,7 +653,8 @@ function idName(agencyName: string): string {
 /** Racks within a short walk of the door (OpenStreetMap). */
 const BIKE_PARKING_RADIUS_M = 400
 
-export async function fetchOfficeBikeParking(office: LatLng): Promise<BikeParkingSpot[]> {
+export async function fetchOfficeBikeParking(office: LatLng, locale: SiteLocale = 'en'): Promise<BikeParkingSpot[]> {
+  const t = tr(locale)
   // Overpass answers an HTML error page now and then (rate limit, busy
   // mirror), which fetchBikeParking reports as "no racks". One retry keeps a
   // hiccup from reading as an office with nowhere to lock up.
@@ -645,7 +664,7 @@ export async function fetchOfficeBikeParking(office: LatLng): Promise<BikeParkin
     spots = await fetchBikeParking(office.lat, office.lng, BIKE_PARKING_RADIUS_M)
   }
   return spots.slice(0, 6).map((s) => ({
-    name: s.type === 'shed' || s.type === 'lockers' ? 'Covered bike parking' : s.type === 'building' ? 'Indoor bike parking' : 'Bike rack',
+    name: s.type === 'shed' || s.type === 'lockers' ? t('data.covered_parking') : s.type === 'building' ? t('data.indoor_parking') : t('data.bike_rack'),
     lat: s.lat,
     lng: s.lng,
     distance_miles: Math.round((s.distance_meters / 1609.34) * 100) / 100,
@@ -678,9 +697,10 @@ export function mergeRacks(...lists: (BikeParkingSpot[] | null | undefined)[]): 
 }
 
 /** "at the door" / "0.07 mi away", the phrase both the drawer and the map pins use. */
-export function rackDistancePhrase(s: Pick<BikeParkingSpot, 'distance_miles'>): string {
-  if (s.distance_miles < RACK_AT_DOOR_MILES) return 'at the door'
-  return `${s.distance_miles.toFixed(2).replace(/0$/, '')} mi away`
+export function rackDistancePhrase(s: Pick<BikeParkingSpot, 'distance_miles'>, locale: SiteLocale = 'en'): string {
+  const t = tr(locale)
+  if (s.distance_miles < RACK_AT_DOOR_MILES) return t('data.at_door')
+  return t('data.mi_away', { miles: s.distance_miles.toFixed(2).replace(/0$/, '') })
 }
 
 /**
@@ -688,20 +708,23 @@ export function rackDistancePhrase(s: Pick<BikeParkingSpot, 'distance_miles'>): 
  * Racks at the same distance share one phrase, so three at the door never
  * read "at the door; at the door; at the door". Null with no racks.
  */
-export function bikeParkingPhrase(spots: BikeParkingSpot[]): string | null {
+export function bikeParkingPhrase(spots: BikeParkingSpot[], locale: SiteLocale = 'en'): string | null {
   if (spots.length === 0) return null
+  const t = tr(locale)
   const groups = new Map<string, { count: number; caps: number[] }>()
   for (const s of spots) {
-    const key = `${s.covered ? 'covered, ' : ''}${rackDistancePhrase(s)}`
+    const where = rackDistancePhrase(s, locale)
+    const key = s.covered ? t('data.covered_where', { where }) : where
     const g = groups.get(key) ?? { count: 0, caps: [] }
     g.count++
     if (s.capacity && s.capacity > 0) g.caps.push(s.capacity)
     groups.set(key, g)
   }
-  const list = (n: number[]) => (n.length <= 1 ? n.join('') : `${n.slice(0, -1).join(', ')} and ${n[n.length - 1]}`)
+  const sep = locale === 'zh-Hans' ? '、' : ', '
+  const list = (n: number[]) => (n.length <= 1 ? n.join('') : t('data.list_and', { list: n.slice(0, -1).join(sep), last: n[n.length - 1] }))
   const parts = [...groups].slice(0, 3).map(([key, g]) => {
-    if (g.caps.length > 0) return `${key} (${list(g.caps)} space${g.caps.length === 1 && g.caps[0] === 1 ? '' : 's'})`
-    return g.count > 1 ? `${key} (${g.count} racks)` : key
+    if (g.caps.length > 0) return g.caps.length === 1 && g.caps[0] === 1 ? t('data.rack_cap_one', { where: key }) : t('data.rack_caps', { where: key, caps: list(g.caps) })
+    return g.count > 1 ? t('data.rack_count', { where: key, n: g.count }) : key
   })
-  return `Bike racks: ${parts.join('; ')}`
+  return t('data.bike_racks', { parts: parts.join(locale === 'zh-Hans' ? '；' : '; ') })
 }

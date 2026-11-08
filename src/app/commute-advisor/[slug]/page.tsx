@@ -5,6 +5,10 @@ import { redirect } from 'next/navigation'
 import type { EmployerGroup, EmployerBenefits, EmployerAdvisorLocation } from '@/lib/types/commute'
 import EmployerCommuteAdvisor from '@/components/commute/EmployerCommuteAdvisor'
 import { decodeAdvisorDraft } from '@/app/shift/employers/portal/advisor/advisor-draft'
+import HtmlLang from '@/components/HtmlLang'
+import { siteLocale } from '@/lib/site-locale'
+import { translator } from '@/lib/site-i18n'
+import { advisorStrings } from '@/lib/site-strings/advisor'
 
 type AdvisorGroupRow = {
   id: string
@@ -30,11 +34,18 @@ const loadGroup = cache(async (slug: string) => {
 
 // Each employer's page carries its own title but stays out of search:
 // it is for that company's staff, not the open web.
-export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ slug: string }>
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}): Promise<Metadata> {
   const { slug } = await params
+  const t = translator(advisorStrings, await siteLocale((await searchParams).lang))
   const group = slug === 'demo' ? null : await loadGroup(slug)
   return {
-    title: group ? `Commute options to ${group.name}` : 'Commute Advisor',
+    title: group ? t('emp.meta_title', { company: group.name }) : t('page.app_name'),
     robots: { index: false, follow: false },
   }
 }
@@ -53,6 +64,7 @@ export default async function EmployerAdvisorPage({
 }) {
   const { slug } = await params
   const sp = await searchParams
+  const locale = await siteLocale(sp.lang)
   const locationParam = typeof sp.location === 'string' ? sp.location : null
   // Portal "Preview unsaved changes": the benefits and offices as the admin
   // has them now, rendered instead of the saved ones. Nothing is logged.
@@ -104,5 +116,10 @@ export default async function EmployerAdvisorPage({
     invite_code: group.invite_code ?? undefined,
   }
 
-  return <EmployerCommuteAdvisor group={employerGroup} initialLocationId={locationParam} startTimes={startTimes} draft={draft} />
+  return (
+    <>
+      <HtmlLang locale={locale} />
+      <EmployerCommuteAdvisor group={employerGroup} initialLocationId={locationParam} startTimes={startTimes} draft={draft} locale={locale} />
+    </>
+  )
 }

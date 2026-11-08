@@ -1,5 +1,7 @@
 import EmployerCommuteAdvisor from '@/components/commute/EmployerCommuteAdvisor'
 import type { EmployerGroup } from '@/lib/types/commute'
+import HtmlLang from '@/components/HtmlLang'
+import { siteLocale } from '@/lib/site-locale'
 
 // Server component on purpose: reading `searchParams` via props makes the
 // route dynamic, so the demo group is rendered into the initial HTML — the
@@ -13,6 +15,7 @@ export default async function DemoPage({
 }) {
   const params = await searchParams
   const str = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v)
+  const locale = await siteLocale(params.lang)
 
   const demoGroup: EmployerGroup = {
     id: 'demo',
@@ -38,5 +41,10 @@ export default async function DemoPage({
     },
   }
 
-  return <EmployerCommuteAdvisor group={demoGroup} isDemo />
+  return (
+    <>
+      <HtmlLang locale={locale} />
+      <EmployerCommuteAdvisor group={demoGroup} isDemo locale={locale} />
+    </>
+  )
 }
