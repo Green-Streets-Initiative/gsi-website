@@ -80,8 +80,10 @@ function copyFor(slug: EventKindSlug, { facts: f, boston, weekend }: Loaded): Co
   const unknown = Math.max(0, n - f.free - f.paid)
   const freeLine = (thing: string) => n === 0
     ? `The page for each ${thing} says whether it costs anything.`
-    : `${f.free} of ${n} are marked free${f.paid ? `, ${f.paid} charge a fee` : ''}.${unknown ? ' The rest don\'t say, so check the listing.' : ''}`
-  const signUp = f.signUpFirst ? ` ${plural(f.signUpFirst, 'listing asks', 'listings ask')} you to sign up first; its page links to the form.` : ''
+    : `${f.free} of ${n} ${n === 1 ? 'is' : 'are'} marked free${f.paid ? `, ${f.paid} ${f.paid === 1 ? 'charges' : 'charge'} a fee` : ''}.${unknown === 1 ? ' One doesn\'t say, so check its listing.' : unknown ? ' The rest don\'t say, so check the listing.' : ''}`
+  const signUp = f.signUpFirst === 1
+    ? ' One asks you to sign up first; its page links to the form.'
+    : f.signUpFirst ? ` ${f.signUpFirst} ask you to sign up first; their pages link to the form.` : ''
 
   switch (slug) {
     case 'group-rides': {
