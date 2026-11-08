@@ -11,6 +11,8 @@ import { VENUES, getVenue, type Venue } from '@/lib/venues'
 import { LiveAlertChip, LiveAlerts, LiveDepartures, LiveDocks, LiveProvider, StationBoards } from './VenueLive'
 import VenueMap from './VenueMap'
 import TrackedLink from './TrackedLink'
+import LoganTogetherLine from '@/components/together/LoganTogetherLine'
+import { loganTogetherOpen } from '@/lib/logan-together'
 import { CalendarDots, Prohibit } from '@phosphor-icons/react/dist/ssr'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
@@ -373,6 +375,9 @@ export default async function VenueParkingPage({ params }: { params: Promise<{ v
                 >
                   Plan your trip to {v.name}
                 </TrackedLink>
+                {v.airport && loganTogetherOpen() && (
+                  <LoganTogetherLine title="Flying out for the holidays?" placement="parking" page={v.slug} />
+                )}
               </div>
             </div>
           </div>

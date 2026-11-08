@@ -19,6 +19,8 @@ import { SEMESTER_CLOSES, SEMESTER_CODE, SEMESTER_OPENS, SEMESTER_REWARD, SEMEST
 import { IS_LIVE, type SchoolData } from './_lib/load'
 import { withUtm } from '@/lib/utm'
 import { activeCampusChallenge } from './_lib/campus-challenge'
+import LoganTogetherLine from '@/components/together/LoganTogetherLine'
+import { loganTogetherOpen } from '@/lib/logan-together'
 
 /*
  * One school's page. Rendered by the production route and by the staging
@@ -99,6 +101,9 @@ export default function SchoolPage({ d, capture = true }: { d: SchoolData; captu
           />
           <SchoolPerks school={school} />
           <p className="mt-5 text-[13px] text-ink-soft">Programs and prices change each term. Check the linked school pages for current details.</p>
+          {loganTogetherOpen() && (
+            <LoganTogetherLine title="Flying home for the holidays?" placement="semester" page={school.slug} />
+          )}
         </Section>
 
         <OfferLedger />
