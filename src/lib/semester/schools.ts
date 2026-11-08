@@ -493,12 +493,21 @@ export const SCHOOLS: School[] = [
     h1: 'DeisBikes, the Brandeis shuttles, and getting around campus',
     answer:
       'DeisBikes, a student-run free bike share, is up and running from the Massell Quad bike shelter, and free Brandeis shuttles run to Waltham, Harvard Square and Back Bay.',
-    seoTitle: 'Brandeis shuttles, DeisBikes, and the Brandeis/Roberts train',
+    // 2026-11-08 (SEO play 1, Keith "Ship 1–8"): "brandeis shuttle to boston"
+    // and the Thanksgiving "brandeis turkey shuttle" took ~93 impressions in 28
+    // days at position ~8 and the page didn't answer them. No 2026 Union
+    // holiday shuttle has been announced that we can find (the Logan "turkey
+    // shuttle" was dropped in 2019, then the Union ran $5 Logan shuttles in
+    // 2022), so the page says what runs every year and points at the Union for
+    // this year's, rather than promising a shuttle.
+    seoTitle: 'Brandeis shuttles to Boston and Logan, DeisBikes, and the Brandeis/Roberts train',
     seoDescription:
-      'Free Brandeis shuttles around campus, into Waltham, and on weekends to Harvard Square and Back Bay. Plus the Brandeis/Roberts commuter rail stop at the edge of campus, free bike registration, and DeisBikes, the student-run free bike share.',
+      'Free Brandeis shuttles around campus, into Waltham, and on weekends to Harvard Square and Back Bay. How to reach Logan for Thanksgiving and winter break by train and the Blue Line, the Brandeis/Roberts commuter rail stop, and DeisBikes, the student-run free bike share.',
     transit: [
       { text: 'The Brandeis/Roberts stop on the Fitchburg commuter rail line borders campus, with trains to North Station in Boston.', sourceUrl: 'https://www.brandeis.edu/admissions/visit/getting-here.html' },
       { text: 'The free Boston and Cambridge shuttle runs Friday through Sunday to Harvard Square and to Mass Ave at Marlborough Street in Back Bay. Show your Brandeis ID to board.', sourceUrl: 'https://www.brandeis.edu/campus-services/transportation/shuttle-services/route-maps-schedule-stops.html' },
+      { text: 'Flying home for Thanksgiving or winter break: take the commuter rail from Brandeis/Roberts to North Station, then the Orange Line to State and the Blue Line to Airport, where free Massport shuttles run to every terminal. Coming back, the Silver Line SL1 from the terminals is free.', sourceUrl: 'https://www.massport.com/logan-airport/getting-to-logan/public-transportation' },
+      { text: 'In past years the Student Union has run $5 holiday shuttles from campus to Logan at Thanksgiving and winter break, sold at the SCC box office. Watch the Union\'s announcements for this year\'s dates.', sourceUrl: 'https://brandeishoot.com/?p=23511' },
       { text: 'MBTA bus 70 runs to University Park in Cambridge, connecting to the Red Line, and bus 553 runs to Newton Corner.', sourceUrl: 'https://www.brandeis.edu/campus-services/transportation/mbta/index.html' },
     ],
     bike: [
@@ -549,6 +558,8 @@ const SOURCE_NAMES: Record<string, string> = {
   'www.thecrimson.com': 'The Harvard Crimson',
   'www.brandeis.edu': 'Brandeis University',
   'www.thejustice.org': 'The Justice',
+  'brandeishoot.com': 'The Brandeis Hoot',
+  'www.massport.com': 'Massport',
   'campusgroups.brandeis.edu': 'Brandeis Cycling Club',
 }
 
