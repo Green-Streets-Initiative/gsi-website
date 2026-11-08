@@ -52,12 +52,30 @@ async function languagePaths(guideId: string, slug: string): Promise<Record<stri
   )
 }
 
+/*
+ * The search-result title ends in "a Boston guide" rather than our name when
+ * the translated title doesn't already say Boston. The translations rank for
+ * generic searches from everywhere ("baldeação ônibus"), and the place is what
+ * tells a searcher the page is for them (exp-2026-11-4, Keith 2026-11-08).
+ */
+const PLACE_SUFFIX: Record<GuideLocale, string> = {
+  en: '— Green Streets Initiative',
+  es: '— guía de Boston',
+  'pt-BR': '— guia de Boston',
+  'zh-Hans': '— 波士顿指南',
+}
+
+function translatedGuideTitle(title: string, locale: GuideLocale): string {
+  const suffix = /boston|波士顿/i.test(title) ? '— Green Streets Initiative' : PLACE_SUFFIX[locale]
+  return `${title} ${suffix}`
+}
+
 export async function translatedGuideMetadata(slug: string, locale: GuideLocale): Promise<Metadata> {
   const g = await getGuide(slug)
   const t = g ? await getGuideTranslation(g.id, locale) : null
   if (!g || !t) return { title: FALLBACK_TITLE[locale] }
   return pageMetadata({
-    title: `${t.title} — Green Streets Initiative`,
+    title: translatedGuideTitle(t.title, locale),
     description: t.summary ?? g.summary,
     path: `${localePrefix(locale)}/guides/${slug}`,
     languages: await languagePaths(g.id, slug),

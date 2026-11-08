@@ -342,18 +342,8 @@
       "do_not": "Do not assume a guide is discoverable just because its own /guides/<slug> URL returns 200. After shipping a guide, check the /guides index, sitemap.xml and llms.txt too — the slug route is dynamic and will 200 well before the index catches up."
     }
   ],
-  "pending": [
-    {
-      "report_date": "2026-11-08",
-      "item_n": 1,
-      "type": "page edit",
-      "experiment_id": "exp-2026-11-4",
-      "title": "Boston in the translated guides' search titles",
-      "ref": "not yet built (unattended runs can't create worktrees under .claude/)",
-      "ship_steps": "Branch via `node scripts/seo/branch.mjs start seo/2026-11-locale-titles`. In src/lib/guides/translated-guide-page.tsx, translatedGuideMetadata: build the title as `${t.title} ${suffix}` where suffix = es '— guía de Boston', pt-BR '— guia de Boston', zh-Hans '— 波士顿指南', unless t.title already matches /boston|波士顿/i (then keep '— Green Streets Initiative'). Headings/body/English untouched. check, finish, ship, then `inspect.mjs meta /pt-BR/guides/how-bus-transfers-work --expect 'guia de Boston'`, IndexNow the 84 locale paths, record ship date in experiments.md.",
-      "base": "locale classes 2,912 impr / 16 clicks = 0.55%, week to 2026-11-06"
-    }
-  ],
+  "pending": [],
+  "_shipped_2026_11_08": "exp-2026-11-4 (SEO item 1 of 2026-11-08, Boston in the translated guides' titles) shipped straight to main 2026-11-08 in an interactive session; 79 of 84 titles changed. Verdict 2026-12-20 on locale-page CTR (base 16 / 2,912 = 0.55%).",
   "superseded_pending": [
     {
       "report_date": "2026-10-19",
