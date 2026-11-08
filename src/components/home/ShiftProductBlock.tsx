@@ -5,26 +5,17 @@ import TrackedLink from '@/components/TrackedLink'
 import ShiftWordmark from '@/components/brand/ShiftWordmark'
 import { RecentTripsCard, StatusBar } from '@/components/shift-mockup'
 import { LANE, RouteSegment } from './RouteLine'
+import { translator, withLang, type SiteLocale } from '@/lib/site-i18n'
+import { homeStrings } from '@/lib/site-strings/home'
 
-const STOPS: { icon: Icon; title: string; body: string }[] = [
-  {
-    icon: Broadcast,
-    title: 'See what\u2019s moving near you',
-    body: 'The next train, the nearest bus, how many Bluebikes are at the dock, and whether you\u2019ll make it.',
-  },
-  {
-    icon: Compass,
-    title: 'Plan a trip',
-    body: 'Say where you\u2019re going and compare walking, biking and transit, door to door.',
-  },
-  {
-    icon: Trophy,
-    title: 'Get rewarded when you try',
-    body: 'Challenges, Walk/Ride Day drawings and prizes for trying a new way. Shift counts your trips on its own.',
-  },
-]
+const STOPS = [
+  { icon: Broadcast, title: 'home.stop1_title', body: 'home.stop1_body' },
+  { icon: Compass, title: 'home.live_stop2_title', body: 'home.live_stop2_body' },
+  { icon: Trophy, title: 'home.live_stop3_title', body: 'home.live_stop3_body' },
+] as const satisfies readonly { icon: Icon; title: string; body: string }[]
 
-export default function ShiftProductBlock({ iosUrl, androidUrl }: { iosUrl: string; androidUrl: string }) {
+export default function ShiftProductBlock({ iosUrl, androidUrl, locale = 'en' }: { iosUrl: string; androidUrl: string; locale?: SiteLocale }) {
+  const t = translator(homeStrings, locale)
   return (
     <section className="relative overflow-x-clip bg-navy text-white">
       <div className={`relative mx-auto grid max-w-[1120px] ${LANE} px-6 lg:px-8`}>
@@ -35,8 +26,8 @@ export default function ShiftProductBlock({ iosUrl, androidUrl }: { iosUrl: stri
               status and streak, then the trips it counted. The hero already
               shows the live "around you" card, so it is not repeated here. */}
           <div className="order-2 flex w-full max-w-[402px] flex-col gap-3 justify-self-center font-display lg:order-1 lg:justify-self-start">
-            <StatusBar />
-            <RecentTripsCard />
+            <StatusBar locale={locale} />
+            <RecentTripsCard locale={locale} />
           </div>
 
           <div className="relative order-1 lg:order-2">
@@ -44,11 +35,10 @@ export default function ShiftProductBlock({ iosUrl, androidUrl }: { iosUrl: stri
               <ShiftWordmark tone="white" height={26} />
             </div>
             <h2 className="font-serif text-[clamp(2.25rem,4.5vw,3.5rem)] font-normal leading-[1.05] text-white">
-              Find the better trip, <em className="text-teal">then try it.</em>
+              {t('home.live_product_title_a')}{locale === 'zh-Hans' ? '' : ' '}<em className="text-teal">{t('home.live_product_title_b')}</em>
             </h2>
             <p className="mt-6 max-w-[540px] text-[1.0625rem] leading-[1.65] text-white">
-              Shift is a free app for finding better ways to get around, with live departures, bike share and
-              routes for the trips you make.
+              {t('home.live_product_body')}
             </p>
 
             <ol className="mt-8 flex flex-col gap-5">
@@ -58,8 +48,8 @@ export default function ShiftProductBlock({ iosUrl, androidUrl }: { iosUrl: stri
                     <s.icon size={20} weight="regular" />
                   </span>
                   <div>
-                    <p className="font-semibold text-white">{s.title}</p>
-                    <p className="mt-1 text-[15px] leading-relaxed text-white/80">{s.body}</p>
+                    <p className="font-semibold text-white">{t(s.title)}</p>
+                    <p className="mt-1 text-[15px] leading-relaxed text-white/80">{t(s.body)}</p>
                   </div>
                 </li>
               ))}
@@ -67,8 +57,8 @@ export default function ShiftProductBlock({ iosUrl, androidUrl }: { iosUrl: stri
 
             <StoreButtons iosUrl={iosUrl} androidUrl={androidUrl} placement="product" className="mt-8" />
             <p className="mt-4 text-[14px] text-white">
-              <TrackedLink href="/shift" placement="product" audience="individual" className="font-semibold text-teal underline-offset-4 hover:underline">
-                Everything Shift does &rarr;
+              <TrackedLink href={withLang('/shift', locale)} placement="product" audience="individual" className="font-semibold text-teal underline-offset-4 hover:underline">
+                {t('home.product_link')}
               </TrackedLink>
             </p>
           </div>

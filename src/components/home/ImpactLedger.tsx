@@ -1,5 +1,8 @@
 import { createServerSupabaseClient } from '@/lib/supabase-server'
+import { unstable_cache } from 'next/cache'
 import { LANE, RouteSegment } from './RouteLine'
+import { SITE_LOCALE_TAG, siteDate, translator, type SiteLocale } from '@/lib/site-i18n'
+import { homeStrings } from '@/lib/site-strings/home'
 
 interface ImpactStats {
   total_dollars_saved: number
@@ -11,12 +14,12 @@ interface ImpactStats {
 }
 
 /** Round down to the nearest hundred and append "+"; exact under 100. */
-function approx(n: number): string {
-  if (n < 100) return n.toLocaleString('en-US')
-  return (Math.floor(n / 100) * 100).toLocaleString('en-US') + '+'
+function approx(n: number, tag: string): string {
+  if (n < 100) return n.toLocaleString(tag)
+  return (Math.floor(n / 100) * 100).toLocaleString(tag) + '+'
 }
 
-async function fetchStats(): Promise<ImpactStats | null> {
+async function readStats(): Promise<ImpactStats | null> {
   try {
     const supabase = createServerSupabaseClient()
     const { data, error } = await supabase.rpc('get_global_impact_stats').single()
@@ -30,13 +33,19 @@ async function fetchStats(): Promise<ImpactStats | null> {
   }
 }
 
-export default async function ImpactLedger() {
+// The page renders per request (it reads the visitor's language); the numbers
+// still refresh hourly, as when the whole page was cached for an hour.
+const fetchStats = unstable_cache(readStats, ['home-impact-stats'], { revalidate: 3600 })
+
+export default async function ImpactLedger({ locale = 'en' }: { locale?: SiteLocale }) {
+  const t = translator(homeStrings, locale)
+  const tag = SITE_LOCALE_TAG[locale]
   // No fabricated fallback: a failed read drops the section rather than
   // printing stale constants. Silence beats wrong numbers.
   const stats = await fetchStats()
   if (!stats) return null
 
-  const asOf = new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+  const asOf = siteDate(locale, new Date(), { month: 'long', year: 'numeric' })
 
   // A fourth slot is open here. It held `neighborhood_count`, labelled
   // "Massachusetts neighborhoods" — but that RPC field counts micro
@@ -46,9 +55,9 @@ export default async function ImpactLedger() {
   //   total_active_trips  25,296  ("Active trips since launch")
   //   total_users            271
   const rows: { label: string; value: string }[] = [
-    { label: 'Active trips this month', value: approx(stats.trips_this_month) },
-    { label: 'Saved by commuters', value: '$' + Math.round(stats.total_dollars_saved).toLocaleString('en-US') },
-    { label: 'Metric tons of CO₂ avoided', value: stats.total_co2_metric_tons.toFixed(1) },
+    { label: t('home.ledger_trips_month'), value: approx(stats.trips_this_month, tag) },
+    { label: t('home.ledger_saved'), value: '$' + Math.round(stats.total_dollars_saved).toLocaleString(tag) },
+    { label: t('home.ledger_co2'), value: stats.total_co2_metric_tons.toLocaleString(tag, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) },
   ]
 
   return (
@@ -68,7 +77,7 @@ export default async function ImpactLedger() {
               </div>
             ))}
           </dl>
-          <p className="mt-4 text-[12px] text-ink-soft">Live from the Shift app, as of {asOf}.</p>
+          <p className="mt-4 text-[12px] text-ink-soft">{t('home.ledger_note', { date: asOf })}</p>
         </div>
       </div>
     </section>

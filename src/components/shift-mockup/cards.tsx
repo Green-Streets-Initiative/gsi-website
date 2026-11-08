@@ -12,6 +12,12 @@ import {
   PersonSimpleWalk,
   TrainSimple,
 } from '@phosphor-icons/react/dist/ssr'
+import { translator, type SiteLocale } from '@/lib/site-i18n'
+import { mockupStrings } from '@/lib/site-strings/home'
+
+/** Every card takes the page's language (default English) and uses the app's own words. */
+type L = { locale?: SiteLocale }
+const tr = (locale: SiteLocale = 'en') => translator(mockupStrings, locale)
 
 /*
  * The shipped Shift home screen, block by block, at the app's native 402px
@@ -29,7 +35,8 @@ const AMBER = '#F5A524'
 const card = 'rounded-2xl border border-white/[0.07] bg-[#242538]'
 const slab = 'font-ui text-[12px] font-semibold uppercase tracking-[1px] text-white/75'
 
-export function ShiftHeader() {
+export function ShiftHeader({ locale }: L = {}) {
+  const t = tr(locale)
   return (
     <div className="flex h-[44px] items-center justify-center gap-[7px] border-b border-white/[0.07]">
       <ShiftWordmark tone="white" height={19} />
@@ -37,16 +44,17 @@ export function ShiftHeader() {
         className="text-[11px] text-white"
         style={{ fontFamily: "'Trebuchet MS', 'Lucida Grande', Verdana, sans-serif" }}
       >
-        by Green Streets Initiative
+        {t('m.by_gsi')}
       </span>
     </div>
   )
 }
 
-export function Greeting({ name }: { name: string }) {
+export function Greeting({ name, locale }: { name: string } & L) {
+  const t = tr(locale)
   return (
     <div className="flex h-[56px] items-center justify-between">
-      <span className="font-display text-[24px] font-bold tracking-[-0.5px] text-[#F4F8EE]">Good morning, {name}</span>
+      <span className="font-display text-[24px] font-bold tracking-[-0.5px] text-[#F4F8EE]">{t('m.greeting', { name })}</span>
       <span className="relative">
         <Bell size={24} color="#F4F8EE" />
         <span className="absolute -right-[2px] -top-[2px] h-[10px] w-[10px] rounded-full border-2 border-[#191A2E] bg-[#BAF14D]" />
@@ -63,30 +71,31 @@ function Badge({ children, bg, fg = '#FFFFFF' }: { children: string; bg: string;
   )
 }
 
-export function AroundYouCard() {
+export function AroundYouCard({ locale }: L = {}) {
+  const t = tr(locale)
   return (
     <div className={`${card} flex h-[180px] flex-col border-l-[3px] border-l-[#BAF14D] px-4 py-3`}>
       <div className="mb-1 flex items-center gap-[7px]">
         <MapPin size={15} color={LIME} weight="fill" />
-        <span className="font-display text-[13px] font-bold text-[#F4F8EE]">Around you</span>
+        <span className="font-display text-[13px] font-bold text-[#F4F8EE]">{t('m.around_you')}</span>
         <span className="inline-flex items-center gap-1 rounded-full bg-[rgba(186,241,77,0.14)] px-2 py-[2px]">
           <span className="h-[5px] w-[5px] rounded-full bg-[#BAF14D] motion-safe:animate-live-pulse" />
-          <span className="font-ui text-[9px] font-bold tracking-[0.8px] text-[#BAF14D]">LIVE</span>
+          <span className="font-ui text-[9px] font-bold tracking-[0.8px] text-[#BAF14D]">{t('m.live')}</span>
         </span>
         <span className="flex-1" />
-        <span className="font-ui text-[11.5px] text-white/75">Edit ›</span>
+        <span className="font-ui text-[11.5px] text-white/75">{t('m.edit')}</span>
       </div>
       <div className="flex flex-1 items-center gap-[9px] border-b border-white/[0.07]">
         <Badge bg="#00843D">E</Badge>
         <span className="flex-1">
           <span className="font-ui block text-[14px] font-bold text-[#F4F8EE]">Medford/Tufts</span>
           <span className="font-ui mt-px flex items-center gap-1 text-[11px] font-semibold text-[#BAF14D]">
-            <PersonSimpleWalk size={12} color={LIME} /> 4 min walk · you&rsquo;ll make this one
+            <PersonSimpleWalk size={12} color={LIME} /> {t('m.walk_make')}
           </span>
         </span>
         <span className="text-right">
           <span className="font-display text-[20px] font-extrabold text-white">6</span>{' '}
-          <span className="font-ui text-[11px] text-white/75">min</span>
+          <span className="font-ui text-[11px] text-white/75">{t('m.min')}</span>
         </span>
       </div>
       <div className="flex flex-1 items-center gap-[9px] border-b border-white/[0.07]">
@@ -94,13 +103,13 @@ export function AroundYouCard() {
         <span className="font-ui flex-1 text-[14px] font-bold text-[#F4F8EE]">Somerville Ave</span>
         <span className="text-right">
           <span className="font-display text-[20px] font-extrabold text-white">4</span>{' '}
-          <span className="font-ui text-[11px] text-white/75">min</span>
+          <span className="font-ui text-[11px] text-white/75">{t('m.min')}</span>
         </span>
       </div>
       <div className="flex items-center gap-2 pt-2">
         <Bicycle size={15} color={LIME} />
         <span className="font-ui text-[12px] text-white/80">
-          <b className="text-[#BAF14D]">7 bikes</b> at Elm St · 2 trains · 5 buses nearby
+          <b className="text-[#BAF14D]">{t('m.nearby_bikes')}</b> {t('m.nearby_rest')}
         </span>
       </div>
     </div>
@@ -116,23 +125,24 @@ function ModeChip({ icon, label }: { icon: React.ReactNode; label: string }) {
   )
 }
 
-export function UpNextCard() {
+export function UpNextCard({ locale }: L = {}) {
+  const t = tr(locale)
   return (
     <div className="flex h-[160px] flex-col gap-[7px] rounded-[14px] border border-white/[0.07] border-l-[4px] border-l-[#BAF14D] bg-[#1A2438] px-4 py-3">
       <div className="flex items-center justify-between">
-        <span className={slab}>Up next</span>
-        <span className="font-mono text-[9px] tracking-[0.8px] text-white/75">YOUR COMMUTE · 11:29 AM</span>
+        <span className={slab}>{t('m.up_next')}</span>
+        <span className="font-mono text-[9px] tracking-[0.8px] text-white/75">{t('m.your_commute')}</span>
       </div>
       <div className="font-display text-[18px] font-bold leading-[1.15] tracking-[-0.3px] text-[#F4F8EE]">
-        Beautiful day to head to school
+        {t('m.commute_title')}
       </div>
-      <div className="font-ui text-[12.5px] text-white/80">76°F, partly sunny</div>
+      <div className="font-ui text-[12.5px] text-white/80">{t('m.weather')}</div>
       <div className="flex items-center gap-2">
-        <ModeChip icon={<Bicycle size={13} color="#F4F8EE" />} label="Bike 5 min" />
-        <ModeChip icon={<Car size={13} color="#F4F8EE" />} label="Drive 5 min" />
-        <ModeChip icon={<TrainSimple size={13} color="#F4F8EE" />} label="Transit 9 min" />
+        <ModeChip icon={<Bicycle size={13} color="#F4F8EE" />} label={t('m.bike')} />
+        <ModeChip icon={<Car size={13} color="#F4F8EE" />} label={t('m.drive')} />
+        <ModeChip icon={<TrainSimple size={13} color="#F4F8EE" />} label={t('m.transit')} />
         <span className="flex-1" />
-        <span className="font-ui text-[12.5px] font-bold text-[#BAF14D]">Details ›</span>
+        <span className="font-ui text-[12.5px] font-bold text-[#BAF14D]">{t('m.details')}</span>
       </div>
     </div>
   )
@@ -158,7 +168,8 @@ export function ConfirmTripsCard() {
   )
 }
 
-export function StatusBar() {
+export function StatusBar({ locale }: L = {}) {
+  const t = tr(locale)
   return (
     <div className={`${card} flex h-[88px] flex-col justify-between px-[14px] py-3`}>
       <div className="flex items-center gap-[10px]">
@@ -167,17 +178,17 @@ export function StatusBar() {
         </div>
         <div className="flex-1">
           <div className="font-ui text-[15px] font-bold leading-[1.1] text-white">Pacesetter</div>
-          <div className="font-ui text-[11px] text-white/75">361 of 500 trips</div>
+          <div className="font-ui text-[11px] text-white/75">{t('m.trips_of')}</div>
         </div>
         <div className="border-l border-white/10 pl-3 text-right">
           <div className="font-ui text-[15px] font-bold leading-[1.1] text-white">73%</div>
-          <div className="font-ui text-[9.5px] tracking-[0.6px] text-white/75">SHIFT RATE · 60D</div>
+          <div className="font-ui text-[9.5px] tracking-[0.6px] text-white/75">{t('m.shift_rate')}</div>
         </div>
         <div className="flex items-center gap-[5px] border-l border-white/10 pl-3 text-right">
           <Flame size={16} color="#FF8C35" weight="fill" />
           <div>
             <div className="font-ui text-[15px] font-bold leading-[1.1] text-white">137</div>
-            <div className="font-ui text-[9.5px] tracking-[0.6px] text-white/75">DAY STREAK</div>
+            <div className="font-ui text-[9.5px] tracking-[0.6px] text-white/75">{t('m.day_streak')}</div>
           </div>
         </div>
       </div>
@@ -188,13 +199,14 @@ export function StatusBar() {
   )
 }
 
-export function NewRoutesStrip() {
+export function NewRoutesStrip({ locale }: L = {}) {
+  const t = tr(locale)
   return (
     <div className={`${card} flex h-[84px] items-center gap-3 border-l-[3px] border-l-[#BAF14D] px-[14px] py-3`}>
       <Gift size={20} color={LIME} />
       <span className="flex-1">
         <span className="font-ui text-[14px] font-bold text-[#F4F8EE]">
-          Your $15 gift card <span className="font-normal text-white/75">· 6 of 10 trips</span>
+          {t('m.gift_card')} <span className="font-normal text-white/75">{t('m.gift_trips')}</span>
         </span>
         <span className="mt-2 block h-[5px] overflow-hidden rounded-[3px] bg-white/[0.12]">
           <span className="block h-full w-[60%] rounded-[3px] bg-[#BAF14D]" />
@@ -218,15 +230,16 @@ function TripRow({ label, meta, amount }: { label: string; meta: string; amount:
   )
 }
 
-export function RecentTripsCard() {
+export function RecentTripsCard({ locale }: L = {}) {
+  const t = tr(locale)
   return (
     <div className={`${card} flex h-[180px] flex-col px-[14px] py-3`}>
-      <span className={`${slab} mb-2`}>Recent trips</span>
-      <TripRow label="Walked" meta="0.4 mi · Sat" amount="$0.29" />
-      <TripRow label="Walked" meta="0.7 mi · Sat" amount="$0.46" />
+      <span className={`${slab} mb-2`}>{t('m.recent_trips')}</span>
+      <TripRow label={t('m.walked')} meta={t('m.trip1')} amount="$0.29" />
+      <TripRow label={t('m.walked')} meta={t('m.trip2')} amount="$0.46" />
       <div className="flex items-center justify-between pt-[10px]">
-        <span className="font-ui text-[13px] font-bold text-[#BAF14D]">See all trips →</span>
-        <span className="font-ui text-[13px] font-semibold text-white/80">Log a missed trip</span>
+        <span className="font-ui text-[13px] font-bold text-[#BAF14D]">{t('m.see_all')}</span>
+        <span className="font-ui text-[13px] font-semibold text-white/80">{t('m.log_missed')}</span>
       </div>
     </div>
   )

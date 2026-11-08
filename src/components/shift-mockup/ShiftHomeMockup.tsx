@@ -8,6 +8,8 @@ import {
   StatusBar,
   UpNextCard,
 } from './cards'
+import { translator, type SiteLocale } from '@/lib/site-i18n'
+import { mockupStrings } from '@/lib/site-strings/home'
 
 // Native geometry: header 44 + content padding 16/40 + greeting 56 + seven
 // blocks (180+160+116+88+84+180) + six 12px gaps. Reserved up front so the
@@ -28,15 +30,18 @@ export default function ShiftHomeMockup({
   name = 'Sam',
   scale = '[--mockup-scale:0.62] md:[--mockup-scale:0.78] lg:[--mockup-scale:0.84]',
   className = '',
+  locale = 'en',
 }: {
   name?: string
   scale?: string
   className?: string
+  locale?: SiteLocale
 }) {
+  const t = translator(mockupStrings, locale)
   return (
     <figure
       role="img"
-      aria-label="The Shift home screen: live departures around you, today's commute suggestion, and your status tier and streak"
+      aria-label={t('m.aria')}
       className={`relative m-0 ${scale} ${className}`}
       style={{
         width: `calc(${MOCKUP_WIDTH}px * var(--mockup-scale))`,
@@ -50,14 +55,14 @@ export default function ShiftHomeMockup({
       >
         <PhoneShell>
           <div style={{ height: STATUS_BAR }} />
-          <ShiftHeader />
+          <ShiftHeader locale={locale} />
           <div className="flex flex-col gap-3 px-5 pb-10 pt-4">
-            <Greeting name={name} />
-            <AroundYouCard />
-            <UpNextCard />
-            <StatusBar />
-            <NewRoutesStrip />
-            <RecentTripsCard />
+            <Greeting name={name} locale={locale} />
+            <AroundYouCard locale={locale} />
+            <UpNextCard locale={locale} />
+            <StatusBar locale={locale} />
+            <NewRoutesStrip locale={locale} />
+            <RecentTripsCard locale={locale} />
           </div>
         </PhoneShell>
       </div>
