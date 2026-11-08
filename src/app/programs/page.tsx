@@ -1,17 +1,32 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
+import HtmlLang from '@/components/HtmlLang'
+import { siteLocale } from '@/lib/site-locale'
+import { translator, withLang } from '@/lib/site-i18n'
+import { programsStrings } from '@/lib/site-strings/programs'
+import { chromeStrings } from '@/lib/site-strings/chrome'
 
-export const metadata = {
-  title: 'Programs — Green Streets Initiative',
-  description:
-    'Walk/Ride Days, What Moves Us, and Corporate Challenge — community programs that help Massachusetts commuters shift how they move.',
+type SearchParams = Promise<Record<string, string | string[] | undefined>>
+
+// In the visitor's language (?lang=, then the browser's); program names as the footer says them.
+export async function generateMetadata({ searchParams }: { searchParams: SearchParams }): Promise<Metadata> {
+  const t = translator(programsStrings, await siteLocale((await searchParams).lang))
+  return {
+    title: t('programs.meta_title'),
+    description: t('programs.meta_description'),
+  }
 }
 
-export default function ProgramsPage() {
+export default async function ProgramsPage({ searchParams }: { searchParams: SearchParams }) {
+  const locale = await siteLocale((await searchParams).lang)
+  const t = translator(programsStrings, locale)
+  const tc = translator(chromeStrings, locale)
   return (
     <>
-      <Nav variant="light" />
+      <HtmlLang locale={locale} />
+      <Nav variant="light" locale={locale} />
       <main className="bg-cream" style={{ paddingTop: '60px' }}>
 
         {/* ══════════════════════════════════════════════════════════
@@ -20,13 +35,13 @@ export default function ProgramsPage() {
         <section className="bg-cream px-6 pb-8 pt-12 md:pt-16 lg:px-8 lg:pb-10">
           <div className="mx-auto max-w-[1120px] text-center">
             <div className="mb-4 text-[11px] font-semibold uppercase tracking-[0.14em] text-forest">
-              Programs
+              {t('programs.eyebrow')}
             </div>
             <h1 className="mx-auto mb-6 max-w-[720px] font-serif text-[clamp(2.5rem,6vw,4.25rem)] font-normal leading-[1.02] tracking-[-0.01em] text-navy">
-              How we get Massachusetts moving.
+              {t('programs.title')}
             </h1>
             <p className="mx-auto max-w-[600px] text-[1.0625rem] leading-[1.65] text-ink-soft">
-              Beyond the app, Green Streets Initiative runs community programs that build awareness, generate data, and create the moments that turn one active trip into a lasting habit.
+              {t('programs.lede')}
             </p>
           </div>
         </section>
@@ -40,31 +55,31 @@ export default function ProgramsPage() {
               {/* Copy */}
               <div>
                 <div className="mb-4 text-[11px] font-semibold uppercase tracking-[0.14em] text-forest">
-                  Community program
+                  {t('programs.wrd_eyebrow')}
                 </div>
                 <h2 className="mb-4 font-serif text-[clamp(1.75rem,3.5vw,2.5rem)] font-normal leading-[1.1] text-navy">
-                  Walk/Ride Days
+                  {tc('footer.wrd')}
                 </h2>
                 <p className="mb-4 text-[1.0625rem] leading-[1.65] text-ink-soft">
-                  Every last Friday of the month, Massachusetts comes together to walk, bike, and take transit. Since 2006, Walk/Ride Days have connected employers, schools, and neighborhoods around one simple idea: try an active trip.
+                  {t('programs.wrd_body_1')}
                 </p>
                 <p className="mb-8 text-[1.0625rem] leading-[1.65] text-ink-soft">
-                  No sign-up, no cost, no minimum commitment. Just pick a Friday and move.
+                  {t('programs.wrd_body_2')}
                 </p>
                 <Link
-                  href="/programs/walk-ride-days"
+                  href={withLang('/programs/walk-ride-days', locale)}
                   className="inline-flex min-h-[48px] items-center justify-center rounded-full bg-navy px-7 text-[15px] font-semibold text-white transition-opacity hover:opacity-90"
                 >
-                  Learn more &rarr;
+                  {t('programs.learn_more')}
                 </Link>
               </div>
 
               {/* Stat callouts */}
               <div className="flex flex-col gap-4">
                 {[
-                  { label: 'Last Friday of every month' },
-                  { label: 'Statewide' },
-                  { label: 'Free to participate' },
+                  { label: t('programs.wrd_stat_1') },
+                  { label: t('programs.wrd_stat_2') },
+                  { label: t('programs.wrd_stat_3') },
                 ].map((stat) => (
                   <div
                     key={stat.label}
@@ -86,46 +101,46 @@ export default function ProgramsPage() {
         <section className="bg-cream px-6 py-8 lg:px-8 lg:py-10">
           <div className="mx-auto max-w-[1120px]">
             <div className="mb-4 text-[11px] font-semibold uppercase tracking-[0.14em] text-forest">
-              Community storytelling
+              {t('programs.wmu_eyebrow')}
             </div>
             <h2 className="mb-4 max-w-[640px] font-serif text-[clamp(1.75rem,3.5vw,2.5rem)] font-normal leading-[1.1] text-navy">
-              What Moves Us
+              {tc('footer.wmu')}
             </h2>
             <p className="mb-10 max-w-[600px] text-[1.0625rem] leading-[1.65] text-ink-soft">
-              Video and audio stories from real commuters — in their own words and community languages. What Moves Us gives everyday people a voice in how streets are designed and transportation is planned.
+              {t('programs.wmu_body')}
             </p>
 
             <div className="mb-10 grid gap-6 md:grid-cols-2">
               <div className="rounded-[14px] border border-navy/10 bg-white p-8">
                 <h3 className="mb-3 font-serif text-[1.375rem] leading-tight text-navy">
-                  For communities
+                  {t('programs.wmu_communities_title')}
                 </h3>
                 <p className="text-[0.9375rem] leading-[1.6] text-ink-soft">
-                  Real voices from your neighborhood, in community languages. Stories that show planners and policymakers what mobility looks like on the ground.
+                  {t('programs.wmu_communities_body')}
                 </p>
               </div>
               <div className="rounded-[14px] border border-navy/10 bg-white p-8">
                 <h3 className="mb-3 font-serif text-[1.375rem] leading-tight text-navy">
-                  For commuters
+                  {t('programs.wmu_commuters_title')}
                 </h3>
                 <p className="text-[0.9375rem] leading-[1.6] text-ink-soft">
-                  Share your story, shape your streets, and get bonus points in Shift. Your commute experience matters — and it can change how your city moves.
+                  {t('programs.wmu_commuters_body')}
                 </p>
               </div>
             </div>
 
             <div className="flex flex-col gap-4 sm:flex-row">
               <Link
-                href="/programs/what-moves-us"
+                href={withLang('/programs/what-moves-us', locale)}
                 className="inline-flex min-h-[48px] items-center justify-center rounded-full bg-navy px-7 text-[15px] font-semibold text-white transition-opacity hover:opacity-90"
               >
-                See past campaigns &rarr;
+                {t('programs.wmu_past')}
               </Link>
               <Link
-                href="/contact?inquiry=general"
+                href={withLang('/contact?inquiry=general', locale)}
                 className="inline-flex min-h-[48px] items-center justify-center rounded-full border border-navy/25 px-6 text-[15px] font-semibold text-navy transition-colors hover:bg-navy/[0.05]"
               >
-                Commission a campaign &rarr;
+                {t('programs.wmu_commission')}
               </Link>
             </div>
           </div>
@@ -137,29 +152,20 @@ export default function ProgramsPage() {
         <section className="bg-white px-6 py-8 lg:px-8 lg:py-10">
           <div className="mx-auto max-w-[1120px]">
             <div className="mb-4 text-[11px] font-semibold uppercase tracking-[0.14em] text-blue">
-              Employer program
+              {t('programs.cc_eyebrow')}
             </div>
             <h2 className="mb-4 max-w-[640px] font-serif text-[clamp(1.75rem,3.5vw,2.5rem)] font-normal leading-[1.1] text-navy">
-              Corporate Challenge
+              {tc('footer.corporate')}
             </h2>
             <p className="mb-10 max-w-[600px] text-[1.0625rem] leading-[1.65] text-ink-soft">
-              A team-based commute competition that motivates employees to try walking, biking, and transit. Verified data, private leaderboards, and end-of-challenge impact reporting — all powered by Shift.
+              {t('programs.cc_body')}
             </p>
 
             <div className="mb-10 grid gap-6 md:grid-cols-3">
               {[
-                {
-                  title: 'Verified trip data',
-                  body: 'Auto-detected trips, no self-reporting. Every walk, ride, and transit trip is verified automatically.',
-                },
-                {
-                  title: 'Custom leaderboards',
-                  body: 'Private team group with invite-code access. Employees compete within your organization.',
-                },
-                {
-                  title: 'Impact reporting',
-                  body: 'End-of-challenge report with mode share, CO₂ avoided, and participation data for your sustainability team.',
-                },
+                { title: t('programs.cc_card_1_title'), body: t('programs.cc_card_1_body') },
+                { title: t('programs.cc_card_2_title'), body: t('programs.cc_card_2_body') },
+                { title: t('programs.cc_card_3_title'), body: t('programs.cc_card_3_body') },
               ].map((card) => (
                 <div
                   key={card.title}
@@ -176,10 +182,10 @@ export default function ProgramsPage() {
             </div>
 
             <Link
-              href="/programs/corporate-challenge"
+              href={withLang('/programs/corporate-challenge', locale)}
               className="inline-flex min-h-[48px] items-center justify-center rounded-full bg-blue px-7 text-[15px] font-semibold text-white transition-opacity hover:opacity-90"
             >
-              Learn more &rarr;
+              {t('programs.learn_more')}
             </Link>
           </div>
         </section>
@@ -192,28 +198,28 @@ export default function ProgramsPage() {
             <div className="grid items-start gap-12 md:grid-cols-2">
               <div>
                 <div className="mb-4 text-[11px] font-semibold uppercase tracking-[0.14em] text-forest">
-                  School program
+                  {t('programs.schools_eyebrow')}
                 </div>
                 <h2 className="mb-4 font-serif text-[clamp(1.75rem,3.5vw,2.5rem)] font-normal leading-[1.1] text-navy">
-                  Shift for Schools
+                  {tc('footer.schools_program')}
                 </h2>
                 <p className="mb-8 text-[1.0625rem] leading-[1.65] text-ink-soft">
-                  The simplest school wellness program. No student apps, no accounts, no data on kids — just a wall chart, a show of hands, and one Friday photo. Shift handles the leaderboards, reports, and parent communications.
+                  {t('programs.schools_body')}
                 </p>
                 <Link
-                  href="/shift/schools"
+                  href={withLang('/shift/schools', locale)}
                   className="inline-flex min-h-[48px] items-center justify-center rounded-full bg-navy px-7 text-[15px] font-semibold text-white transition-opacity hover:opacity-90"
                 >
-                  Learn more &rarr;
+                  {t('programs.learn_more')}
                 </Link>
               </div>
 
               <div className="flex flex-col gap-4">
                 {[
-                  { label: 'K–8 grade bands' },
-                  { label: 'Under 5 minutes/week for teachers' },
-                  { label: 'COPPA-clean by design' },
-                  { label: 'Free for participating schools' },
+                  { label: t('programs.schools_stat_1') },
+                  { label: t('programs.schools_stat_2') },
+                  { label: t('programs.schools_stat_3') },
+                  { label: t('programs.schools_stat_4') },
                 ].map((stat) => (
                   <div
                     key={stat.label}
@@ -235,19 +241,19 @@ export default function ProgramsPage() {
         <section className="bg-white px-6 py-8 lg:px-8 lg:py-10">
           <div className="mx-auto max-w-[640px] text-center">
             <div className="mb-4 text-[11px] font-semibold uppercase tracking-[0.14em] text-forest">
-              Connecting it all
+              {t('programs.bridge_eyebrow')}
             </div>
             <h2 className="mb-4 font-serif text-[clamp(1.75rem,3.5vw,2.5rem)] font-normal leading-[1.1] text-navy">
-              Every program runs on Shift.
+              {t('programs.bridge_title')}
             </h2>
             <p className="mb-8 text-[1.0625rem] leading-[1.65] text-ink-soft">
-              Walk/Ride Days, What Moves Us, Corporate Challenge and Shift for Schools all connect through Shift, our free app for finding better ways to get around. It also gives communities the numbers they need.
+              {t('programs.bridge_body')}
             </p>
             <Link
-              href="/shift"
+              href={withLang('/shift', locale)}
               className="inline-flex min-h-[48px] items-center justify-center rounded-full bg-navy px-7 text-[15px] font-semibold text-white transition-opacity hover:opacity-90"
             >
-              Learn about the Shift app &rarr;
+              {t('programs.bridge_cta')}
             </Link>
           </div>
         </section>
@@ -259,37 +265,37 @@ export default function ProgramsPage() {
           <div className="mx-auto grid max-w-[1120px] gap-6 md:grid-cols-2">
             <div className="rounded-[14px] border border-navy/10 bg-cream p-8">
               <h3 className="mb-3 font-serif text-[1.375rem] leading-tight text-navy">
-                Bring a program to your community
+                {t('programs.bring_title')}
               </h3>
               <p className="mb-6 text-[0.9375rem] leading-[1.6] text-ink-soft">
-                Whether you&apos;re a municipality, employer, school, or community organization — we&apos;ll help you find the right program and get it running.
+                {t('programs.bring_body')}
               </p>
               <Link
-                href="/contact"
+                href={withLang('/contact', locale)}
                 className="inline-flex min-h-[48px] items-center justify-center rounded-full bg-navy px-7 text-[15px] font-semibold text-white transition-opacity hover:opacity-90"
               >
-                Get in touch &rarr;
+                {t('programs.bring_cta')}
               </Link>
             </div>
 
             <div className="rounded-[14px] border border-navy/10 bg-cream p-8">
               <h3 className="mb-3 font-serif text-[1.375rem] leading-tight text-navy">
-                Just want to participate?
+                {t('programs.join_title')}
               </h3>
               <p className="mb-6 text-[0.9375rem] leading-[1.6] text-ink-soft">
-                Walk/Ride Days are open to everyone, every month. Download Shift to find better ways to get around, get rewarded when you try them, and join your neighborhood leaderboard.
+                {t('programs.join_body')}
               </p>
               <Link
-                href="/shift"
+                href={withLang('/shift', locale)}
                 className="inline-flex min-h-[48px] items-center justify-center rounded-full border border-navy/25 px-6 text-[15px] font-semibold text-navy transition-colors hover:bg-navy/[0.05]"
               >
-                Get the Shift app &rarr;
+                {t('programs.join_cta')}
               </Link>
             </div>
           </div>
         </section>
       </main>
-      <Footer variant="light" />
+      <Footer variant="light" locale={locale} />
     </>
   )
 }

@@ -2,6 +2,8 @@
 
 import { useState, type ReactNode } from 'react'
 import { gaEvent } from '@/lib/ga'
+import { translator, type SiteLocale } from '@/lib/site-i18n'
+import { bikeLessonsStrings } from '@/lib/site-strings/bike-lessons'
 
 /*
  * The request for a free 1:1 street lesson (Shift 01465, Keith 2026-10-27,
@@ -11,6 +13,9 @@ import { gaEvent } from '@/lib/ga'
  * addresses stay private until one writes back) and emails the learner a code
  * from the same 10 the app gives out. Far away or all taken, it says so and
  * offers the next-best thing. Shift comes after, in `after`.
+ *
+ * Labels and messages follow `locale` (src/lib/site-strings/bike-lessons.ts);
+ * what the form sends is the same in every language.
  */
 
 const FIELD =
@@ -24,11 +29,15 @@ export default function FreeLessonForm({
   buttonClass,
   leagueUrl,
   after,
+  locale = 'en',
 }: {
   buttonClass: string
   leagueUrl?: string
   after?: ReactNode
+  locale?: SiteLocale
 }) {
+  const t = translator(bikeLessonsStrings, locale)
+  const sp = locale === 'zh-Hans' ? '' : ' '
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [place, setPlace] = useState('')
@@ -45,10 +54,10 @@ export default function FreeLessonForm({
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()
-    if (!name.trim()) return fail('Please enter your name.')
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim())) return fail('Please enter a valid email address.')
-    if (place.trim().length < 2) return fail('Please enter your home ZIP code or town.')
-    if (availability.trim().length < 2) return fail('Please say when you’re usually free.')
+    if (!name.trim()) return fail(t('lessons.err_name'))
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim())) return fail(t('lessons.err_email'))
+    if (place.trim().length < 2) return fail(t('lessons.err_place'))
+    if (availability.trim().length < 2) return fail(t('lessons.err_availability'))
     setStatus('sending')
     try {
       const res = await fetch('/api/free-lesson', {
@@ -71,32 +80,31 @@ export default function FreeLessonForm({
         else gaEvent('free_lesson_code_unavailable', { state: data.state })
         return
       }
-      if (data?.error === 'name') return fail('Please enter your name.')
-      if (data?.error === 'availability') return fail('Please say when you’re usually free.')
-      if (data?.error === 'email') return fail('Please enter a valid email address.')
-      if (data?.error === 'place') return fail('We couldn’t find that in Massachusetts. Try a ZIP code like 02143.')
-      fail('Something went wrong. Please try again in a few minutes.')
+      if (data?.error === 'name') return fail(t('lessons.err_name'))
+      if (data?.error === 'availability') return fail(t('lessons.err_availability'))
+      if (data?.error === 'email') return fail(t('lessons.err_email'))
+      if (data?.error === 'place') return fail(t('lessons.err_place_unknown'))
+      fail(t('lessons.err_failed'))
     } catch {
-      fail('Something went wrong. Please try again in a few minutes.')
+      fail(t('lessons.err_failed'))
     }
   }
 
   const again = (
     <button type="button" onClick={() => setStatus('idle')} className={`${LINK} mt-3 block text-[1rem]`}>
-      Try a different ZIP code
+      {t('lessons.try_other_zip')}
     </button>
   )
 
   if (status === 'sent') {
     return (
       <div role="status">
-        <p className="text-[1.125rem] font-bold leading-snug text-forest">Thanks, {name.trim().split(/\s+/)[0]}. Your request is in.</p>
+        <p className="text-[1.125rem] font-bold leading-snug text-forest">{t('lessons.sent_title', { name: name.trim().split(/\s+/)[0] })}</p>
         <p className={`${NOTE} mt-2`}>
-          An instructor from the Bicycle Riding School will email <b className="break-all">{email.trim()}</b> in
-          the next few days to pick a time.
+          {t('lessons.sent_body_a')} <b className="break-all">{email.trim()}</b>{sp}{t('lessons.sent_body_b')}
         </p>
         <p className="mt-2 text-[0.9375rem] leading-relaxed text-navy/80">
-          Your lesson code is in your inbox now. Not there? Check your spam folder.
+          {t('lessons.sent_code')}
         </p>
         {after}
       </div>
@@ -107,12 +115,12 @@ export default function FreeLessonForm({
     return (
       <div role="status">
         <p className={NOTE}>
-          The free lessons are for people who live near Somerville for now.
+          {t('lessons.far_body')}
           {leagueUrl && (
             <>
-              {' '}A League-certified instructor can teach the same skills anywhere in Massachusetts.{' '}
+              {sp}{t('lessons.far_league')}{sp}
               <a href={leagueUrl} target="_blank" rel="noopener noreferrer" className={LINK}>
-                Find one near you
+                {t('lessons.far_link')}
               </a>
             </>
           )}
@@ -126,9 +134,9 @@ export default function FreeLessonForm({
     return (
       <div role="status">
         <p className={NOTE}>
-          This season&rsquo;s free lessons are all taken.{' '}
+          {t('lessons.full_body')}{sp}
           <a href="#wait" className={LINK}>
-            Get an email when classes start again
+            {t('lessons.full_link')}
           </a>
         </p>
       </div>
@@ -138,7 +146,7 @@ export default function FreeLessonForm({
   return (
     <form onSubmit={submit} noValidate>
       <label className="block">
-        <span className="mb-1 block text-[0.9375rem] font-semibold text-navy">Name</span>
+        <span className="mb-1 block text-[0.9375rem] font-semibold text-navy">{t('lessons.label_name')}</span>
         <input
           type="text"
           value={name}
@@ -153,7 +161,7 @@ export default function FreeLessonForm({
         />
       </label>
       <label className="mt-3 block">
-        <span className="mb-1 block text-[0.9375rem] font-semibold text-navy">Email</span>
+        <span className="mb-1 block text-[0.9375rem] font-semibold text-navy">{t('lessons.label_email')}</span>
         <input
           type="email"
           value={email}
@@ -168,7 +176,7 @@ export default function FreeLessonForm({
         />
       </label>
       <label className="mt-3 block">
-        <span className="mb-1 block text-[0.9375rem] font-semibold text-navy">Home ZIP code or town</span>
+        <span className="mb-1 block text-[0.9375rem] font-semibold text-navy">{t('lessons.label_place')}</span>
         <input
           type="text"
           value={place}
@@ -176,21 +184,21 @@ export default function FreeLessonForm({
             setPlace(e.target.value)
             if (status === 'error') setStatus('idle')
           }}
-          placeholder="02143 or Somerville"
+          placeholder={t('lessons.placeholder_place')}
           autoComplete="postal-code"
           required
           className={FIELD}
         />
       </label>
       <label className="mt-3 block">
-        <span className="mb-1 block text-[0.9375rem] font-semibold text-navy">When are you usually free?</span>
+        <span className="mb-1 block text-[0.9375rem] font-semibold text-navy">{t('lessons.label_availability')}</span>
         <textarea
           value={availability}
           onChange={(e) => {
             setAvailability(e.target.value)
             if (status === 'error') setStatus('idle')
           }}
-          placeholder="Weekday evenings, Saturday mornings"
+          placeholder={t('lessons.placeholder_availability')}
           rows={2}
           maxLength={300}
           required
@@ -199,12 +207,12 @@ export default function FreeLessonForm({
       </label>
       <label className="mt-3 block">
         <span className="mb-1 block text-[0.9375rem] font-semibold text-navy">
-          Anything the instructor should know? <span className="font-normal text-navy/80">(optional)</span>
+          {t('lessons.label_note')} <span className="font-normal text-navy/80">{t('lessons.optional')}</span>
         </span>
         <textarea
           value={note}
           onChange={(e) => setNote(e.target.value)}
-          placeholder="Where you'd like to ride, or what worries you"
+          placeholder={t('lessons.placeholder_note')}
           rows={2}
           maxLength={500}
           className={`${FIELD} resize-y`}
@@ -222,7 +230,7 @@ export default function FreeLessonForm({
         name="website"
       />
       <button type="submit" disabled={status === 'sending'} className={`${buttonClass} mt-4 w-full disabled:opacity-50`}>
-        {status === 'sending' ? 'Sending…' : 'Send my request'}
+        {status === 'sending' ? t('lessons.sending') : t('lessons.send')}
       </button>
       {status === 'error' && (
         <p className="mt-2 text-[0.9375rem] font-semibold text-[#B42318]" role="alert">
@@ -230,8 +238,7 @@ export default function FreeLessonForm({
         </p>
       )}
       <p className="mt-3 text-[0.9375rem] leading-relaxed text-navy/80">
-        We send your request to the Bicycle Riding School&rsquo;s instructors. One of them emails you to pick a
-        time. One free lesson per person.
+        {t('lessons.form_note')}
       </p>
     </form>
   )

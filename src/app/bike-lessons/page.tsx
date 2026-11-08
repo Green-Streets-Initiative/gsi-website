@@ -1,7 +1,9 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { unstable_cache } from 'next/cache'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
+import HtmlLang from '@/components/HtmlLang'
 import StoreBadges from '@/components/StoreBadges'
 import LessonAlertForm from '@/components/guides/LessonAlertForm'
 import type { Placement } from '@/components/home/tracking'
@@ -10,6 +12,9 @@ import { eventPath } from '@/lib/events-url'
 import { BUTTON, CONTAINER, GSI_FONT, H3, SignHero } from '@/app/move-in/sign'
 import JumpBar from './JumpBar'
 import FreeLessonForm from './FreeLessonForm'
+import { siteLocale } from '@/lib/site-locale'
+import { SITE_LOCALE_TAG, translator, withLang, type SiteLocale } from '@/lib/site-i18n'
+import { bikeLessonsStrings } from '@/lib/site-strings/bike-lessons'
 
 /*
  * gogreenstreets.org/bike-lessons: the landing page for the Ad Grants "Bike
@@ -29,16 +34,23 @@ import FreeLessonForm from './FreeLessonForm'
  * offered after the code is on its way.
  *
  * Live 2026-10-28 (Keith: go) for the Ad Grants "learn to ride" test.
+ *
+ * In the visitor's language (?lang=, then the browser's), with the footer's
+ * language links (Keith 2026-11-08). Strings: src/lib/site-strings/bike-lessons.ts.
+ * Class, ride and instructor names come from the calendar as published;
+ * instructor details use their own translations when the row has them.
  */
 
-export const metadata: Metadata = {
-  title: 'Bike lessons for adults in Massachusetts | Green Streets Initiative',
-  description:
-    'Bike lessons for adults, from your first ride to riding on busy streets. A free one-on-one street lesson near Somerville, learn-to-ride classes and easy group rides.',
-  alternates: { canonical: '/bike-lessons' },
-}
+type SearchParams = Promise<Record<string, string | string[] | undefined>>
 
-export const revalidate = 600
+export async function generateMetadata({ searchParams }: { searchParams: SearchParams }): Promise<Metadata> {
+  const t = translator(bikeLessonsStrings, await siteLocale((await searchParams).lang))
+  return {
+    title: t('lessons.meta_title'),
+    description: t('lessons.meta_description'),
+    alternates: { canonical: '/bike-lessons' },
+  }
+}
 
 const PLACEMENT = 'bike_lessons' as Placement
 
@@ -61,8 +73,9 @@ type Ev = {
   organizer_name: string | null
 }
 
-async function load(): Promise<{ lessons: Ev[]; rides: Ev[]; instructors: Instructor[]; slugs: Map<string, string | null> }> {
-  const empty = { lessons: [], rides: [], instructors: [], slugs: new Map<string, string | null>() }
+async function readLessons(): Promise<{ lessons: Ev[]; rides: Ev[]; instructors: Instructor[]; slugs: [string, string | null][] }> {
+  // Slugs travel as pairs: the cache stores JSON, which has no Map.
+  const empty = { lessons: [], rides: [], instructors: [], slugs: [] as [string, string | null][] }
   try {
     const supabase = createServerSupabaseClient()
     const { data, error } = await supabase.rpc('get_bike_lessons')
@@ -76,14 +89,23 @@ async function load(): Promise<{ lessons: Ev[]; rides: Ev[]; instructors: Instru
       const { data: rows } = await supabase.from('content_items').select('id, slug').in('id', ids)
       for (const r of (rows ?? []) as { id: string; slug: string | null }[]) slugs.set(r.id, r.slug)
     }
-    return { lessons, rides, instructors, slugs }
+    return { lessons, rides, instructors, slugs: [...slugs] }
   } catch {
     return empty
   }
 }
 
+// Reading the language renders the page per request; the listings still
+// refresh every ten minutes, as when the whole page was cached for 600s.
+const loadCached = unstable_cache(readLessons, ['bike-lessons-listings'], { revalidate: 600 })
+
+async function load() {
+  const d = await loadCached()
+  return { ...d, slugs: new Map(d.slugs) }
+}
+
 /** "Sat, Nov 7, 10 AM" from the calendar's date and time. */
-function when(e: Ev): string {
+function when(e: Ev, locale: SiteLocale): string {
   const [y, m, d] = e.event_date.split('-').map(Number)
   const [hh, mm] = (e.event_time ?? '').split(':').map(Number)
   const date = new Date(Date.UTC(y, m - 1, d, Number.isFinite(hh) ? hh : 12, Number.isFinite(mm) ? mm : 0))
@@ -92,22 +114,31 @@ function when(e: Ev): string {
     opts.hour = 'numeric'
     if (mm) opts.minute = '2-digit'
   }
-  return date.toLocaleString('en-US', opts)
+  return date.toLocaleString(SITE_LOCALE_TAG[locale], opts)
 }
 
-const STARTS = [
-  { href: '#street-lesson', label: 'I can ride, but traffic makes me nervous', hint: 'A free 1:1 lesson on real streets, near Somerville.' },
-  { href: '#classes', label: 'I’m not sure I can ride', hint: 'Learn-to-ride classes for adults.' },
-  { href: '#group-rides', label: 'I’d like company the first time', hint: 'Easy-pace group rides open to beginners.' },
+type K = keyof (typeof bikeLessonsStrings)['en']
+
+const STARTS: { href: string; label: K; hint: K }[] = [
+  { href: '#street-lesson', label: 'lessons.start_nervous', hint: 'lessons.start_nervous_hint' },
+  { href: '#classes', label: 'lessons.start_learn', hint: 'lessons.start_learn_hint' },
+  { href: '#group-rides', label: 'lessons.start_company', hint: 'lessons.start_company_hint' },
 ]
 
-const FACTS = ['Free', '90 minutes, one-on-one', 'For adults who can already ride', 'If you live near Somerville', '10 lessons to start']
+const FACTS: K[] = ['lessons.fact_free', 'lessons.fact_length', 'lessons.fact_who', 'lessons.fact_where', 'lessons.fact_count']
+
+/** The two bike guides, in the reader's language (both are translated: /es, /pt-BR, /zh-Hans). */
+function guideHref(slug: string, locale: SiteLocale): string {
+  return locale === 'en' ? `/guides/${slug}` : `/${locale}/guides/${slug}`
+}
 
 const H2 = '[font-family:var(--font-overpass),Trebuchet_MS,sans-serif] text-[clamp(1.625rem,3.4vw,2.25rem)] font-extrabold leading-[1.08] text-navy'
 const BODY = 'text-[1.0625rem] leading-[1.6] text-navy'
 const ROW = 'block rounded-[12px] border border-navy/10 bg-white px-4 py-3 transition-colors hover:border-forest/50'
 
-export default async function BikeLessonsPage() {
+export default async function BikeLessonsPage({ searchParams }: { searchParams: SearchParams }) {
+  const locale = await siteLocale((await searchParams).lang)
+  const t = translator(bikeLessonsStrings, locale)
   const { lessons, rides, instructors, slugs } = await load()
   const school = instructors.find((x) => x.kind === 'school')
   const league = instructors.find((x) => x.id === 'league_instructors')
@@ -116,22 +147,22 @@ export default async function BikeLessonsPage() {
 
   const eventRow = (e: Ev) => (
     <li key={e.id}>
-      <Link href={eventPath({ id: e.id, slug: slugs.get(e.id) ?? null })} className={ROW}>
+      <Link href={withLang(eventPath({ id: e.id, slug: slugs.get(e.id) ?? null }), locale)} className={ROW}>
         <span className="block text-[1rem] font-bold leading-snug text-navy">{e.title}</span>
         <span className="block text-[0.9375rem] leading-snug text-navy/80">
-          {[when(e), e.location_name].filter(Boolean).join(' · ')}
+          {[when(e, locale), e.location_name].filter(Boolean).join(' · ')}
         </span>
       </Link>
     </li>
   )
 
   const instructorRow = (x: Instructor) => {
-    const meta = [x.price?.en, x.season?.en].filter(Boolean).join(' · ')
+    const meta = [x.price?.[locale] || x.price?.en, x.season?.[locale] || x.season?.en].filter(Boolean).join(' · ')
     return (
       <li key={x.id}>
         <a href={x.url} target="_blank" rel="noopener noreferrer" className={ROW}>
           <span className="block text-[1rem] font-bold leading-snug text-navy">{x.name}</span>
-          <span className="block text-[0.9375rem] leading-snug text-navy/80">{x.details.en}</span>
+          <span className="block text-[0.9375rem] leading-snug text-navy/80">{x.details[locale] || x.details.en}</span>
           {meta && <span className="mt-1 block text-[0.9375rem] font-bold leading-snug text-navy">{meta}</span>}
         </a>
       </li>
@@ -140,21 +171,16 @@ export default async function BikeLessonsPage() {
 
   return (
     <div className="street min-h-screen bg-cream text-navy" style={{ fontFamily: GSI_FONT }}>
-      <Nav variant="light" street />
-      <JumpBar after="start" />
+      <HtmlLang locale={locale} />
+      <Nav variant="light" street locale={locale} />
+      <JumpBar after="start" locale={locale} />
 
       <SignHero
-        title="Learn to bike in the city."
-        lede={
-          <p>
-            Lessons for adults, whether you&rsquo;re getting on a bike for the first time or you can
-            ride but busy streets make you nervous. Many are free.
-          </p>
-        }
+        title={t('lessons.hero_title')}
+        lede={<p>{t('lessons.hero_lede')}</p>}
         after={
           <p className="mt-5 max-w-[780px] text-[1.0625rem] leading-[1.6] text-navy">
-            Green Streets Initiative is a Massachusetts nonprofit that has helped people walk, bike
-            and take transit more since 2006.
+            {t('lessons.hero_after')}
           </p>
         }
       />
@@ -162,7 +188,7 @@ export default async function BikeLessonsPage() {
       {/* Where are you starting: the in-page nav, in the app's own answers. */}
       <section id="start" className="bg-cream" aria-labelledby="start-heading">
         <div className={`${CONTAINER} pb-12`}>
-          <h2 id="start-heading" className={H3}>Where are you starting?</h2>
+          <h2 id="start-heading" className={H3}>{t('lessons.start_heading')}</h2>
           <ul className="mt-4 grid gap-2.5 md:grid-cols-3 md:gap-3">
             {STARTS.map((s) => (
               <li key={s.href}>
@@ -170,8 +196,8 @@ export default async function BikeLessonsPage() {
                   href={s.href}
                   className="flex h-full min-h-[64px] flex-col justify-center rounded-[14px] border-2 border-forest/30 bg-white px-4 py-3 transition-colors hover:border-forest sm:px-5 sm:py-4"
                 >
-                  <span className="text-[1.0625rem] font-bold leading-snug text-navy">{s.label}</span>
-                  <span className="mt-1 text-[0.9375rem] leading-snug text-navy/80">{s.hint}</span>
+                  <span className="text-[1.0625rem] font-bold leading-snug text-navy">{t(s.label)}</span>
+                  <span className="mt-1 text-[0.9375rem] leading-snug text-navy/80">{t(s.hint)}</span>
                 </a>
               </li>
             ))}
@@ -184,34 +210,32 @@ export default async function BikeLessonsPage() {
         <div className={`${CONTAINER} py-14 lg:py-16`}>
           <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_380px] lg:gap-14">
             <div className="min-w-0">
-              <h2 className={H2}>Nervous in traffic? Take a free 1:1 lesson.</h2>
+              <h2 className={H2}>{t('lessons.street_title')}</h2>
               <p className={`${BODY} mt-4 max-w-[640px]`}>
-                An instructor from the Bicycle Riding School rides with you on real streets, at your
-                own pace. Practice the turns and intersections that worry you. Green Streets is covering the cost.
+                {t('lessons.street_body')}
               </p>
-              <ul className="mt-6 flex max-w-[640px] flex-wrap gap-2" aria-label="Lesson details">
+              <ul className="mt-6 flex max-w-[640px] flex-wrap gap-2" aria-label={t('lessons.facts_label')}>
                 {FACTS.map((f) => (
                   <li key={f} className="rounded-full bg-forest/10 px-4 py-2 text-[0.9375rem] font-bold leading-snug text-navy">
-                    {f}
+                    {t(f)}
                   </li>
                 ))}
               </ul>
             </div>
 
             <div className="rounded-[20px] bg-cream p-6 sm:p-7">
-              <h3 className={H3}>Ask for your free lesson</h3>
+              <h3 className={H3}>{t('lessons.form_title')}</h3>
               <p className="mt-2 mb-4 text-[0.9375rem] leading-relaxed text-navy/80">
-                For people who live in Somerville, Cambridge, Medford, Arlington, Belmont, Watertown,
-                Malden, Everett, Chelsea, Winchester and nearby parts of Boston.
+                {t('lessons.form_area')}
               </p>
               <FreeLessonForm
                 buttonClass={BUTTON}
                 leagueUrl={league?.url}
+                locale={locale}
                 after={
                   <div className="mt-5 border-t border-navy/10 pt-4">
                     <p className="text-[1rem] leading-[1.55] text-navy">
-                      While you wait, Shift, our free app, can help you plan a calm route for your
-                      first rides.
+                      {t('lessons.form_after')}
                     </p>
                     <StoreBadges className="mt-3" placement={PLACEMENT} />
                   </div>
@@ -222,15 +246,14 @@ export default async function BikeLessonsPage() {
 
           {league && (
             <p className={`${BODY} mt-10 max-w-[760px]`}>
-              Live farther away? A League-certified instructor can teach the same skills, one-on-one or
-              in a group, anywhere in Massachusetts.{' '}
+              {t('lessons.league_body')}{locale === 'zh-Hans' ? '' : ' '}
               <a
                 href={league.url}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="font-bold text-forest underline underline-offset-4 hover:opacity-80"
               >
-                Find an instructor near you
+                {t('lessons.league_link')}
               </a>
             </p>
           )}
@@ -240,25 +263,24 @@ export default async function BikeLessonsPage() {
       {/* Not sure I can ride: classes. */}
       <section id="classes" className="scroll-mt-[128px] bg-cream">
         <div className={`${CONTAINER} py-14 lg:py-16`}>
-          <h2 className={H2}>Not sure you can ride? Start with a class.</h2>
+          <h2 className={H2}>{t('lessons.classes_title')}</h2>
           <p className={`${BODY} mt-4 max-w-[680px]`}>
-            Classes for adults who never learned, or haven&rsquo;t ridden in years. Most provide the
-            bike.
+            {t('lessons.classes_body')}
           </p>
 
           <div className="mt-8 grid gap-10 lg:grid-cols-2">
             <div className="min-w-0">
-              <h3 className="text-[1.125rem] font-bold text-navy">Coming up</h3>
+              <h3 className="text-[1.125rem] font-bold text-navy">{t('lessons.coming_up')}</h3>
               {lessons.length > 0 ? (
                 <ul className="mt-3 space-y-2">{lessons.slice(0, 5).map(eventRow)}</ul>
               ) : (
                 <p className={`${BODY} mt-2`}>
-                  No group classes are posted right now. City classes mostly run spring through fall.
+                  {t('lessons.no_classes')}
                 </p>
               )}
               {school && (
                 <>
-                  <h3 className="mt-8 text-[1.125rem] font-bold text-navy">Book any time</h3>
+                  <h3 className="mt-8 text-[1.125rem] font-bold text-navy">{t('lessons.book_any_time')}</h3>
                   <ul className="mt-3 space-y-2">{instructorRow(school)}</ul>
                 </>
               )}
@@ -266,13 +288,13 @@ export default async function BikeLessonsPage() {
             <div className="min-w-0">
               {seasonal.length > 0 && (
                 <>
-                  <h3 className="text-[1.125rem] font-bold text-navy">City classes in season</h3>
+                  <h3 className="text-[1.125rem] font-bold text-navy">{t('lessons.city_classes')}</h3>
                   <ul className="mt-3 space-y-2">{seasonal.map(instructorRow)}</ul>
                 </>
               )}
               {adaptive.length > 0 && (
                 <>
-                  <h3 className="mt-8 text-[1.125rem] font-bold text-navy">Adaptive cycling</h3>
+                  <h3 className="mt-8 text-[1.125rem] font-bold text-navy">{t('lessons.adaptive')}</h3>
                   <ul className="mt-3 space-y-2">{adaptive.map(instructorRow)}</ul>
                 </>
               )}
@@ -284,16 +306,16 @@ export default async function BikeLessonsPage() {
       {/* Would like company: easy group rides. */}
       <section id="group-rides" className="scroll-mt-[128px] bg-white">
         <div className={`${CONTAINER} py-14 lg:py-16`}>
-          <h2 className={H2}>Want company the first time? Join an easy group ride.</h2>
+          <h2 className={H2}>{t('lessons.rides_title')}</h2>
           <p className={`${BODY} mt-4 max-w-[680px]`}>
-            Group rides open to beginners, at an easy pace, with people who know the way.
+            {t('lessons.rides_body')}
           </p>
           {rides.length > 0 && <ul className="mt-6 grid gap-2 md:grid-cols-2">{rides.map(eventRow)}</ul>}
           <Link
-            href="/events"
+            href={withLang('/events', locale)}
             className="mt-5 inline-block text-[1rem] font-bold text-forest underline underline-offset-4 hover:opacity-80"
           >
-            See all events
+            {t('lessons.all_events')}
           </Link>
         </div>
       </section>
@@ -303,35 +325,35 @@ export default async function BikeLessonsPage() {
         <div className={`${CONTAINER} py-14 lg:py-16`}>
           <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-14">
             <div className="min-w-0">
-              <h2 className={H2}>Rather wait for warmer weather?</h2>
+              <h2 className={H2}>{t('lessons.wait_title')}</h2>
               <p className={`${BODY} mt-4 max-w-[520px]`}>
-                Most classes start again in the spring.
+                {t('lessons.wait_body')}
               </p>
             </div>
             <div className="min-w-0 [&>div]:mt-0">
-              <LessonAlertForm locale="en" />
+              <LessonAlertForm locale={locale} />
             </div>
           </div>
 
-          <h2 className={`${H3} mt-14`}>Before your first ride</h2>
+          <h2 className={`${H3} mt-14`}>{t('lessons.first_ride_heading')}</h2>
           <ul className="mt-4 grid gap-3 md:grid-cols-2">
             <li>
-              <Link href="/guides/your-first-ride-in-a-bike-lane" className={ROW}>
-                <span className="block text-[1rem] font-bold leading-snug text-navy">Your first ride in a bike lane</span>
-                <span className="block text-[0.9375rem] leading-snug text-navy/80">What each kind of bike lane means and how to ride it.</span>
+              <Link href={guideHref('your-first-ride-in-a-bike-lane', locale)} className={ROW}>
+                <span className="block text-[1rem] font-bold leading-snug text-navy">{t('lessons.guide_lane_title')}</span>
+                <span className="block text-[0.9375rem] leading-snug text-navy/80">{t('lessons.guide_lane_body')}</span>
               </Link>
             </li>
             <li>
-              <Link href="/guides/picking-a-bike-route" className={ROW}>
-                <span className="block text-[1rem] font-bold leading-snug text-navy">Picking a bike route that feels comfortable</span>
-                <span className="block text-[0.9375rem] leading-snug text-navy/80">How to pick a route that feels manageable from day one.</span>
+              <Link href={guideHref('picking-a-bike-route', locale)} className={ROW}>
+                <span className="block text-[1rem] font-bold leading-snug text-navy">{t('lessons.guide_route_title')}</span>
+                <span className="block text-[0.9375rem] leading-snug text-navy/80">{t('lessons.guide_route_body')}</span>
               </Link>
             </li>
           </ul>
         </div>
       </section>
 
-      <Footer variant="light" />
+      <Footer variant="light" locale={locale} />
     </div>
   )
 }

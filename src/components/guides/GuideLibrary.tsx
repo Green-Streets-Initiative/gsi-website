@@ -3,6 +3,8 @@
 import { useMemo, useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
+import { translator, type SiteLocale } from '@/lib/site-i18n'
+import { guidesIndexStrings } from '@/lib/site-strings/guides-index'
 
 export interface GuideCard {
   id: string
@@ -14,56 +16,46 @@ export interface GuideCard {
   topics: string[]
   read_time_minutes: number | null
   is_starter: boolean
+  /** The guide's page in the reader's language, when it has one; else the English page. */
+  href?: string
 }
 
-const MODES: { value: string; label: string }[] = [
-  { value: 'all', label: 'All modes' },
-  { value: 'cycling', label: 'Biking' },
-  { value: 'transit', label: 'Transit' },
-  { value: 'walking', label: 'Walking' },
-  { value: 'multimodal', label: 'Getting around' },
+type K = keyof (typeof guidesIndexStrings)['en']
+
+const MODES: { value: string; label: K }[] = [
+  { value: 'all', label: 'guidesidx.mode_all' },
+  { value: 'cycling', label: 'guidesidx.mode_cycling' },
+  { value: 'transit', label: 'guidesidx.mode_transit' },
+  { value: 'walking', label: 'guidesidx.mode_walking' },
+  { value: 'multimodal', label: 'guidesidx.mode_multimodal' },
 ]
 
-const MODE_LABEL: Record<string, string> = {
-  cycling: 'Biking',
-  biking: 'Biking',
-  transit: 'Transit',
-  walking: 'Walking',
-  multimodal: 'Getting around',
+const MODE_LABEL: Record<string, K> = {
+  cycling: 'guidesidx.mode_cycling',
+  biking: 'guidesidx.mode_cycling',
+  transit: 'guidesidx.mode_transit',
+  walking: 'guidesidx.mode_walking',
+  multimodal: 'guidesidx.mode_multimodal',
 }
 
-// Friendly labels for known topics; unknowns fall through to title-cased raw value.
-const TOPIC_LABEL: Record<string, string> = {
-  apps: 'Apps',
-  'bike-share': 'Bike share',
-  cargo: 'Cargo',
-  'e-bikes': 'E-bikes',
-  errands: 'Errands',
-  family: 'Family',
-  fares: 'Fares',
-  gear: 'Gear',
-  'getting-started': 'Getting started',
-  infrastructure: 'Infrastructure',
-  'mbta-basics': 'MBTA basics',
-  motivation: 'Why bother',
-  multimodal: 'Multimodal',
-  parking: 'Parking',
-  planning: 'Planning',
-  routes: 'Routes',
-  safety: 'Safety',
-  security: 'Security',
-  'short-trips': 'Short trips',
-  weather: 'Weather',
-  'year-round': 'Year-round',
+// Friendly labels for known topics (guidesidx.topic_<topic>); unknowns fall through to title-cased raw value.
+const TOPICS = new Set([
+  'apps', 'bike-share', 'cargo', 'e-bikes', 'errands', 'family', 'fares', 'gear', 'getting-started',
+  'infrastructure', 'mbta-basics', 'motivation', 'multimodal', 'parking', 'planning', 'routes', 'safety',
+  'security', 'short-trips', 'weather', 'year-round',
+])
+
+function topicLabel(t: string, tr: (key: K) => string): string {
+  if (TOPICS.has(t)) return tr(`guidesidx.topic_${t}` as K)
+  return t.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
 }
 
-function topicLabel(t: string): string {
-  return TOPIC_LABEL[t] ?? t.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
-}
-
-export default function GuideLibrary({ guides }: { guides: GuideCard[] }) {
+export default function GuideLibrary({ guides, locale = 'en' }: { guides: GuideCard[]; locale?: SiteLocale }) {
+  const tr = translator(guidesIndexStrings, locale)
   const router = useRouter()
   const searchParams = useSearchParams()
+  // The visitor's ?lang= stays in the address as the filters change.
+  const lang = searchParams.get('lang')
 
   const initialMode = searchParams.get('mode') ?? 'all'
   const initialTopic = searchParams.get('topic') ?? 'all'
@@ -76,9 +68,10 @@ export default function GuideLibrary({ guides }: { guides: GuideCard[] }) {
     const params = new URLSearchParams()
     if (mode !== 'all') params.set('mode', mode)
     if (topic !== 'all') params.set('topic', topic)
+    if (lang) params.set('lang', lang)
     const qs = params.toString()
     router.replace(qs ? `/guides?${qs}` : '/guides', { scroll: false })
-  }, [mode, topic, router])
+  }, [mode, topic, lang, router])
 
   // All topics that actually appear in the visible-by-mode subset, sorted.
   const visibleTopics = useMemo(() => {
@@ -123,7 +116,7 @@ export default function GuideLibrary({ guides }: { guides: GuideCard[] }) {
                 : 'border border-navy/25 bg-transparent text-navy hover:border-navy/50')
             }
           >
-            {m.label}
+            {tr(m.label)}
           </button>
         ))}
       </div>
@@ -142,7 +135,7 @@ export default function GuideLibrary({ guides }: { guides: GuideCard[] }) {
                 : 'border border-navy/15 bg-transparent text-ink-soft hover:border-navy/40')
             }
           >
-            All topics
+            {tr('guidesidx.topic_all')}
           </button>
           {visibleTopics.map((t) => (
             <button
@@ -157,7 +150,7 @@ export default function GuideLibrary({ guides }: { guides: GuideCard[] }) {
                   : 'border border-navy/15 bg-transparent text-ink-soft hover:border-navy/40')
               }
             >
-              {topicLabel(t)}
+              {topicLabel(t, tr)}
             </button>
           ))}
         </div>
@@ -165,14 +158,14 @@ export default function GuideLibrary({ guides }: { guides: GuideCard[] }) {
 
       {/* Result count */}
       <div className="mb-4 text-[0.8125rem] text-ink-soft">
-        {filtered.length} {filtered.length === 1 ? 'guide' : 'guides'}
+        {tr(filtered.length === 1 ? 'guidesidx.count_one' : 'guidesidx.count_other', { n: filtered.length })}
       </div>
 
       {/* Grid */}
       {filtered.length === 0 ? (
         <div className="rounded-[14px] border border-navy/10 bg-white p-8 text-center">
           <p className="text-[0.9375rem] text-ink-soft">
-            No guides match this combination yet. Try widening the filters.
+            {tr('guidesidx.empty')}
           </p>
         </div>
       ) : (
@@ -180,21 +173,21 @@ export default function GuideLibrary({ guides }: { guides: GuideCard[] }) {
           {filtered.map((g) => (
             <Link
               key={g.id}
-              href={`/guides/${g.slug ?? g.id}`}
+              href={g.href ?? `/guides/${g.slug ?? g.id}`}
               className="flex flex-col rounded-[14px] border border-navy/10 bg-white p-6 transition-colors hover:border-navy/30"
             >
               <div className="mb-3 flex items-center gap-2">
                 <span className="rounded-full bg-forest/10 px-2.5 py-0.5 text-[0.6875rem] font-semibold uppercase tracking-wide text-forest">
-                  {MODE_LABEL[g.primary_mode] ?? g.primary_mode}
+                  {MODE_LABEL[g.primary_mode] ? tr(MODE_LABEL[g.primary_mode]) : g.primary_mode}
                 </span>
                 {g.is_starter && (
                   <span className="rounded-full border border-navy/25 px-2.5 py-0.5 text-[0.6875rem] font-semibold uppercase tracking-wide text-ink-soft">
-                    Starter
+                    {tr('guidesidx.starter')}
                   </span>
                 )}
                 {g.read_time_minutes && (
                   <span className="text-[0.75rem] text-ink-soft">
-                    {g.read_time_minutes} min
+                    {tr('guidesidx.minutes', { n: g.read_time_minutes })}
                   </span>
                 )}
               </div>

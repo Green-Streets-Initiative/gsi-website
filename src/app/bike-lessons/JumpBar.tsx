@@ -1,20 +1,36 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { translator, type SiteLocale } from '@/lib/site-i18n'
+import { bikeLessonsStrings } from '@/lib/site-strings/bike-lessons'
 
 /*
  * The page's section nav once the "Where are you starting?" choices have
  * scrolled away: a slim bar under the site header with the same three
  * places, the current one marked. The venue parking pages pass their own.
+ * `locale` (default English) sets the bike lessons labels and the bar's name.
  */
 
-const LINKS = [
-  { id: 'street-lesson', label: 'Street lesson' },
-  { id: 'classes', label: 'Classes' },
-  { id: 'group-rides', label: 'Group rides' },
-]
-
-export default function JumpBar({ after, links = LINKS }: { after: string; links?: { id: string; label: string }[] }) {
+export default function JumpBar({
+  after,
+  links: given,
+  locale = 'en',
+}: {
+  after: string
+  links?: { id: string; label: string }[]
+  locale?: SiteLocale
+}) {
+  const t = translator(bikeLessonsStrings, locale)
+  // A stable list, so the observers below are set up once per page.
+  const links = useMemo(() => {
+    if (given) return given
+    const tl = translator(bikeLessonsStrings, locale)
+    return [
+      { id: 'street-lesson', label: tl('lessons.jump_street') },
+      { id: 'classes', label: tl('lessons.jump_classes') },
+      { id: 'group-rides', label: tl('lessons.jump_rides') },
+    ]
+  }, [given, locale])
   const [shown, setShown] = useState(false)
   const [current, setCurrent] = useState<string | null>(null)
 
@@ -39,7 +55,7 @@ export default function JumpBar({ after, links = LINKS }: { after: string; links
 
   return (
     <nav
-      aria-label="On this page"
+      aria-label={t('lessons.jump_label')}
       className={`fixed inset-x-0 top-[60px] z-40 border-b border-navy/10 bg-cream/95 backdrop-blur transition-transform duration-200 ${
         shown ? 'translate-y-0' : '-translate-y-[calc(100%+60px)]'
       }`}
