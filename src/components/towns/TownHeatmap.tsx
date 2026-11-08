@@ -18,6 +18,33 @@ const MODE_LABELS: Record<string, string> = {
   transit: 'Transit',
 }
 
+/** Every word the map shows, so a translated town page can pass its own
+ *  (src/lib/towns/i18n.ts). Left out, the page reads in English as before. */
+export type TownHeatmapLabels = {
+  modes: Record<string, string>
+  /** Per-corridor mode chips, keyed by the raw value; unmatched values show as-is. */
+  chipModes: Record<string, string>
+  modeAria: string
+  newChip: string
+  newLead: string
+  newBody: string
+  fewer: string
+  more: string
+  clear: string
+}
+
+const EN_LABELS: TownHeatmapLabels = {
+  modes: MODE_LABELS,
+  chipModes: {},
+  modeAria: 'Mode',
+  newChip: 'new to Shift',
+  newLead: 'New to Shift:',
+  newBody: 'stretches of this route are mostly traveled by people who joined Shift in the last 90 days.',
+  fewer: 'Fewer neighbors',
+  more: 'More neighbors',
+  clear: 'Clear highlight',
+}
+
 // Sequential blues on the light basemap: pale (few) → navy (many).
 const BAND_COLORS: [number, string][] = [
   [1, '#9DB1E4'],
@@ -69,10 +96,13 @@ const FIT_OPTS = { padding: 8, maxZoom: 13.75 }
 export default function TownHeatmap({
   layers,
   centroid,
+  labels,
 }: {
   layers: TownHeatmapLayer[]
   centroid: { lat: number; lng: number } | null
+  labels?: TownHeatmapLabels
 }) {
+  const L = labels ?? EN_LABELS
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<maplibregl.Map | null>(null)
   const [active, setActive] = useState<string>(layers[0]?.mode_group ?? 'all')
@@ -218,7 +248,7 @@ export default function TownHeatmap({
   return (
     <div>
       {/* Mode toggle */}
-      <div className="mb-4 inline-flex flex-wrap rounded-full border border-navy/20 p-0.5" aria-label="Mode">
+      <div className="mb-4 inline-flex flex-wrap rounded-full border border-navy/20 p-0.5" aria-label={L.modeAria}>
         {layers.map((l) => (
           <button
             key={l.mode_group}
@@ -228,7 +258,7 @@ export default function TownHeatmap({
               active === l.mode_group ? 'bg-navy text-white' : 'text-navy hover:bg-navy/[0.05]'
             }`}
           >
-            {MODE_LABELS[l.mode_group] ?? l.mode_group}
+            {L.modes[l.mode_group] ?? l.mode_group}
           </button>
         ))}
       </div>
@@ -258,12 +288,12 @@ export default function TownHeatmap({
                       </span>
                       {c.mode && (
                         <span className="shrink-0 rounded-full border border-navy/20 px-2 py-0.5 text-[10px] font-semibold text-navy">
-                          {c.mode}
+                          {L.chipModes[c.mode] ?? c.mode}
                         </span>
                       )}
                       {showNewerChips && c.newer && (
                         <span className="shrink-0 rounded-full bg-forest/10 px-2 py-0.5 text-[10px] font-semibold text-green-deep">
-                          new to Shift
+                          {L.newChip}
                         </span>
                       )}
                     </span>
@@ -279,8 +309,7 @@ export default function TownHeatmap({
             })}
             {showNewerChips && (
               <li className="px-2 pb-2 pt-2.5 text-[12px] leading-snug text-ink-soft">
-                <span className="font-semibold text-green-deep">New to Shift:</span> stretches of this route are
-                mostly traveled by people who joined Shift in the last 90 days.
+                <span className="font-semibold text-green-deep">{L.newLead}</span> {L.newBody}
               </li>
             )}
           </ol>
@@ -292,16 +321,16 @@ export default function TownHeatmap({
             <div ref={containerRef} className="h-full w-full" />
           </div>
           <div className="mt-2 flex items-center gap-3 text-[11px] text-ink-soft">
-            <span>Fewer neighbors</span>
+            <span>{L.fewer}</span>
             <span className="flex items-center gap-1">
               {BAND_COLORS.map(([band, color]) => (
                 <span key={band} className="inline-block h-1.5 w-7 rounded-full" style={{ backgroundColor: color }} />
               ))}
             </span>
-            <span>More neighbors</span>
+            <span>{L.more}</span>
             {selectedId && (
               <button onClick={() => setSelectedId(null)} className="ml-auto font-semibold text-forest underline-offset-4 hover:underline">
-                Clear highlight
+                {L.clear}
               </button>
             )}
           </div>
