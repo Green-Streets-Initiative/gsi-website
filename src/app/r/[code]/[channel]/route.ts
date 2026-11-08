@@ -19,6 +19,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ code
   const via = isPromoChannel(channel) ? channel : null
   const target = new URL(`/rides/${code}`, req.url)
   if (via) target.searchParams.set('via', via)
+  // Keep the app's language (?lang=, Shift lib/site-link.ts) on the way through.
+  const lang = req.nextUrl.searchParams.get('lang')
+  if (lang && /^[a-zA-Z-]{2,8}$/.test(lang)) target.searchParams.set('lang', lang)
 
   const ua = req.headers.get('user-agent') ?? ''
   if (via && req.method === 'GET' && !PREVIEW_BOT.test(ua)) {

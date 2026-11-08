@@ -1,5 +1,7 @@
 import Link from 'next/link'
 import { Store } from 'lucide-react'
+import { translator, withLang, type SiteLocale } from '@/lib/site-i18n'
+import { ridesStrings } from '@/lib/site-strings/rides'
 
 /** get_ride_coffee (Shift 01596): the shop a ride ends at and, when a Ride Fund covers its next date, who funds the $5 there. */
 export interface RideCoffeeInfo {
@@ -14,7 +16,8 @@ const money = (cents: number) => `$${(cents / 100).toFixed(cents % 100 ? 2 : 0)}
  * there, how to get it (say Going and ride with Shift; it comes to the phone),
  * and a link to the season's report. Without one: just where the ride ends.
  */
-export default function RideCoffee({ info }: { info: RideCoffeeInfo }) {
+export default function RideCoffee({ info, locale = 'en' }: { info: RideCoffeeInfo; locale?: SiteLocale }) {
+  const t = translator(ridesStrings, locale)
   const { shop, fund } = info
   if (!shop) return null
   const where = [shop.street, shop.city].filter(Boolean).join(', ')
@@ -25,13 +28,13 @@ export default function RideCoffee({ info }: { info: RideCoffeeInfo }) {
       </span>
       <div className="min-w-0">
         <h2 className="text-[16px] font-bold text-(--ev-ink)">
-          {fund ? `${money(fund.coffee_cents)} to spend at ${shop.name} after the ride, from ${fund.funder_name}` : `Ends at ${shop.name}`}
+          {fund ? t('coffee.fund', { amount: money(fund.coffee_cents), shop: shop.name, funder: fund.funder_name }) : t('coffee.ends', { shop: shop.name })}
         </h2>
         {where && <p className="mt-0.5 text-[14px] text-(--ev-ink-75)">{where}</p>}
         {fund && (
           <p className="mt-2 text-[14px] leading-snug text-(--ev-ink-80)">
-            Tap Going in the Shift app and ride with it on. Your {money(fund.coffee_cents)} for {shop.name} comes to your phone.{' '}
-            <Link href={`/ride-fund/${fund.slug}`} className="font-semibold text-(--ev-accent) hover:underline">About the Ride Fund</Link>
+            {t('coffee.how', { amount: money(fund.coffee_cents), shop: shop.name })}{' '}
+            <Link href={withLang(`/ride-fund/${fund.slug}`, locale)} className="font-semibold text-(--ev-accent) hover:underline">{t('coffee.about')}</Link>
           </p>
         )}
       </div>

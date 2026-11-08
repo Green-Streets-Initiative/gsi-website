@@ -35,11 +35,13 @@ import {
   type RsvpStatus,
 } from '@/lib/rides/public'
 import '@/components/events/events-tone.css'
+import { translator, withLang, type SiteLocale } from '@/lib/site-i18n'
+import { ridesStrings, type RideKey } from '@/lib/site-strings/rides'
 
-const ANSWERS: { value: RsvpStatus; label: string }[] = [
-  { value: 'going', label: 'Going' },
-  { value: 'maybe', label: 'Maybe' },
-  { value: 'not_going', label: "Can't go" },
+const ANSWERS: { value: RsvpStatus; label: RideKey }[] = [
+  { value: 'going', label: 'ans.going' },
+  { value: 'maybe', label: 'ans.maybe' },
+  { value: 'not_going', label: 'ans.not' },
 ]
 
 const TONE_STYLE: Record<'good' | 'warn' | 'off' | 'plain', string> = {
@@ -81,28 +83,31 @@ function directionsUrl(d: Pick<RideDate, 'meetup_lat' | 'meetup_lng'>): string {
  * is. The location field carries the meeting spot; the link goes back to this
  * date on the ride page.
  */
-function calendarEvent(ride: PublicRide, d: RideDate, hostName: string | null, miles: number | null, climb: number | null) {
+function calendarEvent(ride: PublicRide, d: RideDate, hostName: string | null, miles: number | null, climb: number | null, locale: SiteLocale) {
+  const t = translator(ridesStrings, locale)
   const walk = ride.activity === 'walk'
-  const page = `${pageUrl(ride)}?date=${d.date}`
+  // Back to this date, in the language they read it in.
+  const page = `${pageUrl(ride)}?date=${d.date}${locale === 'en' ? '' : `&lang=${locale}`}`
   const where = calendarLocation(d.meetup_name, d.meetup_address)
-  const facts = rideFacts(ride, miles, climb)
+  const facts = rideFacts(ride, miles, climb, locale)
   const factLine = [
-    ...facts.stats.map((f) => (f.label === 'Pace' && f.sub ? `${f.value} (${f.sub})` : f.value)),
+    ...facts.stats.map((f) => (f.key === 'pace' && f.sub ? `${f.value} (${f.sub})` : f.value)),
     ...facts.policies.map((p) => p.title),
   ].join(' · ')
   const about = (d.description || ride.description || '').trim()
   const notes = [
     // "Keith A." already ends the sentence.
-    `${walk ? 'Group walk' : 'Group ride'}${hostName ? ` hosted by ${hostName}` : ''}`.replace(/([^.])$/, '$1.'),
-    `Say you're coming, or change your answer: ${page}`,
-    ride.registration_url ? `The organizer's sign-up: ${ride.registration_url}` : null,
+    (hostName ? t('cal.kind_hosted', { kind: t(walk ? 'kind.walk' : 'kind.ride'), host: hostName }) : t(walk ? 'kind.walk' : 'kind.ride'))
+      .replace(/([^.。])$/, locale === 'zh-Hans' ? '$1。' : '$1.'),
+    t('cal.say_coming', { url: page }),
+    ride.registration_url ? t('cal.signup', { url: ride.registration_url }) : null,
     [
-      where ? `Meet: ${where}` : null,
-      d.meetup_lat != null && d.meetup_lng != null ? `Directions to the start: ${directionsUrl(d)}` : null,
-      factLine ? `${walk ? 'The walk' : 'The ride'}: ${factLine}` : null,
+      where ? t('cal.meet', { where }) : null,
+      d.meetup_lat != null && d.meetup_lng != null ? t('cal.directions', { url: directionsUrl(d) }) : null,
+      factLine ? t(walk ? 'cal.the_walk' : 'cal.the_ride', { facts: factLine }) : null,
     ].filter(Boolean).join('\n'),
     about || null,
-    `If plans change, everyone who said they're coming hears right away. The latest is always on the ride page: ${page}`,
+    t('cal.changes', { url: page }),
   ].filter(Boolean).join('\n\n')
   return {
     id: `${ride.code}-${d.date}`, slug: null, title: d.title || ride.name, body: about,
@@ -147,8 +152,10 @@ function downloadGpx(ride: PublicRide, line: { lat: number; lng: number }[], dat
   a.remove()
 }
 
-export default function RidePage({ ride, host = null, hostPerson = null, ascentFt = null, comfort = null, initialDate = null, perks = [], newInfra = [], coffee = null }: {
+export default function RidePage({ ride, host = null, hostPerson = null, ascentFt = null, comfort = null, initialDate = null, perks = [], newInfra = [], coffee = null, locale = 'en' }: {
   ride: PublicRide; host?: RideHost | null; ascentFt?: number | null
+  /** The page's language (?lang= from the app, else the browser's). */
+  locale?: SiteLocale
   /** The ride's own route, street by street, for the calm-streets bar. */
   comfort?: CalmSegment[] | null
   /** Who hosts it when there's no verified organization: the organizer's profile name (hostLabel). */
@@ -162,6 +169,7 @@ export default function RidePage({ ride, host = null, hostPerson = null, ascentF
   /** Where it ends and who buys the coffee there (get_ride_coffee). */
   coffee?: RideCoffeeInfo | null
 }) {
+  const t = translator(ridesStrings, locale)
   const hostHref = host?.href ?? null
   // The organization only once verified (Shift 01563, rideExtras); a typed-in
   // name could be anyone's, so it isn't shown, as on the events calendar.
@@ -210,6 +218,7 @@ export default function RidePage({ ride, host = null, hostPerson = null, ascentF
   const ended = ride.status === 'archived'
   const walk = ride.activity === 'walk'
   const noun = walk ? 'walk' : 'ride'
+  const nk = <K extends string>(base: K) => `${base}.${noun}` as RideKey
   // A break ends on its own when its date comes: the banner goes with it.
   const paused = ride.status === 'paused' || (!!ride.break_until && ride.break_until > todayKey())
 
@@ -229,7 +238,7 @@ export default function RidePage({ ride, host = null, hostPerson = null, ascentF
       setCopied(true)
       setTimeout(() => setCopied(false), 2400)
     } catch {
-      window.prompt('Copy the ride link:', url)
+      window.prompt(t('copy_prompt'), url)
     }
   }
 
@@ -261,7 +270,8 @@ export default function RidePage({ ride, host = null, hostPerson = null, ascentF
       })
       const data = await res.json().catch(() => ({}))
       if (!res.ok) {
-        setError(data.error ?? 'Something went wrong. Try again in a minute.')
+        // The server's message is English; other languages get the plain retry line.
+        setError(locale === 'en' && data.error ? data.error : t('error'))
         return
       }
       const answers = { ...me.answers, [selected.id]: choice }
@@ -283,7 +293,7 @@ export default function RidePage({ ride, host = null, hostPerson = null, ascentF
       setChoice(null)
       posthog.capture('ride_rsvp_submitted', { code: ride.code, status: choice, surface: 'web', every: choice === 'going' && every })
     } catch {
-      setError('Something went wrong. Try again in a minute.')
+      setError(t('error'))
     } finally {
       setBusy(false)
     }
@@ -300,9 +310,9 @@ export default function RidePage({ ride, host = null, hostPerson = null, ascentF
   // its own time and meeting spot, lives once, in the card under the title,
   // so the date isn't said three times before the Going button.
   const repeats = !ride.ride_date && ((ride.days ?? []).length > 0 || ride.frequency === 'daily')
-  const headerSchedule = repeats ? scheduleText(ride) : null
+  const headerSchedule = repeats ? scheduleText(ride, locale) : null
   // Offered with Going when there's more than one date to say yes to.
-  const everyText = repeats && open.length > 1 ? everyLabel(ride) : null
+  const everyText = repeats && open.length > 1 ? everyLabel(ride, locale) : null
   const pastOneOff = !!ride.ride_date && ride.ride_date < todayKey()
   // Most groups ride somewhere new each time (Shift 01432): the chosen date's
   // own route, name, description and flyer, else the ride's.
@@ -311,7 +321,7 @@ export default function RidePage({ ride, host = null, hostPerson = null, ascentF
   const miles = route.length >= 2 ? routeMiles(route) : null
   const climb = own ? (typeof own.route_elevation?.ascent_ft === 'number' ? Math.round(own.route_elevation.ascent_ft) : null) : ascentFt
   // The chosen date as a calendar entry (calendarEvent): offered before and after answering.
-  const calEv = selected ? calendarEvent(ride, selected, hostName, miles, climb) : null
+  const calEv = selected ? calendarEvent(ride, selected, hostName, miles, climb, locale) : null
   const routeLink = own ? own.route_google_maps_url : ride.route_google_maps_url
   const dateTitle = selected?.title ?? null
   const about = selected?.description || ride.description
@@ -334,10 +344,10 @@ export default function RidePage({ ride, host = null, hostPerson = null, ascentF
   const hostAny = !!hostName
   const aboutAny = !!about || !!flyer || !!ride.registration_url
   const TABS = ([
-    aboutAny ? { id: 'about', label: `About this ${noun}` } : null,
-    { id: 'updates', label: 'Updates', count: updatesCount },
-    alongAny ? { id: 'along', label: route.length < 2 ? 'Near the start' : walk ? 'Along the walk' : 'Along the route' } : null,
-    hostAny ? { id: 'host', label: 'Host' } : null,
+    aboutAny ? { id: 'about', label: t(nk('tab.about')) } : null,
+    { id: 'updates', label: t('tab.updates'), count: updatesCount },
+    alongAny ? { id: 'along', label: route.length < 2 ? t('tab.near_start') : t(nk('tab.along')) } : null,
+    hostAny ? { id: 'host', label: t('tab.host') } : null,
   ].filter(Boolean)) as { id: TabId; label: string; count?: number }[]
   // A fresh update (the last three days) opens first; otherwise what it's about.
   const freshUpdate = updates[0] && Date.now() - new Date(updates[0].created_at).getTime() < 3 * 864e5
@@ -354,10 +364,10 @@ export default function RidePage({ ride, host = null, hostPerson = null, ascentF
         <div className="flex items-center gap-3">
           <HostFace name={hostName} logo={host?.logo_url ?? null} walk={walk} />
           <p className="min-w-0 text-[15px] leading-snug text-(--ev-ink-80)">
-            <span className="block font-semibold text-(--ev-accent)">{walk ? 'Group walk' : 'Group ride'}</span>
+            <span className="block font-semibold text-(--ev-accent)">{t(walk ? 'kind.walk' : 'kind.ride')}</span>
             {hostName && (
               <span className="block">
-                Hosted by{' '}
+                {t('hosted_by')}{' '}
                 {hostHref
                   ? <a href={hostHref} className="font-semibold text-(--ev-ink) hover:underline">{hostName}</a>
                   : <span className="font-semibold text-(--ev-ink)">{hostName}</span>}
@@ -380,7 +390,7 @@ export default function RidePage({ ride, host = null, hostPerson = null, ascentF
         {(ended || paused) && (
           <div className={`mt-6 rounded-2xl px-5 py-4 ${ended ? TONE_STYLE.off : TONE_STYLE.warn}`}>
             <p className="text-[15px] font-semibold">
-              {ended ? (walk ? 'This walk has ended' : 'This ride has ended') : `Taking a break${ride.break_until ? ` until ${dateLong(ride.break_until)}` : ''}`}
+              {ended ? t(nk('ended')) : ride.break_until ? t('break_until', { date: dateLong(ride.break_until, locale) }) : t('break')}
             </p>
             {ride.stopped_note && <p className="mt-1 text-[14px]">&ldquo;{ride.stopped_note}&rdquo;</p>}
           </div>
@@ -395,22 +405,22 @@ export default function RidePage({ ride, host = null, hostPerson = null, ascentF
               {ride.occurrences.length === 0 ? (
                 <div>
                   <p className="text-[16px] font-bold text-(--ev-ink)">
-                    {ended ? 'No more dates' : pastOneOff ? (walk ? 'This walk has happened' : 'This ride has happened') : paused && ride.break_until ? `Back on ${dateLong(ride.break_until)}` : 'No upcoming dates yet'}
+                    {ended ? t('no_more_dates') : pastOneOff ? t(nk('happened')) : paused && ride.break_until ? t('back_on', { date: dateLong(ride.break_until, locale) }) : t('no_dates_yet')}
                   </p>
                   <p className="mt-1 text-[15px] text-(--ev-ink-80)">
                     {ended || pastOneOff
-                      ? <>See what else is on: <a href={hostHref ?? (walk ? '/events?type=walking_tour' : '/events?type=group_ride')} className="font-semibold text-(--ev-accent) hover:underline">{hostHref && hostName ? `more ${walk ? 'walks' : 'rides'} from ${hostName}` : walk ? 'walks on the calendar' : 'group rides on the calendar'}</a>.</>
-                      : paused ? 'Dates open here when the break ends.' : 'Check back soon. New dates show up here.'}
+                      ? <>{t('see_else')} <a href={hostHref ?? withLang(walk ? '/events?type=walking_tour' : '/events?type=group_ride', locale)} className="font-semibold text-(--ev-accent) hover:underline">{hostHref && hostName ? t(walk ? 'more_walks_from' : 'more_rides_from', { host: hostName }) : t(walk ? 'walks_on_cal' : 'rides_on_cal')}</a>{locale === 'zh-Hans' ? '。' : '.'}</>
+                      : paused ? t('after_break') : t('check_back')}
                   </p>
                 </div>
               ) : (
                 <>
                   {linkedMissing && !selectedId && (
-                    <p className="mb-3 text-[15px] text-(--ev-ink-85)">{dateLong(initialDate!)} isn&rsquo;t open yet. Pick another date below.</p>
+                    <p className="mb-3 text-[15px] text-(--ev-ink-85)">{t('not_open', { date: dateLong(initialDate!, locale) })}</p>
                   )}
                   {ride.occurrences.length > 1 && (<>
-                  <p className="text-[14px] font-semibold text-(--ev-ink-75)">Pick a date</p>
-                  <div className="-mx-1 mt-2 mb-6 flex gap-2 overflow-x-auto px-1 pb-2" role="group" aria-label="Ride dates">
+                  <p className="text-[14px] font-semibold text-(--ev-ink-75)">{t('pick_date')}</p>
+                  <div className="-mx-1 mt-2 mb-6 flex gap-2 overflow-x-auto px-1 pb-2" role="group" aria-label={t('dates_aria')}>
                     {ride.occurrences.map((d) => {
                       const active = d.id === selectedId
                       const answered = me.answers[d.id]
@@ -424,10 +434,10 @@ export default function RidePage({ ride, host = null, hostPerson = null, ascentF
                             active ? 'border-(--ev-ink) bg-(--ev-ink) text-white' : 'border-(--ev-line-mid) text-(--ev-ink) hover:border-(--ev-line-stronger)'
                           } ${d.status === 'canceled' ? 'opacity-70' : ''}`}
                         >
-                          <span className={`text-[13px] font-semibold ${active ? 'text-white/85' : 'text-(--ev-ink-75)'}`}>{dayShort(d.date)}</span>
-                          <span className="text-[15px] font-bold">{dateShort(d.date)}</span>
+                          <span className={`text-[13px] font-semibold ${active ? 'text-white/85' : 'text-(--ev-ink-75)'}`}>{dayShort(d.date, locale)}</span>
+                          <span className="text-[15px] font-bold">{dateShort(d.date, locale)}</span>
                           <span className={`mt-0.5 text-[13px] ${active ? 'text-white/85' : 'text-(--ev-ink-75)'}`}>
-                            {d.status === 'canceled' ? 'Off' : answered === 'going' ? "You're in" : answered === 'maybe' ? 'Maybe' : (counts[d.id]?.going ?? 0) > 0 ? `${counts[d.id].going} going` : clock(d.start_time) || 'Open'}
+                            {d.status === 'canceled' ? t('chip.off') : answered === 'going' ? t('chip.in') : answered === 'maybe' ? t('chip.maybe') : (counts[d.id]?.going ?? 0) > 0 ? t('chip.going', { n: counts[d.id].going }) : clock(d.start_time, locale) || t('chip.open')}
                           </span>
                         </button>
                       )
@@ -438,7 +448,7 @@ export default function RidePage({ ride, host = null, hostPerson = null, ascentF
                   {selected && (
                     <>
                       {(() => {
-                        const s = dateStatusLine(ride, selected)
+                        const s = dateStatusLine(ride, selected, locale)
                         const latest = latestFor(selected.id)
                         // "Scheduled" says nothing the date line doesn't; any other state shows.
                         // The note is clamped so the RSVP stays on a phone's first screen; the
@@ -453,7 +463,7 @@ export default function RidePage({ ride, host = null, hostPerson = null, ascentF
                               </p>
                             )}
                             {latest?.note && (
-                              <p className={`${s.tone !== 'plain' ? 'mt-1 ' : ''}line-clamp-2 text-[14px] font-medium`}>&ldquo;{latest.note}&rdquo; <span className="opacity-80">· {ago(latest.created_at)}</span></p>
+                              <p className={`${s.tone !== 'plain' ? 'mt-1 ' : ''}line-clamp-2 text-[14px] font-medium`}>&ldquo;{latest.note}&rdquo; <span className="opacity-80">· {ago(latest.created_at, Date.now(), locale)}</span></p>
                             )}
                           </div>
                         )
@@ -464,7 +474,7 @@ export default function RidePage({ ride, host = null, hostPerson = null, ascentF
                       <div className={`${dateTitle ? 'mt-2' : ''} space-y-2 text-[15px] text-(--ev-ink-85)`}>
                         <p className="flex gap-2 font-semibold text-(--ev-ink)">
                           <Calendar size={17} className="mt-0.5 shrink-0 text-(--ev-ink-60)" />
-                          <span>{dateLong(selected.date)}{selected.start_time ? ` · ${clock(selected.start_time)}${selected.end_time ? ` to ${clock(selected.end_time)}` : ''}` : ''}</span>
+                          <span>{dateLong(selected.date, locale)}{selected.start_time ? ` · ${selected.end_time ? t('time_range', { start: clock(selected.start_time, locale), end: clock(selected.end_time, locale) }) : clock(selected.start_time, locale)}` : ''}</span>
                         </p>
                         {(selected.meetup_name || selected.meetup_address) && (
                           <p className="flex gap-2"><MapPin size={17} className="mt-0.5 shrink-0 text-(--ev-ink-60)" />{selected.meetup_name || selected.meetup_address}</p>
@@ -475,21 +485,23 @@ export default function RidePage({ ride, host = null, hostPerson = null, ascentF
                         <p className="flex gap-2">
                           <Users size={17} className="mt-0.5 shrink-0 text-(--ev-ink-60)" />
                           {(counts[selected.id]?.going ?? 0) === 0 && (counts[selected.id]?.maybe ?? 0) === 0
-                            ? 'Be the first to say you’re going'
-                            : `${counts[selected.id]?.going ?? 0} going${(counts[selected.id]?.maybe ?? 0) > 0 ? ` · ${counts[selected.id].maybe} maybe` : ''}`}
+                            ? t('be_first')
+                            : (counts[selected.id]?.maybe ?? 0) > 0
+                              ? t('counts_maybe', { going: counts[selected.id]?.going ?? 0, maybe: counts[selected.id].maybe })
+                              : t('counts', { going: counts[selected.id]?.going ?? 0 })}
                         </p>
                         {/* Save it before answering too (Keith 2026-11-06); after answering, the buttons sit with the confirmation. */}
                         {calEv && selected.status === 'scheduled' && !ended && !done && (
                           <p className="flex flex-wrap items-center gap-x-2 gap-y-1">
                             <Download size={17} className="shrink-0 text-(--ev-ink-60)" />
-                            <span>Add to calendar:</span>
+                            <span>{t('add_cal')}</span>
                             <a href={eventGcalUrl(calEv)} target="_blank" rel="noopener noreferrer"
                               onClick={() => posthog.capture('ride_calendar_saved', { code: ride.code, app: 'google', answered: false })}
                               className="font-semibold text-(--ev-accent) hover:underline">Google</a>
                             <span aria-hidden className="text-(--ev-ink-60)">·</span>
                             <button type="button"
                               onClick={() => { posthog.capture('ride_calendar_saved', { code: ride.code, app: 'ics', answered: false }); downloadIcs(calEv, ride.name, selected.date) }}
-                              className="font-semibold text-(--ev-accent) hover:underline">Apple or Outlook</button>
+                              className="font-semibold text-(--ev-accent) hover:underline">{t('apple_outlook')}</button>
                           </p>
                         )}
                       </div>
@@ -500,16 +512,12 @@ export default function RidePage({ ride, host = null, hostPerson = null, ascentF
                           {done ? (
                             <div aria-live="polite">
                               <p className="text-[17px] font-bold text-(--ev-ink)">
-                                {done.every ? `You're in ${done.every}, ${done.first}.` : done.status === 'going' ? `You're going, ${done.first}.` : done.status === 'maybe' ? `Saved as a maybe, ${done.first}.` : `Got it, ${done.first}. Maybe next time.`}
+                                {done.every ? t('done.every', { every: done.every, first: done.first }) : done.status === 'going' ? t('done.going', { first: done.first }) : done.status === 'maybe' ? t('done.maybe', { first: done.first }) : t('done.not', { first: done.first })}
                               </p>
                               {done.status !== 'not_going' && (
                                 <p className="mt-1 text-[15px] text-(--ev-ink-80)">
-                                  {done.emailed ? <>We emailed you the details. </> : null}
-                                  {done.every
-                                    ? <>You&rsquo;ll hear from us the evening before each one. Can&rsquo;t make one? Pick that date and say Can&rsquo;t go.</>
-                                    : done.status === 'maybe'
-                                    ? <>We&rsquo;ll let you know if anything changes.</>
-                                    : <>You&rsquo;ll hear from us the evening before, and right away if the plan changes.</>}
+                                  {done.emailed ? <>{t('done.emailed')} </> : null}
+                                  {done.every ? t('done.every_body') : done.status === 'maybe' ? t('done.maybe_body') : t('done.going_body')}
                                 </p>
                               )}
                               {done.chat && done.status !== 'not_going' && (
@@ -522,31 +530,31 @@ export default function RidePage({ ride, host = null, hostPerson = null, ascentF
                               {!done.chat && done.chatWaiting && done.status !== 'not_going' && (
                                 <p className="mt-3 flex items-start gap-2 rounded-[10px] bg-(--ev-panel) px-3 py-2.5 text-[15px] text-(--ev-ink-85)">
                                   <MessageCircle size={17} className="mt-0.5 shrink-0" aria-hidden />
-                                  <span>The organizer shares the group chat invite. Once they do, it shows here and in your ride emails.</span>
+                                  <span>{t('chat_waiting')}</span>
                                 </p>
                               )}
                               <div className="mt-3 flex flex-wrap gap-2">
                                 {done.status !== 'not_going' && (
                                   <>
                                     <a href={eventGcalUrl(calEv!)} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-[40px] items-center gap-1.5 rounded-[10px] border border-(--ev-line-strong) px-4 py-2 text-[14px] font-semibold text-(--ev-ink) hover:bg-(--ev-panel)">
-                                      <Calendar size={14} /> Google Calendar
+                                      <Calendar size={14} /> {t('google_cal')}
                                     </a>
                                     <button type="button" onClick={() => downloadIcs(calEv!, ride.name, selected.date)} className="inline-flex min-h-[40px] items-center gap-1.5 rounded-[10px] border border-(--ev-line-strong) px-4 py-2 text-[14px] font-semibold text-(--ev-ink) hover:bg-(--ev-panel)">
-                                      <Download size={14} /> Apple or Outlook
+                                      <Download size={14} /> {t('apple_outlook')}
                                     </button>
                                   </>
                                 )}
                                 <button onClick={() => setDone(null)} className="rounded-[10px] px-3 py-2 text-[14px] font-semibold text-(--ev-accent) hover:underline">
-                                  Change answer
+                                  {t('change_answer')}
                                 </button>
                               </div>
                             </div>
                           ) : (
                             <>
                               <p className="text-[15px] font-bold text-(--ev-ink)">
-                                {myAnswer === 'going' ? 'You’re going. Change your answer?' : myAnswer === 'maybe' ? 'You’re a maybe. Change your answer?' : myAnswer === 'not_going' ? 'You can’t make it. Change your answer?' : 'Are you coming?'}
+                                {myAnswer === 'going' ? t('ask.going') : myAnswer === 'maybe' ? t('ask.maybe') : myAnswer === 'not_going' ? t('ask.not') : t('ask.coming')}
                               </p>
-                              <div className="mt-3 grid grid-cols-3 gap-2" role="radiogroup" aria-label="Your answer">
+                              <div className="mt-3 grid grid-cols-3 gap-2" role="radiogroup" aria-label={t('answer_aria')}>
                                 {ANSWERS.map((a) => {
                                   const on = choice ? choice === a.value : myAnswer === a.value
                                   return (
@@ -560,7 +568,7 @@ export default function RidePage({ ride, host = null, hostPerson = null, ascentF
                                         on ? 'border-(--ev-accent-fill) bg-(--ev-accent-fill) text-(--ev-on-accent-fill)' : 'border-(--ev-line-strong) text-(--ev-ink) hover:bg-(--ev-panel)'
                                       }`}
                                     >
-                                      {a.label}
+                                      {t(a.label)}
                                     </button>
                                   )
                                 })}
@@ -570,39 +578,35 @@ export default function RidePage({ ride, host = null, hostPerson = null, ascentF
                                 <form onSubmit={submit} className="mt-4 space-y-3">
                                   <div className="grid grid-cols-2 gap-2">
                                     <label className="block">
-                                      <span className="text-[14px] font-semibold text-(--ev-ink-80)">First name</span>
+                                      <span className="text-[14px] font-semibold text-(--ev-ink-80)">{t('first_name')}</span>
                                       <input name="first_name" required maxLength={40} defaultValue={me.first_name} autoComplete="given-name" className="mt-1 w-full rounded-[10px] border border-(--ev-line-strong) bg-white px-3 py-2.5 text-[15px] text-(--ev-ink) placeholder:text-(--ev-ink-60)" />
                                     </label>
                                     <label className="block">
-                                      <span className="text-[14px] font-semibold text-(--ev-ink-80)">Last name <span className="font-normal text-(--ev-ink-75)">(optional)</span></span>
+                                      <span className="text-[14px] font-semibold text-(--ev-ink-80)">{t('last_name')} <span className="font-normal text-(--ev-ink-75)">{t('optional')}</span></span>
                                       <input name="last_name" maxLength={40} defaultValue={me.last_name} autoComplete="family-name" className="mt-1 w-full rounded-[10px] border border-(--ev-line-strong) bg-white px-3 py-2.5 text-[15px] text-(--ev-ink)" />
                                     </label>
                                   </div>
                                   <label className="block">
-                                    <span className="text-[14px] font-semibold text-(--ev-ink-80)">Email</span>
-                                    <input name="email" type="email" required defaultValue={me.email} autoComplete="email" inputMode="email" placeholder="you@example.com" className="mt-1 w-full rounded-[10px] border border-(--ev-line-strong) bg-white px-3 py-2.5 text-[15px] text-(--ev-ink) placeholder:text-(--ev-ink-60)" />
+                                    <span className="text-[14px] font-semibold text-(--ev-ink-80)">{t('email')}</span>
+                                    <input name="email" type="email" required defaultValue={me.email} autoComplete="email" inputMode="email" placeholder={t('email_ph')} className="mt-1 w-full rounded-[10px] border border-(--ev-line-strong) bg-white px-3 py-2.5 text-[15px] text-(--ev-ink) placeholder:text-(--ev-ink-60)" />
                                   </label>
                                   {choice === 'going' && everyText && (
                                     <label className="flex min-h-[44px] cursor-pointer items-start gap-3 rounded-[10px] border border-(--ev-line-strong) bg-white px-3 py-2.5">
                                       <input type="checkbox" checked={every} onChange={(e) => setEvery(e.target.checked)} className="mt-1 h-4 w-4 shrink-0 accent-(--ev-accent-fill)" />
                                       <span>
-                                        <span className="block text-[15px] font-semibold text-(--ev-ink)">Count me in {everyText}</span>
-                                        <span className="block text-[14px] text-(--ev-ink-75)">You&rsquo;ll be on the list for each date. Say Can&rsquo;t go on any one.</span>
+                                        <span className="block text-[15px] font-semibold text-(--ev-ink)">{t('count_me_in', { every: everyText })}</span>
+                                        <span className="block text-[14px] text-(--ev-ink-75)">{t('count_me_in_sub')}</span>
                                       </span>
                                     </label>
                                   )}
                                   {/* People never see this; scripts fill it in. */}
                                   <input name="website" tabIndex={-1} autoComplete="off" aria-hidden="true" className="absolute left-[-9999px] h-px w-px opacity-0" />
                                   <p className="text-[14px] leading-snug text-(--ev-ink-75)">
-                                    {choice === 'not_going'
-                                      ? 'We’ll let the organizer know.'
-                                      : choice === 'maybe'
-                                        ? `We’ll email you if the plan changes. People on this ${noun} see your first name and last initial. Your email stays private.`
-                                        : `We’ll email you the evening before and if the plan changes. People on this ${noun} see your first name and last initial. Your email stays private.`}
+                                    {choice === 'not_going' ? t('fine.not') : choice === 'maybe' ? t(nk('fine.maybe')) : t(nk('fine.going'))}
                                   </p>
                                   {error && <p role="alert" className="text-[14px] font-semibold text-(--ev-danger)">{error}</p>}
                                   <button type="submit" disabled={busy} className="min-h-[46px] w-full rounded-[10px] bg-(--ev-accent-fill) text-[15px] font-bold text-(--ev-on-accent-fill) transition-opacity hover:opacity-90 disabled:opacity-60">
-                                    {busy ? 'Saving…' : choice === 'going' ? (every && everyText ? `I'm in ${everyText}` : "I'm going") : choice === 'maybe' ? 'Save as maybe' : "I can't make it"}
+                                    {busy ? t('saving') : choice === 'going' ? (every && everyText ? t('btn.every', { every: everyText }) : t('btn.going')) : choice === 'maybe' ? t('btn.maybe') : t('btn.not')}
                                   </button>
                                 </form>
                               )}
@@ -617,7 +621,7 @@ export default function RidePage({ ride, host = null, hostPerson = null, ascentF
 
               <div className="mt-5 flex items-center gap-2 border-t border-(--ev-line) pt-4">
                 <button onClick={share} className="inline-flex items-center gap-1.5 rounded-[10px] border border-(--ev-line-strong) px-4 py-2 text-[14px] font-semibold text-(--ev-ink) hover:bg-(--ev-panel)">
-                  <Share2 size={14} /> {copied ? 'Link copied' : `Share this ${noun}`}
+                  <Share2 size={14} /> {copied ? t('link_copied') : t(nk('share'))}
                 </button>
               </div>
             </div>
@@ -630,24 +634,24 @@ export default function RidePage({ ride, host = null, hostPerson = null, ascentF
               <div className={route.length >= 2 ? 'h-[300px] sm:h-[360px]' : 'h-56 sm:h-64'}>
                 {route.length >= 2 ? (
                   <RouteMap line={route} stops={[]} meetup={{ lat: place.meetup_lat!, lng: place.meetup_lng! }} pick={false}
-                    className="h-full w-full" label={`Route map for ${ride.name}`} />
+                    className="h-full w-full" label={t('route_map', { name: ride.name })} />
                 ) : (
                   <EventMap lat={place.meetup_lat!} lng={place.meetup_lng!} label={place.meetup_name ?? undefined} />
                 )}
               </div>
               <div className="flex flex-wrap items-center justify-between gap-3 border-t border-(--ev-line) p-4">
                 <div className="min-w-0">
-                  <p className="text-[15px] font-semibold text-(--ev-ink)">Meet at {place.meetup_name || 'the start'}</p>
+                  <p className="text-[15px] font-semibold text-(--ev-ink)">{t('meet_at', { place: place.meetup_name || t('the_start') })}</p>
                   {place.meetup_address && <p className="mt-0.5 text-[14px] text-(--ev-ink-75)">{place.meetup_address}</p>}
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {/* Nearby plans the trip there by bike, the T or Bluebikes, from where they are. */}
-                  <a href={`/nearby?to=${place.meetup_lat},${place.meetup_lng}&toName=${encodeURIComponent(place.meetup_name || ride.name)}&toMode=bike`}
+                  <a href={withLang(`/nearby?to=${place.meetup_lat},${place.meetup_lng}&toName=${encodeURIComponent(place.meetup_name || ride.name)}&toMode=bike`, locale)}
                     className="inline-flex min-h-[44px] items-center gap-1.5 rounded-[10px] border border-(--ev-line-strong) bg-white px-4 py-2 text-[14px] font-semibold text-(--ev-ink) hover:bg-(--ev-panel)">
-                    <Bike size={15} /> Get there by bike or T
+                    <Bike size={15} /> {t('get_there')}
                   </a>
                   <a href={directionsUrl(place)} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-[44px] items-center gap-1.5 rounded-[10px] border border-(--ev-line-strong) bg-white px-4 py-2 text-[14px] font-semibold text-(--ev-ink) hover:bg-(--ev-panel)">
-                    <MapPin size={15} /> Directions
+                    <MapPin size={15} /> {t('directions')}
                   </a>
                 </div>
               </div>
@@ -655,11 +659,11 @@ export default function RidePage({ ride, host = null, hostPerson = null, ascentF
           )}
 
           {/* What it's like (distance, pace, hills, calm streets, level, policies). */}
-          <RideFacts ride={ride} miles={miles} ascentFt={climb} comfort={comfortHere} className="" />
+          <RideFacts ride={ride} miles={miles} ascentFt={climb} comfort={comfortHere} className="" locale={locale} />
 
           {/* ---- The rest, by tab, so nothing waits at the bottom of a long scroll ---- */}
-          <section aria-label={`More about this ${noun}`}>
-            <div role="tablist" aria-label={`About this ${noun}`}
+          <section aria-label={t(nk('more_about'))}>
+            <div role="tablist" aria-label={t(nk('tab.about'))}
               className="flex gap-1 overflow-x-auto border-b border-(--ev-line-mid) [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {TABS.map((t) => {
                 const on = t.id === shownTab
@@ -687,15 +691,15 @@ export default function RidePage({ ride, host = null, hostPerson = null, ascentF
                         className="flex items-center gap-3 rounded-2xl border border-(--ev-line-mid) bg-white p-4 hover:bg-(--ev-panel-faint)">
                         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-(--ev-accent-tint-15) text-(--ev-accent)"><ExternalLink size={18} aria-hidden /></span>
                         <span className="min-w-0">
-                          <span className="block text-[15px] font-bold text-(--ev-ink)">Also register with the organizer</span>
-                          <span className="block text-[14px] text-(--ev-ink-80)">They ask everyone to sign up on their own page too.</span>
+                          <span className="block text-[15px] font-bold text-(--ev-ink)">{t('register_title')}</span>
+                          <span className="block text-[14px] text-(--ev-ink-80)">{t('register_body')}</span>
                         </span>
                       </a>
                     )}
                   </div>
                   {flyer && (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={flyer} alt={`${dateTitle ?? ride.name} flyer`} className="max-h-[320px] w-full rounded-2xl border border-(--ev-line) object-cover sm:w-[240px]" />
+                    <img src={flyer} alt={t('flyer_alt', { name: dateTitle ?? ride.name })} className="max-h-[320px] w-full rounded-2xl border border-(--ev-line) object-cover sm:w-[240px]" />
                   )}
                 </div>
               )}
@@ -704,7 +708,7 @@ export default function RidePage({ ride, host = null, hostPerson = null, ascentF
                 updates.length === 0 ? (
                   <div className="flex items-start gap-3 rounded-2xl border border-(--ev-line) bg-(--ev-card) p-4">
                     <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-(--ev-panel) text-(--ev-ink-75)"><Megaphone size={18} aria-hidden /></span>
-                    <p className="text-[15px] text-(--ev-ink-80)">Nothing new from the organizer. If plans change, it shows up here, and everyone who says they&rsquo;re coming hears right away.</p>
+                    <p className="text-[15px] text-(--ev-ink-80)">{t('no_updates')}</p>
                   </div>
                 ) : (
                   <ol className="space-y-3">
@@ -714,7 +718,7 @@ export default function RidePage({ ride, host = null, hostPerson = null, ascentF
                         <div className="min-w-0 flex-1">
                           <div className="flex items-baseline justify-between gap-3">
                             <p className="text-[15px] font-semibold text-(--ev-ink)">{u.title}</p>
-                            <time dateTime={u.created_at} className="shrink-0 text-[14px] text-(--ev-ink-75)">{ago(u.created_at)}</time>
+                            <time dateTime={u.created_at} className="shrink-0 text-[14px] text-(--ev-ink-75)">{ago(u.created_at, Date.now(), locale)}</time>
                           </div>
                           {u.body && <p className="mt-0.5 text-[15px] text-(--ev-ink-80)">{u.body}</p>}
                           {u.note && <p className="mt-1.5 border-l-2 border-(--ev-accent-line) pl-3 text-[15px] text-(--ev-ink-85)">&ldquo;{u.note}&rdquo;</p>}
@@ -732,21 +736,21 @@ export default function RidePage({ ride, host = null, hostPerson = null, ascentF
                       {routeLink && /^https?:\/\//.test(routeLink) && (
                         <a href={routeLink} target="_blank" rel="noopener noreferrer"
                           className="inline-flex min-h-[44px] items-center gap-1.5 rounded-[10px] border border-(--ev-line-strong) bg-white px-4 text-[15px] font-semibold text-(--ev-ink) hover:bg-(--ev-panel)">
-                          <RouteIcon size={16} /> The full route, turn by turn <ExternalLink size={14} />
+                          <RouteIcon size={16} /> {t('full_route')} <ExternalLink size={14} />
                         </a>
                       )}
                       {route.length >= 2 && (
                         <button type="button" onClick={() => downloadGpx(ride, route, selected?.date ?? null)}
                           className="inline-flex min-h-[44px] items-center gap-1.5 rounded-[10px] border border-(--ev-line-strong) bg-white px-4 text-[15px] font-semibold text-(--ev-ink) hover:bg-(--ev-panel)">
-                          <Download size={16} /> {walk ? 'GPX for a phone or watch' : 'GPX for a bike computer'}
+                          <Download size={16} /> {t(walk ? 'gpx.walk' : 'gpx.ride')}
                         </button>
                       )}
                     </div>
                   )}
-                  {coffee?.shop && <RideCoffee info={coffee} />}
-                  {hasNewInfra(newHere) && <RideNewInfra info={newHere} onRoute={route.length >= 2} />}
+                  {coffee?.shop && <RideCoffee info={coffee} locale={locale} />}
+                  {hasNewInfra(newHere) && <RideNewInfra info={newHere} onRoute={route.length >= 2} locale={locale} />}
                   {/* Bicycle Benefits perks need a helmet sticker: rides only. */}
-                  {!walk && perkStops.length > 0 && <RidePerks stops={perkStops} code={ride.code} />}
+                  {!walk && perkStops.length > 0 && <RidePerks stops={perkStops} code={ride.code} locale={locale} />}
                 </div>
               )}
 
@@ -756,18 +760,18 @@ export default function RidePage({ ride, host = null, hostPerson = null, ascentF
                     <HostFace name={hostName} logo={host?.logo_url ?? null} walk={walk} large />
                     <div className="min-w-0">
                       <p className="font-display text-[22px] font-extrabold leading-tight text-(--ev-ink)">{hostName}</p>
-                      <p className="mt-0.5 text-[15px] text-(--ev-ink-80)">{host ? 'Hosts this group ' + noun : `Organizes this group ${noun} on Shift`}</p>
+                      <p className="mt-0.5 text-[15px] text-(--ev-ink-80)">{host ? t(nk('hosts')) : t(nk('organizes'))}</p>
                     </div>
                   </div>
                   {(host ? Object.keys(host.social_links).length > 0 || host.url : ride.organizer_url) && (
                     <div className="mt-4">
-                      <p className="text-[15px] font-semibold text-(--ev-ink)">Follow them for news between {walk ? 'walks' : 'rides'}</p>
-                      <OrganizerChannels className="mt-2" links={host?.social_links ?? {}} website={host ? host.url : ride.organizer_url} />
+                      <p className="text-[15px] font-semibold text-(--ev-ink)">{t(nk('follow'))}</p>
+                      <OrganizerChannels className="mt-2" links={host?.social_links ?? {}} website={host ? host.url : ride.organizer_url} locale={locale} />
                     </div>
                   )}
                   {hostHref && (
                     <a href={hostHref} className="mt-4 inline-flex min-h-[44px] items-center rounded-[10px] bg-(--ev-accent-fill) px-4 text-[15px] font-semibold text-(--ev-on-accent-fill) hover:opacity-90">
-                      {walk ? 'More walks from them' : 'More rides from them'}
+                      {t(nk('more_from_them'))}
                     </a>
                   )}
                 </div>
@@ -777,12 +781,12 @@ export default function RidePage({ ride, host = null, hostPerson = null, ascentF
 
           <div className="flex flex-col gap-4 rounded-2xl bg-[#191A2E] p-5 text-white sm:flex-row sm:items-center sm:justify-between">
             <div className="min-w-0">
-              <p className="font-display text-[19px] font-extrabold">{walk ? 'Walk along with Shift' : 'Ride along with Shift'}</p>
+              <p className="font-display text-[19px] font-extrabold">{t(nk('along_title'))}</p>
               <p className="mt-1 text-[15px] text-white/80">
-                On the day, Shift shows where the group is so you can catch up, and counts your {walk ? 'walk' : 'ride'} toward local rewards.
+                {t(nk('along_body'))}
               </p>
             </div>
-            <RideStoreBadges code={ride.code} className="shrink-0" placement="ride_page" height={40} />
+            <RideStoreBadges code={ride.code} className="shrink-0" placement="ride_page" height={40} locale={locale} />
           </div>
           </div>
         </div>

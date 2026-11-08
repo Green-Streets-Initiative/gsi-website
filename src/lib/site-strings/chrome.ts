@@ -73,7 +73,7 @@ export const chromeStrings = defineStrings(
   },
   {
     es: {
-      'nav.challenges': 'Retos',
+      'nav.challenges': 'Desafíos',
       'nav.events': 'Eventos',
       'nav.plan': 'Planear una ruta',
       'nav.trails': 'Senderos',
@@ -108,7 +108,7 @@ export const chromeStrings = defineStrings(
       'footer.guides': 'Guías',
       'footer.trails': 'Ciclovías y senderos',
       'footer.events': 'Eventos comunitarios',
-      'footer.challenges': 'Retos',
+      'footer.challenges': 'Desafíos',
       'footer.towns': 'Ciudades Shift',
       'footer.all_towns': 'Todas las ciudades →',
       'footer.programs': 'Programas',

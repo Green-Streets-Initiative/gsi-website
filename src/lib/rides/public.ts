@@ -1,3 +1,5 @@
+import { SITE_LOCALE_TAG, translator, type SiteLocale } from '@/lib/site-i18n'
+import { ridesStrings } from '@/lib/site-strings/rides'
 /**
  * A Shift group ride as the public ride page sees it.
  *
@@ -115,12 +117,26 @@ export function looksLikeRideCode(code: string): boolean {
 
 const DAY_SHORT = ['', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 
+// Every formatter takes an optional locale (the public ride page passes the
+// page's language, translation plan batch 5). Without one it is English,
+// exactly as before, for the organizer console and the other callers.
+const tr = (locale: SiteLocale) => translator(ridesStrings, locale)
+
+/** Day 1..7 (Mon..Sun) as a weekday name in the page's language. Jan 1 2024 was a Monday. */
+function weekdayName(d: number, locale: SiteLocale, weekday: 'short' | 'long'): string {
+  return new Date(Date.UTC(2024, 0, d, 12)).toLocaleDateString(SITE_LOCALE_TAG[locale], { weekday, timeZone: 'UTC' })
+}
+
 /** "14:00:00" -> "2 PM", "09:30:00" -> "9:30 AM". */
-export function clock(t: string | null | undefined): string {
+export function clock(t: string | null | undefined, locale: SiteLocale = 'en'): string {
   if (!t) return ''
   const [hStr, mStr = '00'] = t.split(':')
   const h = parseInt(hStr, 10)
   if (Number.isNaN(h)) return ''
+  if (locale !== 'en') {
+    const m = parseInt(mStr, 10) || 0
+    return new Date(Date.UTC(2000, 0, 1, h, m)).toLocaleTimeString(SITE_LOCALE_TAG[locale], { hour: 'numeric', minute: '2-digit', timeZone: 'UTC' })
+  }
   return `${h % 12 || 12}${mStr === '00' ? '' : `:${mStr}`} ${h < 12 ? 'AM' : 'PM'}`
 }
 
@@ -128,16 +144,16 @@ function noon(d: string): Date {
   return new Date(`${d}T12:00:00Z`)
 }
 
-export function dayShort(d: string): string {
-  return noon(d).toLocaleDateString('en-US', { weekday: 'short', timeZone: 'UTC' })
+export function dayShort(d: string, locale: SiteLocale = 'en'): string {
+  return noon(d).toLocaleDateString(SITE_LOCALE_TAG[locale], { weekday: 'short', timeZone: 'UTC' })
 }
 
-export function dateShort(d: string): string {
-  return noon(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })
+export function dateShort(d: string, locale: SiteLocale = 'en'): string {
+  return noon(d).toLocaleDateString(SITE_LOCALE_TAG[locale], { month: 'short', day: 'numeric', timeZone: 'UTC' })
 }
 
-export function dateLong(d: string): string {
-  return noon(d).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', timeZone: 'UTC' })
+export function dateLong(d: string, locale: SiteLocale = 'en'): string {
+  return noon(d).toLocaleDateString(SITE_LOCALE_TAG[locale], { weekday: 'long', month: 'long', day: 'numeric', timeZone: 'UTC' })
 }
 
 /**
@@ -147,21 +163,23 @@ export function dateLong(d: string): string {
  * Mon–Fri ride (never "Every other Weekdays"). Words stay the site's own:
  * "Every Sat · 10 AM", "1st Sat of the month · 10 AM".
  */
-export function scheduleText(r: Pick<PublicRide, 'ride_date' | 'frequency' | 'days' | 'week_of_month' | 'start_time'>): string {
-  const time = clock(r.start_time)
+export function scheduleText(r: Pick<PublicRide, 'ride_date' | 'frequency' | 'days' | 'week_of_month' | 'start_time'>, locale: SiteLocale = 'en'): string {
+  const t = tr(locale)
+  const time = clock(r.start_time, locale)
   const at = (s: string) => (time ? `${s} · ${time}` : s)
-  if (r.ride_date) return at(dateLong(r.ride_date))
-  if (r.frequency === 'daily') return at('Every day')
+  if (r.ride_date) return at(dateLong(r.ride_date, locale))
+  if (r.frequency === 'daily') return at(t('sched.every_day'))
   const days = (r.days ?? []).filter((d) => d >= 1 && d <= 7)
-  if (days.length === 0) return at('No days set')
-  const dayStr = days.map((d) => DAY_SHORT[d]).join(', ')
-  if (r.frequency === 'biweekly') return at(`Every other ${dayStr}`)
+  if (days.length === 0) return at(t('sched.no_days'))
+  const dayStr = days.map((d) => (locale === 'en' ? DAY_SHORT[d] : weekdayName(d, locale, 'short'))).join(', ')
+  if (r.frequency === 'biweekly') return at(t('sched.every_other', { days: dayStr }))
   if (r.frequency === 'monthly') {
-    const ord = r.week_of_month === -1 ? 'Last' : ['', '1st', '2nd', '3rd', '4th', '5th'][r.week_of_month ?? 0] ?? ''
-    return at(`${ord} ${dayStr} of the month`.trim())
+    const w = r.week_of_month ?? 0
+    const ord = w === -1 ? t('ord.last') : w >= 1 && w <= 5 ? t(`ord.${w}` as 'ord.1') : ''
+    return at(t('sched.monthly', { ord, day: dayStr }).trim())
   }
-  if (days.length === 5 && [1, 2, 3, 4, 5].every((d) => days.includes(d))) return at('Weekdays')
-  return at(`Every ${dayStr}`)
+  if (days.length === 5 && [1, 2, 3, 4, 5].every((d) => days.includes(d))) return at(t('sched.weekdays'))
+  return at(t('sched.every', { days: dayStr }))
 }
 
 /**
@@ -169,15 +187,17 @@ export function scheduleText(r: Pick<PublicRide, 'ride_date' | 'frequency' | 'da
  * the same words as the emails (_shared/ride-guest-copy.ts everyLabel). Null
  * for a ride with one date.
  */
-export function everyLabel(r: Pick<PublicRide, 'ride_date' | 'frequency' | 'days'>): string | null {
+export function everyLabel(r: Pick<PublicRide, 'ride_date' | 'frequency' | 'days'>, locale: SiteLocale = 'en'): string | null {
+  const t = tr(locale)
   if (r.ride_date) return null
-  if (r.frequency === 'daily') return 'every day'
+  if (r.frequency === 'daily') return t('every.day')
   const days = (r.days ?? []).filter((d) => d >= 1 && d <= 7)
   if (days.length === 0) return null
-  if (r.frequency === 'monthly') return 'every month'
+  if (r.frequency === 'monthly') return t('every.month')
   const names = ['', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
-  if (days.length > 1) return r.frequency === 'biweekly' ? 'every other week' : 'every week'
-  return r.frequency === 'biweekly' ? `every other ${names[days[0]]}` : `every ${names[days[0]]}`
+  if (days.length > 1) return r.frequency === 'biweekly' ? t('every.other_week') : t('every.week')
+  const day = locale === 'en' ? names[days[0]] : weekdayName(days[0], locale, 'long')
+  return r.frequency === 'biweekly' ? t('every.other_weekday', { day }) : t('every.weekday', { day })
 }
 
 /** The group chat link people get once they say they're coming (Shift 01598). */
@@ -191,13 +211,13 @@ export interface RideChat {
  * one-time ride its next open date. Empty once no open date is left, so an
  * ended ride never advertises a date that has passed.
  */
-export function nextWhen(r: PublicRide): string {
+export function nextWhen(r: PublicRide, locale: SiteLocale = 'en'): string {
   const next = r.occurrences.find((d) => d.status === 'scheduled')
   if (!next) return ''
   const repeats = !r.ride_date && ((r.days ?? []).length > 0 || r.frequency === 'daily')
-  if (repeats) return scheduleText(r)
-  const time = clock(next.start_time ?? r.start_time)
-  return `${dateLong(next.date)}${time ? ` · ${time}` : ''}`
+  if (repeats) return scheduleText(r, locale)
+  const time = clock(next.start_time ?? r.start_time, locale)
+  return `${dateLong(next.date, locale)}${time ? ` · ${time}` : ''}`
 }
 
 export const PACE_LABEL: Record<NonNullable<PublicRide['pace']>, string> = {
@@ -209,27 +229,29 @@ export const PACE_LABEL: Record<NonNullable<PublicRide['pace']>, string> = {
 }
 
 /** "Updated 2 hours ago", in plain words. */
-export function ago(iso: string, now = Date.now()): string {
+export function ago(iso: string, now = Date.now(), locale: SiteLocale = 'en'): string {
+  const t = tr(locale)
   const mins = Math.max(0, Math.round((now - new Date(iso).getTime()) / 60000))
-  if (mins < 1) return 'just now'
-  if (mins < 60) return `${mins} min ago`
+  if (mins < 1) return t('ago.now')
+  if (mins < 60) return t('ago.min', { n: mins })
   const hrs = Math.round(mins / 60)
-  if (hrs < 24) return `${hrs} hour${hrs === 1 ? '' : 's'} ago`
+  if (hrs < 24) return hrs === 1 ? t('ago.hour_one') : t('ago.hour_other', { n: hrs })
   const days = Math.round(hrs / 24)
-  return `${days} day${days === 1 ? '' : 's'} ago`
+  return days === 1 ? t('ago.day_one') : t('ago.day_other', { n: days })
 }
 
 /**
  * The one line that answers "is it still on?" for a date, from the ride's
  * own state and the newest update about that date.
  */
-export function dateStatusLine(ride: PublicRide, d: RideDate): { tone: 'good' | 'warn' | 'off' | 'plain'; text: string } {
-  if (d.status === 'canceled') return { tone: 'off', text: 'This date is cancelled' }
-  if (d.live) return { tone: 'good', text: 'The group is on the move now' }
+export function dateStatusLine(ride: PublicRide, d: RideDate, locale: SiteLocale = 'en'): { tone: 'good' | 'warn' | 'off' | 'plain'; text: string } {
+  const t = tr(locale)
+  if (d.status === 'canceled') return { tone: 'off', text: t('status.canceled') }
+  if (d.live) return { tone: 'good', text: t('status.live') }
   const latest = ride.updates.find((u) => u.occurrence_id === d.id)
-  if (latest?.kind === 'late') return { tone: 'warn', text: 'Running a little late' }
-  if (latest?.kind === 'weather') return { tone: 'warn', text: 'Weather update from the organizer' }
-  if (d.moved) return { tone: 'warn', text: 'New time or place for this date' }
-  if (d.confirmed) return { tone: 'good', text: "It's on" }
-  return { tone: 'plain', text: 'Scheduled' }
+  if (latest?.kind === 'late') return { tone: 'warn', text: t('status.late') }
+  if (latest?.kind === 'weather') return { tone: 'warn', text: t('status.weather') }
+  if (d.moved) return { tone: 'warn', text: t('status.moved') }
+  if (d.confirmed) return { tone: 'good', text: t('status.on') }
+  return { tone: 'plain', text: t('status.scheduled') }
 }

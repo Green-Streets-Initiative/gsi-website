@@ -10,6 +10,10 @@ import { looksLikeRideCode, scheduleText, type PublicRide, type RideLookup } fro
 import { hostLabel, rideExtras } from '@/lib/rides/host'
 import { bikePerksForPlaces } from '@/lib/server/bike-perks'
 import { newInfraForPlaces } from '@/lib/server/new-infra'
+import HtmlLang from '@/components/HtmlLang'
+import { siteLocale } from '@/lib/site-locale'
+import { translator, withLang, type SiteLocale } from '@/lib/site-i18n'
+import { ridesStrings } from '@/lib/site-strings/rides'
 
 /**
  * A Shift group ride's public page: the link organizers put in their
@@ -38,20 +42,26 @@ async function loadRide(code: string, date: string | null = null): Promise<RideL
   }
 }
 
-type Search = Promise<{ date?: string | string[] }>
+type Search = Promise<{ date?: string | string[]; lang?: string | string[] }>
 const dateParam = (v: string | string[] | undefined) => (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : null)
 
 export async function generateMetadata({ params, searchParams }: { params: Promise<{ code: string }>; searchParams: Search }): Promise<Metadata> {
   const { code } = await params
   // A link to one date (from its calendar listing) previews that date's own name and description.
-  const want = dateParam((await searchParams).date)
+  const sp = await searchParams
+  const want = dateParam(sp.date)
+  const locale = await siteLocale(sp.lang)
+  const t = translator(ridesStrings, locale)
   const ride = await loadRide(code, want)
-  if (ride === 'error') return { title: 'Group ride', robots: { index: false } }
-  if (!ride) return { title: 'Ride not found', robots: { index: false } }
+  if (ride === 'error') return { title: t('meta.group'), robots: { index: false } }
+  if (!ride) return { title: t('meta.not_found'), robots: { index: false } }
   if (!ride.web) return { title: ride.name, robots: { index: false } }
   const day = want ? ride.occurrences.find((d) => d.date === want) : undefined
-  const where = ride.meetup_name ? ` from ${ride.meetup_name}` : ''
-  const description = (day?.description || ride.description)?.slice(0, 160) || `${scheduleText(ride)}${where}. RSVP here, no app needed.`
+  // The organizer's own description stays as written; the fallback is in the page's language.
+  const fallback = ride.meetup_name
+    ? t('meta.desc_from', { schedule: scheduleText(ride, locale), place: ride.meetup_name })
+    : t('meta.desc', { schedule: scheduleText(ride, locale) })
+  const description = (day?.description || ride.description)?.slice(0, 160) || fallback
   const title = day?.title ? `${day.title} · ${ride.name}` : ride.name
   const flyer = day?.flyer_url || ride.flyer_url
   return {
@@ -71,9 +81,11 @@ export async function generateMetadata({ params, searchParams }: { params: Promi
 
 export default async function Page({ params, searchParams }: { params: Promise<{ code: string }>; searchParams: Search }) {
   const { code } = await params
-  const initialDate = dateParam((await searchParams).date)
+  const sp = await searchParams
+  const initialDate = dateParam(sp.date)
+  const locale = await siteLocale(sp.lang)
   const ride = await loadRide(code, initialDate)
-  if (ride === 'error') return <CouldNotLoad href={`/rides/${encodeURIComponent(code)}${initialDate ? `?date=${initialDate}` : ''}`} />
+  if (ride === 'error') return <CouldNotLoad locale={locale} href={withLang(`/rides/${encodeURIComponent(code)}${initialDate ? `?date=${initialDate}` : ''}`, locale)} />
   if (!ride) notFound()
 
   // Who runs it (logo, channels, their calendar page) and the route's climbing;
@@ -86,11 +98,12 @@ export default async function Page({ params, searchParams }: { params: Promise<{
 
   return (
     <>
-      <Nav variant="light" />
+      <HtmlLang locale={locale} />
+      <Nav variant="light" locale={locale} />
       <main className="bg-cream" style={{ paddingTop: '60px' }}>
-        {ride.web ? <RidePage ride={{ ...ride, languages: extras?.languages ?? null }} host={extras?.host ?? null} hostPerson={hostLabel(extras)} ascentFt={extras?.ascentFt ?? null} comfort={extras?.comfortSegments ?? null} initialDate={initialDate} perks={perks} newInfra={newInfra} coffee={coffee} /> : <AppOnlyRidePage ride={ride} />}
+        {ride.web ? <RidePage ride={{ ...ride, languages: extras?.languages ?? null }} host={extras?.host ?? null} hostPerson={hostLabel(extras)} ascentFt={extras?.ascentFt ?? null} comfort={extras?.comfortSegments ?? null} initialDate={initialDate} perks={perks} newInfra={newInfra} coffee={coffee} locale={locale} /> : <AppOnlyRidePage ride={ride} locale={locale} />}
       </main>
-      <Footer variant="light" />
+      <Footer variant="light" locale={locale} />
     </>
   )
 }
@@ -119,21 +132,23 @@ function ridePlaces(ride: PublicRide) {
 }
 
 /** The lookup failed (not "no such ride"): say so and offer the same page again. */
-function CouldNotLoad({ href }: { href: string }) {
+function CouldNotLoad({ href, locale }: { href: string; locale: SiteLocale }) {
+  const t = translator(ridesStrings, locale)
   return (
     <>
-      <Nav variant="light" />
+      <HtmlLang locale={locale} />
+      <Nav variant="light" locale={locale} />
       <main className="bg-cream" style={{ paddingTop: '60px' }}>
         <div className="mx-auto max-w-[560px] px-4 py-16 sm:px-8">
-          <h1 className="font-display text-[30px] font-extrabold leading-tight text-[#191A2E]">Couldn&rsquo;t load this ride</h1>
-          <p className="mt-2 text-[16px] text-[#191A2E]/80">Something went wrong on our side. Try again in a moment.</p>
+          <h1 className="font-display text-[30px] font-extrabold leading-tight text-[#191A2E]">{t('load.title')}</h1>
+          <p className="mt-2 text-[16px] text-[#191A2E]/80">{t('load.body')}</p>
           {/* A full reload, so the lookup runs again. */}
           <a href={href} className="mt-6 inline-flex min-h-[46px] items-center rounded-[10px] bg-[#191A2E] px-5 text-[15px] font-bold text-white hover:opacity-90">
-            Try again
+            {t('load.retry')}
           </a>
         </div>
       </main>
-      <Footer variant="light" />
+      <Footer variant="light" locale={locale} />
     </>
   )
 }

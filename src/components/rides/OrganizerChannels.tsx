@@ -3,6 +3,8 @@ import {
   DiscordLogo, FacebookLogo, Globe, InstagramLogo, LinkSimple, LinktreeLogo, TiktokLogo, WhatsappLogo, XLogo, YoutubeLogo,
 } from '@phosphor-icons/react/dist/ssr'
 import { SOCIAL_LABEL } from '@/lib/social-links'
+import { translator, type SiteLocale } from '@/lib/site-i18n'
+import { ridesStrings, type RideKey } from '@/lib/site-strings/rides'
 
 /**
  * Where to follow an organizer: their own channels (WhatsApp group, Partiful,
@@ -28,23 +30,29 @@ const WHAT: Record<string, string> = {
   strava: 'Club',
 }
 
+const WHAT_KEY: Record<string, RideKey> = {
+  whatsapp: 'chan.chat', partiful: 'chan.invites', discord: 'chan.chat', meetup: 'chan.invites', strava: 'chan.club',
+}
+
 const ORDER = ['whatsapp', 'partiful', 'discord', 'meetup', 'instagram', 'strava', 'facebook', 'bluesky', 'x', 'twitter', 'tiktok', 'youtube', 'linktree', 'eventbrite']
 
-export function channelList(links: Record<string, string>, website?: string | null): { key: string; label: string; what?: string; url: string; Icon: Icon }[] {
+export function channelList(links: Record<string, string>, website?: string | null, locale: SiteLocale = 'en'): { key: string; label: string; what?: string; url: string; Icon: Icon }[] {
+  const t = translator(ridesStrings, locale)
   const rows: { key: string; label: string; what?: string; url: string; Icon: Icon }[] = Object.entries(links)
     .filter(([, u]) => /^https:\/\/\S+$/i.test(u))
     .sort(([a], [b]) => (ORDER.indexOf(a) + 1 || 99) - (ORDER.indexOf(b) + 1 || 99))
-    .map(([k, u]) => ({ key: k, label: SOCIAL_LABEL[k] ?? k[0].toUpperCase() + k.slice(1), what: WHAT[k], url: u, Icon: ICON[k] ?? LinkSimple }))
-  if (website && /^https?:\/\/\S+$/i.test(website)) rows.push({ key: 'website', label: 'Website', url: website, Icon: Globe })
+    .map(([k, u]) => ({ key: k, label: SOCIAL_LABEL[k] ?? k[0].toUpperCase() + k.slice(1), what: WHAT[k] && locale !== 'en' ? t(WHAT_KEY[k]) : WHAT[k], url: u, Icon: ICON[k] ?? LinkSimple }))
+  if (website && /^https?:\/\/\S+$/i.test(website)) rows.push({ key: 'website', label: locale === 'en' ? 'Website' : t('chan.website'), url: website, Icon: Globe })
   return rows
 }
 
-export default function OrganizerChannels({ links, website, className = '' }: {
+export default function OrganizerChannels({ links, website, className = '', locale = 'en' }: {
   links: Record<string, string>
   website?: string | null
   className?: string
+  locale?: SiteLocale
 }) {
-  const rows = channelList(links, website)
+  const rows = channelList(links, website, locale)
   if (rows.length === 0) return null
   return (
     <ul className={`flex flex-wrap gap-2 ${className}`}>

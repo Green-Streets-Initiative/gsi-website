@@ -2,6 +2,8 @@
 
 import { useSyncExternalStore, type ComponentProps } from 'react'
 import StoreBadges from '@/components/StoreBadges'
+import { translator, type SiteLocale } from '@/lib/site-i18n'
+import { ridesStrings } from '@/lib/site-strings/rides'
 
 /** A Shift referral code: 8 hex characters. */
 const REF_RE = /^[0-9A-F]{8}$/
@@ -21,7 +23,8 @@ const noSubscribe = () => () => {}
  * screen for this ride and credits the friend. Same hand-off as the Worker's
  * /join/CODE page (docs/cloudflare-worker-refer.js in the Shift repo).
  */
-export default function RideStoreBadges({ code, ...badges }: { code: string } & ComponentProps<typeof StoreBadges>) {
+export default function RideStoreBadges({ code, locale = 'en', ...badges }: { code: string; locale?: SiteLocale } & ComponentProps<typeof StoreBadges>) {
+  const t = translator(ridesStrings, locale)
   // Client-only: the server render doesn't see the visitor's link.
   const friendRef = useSyncExternalStore(noSubscribe, linkRef, () => null)
 
@@ -35,7 +38,7 @@ export default function RideStoreBadges({ code, ...badges }: { code: string } & 
   return (
     <div onClickCapture={copyOnStoreTap}>
       <StoreBadges {...badges} />
-      {friendRef && <p className="mt-2 text-[13px] leading-snug text-(--ev-ink-80)">Get Shift here and your friend&rsquo;s invite comes with you.</p>}
+      {friendRef && <p className="mt-2 text-[13px] leading-snug text-(--ev-ink-80)">{t('badges.friend')}</p>}
     </div>
   )
 }
