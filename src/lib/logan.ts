@@ -85,7 +85,8 @@ const REASON: Record<string, string> = {
   under_18: 'Going to Logan with someone is for people 18 and older.',
 }
 
-export async function saveTrip(t: TripInput): Promise<{ ok: true; matches: number } | { ok: false; reason: string }> {
+/** `code` (the server's reason, or 'error') lets a translated page say `reason` in its own words. */
+export async function saveTrip(t: TripInput): Promise<{ ok: true; matches: number } | { ok: false; reason: string; code: string }> {
   const { data, error } = await supabase.rpc('set_airport_trip', {
     p_kind: t.kind,
     p_trip_at: t.tripAt,
@@ -98,9 +99,11 @@ export async function saveTrip(t: TripInput): Promise<{ ok: true; matches: numbe
     p_lng: t.lng,
     p_label: t.label,
   })
-  if (error) return { ok: false, reason: "We couldn't save that. Try again in a minute." }
+  if (error) return { ok: false, reason: "We couldn't save that. Try again in a minute.", code: 'error' }
   const r = data as { ok: boolean; reason?: string; matches?: number }
-  return r.ok ? { ok: true, matches: r.matches ?? 0 } : { ok: false, reason: REASON[r.reason ?? ''] ?? "We couldn't save that. Try again in a minute." }
+  return r.ok
+    ? { ok: true, matches: r.matches ?? 0 }
+    : { ok: false, reason: REASON[r.reason ?? ''] ?? "We couldn't save that. Try again in a minute.", code: r.reason ?? 'error' }
 }
 
 export async function stopTrip(kind: TripKind): Promise<boolean> {

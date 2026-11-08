@@ -8,6 +8,7 @@ import { toneClass } from '@/components/events/EventsTone'
 import { Button, Card, Field, Input, Notice, Spinner, cx } from '@/components/organizers/ui'
 import { translator, withLang, type SiteLocale, type T } from '@/lib/site-i18n'
 import { togetherStrings, type TogetherKey } from '@/lib/site-strings/together'
+import { loganStrings, type LoganKey } from '@/lib/site-strings/logan'
 import { supabase } from '@/lib/supabase'
 import { togetherOn, track } from '@/lib/together'
 import '@/components/events/events-tone.css'
@@ -25,7 +26,7 @@ type Phase = 'checking' | 'signed_out' | 'off' | 'ready' | 'error'
 /** 'logan': gogreenstreets.org/logan (Shift 01518), open to anyone signed in, with its own words. */
 export type ShellVariant = 'together' | 'logan'
 
-/** `locale`: /together's language (Shift Together pages pass it; /logan stays English). */
+/** `locale`: the page's language (/together and /logan pass it). */
 type State = { phase: Phase; userId: string | null; email: string | null; notice: string | null; signOut: () => Promise<void>; variant: ShellVariant; locale: SiteLocale; t: T<TogetherKey> }
 const Ctx = createContext<State | null>(null)
 
@@ -128,7 +129,7 @@ function SubBar() {
     <div className="border-b border-(--ev-line) bg-(--ev-bar)">
       <div className="mx-auto flex min-h-[56px] max-w-[920px] items-center gap-x-4 px-4 sm:px-6">
         <span className={cx('font-display text-[17px] font-extrabold', variant === 'logan' ? 'inline' : 'hidden sm:inline')}>
-          {variant === 'logan' ? 'Going to Logan together' : 'Shift Together'}
+          {variant === 'logan' ? translator(loganStrings, locale)('logan.bar_title') : 'Shift Together'}
         </span>
         {phase === 'ready' && variant === 'together' && (
           <nav aria-label="Shift Together" className="flex items-center gap-1">
@@ -235,8 +236,8 @@ function JourneySteps({ at, full, t }: { at?: 1 | 2 | 3; full: boolean; t: T<Tog
 }
 
 function Gate({ children }: { children: ReactNode }) {
-  const { phase, variant, t } = useTogether()
-  if (phase === 'checking') return <Spinner label={variant === 'logan' ? 'Opening your trips' : t('shell.opening')} />
+  const { phase, variant, locale, t } = useTogether()
+  if (phase === 'checking') return <Spinner label={variant === 'logan' ? translator(loganStrings, locale)('logan.opening') : t('shell.opening')} />
   if (phase === 'signed_out') return <SignIn />
   if (phase === 'off') {
     return (
@@ -259,22 +260,23 @@ function Gate({ children }: { children: ReactNode }) {
   return <>{children}</>
 }
 
-const LOGAN_POINTS: { label: string; Icon: LucideIcon }[] = [
-  { label: 'Take the T or Logan Express with someone from near you', Icon: TrainFront },
-  { label: 'Or share a taxi or ride app and split the fare', Icon: Car },
-  { label: 'Going there, coming home, or both', Icon: Plane },
+const LOGAN_POINTS: { label: LoganKey; Icon: LucideIcon }[] = [
+  { label: 'logan.point_transit', Icon: TrainFront },
+  { label: 'logan.point_split', Icon: Car },
+  { label: 'logan.point_both', Icon: Plane },
 ]
 
 /** Keith's three steps and drawings (approved 2026-11-08; public/images/logan, also in the launch email). */
-const LOGAN_STEPS: { title: string; hint: string; img: string; alt: string; chips: string[] }[] = [
-  { title: 'Add your flight', hint: 'Say when you fly and where you leave from. Other people flying for the holidays do the same.', img: '/images/logan/step-1.svg', alt: 'Three phones, each with a flight added; the middle one is yours', chips: [] },
-  { title: 'We find someone near you', hint: 'Someone near you, at Logan within 45 minutes of you. Coming home, someone landing when you do.', img: '/images/logan/step-2.svg', alt: 'A map: you and another person, both near the same T station, with flights half an hour apart', chips: [] },
-  { title: 'Choose how you go together', hint: 'Take the T or Logan Express together, or share a ride and split the fare.', img: '/images/logan/step-3.svg', alt: 'Two ways to go: the T together, or one shared car with the fare split in half', chips: ['Split the fare', 'Free Silver Line home', 'One car, not two'] },
+const LOGAN_STEPS: { title: LoganKey; hint: LoganKey; img: string; alt: LoganKey; chips: LoganKey[] }[] = [
+  { title: 'logan.step1_title', hint: 'logan.step1_hint', img: '/images/logan/step-1.svg', alt: 'logan.step1_alt', chips: [] },
+  { title: 'logan.step2_title', hint: 'logan.step2_hint', img: '/images/logan/step-2.svg', alt: 'logan.step2_alt', chips: [] },
+  { title: 'logan.step3_title', hint: 'logan.step3_hint', img: '/images/logan/step-3.svg', alt: 'logan.step3_alt', chips: ['logan.chip_split', 'logan.chip_silver', 'logan.chip_one_car'] },
 ]
 
 function SignIn() {
   const { notice, variant, locale, t } = useTogether()
   const logan = variant === 'logan'
+  const tl = translator(loganStrings, locale)
   const [email, setEmail] = useState('')
   const [sent, setSent] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -309,9 +311,9 @@ function SignIn() {
       {/* Phone: heading, then the sign-in, then how it works. Wide: heading and ways left, sign-in right. */}
       <div className="grid grid-cols-1 gap-6 md:grid-cols-[1.15fr_1fr] md:items-start md:gap-x-10">
         <div className="md:col-start-1 md:row-start-1">
-          <p className="text-[15px] font-semibold text-(--ev-accent)">{logan ? 'Shift, from Green Streets Initiative' : t('signin.eyebrow')}</p>
+          <p className="text-[15px] font-semibold text-(--ev-accent)">{logan ? tl('logan.eyebrow') : t('signin.eyebrow')}</p>
           <h1 className="mt-2 font-display text-[clamp(30px,4.2vw,44px)] font-extrabold leading-[1.05] text-balance">
-            {logan ? 'Going to Logan? Find someone to go with' : t('signin.title')}
+            {logan ? tl('logan.signin_title') : t('signin.title')}
           </h1>
         </div>
         <Card className="shadow-(--ev-shadow) md:col-start-2 md:row-span-2 md:row-start-1">
@@ -343,7 +345,7 @@ function SignIn() {
           )}
         </Card>
         <ul className="grid gap-2 md:col-start-1 md:row-start-2" aria-label={t('signin.ways_aria')}>
-          {(logan ? LOGAN_POINTS : WAYS_TO_GO.map((w) => ({ label: t(w.label), Icon: w.Icon }))).map(({ label, Icon }) => (
+          {(logan ? LOGAN_POINTS.map((p) => ({ label: tl(p.label), Icon: p.Icon })) : WAYS_TO_GO.map((w) => ({ label: t(w.label), Icon: w.Icon }))).map(({ label, Icon }) => (
             <li key={label} className="flex items-center gap-3 text-[17px] font-semibold">
               <span className="flex h-9 w-9 items-center justify-center rounded-full bg-(--ev-panel) text-(--ev-accent)" aria-hidden>
                 <Icon className="h-5 w-5" />
@@ -360,16 +362,16 @@ function SignIn() {
             {LOGAN_STEPS.map((st, i) => (
               <li key={st.title} className="grid content-start gap-3 rounded-2xl border border-(--ev-line) bg-white p-4">
                 {/* eslint-disable-next-line @next/next/no-img-element -- a small static SVG */}
-                <img src={st.img} alt={st.alt} width={240} height={170} className="h-auto w-full max-w-[360px]" />
+                <img src={st.img} alt={tl(st.alt)} width={240} height={170} className="h-auto w-full max-w-[360px]" />
                 <span className="min-w-0">
-                  <span className="block font-display text-[13px] font-extrabold tracking-[0.08em] text-(--ev-accent)">STEP {i + 1}</span>
-                  <span className="mt-1 block text-[17px] font-bold leading-snug">{st.title}</span>
-                  <span className="mt-1 block text-[15px] leading-snug text-(--ev-ink-80)">{st.hint}</span>
+                  <span className="block font-display text-[13px] font-extrabold tracking-[0.08em] text-(--ev-accent)">{tl('logan.step_n', { n: i + 1 })}</span>
+                  <span className="mt-1 block text-[17px] font-bold leading-snug">{tl(st.title)}</span>
+                  <span className="mt-1 block text-[15px] leading-snug text-(--ev-ink-80)">{tl(st.hint)}</span>
                 </span>
                 {st.chips.length ? (
                   <span className="flex flex-wrap gap-2">
                     {st.chips.map((c) => (
-                      <span key={c} className="rounded-full bg-(--ev-panel) px-3 py-1 text-[13px] font-bold text-(--ev-accent)">{c}</span>
+                      <span key={c} className="rounded-full bg-(--ev-panel) px-3 py-1 text-[13px] font-bold text-(--ev-accent)">{tl(c)}</span>
                     ))}
                   </span>
                 ) : null}
@@ -379,7 +381,7 @@ function SignIn() {
         ) : <Journey full locale={locale} />}
         <p className="mt-4 text-[15px] leading-snug text-(--ev-ink-80)">
           {logan
-            ? 'Free, and no app needed. Your match sees only your first name and town until you both say yes.'
+            ? tl('logan.free')
             : t('signin.free')}
         </p>
       </section>
