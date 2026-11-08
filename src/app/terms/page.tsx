@@ -381,8 +381,14 @@ export default function TermsPage() {
                 Shift can suggest other people who make a trip like yours: someone who already bikes
                 or takes transit on that trip and can show you the way, someone who would like you
                 to show them, someone near you to walk with, or someone who lives near you and works
-                near your work and could share the drive. You only see each other&apos;s email if
+                near your work and could share the drive, or someone going to or coming home from
+                Logan Airport around the same time as you. You only see each other&apos;s email if
                 you both say yes.
+              </P>
+              <P>
+                If you share a taxi or ride-app car, one of you books it and the others pay that
+                person back for their share. GSI does not book rides, set or collect fares, or
+                handle any payment between you.
               </P>
               <P>
                 These features are for people 18 and older. GSI introduces people; it does not
