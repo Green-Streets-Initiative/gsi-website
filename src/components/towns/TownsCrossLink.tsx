@@ -1,5 +1,8 @@
 import Link from 'next/link'
 import { getQualifyingTowns } from '@/lib/towns/queries'
+import { translator, withLang, type SiteLocale } from '@/lib/site-i18n'
+import { eventsStrings } from '@/lib/site-strings/events'
+import { chromeStrings } from '@/lib/site-strings/chrome'
 
 /**
  * Cross-link modules pointing at the town pages (paths Phase 1). Both read the
@@ -43,34 +46,37 @@ const STRIP_THEME: Record<Tone, { section: string; h2: string; sub: string; chip
  * script runs. The ~350ms the directory RPC adds to an already-dynamic page is
  * the cheaper side of that trade.
  */
-export async function TownChipsStrip({ tone = 'dark' }: { tone?: Tone } = {}) {
+export async function TownChipsStrip({ tone = 'dark', locale = 'en' }: { tone?: Tone; locale?: SiteLocale } = {}) {
   const towns = await topTowns()
   const t = STRIP_THEME[tone]
+  // The translated events calendar passes its language; other hosts stay English.
+  const tr = translator(eventsStrings, locale)
+  const trChrome = translator(chromeStrings, locale)
 
   return (
     <section className={t.section}>
       <div className="mx-auto max-w-[960px] text-center">
         <h2 className={t.h2}>
-          See what&apos;s happening in your town
+          {tr('towns.title')}
         </h2>
         <p className={t.sub}>
-          Live community stats, popular routes, and ways to get involved — town by town.
+          {tr('towns.sub')}
         </p>
         <div className="flex flex-wrap justify-center gap-2">
           {towns.map((town) => (
             <Link
               key={town.slug}
-              href={`/shift/towns/${town.slug}`}
+              href={withLang(`/shift/towns/${town.slug}`, locale)}
               className={t.chip}
             >
               {town.town_name}
             </Link>
           ))}
           <Link
-            href="/shift/towns"
+            href={withLang('/shift/towns', locale)}
             className={t.all}
           >
-            All towns &rarr;
+            {trChrome('footer.all_towns')}
           </Link>
         </div>
       </div>

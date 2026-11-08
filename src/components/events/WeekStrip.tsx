@@ -3,7 +3,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { type CommunityEvent, parseEventDate, dateKey, todayKey, eventDotsByDay, eventCountByDay } from '@/lib/events'
-import { useEventsTone } from './EventsTone'
+import { siteDate } from '@/lib/site-i18n'
+import { eventCount } from '@/lib/events-i18n'
+import { useEventsTone, useEventsI18n } from './EventsTone'
 
 /**
  * Phone-sized replacement for the month grid: one week of day buttons with
@@ -35,6 +37,7 @@ function addDays(d: Date, n: number): Date {
 
 export default function WeekStrip({ events, selectedDay, onSelectDay }: WeekStripProps) {
   const { tone } = useEventsTone()
+  const { locale, t } = useEventsI18n()
   const today = todayKey()
   const [weekStart, setWeekStart] = useState<Date>(() => startOfWeek(selectedDay ? parseEventDate(selectedDay) : new Date()))
 
@@ -56,9 +59,14 @@ export default function WeekStrip({ events, selectedDay, onSelectDay }: WeekStri
 
   const first = days[0]
   const last = days[6]
-  const rangeLabel = first.getMonth() === last.getMonth()
-    ? `${MONTH_SHORT[first.getMonth()]} ${first.getFullYear()}`
-    : `${MONTH_SHORT[first.getMonth()]} – ${MONTH_SHORT[last.getMonth()]} ${last.getFullYear()}`
+  const rangeLabel = locale === 'en'
+    ? first.getMonth() === last.getMonth()
+      ? `${MONTH_SHORT[first.getMonth()]} ${first.getFullYear()}`
+      : `${MONTH_SHORT[first.getMonth()]} – ${MONTH_SHORT[last.getMonth()]} ${last.getFullYear()}`
+    : first.getMonth() === last.getMonth()
+      ? siteDate(locale, first, { month: 'short', year: 'numeric' })
+      : `${siteDate(locale, first, { month: 'short' })} – ${siteDate(locale, last, { month: 'short', year: 'numeric' })}`
+  const dayAbbr = (d: Date) => (locale === 'en' ? DAY_ABBR[d.getDay()] : siteDate(locale, d, { weekday: 'short' }))
 
   const goToday = () => {
     setWeekStart(startOfWeek(new Date()))
@@ -71,7 +79,7 @@ export default function WeekStrip({ events, selectedDay, onSelectDay }: WeekStri
         <button
           onClick={() => setWeekStart(addDays(weekStart, -7))}
           className="flex h-9 w-9 items-center justify-center rounded-[10px] border border-(--ev-line-mid) text-(--ev-ink-80) transition-colors hover:bg-(--ev-panel)"
-          aria-label="Previous week"
+          aria-label={t('cal.prev_week')}
         >
           <ChevronLeft size={16} />
         </button>
@@ -81,13 +89,13 @@ export default function WeekStrip({ events, selectedDay, onSelectDay }: WeekStri
             onClick={goToday}
             className="rounded-full border border-(--ev-line-mid) px-2.5 py-0.5 text-[11px] font-semibold text-(--ev-ink-80) transition-colors hover:bg-(--ev-panel)"
           >
-            Today
+            {t('cal.today')}
           </button>
         </div>
         <button
           onClick={() => setWeekStart(addDays(weekStart, 7))}
           className="flex h-9 w-9 items-center justify-center rounded-[10px] border border-(--ev-line-mid) text-(--ev-ink-80) transition-colors hover:bg-(--ev-panel)"
-          aria-label="Next week"
+          aria-label={t('cal.next_week')}
         >
           <ChevronRight size={16} />
         </button>
@@ -106,7 +114,10 @@ export default function WeekStrip({ events, selectedDay, onSelectDay }: WeekStri
               key={key}
               onClick={() => onSelectDay(isSelected ? null : key)}
               aria-pressed={isSelected}
-              aria-label={`${DAY_ABBR[d.getDay()]} ${d.getDate()}, ${count} event${count === 1 ? '' : 's'}`}
+              aria-label={t('cal.cell_aria', {
+                date: locale === 'en' ? `${DAY_ABBR[d.getDay()]} ${d.getDate()}` : siteDate(locale, d, { weekday: 'short', day: 'numeric' }),
+                events: eventCount(t, count),
+              })}
               className={`flex min-h-[64px] flex-col items-center justify-start rounded-xl px-1 pb-1.5 pt-2 transition-colors ${
                 isSelected
                   ? 'bg-(--ev-accent-fill) text-(--ev-on-accent-fill)'
@@ -116,7 +127,7 @@ export default function WeekStrip({ events, selectedDay, onSelectDay }: WeekStri
               } ${isToday && !isSelected ? 'ring-1 ring-(--ev-accent-line-60)' : ''}`}
             >
               <span className={`text-[10px] font-semibold uppercase tracking-[0.08em] ${isSelected ? 'text-(--ev-on-accent-fill-soft)' : isPast ? 'text-(--ev-ink-60)' : 'text-(--ev-ink-75)'}`}>
-                {DAY_ABBR[d.getDay()]}
+                {dayAbbr(d)}
               </span>
               <span className="mt-0.5 text-[16px] font-bold leading-none">{d.getDate()}</span>
               <span className="mt-1.5 flex h-1.5 items-center gap-0.5">
@@ -138,7 +149,7 @@ export default function WeekStrip({ events, selectedDay, onSelectDay }: WeekStri
           onClick={() => onSelectDay(null)}
           className="mt-2 w-full rounded-lg py-1.5 text-center text-[12px] font-semibold text-(--ev-accent) transition-colors hover:bg-(--ev-panel-faint)"
         >
-          Show all upcoming
+          {t('cal.show_all_upcoming')}
         </button>
       )}
     </div>

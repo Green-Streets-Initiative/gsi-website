@@ -1,6 +1,9 @@
 import type { Metadata } from 'next'
 import { SITE_URL } from './seo'
 import { parseEventDate, dateMedium, parseStyleFilter, RIDE_STYLE_LABEL, type RideStyle } from './events'
+import type { SiteLocale } from './site-i18n'
+import type { EventsKey } from './site-strings/events'
+import { eventsT, dateMediumL, rideLevelFilterLabel } from './events-i18n'
 
 /**
  * Title, description and share card for the /events calendar — the page people
@@ -148,17 +151,59 @@ const DEFAULT_OG_TITLE = 'Community Events — rides, walks and bike classes'
 const DEFAULT_OG_DESCRIPTION =
   'A calendar of group rides, e-bike demos, walking tours and street festivals across Massachusetts. Find your next ride, walk, or roll.'
 
+/**
+ * The same card in Spanish, Portuguese or Chinese (translation plan, batch 5).
+ * Each language orders "Group Rides this weekend near Somerville" its own
+ * way, so the phrase is one template per shape rather than joined pieces.
+ * Tag adjectives ("Free", "Beginner-Friendly") are left out of these titles:
+ * where they go and how they agree differs too much to template cleanly.
+ */
+function localizedListingText(params: EventsSearchParams, locale: Exclude<SiteLocale, 'en'>) {
+  const t = eventsT(locale)
+  const query = one(params.q)
+  const level = rideLevel(params)
+  const type = one(params.type)
+  const saved = one(params.saved)
+  const day = one(params.day)
+  const whenKey = one(params.when)
+  const label = nearLabel(one(params.near))
+
+  let noun: string | null = null
+  if (level) noun = rideLevelFilterLabel(level, locale)
+  else if (type && !type.startsWith('style:') && type in TYPE_PLURAL) noun = t(`plural.${type}` as EventsKey)
+  else if (saved) noun = t('meta.saved')
+
+  const when = day && /^\d{4}-\d{2}-\d{2}$/.test(day)
+    ? t('meta.when_day', { date: dateMediumL(parseEventDate(day), locale) })
+    : whenKey === 'week' || whenKey === 'weekend' || whenKey === 'month'
+      ? t(`meta.when_${whenKey}` as EventsKey)
+      : null
+  const subject = query ? t('meta.subject_query', { query }) : noun ?? t('plural.other')
+  const isDefault = !query && !noun && !when && !label
+
+  const phrase = label
+    ? t(when ? 'meta.phrase_near_when' : 'meta.phrase_near', { subject, when, place: label })
+    : t(when ? 'meta.phrase_ma_when' : 'meta.phrase_ma', { subject, when })
+  return {
+    title: isDefault ? t('meta.default_title') : phrase,
+    description: isDefault ? t('meta.default_description') : t('meta.description_filtered', { phrase }),
+    ogTitle: isDefault ? t('meta.default_og_title') : phrase,
+    ogDescription: isDefault ? t('meta.default_og_description') : t('meta.description_filtered', { phrase }),
+  }
+}
+
 /** Metadata for /events, shaped by whatever filters the shared URL carries. */
-export function buildEventsListingMetadata(params: EventsSearchParams): Metadata {
+export function buildEventsListingMetadata(params: EventsSearchParams, locale: SiteLocale = 'en'): Metadata {
   const f = summarizeEventsFilters(params)
 
   const phrase = [f.subject, f.when, f.place].filter(Boolean).join(' ')
-  const title = f.isDefault ? DEFAULT_TITLE : phrase
-  const description = f.isDefault
+  let title = f.isDefault ? DEFAULT_TITLE : phrase
+  let description = f.isDefault
     ? DEFAULT_DESCRIPTION
     : `${phrase}. Dates, times, meeting points, and who each one is for — updated as organizers post them.`
-  const ogTitle = f.isDefault ? DEFAULT_OG_TITLE : phrase
-  const ogDescription = f.isDefault ? DEFAULT_OG_DESCRIPTION : description
+  let ogTitle = f.isDefault ? DEFAULT_OG_TITLE : phrase
+  let ogDescription = f.isDefault ? DEFAULT_OG_DESCRIPTION : description
+  if (locale !== 'en') ({ title, description, ogTitle, ogDescription } = localizedListingText(params, locale))
 
   return {
     title: title + SUFFIX,

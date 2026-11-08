@@ -3,6 +3,8 @@
 import { useState, type ReactNode } from 'react'
 import posthog from 'posthog-js'
 import { gaEvent } from '@/lib/ga'
+import type { SiteLocale } from '@/lib/site-i18n'
+import { eventsT } from '@/lib/events-i18n'
 
 /*
  * The one email sign-up box (Shift item 19's subscription system; calendar
@@ -44,13 +46,18 @@ export interface EmailSignupProps {
   track?: Record<string, unknown>
   id?: string
   className?: string
+  /** The page's language: the box's own words, and the language the
+   *  confirmation and weekly emails go out in (the email-subscriptions
+   *  function reads es, pt-BR and zh-Hans). English when left out. */
+  locale?: SiteLocale
 }
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
 
 export default function EmailSignup({
-  topic, source, details, title, lede, summary, cta, done, fine, track, id, className = '',
+  topic, source, details, title, lede, summary, cta, done, fine, track, id, className = '', locale = 'en',
 }: EmailSignupProps) {
+  const t = eventsT(locale)
   const [email, setEmail] = useState('')
   const [website, setWebsite] = useState('')
   const [status, setStatus] = useState<'idle' | 'sending' | 'done' | 'error'>('idle')
@@ -61,7 +68,7 @@ export default function EmailSignup({
     e.preventDefault()
     if (!EMAIL.test(email.trim())) {
       setStatus('error')
-      setError('Please enter a valid email address.')
+      setError(t('email.invalid'))
       return
     }
     setStatus('sending')
@@ -69,7 +76,7 @@ export default function EmailSignup({
       const res = await fetch('/api/email-subscribe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ topic, email: email.trim(), ...details, locale: 'en', source, website }),
+        body: JSON.stringify({ topic, email: email.trim(), ...details, locale, source, website }),
       })
       if (res.ok) {
         setStatus('done')
@@ -84,10 +91,10 @@ export default function EmailSignup({
       }
       const data = await res.json().catch(() => null)
       setStatus('error')
-      setError(data?.error === 'email' ? 'Please enter a valid email address.' : 'Something went wrong. Please try again in a few minutes.')
+      setError(data?.error === 'email' ? t('email.invalid') : t('email.error'))
     } catch {
       setStatus('error')
-      setError('Something went wrong. Please try again in a few minutes.')
+      setError(t('email.error'))
     }
   }
 
@@ -103,7 +110,7 @@ export default function EmailSignup({
           {lede && <p className="mt-1 text-[14px] leading-relaxed text-(--ev-ink-75)">{lede}</p>}
           {summary && <p className="mt-1 text-[15px] font-semibold leading-snug text-(--ev-ink)">{summary}</p>}
           <form onSubmit={submit} noValidate className="mt-3">
-            <label className="sr-only" htmlFor={inputId}>Email</label>
+            <label className="sr-only" htmlFor={inputId}>{t('email.label')}</label>
             <input
               id={inputId}
               type="email"

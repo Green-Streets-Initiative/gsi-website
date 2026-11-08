@@ -5,12 +5,14 @@ import Link from 'next/link'
 import { eventPath } from '@/lib/events-url'
 import { ArrowRight, Calendar as CalendarIcon, List, Search, SlidersHorizontal } from 'lucide-react'
 import {
-  type CommunityEvent, getTypeMeta, parseEventDate, dateLong, dateRangeLong, eventLastDay, formatTime, isDeadline,
+  type CommunityEvent, getTypeMeta, parseEventDate, eventLastDay, isDeadline,
 } from '@/lib/events'
+import { withLang, type SiteLocale } from '@/lib/site-i18n'
+import { typeLabel, timeL, dateRangeLongL, dayTitleL, eventCount, eventsT } from '@/lib/events-i18n'
 import { typeInk, TINT } from '@/lib/events-tone'
 import { PILL } from '@/components/org/Section'
 import { EVENT_TYPE_ICONS } from './event-type-icons'
-import { EventsToneProvider, toneClass, useEventsTone, type EventsTone } from './EventsTone'
+import { EventsToneProvider, toneClass, useEventsTone, useEventsI18n, type EventsTone } from './EventsTone'
 import './events-tone.css'
 import EventCard from './EventCard'
 import FeederTray from './FeederTray'
@@ -53,22 +55,21 @@ const SPOTLIGHT_MAX = 3
 
 function SpotlightCard({ event, compact }: { event: CommunityEvent; compact: boolean }) {
   const { tone, hrefBase } = useEventsTone()
+  const { locale, t } = useEventsI18n()
   const meta = getTypeMeta(event.event_type)
   const ink = typeInk(meta, tone)
   const tint = TINT[tone]
   const Icon = EVENT_TYPE_ICONS[meta.icon] ?? CalendarIcon
-  const timeStr = event.event_time ? formatTime(event.event_time) : null
+  const timeStr = event.event_time ? timeL(event.event_time, locale) : null
   // "November 1 to 30, 2026" for a multi-day event (Shift 01557).
-  const dateLine =
-    (isDeadline(event.event_type) ? 'Entry deadline: ' : '') +
-    dateRangeLong(event) +
-    (timeStr ? ` · ${timeStr}` : '')
+  const when = dateRangeLongL(event, locale) + (timeStr ? ` · ${timeStr}` : '')
+  const dateLine = isDeadline(event.event_type) ? t('card.entry_deadline', { when }) : when
   const firstLine = event.body?.split('\n').find((line) => line.trim())
   const summary = firstLine ? eventBodyPlain(firstLine) : null
 
   return (
     <Link
-      href={eventPath(event, hrefBase)}
+      href={withLang(eventPath(event, hrefBase), locale)}
       className="group flex min-w-[86%] snap-start items-start gap-4 rounded-2xl border p-5 transition-all duration-200 hover:brightness-110 sm:min-w-0 sm:gap-5 sm:p-7 lg:gap-4 lg:p-4"
       style={{ borderColor: ink + tint.spotLine, backgroundColor: ink + tint.spotBg }}
     >
@@ -81,7 +82,7 @@ function SpotlightCard({ event, compact }: { event: CommunityEvent; compact: boo
       </div>
       <div className="min-w-0 flex-1">
         <p className="text-[11px] font-bold uppercase tracking-[0.14em]" style={{ color: ink }}>
-          Spotlight · {meta.label}
+          {t('spot.label', { type: typeLabel(event.event_type, locale) })}
         </p>
         <h2 className="mt-1 font-display text-[20px] font-bold leading-snug text-(--ev-ink) sm:text-[22px] lg:text-[17px]">
           {event.title}
@@ -95,7 +96,7 @@ function SpotlightCard({ event, compact }: { event: CommunityEvent; compact: boo
         className={`mt-1 hidden shrink-0 items-center gap-1.5 text-[13px] font-semibold sm:flex ${compact ? 'lg:hidden' : ''}`}
         style={{ color: ink }}
       >
-        See details
+        {t('spot.see_details')}
         <ArrowRight size={15} className="transition-transform duration-200 group-hover:translate-x-0.5" />
       </span>
     </Link>
@@ -112,6 +113,8 @@ interface EventsPageProps {
   tone?: EventsTone
   /** Where event links point; the staged copy passes its own base so review stays inside it. */
   hrefBase?: string
+  /** The page's language (translation plan, batch 5). English when left out. */
+  locale?: SiteLocale
 }
 
 // The header is the one place the two tones differ in typography, not just
@@ -132,8 +135,9 @@ const HEADER: Record<EventsTone, { eyebrow: string; h1: string; lede: string; ct
   },
 }
 
-export default function EventsPage({ events, tone = 'dark', hrefBase = '/events' }: EventsPageProps) {
+export default function EventsPage({ events, tone = 'dark', hrefBase = '/events', locale = 'en' }: EventsPageProps) {
   const h = HEADER[tone]
+  const t = eventsT(locale)
   const submitHref = `${hrefBase}/submit`
   const isDesktop = useSyncExternalStore(subscribeDesktop, getDesktopSnapshot, getDesktopServerSnapshot)
 
@@ -157,6 +161,7 @@ export default function EventsPage({ events, tone = 'dark', hrefBase = '/events'
     // The week strip is the date control in the phone calendar view.
     applyDateRange: isDesktop || phoneView === 'list',
     notify: showToast,
+    locale,
   })
 
   // Any filter change starts paging over (state adjusted during render, the
@@ -182,39 +187,39 @@ export default function EventsPage({ events, tone = 'dark', hrefBase = '/events'
   }
 
   const handleToggleSave = (id: string) => {
-    showToast(toggleSaved(id) ? 'Event saved' : 'Removed from saved')
+    showToast(toggleSaved(id) ? t('toast.saved') : t('toast.unsaved'))
   }
 
-  const dayPanelTitle = f.selectedDay ? dateLong(parseEventDate(f.selectedDay)).replace(/, \d{4}$/, '') : 'Upcoming events'
+  const dayPanelTitle = f.selectedDay ? dayTitleL(parseEventDate(f.selectedDay), locale) : t('day.upcoming')
 
   // =========================================================================
   // Render
   // =========================================================================
 
   return (
-    <EventsToneProvider tone={tone} hrefBase={hrefBase}>
+    <EventsToneProvider tone={tone} hrefBase={hrefBase} locale={locale}>
     <div className={`min-h-screen bg-(--ev-bg) ${toneClass(tone)}`}>
       {/* Header */}
       <section className="px-4 pb-5 pt-8 sm:px-8 lg:pb-4 lg:pt-8">
         <div className="mx-auto flex max-w-[1200px] flex-col gap-4 lg:flex-row lg:items-end lg:justify-between lg:gap-8">
           <div className="min-w-0">
             <p className={h.eyebrow}>
-              Community Events · Massachusetts
+              {t('page.eyebrow')}
             </p>
             <h1 className={h.h1}>
-              Find your next ride,{' '}
+              {t('page.h1_a')}{' '}
               <br className="hidden sm:block lg:hidden" />
-              walk, or roll.
+              {t('page.h1_b')}
             </h1>
             <p className={h.lede}>
-              {events.length} upcoming events across Massachusetts: group rides, e-bike demos, walking tours, transit meetups, talks, civic actions, and festivals, all in one place.
+              {t('page.lede', { count: events.length })}
             </p>
           </div>
           <Link
             href={submitHref}
             className={h.cta}
           >
-            Submit an event
+            {t('cta.submit')}
           </Link>
         </div>
       </section>
@@ -243,8 +248,8 @@ export default function EventsPage({ events, tone = 'dark', hrefBase = '/events'
               type="text"
               value={f.query}
               onChange={(e) => f.setQuery(e.target.value)}
-              placeholder="Search events"
-              aria-label="Search events"
+              placeholder={t('search.placeholder')}
+              aria-label={t('search.placeholder')}
               className="h-10 w-full rounded-lg border border-(--ev-line-mid) bg-(--ev-input) pl-9 pr-3 text-[14px] text-(--ev-ink) placeholder:text-(--ev-ink-60) focus:border-(--ev-accent) focus:outline-none"
             />
           </div>
@@ -253,7 +258,7 @@ export default function EventsPage({ events, tone = 'dark', hrefBase = '/events'
             className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-lg border border-(--ev-line-mid) px-3 text-[13px] font-semibold text-(--ev-ink) transition-colors hover:bg-(--ev-panel)"
           >
             <SlidersHorizontal size={15} />
-            Filters
+            {t('filters.button')}
             {f.activeFilterCount > 0 && (
               <span className="inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-(--ev-accent-fill) px-1.5 text-[11px] font-bold text-(--ev-on-accent-fill)">
                 {f.activeFilterCount}
@@ -264,7 +269,7 @@ export default function EventsPage({ events, tone = 'dark', hrefBase = '/events'
             <button
               onClick={() => pickView('list')}
               aria-pressed={phoneView === 'list'}
-              aria-label="List view"
+              aria-label={t('view.list')}
               className={`flex h-8 w-9 items-center justify-center rounded-[7px] transition-colors ${phoneView === 'list' ? 'bg-(--ev-accent-fill) text-(--ev-on-accent-fill)' : 'text-(--ev-ink-75)'}`}
             >
               <List size={16} />
@@ -272,7 +277,7 @@ export default function EventsPage({ events, tone = 'dark', hrefBase = '/events'
             <button
               onClick={() => pickView('calendar')}
               aria-pressed={phoneView === 'calendar'}
-              aria-label="Calendar view"
+              aria-label={t('view.calendar')}
               className={`flex h-8 w-9 items-center justify-center rounded-[7px] transition-colors ${phoneView === 'calendar' ? 'bg-(--ev-accent-fill) text-(--ev-on-accent-fill)' : 'text-(--ev-ink-75)'}`}
             >
               <CalendarIcon size={16} />
@@ -295,17 +300,15 @@ export default function EventsPage({ events, tone = 'dark', hrefBase = '/events'
               <div className="mt-6">
                 <div className="mb-4 flex items-center justify-between">
                   <h3 className="font-display text-lg font-bold text-(--ev-ink)">{dayPanelTitle}</h3>
-                  <span className="font-mono text-[13px] text-(--ev-ink-75)">{f.filtered.length} events</span>
+                  <span className="font-mono text-[13px] text-(--ev-ink-75)">{locale === 'en' ? t('count.events_other', { count: f.filtered.length }) : eventCount(t, f.filtered.length)}</span>
                 </div>
                 {f.filtered.length === 0 ? (
                   <div className="rounded-2xl border border-(--ev-line) bg-(--ev-card) px-8 py-12 text-center">
                     <p className="text-[15px] text-(--ev-ink-75)">
-                      {f.selectedDay
-                        ? 'Nothing on this day yet. Pick another date above, or host your own.'
-                        : 'No upcoming events match your filters.'}
+                      {f.selectedDay ? t('empty.day_phone') : t('empty.filters_phone')}
                     </p>
                     <Link href={submitHref} className="mt-3 inline-block text-[13px] font-semibold text-(--ev-accent) hover:underline">
-                      Submit an event
+                      {t('cta.submit')}
                     </Link>
                   </div>
                 ) : (
@@ -338,7 +341,7 @@ export default function EventsPage({ events, tone = 'dark', hrefBase = '/events'
                     onClick={() => setListLimit((n) => n + AGENDA_PAGE)}
                     className="mx-auto mt-5 block rounded-[10px] border border-(--ev-line-strong) px-6 py-3 text-[14px] font-semibold text-(--ev-ink) transition-colors hover:bg-(--ev-panel)"
                   >
-                    Show more · {f.entries.length - listLimit} remaining
+                    {t('agenda.show_more', { count: f.entries.length - listLimit })}
                   </button>
                 )}
               </div>
@@ -362,16 +365,16 @@ export default function EventsPage({ events, tone = 'dark', hrefBase = '/events'
                 onToggleSave={handleToggleSave}
                 emptyMessage={
                   f.savedOnly && savedCount === 0
-                    ? 'Nothing saved yet. Tap the bookmark on any event to keep it here.'
+                    ? t('empty.saved')
                     : f.selectedDay
-                      ? 'Nothing on this day yet. Pick another date, or host your own.'
-                      : 'No events match your filters.'
+                      ? t('empty.day')
+                      : t('empty.filters')
                 }
                 showCount
                 countAction={
                   f.filtered.length > 0 && (
                     <a href="#event-alerts" className="flex min-h-[44px] items-center text-[13px] font-semibold text-(--ev-accent) hover:underline">
-                      Get these by email
+                      {t('alerts.jump')}
                     </a>
                   )
                 }
@@ -389,15 +392,15 @@ export default function EventsPage({ events, tone = 'dark', hrefBase = '/events'
               <MiniMonth events={f.filteredNoDay} selectedDay={f.selectedDay} onSelectDay={f.setSelectedDay} />
               <EventAlertSignup filters={f} source="events_sidebar" className="mt-4" />
               <div className="mt-4 rounded-2xl border border-(--ev-line) bg-(--ev-card) p-4">
-                <p className="text-[14px] font-bold text-(--ev-ink)">Hosting a ride, walk, or workshop?</p>
+                <p className="text-[14px] font-bold text-(--ev-ink)">{t('host.title')}</p>
                 <p className="mt-1 text-[13px] leading-relaxed text-(--ev-ink-75)">
-                  Add it here and it reaches people across the state.
+                  {t('host.body')}
                 </p>
                 <Link
                   href={submitHref}
                   className="mt-3 inline-block rounded-[10px] border border-(--ev-accent-line) px-4 py-2 text-[13px] font-bold text-(--ev-accent) transition-colors hover:bg-(--ev-accent-tint-8)"
                 >
-                  Submit an event
+                  {t('cta.submit')}
                 </Link>
               </div>
             </aside>
@@ -417,20 +420,20 @@ export default function EventsPage({ events, tone = 'dark', hrefBase = '/events'
           {/* First when there is a choice: for someone who'd rather ride in Spanish, it is the question (Shift 01697). */}
           {f.languageChoices.length > 0 && (
             <div>
-              <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-(--ev-ink-75)">Led in</p>
+              <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-(--ev-ink-75)">{t('sheet.led_in')}</p>
               <LanguageToggles choices={f.languageChoices} selected={f.langs} counts={f.languageCounts} onToggle={f.toggleLang} />
             </div>
           )}
           <div>
-            <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-(--ev-ink-75)">Event type</p>
+            <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-(--ev-ink-75)">{t('sheet.type')}</p>
             <TypePills value={f.typeFilter} counts={f.typeCounts} onChange={f.setTypeFilter} />
           </div>
           <div>
-            <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-(--ev-ink-75)">Rides by level</p>
+            <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-(--ev-ink-75)">{t('sheet.level')}</p>
             <LevelPills value={f.typeFilter} counts={f.typeCounts} onChange={f.setTypeFilter} />
           </div>
           <div>
-            <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-(--ev-ink-75)">Distance from you</p>
+            <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-(--ev-ink-75)">{t('sheet.distance')}</p>
             <LocationControl
               geoStatus={f.geoStatus}
               userLoc={f.userLoc}
@@ -442,23 +445,23 @@ export default function EventsPage({ events, tone = 'dark', hrefBase = '/events'
           </div>
           {phoneView === 'list' && (
             <div>
-              <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-(--ev-ink-75)">When</p>
+              <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-(--ev-ink-75)">{t('sheet.when')}</p>
               <WhenPills value={f.dateRange} onChange={f.setDateRange} />
             </div>
           )}
           <div>
-            <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-(--ev-ink-75)">Good for</p>
+            <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-(--ev-ink-75)">{t('sheet.good_for')}</p>
             <TagToggles selected={f.tags} counts={f.tagCounts} onToggle={f.toggleTag} />
           </div>
           {hasAudienceChoices(f.audience, f.audienceCounts) && (
             <div>
-              <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-(--ev-ink-75)">Rides for</p>
+              <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-(--ev-ink-75)">{t('sheet.rides_for')}</p>
               <AudienceToggles selected={f.audience} counts={f.audienceCounts} onToggle={f.toggleAudience} />
             </div>
           )}
           {savedCount > 0 && (
             <div>
-              <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-(--ev-ink-75)">Saved</p>
+              <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-(--ev-ink-75)">{t('sheet.saved')}</p>
               <button
                 onClick={() => f.setSavedOnly(!f.savedOnly)}
                 aria-pressed={f.savedOnly}
@@ -466,7 +469,7 @@ export default function EventsPage({ events, tone = 'dark', hrefBase = '/events'
                   f.savedOnly ? 'border-(--ev-accent-line) text-(--ev-accent)' : 'border-(--ev-line-mid) text-(--ev-ink-78) hover:bg-(--ev-panel)'
                 }`}
               >
-                Only saved events · {savedCount}
+                {t('sheet.only_saved', { count: savedCount })}
               </button>
             </div>
           )}

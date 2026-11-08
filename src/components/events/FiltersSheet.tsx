@@ -2,6 +2,8 @@
 
 import { useEffect } from 'react'
 import { X } from 'lucide-react'
+import { eventCount, plural } from '@/lib/events-i18n'
+import { useEventsI18n } from './EventsTone'
 
 /**
  * Phone filters: a slide-up sheet over the page. Desktop keeps its sidebar
@@ -18,6 +20,7 @@ interface FiltersSheetProps {
 }
 
 export default function FiltersSheet({ open, onClose, onClear, activeCount, resultCount, children }: FiltersSheetProps) {
+  const { t } = useEventsI18n()
   // Lock page scroll and close on Escape while open.
   useEffect(() => {
     if (!open) return
@@ -34,11 +37,11 @@ export default function FiltersSheet({ open, onClose, onClear, activeCount, resu
   if (!open) return null
 
   return (
-    <div className="fixed inset-0 z-[70] lg:hidden" role="dialog" aria-modal="true" aria-label="Filter events">
+    <div className="fixed inset-0 z-[70] lg:hidden" role="dialog" aria-modal="true" aria-label={t('sheet.aria')}>
       <button
         className="absolute inset-0 bg-(--ev-scrim)"
         onClick={onClose}
-        aria-label="Close filters"
+        aria-label={t('sheet.close_filters')}
         tabIndex={-1}
       />
       <div
@@ -47,9 +50,9 @@ export default function FiltersSheet({ open, onClose, onClear, activeCount, resu
       >
         <div className="flex items-center justify-between border-b border-(--ev-line) px-4 py-3">
           <div>
-            <p className="font-display text-[16px] font-bold text-(--ev-ink)">Filters</p>
+            <p className="font-display text-[16px] font-bold text-(--ev-ink)">{t('filters.button')}</p>
             <p className="text-[12px] text-(--ev-ink-75)">
-              {resultCount} event{resultCount === 1 ? '' : 's'}{activeCount > 0 ? ` · ${activeCount} filter${activeCount === 1 ? '' : 's'} on` : ''}
+              {eventCount(t, resultCount)}{activeCount > 0 ? ` · ${plural(t, activeCount, 'sheet.filters_on_one', 'sheet.filters_on_other')}` : ''}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -58,13 +61,13 @@ export default function FiltersSheet({ open, onClose, onClear, activeCount, resu
                 onClick={onClear}
                 className="rounded-full border border-(--ev-line-mid) px-3 py-1.5 text-[12px] font-semibold text-(--ev-ink-80) transition-colors hover:bg-(--ev-panel)"
               >
-                Clear all
+                {t('chip.clear_all')}
               </button>
             )}
             <button
               onClick={onClose}
               className="flex h-9 w-9 items-center justify-center rounded-full border border-(--ev-line-mid) text-(--ev-ink-80) transition-colors hover:bg-(--ev-panel)"
-              aria-label="Close"
+              aria-label={t('sheet.close')}
             >
               <X size={16} />
             </button>
@@ -78,7 +81,7 @@ export default function FiltersSheet({ open, onClose, onClear, activeCount, resu
             onClick={onClose}
             className="w-full rounded-[10px] bg-(--ev-accent-fill) py-3 text-[14px] font-bold text-(--ev-on-accent-fill) transition-opacity hover:opacity-85"
           >
-            Show {resultCount} event{resultCount === 1 ? '' : 's'}
+            {plural(t, resultCount, 'sheet.show_one', 'sheet.show_other')}
           </button>
         </div>
       </div>

@@ -1,6 +1,8 @@
 import { Suspense } from 'react'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
+import HtmlLang from '@/components/HtmlLang'
+import { siteLocale } from '@/lib/site-locale'
 import EventsPage from '@/components/events/EventsPage'
 import { TownChipsStrip } from '@/components/towns/TownsCrossLink'
 import { loadEventsListing } from './_lib/load'
@@ -14,25 +16,31 @@ import { buildEventsListingMetadata, type EventsSearchParams } from '@/lib/event
 export async function generateMetadata(
   { searchParams }: { searchParams: Promise<EventsSearchParams> },
 ) {
-  return buildEventsListingMetadata(await searchParams)
+  const params = await searchParams
+  return buildEventsListingMetadata(params, await siteLocale(params.lang))
 }
 
 export const dynamic = 'force-dynamic'
 
-export default async function EventsListingPage() {
-  // A Shift ride's cancelled dates stay on the list, shown as Cancelled.
-  const events = await loadEventsListing({ withCancelled: true })
+export default async function EventsListingPage({ searchParams }: { searchParams: Promise<EventsSearchParams> }) {
+  // The app adds ?lang=; otherwise the browser's language (translation plan, batch 5).
+  const [locale, events] = await Promise.all([
+    searchParams.then((p) => siteLocale(p.lang)),
+    // A Shift ride's cancelled dates stay on the list, shown as Cancelled.
+    loadEventsListing({ withCancelled: true }),
+  ])
 
   return (
     <>
-      <Nav variant="light" />
+      <HtmlLang locale={locale} />
+      <Nav variant="light" locale={locale} />
       <main className="bg-cream" style={{ paddingTop: '60px' }}>
         <Suspense fallback={null}>
-          <EventsPage events={events} tone="light" />
+          <EventsPage events={events} tone="light" locale={locale} />
         </Suspense>
-        <TownChipsStrip tone="light" />
+        <TownChipsStrip tone="light" locale={locale} />
       </main>
-      <Footer variant="light" />
+      <Footer variant="light" locale={locale} />
     </>
   )
 }

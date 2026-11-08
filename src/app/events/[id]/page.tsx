@@ -2,6 +2,9 @@ import { notFound, permanentRedirect } from 'next/navigation'
 import { eventPath } from '@/lib/events-url'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
+import HtmlLang from '@/components/HtmlLang'
+import { siteLocale } from '@/lib/site-locale'
+import { withLang } from '@/lib/site-i18n'
 import EventDetail from '@/components/events/EventDetail'
 import { isPastEvent } from '@/lib/events-next'
 import { buildEventJsonLd, townFromAddress } from '@/lib/events-seo'
@@ -14,21 +17,26 @@ import { loadGoTogether } from '../_lib/go-together'
 
 export const dynamic = 'force-dynamic'
 
-export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params
-  return buildEventPageMetadata(await loadEvent(id))
+type SearchParams = Promise<Record<string, string | string[] | undefined>>
+
+export async function generateMetadata({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: SearchParams }) {
+  const [{ id }, { lang }] = await Promise.all([params, searchParams])
+  const [loaded, locale] = await Promise.all([loadEvent(id), siteLocale(lang)])
+  return buildEventPageMetadata(loaded, locale)
 }
 
-export default async function EventDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params
-  const loaded = await loadEvent(id)
+export default async function EventDetailPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: SearchParams }) {
+  const [{ id }, { lang }] = await Promise.all([params, searchParams])
+  // The app adds ?lang=; otherwise the browser's language (translation plan, batch 5).
+  const [loaded, locale] = await Promise.all([loadEvent(id), siteLocale(lang)])
 
   if (!loaded) notFound()
 
   const { event, nextUp, timezone, sponsorLinks, organizerId } = loaded
 
-  // Old links carry the internal id; send them to the readable address for good.
-  if (event.slug && decodeURIComponent(id) !== event.slug) permanentRedirect(eventPath(event))
+  // Old links carry the internal id; send them to the readable address for
+  // good, keeping a ?lang= the link asked for.
+  if (event.slug && decodeURIComponent(id) !== event.slug) permanentRedirect(lang ? withLang(eventPath(event), locale) : eventPath(event))
   const jsonLd = buildEventJsonLd(event, { timeZone: timezone })
   // The town in the address, when it has a published town page. Event visitors
   // from search reach the app at 0.6% from the event page and 6.3% from a town
@@ -57,15 +65,16 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
 
   return (
     <>
-      <Nav variant="light" />
+      <HtmlLang locale={locale} />
+      <Nav variant="light" locale={locale} />
       <main className="bg-cream" style={{ paddingTop: '60px' }}>
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
-        <EventDetail event={event} nextUp={nextUp} isPast={isPastEvent(event.event_date, event.event_end_date)} tone="light" sponsorLinks={sponsorLinks} roamLinks={roamLinks} rideCode={rideCode} hostHref={hostHref} town={town} goTogether={goTogether} />
+        <EventDetail event={event} nextUp={nextUp} isPast={isPastEvent(event.event_date, event.event_end_date)} tone="light" sponsorLinks={sponsorLinks} roamLinks={roamLinks} rideCode={rideCode} hostHref={hostHref} town={town} goTogether={goTogether} locale={locale} />
       </main>
-      <Footer variant="light" />
+      <Footer variant="light" locale={locale} />
     </>
   )
 }

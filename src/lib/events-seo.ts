@@ -2,6 +2,9 @@ import type { CommunityEvent } from './events'
 import { eventUrl } from '@/lib/events-url'
 import { parseEventDate, formatTime, eventImages, eventLastDay, isMultiDay, dateRangeShort } from './events'
 import { eventBodyPlain } from './event-body'
+import type { SiteLocale } from './site-i18n'
+import type { EventsKey } from './site-strings/events'
+import { eventsT, timeL, dateShortL, dateRangeShortL } from './events-i18n'
 
 /**
  * Search-facing metadata for /events/[id]: page title, meta description, and
@@ -79,6 +82,21 @@ export function whenLabel(event: CommunityEvent, recurring: boolean): string {
   return time ? `${day}${recurring ? ' ' : ', '}${time}` : day
 }
 
+/** whenLabel in the page's language (translation plan, batch 5); English is whenLabel itself. */
+function whenLabelL(event: CommunityEvent, recurring: boolean, locale: SiteLocale): string {
+  if (locale === 'en') return whenLabel(event, recurring)
+  const t = eventsT(locale)
+  const d = parseEventDate(event.event_date)
+  const time = event.event_time ? timeL(event.event_time, locale) : null
+  const weekly = recurring && !isMultiDay(event)
+  const day = weekly
+    ? t(`seo.weekly_${d.getDay()}` as EventsKey)
+    : isMultiDay(event)
+      ? dateRangeShortL(event, locale)
+      : dateShortL(d, locale)
+  return time ? t(weekly ? 'seo.when_weekly_time' : 'seo.when_date_time', { day, time }) : day
+}
+
 /** Google shows roughly this much of a title; past it, the tail is cut. */
 const TITLE_BUDGET = 62
 const SUFFIX = ' | Shift'
@@ -102,11 +120,11 @@ function trimToWord(text: string, max: number): string {
  * The town is also skipped when the name already says it ("Free Bike Repair
  * Workshop at BPL South Boston" does not need ", Boston").
  */
-export function buildEventTitle(event: CommunityEvent, recurring: boolean): string {
+export function buildEventTitle(event: CommunityEvent, recurring: boolean, locale: SiteLocale = 'en'): string {
   const name = event.title.trim()
   const rawTown = townFromAddress(event.location_address)
   const town = rawTown && !name.toLowerCase().includes(rawTown.toLowerCase()) ? rawTown : null
-  const when = whenLabel(event, recurring)
+  const when = whenLabelL(event, recurring, locale)
 
   // Budget covers the whole rendered title, suffix included.
   const room = TITLE_BUDGET - SUFFIX.length
@@ -131,12 +149,13 @@ const DESCRIPTION_BUDGET = 158
  * room left for it — a truncated "Organized by…" is worth less than one more
  * line of what the event actually is.
  */
-export function buildEventDescription(event: CommunityEvent, recurring: boolean): string {
+export function buildEventDescription(event: CommunityEvent, recurring: boolean, locale: SiteLocale = 'en'): string {
   const town = townFromAddress(event.location_address)
   const where = town && !event.location_name.toLowerCase().includes(town.toLowerCase())
     ? `${event.location_name}, ${town}`
     : event.location_name
-  const lead = `${whenLabel(event, recurring)} at ${where}.`
+  const t = eventsT(locale)
+  const lead = locale === 'en' ? `${whenLabel(event, recurring)} at ${where}.` : t('seo.lead', { when: whenLabelL(event, recurring, locale), where })
   const body = eventBodyPlain(event.body)
 
   let out = lead
@@ -145,7 +164,9 @@ export function buildEventDescription(event: CommunityEvent, recurring: boolean)
     if (room > 40) out += ` ${trimToWord(body, room)}`
   }
 
-  const organizer = event.organizer_name ? ` Organized by ${event.organizer_name}.` : ''
+  const organizer = event.organizer_name
+    ? locale === 'en' ? ` Organized by ${event.organizer_name}.` : t('seo.organized_by', { name: event.organizer_name })
+    : ''
   if (organizer && out.length + organizer.length <= DESCRIPTION_BUDGET) out += organizer
 
   return out

@@ -2,13 +2,14 @@
 
 import { useMemo, type ReactNode } from 'react'
 import Link from 'next/link'
-import { type CommunityEvent, groupLabel, parseEventDate } from '@/lib/events'
+import { type CommunityEvent, parseEventDate } from '@/lib/events'
+import { groupLabelL, eventCount } from '@/lib/events-i18n'
 import EventCard from './EventCard'
 import FeederTray from './FeederTray'
 import type { CalendarEntry } from '@/lib/go-together'
 import type { UserLoc } from './useEventFilters'
 import { trackEvents } from './events-analytics'
-import { useEventsTone } from './EventsTone'
+import { useEventsTone, useEventsI18n } from './EventsTone'
 
 /**
  * The day-grouped list used by the phone list view and the desktop agenda:
@@ -45,6 +46,7 @@ export default function Agenda({
   events, entries: nested, ridesTo, limit, onShowMore, paged, userLoc, showAway, saved, onToggleSave, emptyMessage, emptyAction, showCount, countAction, inset,
 }: AgendaProps) {
   const { hrefBase } = useEventsTone()
+  const { locale, t } = useEventsI18n()
   const entries = useMemo(() => nested ?? events.map((event) => ({ event, feeders: [] })), [nested, events])
   const shown = paged ? entries.slice(0, limit) : entries
 
@@ -55,12 +57,12 @@ export default function Agenda({
       const ev = entry.event
       if (ev.event_date !== currentKey) {
         currentKey = ev.event_date
-        out.push({ key: currentKey, label: groupLabel(parseEventDate(ev.event_date)), entries: [] })
+        out.push({ key: currentKey, label: groupLabelL(parseEventDate(ev.event_date), locale), entries: [] })
       }
       out[out.length - 1].entries.push(entry)
     }
     return out
-  }, [shown])
+  }, [shown, locale])
 
   if (events.length === 0) {
     return (
@@ -68,7 +70,7 @@ export default function Agenda({
         <p className="text-[15px] text-(--ev-ink-75)">{emptyMessage}</p>
         {emptyAction ?? (
           <Link href={`${hrefBase}/submit`} className="mt-3 inline-block text-[13px] font-semibold text-(--ev-accent) hover:underline">
-            Submit an event
+            {t('cta.submit')}
           </Link>
         )}
       </div>
@@ -84,7 +86,7 @@ export default function Agenda({
       {showCount && (
         <div className="mb-4 flex items-center justify-between gap-3 lg:hidden">
           <p className="text-[13px] text-(--ev-ink-75)">
-            {events.length} event{events.length !== 1 ? 's' : ''}
+            {eventCount(t, events.length)}
           </p>
           {countAction}
         </div>
@@ -129,7 +131,7 @@ export default function Agenda({
           onClick={() => { onShowMore(); trackEvents('events_show_more', { shown: shown.length + AGENDA_PAGE }) }}
           className="mx-auto mt-6 block rounded-[10px] border border-(--ev-line-strong) px-6 py-3 text-[14px] font-semibold text-(--ev-ink) transition-colors hover:bg-(--ev-panel)"
         >
-          Show more · {remaining} remaining
+          {t('agenda.show_more', { count: remaining })}
         </button>
       )}
     </div>

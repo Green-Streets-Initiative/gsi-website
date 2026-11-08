@@ -4,9 +4,10 @@ import Link from 'next/link'
 import { Bike, ChevronRight, Footprints } from 'lucide-react'
 import posthog from 'posthog-js'
 import { eventHref, eventPath } from '@/lib/events-url'
-import { formatTime } from '@/lib/events'
+import { withLang } from '@/lib/site-i18n'
+import { timeL } from '@/lib/events-i18n'
 import { feederPlace, isWalkGroup, shortOrganizer, type GoTogetherGroup, type GoTogetherTarget } from '@/lib/go-together'
-import { useEventsTone } from './EventsTone'
+import { useEventsTone, useEventsI18n } from './EventsTone'
 import Facts from '@/components/Facts'
 
 /**
@@ -24,15 +25,16 @@ import Facts from '@/components/Facts'
 
 export function FeedsToLine({ target, walk, fromId }: { target: GoTogetherTarget; walk: boolean; fromId: string }) {
   const { hrefBase } = useEventsTone()
+  const { locale, t } = useEventsI18n()
   const Icon = walk ? Footprints : Bike
   return (
     <Link
-      href={eventPath(target, hrefBase)}
+      href={withLang(eventPath(target, hrefBase), locale)}
       onClick={() => posthog.capture('go_together_feeds_to_clicked', { event_id: fromId, target_id: target.id })}
       className="-mt-2 mb-4 inline-flex min-h-[44px] items-center gap-2 text-[15px] font-bold text-(--ev-accent) hover:underline"
     >
       <Icon size={16} aria-hidden />
-      {walk ? 'Walks' : 'Rides'} to {target.title}
+      {t(walk ? 'card.walks_to' : 'card.rides_to', { event: target.title })}
       <ChevronRight size={14} aria-hidden />
     </Link>
   )
@@ -40,25 +42,26 @@ export function FeedsToLine({ target, walk, fromId }: { target: GoTogetherTarget
 
 export function GoTogetherSection({ eventId, groups }: { eventId: string; groups: GoTogetherGroup[] }) {
   const { hrefBase } = useEventsTone()
+  const { locale, t } = useEventsI18n()
   if (groups.length === 0) return null
   return (
     <section id="go-together" aria-labelledby="go-together-title" className="mb-8 rounded-2xl border border-(--ev-line) bg-(--ev-card) p-4 sm:p-5">
-      <h2 id="go-together-title" className="font-display text-[20px] font-extrabold text-(--ev-ink)">Go Together</h2>
-      <p className="mt-1 text-[15px] text-(--ev-ink-75)">Meet a group near you and arrive together.</p>
+      <h2 id="go-together-title" className="font-display text-[20px] font-extrabold text-(--ev-ink)">{t('gt.title')}</h2>
+      <p className="mt-1 text-[15px] text-(--ev-ink-75)">{t('gt.sub')}</p>
       <ul className="mt-3 flex flex-col gap-1">
         {groups.map((g) => {
           const walk = isWalkGroup(g.event_type)
           const Icon = walk ? Footprints : Bike
           const details = [
-            g.event_time ? `Leaves ${formatTime(g.event_time)}` : null,
-            g.distance_text ? `${g.distance_text} ${walk ? 'walk' : 'ride'}` : null,
+            g.event_time ? t('gt.leaves', { time: timeL(g.event_time, locale) }) : null,
+            g.distance_text ? t(walk ? 'gt.walk_length' : 'gt.ride_length', { distance: g.distance_text }) : null,
           ].filter((x): x is string => !!x)
           const organizer = shortOrganizer(g.organizer_name)
           return (
             <li key={g.id}>
               <Link
                 // A Shift ride opens its own page for the date, where people RSVP without the app.
-                href={eventHref(g, hrefBase)}
+                href={withLang(eventHref(g, hrefBase), locale)}
                 onClick={() => posthog.capture('go_together_feeder_clicked', { event_id: eventId, feeder_id: g.id, is_shift_ride: !!g.ride_code })}
                 className="flex min-h-[56px] items-center gap-3 rounded-[12px] px-2 py-2 transition-colors hover:bg-(--ev-panel)"
               >
@@ -66,7 +69,7 @@ export function GoTogetherSection({ eventId, groups }: { eventId: string; groups
                   <Icon size={20} aria-hidden />
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block text-[16px] font-bold text-(--ev-ink)">From {feederPlace(g.title, g.location_name)}</span>
+                  <span className="block text-[16px] font-bold text-(--ev-ink)">{t('gt.from', { place: feederPlace(g.title, g.location_name) })}</span>
                   {details.length > 0 && <span className="block text-[14px] text-(--ev-ink-75)"><Facts parts={details} /></span>}
                   {organizer && <span className="block truncate text-[14px] text-(--ev-ink-75)">{organizer}</span>}
                 </span>

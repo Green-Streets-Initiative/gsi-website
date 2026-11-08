@@ -2,11 +2,13 @@
 
 import { Navigation } from 'lucide-react'
 import {
-  EVENT_TYPES, TYPE_FILTER_ORDER, getTagMeta,
-  RIDE_STYLE_ORDER, RIDE_STYLE_FILTER_LABEL, RIDE_STYLE_BLURB, styleFilterValue,
+  EVENT_TYPES, TYPE_FILTER_ORDER,
+  RIDE_STYLE_ORDER, styleFilterValue,
 } from '@/lib/events'
+import { typeLabel, tagLabel, rideLevelFilterLabel, rideLevelBlurb, placeLabel, plural, ownNameRepeats } from '@/lib/events-i18n'
+import type { EventsKey } from '@/lib/site-strings/events'
 import { typeInk, rideStyleInk } from '@/lib/events-tone'
-import { useEventsTone } from './EventsTone'
+import { useEventsTone, useEventsI18n } from './EventsTone'
 import CityAutocomplete from './CityAutocomplete'
 import {
   DISTANCE_OPTIONS, WHEN_OPTIONS, GOOD_FOR_TAGS, AUDIENCE_TAGS, languageFilterLabel,
@@ -32,11 +34,12 @@ const rowClass = (active: boolean) =>
 // --- When ---
 
 export function WhenPills({ value, onChange }: { value: WhenValue; onChange: (v: WhenValue) => void }) {
+  const { t } = useEventsI18n()
   return (
     <div className="flex flex-wrap gap-1.5">
       {WHEN_OPTIONS.map((opt) => (
         <button key={opt.value} onClick={() => onChange(opt.value)} className={pillClass(value === opt.value)}>
-          {opt.label}
+          {t(`when.${opt.value}` as EventsKey)}
         </button>
       ))}
     </div>
@@ -44,11 +47,12 @@ export function WhenPills({ value, onChange }: { value: WhenValue; onChange: (v:
 }
 
 export function WhenList({ value, onChange }: { value: WhenValue; onChange: (v: WhenValue) => void }) {
+  const { t } = useEventsI18n()
   return (
     <div className="flex flex-col gap-0.5">
       {WHEN_OPTIONS.map((opt) => (
         <button key={opt.value} onClick={() => onChange(opt.value)} className={rowClass(value === opt.value)}>
-          {opt.label}
+          {t(`when.${opt.value}` as EventsKey)}
         </button>
       ))}
     </div>
@@ -58,11 +62,12 @@ export function WhenList({ value, onChange }: { value: WhenValue; onChange: (v: 
 // --- Near ---
 
 export function DistancePills({ value, onChange }: { value: DistanceValue; onChange: (v: DistanceValue) => void }) {
+  const { t } = useEventsI18n()
   return (
     <div className="flex flex-wrap gap-1.5">
       {DISTANCE_OPTIONS.map((opt) => (
         <button key={opt.value} onClick={() => onChange(opt.value)} className={pillClass(value === opt.value)}>
-          {opt.label}
+          {t(`dist.${opt.value}` as EventsKey)}
         </button>
       ))}
     </div>
@@ -78,6 +83,8 @@ interface LocationControlProps {
 }
 
 export function LocationControl({ geoStatus, userLoc, initialCity, onUseMyLocation, onCitySelect }: LocationControlProps) {
+  const { locale, t } = useEventsI18n()
+  const place = placeLabel(userLoc.label, locale)
   return (
     <div>
       <div className="mb-2 flex gap-2">
@@ -87,12 +94,12 @@ export function LocationControl({ geoStatus, userLoc, initialCity, onUseMyLocati
           className="flex items-center gap-1.5 rounded-lg border border-(--ev-line-mid) px-3 py-1.5 text-[12px] font-medium text-(--ev-ink-80) transition-colors hover:bg-(--ev-panel) disabled:opacity-60"
         >
           <Navigation size={13} />
-          {geoStatus === 'locating' ? 'Locating…' : 'Use my location'}
+          {geoStatus === 'locating' ? t('loc.locating') : t('loc.use_mine')}
         </button>
       </div>
-      <CityAutocomplete onSelect={onCitySelect} initialValue={initialCity} />
+      <CityAutocomplete onSelect={onCitySelect} initialValue={initialCity} placeholder={t('loc.placeholder')} />
       <p className="mt-1.5 text-[11px] text-(--ev-ink-75)">
-        {geoStatus === 'active' ? `Near ${userLoc.label}` : `Distances measured from ${userLoc.label} until you pick a town.`}
+        {geoStatus === 'active' ? t('loc.near', { place }) : t('loc.measured', { place })}
       </p>
     </div>
   )
@@ -108,15 +115,16 @@ interface TypeProps {
 
 /** Phone sheet: pills in the canonical order, hiding empty types. */
 export function TypePills({ value, counts, onChange }: TypeProps) {
+  const { locale, t } = useEventsI18n()
   return (
     <div className="flex flex-wrap gap-1.5">
-      <button onClick={() => onChange('All')} className={pillClass(value === 'All')}>All</button>
+      <button onClick={() => onChange('All')} className={pillClass(value === 'All')}>{t('types.all')}</button>
       {TYPE_FILTER_ORDER.map((t) => {
         const meta = EVENT_TYPES[t]
         if (!meta || (counts[t] ?? 0) === 0) return null
         return (
           <button key={t} onClick={() => onChange(t === value ? 'All' : t)} className={pillClass(value === t)}>
-            {meta.label}
+            {typeLabel(t, locale)}
           </button>
         )
       })}
@@ -131,13 +139,14 @@ export function TypeList({ value, counts, types, expanded, onToggleExpanded, onC
   onToggleExpanded: () => void
 }) {
   const { tone } = useEventsTone()
+  const { locale, t: tr } = useEventsI18n()
   const TOP = 6
   const visible = expanded ? types : types.slice(0, TOP)
   const hidden = types.length - visible.length
   return (
     <div className="flex flex-col gap-0.5">
       <button onClick={() => onChange('All')} className={rowClass(value === 'All')}>
-        <span>All types</span>
+        <span>{tr('types.all_types')}</span>
         <span className="font-mono text-[12px] text-(--ev-ink-70)">{counts.All ?? 0}</span>
       </button>
       {visible.map((t) => {
@@ -146,7 +155,7 @@ export function TypeList({ value, counts, types, expanded, onToggleExpanded, onC
           <button key={t} onClick={() => onChange(t === value ? 'All' : t)} className={rowClass(value === t)}>
             <span className="flex items-center gap-2">
               <span className="h-2 w-2 rounded-full" style={{ backgroundColor: typeInk(meta, tone) }} />
-              {meta.label}
+              {typeLabel(t, locale)}
             </span>
             <span className="font-mono text-[12px] text-(--ev-ink-70)">{counts[t] ?? 0}</span>
           </button>
@@ -157,7 +166,7 @@ export function TypeList({ value, counts, types, expanded, onToggleExpanded, onC
           onClick={onToggleExpanded}
           className="mt-1 rounded-lg px-3 py-1.5 text-left text-[12px] font-semibold text-(--ev-accent) transition-colors hover:bg-(--ev-panel-faint)"
         >
-          {expanded ? 'Show fewer' : `Show ${hidden} more type${hidden === 1 ? '' : 's'}`}
+          {expanded ? tr('types.show_fewer') : plural(tr, hidden, 'types.show_more_one', 'types.show_more_other')}
         </button>
       )}
       <LevelRows value={value} counts={counts} onChange={onChange} />
@@ -178,12 +187,13 @@ function visibleLevels(value: string, counts: Record<string, number>) {
 
 function LevelRows({ value, counts, onChange }: TypeProps) {
   const { tone } = useEventsTone()
+  const { locale, t } = useEventsI18n()
   const levels = visibleLevels(value, counts)
   if (levels.length === 0) return null
   return (
     <>
       <p className="mb-1 mt-3 border-t border-(--ev-line) px-3 pt-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-(--ev-ink-75)">
-        Rides by level
+        {t('sheet.level')}
       </p>
       {levels.map((s) => {
         const v = styleFilterValue(s)
@@ -193,9 +203,9 @@ function LevelRows({ value, counts, onChange }: TypeProps) {
             <span className="flex min-w-0 items-start gap-2">
               <span className="mt-[5px] h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: rideStyleInk(s, tone) }} />
               <span className="min-w-0">
-                <span className="block">{RIDE_STYLE_FILTER_LABEL[s]}</span>
+                <span className="block">{rideLevelFilterLabel(s, locale)}</span>
                 <span className={`block text-[11px] font-normal leading-snug ${active ? 'text-(--ev-accent-90)' : 'text-(--ev-ink-75)'}`}>
-                  {RIDE_STYLE_BLURB[s]}
+                  {rideLevelBlurb(s, locale)}
                 </span>
               </span>
             </span>
@@ -209,6 +219,7 @@ function LevelRows({ value, counts, onChange }: TypeProps) {
 
 /** Phone sheet: one pill per level that has rides. */
 export function LevelPills({ value, counts, onChange }: TypeProps) {
+  const { locale } = useEventsI18n()
   const levels = visibleLevels(value, counts)
   if (levels.length === 0) return null
   return (
@@ -218,7 +229,7 @@ export function LevelPills({ value, counts, onChange }: TypeProps) {
         const active = value === v
         return (
           <button key={v} onClick={() => onChange(active ? 'All' : v)} aria-pressed={active} className={pillClass(active)}>
-            {RIDE_STYLE_FILTER_LABEL[s]}
+            {rideLevelFilterLabel(s, locale)}
             <span className={`ml-1.5 font-mono text-[11px] ${active ? 'text-(--ev-accent-90)' : 'text-(--ev-ink-70)'}`}>{counts[v] ?? 0}</span>
           </button>
         )
@@ -236,6 +247,7 @@ interface TagProps {
 }
 
 export function TagToggles({ selected, counts, onToggle }: TagProps) {
+  const { locale } = useEventsI18n()
   return (
     <div className="flex flex-wrap gap-1.5">
       {GOOD_FOR_TAGS.map((t) => {
@@ -249,7 +261,7 @@ export function TagToggles({ selected, counts, onToggle }: TagProps) {
             aria-pressed={active}
             className={`${pillClass(active)} disabled:opacity-60`}
           >
-            {getTagMeta(t).label}
+            {tagLabel(t, locale)}
             <span className={`ml-1.5 font-mono text-[11px] ${active ? 'text-(--ev-accent-90)' : 'text-(--ev-ink-70)'}`}>{n}</span>
           </button>
         )
@@ -263,6 +275,7 @@ export function TagToggles({ selected, counts, onToggle }: TagProps) {
 /** Groups with events under the current filters (and any picked one). A
  *  group with nothing is left out: "LGBTQ+ 0" reads as "nothing for you". */
 export function AudienceToggles({ selected, counts, onToggle }: TagProps) {
+  const { locale } = useEventsI18n()
   const shown = AUDIENCE_TAGS.filter((t) => (counts[t] ?? 0) > 0 || selected.includes(t))
   if (shown.length === 0) return null
   return (
@@ -272,7 +285,7 @@ export function AudienceToggles({ selected, counts, onToggle }: TagProps) {
         const n = counts[t] ?? 0
         return (
           <button key={t} onClick={() => onToggle(t)} aria-pressed={active} className={pillClass(active)}>
-            {getTagMeta(t).label}
+            {tagLabel(t, locale)}
             <span className={`ml-1.5 font-mono text-[11px] ${active ? 'text-(--ev-accent-90)' : 'text-(--ev-ink-70)'}`}>{n}</span>
           </button>
         )
@@ -298,6 +311,7 @@ export function LanguageToggles({ choices, selected, counts, onToggle }: {
   counts: Partial<Record<PartnerLanguage, number>>
   onToggle: (c: PartnerLanguage) => void
 }) {
+  const { locale } = useEventsI18n()
   if (choices.length === 0) return null
   return (
     <div className="flex flex-wrap gap-1.5">
@@ -305,8 +319,11 @@ export function LanguageToggles({ choices, selected, counts, onToggle }: {
         const active = selected.includes(c)
         return (
           <button key={c} onClick={() => onToggle(c)} aria-pressed={active} className={pillClass(active)}>
-            {languageFilterLabel(c)}
-            <span lang={c} className={`ml-1 ${active ? 'text-(--ev-accent-90)' : 'text-(--ev-ink-75)'}`}>· {languageLabel(c)}</span>
+            {languageFilterLabel(c, locale)}
+            {/* "En español · Español" says it twice, so the own name goes when it matches. */}
+            {!ownNameRepeats(c, locale) && (
+              <span lang={c} className={`ml-1 ${active ? 'text-(--ev-accent-90)' : 'text-(--ev-ink-75)'}`}>· {languageLabel(c)}</span>
+            )}
             <span className={`ml-1.5 font-mono text-[11px] ${active ? 'text-(--ev-accent-90)' : 'text-(--ev-ink-70)'}`}>{counts[c] ?? 0}</span>
           </button>
         )

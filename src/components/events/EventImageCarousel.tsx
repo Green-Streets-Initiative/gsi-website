@@ -2,6 +2,7 @@
 
 import { useCallback, useRef, useState } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { useEventsI18n } from './EventsTone'
 
 /**
  * The event's flyer pages, side by side: the front, then an event map or a
@@ -12,6 +13,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
  * already say where you are.
  */
 export default function EventImageCarousel({ images, title }: { images: string[]; title: string }) {
+  const { t } = useEventsI18n()
   const trackRef = useRef<HTMLDivElement>(null)
   const [index, setIndex] = useState(0)
   const total = images.length
@@ -55,7 +57,7 @@ export default function EventImageCarousel({ images, title }: { images: string[]
         className="relative overflow-hidden rounded-2xl border border-(--ev-line) bg-(--ev-card)"
         role="region"
         aria-roledescription="carousel"
-        aria-label={`${title}: ${total} images`}
+        aria-label={t('img.carousel', { title, total })}
       >
         <div
           ref={trackRef}
@@ -70,11 +72,11 @@ export default function EventImageCarousel({ images, title }: { images: string[]
               className="w-full shrink-0 snap-center"
               role="group"
               aria-roledescription="slide"
-              aria-label={`Image ${i + 1} of ${total}`}
+              aria-label={t('img.slide', { n: i + 1, total })}
             >
               <img
                 src={src}
-                alt={i === 0 ? title : `${title}, image ${i + 1}`}
+                alt={i === 0 ? title : t('img.alt', { title, n: i + 1 })}
                 className="w-full object-contain"
                 loading={i === 0 ? 'eager' : 'lazy'}
                 draggable={false}
@@ -87,7 +89,7 @@ export default function EventImageCarousel({ images, title }: { images: string[]
           type="button"
           onClick={() => goTo(index - 1)}
           disabled={index === 0}
-          aria-label="Previous image"
+          aria-label={t('img.prev')}
           className={`${arrowClass} left-3`}
         >
           <ChevronLeft size={20} />
@@ -96,21 +98,21 @@ export default function EventImageCarousel({ images, title }: { images: string[]
           type="button"
           onClick={() => goTo(index + 1)}
           disabled={index === total - 1}
-          aria-label="Next image"
+          aria-label={t('img.next')}
           className={`${arrowClass} right-3`}
         >
           <ChevronRight size={20} />
         </button>
       </div>
 
-      <div className="mt-2 flex justify-center" role="tablist" aria-label="Choose an image">
+      <div className="mt-2 flex justify-center" role="tablist" aria-label={t('img.choose')}>
         {images.map((src, i) => (
           <button
             key={`dot-${src}-${i}`}
             type="button"
             role="tab"
             aria-selected={i === index}
-            aria-label={`Image ${i + 1} of ${total}`}
+            aria-label={t('img.slide', { n: i + 1, total })}
             onClick={() => goTo(i)}
             className="flex h-8 w-8 items-center justify-center focus-visible:outline-none"
           >

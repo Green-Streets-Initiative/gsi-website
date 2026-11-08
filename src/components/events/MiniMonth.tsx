@@ -3,10 +3,12 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import {
-  type CommunityEvent, dateKey, parseEventDate, todayKey, dateMedium,
+  type CommunityEvent, dateKey, parseEventDate, todayKey,
   eventDotsByDay, eventCountByDay,
 } from '@/lib/events'
-import { useEventsTone } from './EventsTone'
+import { siteDate, type SiteLocale } from '@/lib/site-i18n'
+import { dateMediumL, eventCount } from '@/lib/events-i18n'
+import { useEventsTone, useEventsI18n } from './EventsTone'
 
 /**
  * Desktop date navigator: a compact month with event dots. Picking a day
@@ -24,8 +26,20 @@ interface MiniMonthProps {
 const DAY_LETTERS = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 
+/** Column letters Sunday first; 2026-11-01 is a Sunday. */
+function dayLetters(locale: SiteLocale): string[] {
+  if (locale === 'en') return DAY_LETTERS
+  return Array.from({ length: 7 }, (_, i) => siteDate(locale, new Date(2026, 10, 1 + i), { weekday: 'narrow' }))
+}
+
+function monthTitle(locale: SiteLocale, y: number, m: number): string {
+  if (locale === 'en') return `${MONTHS[m]} ${y}`
+  return siteDate(locale, new Date(y, m, 1), { month: 'long', year: 'numeric' })
+}
+
 export default function MiniMonth({ events, selectedDay, onSelectDay }: MiniMonthProps) {
   const { tone } = useEventsTone()
+  const { locale, t } = useEventsI18n()
   const today = todayKey()
   const [ym, setYm] = useState(() => {
     const d = selectedDay ? parseEventDate(selectedDay) : new Date()
@@ -113,27 +127,27 @@ export default function MiniMonth({ events, selectedDay, onSelectDay }: MiniMont
   return (
     <div className="rounded-2xl border border-(--ev-line) bg-(--ev-card) p-4">
       <div className="mb-3 flex items-center justify-between">
-        <span className="font-display text-[15px] font-bold text-(--ev-ink)">{MONTHS[ym.m]} {ym.y}</span>
+        <span className="font-display text-[15px] font-bold text-(--ev-ink)">{monthTitle(locale, ym.y, ym.m)}</span>
         <div className="flex items-center gap-1">
           {!inMonth(today) && (
             <button
               onClick={goToday}
               className="mr-1 rounded-full border border-(--ev-line-mid) px-2.5 py-0.5 text-[11px] font-semibold text-(--ev-ink-80) transition-colors hover:bg-(--ev-panel)"
             >
-              Today
+              {t('cal.today')}
             </button>
           )}
           <button
             onClick={() => shiftMonth(-1)}
             className="flex h-7 w-7 items-center justify-center rounded-lg border border-(--ev-line-mid) text-(--ev-ink-80) transition-colors hover:bg-(--ev-panel)"
-            aria-label="Previous month"
+            aria-label={t('cal.prev_month')}
           >
             <ChevronLeft size={14} />
           </button>
           <button
             onClick={() => shiftMonth(1)}
             className="flex h-7 w-7 items-center justify-center rounded-lg border border-(--ev-line-mid) text-(--ev-ink-80) transition-colors hover:bg-(--ev-panel)"
-            aria-label="Next month"
+            aria-label={t('cal.next_month')}
           >
             <ChevronRight size={14} />
           </button>
@@ -141,12 +155,12 @@ export default function MiniMonth({ events, selectedDay, onSelectDay }: MiniMont
       </div>
 
       <div className="mb-1 grid grid-cols-7">
-        {DAY_LETTERS.map((l, i) => (
+        {dayLetters(locale).map((l, i) => (
           <div key={i} className="py-1 text-center text-[10px] font-semibold uppercase tracking-[0.08em] text-(--ev-ink-70)">{l}</div>
         ))}
       </div>
 
-      <div ref={gridRef} role="grid" aria-label="Pick a day" className="grid grid-cols-7 gap-y-0.5">
+      <div ref={gridRef} role="grid" aria-label={t('cal.pick_day')} className="grid grid-cols-7 gap-y-0.5">
         {cells.map((d, i) => {
           if (!d) return <div key={`pad-${i}`} aria-hidden />
           const key = dateKey(d)
@@ -163,7 +177,7 @@ export default function MiniMonth({ events, selectedDay, onSelectDay }: MiniMont
               tabIndex={tabKey === key ? 0 : -1}
               aria-pressed={isSelected}
               aria-disabled={isPast || undefined}
-              aria-label={`${dateMedium(d)}, ${count} event${count === 1 ? '' : 's'}`}
+              aria-label={t('cal.cell_aria', { date: dateMediumL(d, locale), events: eventCount(t, count) })}
               onClick={() => { if (!isPast) onSelectDay(isSelected ? null : key) }}
               onKeyDown={(e) => onKey(e, key)}
               onFocus={() => setFocusKey(key)}
@@ -191,10 +205,10 @@ export default function MiniMonth({ events, selectedDay, onSelectDay }: MiniMont
           onClick={() => onSelectDay(null)}
           className="mt-3 w-full rounded-lg py-1.5 text-center text-[12px] font-semibold text-(--ev-accent) transition-colors hover:bg-(--ev-panel-faint)"
         >
-          Showing {dateMedium(parseEventDate(selectedDay))} · Show all
+          {t('cal.showing', { date: dateMediumL(parseEventDate(selectedDay), locale) })}
         </button>
       ) : (
-        <p className="mt-3 text-center text-[12px] text-(--ev-ink-75)">Pick a day to see only that day.</p>
+        <p className="mt-3 text-center text-[12px] text-(--ev-ink-75)">{t('cal.hint')}</p>
       )}
     </div>
   )

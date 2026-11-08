@@ -4,10 +4,13 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import {
   type CommunityEvent, type RideStyle, EVENT_TYPES, TAG_META, TYPE_FILTER_ORDER, DEFAULT_LOCATION,
-  RIDE_STYLE_ORDER, RIDE_STYLE_LABEL, RIDE_STYLE_FILTER_LABEL,
-  haversine, parseEventDate, todayKey, getTypeMeta, getTagMeta, dateMedium, eventLastDay,
+  RIDE_STYLE_ORDER, RIDE_STYLE_LABEL,
+  haversine, parseEventDate, todayKey, getTypeMeta, eventLastDay,
   eventRideStyle, isNoDrop, styleFilterValue, parseStyleFilter,
 } from '@/lib/events'
+import type { SiteLocale } from '@/lib/site-i18n'
+import type { EventsKey } from '@/lib/site-strings/events'
+import { eventsT, typeFilterLabelL, tagLabel, dateMediumL, placeLabel, typeLabel, rideLevelLabel, languageNameL } from '@/lib/events-i18n'
 import { trackEvents } from './events-analytics'
 import { LANGUAGES, eventLanguages, languageEnglish, languageLabel, isLanguage, type PartnerLanguage } from '@/lib/languages'
 import { nestFeeders } from '@/lib/go-together'
@@ -45,9 +48,10 @@ export const AUDIENCE_TAGS = ['women', 'lgbtq', 'seniors', 'students'] as const
 /** Languages an event can be led in, other than English (Shift 01697). Like Rides for, an event matches ANY picked one. */
 export const FILTER_LANGUAGES = LANGUAGES.map((l) => l.id).filter((id) => id !== 'en')
 
-/** "In Spanish": the chip and pill words for a language filter. */
-export function languageFilterLabel(code: PartnerLanguage): string {
-  return `In ${languageEnglish(code)}`
+/** "In Spanish": the chip and pill words for a language filter ("En español" on a Spanish page). */
+export function languageFilterLabel(code: PartnerLanguage, locale: SiteLocale = 'en'): string {
+  if (locale === 'en') return `In ${languageEnglish(code)}`
+  return eventsT(locale)('lang.filter', { lang: languageNameL(code, locale) })
 }
 
 export interface UserLoc { lat: number; lng: number; label: string }
@@ -57,7 +61,10 @@ export interface ActiveFilter { key: string; label: string; clear: () => void }
 
 const DISTANCE_VALUES: readonly string[] = DISTANCE_OPTIONS.map((o) => o.value)
 const WHEN_VALUES: readonly string[] = WHEN_OPTIONS.map((o) => o.value)
-const URL_KEYS = ['q', 'when', 'type', 'level', 'day', 'near', 'dist', 'tags', 'for', 'lang', 'saved']
+// The Language filter is "led", not "lang": ?lang= is the page's own language
+// (site-i18n), and the two shared one key on main, so ?lang=es filtered to
+// Spanish-led events and ?lang=zh-Hans was dropped from the address.
+const URL_KEYS = ['q', 'when', 'type', 'level', 'day', 'near', 'dist', 'tags', 'for', 'led', 'saved']
 
 /**
  * The "type" filter is one radio group holding either an event type or a
@@ -71,10 +78,8 @@ function isRideLevel(v: string): v is RideStyle {
 }
 
 /** What a type-filter value is called on the pill and the applied chip. */
-export function typeFilterLabel(value: string): string {
-  const level = parseStyleFilter(value)
-  if (level) return RIDE_STYLE_FILTER_LABEL[level]
-  return getTypeMeta(value).label
+export function typeFilterLabel(value: string, locale: SiteLocale = 'en'): string {
+  return typeFilterLabelL(value, locale)
 }
 
 function parseNear(v: string | null): UserLoc | null {
@@ -109,14 +114,17 @@ interface Options {
   /** False only in the phone calendar view, where the week strip is the date control. */
   applyDateRange: boolean
   notify?: (msg: string) => void
+  /** The page's language, for chip labels and notices. English when left out. */
+  locale?: SiteLocale
 }
 
 // ---------------------------------------------------------------------------
 // Hook
 // ---------------------------------------------------------------------------
 
-export function useEventFilters(events: CommunityEvent[], { saved, applyDateRange, notify }: Options) {
+export function useEventFilters(events: CommunityEvent[], { saved, applyDateRange, notify, locale = 'en' }: Options) {
   const params = useSearchParams()
+  const t = useMemo(() => eventsT(locale), [locale])
   const today = todayKey()
   const todayDate = useMemo(() => parseEventDate(today), [today])
 
@@ -148,7 +156,7 @@ export function useEventFilters(events: CommunityEvent[], { saved, applyDateRang
     (params.get('for') ?? '').split(',').filter((t) => (AUDIENCE_TAGS as readonly string[]).includes(t)),
   )
   const [langs, setLangs] = useState<PartnerLanguage[]>(() =>
-    (params.get('lang') ?? '').split(',').filter((c): c is PartnerLanguage => isLanguage(c) && c !== 'en'),
+    (params.get('led') ?? '').split(',').filter((c): c is PartnerLanguage => isLanguage(c) && c !== 'en'),
   )
   const [savedOnly, setSavedOnlyState] = useState(() => params.get('saved') === '1')
   const [initialNear] = useState(() => parseNear(params.get('near')))
@@ -204,7 +212,7 @@ export function useEventFilters(events: CommunityEvent[], { saved, applyDateRang
 
   const useMyLocation = useCallback(() => {
     if (!navigator.geolocation) {
-      notify?.('Location is not available here. Type a town instead.')
+      notify?.(t('toast.no_geo'))
       return
     }
     setGeoStatus('locating')
@@ -227,19 +235,19 @@ export function useEventFilters(events: CommunityEvent[], { saved, applyDateRang
       },
       () => {
         setGeoStatus('idle')
-        notify?.('Location access was declined. Type a town instead.')
+        notify?.(t('toast.geo_declined'))
       },
       { timeout: 8000 },
     )
-  }, [notify])
+  }, [notify, t])
 
   const selectCity = useCallback((loc: UserLoc) => {
     setUserLoc(loc)
     setGeoStatus('active')
     setDistanceState((d) => (d === 'all' ? NEAR_DEFAULT_DISTANCE : d))
-    notify?.(`Near ${loc.label}`)
+    notify?.(t('loc.near', { place: placeLabel(loc.label, locale) }))
     trackEvents('events_filter_changed', { dimension: 'near', value: loc.label })
-  }, [notify])
+  }, [notify, t, locale])
 
   // --- One predicate for the list and every facet count ---
 
@@ -261,8 +269,10 @@ export function useEventFilters(events: CommunityEvent[], { saved, applyDateRang
     if (savedOnly && !saved[ev.id]) return false
     if (q) {
       const level = eventRideStyle(ev)
+      // English words always match; the page's own words match too.
       const haystack = [ev.title, ev.location_name, ev.event_type, getTypeMeta(ev.event_type).label, ev.organizer_name, level && RIDE_STYLE_LABEL[level], isNoDrop(ev) && 'no-drop',
-        ...eventLanguages(ev.languages).flatMap((c) => [languageEnglish(c), languageLabel(c)])]
+        ...eventLanguages(ev.languages).flatMap((c) => [languageEnglish(c), languageLabel(c), locale !== 'en' && languageNameL(c, locale)]),
+        locale !== 'en' && typeLabel(ev.event_type, locale), locale !== 'en' && level && rideLevelLabel(level, locale)]
         .filter(Boolean).join(' ').toLowerCase()
       if (!haystack.includes(q)) return false
     }
@@ -274,7 +284,7 @@ export function useEventFilters(events: CommunityEvent[], { saved, applyDateRang
     if (ignore !== 'day' && selectedDay) return ev.event_date <= selectedDay && selectedDay <= eventLastDay(ev)
     if (applyDateRange && !inDateRange(parseEventDate(ev.event_date), dateRange, todayDate)) return false
     return true
-  }, [today, typeFilter, tags, audience, langs, savedOnly, saved, q, distance, userLoc, selectedDay, applyDateRange, dateRange, todayDate])
+  }, [today, typeFilter, tags, audience, langs, savedOnly, saved, q, distance, userLoc, selectedDay, applyDateRange, dateRange, todayDate, locale])
 
   const sortEvents = (list: CommunityEvent[]) =>
     list.sort((a, b) => a.event_date.localeCompare(b.event_date) || (a.event_time ?? '').localeCompare(b.event_time ?? ''))
@@ -354,18 +364,18 @@ export function useEventFilters(events: CommunityEvent[], { saved, applyDateRang
 
   const activeFilters = useMemo<ActiveFilter[]>(() => {
     const list: ActiveFilter[] = []
-    if (selectedDay) list.push({ key: 'day', label: dateMedium(parseEventDate(selectedDay)), clear: () => setSelectedDay(null) })
+    if (selectedDay) list.push({ key: 'day', label: dateMediumL(parseEventDate(selectedDay), locale), clear: () => setSelectedDay(null) })
     if (applyDateRange && dateRange !== 'upcoming') {
-      list.push({ key: 'when', label: WHEN_OPTIONS.find((o) => o.value === dateRange)?.label ?? dateRange, clear: () => setDateRange('upcoming') })
+      list.push({ key: 'when', label: t(`when.${dateRange}` as EventsKey), clear: () => setDateRange('upcoming') })
     }
-    if (distance !== 'all') list.push({ key: 'distance', label: `Within ${distance} mi of ${userLoc.label}`, clear: () => setDistance('all') })
-    if (typeFilter !== 'All') list.push({ key: 'type', label: typeFilterLabel(typeFilter), clear: () => setTypeFilter('All') })
-    for (const t of tags) list.push({ key: `tag:${t}`, label: getTagMeta(t).label, clear: () => toggleTag(t) })
-    for (const t of audience) list.push({ key: `for:${t}`, label: getTagMeta(t).label, clear: () => toggleAudience(t) })
-    for (const c of langs) list.push({ key: `lang:${c}`, label: languageFilterLabel(c), clear: () => toggleLang(c) })
-    if (savedOnly) list.push({ key: 'saved', label: 'Saved', clear: () => setSavedOnly(false) })
+    if (distance !== 'all') list.push({ key: 'distance', label: t('chip.within_of', { dist: distance, place: placeLabel(userLoc.label, locale) }), clear: () => setDistance('all') })
+    if (typeFilter !== 'All') list.push({ key: 'type', label: typeFilterLabel(typeFilter, locale), clear: () => setTypeFilter('All') })
+    for (const tag of tags) list.push({ key: `tag:${tag}`, label: tagLabel(tag, locale), clear: () => toggleTag(tag) })
+    for (const tag of audience) list.push({ key: `for:${tag}`, label: tagLabel(tag, locale), clear: () => toggleAudience(tag) })
+    for (const c of langs) list.push({ key: `lang:${c}`, label: languageFilterLabel(c, locale), clear: () => toggleLang(c) })
+    if (savedOnly) list.push({ key: 'saved', label: t('chip.saved'), clear: () => setSavedOnly(false) })
     return list
-  }, [selectedDay, applyDateRange, dateRange, distance, userLoc.label, typeFilter, tags, audience, langs, savedOnly,
+  }, [selectedDay, applyDateRange, dateRange, distance, userLoc.label, typeFilter, tags, audience, langs, savedOnly, locale, t,
       setSelectedDay, setDateRange, setDistance, setTypeFilter, toggleTag, toggleAudience, toggleLang, setSavedOnly])
 
   // The picked day is its own control on phones, so it stays out of the badge count.
@@ -402,7 +412,7 @@ export function useEventFilters(events: CommunityEvent[], { saved, applyDateRang
       if (distance !== 'all' || geoStatus === 'active') next.set('dist', distance)
       if (tags.length) next.set('tags', tags.join(','))
       if (audience.length) next.set('for', audience.join(','))
-      if (langs.length) next.set('lang', langs.join(','))
+      if (langs.length) next.set('led', langs.join(','))
       if (savedOnly) next.set('saved', '1')
       const qs = next.toString()
       const url = qs ? `${window.location.pathname}?${qs}` : window.location.pathname

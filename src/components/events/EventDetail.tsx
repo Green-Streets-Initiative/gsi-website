@@ -2,13 +2,13 @@
 
 import { useState, useRef, useCallback } from 'react'
 import Link from 'next/link'
-import { eventPath } from '@/lib/events-url'
+import { eventPath, eventUrl } from '@/lib/events-url'
 import {
   MapPin, Calendar, Users,
   ChevronLeft, Bookmark, Share2, Globe, ExternalLink, Ticket,
   Clock, Mail, ArrowRight, Route, Languages,
 } from 'lucide-react'
-import { eventLanguages, ledInLine, ownNames } from '@/lib/languages'
+import { eventLanguages, ownNames } from '@/lib/languages'
 import dynamic from 'next/dynamic'
 import posthog from 'posthog-js'
 import FixListingLink from '@/components/hosts/FixListingLink'
@@ -18,18 +18,23 @@ import { withUtm as appUtm } from '@/lib/utm'
 import { EVENT_TYPE_ICONS } from './event-type-icons'
 import {
   type CommunityEvent, type NextUp,
-  getTypeMeta, getTagMeta, formatTime, dateLong, dateRangeLong, isDeadline, parseEventDate,
+  getTypeMeta, getTagMeta, isDeadline, parseEventDate,
   buildIcs, gcalUrl, directionsUrl,
-  eventRideStyle, isNoDrop, isRideEvent, PACE_BAND_LABEL, RIDE_STYLE_LABEL, RIDE_STYLE_BLURB,
+  eventRideStyle, isNoDrop, isRideEvent,
   eventImages,
 } from '@/lib/events'
+import { withLang, type SiteLocale } from '@/lib/site-i18n'
+import {
+  eventsT, typeLabel, tagLabel, rideLevelLabel, rideLevelBlurb, paceLabel,
+  timeL, dateLongL, dateRangeLongL, calendarNotesL, ledInLineL,
+} from '@/lib/events-i18n'
 import EventImageCarousel from './EventImageCarousel'
 import { FeedsToLine, GoTogetherSection } from './GoTogether'
 import { NO_GO_TOGETHER, isWalkGroup, type GoTogetherData } from '@/lib/go-together'
 import { EventPageAlertSignup } from './EventAlertSignup'
 import { parseEventBody } from '@/lib/event-body'
 import { typeInk, tagInk, rideStyleInk, TINT } from '@/lib/events-tone'
-import { EventsToneProvider, toneClass, useEventsTone, type EventsTone } from './EventsTone'
+import { EventsToneProvider, toneClass, useEventsTone, useEventsI18n, type EventsTone } from './EventsTone'
 import './events-tone.css'
 
 const EventMap = dynamic(() => import('./EventMap'), { ssr: false })
@@ -61,62 +66,65 @@ function withUtm(url: string): string {
  */
 /** The organizer cancelled, postponed or moved this one (Shift 01013). */
 function ScheduleBanner({ event }: { event: CommunityEvent }) {
+  const { locale, t } = useEventsI18n()
   const status = event.schedule_status
   if (!status) return null
   let headline: string
-  if (status === 'cancelled') headline = 'Cancelled by the organizer'
-  else if (status === 'postponed') headline = 'Postponed. No new date yet.'
+  if (status === 'cancelled') headline = t('detail.cancelled')
+  else if (status === 'postponed') headline = t('detail.postponed')
   else if (event.previous_event_date && event.previous_event_date !== event.event_date) {
-    headline = `Moved from ${dateLong(parseEventDate(event.previous_event_date))}`
-  } else if (event.previous_event_time) headline = `New start time (was ${formatTime(event.previous_event_time)})`
-  else headline = 'New start time'
+    headline = t('detail.moved_from', { date: dateLongL(parseEventDate(event.previous_event_date), locale) })
+  } else if (event.previous_event_time) headline = t('detail.new_time_was', { time: timeL(event.previous_event_time, locale) })
+  else headline = t('detail.new_time')
   const note = event.schedule_note?.trim()
 
   return (
     <div className="mb-6 rounded-2xl border border-(--ev-accent-line-30) bg-(--ev-accent-tint-7) p-4 sm:mb-8 sm:p-5">
       <p className="font-display text-[19px] font-extrabold leading-tight text-(--ev-ink) sm:text-[22px]">{headline}</p>
-      {note && <p className="mt-1 text-[13px] text-(--ev-ink-75)">From the organizer: &ldquo;{note}&rdquo;</p>}
+      {note && <p className="mt-1 text-[13px] text-(--ev-ink-75)">{t('detail.organizer_said', { note })}</p>}
     </div>
   )
 }
 
 function NextUpBanner({ nextUp }: { nextUp: NextUp | null }) {
   const { hrefBase } = useEventsTone()
-  const label = nextUp
-    ? `${dateLong(parseEventDate(nextUp.event_date))}${nextUp.event_time ? ` at ${formatTime(nextUp.event_time)}` : ''}`
+  const { locale, t } = useEventsI18n()
+  const nextDate = nextUp ? dateLongL(parseEventDate(nextUp.event_date), locale) : null
+  const label = nextUp && nextDate
+    ? nextUp.event_time ? t('next.date_at', { date: nextDate, time: timeL(nextUp.event_time, locale) }) : nextDate
     : null
 
   return (
     <div className="mb-6 rounded-2xl border border-(--ev-accent-line-30) bg-(--ev-accent-tint-7) p-4 sm:mb-8 sm:p-5">
       <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-(--ev-accent)">
-        This one has passed
+        {t('next.passed')}
       </p>
 
       {nextUp && label ? (
         <>
           <Link
-            href={eventPath(nextUp, hrefBase)}
+            href={withLang(eventPath(nextUp, hrefBase), locale)}
             className="mt-1.5 inline-flex items-center gap-1.5 font-display text-[19px] font-extrabold leading-tight text-(--ev-ink) transition-opacity hover:opacity-80 sm:text-[22px]"
           >
-            Next {nextUp.kind === 'series' ? 'one' : 'event'}: {label}
+            {t(nextUp.kind === 'series' ? 'next.one' : 'next.event', { when: label })}
             <ArrowRight size={18} className="shrink-0" />
           </Link>
           <p className="mt-1 text-[13px] text-(--ev-ink-75)">
             {nextUp.kind === 'series'
-              ? <>This one runs again{nextUp.location_name ? ` at ${nextUp.location_name}` : ''}.</>
+              ? <>{nextUp.location_name ? t('next.again_at', { place: nextUp.location_name }) : t('next.again')}</>
               : <>{nextUp.title}{nextUp.location_name ? ` · ${nextUp.location_name}` : ''}</>}
           </p>
         </>
       ) : (
         <>
           <p className="mt-1.5 font-display text-[19px] font-extrabold leading-tight text-(--ev-ink) sm:text-[22px]">
-            No repeat scheduled yet
+            {t('next.none')}
           </p>
           <Link
-            href={hrefBase}
+            href={withLang(hrefBase, locale)}
             className="mt-1 inline-flex items-center gap-1.5 text-[13px] font-semibold text-(--ev-accent) transition-opacity hover:opacity-80"
           >
-            See what&rsquo;s happening this week near you
+            {t('next.see_week')}
             <ArrowRight size={14} className="shrink-0" />
           </Link>
         </>
@@ -147,9 +155,12 @@ interface EventDetailProps {
   town?: { name: string; href: string } | null
   /** Groups going to this event, and where this one goes (Go Together, Shift 01460). */
   goTogether?: GoTogetherData
+  /** The page's language (translation plan, batch 5). English when left out. */
+  locale?: SiteLocale
 }
 
-export default function EventDetail({ event, nextUp = null, isPast = false, tone = 'dark', hrefBase = '/events', sponsorLinks = {}, roamLinks = [], rideCode = null, hostHref = null, town = null, goTogether = NO_GO_TOGETHER }: EventDetailProps) {
+export default function EventDetail({ event, nextUp = null, isPast = false, tone = 'dark', hrefBase = '/events', sponsorLinks = {}, roamLinks = [], rideCode = null, hostHref = null, town = null, goTogether = NO_GO_TOGETHER, locale = 'en' }: EventDetailProps) {
+  const t = eventsT(locale)
   const meta = getTypeMeta(event.event_type)
   const Icon = EVENT_TYPE_ICONS[meta.icon] ?? Calendar
   // The type's color for this surface: the navy-tuned one, or its ink on cream.
@@ -160,16 +171,17 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
   // Pace, distance, and drop policy: shown only where the listing states them.
   const rideFacts: string[] = []
   if (isRideEvent(event.event_type)) {
-    if (event.pace && PACE_BAND_LABEL[event.pace]) rideFacts.push(PACE_BAND_LABEL[event.pace])
+    const pace = paceLabel(event.pace, locale)
+    if (pace) rideFacts.push(pace)
     if (event.distance_text) rideFacts.push(event.distance_text)
   }
   // The language it's led in (Shift 01697), and each in its own words.
-  const ledIn = ledInLine(event.languages, event.event_type)
+  const ledIn = ledInLineL(event.languages, event.event_type, locale)
   const ownLangs = eventLanguages(event.languages).filter((c) => c !== 'en')
   // The line says it, so the Spanish / Bilingual chips would only repeat it.
   const chipTags = ledIn ? event.tags.filter((t) => t !== 'spanish' && t !== 'bilingual') : event.tags
   // "November 1 to 30, 2026" for a multi-day event (Shift 01557).
-  const dateText = dateRangeLong(event)
+  const dateText = dateRangeLongL(event, locale)
   // Deadline-style events (contests) are places to enter, not places to go —
   // no map, no directions.
   const deadline = isDeadline(event.event_type)
@@ -197,7 +209,7 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
       } catch { /* cancelled */ }
     } else {
       await navigator.clipboard.writeText(url)
-      showToast('Link copied to clipboard')
+      showToast(t('detail.link_copied'))
     }
   }
 
@@ -219,9 +231,13 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
     posthog.capture('event_directions_click', props)
   }
 
+  // The calendar entry's own labels in the page's language; the event's words stay as listed.
+  const notes = calendarNotesL(event, `${eventUrl(event)}?lang=${encodeURIComponent(locale)}`, locale)
+  const calEvent = notes ? { ...event, notes } : event
+
   const handleDownloadIcs = (surface: 'details' | 'phone_bar') => {
     trackCalendar('ics', surface)
-    const ics = buildIcs(event)
+    const ics = buildIcs(calEvent)
     const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -230,7 +246,7 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
     a.click()
     URL.revokeObjectURL(url)
     setCalMenuOpen(false)
-    showToast('Calendar file downloaded')
+    showToast(t('detail.ics_done'))
   }
 
   // Register / Event info clicks leave the site, so without this an event page
@@ -238,15 +254,17 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
   // activation in scripts/seo/pull-posthog.mjs.
   // A sold-out listing stays up because organizers' pages take a notify-me
   // list and spots reopen; the button says what the click will get.
-  const registerLabel = event.tags.includes('sold_out') ? 'Join the waitlist' : 'Register'
+  const registerLabel = event.tags.includes('sold_out') ? t('detail.waitlist') : t('detail.register')
   const trackOutbound = (kind: 'register' | 'info' | 'route', surface: 'details' | 'phone_bar') => {
     const props = eventProps({ kind, surface })
     posthog.capture('event_outbound_click', props)
     gaEvent(kind === 'register' ? 'event_register_click' : kind === 'route' ? 'event_route_click' : 'event_info_click', props)
   }
 
-  const timeStr = event.event_time ? formatTime(event.event_time) : null
-  const endTimeStr = event.event_end_time ? formatTime(event.event_end_time) : null
+  const timeStr = event.event_time ? timeL(event.event_time, locale) : null
+  const endTimeStr = event.event_end_time ? timeL(event.event_end_time, locale) : null
+  const whenText = `${dateText}${timeStr ? ` · ${timeStr}` : ''}${!deadline && endTimeStr ? ` – ${endTimeStr}` : ''}`
+  const eventLink = (href: string) => withLang(href, locale)
   // Some listings carry the street address as the place name too; print it once.
   const sameAsName = (a: string | null) =>
     !!a && !!event.location_name && a.trim().toLowerCase() === event.location_name.trim().toLowerCase()
@@ -254,13 +272,13 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
   const location = [event.location_name, address].filter(Boolean).join(', ')
 
   return (
-    <EventsToneProvider tone={tone} hrefBase={hrefBase}>
+    <EventsToneProvider tone={tone} hrefBase={hrefBase} locale={locale}>
     <div className={`min-h-screen bg-(--ev-bg) px-4 pb-32 pt-6 sm:px-8 sm:pt-8 lg:pb-24 ${toneClass(tone)}`}>
       <div className="mx-auto max-w-[1040px]">
         {/* Back button */}
-        <Link href={hrefBase} className="mb-6 inline-flex items-center gap-1 text-[13px] font-medium text-(--ev-ink-75) transition-colors hover:text-(--ev-ink) sm:mb-8">
+        <Link href={eventLink(hrefBase)} className="mb-6 inline-flex items-center gap-1 text-[13px] font-medium text-(--ev-ink-75) transition-colors hover:text-(--ev-ink) sm:mb-8">
           <ChevronLeft size={16} />
-          All events
+          {t('detail.all_events')}
         </Link>
 
         <ScheduleBanner event={event} />
@@ -290,7 +308,7 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
                       onClick={() => trackDirections('map_card')}
                     >
                       <MapPin size={14} />
-                      Directions
+                      {t('detail.directions')}
                     </a>
                   </div>
                 </div>
@@ -310,26 +328,23 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
               </div>
               <div>
                 <p className="text-[11px] font-semibold uppercase tracking-[0.12em]" style={{ color: ink }}>
-                  {meta.label}
+                  {typeLabel(event.event_type, locale)}
                   {level && (
                     <>
                       <span className="text-(--ev-ink-75)"> · </span>
-                      <span style={{ color: rideStyleInk(level, tone) }} title={RIDE_STYLE_BLURB[level]}>{RIDE_STYLE_LABEL[level]}</span>
+                      <span style={{ color: rideStyleInk(level, tone) }} title={rideLevelBlurb(level, locale)}>{rideLevelLabel(level, locale)}</span>
                     </>
                   )}
                 </p>
                 <p className="text-[13px] text-(--ev-ink-75)">
-                  {deadline && 'Entry deadline: '}
-                  {dateText}
-                  {timeStr && ` · ${timeStr}`}
-                  {!deadline && endTimeStr && ` – ${endTimeStr}`}
+                  {deadline ? t('card.entry_deadline', { when: whenText }) : whenText}
                 </p>
               </div>
               <div className="ml-auto">
                 <button
-                  onClick={() => { setSaved(!saved); showToast(saved ? 'Removed from saved' : 'Event saved') }}
+                  onClick={() => { setSaved(!saved); showToast(saved ? t('toast.unsaved') : t('toast.saved')) }}
                   className="flex h-10 w-10 items-center justify-center rounded-full border border-(--ev-line-mid) transition-colors hover:border-(--ev-line-stronger)"
-                  aria-label={saved ? 'Remove bookmark' : 'Save event'}
+                  aria-label={saved ? t('card.unsave') : t('card.save')}
                 >
                   <Bookmark size={18} className={saved ? 'fill-(--ev-accent) text-(--ev-accent)' : 'text-(--ev-ink-60)'} />
                 </button>
@@ -370,9 +385,9 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
                 {noDrop && (
                   <span
                     className="inline-block rounded-full bg-(--ev-accent-tint-15) px-3 py-1 text-[12px] font-semibold text-(--ev-accent)"
-                    title="The organizer says nobody gets left behind: the group waits, or a sweep rides at the back."
+                    title={t('detail.no_drop_title')}
                   >
-                    No-drop
+                    {t('card.no_drop')}
                   </span>
                 )}
                 {chipTags.map(tag => {
@@ -383,7 +398,7 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
                       className="inline-block rounded-full px-3 py-1 text-[12px] font-semibold"
                       style={{ color: tm.color, backgroundColor: tm.bg }}
                     >
-                      {getTagMeta(tag).label}
+                      {tagLabel(tag, locale)}
                     </span>
                   )
                 })}
@@ -395,12 +410,12 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
               {/* A ride planned in Shift: answering Going is the point of the page. */}
               {rideCode && !isPast && (
                 <Link
-                  href={`/rides/${rideCode}?date=${event.event_date}`}
+                  href={eventLink(`/rides/${rideCode}?date=${event.event_date}`)}
                   className="inline-flex items-center gap-2 rounded-[10px] bg-blue px-5 py-2.5 text-[13px] font-bold text-white transition-opacity hover:opacity-85"
                   onClick={() => posthog.capture('ride_page_open', { from: 'event_detail', surface: 'actions' })}
                 >
                   <Users size={15} />
-                  RSVP
+                  {t('detail.rsvp')}
                 </Link>
               )}
               {/* Directions stay under the map for a Shift ride, so RSVP leads here. */}
@@ -413,7 +428,7 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
                   onClick={() => trackDirections('details')}
                 >
                   <MapPin size={15} />
-                  Directions
+                  {t('detail.directions')}
                 </a>
               )}
 
@@ -424,12 +439,12 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
                   className="inline-flex items-center gap-2 rounded-[10px] border border-(--ev-line-strong) px-5 py-2.5 text-[13px] font-semibold text-(--ev-ink) transition-colors hover:bg-(--ev-panel)"
                 >
                   <Calendar size={15} />
-                  Save to calendar
+                  {t('detail.save_calendar')}
                 </button>
                 {calMenuOpen && (
                   <div className="absolute left-0 top-full z-30 mt-2 w-56 overflow-hidden rounded-xl border border-(--ev-line-mid) bg-(--ev-menu-raised) py-1 shadow-(--ev-shadow-deep)">
                     <a
-                      href={gcalUrl(event)}
+                      href={gcalUrl(calEvent)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center gap-2 px-4 py-2.5 text-[13px] text-(--ev-ink-80) transition-colors hover:bg-(--ev-panel)"
@@ -450,7 +465,7 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
                       className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-[13px] text-(--ev-ink-80) transition-colors hover:bg-(--ev-panel)"
                     >
                       <ExternalLink size={14} />
-                      Download .ics file
+                      {t('detail.download_ics')}
                     </button>
                   </div>
                 )}
@@ -460,7 +475,7 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
               <button
                 onClick={handleShare}
                 className="inline-flex h-10 w-10 items-center justify-center rounded-[10px] border border-(--ev-line-strong) text-(--ev-ink-75) transition-colors hover:bg-(--ev-panel)"
-                aria-label="Share"
+                aria-label={t('detail.share')}
               >
                 <Share2 size={16} />
               </button>
@@ -496,11 +511,11 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
                 {roamLinks.map((r) => (
                   <a
                     key={r.id}
-                    href={`/shift/roams/${encodeURIComponent(r.id)}`}
+                    href={eventLink(`/shift/roams/${encodeURIComponent(r.id)}`)}
                     className="flex min-h-[44px] flex-col justify-center rounded-[12px] border border-(--ev-line) px-4 py-3 text-[15px] font-semibold text-(--ev-ink-80) hover:border-(--ev-ink-40)"
                   >
-                    <span>Part of this ride uses the {r.name}</span>
-                    <span className="mt-0.5 text-[14px] text-(--ev-ink-75)">See the roam &rarr;</span>
+                    <span>{t('detail.roam_part', { name: r.name })}</span>
+                    <span className="mt-0.5 text-[14px] text-(--ev-ink-75)">{t('detail.roam_see')}</span>
                     {r.reward_note && <span className="mt-1 text-[14px] font-normal text-(--ev-ink-75)">{r.reward_note}</span>}
                   </a>
                 ))}
@@ -512,7 +527,7 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
               <div className="flex gap-3">
                 <Calendar size={16} className="mt-0.5 shrink-0 text-(--ev-ink-40)" />
                 <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-(--ev-ink-70)">{deadline ? 'Entry deadline' : 'Date'}</p>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-(--ev-ink-70)">{deadline ? t('detail.label_deadline') : t('detail.label_date')}</p>
                   <p className="text-[14px] text-(--ev-ink-80)">{dateText}</p>
                 </div>
               </div>
@@ -520,7 +535,7 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
                 <div className="flex gap-3">
                   <Clock size={16} className="mt-0.5 shrink-0 text-(--ev-ink-40)" />
                   <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-(--ev-ink-70)">Time</p>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-(--ev-ink-70)">{t('detail.label_time')}</p>
                     <p className="text-[14px] text-(--ev-ink-80)">
                       {timeStr}{endTimeStr && ` – ${endTimeStr}`}
                     </p>
@@ -531,7 +546,7 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
                 <div className="flex gap-3">
                   <MapPin size={16} className="mt-0.5 shrink-0 text-(--ev-ink-40)" />
                   <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-(--ev-ink-70)">Where</p>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-(--ev-ink-70)">{t('detail.label_where')}</p>
                     <p className="text-[14px] text-(--ev-ink-80)">{location}</p>
                   </div>
                 </div>
@@ -540,7 +555,7 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
                 <div className="flex gap-3">
                   <Users size={16} className="mt-0.5 shrink-0 text-(--ev-ink-40)" />
                   <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-(--ev-ink-70)">Organizer</p>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-(--ev-ink-70)">{t('detail.label_organizer')}</p>
                     {event.organizer_url ? (
                       <a href={withUtm(event.organizer_url)} target="_blank" rel="noopener noreferrer" className="text-[14px] text-(--ev-accent) hover:underline">
                         {event.organizer_name} <ExternalLink size={12} className="inline" />
@@ -550,7 +565,7 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
                     )}
                     {hostHref && (
                       <Link href={hostHref} className="mt-0.5 block text-[14px] font-semibold text-(--ev-accent) hover:underline">
-                        All their rides and walks
+                        {t('detail.host_page')}
                       </Link>
                     )}
                   </div>
@@ -561,7 +576,7 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
                   <Users size={16} className="mt-0.5 shrink-0 text-(--ev-ink-40)" />
                   <div>
                     <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-(--ev-ink-70)">
-                      {event.organizer_name ? 'Presented with' : 'Presented by'}
+                      {event.organizer_name ? t('detail.presented_with') : t('detail.presented_by')}
                     </p>
                     <p className="text-[14px] text-(--ev-ink-80)">
                       {event.sponsors.map((name, i) => {
@@ -596,17 +611,17 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
                   onClick={() => trackOutbound('info', 'details')}
                 >
                   <Globe size={15} />
-                  Event info
+                  {t('detail.event_info')}
                 </a>
               )}
               {rideCode && !isPast && (
                 <Link
-                  href={`/rides/${rideCode}?date=${event.event_date}`}
+                  href={eventLink(`/rides/${rideCode}?date=${event.event_date}`)}
                   className="inline-flex items-center gap-2 rounded-[10px] bg-blue px-5 py-2.5 text-[13px] font-bold text-white transition-opacity hover:opacity-85 lg:hidden"
                   onClick={() => posthog.capture('ride_page_open', { from: 'event_detail', surface: 'details' })}
                 >
                   <Users size={15} />
-                  RSVP
+                  {t('detail.rsvp')}
                 </Link>
               )}
               {event.registration_url && (
@@ -632,7 +647,7 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
                   onClick={() => trackOutbound('route', 'details')}
                 >
                   <Route size={15} />
-                  {r.label} on {r.provider}
+                  {t('detail.route_on', { label: locale !== 'en' && r.label === 'Route' ? t('detail.route') : r.label, provider: r.provider })}
                 </a>
               ))}
             </div>
@@ -653,19 +668,18 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
             {!deadline && town ? (
               <p className="mt-6 text-[14px] text-(--ev-ink-80)">
                 <Link
-                  href={town.href}
+                  href={eventLink(town.href)}
                   className="font-semibold text-(--ev-accent) hover:underline"
                   onClick={() => posthog.capture('event_town_click', eventProps({ town: town.name }))}
                 >
-                  Getting there: walking, biking and transit around {town.name}
+                  {t('detail.town_link', { town: town.name })}
                 </Link>
               </p>
             ) : !deadline && STORE_LIVE ? (
               <div className="mt-6 rounded-[14px] border border-(--ev-line-strong) px-5 py-4">
-                <p className="text-[14px] font-semibold text-(--ev-ink)">Walking, biking or taking transit there?</p>
+                <p className="text-[14px] font-semibold text-(--ev-ink)">{t('detail.app_title')}</p>
                 <p className="mt-1 text-[13px] leading-relaxed text-(--ev-ink-80)">
-                  Shift counts the trip without you touching anything and turns it into money saved and perks from
-                  local businesses. It&apos;s free.
+                  {t('detail.app_body')}
                 </p>
                 <StoreButtons
                   iosUrl={withAppUtm(IOS_URL)}
@@ -681,14 +695,14 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
               {/* A ride planned in Shift is the organizer's own listing, not one built from public posts. */}
               {event.ride_series_id && !event.source_id ? (
                 <p className="text-[14px] text-(--ev-ink-80)">
-                  Your ride?{' '}
+                  {t('detail.your_ride')}{' '}
                   <Link href={`/organizers/rides/${event.ride_series_id}`} className="font-semibold text-(--ev-accent) hover:underline">
-                    Change it in organizer tools
+                    {t('detail.change_ride')}
                   </Link>
-                  .
+                  {t('detail.sentence_end')}
                 </p>
               ) : (
-                <FixListingLink event={{ id: event.id, title: event.title }} />
+                <FixListingLink event={{ id: event.id, title: event.title }} locale={locale} />
               )}
             </div>
           </div>
@@ -702,12 +716,12 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
       >
         {rideCode && !isPast ? (
           <Link
-            href={`/rides/${rideCode}?date=${event.event_date}`}
+            href={eventLink(`/rides/${rideCode}?date=${event.event_date}`)}
             className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-[10px] bg-blue px-4 text-[14px] font-bold text-white"
             onClick={() => posthog.capture('ride_page_open', { from: 'event_detail', surface: 'phone_bar' })}
           >
             <Users size={16} />
-            RSVP
+            {t('detail.rsvp')}
           </Link>
         ) : event.registration_url ? (
           <a
@@ -729,7 +743,7 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
             onClick={() => trackOutbound('info', 'phone_bar')}
           >
             <Globe size={16} />
-            Event info
+            {t('detail.event_info')}
           </a>
         ) : hasMap ? (
           <a
@@ -740,7 +754,7 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
             onClick={() => trackDirections('phone_bar')}
           >
             <MapPin size={16} />
-            Directions
+            {t('detail.directions')}
           </a>
         ) : null}
         <div className="relative">
@@ -751,12 +765,12 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
             aria-expanded={barMenuOpen}
           >
             <Calendar size={16} />
-            Save
+            {t('detail.save')}
           </button>
           {barMenuOpen && (
             <div className="absolute bottom-full right-0 z-50 mb-2 w-56 overflow-hidden rounded-xl border border-(--ev-line-mid) bg-(--ev-menu-raised) py-1 shadow-(--ev-shadow-deep)">
               <a
-                href={gcalUrl(event)}
+                href={gcalUrl(calEvent)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-2 px-4 py-2.5 text-[13px] text-(--ev-ink-80) transition-colors hover:bg-(--ev-panel)"
@@ -778,7 +792,7 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
         <button
           onClick={handleShare}
           className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] border border-(--ev-line-strong) text-(--ev-ink-80)"
-          aria-label="Share"
+          aria-label={t('detail.share')}
         >
           <Share2 size={17} />
         </button>

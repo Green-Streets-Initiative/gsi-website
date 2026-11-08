@@ -5,6 +5,8 @@ import { createServerSupabaseClient } from '@/lib/supabase-server'
 import type { CommunityEvent, NextUp } from '@/lib/events'
 import { findNextUp, todayEt } from '@/lib/events-next'
 import { buildEventTitle, buildEventDescription } from '@/lib/events-seo'
+import type { SiteLocale } from '@/lib/site-i18n'
+import { eventsT } from '@/lib/events-i18n'
 import { SITE_URL } from '@/lib/seo'
 import { eventUrl } from '@/lib/events-url'
 
@@ -340,16 +342,16 @@ export async function loadEvent(key: string): Promise<LoadedEvent | null> {
 }
 
 /** Title, description, canonical, and Open Graph for a detail page; the staged copy reuses it. */
-export function buildEventPageMetadata(loaded: LoadedEvent | null): Metadata {
-  if (!loaded) return { title: 'Event not found' }
+export function buildEventPageMetadata(loaded: LoadedEvent | null, locale: SiteLocale = 'en'): Metadata {
+  if (!loaded) return { title: locale === 'en' ? 'Event not found' : eventsT(locale)('meta.not_found') }
 
   const { event, nextUp } = loaded
   // Only a same-title future sibling proves this repeats. An organizer match
   // means the host has something else on, which is not a cadence.
   const recurring = nextUp?.kind === 'series'
 
-  const title = buildEventTitle(event, recurring)
-  const description = buildEventDescription(event, recurring)
+  const title = buildEventTitle(event, recurring, locale)
+  const description = buildEventDescription(event, recurring, locale)
   const url = eventUrl(event, SITE_URL)
 
   return {

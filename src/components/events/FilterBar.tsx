@@ -2,10 +2,12 @@
 
 import { useState } from 'react'
 import { Bookmark, Search } from 'lucide-react'
-import { getTagMeta } from '@/lib/events'
+import { tagLabel as tagName, typeFilterLabelL, placeLabel, eventCount } from '@/lib/events-i18n'
+import type { EventsKey } from '@/lib/site-strings/events'
+import { useEventsI18n } from './EventsTone'
 import FilterPill from './FilterPill'
 import { WhenList, LocationControl, DistancePills, TypeList, TagToggles, AudienceToggles, hasAudienceChoices, LanguageToggles } from './FilterControls'
-import { WHEN_OPTIONS, typeFilterLabel, languageFilterLabel, type EventFilters } from './useEventFilters'
+import { languageFilterLabel, type EventFilters } from './useEventFilters'
 
 /**
  * Desktop filter bar: one sticky row under the site nav. Search, then a pill
@@ -25,22 +27,23 @@ export default function FilterBar({ filters: f, savedCount, resultCount }: Filte
   const [open, setOpen] = useState<PillKey | null>(null)
   const [typesExpanded, setTypesExpanded] = useState(false)
   const close = () => setOpen(null)
+  const { locale, t } = useEventsI18n()
 
-  const whenLabel = f.dateRange === 'upcoming' ? 'When' : WHEN_OPTIONS.find((o) => o.value === f.dateRange)?.label ?? 'When'
+  const whenLabel = f.dateRange === 'upcoming' ? t('bar.when') : t(`when.${f.dateRange}` as EventsKey)
   // "Near <town>" only when the list is narrowed to it; a place at Statewide says so.
   const nearLabel =
     f.distance === 'all'
-      ? f.geoStatus === 'active' ? 'Statewide' : 'Near'
+      ? f.geoStatus === 'active' ? t('dist.all') : t('bar.near')
       : f.geoStatus === 'active'
-        ? `Near ${f.userLoc.label} · ${f.distance} mi`
-        : `Within ${f.distance} mi`
-  const typeLabel = f.typeFilter === 'All' ? 'Type' : typeFilterLabel(f.typeFilter)
+        ? t('bar.near_place_dist', { place: placeLabel(f.userLoc.label, locale), dist: f.distance })
+        : t('bar.within', { dist: f.distance })
+  const typeLabel = f.typeFilter === 'All' ? t('bar.type') : typeFilterLabelL(f.typeFilter, locale)
   // One pill holds Good for and Rides for, so the bar doesn't grow.
   const picked = [...f.tags, ...f.audience]
   const tagLabel =
-    picked.length === 0 ? 'Good for' : picked.length === 1 ? getTagMeta(picked[0]).label : `Good for · ${picked.length}`
+    picked.length === 0 ? t('sheet.good_for') : picked.length === 1 ? tagName(picked[0], locale) : t('bar.good_for_count', { count: picked.length })
   // Its own pill, shown only when some upcoming event is led in another language (Shift 01697).
-  const langLabel = f.langs.length === 0 ? 'Language' : f.langs.length === 1 ? languageFilterLabel(f.langs[0]) : `Language · ${f.langs.length}`
+  const langLabel = f.langs.length === 0 ? t('bar.lang') : f.langs.length === 1 ? languageFilterLabel(f.langs[0], locale) : t('bar.lang_count', { count: f.langs.length })
 
   return (
     <section className="sticky top-[60px] z-30 hidden border-b border-(--ev-line) bg-(--ev-bar) px-8 backdrop-blur lg:block">
@@ -51,8 +54,8 @@ export default function FilterBar({ filters: f, savedCount, resultCount }: Filte
             type="search"
             value={f.query}
             onChange={(e) => f.setQuery(e.target.value)}
-            placeholder="Search events"
-            aria-label="Search events"
+            placeholder={t('search.placeholder')}
+            aria-label={t('search.placeholder')}
             className="h-9 w-full rounded-full border border-(--ev-line-mid) bg-(--ev-input) pl-9 pr-3 text-[13px] text-(--ev-ink) placeholder:text-(--ev-ink-60) focus:border-(--ev-accent) focus:outline-none"
           />
         </div>
@@ -62,7 +65,7 @@ export default function FilterBar({ filters: f, savedCount, resultCount }: Filte
         </FilterPill>
 
         <FilterPill label={nearLabel} active={f.geoStatus === 'active' || f.distance !== 'all'} open={open === 'near'} onOpen={() => setOpen('near')} onClose={close} panelClassName="w-[300px]">
-          <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-(--ev-ink-75)">Where are you?</p>
+          <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-(--ev-ink-75)">{t('bar.where')}</p>
           <LocationControl
             geoStatus={f.geoStatus}
             userLoc={f.userLoc}
@@ -70,7 +73,7 @@ export default function FilterBar({ filters: f, savedCount, resultCount }: Filte
             onUseMyLocation={f.useMyLocation}
             onCitySelect={f.selectCity}
           />
-          <p className="mb-2 mt-4 text-[11px] font-semibold uppercase tracking-[0.12em] text-(--ev-ink-75)">How far</p>
+          <p className="mb-2 mt-4 text-[11px] font-semibold uppercase tracking-[0.12em] text-(--ev-ink-75)">{t('bar.how_far')}</p>
           <DistancePills value={f.distance} onChange={f.setDistance} />
         </FilterPill>
 
@@ -89,7 +92,7 @@ export default function FilterBar({ filters: f, savedCount, resultCount }: Filte
           <TagToggles selected={f.tags} counts={f.tagCounts} onToggle={f.toggleTag} />
           {hasAudienceChoices(f.audience, f.audienceCounts) && (
             <>
-              <p className="mb-2 mt-4 text-[11px] font-semibold uppercase tracking-[0.12em] text-(--ev-ink-75)">Rides for</p>
+              <p className="mb-2 mt-4 text-[11px] font-semibold uppercase tracking-[0.12em] text-(--ev-ink-75)">{t('sheet.rides_for')}</p>
               <AudienceToggles selected={f.audience} counts={f.audienceCounts} onToggle={f.toggleAudience} />
             </>
           )}
@@ -97,7 +100,7 @@ export default function FilterBar({ filters: f, savedCount, resultCount }: Filte
 
         {f.languageChoices.length > 0 && (
           <FilterPill label={langLabel} active={f.langs.length > 0} open={open === 'lang'} onOpen={() => setOpen('lang')} onClose={close} panelClassName="w-[300px]">
-            <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-(--ev-ink-75)">Led in</p>
+            <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-(--ev-ink-75)">{t('sheet.led_in')}</p>
             <LanguageToggles choices={f.languageChoices} selected={f.langs} counts={f.languageCounts} onToggle={f.toggleLang} />
           </FilterPill>
         )}
@@ -111,12 +114,12 @@ export default function FilterBar({ filters: f, savedCount, resultCount }: Filte
             }`}
           >
             <Bookmark size={14} className={f.savedOnly ? 'fill-(--ev-accent)' : ''} />
-            Saved · {savedCount}
+            {t('bar.saved', { count: savedCount })}
           </button>
         )}
 
         <span className="ml-auto shrink-0 font-mono text-[13px] text-(--ev-ink-75)">
-          {resultCount} event{resultCount === 1 ? '' : 's'}
+          {eventCount(t, resultCount)}
         </span>
       </div>
     </section>

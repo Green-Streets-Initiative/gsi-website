@@ -1,9 +1,12 @@
 'use client'
 
 import EmailSignup from '@/components/email/EmailSignup'
-import { type CommunityEvent, getTagMeta, getTypeMeta, parseStyleFilter, RIDE_STYLE_FILTER_LABEL } from '@/lib/events'
+import { type CommunityEvent, parseStyleFilter } from '@/lib/events'
 import { townFromAddress } from '@/lib/events-seo'
+import type { SiteLocale } from '@/lib/site-i18n'
+import { tagLabel, typeLabel, rideLevelFilterLabel, placeLabel, type EventsT } from '@/lib/events-i18n'
 import type { useEventFilters } from './useEventFilters'
+import { useEventsI18n } from './EventsTone'
 
 /*
  * "Get these by email" (Shift product item 19, step 3: event alerts). Saves
@@ -20,15 +23,15 @@ const EVENT_PAGE_MILES = 10
 type Filters = ReturnType<typeof useEventFilters>
 
 /** The filters in one line, as the confirmation email and manage page say it. */
-function summarize(f: Filters): string {
+function summarize(f: Filters, locale: SiteLocale, t: EventsT): string {
   const parts: string[] = []
   const level = parseStyleFilter(f.typeFilter)
-  if (level) parts.push(RIDE_STYLE_FILTER_LABEL[level])
-  else if (f.typeFilter !== 'All') parts.push(getTypeMeta(f.typeFilter).label)
-  else parts.push('All events')
-  for (const t of f.tags) parts.push(getTagMeta(t).label)
-  if (f.audience.length) parts.push(`for ${f.audience.map((a) => getTagMeta(a).label).join(', ')}`)
-  parts.push(f.distance === 'all' ? 'statewide' : `within ${f.distance} mi of ${f.userLoc.label}`)
+  if (level) parts.push(rideLevelFilterLabel(level, locale))
+  else if (f.typeFilter !== 'All') parts.push(typeLabel(f.typeFilter, locale))
+  else parts.push(t('alert.all_events'))
+  for (const tag of f.tags) parts.push(tagLabel(tag, locale))
+  if (f.audience.length) parts.push(t('alert.for', { list: f.audience.map((a) => tagLabel(a, locale)).join(t('list.sep')) }))
+  parts.push(f.distance === 'all' ? t('alert.statewide') : t('alert.within', { dist: f.distance, place: placeLabel(f.userLoc.label, locale) }))
   return parts.join(' · ')
 }
 
@@ -49,17 +52,19 @@ function payload(f: Filters) {
 
 /** The calendar's "Get these by email" box: its current filters, as a weekly email. */
 export default function EventAlertSignup({ filters: f, source, className = '', id }: { filters: Filters; source: 'events_list' | 'events_sidebar'; className?: string; id?: string }) {
+  const { locale, t } = useEventsI18n()
   return (
     <EmailSignup
       topic="event_alerts"
       source={source}
       details={{ filters: payload(f) }}
-      title="Get these by email"
-      lede="Every Thursday, what's coming up that matches:"
-      summary={summarize(f)}
-      cta="Email me every Thursday"
-      done="Check your email and tap the link to confirm."
-      fine="Only when something matches. Change your filters above to change what you get."
+      title={t('alert.title')}
+      lede={t('alert.lede')}
+      summary={summarize(f, locale, t)}
+      cta={t('alert.cta')}
+      done={t('alert.done')}
+      fine={t('alert.fine')}
+      locale={locale}
       track={{ type: f.typeFilter, dist: f.distance, tags: f.tags.length, audience: f.audience.length }}
       id={id}
       className={className}
@@ -72,9 +77,9 @@ export default function EventAlertSignup({ filters: f, source, className = '', i
  * one's town, every Thursday. Statewide when the listing has no town or point.
  */
 export function EventPageAlertSignup({ event, className = '' }: { event: CommunityEvent; className?: string }) {
+  const { locale, t } = useEventsI18n()
   const town = townFromAddress(event.location_address)
   const near = !!town && event.location_lat != null && event.location_lng != null
-  const type = getTypeMeta(event.event_type)
   const place = near ? `${town}, MA` : null
   const filters = {
     lat: near ? Number(event.location_lat!.toFixed(3)) : null,
@@ -86,18 +91,19 @@ export function EventPageAlertSignup({ event, className = '' }: { event: Communi
     tags: [],
     audience: [],
   }
-  const summary = [type.label, near ? `within ${EVENT_PAGE_MILES} mi of ${place}` : 'statewide'].join(' · ')
+  const summary = [typeLabel(event.event_type, locale), near ? t('alert.within', { dist: EVENT_PAGE_MILES, place }) : t('alert.statewide')].join(' · ')
   return (
     <EmailSignup
       topic="event_alerts"
       source="event_page"
       details={{ filters }}
-      title="Get more like this by email"
-      lede="Every Thursday, what's coming up that matches:"
+      title={t('alert.page_title')}
+      lede={t('alert.lede')}
       summary={summary}
-      cta="Email me every Thursday"
-      done="Check your email and tap the link to confirm."
-      fine="Only when something matches. Stop any time from any email."
+      cta={t('alert.cta')}
+      done={t('alert.done')}
+      fine={t('alert.page_fine')}
+      locale={locale}
       track={{ type: event.event_type, near }}
       className={className}
     />
