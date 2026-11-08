@@ -30,6 +30,10 @@ const en = {
   'related.heading': 'Related guides',
   'browseAll': 'Browse all guides',
   'appStrip.howItWorks': 'See how Shift works',
+  'plan.heading': 'Try it on your own trip',
+  'plan.body': "Type where you're going and see the walking, biking and transit options from where you are, with live arrivals. No app needed.",
+  'plan.button': 'Plan your trip',
+  'plan.topLink': 'Plan your own trip, no app needed',
 
   // Trip planner
   'planner.from': 'From',
@@ -129,6 +133,10 @@ const es: Record<GuideKey, string> = {
   'related.heading': 'Guías relacionadas',
   'browseAll': 'Ver todas las guías (en inglés)',
   'appStrip.howItWorks': 'Mira cómo funciona Shift (en inglés)',
+  'plan.heading': 'Pruébalo con tu propio viaje',
+  'plan.body': 'Escribe adónde vas y mira cómo llegar a pie, en bici o en transporte público desde donde estás, con llegadas en tiempo real. Sin descargar nada.',
+  'plan.button': 'Planea tu viaje',
+  'plan.topLink': 'Planea tu propio viaje, sin descargar nada',
 
   'planner.from': 'Desde',
   'planner.fromPlaceholder': '¿Desde dónde sales?',
@@ -222,6 +230,10 @@ const ptBR: Record<GuideKey, string> = {
   'related.heading': 'Guias relacionados',
   'browseAll': 'Ver todos os guias (em inglês)',
   'appStrip.howItWorks': 'Veja como o Shift funciona (em inglês)',
+  'plan.heading': 'Experimente na sua própria viagem',
+  'plan.body': 'Digite para onde você vai e veja como chegar a pé, de bicicleta ou de transporte público a partir de onde você está, com chegadas em tempo real. Sem baixar nada.',
+  'plan.button': 'Planeje sua viagem',
+  'plan.topLink': 'Planeje sua própria viagem, sem baixar nada',
 
   'planner.from': 'De',
   'planner.fromPlaceholder': 'De onde você sai?',
@@ -314,6 +326,10 @@ const zhHans: Record<GuideKey, string> = {
   'related.heading': '相关指南',
   'browseAll': '浏览全部指南（英文）',
   'appStrip.howItWorks': '了解 Shift 如何运作（英文）',
+  'plan.heading': '用你自己的行程试一试',
+  'plan.body': '输入目的地，查看从你所在位置步行、骑车或乘坐公共交通的方式，并显示实时到站信息。无需下载应用。',
+  'plan.button': '规划行程',
+  'plan.topLink': '规划你自己的行程，无需下载应用',
 
   'planner.from': '出发地',
   'planner.fromPlaceholder': '你从哪里出发？',

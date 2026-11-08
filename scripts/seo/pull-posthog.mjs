@@ -256,7 +256,8 @@ const OUTCOME_TRACKING_START = '2026-09-14'
 // seo/2026-09-app-invites; until that ships it simply never matches.
 // venue_trip_planned ("Plan your trip" on a /parking page, exp-2026-11-3)
 // likewise matches nothing until those pages ship.
-const ACTIVATION_EVENTS = `'advisor_results_shown', 'snapshot_viewed', 'event_outbound_click', 'event_town_click', 'venue_trip_planned'`
+// guide_plan_click ("Plan your trip" on a guide, exp-2026-11-8) from 2026-11-08.
+const ACTIVATION_EVENTS = `'advisor_results_shown', 'snapshot_viewed', 'event_outbound_click', 'event_town_click', 'venue_trip_planned', 'guide_plan_click'`
 const APP_INTENT_EVENTS = `'shift_store_click', 'snapshot_app_cta_clicked', 'advisor_app_cta_clicked'`
 // The session queries only need pageviews (referrer + click ids live on them)
 // and the outcome events. Scanning every web event (autocapture, web vitals,

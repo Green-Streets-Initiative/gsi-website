@@ -11,6 +11,7 @@ import ParkAndRideFinder from '@/components/guides/ParkAndRideFinder'
 import GuideOffer from '@/components/guides/GuideOffer'
 import TransitDisruptions from '@/components/guides/TransitDisruptions'
 import BikeLessons from '@/components/guides/BikeLessons'
+import GuidePlanLink from '@/components/guides/GuidePlanLink'
 import { PRICES, usd } from '@/lib/facts/prices'
 import { guideArticleSchema, breadcrumbSchema } from '@/lib/structured-data'
 import { gt, DATE_LOCALE, type GuideLocale, type GuideKey } from '@/lib/guides/i18n'
@@ -69,6 +70,16 @@ export const searchMeta: Record<string, { title?: string; description: string; h
   'how-far-is-a-ten-minute-drive-on-foot': {
     description:
       'Walk and bike times for a 5, 10, 15 or 20-minute drive around Boston, and the door-to-door minutes that change the answer.',
+  },
+  // 2026-11-08: 336 impressions a week at position 8.2 and 2 clicks. The
+  // searches behind it (28 days) are "how much is parking in boston",
+  // Boston Common garage rates, street meters, "how much is a parking ticket
+  // in boston" and T lots (Oak Grove, Alewife, Braintree); the old title named
+  // none of them. Every noun here is answered on the page. SEO play 3,
+  // experiment exp-2026-11-5.
+  'boston-parking-costs': {
+    title: 'How much is parking in Boston? Garages, meters, tickets and T lots',
+    description: `Boston Common Garage is ${usd(PRICES.parking.bostonCommonDay)} for 3 to 10 hours, meters ${usd(PRICES.parking.meterStandard)} an hour, an expired meter a ${usd(PRICES.parking.meterTicket)} ticket, and T lots like Oak Grove and Alewife ${usd(PRICES.parking.mbtaGarageDay)} a weekday. What a year of parking adds up to, and cheaper ways in.`,
   },
 }
 
@@ -446,6 +457,8 @@ export default function GuideView({
   const quickAnswer = L === 'en' ? quickAnswers[guideSlug] : undefined
   // The search heading is English wording; a translated page keeps its own title.
   const heading = (L === 'en' ? searchMeta[guideSlug]?.heading : undefined) ?? g.title
+  // The route planner, opened in the reader's language (/plan → Nearby).
+  const planHref = L === 'en' ? '/plan' : `/plan?lang=${L}`
   const strip =
     L === 'es'
       ? appStripBySlugEs[guideSlug] ?? appStripDefaultEs
@@ -464,12 +477,16 @@ export default function GuideView({
       <p className="mb-1 text-[1.0625rem] font-semibold leading-snug text-navy">{strip.headline}</p>
       <p className="mb-4 text-[0.9375rem] leading-relaxed text-navy">{strip.line}</p>
       <StoreBadges height={40} placement="guide_top" />
-      <Link
-        href="/shift"
+      {/* exp-2026-11-8: the reader who isn't ready for an app gets the
+          planner, not a page about the app. */}
+      <GuidePlanLink
+        href={planHref}
+        slug={guideSlug}
+        placement="guide_top"
         className="mt-3 inline-block text-[0.875rem] font-semibold text-forest underline underline-offset-4 hover:opacity-80"
       >
-        {gt(L, 'appStrip.howItWorks')}
-      </Link>
+        {gt(L, 'plan.topLink')}
+      </GuidePlanLink>
     </div>
   )
 
@@ -640,22 +657,24 @@ export default function GuideView({
           </div>
 
           {/* Try it: every guide ends by pointing at the tool that does the
-              thing it just explained. The app first; the web Nearby page for
-              a reader who isn't ready to install anything. */}
+              thing it just explained. exp-2026-11-8 (2026-11-08): guide
+              readers take tools, not the app (0 of 35 organic guide landings
+              reached the app), so the planner comes first and the app second. */}
           <div className="mt-12 rounded-[14px] border border-navy/10 bg-white p-6">
-            <h2 className="mb-2 font-serif text-[1.25rem] leading-tight text-navy">{gt(L, 'tryIt.heading')}</h2>
-            <p className="mb-4 text-[1rem] leading-relaxed text-navy">{gt(L, 'tryIt.body')}</p>
-            <StoreBadges height={40} placement="guide" />
-            <p className="mt-4 text-[0.875rem] leading-relaxed text-ink-soft">
-              {gt(L, 'tryIt.notReady')}{' '}
-              <Link
-                href={L === 'en' ? '/nearby' : `/nearby?lang=${L}`}
-                className="font-semibold text-forest underline underline-offset-4 hover:opacity-80"
-              >
-                {gt(L, 'tryIt.nearbyLink')}
-              </Link>{' '}
-              {gt(L, 'tryIt.inBrowser')}
-            </p>
+            <h2 className="mb-2 font-serif text-[1.25rem] leading-tight text-navy">{gt(L, 'plan.heading')}</h2>
+            <p className="mb-4 text-[1rem] leading-relaxed text-navy">{gt(L, 'plan.body')}</p>
+            <GuidePlanLink
+              href={planHref}
+              slug={guideSlug}
+              placement="guide_bottom"
+              className="inline-flex min-h-11 items-center rounded-full bg-forest px-6 py-2.5 text-[1rem] font-semibold text-white no-underline transition-opacity hover:opacity-90"
+            >
+              {gt(L, 'plan.button')}
+            </GuidePlanLink>
+            <div className="mt-6 border-t border-navy/10 pt-5">
+              <p className="mb-4 text-[0.9375rem] leading-relaxed text-navy">{gt(L, 'tryIt.body')}</p>
+              <StoreBadges height={40} placement="guide" />
+            </div>
           </div>
 
           {/* Related guides */}
