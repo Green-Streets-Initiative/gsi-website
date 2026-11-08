@@ -15,6 +15,7 @@ import { VENUES } from '@/lib/venues'
 export const revalidate = 3600
 
 interface GuideLite {
+  id: string
   slug: string
   title: string
   summary: string | null
@@ -26,7 +27,7 @@ export async function GET() {
     const supabase = createServerSupabaseClient()
     const { data } = await supabase
       .from('content_items')
-      .select('slug, title, summary')
+      .select('id, slug, title, summary')
       .eq('content_type', 'micro_guide')
       .eq('status', 'approved')
       .contains('surfaces', ['guide_library'])
@@ -35,6 +36,23 @@ export async function GET() {
     guides = (data as GuideLite[] | null) ?? []
   } catch {
     // DB unreachable — still serve the rest of the file.
+  }
+
+  // The guides in Spanish, Portuguese and Chinese (84 pages, live since
+  // 2026-10-17) were in the sitemap with hreflang but missing here. SEO play 8
+  // of 2026-11-08.
+  let translated: { content_item_id: string; locale: string; title: string; summary: string | null }[] = []
+  if (guides.length > 0) {
+    try {
+      const { data } = await createServerSupabaseClient()
+        .from('content_item_translations')
+        .select('content_item_id, locale, title, summary')
+        .in('content_item_id', guides.map((g) => g.id))
+        .order('title')
+      translated = (data as typeof translated | null) ?? []
+    } catch {
+      // Skip the translated sections.
+    }
   }
 
   let towns: { town_name: string; slug: string }[] = []
@@ -92,6 +110,22 @@ export async function GET() {
     for (const g of guides) {
       const summary = g.summary ? `: ${g.summary}` : ''
       L.push(`- [${g.title}](${SITE_URL}/guides/${g.slug})${summary}`)
+    }
+    L.push('')
+  }
+
+  const slugById = new Map(guides.map((g) => [g.id, g.slug]))
+  for (const [locale, heading] of [
+    ['es', '## Guías en español'],
+    ['pt-BR', '## Guias em português'],
+    ['zh-Hans', '## 中文指南'],
+  ] as const) {
+    const rows = translated.filter((t) => t.locale === locale && slugById.has(t.content_item_id))
+    if (rows.length === 0) continue
+    L.push(heading)
+    for (const t of rows) {
+      const summary = t.summary ? `: ${t.summary}` : ''
+      L.push(`- [${t.title}](${SITE_URL}/${locale}/guides/${slugById.get(t.content_item_id)})${summary}`)
     }
     L.push('')
   }
