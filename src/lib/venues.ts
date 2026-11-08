@@ -37,6 +37,8 @@ export type Garage = {
   /** Left off the map when it's far enough to squash the pins near the venue. */
   offMap?: boolean
   book?: { label: string; url: string }
+  /** Said in place of the walk in the list, when walking isn't how you get there ("Free shuttle"). */
+  access?: string
 }
 
 export type BikeDock = { ids: string[]; name: string; lat: number; lng: number; walkMin: number }
@@ -48,6 +50,9 @@ export type EventTrain = { date: string; event: string; times: string; onSale: s
 export type ShuttleStation = { stop: string; name: string; lines: string[]; where: string; lat: number; lng: number }
 
 type Source = { label: string; url: string }
+
+/** A bus to the airport from outside the city (Logan Express). Fares come from venue-facts.json `buses`. */
+export type AirportBus = { name: string; where?: string; fare: string }
 
 export type Venue = {
   slug: string
@@ -100,6 +105,10 @@ export type Venue = {
   shuttles?: { stations: ShuttleStation[]; satellite: string; source: Source }
   /** Walking in: the nearest stations and stops with their walk, and the entrances. */
   walk?: { from: { name: string; lines: string; walkMin: number }[]; entrances: string }
+  /** Search title and description, when the venue needs its own (an airport has no games or shows). */
+  seo?: { title: string; description: string }
+  /** An airport (Logan): its IATA code for the JSON-LD, and the buses in from outside the city. */
+  airport?: { iata: string; buses?: { title: string; note: string; routes: AirportBus[]; source: Source } }
 }
 
 const BASE: Record<string, VenueBase> = {
@@ -388,6 +397,78 @@ const BASE: Record<string, VenueBase> = {
     },
     rideshare: 'On game days Uber and Lyft drop off and pick up at the Seaver Street lot. Free wheelchair-accessible carts run from there to the stadium.',
   },
+
+  // Logan Airport (Keith 2026-11-08, SEO play 2: "Logan airport parking",
+  // about 33,100 Massachusetts searches a month). Massport publishes one rate
+  // chart for the two terminal garages (Central and Terminal B) and its own
+  // for Economy; those, the booked-ahead rate and Logan Express fares are in
+  // venue-facts.json. Garage and terminal points from OpenStreetMap (Central
+  // Parking relation 64101, Terminal B Parking Garage way 1411687388, Economy
+  // Parking way 200984269); the venue point is Terminal C, mid-airport.
+  // Bluebikes docks by Airport station from the Bluebikes station feed, walks
+  // straight-line x 1.25 at 80 m a minute. Transit lines from
+  // mbta.com/destinations/logan-airport, read 2026-11-08.
+  'logan-airport': {
+    slug: 'logan-airport',
+    name: 'Logan Airport',
+    address: '1 Harborside Dr, East Boston',
+    lat: 42.36676,
+    lng: -71.01608,
+    lede: 'The Central Parking Garage connects to every terminal. The Economy Garage costs less, with a free shuttle in.',
+    seo: {
+      title: 'Logan Airport parking: garages, daily rates and the T | Green Streets Initiative',
+      description:
+        'Where to park at Logan: the Central, Terminal B and Economy garages with Massport’s rates, plus the free Silver Line, the Blue Line and Logan Express buses.',
+    },
+    garages: [
+      {
+        name: 'Central Parking Garage',
+        address: '',
+        lat: 42.36643,
+        lng: -71.02024,
+        walkMin: 0,
+        official: true,
+        where: 'Walkways to Terminals A, B, C and E',
+        book: { label: 'Reserve on massport.com', url: 'https://www.massport.com/logan-airport/getting-to-logan/parking/terminal-parking' },
+      },
+      { name: 'Terminal B Garage', address: 'For Terminal B flights', lat: 42.36244, lng: -71.01855, walkMin: 0, access: 'At the terminal' },
+      { name: 'Economy Garage', address: 'About 2 miles from the terminals', lat: 42.37555, lng: -71.02632, walkMin: 0, access: 'Free shuttle' },
+    ],
+    priceSources: [
+      { label: 'massport.com', url: 'https://www.massport.com/logan-airport/getting-to-logan/parking/terminal-parking' },
+      { label: 'Economy rates', url: 'https://www.massport.com/logan-airport/getting-to-logan/parking/economy-parking' },
+    ],
+    others: { title: 'The other garages', note: '' },
+    compare: { label: 'See which garages have space', url: 'https://www.massport.com/logan-airport/getting-to-logan/parking/parking-status' },
+    transit: {
+      stop: 'place-aport',
+      stopName: 'Airport',
+      lat: 42.374262,
+      lng: -71.030395,
+      headline: 'Or take the T: the Silver Line and the Blue Line both reach every terminal.',
+      live: 'board',
+      lines: ['Silver Line SL1 from South Station', 'Blue Line to Airport', 'Free Massport shuttle', 'Ferry'],
+      tips: [
+        'Silver Line SL1 stops at every terminal and runs to South Station, on the Red Line and Commuter Rail. Rides from the airport are always free.',
+        'Going to the airport, the change from the Red Line to the SL1 at South Station is free.',
+        'Blue Line: get off at Airport and take the free Massport shuttle to your terminal.',
+        'Boats run from the airport ferry dock to Long Wharf, Lovejoy Wharf by North Station, Hingham and Hull, with more trips in summer.',
+      ],
+    },
+    airport: {
+      iata: 'BOS',
+      buses: { title: 'Logan Express buses', source: { label: 'massport.com', url: 'https://www.massport.com/logan-airport/getting-to-logan/logan-express' } },
+    },
+    bikes: {
+      docks: [
+        { ids: ['f8352b39-0de8-11e7-991c-3863bb43a7d0'], name: 'Airport T Stop, Bremen St at Brooks St', lat: 42.375578, lng: -71.031243, walkMin: 3 },
+        { ids: ['7e1dae55-4d3d-4a41-b969-2aeca70e0e69'], name: 'Bremen St at Marion St', lat: 42.374106, lng: -71.032763, walkMin: 4 },
+      ],
+      note: 'Both docks are by Airport station, minutes from the free Massport shuttle to every terminal.',
+    },
+    // Massport's ride-app page (massport.com/logan-airport/getting-to-logan/ride-apps-uber-lyft, 2026-11-08).
+    rideshare: 'Uber and Lyft pick up in the Central Parking Garage. Follow the signs from your terminal; the app shows where to meet your driver.',
+  },
 }
 
 /** The parts that go out of date live in venue-facts.json (see its _comment). */
@@ -401,16 +482,20 @@ type Facts = {
   trains?: { fare: string; buy: string; trips: EventTrain[] }
   notice?: { text: string; source: Source }
   pending?: string[]
+  /** Logan Express: one line about the buses and each route's fare. */
+  buses?: { note: string; routes: AirportBus[] }
 }
-type VenueBase = Omit<Venue, 'checked' | 'transit' | 'notice' | 'noParking'> & {
+type VenueBase = Omit<Venue, 'checked' | 'transit' | 'notice' | 'noParking' | 'airport'> & {
   transit: Omit<Venue['transit'], 'eventTrains'> & { eventTrainSource?: { label: string; url: string } }
+  airport?: { iata: string; buses?: { title: string; source: Source } }
 }
 const FACTS = venueFacts as unknown as Record<string, Facts>
 
-const withFacts = ({ transit: { eventTrainSource, ...transit }, ...b }: VenueBase): Venue => {
+const withFacts = ({ transit: { eventTrainSource, ...transit }, airport, ...b }: VenueBase): Venue => {
   const f = FACTS[b.slug]
   return {
     ...b,
+    airport: airport && { iata: airport.iata, buses: airport.buses && f.buses ? { ...airport.buses, ...f.buses } : undefined },
     checked: f.checked,
     priceNote: f.priceNote ?? b.priceNote,
     others: b.others && { ...b.others, note: f.othersNote ?? b.others.note },

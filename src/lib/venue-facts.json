@@ -211,5 +211,107 @@
         ]
       }
     ]
+  },
+  "logan-airport": {
+    "checked": "2026-11-08",
+    "priceNote": "Booked-ahead spaces are limited.",
+    "othersNote": "Terminal B charges the same as Central. Economy is about $9 a day less.",
+    "prices": [
+      {
+        "label": "First hour",
+        "amount": "$10"
+      },
+      {
+        "label": "Up to 24 hours",
+        "amount": "$46"
+      },
+      {
+        "label": "A day, booked ahead",
+        "amount": "$29"
+      }
+    ],
+    "facts": [
+      "Each extra day $46, or $23 under 6 hours",
+      "Walkways on Level 4",
+      "Height limit 9′6″"
+    ],
+    "notes": {
+      "Terminal B Garage": "Same rates · height limit 6′6″",
+      "Economy Garage": "$37 a day · first hour $10 · height limit 8′2″"
+    },
+    "buses": {
+      "note": "Buses to every terminal. Kids ride free with a family member who has a ticket.",
+      "routes": [
+        {
+          "name": "Back Bay",
+          "where": "Copley Place, Dartmouth St, and 800 Boylston St",
+          "fare": "$3 to the airport, free back"
+        },
+        {
+          "name": "Braintree",
+          "where": "Quincy Adams T garage",
+          "fare": "$9 each way online · park $7 a day"
+        },
+        {
+          "name": "Danvers",
+          "where": "Liberty Tree Mall",
+          "fare": "$9 each way online · park $7 a day"
+        },
+        {
+          "name": "Framingham",
+          "where": "Burr St, off the Mass Pike",
+          "fare": "$9 each way online · park $7 a day"
+        },
+        {
+          "name": "Woburn",
+          "where": "Anderson Regional Transportation Center",
+          "fare": "$9 each way online · park $7 a day"
+        }
+      ]
+    },
+    "verify": [
+      {
+        "url": "https://www.massport.com/logan-airport/getting-to-logan/parking/terminal-parking",
+        "confirm": [
+          "Terminal parking (Central and Terminal B garages): 0 to 1 hour $10, 7 to 24 hours $46",
+          "Additional day: $23 for 0 to 6 hours, $46 for 6 to 24 hours",
+          "A limited number of spaces are $29 a day with an Advance Parking Reservation",
+          "Central Parking serves Terminals A, B, C and E by walkways on Level 4; height clearance 9'6\"",
+          "Terminal B garage height clearance 6'6\""
+        ]
+      },
+      {
+        "url": "https://www.massport.com/logan-airport/getting-to-logan/parking/economy-parking",
+        "confirm": [
+          "Economy: first hour $10, 4 to 24 hours $37, additional day $19 (0 to 6 hours) or $37",
+          "Free shuttle to Terminals A, B, C and E; height clearance 8'2\"",
+          "Economy saves about $9 a day over the terminal garages (the othersNote)"
+        ]
+      },
+      {
+        "url": "https://www.massport.com/logan-airport/getting-to-logan/logan-express",
+        "confirm": [
+          "Logan Express runs from Back Bay, Braintree, Danvers, Framingham and Woburn (add any new route, such as North Station, and drop any that stop)",
+          "Suburban sites: park $7 a day, ride $9 each way bought online (a limited-time offer; update the fares when it ends)",
+          "Back Bay: $3 to the airport, free ride back",
+          "Braintree runs from the MBTA Quincy Adams garage",
+          "Kids ride free with a ticketed family member"
+        ]
+      },
+      {
+        "url": "https://www.mbta.com/destinations/logan-airport",
+        "confirm": [
+          "SL1 stops at every terminal and runs to South Station; service from the airport is always free; Red Line to SL1 transfers to the airport are free",
+          "Free Massport shuttle between Airport station (Blue Line) and every terminal",
+          "Ferries from the Logan Airport Ferry Terminal to Long Wharf, Lovejoy Wharf, Hingham and Hull, more in summer (these lines are in src/lib/venues.ts transit.tips)"
+        ]
+      },
+      {
+        "url": "https://www.massport.com/logan-airport/getting-to-logan/ride-apps-uber-lyft",
+        "confirm": [
+          "Ride apps pick up in the Central Parking Garage (the rideshare line in src/lib/venues.ts)"
+        ]
+      }
+    ]
   }
 }

@@ -202,7 +202,9 @@ export async function GET() {
   L.push(`- [Free bike repair near Boston](${SITE_URL}/events/bike-repair): Open shops and repair workshops where you fix your bike with tools and help on hand.`)
   L.push(`- [This weekend around Boston](${SITE_URL}/events/this-weekend): Group walks, bike rides and community events this Saturday and Sunday.`)
     L.push(
-      v.noParking
+      v.airport
+        ? `- [Parking at ${v.name}](${SITE_URL}/parking/${v.slug}): ${v.lede} Massport's rates for the Central, Terminal B and Economy garages (checked ${v.checked}), the free Silver Line SL1 from South Station, the Blue Line and Massport shuttle, Logan Express buses with their fares, and Bluebikes by Airport station.`
+        : v.noParking
         ? `- [Parking at ${v.name}](${SITE_URL}/parking/${v.slug}): ${v.lede} The City's game-day travel plan with the team: satellite lots, shuttle stops, bike valet, Bluebikes and walks (checked ${v.checked}).${v.notice ? ` ${v.notice.text}` : ''}`
         : `- [Parking at ${v.name}](${SITE_URL}/parking/${v.slug}): ${v.lede} Garages and lots with walk times and published prices (checked ${v.checked}), and how to get there by train.`,
     )

@@ -39,6 +39,7 @@ const STATIC_PAGES: { path: string; changeFrequency: ChangeFreq; priority: numbe
   { path: '/parking/fenway-park', changeFrequency: 'weekly', priority: 0.7 },
   { path: '/parking/gillette-stadium', changeFrequency: 'weekly', priority: 0.7 },
   { path: '/parking/white-stadium', changeFrequency: 'weekly', priority: 0.7 },
+  { path: '/parking/logan-airport', changeFrequency: 'weekly', priority: 0.7 },
   // Programs
   { path: '/programs', changeFrequency: 'monthly', priority: 0.7 },
   { path: '/programs/walk-ride-days', changeFrequency: 'weekly', priority: 0.7 },

@@ -26,6 +26,8 @@ import { bigEventPath, bigEventWhen, loadBigEvents, type BigEvent } from '@/lib/
  * Live and indexed since Keith's go on 2026-11-02 (exp-2026-11-3). Venues in
  * src/lib/venues.ts, prices in src/lib/venue-facts.json (re-checked every
  * Monday by the venue-parking-prices routine); live parts from /api/venue-live.
+ * Logan Airport joined 2026-11-08 (exp-2026-11-6): `airport` adds its Logan
+ * Express buses and an Airport JSON-LD type, `seo` its own title.
  */
 
 export const revalidate = 3600
@@ -34,7 +36,7 @@ const PLACEMENT = 'venue_parking' as Placement
 
 const linksFor = (v: Venue) => [
   { id: 'garages', label: 'Parking' },
-  { id: 'transit', label: v.shuttles ? 'Shuttles and the T' : v.transit.eventTrains ? 'Event train' : 'The T' },
+  { id: 'transit', label: v.shuttles ? 'Shuttles and the T' : v.transit.eventTrains ? 'Event train' : v.airport?.buses ? 'The T and buses' : 'The T' },
   { id: 'bike', label: v.walk ? 'Bike or walk' : v.bikes ? 'Bike or rideshare' : 'Rideshare' },
 ]
 
@@ -67,7 +69,8 @@ const jsonLdFor = (v: Venue) => ({
   lastReviewed: v.checked,
   isPartOf: { '@type': 'WebSite', name: 'Green Streets Initiative', url: SITE_URL },
   about: {
-    '@type': 'StadiumOrArena',
+    '@type': v.airport ? 'Airport' : 'StadiumOrArena',
+    ...(v.airport ? { iataCode: v.airport.iata } : {}),
     name: v.name,
     address: v.address,
     geo: { '@type': 'GeoCoordinates', latitude: v.lat, longitude: v.lng },
@@ -106,6 +109,7 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: { params: Promise<{ venue: string }> }): Promise<Metadata> {
   const v = getVenue((await params).venue)
   if (!v) return {}
+  if (v.seo) return { title: v.seo.title, description: v.seo.description, alternates: { canonical: `/parking/${v.slug}` } }
   if (v.noParking) {
     return {
       title: `${v.name} parking: free shuttles, the T and bikes | Green Streets Initiative`,
@@ -270,10 +274,14 @@ export default async function VenueParkingPage({ params }: { params: Promise<{ v
                         <span className="block text-[0.9375rem] leading-snug text-navy/80">{g.address}</span>
                         {g.note && <span className="mt-1 block text-[0.9375rem] font-bold leading-snug text-forest">{g.note}</span>}
                       </span>
-                      <span className="shrink-0 text-right">
-                        <span className="block text-[1.125rem] font-extrabold leading-none tabular-nums text-navy">{g.walkMin} min</span>
-                        <span className="text-[0.875rem] text-navy/80">walk</span>
-                      </span>
+                      {g.access ? (
+                        <span className="shrink-0 text-right text-[1rem] font-extrabold leading-snug text-navy">{g.access}</span>
+                      ) : (
+                        <span className="shrink-0 text-right">
+                          <span className="block text-[1.125rem] font-extrabold leading-none tabular-nums text-navy">{g.walkMin} min</span>
+                          <span className="text-[0.875rem] text-navy/80">walk</span>
+                        </span>
+                      )}
                     </li>
                   ))}
                 </ol>
@@ -356,6 +364,7 @@ export default async function VenueParkingPage({ params }: { params: Promise<{ v
                     </li>
                   ))}
                 </ul>
+                {v.airport?.buses && <AirportBuses buses={v.airport.buses} checked={v.checked} />}
                 <TrackedLink
                   href={planUrl}
                   event="venue_trip_planned"
@@ -393,7 +402,7 @@ export default async function VenueParkingPage({ params }: { params: Promise<{ v
             <div className="grid items-center gap-6 lg:grid-cols-[minmax(0,1fr)_auto]">
               <div>
                 <h2 className="[font-family:var(--font-overpass),Trebuchet_MS,sans-serif] text-[clamp(1.5rem,3vw,2rem)] font-extrabold leading-[1.1] text-white">
-                  Going to more games and shows?
+                  {v.airport ? 'Getting around Boston once you land?' : 'Going to more games and shows?'}
                 </h2>
                 <p className="mt-3 max-w-[560px] text-[1.0625rem] leading-[1.55] text-white">
                   Shift, our free app, shows live trains and bikes wherever you are, and rewards the trips you
@@ -426,6 +435,30 @@ function Notice({ notice }: { notice: NonNullable<Venue['notice']> }) {
       <p className="text-[1.0625rem] leading-[1.5] text-navy">
         <b>{first}</b> {rest.join(' ')}{' '}
         <span className="text-[0.9375rem] text-navy/80">From {SOURCE_LINK(notice.source)}.</span>
+      </p>
+    </div>
+  )
+}
+
+/** Logan Express: each route with where it leaves from and its fare. */
+function AirportBuses({ buses, checked }: { buses: NonNullable<NonNullable<Venue['airport']>['buses']>; checked: string }) {
+  return (
+    <div className="mt-8">
+      <h3 className="text-[1.125rem] font-bold text-navy">{buses.title}</h3>
+      <p className={`${BODY} mt-1`}>{buses.note}</p>
+      <ul className="mt-3 grid gap-2">
+        {buses.routes.map((r) => (
+          <li key={r.name} className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5 rounded-[12px] border border-navy/10 bg-white px-4 py-3">
+            <span className="min-w-0">
+              <span className="block text-[1rem] font-bold leading-snug text-navy">{r.name}</span>
+              {r.where && <span className="block text-[0.9375rem] leading-snug text-navy/80">{r.where}</span>}
+            </span>
+            <span className="text-[0.9375rem] font-bold leading-snug text-forest">{r.fare}</span>
+          </li>
+        ))}
+      </ul>
+      <p className="mt-2 text-[0.9375rem] text-navy/80">
+        Fares from {SOURCE_LINK(buses.source)}, checked {longDate(checked)}.
       </p>
     </div>
   )

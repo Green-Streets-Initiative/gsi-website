@@ -13,27 +13,37 @@
         "fenway park parking",
         "parking near fenway park",
         "gillette stadium train",
-        "north station garage td garden"
+        "north station garage td garden",
+        "logan airport parking",
+        "logan parking",
+        "logan economy parking"
       ],
       "gsc_patterns": [
         "(td ?garden|fenway|gillette|foxboro(ugh)?|patriots|red sox|bruins|celtics).*(parking|\\blots?\\b|garage)",
         "(parking|garage).*(td ?garden|fenway|gillette|foxboro(ugh)?)",
         "(gillette|patriots|foxboro(ugh)?).*(train|commuter rail|event train)",
-        "north station garage"
+        "north station garage",
+        "logan.*(parking|garage)",
+        "(parking|garage).*logan",
+        "logan express"
       ],
       "target_urls": [
         "/parking/td-garden",
         "/parking/fenway-park",
-        "/parking/gillette-stadium"
+        "/parking/gillette-stadium",
+        "/parking/logan-airport"
       ],
       "proposed_assets": [
-        "The three /parking pages (branch parking, noindex until Keith approves); Logan parking waits for this read"
+        "The three /parking pages (branch parking, noindex until Keith approves); Logan parking waits for this read",
+        "/parking/logan-airport (live 2026-11-08, exp-2026-11-6; Logan searches bucket here, its own read in that row)"
       ],
       "aeo_questions": [
         "Where do I park for a Celtics game at TD Garden?",
         "How much is parking at Fenway Park?",
         "Is parking free at Gillette Stadium?",
-        "Is there a train to Gillette Stadium?"
+        "Is there a train to Gillette Stadium?",
+        "How much is parking at Logan Airport?",
+        "Is the Silver Line free from Logan Airport?"
       ],
       "messaging_notes": "Answer the parking question first: which garage or lot, what it charges with the date we checked, how far it is on foot. Then state the alternative as a plain fact (the station under the arena, the event train). Never argue against driving; these people have decided to drive and the page earns trust by helping them. Placed first in this file because bucketing takes the first match and these venue names collide with nothing else, while 'foxborough parking' would otherwise read as town demand."
     },
