@@ -8,6 +8,9 @@ import RoamCard from '@/components/roams/RoamCard'
 import TownEventsPanel from '@/components/towns/TownEventsPanel'
 import TownHeatmap from '@/components/towns/TownHeatmap'
 import TownLeaderboardBoard from '@/components/towns/TownLeaderboardBoard'
+import { rich } from '@/components/towns/rich'
+import { siteDate, translator, withLang, SITE_LOCALE_TAG, type SiteLocale } from '@/lib/site-i18n'
+import { townsStrings } from '@/lib/site-strings/towns'
 import type {
   TownEvent,
   TownHeatmapLayer,
@@ -28,7 +31,30 @@ import type {
  *    from active miles traveled", never framed against driving.
  *  - Shift-user-sample disclaimer near the stats and in the footer note.
  *  - "Rewards Partner", never "sponsor".
+ *
+ * Every section takes an optional `locale` (translation plan, batch 5); words
+ * live in site-strings/towns.ts. Callers that pass none (the school pages,
+ * the sign previews) stay English.
  */
+
+const tt = (locale: SiteLocale) => translator(townsStrings, locale)
+
+/** Whole numbers in the page's language; English keeps the server default. */
+export function townNum(n: number, locale: SiteLocale = 'en'): string {
+  return locale === 'en' ? n.toLocaleString() : n.toLocaleString(SITE_LOCALE_TAG[locale])
+}
+
+/** "This month" in the page's language: "November", "noviembre", "十一月". */
+export function townMonth(locale: SiteLocale = 'en'): string {
+  return siteDate(locale, new Date(), { month: 'long' })
+}
+
+/** "A, B and C" in the page's language. */
+export function townList(items: string[], locale: SiteLocale = 'en'): string {
+  const t = tt(locale)
+  if (items.length < 2) return items.join('')
+  return t('list.and', { rest: items.slice(0, -1).join(t('list.sep')), last: items[items.length - 1] })
+}
 
 /* ── stat row ─────────────────────────────────────────────── */
 
@@ -42,22 +68,25 @@ export function StatRow({
   townName,
   rank,
   unrankedNote,
+  locale = 'en',
 }: {
   stats: TownPageStats
   townName: string
+  locale?: SiteLocale
   /** Null when the town is not on its state board this month. */
   rank: { rank: number; of: number; stateName: string } | null
   /** Why the town is unranked, shown first in the footnote when `rank` is null. */
   unrankedNote?: string
 }) {
   const m = stats.month
-  const month = new Date().toLocaleDateString('en-US', { month: 'long' })
+  const t = tt(locale)
+  const month = townMonth(locale)
   const cells = [
-    ...(rank ? [{ value: `#${rank.rank} of ${rank.of}`, label: `${rank.stateName} towns by shift rate in ${month}` }] : []),
-    { value: m.active_trips.toLocaleString(), label: `active trips so far in ${month}` },
-    { value: m.active_miles.toLocaleString(), label: 'active miles' },
-    { value: m.co2_lbs.toLocaleString(), label: 'lbs CO₂ avoided*' },
-    { value: m.active_users.toLocaleString(), label: `neighbors active so far in ${month}` },
+    ...(rank ? [{ value: t('stat.rank_value', { rank: rank.rank, of: rank.of }), label: t('stat.rank_label', { state: rank.stateName, month }) }] : []),
+    { value: townNum(m.active_trips, locale), label: t('stat.trips', { month }) },
+    { value: townNum(m.active_miles, locale), label: t('stat.miles') },
+    { value: townNum(m.co2_lbs, locale), label: t('stat.co2') },
+    { value: townNum(m.active_users, locale), label: t('stat.users', { month }) },
   ]
   return (
     <div className="border-y border-navy/15 py-7">
@@ -69,19 +98,20 @@ export function StatRow({
           </div>
         ))}
       </dl>
-      <DataDisclaimer townName={townName} lead={unrankedNote} />
+      <DataDisclaimer townName={townName} lead={unrankedNote} locale={locale} />
     </div>
   )
 }
 
-export function DataDisclaimer({ townName, lead }: { townName: string; lead?: string }) {
+export function DataDisclaimer({ townName, lead, locale = 'en' }: { townName: string; lead?: string; locale?: SiteLocale }) {
+  const now = new Date()
+  const start = siteDate(locale, new Date(now.getFullYear(), now.getMonth(), 1), { month: 'long', day: 'numeric' })
   return (
     <p className="mt-4 max-w-[720px] text-[12px] leading-relaxed text-ink-soft">
       {lead ? `${lead} ` : ''}
-      Shift Rate is the share of trips taken actively (walk, micromobility, transit). Counts cover{' '}
-      {new Date().toLocaleDateString('en-US', { month: 'long' })} 1 through today, based on trips logged by Shift community members that{' '}
-      <b className="font-semibold text-navy">start or end in {townName}</b> — a growing sample, meant as an interesting local signal, not an
-      official or census-level count. *CO&#8322; avoided is estimated from active miles traveled (EPA 404&nbsp;g/mi baseline).
+      {rich(tt(locale)('stat.disclaimer', { start, town: townName }), {
+        b: (c) => <b className="font-semibold text-navy">{c}</b>,
+      })}
     </p>
   )
 }
@@ -92,43 +122,37 @@ export function HeatmapSection({
   layers,
   townName,
   centroid,
+  locale = 'en',
 }: {
   layers: TownHeatmapLayer[]
   townName: string
   centroid: { lat: number; lng: number } | null
+  locale?: SiteLocale
 }) {
   if (layers.length === 0) return null
+  const t = tt(locale)
   const all = layers.find((l) => l.mode_group === 'all') ?? layers[0]
   const topNames = (all.named_corridors ?? []).slice(0, 3).map((c) => c.name)
+  const trips = townNum(all.trip_count, locale)
   return (
     <div>
-      <SectionHeading title={`Where ${townName} moves`} />
+      <SectionHeading title={t('hm.title', { town: townName })} />
       {/* Server-rendered summary — crawlers and screen readers get the story
           (including the top corridor names) even though the map is client-only. */}
       <p className="-mt-2 mb-6 max-w-[680px] text-[15px] leading-relaxed text-ink-soft">
-        New to {townName}? You&apos;re joining a town that moves — neighbors logged{' '}
-        {all.trip_count.toLocaleString()} trips on foot, by bike, and on transit in the last 90
-        days{topNames.length > 0 ? (
-          <>
-            , and {topNames.slice(0, -1).join(', ')}
-            {topNames.length > 1 ? ' and ' : ''}
-            {topNames[topNames.length - 1]}{' '}are where you&apos;ll find them
-          </>
-        ) : (
-          ''
-        )}
-        . A corridor appears only once three or more different people have traveled it — and it
-        follows {townName} residents wherever they go, including into neighboring towns, within
-        about six miles of the town center.
+        {topNames.length > 0
+          ? t('hm.summary_named', { town: townName, trips, names: townList(topNames, locale) })
+          : t('hm.summary', { town: townName, trips })}
       </p>
-      <TownHeatmap layers={layers} centroid={centroid} />
+      <TownHeatmap layers={layers} centroid={centroid} locale={locale} />
     </div>
   )
 }
 
 /* ── momentum sparkline ───────────────────────────────────── */
 
-export function MomentumSparkline({ stats, townName }: { stats: TownPageStats; townName: string }) {
+export function MomentumSparkline({ stats, townName, locale = 'en' }: { stats: TownPageStats; townName: string; locale?: SiteLocale }) {
+  const t = tt(locale)
   const weeks = stats.momentum ?? []
   const total = weeks.reduce((s, w) => s + w.active_trips, 0)
   if (weeks.length < 3 || total === 0) return null
@@ -151,11 +175,11 @@ export function MomentumSparkline({ stats, townName }: { stats: TownPageStats; t
   return (
     <div>
       <SectionHeading
-        title="Momentum"
-        lede={`Active trips in ${townName} by week ending, last ${weeks.length} completed weeks${rising ? ', and climbing' : ''}.`}
+        title={t('mom.title')}
+        lede={t(rising ? 'mom.lede_rising' : 'mom.lede', { town: townName, count: weeks.length })}
       />
       <div className="border-y border-navy/15 py-6">
-        <svg viewBox={`0 0 ${w} ${h}`} className="h-auto w-full" role="img" aria-label={`Weekly active trips: ${weeks.map((d) => d.active_trips).join(', ')}`}>
+        <svg viewBox={`0 0 ${w} ${h}`} className="h-auto w-full" role="img" aria-label={t('mom.aria', { list: weeks.map((d) => d.active_trips).join(', ') })}>
           <path d={area} fill="rgba(45,106,79,0.10)" />
           <path d={path} fill="none" stroke="#2D6A4F" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
           {points.map((p, i) => (
@@ -168,7 +192,7 @@ export function MomentumSparkline({ stats, townName }: { stats: TownPageStats; t
             end.setDate(end.getDate() + 6)
             return (
               <span key={d.week_start}>
-                {end.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                {siteDate(locale, end, { month: 'short', day: 'numeric' })}
               </span>
             )
           })}
@@ -184,13 +208,16 @@ export function TownLeaderboard({
   directory,
   state,
   highlightGroupId,
-  title = 'Friendly competition',
+  title,
+  locale = 'en',
 }: {
   directory: TownSummary[]
   /** Board is scoped to this state — towns only race towns in their own state. */
   state: string
   highlightGroupId?: string
+  /** Defaults to "Friendly competition" in the page's language. */
   title?: string
+  locale?: SiteLocale
 }) {
   const qualifying = directory.filter((t) => t.rank > 0 && t.state === state)
   if (qualifying.length < 2) return null
@@ -200,31 +227,35 @@ export function TownLeaderboard({
       state={state}
       stateName={qualifying[0].stateName}
       highlightGroupId={highlightGroupId}
-      title={title}
+      title={title ?? tt(locale)('lb.title')}
+      locale={locale}
     />
   )
 }
 
 /* ── mode split ───────────────────────────────────────────── */
 
-export function ModeSplit({ stats, townName }: { stats: TownPageStats; townName: string }) {
-  return <ModeSplitChart stats={stats} townName={townName} />
+export function ModeSplit({ stats, townName, locale = 'en' }: { stats: TownPageStats; townName: string; locale?: SiteLocale }) {
+  return <ModeSplitChart stats={stats} townName={townName} locale={locale} />
 }
 
 /* ── explainer ────────────────────────────────────────────── */
 
-export function WhatIsShift({ townName }: { townName: string }) {
+export function WhatIsShift({ townName, locale = 'en' }: { townName: string; locale?: SiteLocale }) {
+  const t = tt(locale)
   return (
     <div className="max-w-[720px] border-t border-navy/15 pt-6">
-      <h2 className="font-serif text-[1.375rem] leading-tight text-navy">What is this?</h2>
+      <h2 className="font-serif text-[1.375rem] leading-tight text-navy">{t('wis.title')}</h2>
       <p className="mt-3 text-[1.0625rem] leading-[1.65] text-ink-soft">
-        Shift is a free app from{' '}
-        <Link href="/" className="font-semibold text-forest underline-offset-4 hover:underline">
-          Green Streets Initiative
-        </Link>
-        , a Somerville nonprofit since 2006, for finding better ways to get around. Every
-        walk, bike ride and transit trip people take with Shift adds to {townName}&apos;s totals
-        on this page. Shift counts trips on its own.
+        {rich(t('wis.body', { town: townName }), {
+          nodes: {
+            gsi: (
+              <Link href={withLang('/', locale)} className="font-semibold text-forest underline-offset-4 hover:underline">
+                Green Streets Initiative
+              </Link>
+            ),
+          },
+        })}
       </p>
     </div>
   )
@@ -254,7 +285,8 @@ export function EventsRoamsPanels({
   roams,
   townName,
   tone = 'dark',
-  roamsFrom = { near: `in central ${townName}`, from: `from central ${townName}` },
+  roamsFrom,
+  locale = 'en',
 }: {
   events: TownEvent[]
   roams: TownRoam[]
@@ -263,22 +295,24 @@ export function EventsRoamsPanels({
   /** How a roam's start distance reads: a town page measures from the
    *  town's centroid, a school page passes "on campus" / "from campus". */
   roamsFrom?: { near: string; from: string }
+  locale?: SiteLocale
 }) {
   if (events.length === 0 && roams.length === 0) return null
   const both = events.length > 0 && roams.length > 0
   const t = PANEL_THEME[tone]
+  const tr = tt(locale)
+  const from = roamsFrom ?? { near: tr('roams.near', { town: townName }), from: tr('roams.from', { town: townName }) }
   return (
     <section className="mx-auto max-w-[960px]">
       <div className={`grid gap-5 ${both ? 'md:grid-cols-2' : ''}`}>
-        {events.length > 0 && <TownEventsPanel events={events} townName={townName} tone={tone} />}
+        {events.length > 0 && <TownEventsPanel events={events} townName={townName} tone={tone} locale={locale} />}
         {roams.length > 0 && (
           <div className={t.panel}>
             <h3 className={t.h3}>
-              Roams to try
+              {tr('roams.title')}
             </h3>
             <p className={t.sub}>
-              Self-guided routes. Preview the full route here, then check in at each stop in the
-              Shift app to unlock the badge.
+              {tr('roams.sub')}
             </p>
             <div className="space-y-3">
               {roams.map((r) => (
@@ -286,12 +320,13 @@ export function EventsRoamsPanels({
                   key={r.id}
                   roam={r}
                   tone={tone}
-                  start={r.start_distance_miles != null ? { miles: r.start_distance_miles, ...roamsFrom } : undefined}
+                  start={r.start_distance_miles != null ? { miles: r.start_distance_miles, ...from } : undefined}
+                  locale={locale}
                 />
               ))}
             </div>
             <Link href="/shift/roams" className={t.all}>
-              All roams &rarr;
+              {tr('roams.all')}
             </Link>
           </div>
         )}
@@ -310,19 +345,20 @@ export function EventsRoamsPanels({
  * (soonest wins); action_label set -> action row; otherwise -> drawer.
  */
 
-const DRAWER_CATEGORY_META: Record<string, string> = {
-  town_dept: 'Your transportation department',
-  public_meetings: 'Meetings & comment pathways',
-  bike_ped_committee: 'City committees you can join',
-  advocacy_group: 'Advocacy groups',
-  commuter_services: 'Commuter perks & fare help',
-  bike_share: 'Bike share',
-  bike_repair: 'Fix your own bike',
-  community_group: 'Clubs & ride groups',
-  construction_info: 'Construction & closures',
-  get_updates: 'Get updates',
-  report_issue: 'Report an issue',
-}
+// Category headings: site-strings/towns.ts `cat.<category>`.
+const DRAWER_CATEGORY_KEY = {
+  town_dept: 'cat.town_dept',
+  public_meetings: 'cat.public_meetings',
+  bike_ped_committee: 'cat.bike_ped_committee',
+  advocacy_group: 'cat.advocacy_group',
+  commuter_services: 'cat.commuter_services',
+  bike_share: 'cat.bike_share',
+  bike_repair: 'cat.bike_repair',
+  community_group: 'cat.community_group',
+  construction_info: 'cat.construction_info',
+  get_updates: 'cat.get_updates',
+  report_issue: 'cat.report_issue',
+} as const satisfies Record<string, keyof (typeof townsStrings)['en']>
 const DRAWER_CATEGORY_ORDER = [
   'bike_ped_committee',
   'advocacy_group',
@@ -346,17 +382,20 @@ export function GetInvolved({
   civicEvents,
   townName,
   townSlug,
+  locale = 'en',
 }: {
   resources: TownResource[]
   civicEvents: TownCivicEvent[]
   townName: string
   townSlug: string
+  locale?: SiteLocale
 }) {
+  const t = tt(locale)
   const civicUrl = (url: string | null) =>
     withUtm(url, { medium: 'town_page', campaign: townSlug, content: 'get_involved' }) ?? '#'
   if (resources.length === 0 && civicEvents.length === 0) return null
 
-  const { candidates, civicDupIds } = buildFeaturedCandidates(civicEvents, resources, civicUrl)
+  const { candidates, civicDupIds } = buildFeaturedCandidates(civicEvents, resources, civicUrl, undefined, undefined, locale)
   const featured = candidates[0] ?? null
   const upNext = candidates.slice(1, 3)
   const shownResourceIds = new Set(
@@ -375,7 +414,7 @@ export function GetInvolved({
 
   return (
     <div className="max-w-[720px]">
-      <SectionHeading title={`Get involved in ${townName}`} lede="Safer streets are made by neighbors who speak up. Start small:" />
+      <SectionHeading title={t('inv.title', { town: townName })} lede={t('inv.lede')} />
 
       {/* 1. Happening now — zero or one. An item with nowhere to send
           people is a plain card: no button that leads back to this page. */}
@@ -394,7 +433,7 @@ export function GetInvolved({
           >
             <div className="mb-2 flex flex-wrap items-center gap-2">
               <span className="rounded-full bg-gold px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider text-navy">
-                Happening now
+                {t('inv.happening')}
               </span>
               <span className="text-[13px] font-semibold text-green-deep">{featured.chip}</span>
             </div>
@@ -418,13 +457,13 @@ export function GetInvolved({
           {upNext.map((c) => {
             const linked = c.href !== '#'
             const daysLeft = c.deadline ? Math.max(0, Math.ceil((c.sort - Date.now()) / 86400000)) : null
-            const countdown = daysLeft === null ? null : daysLeft === 0 ? 'Today' : daysLeft === 1 ? '1 day left' : `${daysLeft} days left`
+            const countdown = daysLeft === null ? null : daysLeft === 0 ? t('inv.today') : daysLeft === 1 ? t('inv.day_left') : t('inv.days_left', { count: daysLeft })
             const inner = (
               <>
                 <span className="flex shrink-0 flex-wrap items-center gap-2">
                   {c.deadline && (
                     <span className="rounded-full border border-gold bg-gold/15 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wider text-navy">
-                      Deadline
+                      {t('inv.deadline')}
                     </span>
                   )}
                   <span className="text-[13px] font-semibold text-green-deep">
@@ -477,8 +516,8 @@ export function GetInvolved({
           town page sees that town's content first; hidden ≠ ok for local). */}
       {localResources.length > 0 && (
         <div className="mt-6 space-y-5">
-          <p className="text-[12px] font-semibold uppercase tracking-[0.14em] text-forest">In {townName}</p>
-          {resourceGroups(localResources, civicUrl)}
+          <p className="text-[12px] font-semibold uppercase tracking-[0.14em] text-forest">{t('inv.in_town', { town: townName })}</p>
+          {resourceGroups(localResources, civicUrl, locale)}
         </div>
       )}
 
@@ -487,11 +526,11 @@ export function GetInvolved({
       {sharedResources.length > 0 && (
         <details className="group mt-6">
           <summary className="inline-flex min-h-[44px] cursor-pointer list-none items-center gap-2 text-[15px] font-semibold text-forest underline-offset-4 hover:underline [&::-webkit-details-marker]:hidden">
-            Regional &amp; statewide groups, {sharedResources.length} more{' '}
+            {t('inv.shared', { count: sharedResources.length })}{' '}
             <span aria-hidden className="transition-transform group-open:rotate-90">&rsaquo;</span>
           </summary>
           <div className="mt-4 space-y-5 border-t border-navy/15 pt-5">
-            {resourceGroups(sharedResources, civicUrl)}
+            {resourceGroups(sharedResources, civicUrl, locale)}
           </div>
         </details>
       )}
@@ -501,14 +540,15 @@ export function GetInvolved({
 
 /** Category-grouped resource list shared by the visible local block and the
  *  regional/statewide drawer. Input order is preserved within a category. */
-function resourceGroups(list: TownResource[], civicUrl: (url: string | null) => string) {
+function resourceGroups(list: TownResource[], civicUrl: (url: string | null) => string, locale: SiteLocale) {
+  const t = tt(locale)
   return DRAWER_CATEGORY_ORDER.map((cat) => {
     const inCat = list.filter((r) => r.category === cat)
     if (inCat.length === 0) return null
     return (
       <div key={cat}>
         <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-soft">
-          {DRAWER_CATEGORY_META[cat] ?? cat}
+          {cat in DRAWER_CATEGORY_KEY ? t(DRAWER_CATEGORY_KEY[cat as keyof typeof DRAWER_CATEGORY_KEY]) : cat}
         </p>
         <ul className="space-y-2">
           {inCat.map((r) => (
@@ -522,7 +562,7 @@ function resourceGroups(list: TownResource[], civicUrl: (url: string | null) => 
               )}
               {r.scope !== 'local' && (
                 <span className="ml-1.5 rounded-full bg-navy/[0.06] px-1.5 py-0.5 text-[10px] font-semibold text-ink-soft">
-                  {r.scope}
+                  {r.scope === 'regional' ? t('inv.scope_regional') : r.scope === 'statewide' ? t('inv.scope_statewide') : r.scope}
                 </span>
               )}
               {r.description && <span> &mdash; {r.description}</span>}
@@ -541,11 +581,12 @@ function resourceGroups(list: TownResource[], civicUrl: (url: string | null) => 
 
 /* ── rewards partners ─────────────────────────────────────── */
 
-export function RewardsPartners({ partners, townName }: { partners: TownPartner[]; townName: string }) {
+export function RewardsPartners({ partners, townName, locale = 'en' }: { partners: TownPartner[]; townName: string; locale?: SiteLocale }) {
   if (partners.length === 0) return null
+  const t = tt(locale)
   return (
     <div>
-      <SectionHeading title={`Shift Rewards in ${townName}`} lede="Perks at local shops for Shift members." />
+      <SectionHeading title={t('rw.title', { town: townName })} lede={t('rw.lede')} />
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         {partners.map((p) => {
           const card = (

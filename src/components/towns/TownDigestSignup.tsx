@@ -1,6 +1,8 @@
 'use client'
 
 import { useState } from 'react'
+import { translator, type SiteLocale } from '@/lib/site-i18n'
+import { townsStrings } from '@/lib/site-strings/towns'
 
 /**
  * Email capture on town pages — the E19 town digest's front door.
@@ -8,9 +10,11 @@ import { useState } from 'react'
  *
  * `inline` is the slim version that sits under the hero lede (Keith,
  * 2026-09-15: the page is long, so the ask comes first); `card` is the
- * original white card.
+ * original white card. `locale` is the page's language; the digest emails
+ * themselves are English.
  */
-export default function TownDigestSignup({ townName, townSlug, variant = 'card' }: { townName: string; townSlug: string; variant?: 'card' | 'inline' }) {
+export default function TownDigestSignup({ townName, townSlug, variant = 'card', locale = 'en' }: { townName: string; townSlug: string; variant?: 'card' | 'inline'; locale?: SiteLocale }) {
+  const t = translator(townsStrings, locale)
   const [email, setEmail] = useState('')
   const [state, setState] = useState<'idle' | 'busy' | 'done' | 'error'>('idle')
 
@@ -35,20 +39,20 @@ export default function TownDigestSignup({ townName, townSlug, variant = 'card' 
     <div className={inline ? 'max-w-[600px]' : 'max-w-[640px] rounded-[18px] border border-navy/10 bg-white px-6 py-7 md:px-8'}>
       {inline ? (
         <p className="text-[15px] leading-relaxed text-ink-soft">
-          <span className="font-semibold text-navy">Keep a pulse on {townName}.</span>{' '}
-          New street projects, meetings worth your voice, and how {townName} is moving. One or two emails a month.
+          <span className="font-semibold text-navy">{t('dg.lead', { town: townName })}</span>{' '}
+          {t('dg.body', { town: townName })}
         </p>
       ) : (
         <>
-          <h2 className="font-serif text-[clamp(1.5rem,3vw,1.875rem)] leading-tight text-navy">Keep a pulse on {townName}</h2>
+          <h2 className="font-serif text-[clamp(1.5rem,3vw,1.875rem)] leading-tight text-navy">{t('dg.card_title', { town: townName })}</h2>
           <p className="mt-2 max-w-[460px] text-[15px] leading-relaxed text-ink-soft">
-            New street projects, meetings worth your voice, and how {townName} is moving. One or two emails a month.
+            {t('dg.body', { town: townName })}
           </p>
         </>
       )}
       {state === 'done' ? (
         <p className="mt-4 text-[15px] font-semibold text-green-deep">
-          You&apos;re signed up. We&apos;ll email you when something&apos;s happening in {townName}.
+          {t('dg.done', { town: townName })}
         </p>
       ) : (
         <form onSubmit={submit} className={`${inline ? 'mt-3' : 'mt-5'} flex max-w-[440px] gap-2`} data-ph-capture-attribute-entry="town_digest_signup">
@@ -57,7 +61,7 @@ export default function TownDigestSignup({ townName, townSlug, variant = 'card' 
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="you@example.com"
+            placeholder={t('dg.placeholder')}
             className="min-w-0 flex-1 rounded-full border border-navy/20 bg-white px-4 py-2.5 text-[15px] text-navy outline-none placeholder:text-ink-soft focus:border-forest"
           />
           <button
@@ -65,11 +69,11 @@ export default function TownDigestSignup({ townName, townSlug, variant = 'card' 
             disabled={state === 'busy'}
             className="shrink-0 rounded-full bg-navy px-5 py-2.5 text-[15px] font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
           >
-            {state === 'busy' ? 'Signing up…' : 'Sign up'}
+            {state === 'busy' ? t('dg.busy') : t('dg.submit')}
           </button>
         </form>
       )}
-      {state === 'error' && <p className="mt-2 text-[13px] text-red-700">Something went wrong. Please try again in a moment.</p>}
+      {state === 'error' && <p className="mt-2 text-[13px] text-red-700">{t('dg.error')}</p>}
     </div>
   )
 }

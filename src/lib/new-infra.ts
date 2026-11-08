@@ -9,7 +9,16 @@
  * dates for the last six months, OpenStreetMap changes only when something
  * besides one mapper backs them, and located street-project hearings still
  * ahead. See Shift docs/programs/product/new-this-season-2026-11/design.md.
+ *
+ * Each text helper takes an optional `locale` (translation plan, batch 5):
+ * the town page passes its language; the assistants and the digest email
+ * pass nothing and stay English. Words live in site-strings/new-infra.ts.
  */
+
+import { siteDate, siteTime, translator, withLang, type SiteLocale } from '@/lib/site-i18n'
+import { newInfraStrings } from '@/lib/site-strings/new-infra'
+
+const tr = (locale: SiteLocale) => translator(newInfraStrings, locale)
 
 export interface OpenedItem {
   source: 'massdot' | 'osm'
@@ -83,27 +92,30 @@ export function hasNewInfra(n: NewInfra | null | undefined): n is NewInfra {
 const PATHISH = /\b(trail|path|greenway|bikeway|rail trail|esplanade|riverwalk|connector)\b/i
 
 /** "Protected bike lane on Cummins Hwy", "Edgewater Greenway", "Path on Bill Russell Bridge". */
-export function openedTitle(o: Pick<OpenedItem, 'name' | 'facility'>): string {
+export function openedTitle(o: Pick<OpenedItem, 'name' | 'facility'>, locale: SiteLocale = 'en'): string {
+  const t = tr(locale)
   if (o.facility === 'path') {
     if (o.name && PATHISH.test(o.name)) return o.name
-    return o.name ? `Path on ${o.name}` : 'New shared-use path'
+    return o.name ? t('title.path_on', { name: o.name }) : t('title.new_path')
   }
-  const what = o.facility === 'protected' ? 'Protected bike lane' : 'Bike lane'
-  return o.name ? `${what} on ${o.name}` : `New ${what.toLowerCase()}`
+  const prot = o.facility === 'protected'
+  if (o.name) return t(prot ? 'title.protected_on' : 'title.lane_on', { name: o.name })
+  return t(prot ? 'title.new_protected' : 'title.new_lane')
 }
 
 /** "Aug 2026" from "2026-08". */
-export function monthLabel(ym: string): string {
+export function monthLabel(ym: string, locale: SiteLocale = 'en'): string {
   const [y, m] = ym.split('-').map(Number)
-  return new Date(Date.UTC(y, (m || 1) - 1, 15)).toLocaleDateString('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' })
+  return siteDate(locale, Date.UTC(y, (m || 1) - 1, 15), { month: 'short', year: 'numeric', timeZone: 'UTC' })
 }
 
-const miles = (n: number) => `${n.toFixed(1)} mi`
+const miles = (n: number, locale: SiteLocale) => tr(locale)('unit.mi', { n: n.toFixed(1) })
 
 /** "Opened Aug 2026 · 1.6 mi of this ride" (on a route) or "Opened Aug 2026 · 0.4 mi" (elsewhere). */
-export function openedMeta(o: OpenedItem, onRoute: boolean): string {
-  const when = `${o.change === 'upgraded' ? 'Upgraded' : 'Opened'} ${monthLabel(o.opened)}`
-  return `${when} · ${miles(o.miles)}${onRoute ? ' of this ride' : ''}`
+export function openedMeta(o: OpenedItem, onRoute: boolean, locale: SiteLocale = 'en'): string {
+  const t = tr(locale)
+  const when = t(o.change === 'upgraded' ? 'meta.upgraded' : 'meta.opened', { month: monthLabel(o.opened, locale) })
+  return t(onRoute ? 'meta.line_route' : 'meta.line', { when, miles: miles(o.miles, locale) })
 }
 
 /** Trail pages are built (gsi-website branch trails-review) but not public
@@ -111,17 +123,19 @@ export function openedMeta(o: OpenedItem, onRoute: boolean): string {
 const TRAIL_PAGES_LIVE = true
 
 /** "On the Mystic River and Alewife Brook paths, near Medford Square", or "In Medford". */
-export function openedPlace(o: OpenedItem, showTown: boolean): string | null {
-  if (o.trail) return `On the ${o.trail.name}${o.near ? `, near ${o.near}` : ''}`
-  if (o.roam) return `On the ${o.roam.name} route`
-  return showTown && o.town ? `In ${o.town}` : null
+export function openedPlace(o: OpenedItem, showTown: boolean, locale: SiteLocale = 'en'): string | null {
+  const t = tr(locale)
+  if (o.trail) return o.near ? t('place.trail_near', { trail: o.trail.name, near: o.near }) : t('place.trail', { trail: o.trail.name })
+  if (o.roam) return t('place.roam', { roam: o.roam.name })
+  return showTown && o.town ? t('place.town', { town: o.town }) : null
 }
 
 /** Where to read more: the trail's page, else its roam, else MassDOT's project page. */
-export function openedLink(o: OpenedItem): { href: string; label: string; external: boolean } | null {
-  if (o.trail && TRAIL_PAGES_LIVE) return { href: `/trails/${o.trail.id}`, label: 'See the trail', external: false }
-  if (o.roam) return { href: `/shift/roams/${o.roam.id}`, label: 'See the route', external: false }
-  if (o.link) return { href: o.link, label: 'MassDOT project', external: true }
+export function openedLink(o: OpenedItem, locale: SiteLocale = 'en'): { href: string; label: string; external: boolean } | null {
+  const t = tr(locale)
+  if (o.trail && TRAIL_PAGES_LIVE) return { href: withLang(`/trails/${o.trail.id}`, locale), label: t('link.trail'), external: false }
+  if (o.roam) return { href: `/shift/roams/${o.roam.id}`, label: t('link.route'), external: false }
+  if (o.link) return { href: o.link, label: t('link.massdot'), external: true }
   return null
 }
 
@@ -139,25 +153,31 @@ export function openedPhoto(o: OpenedItem): { src: string; credit: string | null
   return null
 }
 
-function dayLabel(d: string): string {
-  return new Date(`${d}T12:00:00Z`).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' })
+function dayLabel(d: string, locale: SiteLocale = 'en'): string {
+  return siteDate(locale, `${d}T12:00:00Z`, { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' })
 }
 
-function timeLabel(t: string): string {
+function timeLabel(t: string, locale: SiteLocale = 'en'): string {
   const [h, m] = t.split(':').map(Number)
+  if (locale !== 'en') {
+    // A bare "18" reads as nothing in a 24-hour clock: keep the minutes.
+    return siteTime(locale, Date.UTC(2000, 0, 1, h, m || 0), { hour: 'numeric', minute: '2-digit', timeZone: 'UTC' })
+  }
   const ampm = h >= 12 ? 'pm' : 'am'
   const h12 = h % 12 || 12
   return m ? `${h12}:${String(m).padStart(2, '0')}${ampm}` : `${h12}${ampm}`
 }
 
 /** "Hearing Thu, Nov 12, 6pm, online" or "Comments due Wed, Dec 2". */
-export function comingWhen(c: ComingItem, today: string): string {
+export function comingWhen(c: ComingItem, today: string, locale: SiteLocale = 'en'): string {
+  const t = tr(locale)
   if (c.date && c.date >= today) {
-    const where = c.kind === 'virtual' ? ', online' : c.kind === 'hybrid' ? ', in person or online' : ''
-    return `Hearing ${dayLabel(c.date)}${c.time ? `, ${timeLabel(c.time)}` : ''}${where}`
+    const where = c.kind === 'virtual' ? t('coming.online') : c.kind === 'hybrid' ? t('coming.hybrid') : null
+    const when = [dayLabel(c.date, locale), c.time ? timeLabel(c.time, locale) : null, where].filter(Boolean).join(t('list.sep'))
+    return t('coming.hearing', { when })
   }
-  if (c.comment_by) return `Comments due ${dayLabel(c.comment_by)}`
-  return c.date ? `Hearing ${dayLabel(c.date)}` : 'Hearing date to be set'
+  if (c.comment_by) return t('coming.comments_due', { day: dayLabel(c.comment_by, locale) })
+  return c.date ? t('coming.hearing', { when: dayLabel(c.date, locale) }) : t('coming.tbd')
 }
 
 /** Words for the assistants: one line per item, the same as the pages show. */

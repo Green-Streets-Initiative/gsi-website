@@ -4,6 +4,8 @@ import Link from 'next/link'
 import { useState } from 'react'
 import { ArrowRight } from '@phosphor-icons/react'
 import type { TownSummary } from '@/lib/towns/queries'
+import { siteDate, translator, withLang, SITE_LOCALE_TAG, type SiteLocale } from '@/lib/site-i18n'
+import { townsStrings } from '@/lib/site-strings/towns'
 
 type Metric = 'shift_rate' | 'active_trips'
 
@@ -15,22 +17,27 @@ type Metric = 'shift_rate' | 'active_trips'
  *
  * Scoped to ONE state: towns only race towns in their own state, matching the
  * in-app standings (Shift migration 00619). Callers render one board per state.
+ * `locale` is the page's language (site-strings/towns.ts); English by default.
  */
 export default function TownLeaderboardBoard({
   directory,
   state,
   stateName,
   highlightGroupId,
-  title = 'Friendly competition',
+  title,
+  locale = 'en',
 }: {
   directory: TownSummary[]
   state: string
   stateName: string
   highlightGroupId?: string
   title?: string
+  locale?: SiteLocale
 }) {
   const [metric, setMetric] = useState<Metric>('shift_rate')
-  const month = new Date().toLocaleDateString('en-US', { month: 'long' })
+  const tr = translator(townsStrings, locale)
+  const num = (n: number) => (locale === 'en' ? n.toLocaleString() : n.toLocaleString(SITE_LOCALE_TAG[locale]))
+  const month = siteDate(locale, new Date(), { month: 'long' })
   const qualifying = directory.filter((t) => t.rank > 0 && t.state === state)
   if (qualifying.length < 2) return null
 
@@ -53,25 +60,23 @@ export default function TownLeaderboardBoard({
     <div>
       <div className="mb-6 flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
         <div>
-          <h2 className="font-serif text-[clamp(1.75rem,3.5vw,2.5rem)] leading-[1.1] text-navy">{title}</h2>
+          <h2 className="font-serif text-[clamp(1.75rem,3.5vw,2.5rem)] leading-[1.1] text-navy">{title ?? tr('lb.title')}</h2>
           <p className="mt-2 max-w-[600px] text-[15px] leading-relaxed text-ink-soft">
-            {metric === 'shift_rate'
-              ? `${stateName} towns by shift rate so far in ${month}, the share of trips taken actively.`
-              : `${stateName} towns by active trips so far in ${month}.`}{' '}
+            {tr(metric === 'shift_rate' ? 'lb.lede_rate' : 'lb.lede_trips', { state: stateName, month })}{' '}
             {/* What's behind each row — the leaderboard doubles as a directory of full town pages. */}
-            Every town here has its own page: local stats, popular routes, events, and ways to get involved.
+            {tr('lb.directory')}
             {highlighted && gap > 0 && (
               <>
                 {' '}
                 <span className="font-semibold text-forest">
-                  {highlighted.town_name} is {gap.toLocaleString()} {metric === 'shift_rate' ? (gap === 1 ? 'point' : 'points') : 'trips'} behind #1.
+                  {tr(metric === 'shift_rate' ? (gap === 1 ? 'lb.behind_point' : 'lb.behind_points') : 'lb.behind_trips', { town: highlighted.town_name, gap: num(gap) })}
                 </span>
               </>
             )}
           </p>
         </div>
-        <div className="inline-flex rounded-full border border-navy/20 p-0.5" aria-label="Rank by">
-          {([['shift_rate', 'Shift rate'], ['active_trips', 'Active trips']] as [Metric, string][]).map(([m, label]) => (
+        <div className="inline-flex rounded-full border border-navy/20 p-0.5" aria-label={tr('lb.rank_by')}>
+          {([['shift_rate', tr('lb.sort_rate')], ['active_trips', tr('lb.sort_trips')]] as [Metric, string][]).map(([m, label]) => (
             <button
               key={m}
               onClick={() => setMetric(m)}
@@ -93,7 +98,7 @@ export default function TownLeaderboardBoard({
           return (
             <li key={t.group_id}>
               <Link
-                href={`/shift/towns/${t.slug}`}
+                href={withLang(`/shift/towns/${t.slug}`, locale)}
                 className={`group grid grid-cols-[1.75rem_minmax(0,1fr)_3.75rem_1rem] items-center gap-3 border-b border-navy/15 px-2 py-3 transition-colors hover:bg-navy/[0.03] md:grid-cols-[2.5rem_13rem_1fr_5.5rem_1rem] ${
                   isMe ? 'bg-forest/[0.07]' : ''
                 }`}
@@ -104,7 +109,7 @@ export default function TownLeaderboardBoard({
                     {t.town_name}
                   </span>
                   <span className="ml-2 hidden text-[13px] text-ink-soft md:inline">
-                    {t.active_users_month} active in {month}
+                    {tr('lb.active_in', { count: t.active_users_month, month })}
                   </span>
                 </span>
                 {/* Bar only fits alongside the arrow at md+; on phones the
@@ -113,7 +118,7 @@ export default function TownLeaderboardBoard({
                   <span className={`block h-full rounded-full ${isMe ? 'bg-forest' : 'bg-navy/25'}`} style={{ width: `${pct}%` }} />
                 </span>
                 <span className="text-right text-[15px] font-semibold tabular-nums text-navy">
-                  {metric === 'shift_rate' ? `${t.shift_rate}%` : t.active_trips_month.toLocaleString()}
+                  {metric === 'shift_rate' ? `${t.shift_rate}%` : num(t.active_trips_month)}
                 </span>
                 <ArrowRight size={16} className="text-forest transition-transform group-hover:translate-x-0.5" aria-hidden />
               </Link>

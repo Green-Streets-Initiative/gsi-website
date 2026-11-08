@@ -14,31 +14,43 @@ import {
   MIN_RANKED_TRIPS,
   MIN_RANKED_TOWNS_PER_STATE,
 } from '@/lib/towns/queries'
-import { TownLeaderboard } from '@/components/towns/TownSections'
+import { TownLeaderboard, townMonth, townNum } from '@/components/towns/TownSections'
+import HtmlLang from '@/components/HtmlLang'
+import { rich } from '@/components/towns/rich'
+import { siteLocale } from '@/lib/site-locale'
+import { translator, withLang } from '@/lib/site-i18n'
+import { townsStrings } from '@/lib/site-strings/towns'
 
-// Evergreen hub — the internal-link parent for every town page.
+// Evergreen hub — the internal-link parent for every town page. It renders in
+// the reader's language (?lang= or Accept-Language), which makes it per request;
+// revalidate still caches the directory query.
 export const revalidate = 3600
+
+type SP = { searchParams: Promise<{ lang?: string | string[] }> }
 
 const SITE_URL = 'https://www.gogreenstreets.org'
 const IOS_URL = process.env.NEXT_PUBLIC_IOS_URL || ''
 const ANDROID_URL = process.env.NEXT_PUBLIC_ANDROID_URL || ''
 
-export const metadata: Metadata = {
-  title: 'Shift Towns — How Our Communities Move | Green Streets Initiative',
-  description:
-    'Live community stats on walking, biking, and transit, town by town. See which towns are moving the most, follow the friendly competition, and put your town on the board.',
-  alternates: { canonical: `${SITE_URL}/shift/towns` },
-  openGraph: {
-    title: 'Shift Towns — How Our Communities Move',
-    description:
-      'Live community stats on walking, biking, and transit, town by town. Follow the friendly competition between towns.',
-    url: `${SITE_URL}/shift/towns`,
-    siteName: 'Green Streets Initiative',
-    type: 'website',
-  },
+export async function generateMetadata({ searchParams }: SP): Promise<Metadata> {
+  const t = translator(townsStrings, await siteLocale((await searchParams).lang))
+  return {
+    title: t('hub.meta_title'),
+    description: t('hub.meta_desc'),
+    alternates: { canonical: `${SITE_URL}/shift/towns` },
+    openGraph: {
+      title: t('hub.og_title'),
+      description: t('hub.og_desc'),
+      url: `${SITE_URL}/shift/towns`,
+      siteName: 'Green Streets Initiative',
+      type: 'website',
+    },
+  }
 }
 
-export default async function TownsHubPage() {
+export default async function TownsHubPage({ searchParams }: SP) {
+  const locale = await siteLocale((await searchParams).lang)
+  const t = translator(townsStrings, locale)
   const directory = await getTownDirectory()
   // Three tiers, and they are not the same question:
   //   published  — has a town page (member gate)
@@ -73,36 +85,30 @@ export default async function TownsHubPage() {
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'WebPage',
-    name: 'Shift Towns — How Our Communities Move',
+    name: t('hub.og_title'),
     url: `${SITE_URL}/shift/towns`,
-    description:
-      'Live community stats on walking, biking, and transit, town by town, from the Shift app by Green Streets Initiative.',
+    description: t('hub.ld_desc'),
     isPartOf: { '@type': 'WebSite', name: 'Green Streets Initiative', url: SITE_URL },
   }
 
   return (
     <>
-      <Nav variant="light" />
+      <Nav variant="light" locale={locale} />
+      <HtmlLang locale={locale} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <main className="bg-cream">
         <PageHero
-          eyebrow="Shift Towns"
-          title={
-            <>
-              Our towns are <em className="text-green-deep">on the move.</em>
-            </>
-          }
-          lede={
-            <>
-              Every walk, bike ride, and transit trip logged on Shift adds to a town&apos;s totals. So far in{' '}
-              {new Date().toLocaleDateString('en-US', { month: 'long' })}, {totals.users.toLocaleString()} neighbors have logged{' '}
-              {totals.trips.toLocaleString()} active trips across {published.length} towns.
-            </>
-          }
+          eyebrow={t('eyebrow')}
+          title={rich(t('hub.title'), { em: (c) => <em className="text-green-deep">{c}</em> })}
+          lede={t('hub.lede', {
+            month: townMonth(locale),
+            users: townNum(totals.users, locale),
+            trips: townNum(totals.trips, locale),
+            towns: published.length,
+          })}
         >
           <p className="mt-4 max-w-[560px] text-[12px] leading-relaxed text-ink-soft">
-            Based on trips logged by <b className="font-semibold text-navy">Shift users</b> in each town — a growing sample, meant as an
-            interesting local signal, not an official or census-level count.
+            {rich(t('hub.sample'), { b: (c) => <b className="font-semibold text-navy">{c}</b> })}
           </p>
         </PageHero>
 
@@ -113,7 +119,8 @@ export default async function TownsHubPage() {
             <TownLeaderboard
               directory={directory}
               state={state}
-              title={i === 0 ? 'Friendly competition' : `${stateLabel(state)} towns`}
+              title={i === 0 ? t('lb.title') : t('hub.board_state', { state: stateLabel(state) })}
+              locale={locale}
             />
           </Section>
         ))}
@@ -123,23 +130,22 @@ export default async function TownsHubPage() {
         {unranked.length > 0 && (
           <Section shape="straight" width="read">
             <div className="max-w-[720px] border-t border-navy/15 pt-6">
-              <h2 className="font-serif text-[1.375rem] leading-tight text-navy">Also on Shift</h2>
+              <h2 className="font-serif text-[1.375rem] leading-tight text-navy">{t('hub.also_title')}</h2>
               <p className="mt-3 text-[1.0625rem] leading-[1.65] text-ink-soft">
-                {unranked.map((t, i) => (
-                  <span key={t.group_id}>
-                    {i > 0 && ', '}
-                    <Link href={`/shift/towns/${t.slug}`} className="font-semibold text-navy underline decoration-navy/30 underline-offset-2 hover:text-forest hover:decoration-forest">
-                      {t.town_name}
-                      {t.state !== boards[0] && ` (${t.state})`}
-                    </Link>
-                  </span>
-                ))}{' '}
-                {unranked.length === 1
-                  ? "has a page but isn't on a board yet."
-                  : "have pages but aren't on a board yet."}{' '}
-                A town joins its state&apos;s board once it logs {MIN_RANKED_TRIPS}+ trips in a
-                month — and a state needs at least {MIN_RANKED_TOWNS_PER_STATE} of them to hold a
-                competition.
+                {rich(t(unranked.length === 1 ? 'hub.also_one' : 'hub.also_many'), {
+                  nodes: {
+                    list: unranked.map((town, i) => (
+                      <span key={town.group_id}>
+                        {i > 0 && t('list.sep')}
+                        <Link href={withLang(`/shift/towns/${town.slug}`, locale)} className="font-semibold text-navy underline decoration-navy/30 underline-offset-2 hover:text-forest hover:decoration-forest">
+                          {town.town_name}
+                          {town.state !== boards[0] && ` (${town.state})`}
+                        </Link>
+                      </span>
+                    )),
+                  },
+                })}{' '}
+                {t('hub.also_rule', { trips: MIN_RANKED_TRIPS, towns: MIN_RANKED_TOWNS_PER_STATE })}
               </p>
             </div>
           </Section>
@@ -149,14 +155,15 @@ export default async function TownsHubPage() {
         {nearlyThere.length > 0 && (
           <Section shape="wanderLeft" width="read">
             <div className="max-w-[720px] border-t border-navy/15 pt-6">
-              <h2 className="font-serif text-[1.375rem] leading-tight text-navy">Just getting started</h2>
+              <h2 className="font-serif text-[1.375rem] leading-tight text-navy">{t('hub.started_title')}</h2>
               <p className="mt-3 text-[1.0625rem] leading-[1.65] text-ink-soft">
-                {nearlyThere
-                  .map((t) => (t.state === boards[0] ? t.town_name : `${t.town_name} (${t.state})`))
-                  .join(', ')}
-                {remaining > 0 && `, and ${remaining.toLocaleString()} more towns`}{' '}
-                {nearlyThere.length === 1 && remaining === 0 ? 'is' : 'are'} building momentum. A town
-                gets its own page once {PUBLICATION_GATE}+ neighbors are on Shift — invite yours in.
+                {t(remaining > 0 ? 'hub.started_more' : nearlyThere.length === 1 ? 'hub.started_one' : 'hub.started_many', {
+                  list: nearlyThere
+                    .map((town) => (town.state === boards[0] ? town.town_name : `${town.town_name} (${town.state})`))
+                    .join(t('list.sep')),
+                  count: townNum(remaining, locale),
+                })}{' '}
+                {t('hub.started_rule', { gate: PUBLICATION_GATE })}
               </p>
             </div>
           </Section>
@@ -165,16 +172,15 @@ export default async function TownsHubPage() {
         {/* CTA */}
         <Section shape="terminal" closing>
           <h2 className="font-serif text-[clamp(2.25rem,5vw,3.75rem)] font-normal leading-[1.02] text-navy">
-            Put your town <em className="text-green-deep">on the board.</em>
+            {rich(t('hub.cta_title'), { em: (c) => <em className="text-green-deep">{c}</em> })}
           </h2>
           <p className="mt-5 max-w-[520px] text-[1.0625rem] leading-[1.65] text-ink-soft">
-            Shift counts your walks, rides, and transit trips automatically — free, from Green
-            Streets Initiative.
+            {t('hub.cta_body')}
           </p>
           <StoreButtons iosUrl={iosUrl} androidUrl={androidUrl} placement="towns_hub" tone="light" className="mt-8 [&>a]:max-[420px]:basis-full" />
         </Section>
       </main>
-      <Footer variant="light" />
+      <Footer variant="light" locale={locale} />
     </>
   )
 }

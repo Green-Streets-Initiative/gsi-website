@@ -1,0 +1,70 @@
+/**
+ * RoamCard's fixed words (mode, length, where it starts), for translated
+ * pages that list roams. Roam names, hooks and regions stay as stored.
+ */
+import { defineStrings } from '@/lib/site-i18n'
+
+export const roamCardStrings = defineStrings(
+  {
+    'mode.bike': 'Bike',
+    'mode.walk': 'Walk',
+    'mode.transit': 'Transit',
+    'mode.multi': 'Walk + transit',
+    'dur.min': '{m} min',
+    'dur.hr': '{h} hr',
+    'dur.hr_min': '{h} hr {m} min',
+    'len.mi': '{n} mi',
+    'len.route': '{n} mi route',
+    'start.near': 'Starts {near}',
+    'start.from': 'Starts {miles} mi {from}',
+    'next_group': 'Next group ride: {date}',
+    'completed': '{count} completed',
+  },
+  {
+    es: {
+      'mode.bike': 'Bici',
+      'mode.walk': 'A pie',
+      'mode.transit': 'Transporte público',
+      'mode.multi': 'A pie + transporte',
+      'dur.min': '{m} min',
+      'dur.hr': '{h} h',
+      'dur.hr_min': '{h} h {m} min',
+      'len.mi': '{n} mi',
+      'len.route': 'ruta de {n} mi',
+      'start.near': 'Empieza {near}',
+      'start.from': 'Empieza a {miles} mi {from}',
+      'next_group': 'Próximo paseo en grupo: {date}',
+      'completed': '{count} lo completaron',
+    },
+    'pt-BR': {
+      'mode.bike': 'Bicicleta',
+      'mode.walk': 'A pé',
+      'mode.transit': 'Transporte público',
+      'mode.multi': 'A pé + transporte',
+      'dur.min': '{m} min',
+      'dur.hr': '{h} h',
+      'dur.hr_min': '{h} h {m} min',
+      'len.mi': '{n} mi',
+      'len.route': 'rota de {n} mi',
+      'start.near': 'Começa {near}',
+      'start.from': 'Começa a {miles} mi {from}',
+      'next_group': 'Próximo passeio em grupo: {date}',
+      'completed': '{count} concluíram',
+    },
+    'zh-Hans': {
+      'mode.bike': '骑行',
+      'mode.walk': '步行',
+      'mode.transit': '公共交通',
+      'mode.multi': '步行 + 公交',
+      'dur.min': '{m} 分钟',
+      'dur.hr': '{h} 小时',
+      'dur.hr_min': '{h} 小时 {m} 分钟',
+      'len.mi': '{n} 英里',
+      'len.route': '全程 {n} 英里',
+      'start.near': '起点{near}',
+      'start.from': '起点{from} {miles} 英里',
+      'next_group': '下次团体骑行：{date}',
+      'completed': '{count} 人完成',
+    },
+  },
+)

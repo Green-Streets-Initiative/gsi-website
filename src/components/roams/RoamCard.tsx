@@ -2,37 +2,44 @@ import Link from 'next/link'
 import PhotoCredit from '@/components/PhotoCredit'
 import { MapPin, UsersRound } from 'lucide-react'
 import type { RoamSummary } from '@/lib/roams/queries'
+import { siteDate, translator, type SiteLocale } from '@/lib/site-i18n'
+import { roamCardStrings } from '@/lib/site-strings/roam-card'
 
 /** Minimum shape the card needs — TownRoam (towns/queries) also satisfies it. */
 export type RoamCardData = Omit<RoamSummary, 'featured' | 'tagline'> & { tagline?: string | null }
 
 const MIN_COMPLETIONS_TO_SHOW = 10
 
-const MODE_LABEL: Record<string, string> = {
-  bike: 'Bike',
-  walk: 'Walk',
-  transit: 'Transit',
-  multi: 'Walk + transit',
+// Words in site-strings/roam-card.ts. Every helper takes an optional
+// `locale`; callers that pass none stay English.
+const MODE_KEY: Record<string, 'mode.bike' | 'mode.walk' | 'mode.transit' | 'mode.multi'> = {
+  bike: 'mode.bike',
+  walk: 'mode.walk',
+  transit: 'mode.transit',
+  multi: 'mode.multi',
 }
 
 /** "27 min", "1 hr 30 min", "7 hr" — minutes past an hour round to 5. */
-export function roamDuration(min: number): string {
+export function roamDuration(min: number, locale: SiteLocale = 'en'): string {
+  const t = translator(roamCardStrings, locale)
   const m = Math.round(min)
-  if (m < 60) return `${m} min`
+  if (m < 60) return t('dur.min', { m })
   const h = Math.floor(m / 60)
   const rest = Math.round((m % 60) / 5) * 5
-  return rest === 60 ? `${h + 1} hr` : rest ? `${h} hr ${rest} min` : `${h} hr`
+  return rest === 60 ? t('dur.hr', { h: h + 1 }) : rest ? t('dur.hr_min', { h, m: rest }) : t('dur.hr', { h })
 }
 
+/** `routeLength` words the distance as the route's ("7.3 mi route"). */
 export function roamMetaLine(r: {
   mode: string
   distance_miles: number | null
   estimated_minutes: number | null
-}): string {
+}, locale: SiteLocale = 'en', routeLength = false): string {
+  const t = translator(roamCardStrings, locale)
   return [
-    MODE_LABEL[r.mode] ?? r.mode,
-    r.distance_miles != null ? `${r.distance_miles} mi` : null,
-    r.estimated_minutes != null ? roamDuration(r.estimated_minutes) : null,
+    MODE_KEY[r.mode] ? t(MODE_KEY[r.mode]) : r.mode,
+    r.distance_miles != null ? t(routeLength ? 'len.route' : 'len.mi', { n: r.distance_miles }) : null,
+    r.estimated_minutes != null ? roamDuration(r.estimated_minutes, locale) : null,
   ]
     .filter(Boolean)
     .join(' · ')
@@ -75,8 +82,8 @@ const THEME: Record<Tone, { card: string; name: string; meta: string; start: str
 }
 
 /** "Sun, Oct 25" in Boston time. */
-export function shortEventDay(date: string): string {
-  return new Date(`${date}T12:00:00-04:00`).toLocaleDateString('en-US', {
+export function shortEventDay(date: string, locale: SiteLocale = 'en'): string {
+  return siteDate(locale, `${date}T12:00:00-04:00`, {
     weekday: 'short',
     month: 'short',
     day: 'numeric',
@@ -90,10 +97,11 @@ export type RoamStart = { miles: number; near: string; from: string }
 
 const ON_THE_SPOT_MILES = 0.15
 
-function startLine(s: RoamStart): string {
-  if (s.miles < ON_THE_SPOT_MILES) return `Starts ${s.near}`
+function startLine(s: RoamStart, locale: SiteLocale): string {
+  const t = translator(roamCardStrings, locale)
+  if (s.miles < ON_THE_SPOT_MILES) return t('start.near', { near: s.near })
   const mi = s.miles < 10 ? Math.round(s.miles * 10) / 10 : Math.round(s.miles)
-  return `Starts ${mi} mi ${s.from}`
+  return t('start.from', { miles: mi, from: s.from })
 }
 
 /** Hero-image roam card, shared by the roams index, the town pages, and the school pages.
@@ -106,6 +114,7 @@ export default function RoamCard({
   nextGroupDate,
   filterable = false,
   href,
+  locale = 'en',
 }: {
   roam: RoamCardData
   tone?: Tone
@@ -116,9 +125,12 @@ export default function RoamCard({
   filterable?: boolean
   /** Where the card goes; defaults to the roam page. Tour roams pass their trail page. */
   href?: string
+  /** The page's language; `start.near`/`from` must already be in it. */
+  locale?: SiteLocale
 }) {
   const t = THEME[tone]
-  const meta = roamMetaLine(roam)
+  const tr = translator(roamCardStrings, locale)
+  const meta = roamMetaLine(roam, locale, !!start)
   const data = filterable
     ? {
         'data-roam-card': '',
@@ -159,8 +171,8 @@ export default function RoamCard({
         </p>
         <p className={`mt-0.5 ${t.meta}`}>
           {filterable && <span data-roam-distance hidden className={t.start} />}
-          {start && <span className={t.start}>{startLine(start)} · </span>}
-          {start && roam.distance_miles != null ? meta.replace(`${roam.distance_miles} mi`, `${roam.distance_miles} mi route`) : meta}
+          {start && <span className={t.start}>{startLine(start, locale)} · </span>}
+          {meta}
           {roam.region ? ` · ${roam.region}` : ''}
         </p>
         {/* Every card gets its one line: the hook, or the tagline when there's no hook. */}
@@ -168,13 +180,13 @@ export default function RoamCard({
         {nextGroupDate && (
           <p className={t.group}>
             <UsersRound size={13} aria-hidden />
-            Next group ride: {shortEventDay(nextGroupDate)}
+            {tr('next_group', { date: shortEventDay(nextGroupDate, locale) })}
           </p>
         )}
         {roam.completion_count >= MIN_COMPLETIONS_TO_SHOW && (
           <p className={t.done}>
             <MapPin size={9} />
-            {roam.completion_count} completed
+            {tr('completed', { count: roam.completion_count })}
           </p>
         )}
       </div>

@@ -3,24 +3,26 @@
 import { useState } from 'react'
 import { ArrowRight, ShieldCheck } from 'lucide-react'
 import { openedLink, openedMeta, openedPhoto, openedPlace, openedTitle, type OpenedItem } from '@/lib/new-infra'
+import type { SiteLocale } from '@/lib/site-i18n'
 
 /**
  * One opened stretch, the same on the ride page and the town page: a picture
  * of it (the trail's photo, or Street View taken after it opened), what it is,
  * when it opened and how long, where it is, and where to read more.
  * `tone` picks the page's palette: the ride page's event tokens or the town
- * page's cream.
+ * page's cream. `locale` is the page's language; without it the row is English.
  */
-export default function NewInfraRow({ o, onRoute, showTown, tone }: {
+export default function NewInfraRow({ o, onRoute, showTown, tone, locale = 'en' }: {
   o: OpenedItem
   onRoute: boolean
   showTown: boolean
   tone: 'ride' | 'town'
+  locale?: SiteLocale
 }) {
   const photo = openedPhoto(o)
   const [failed, setFailed] = useState(false)
-  const place = openedPlace(o, showTown)
-  const link = openedLink(o)
+  const place = openedPlace(o, showTown, locale)
+  const link = openedLink(o, locale)
   const c = tone === 'ride'
     ? { title: 'text-(--ev-ink)', meta: 'text-(--ev-ink-75)', link: 'text-(--ev-accent)', icon: 'bg-(--ev-accent-tint-14) text-(--ev-accent)', thumb: 'bg-(--ev-panel)' }
     : { title: 'text-navy', meta: 'text-ink-soft', link: 'text-green-deep', icon: 'bg-green-deep/10 text-green-deep', thumb: 'bg-navy/5' }
@@ -44,8 +46,8 @@ export default function NewInfraRow({ o, onRoute, showTown, tone }: {
         </span>
       )}
       <div className="min-w-0">
-        <p className={`text-[15px] font-semibold ${c.title}`}>{openedTitle(o)}</p>
-        <p className={`mt-0.5 text-[14px] ${c.meta}`}>{openedMeta(o, onRoute)}</p>
+        <p className={`text-[15px] font-semibold ${c.title}`}>{openedTitle(o, locale)}</p>
+        <p className={`mt-0.5 text-[14px] ${c.meta}`}>{openedMeta(o, onRoute, locale)}</p>
         {place && <p className={`text-[14px] ${c.meta}`}>{place}</p>}
         {link && (
           <a

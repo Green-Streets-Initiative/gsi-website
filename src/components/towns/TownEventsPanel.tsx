@@ -4,18 +4,27 @@ import { Calendar } from 'lucide-react'
 import { formatDistance, getTagMeta, getTypeMeta, parseEventDate, TYPE_FILTER_ORDER } from '@/lib/events'
 import { EVENT_TYPE_ICONS } from '@/components/events/event-type-icons'
 import type { TownEvent } from '@/lib/towns/queries'
+import { siteDate, translator, withLang, type SiteLocale } from '@/lib/site-i18n'
+import { townsStrings } from '@/lib/site-strings/towns'
 
 /**
  * Grouped events panel for the town pages: events bucketed by type (in the
  * canonical TYPE_FILTER_ORDER), each group headed by its Lucide icon tile in
  * the type color — same visual language as the events calendar's EventCard.
  * Rows show date · location · distance from the town.
+ *
+ * `locale` (translation plan, batch 5): type and tag labels come from
+ * site-strings/towns.ts in other languages; English keeps lib/events' labels.
  */
 
-function eventDateLabel(e: TownEvent): string {
+type TK = keyof (typeof townsStrings)['en']
+
+function eventDateLabel(e: TownEvent, locale: SiteLocale): string {
   const d = parseEventDate(e.event_date)
-  return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+  return siteDate(locale, d, { weekday: 'short', month: 'short', day: 'numeric' })
 }
+
+const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 
 type Tone = 'dark' | 'light'
 
@@ -46,9 +55,24 @@ const THEME: Record<Tone, { panel: string; h3: string; sub: string; row: string;
   },
 }
 
-export default function TownEventsPanel({ events, townName, tone = 'dark' }: { events: TownEvent[]; townName: string; tone?: Tone }) {
+export default function TownEventsPanel({ events, townName, tone = 'dark', locale = 'en' }: { events: TownEvent[]; townName: string; tone?: Tone; locale?: SiteLocale }) {
   if (events.length === 0) return null
   const t = THEME[tone]
+  const tr = translator(townsStrings, locale)
+  const en = locale === 'en'
+  const typeLabel = (type: string, fallback: string) => (en || !(`evtype.${type}` in townsStrings.en) ? fallback : tr(`evtype.${type}` as TK))
+  const tagLabel = (tag: string, fallback: string) => (en || !(`tag.${tag}` in townsStrings.en) ? fallback : tr(`tag.${tag}` as TK))
+  // "Saturdays · next Sat, Nov 8": the server names the weekday in English.
+  const recurring = (e: TownEvent) => {
+    if (!e.recurring_weekday) return ''
+    const day = WEEKDAYS.indexOf(e.recurring_weekday)
+    if (en || day < 0) return `${e.recurring_weekday}s · next `
+    return `${tr(`ev.weekly_${day}` as TK)} · `
+  }
+  const when = (e: TownEvent) =>
+    !en && e.recurring_weekday && WEEKDAYS.includes(e.recurring_weekday)
+      ? tr('ev.next', { when: eventDateLabel(e, locale) })
+      : eventDateLabel(e, locale)
 
   // Group by type in the canonical order — but Open Streets hoists to the top
   // when present (the marquee car-free events lead the panel).
@@ -62,10 +86,10 @@ export default function TownEventsPanel({ events, townName, tone = 'dark' }: { e
   return (
     <div className={t.panel}>
       <h3 className={t.h3}>
-        Events near {townName}
+        {tr('ev.title', { town: townName })}
       </h3>
       <p className={t.sub}>
-        A few picks over the next 30 days — the full calendar has everything.
+        {tr('ev.sub')}
       </p>
       <div className="space-y-5">
         {groups.map(({ type, items }) => {
@@ -84,7 +108,7 @@ export default function TownEventsPanel({ events, townName, tone = 'dark' }: { e
                   className={t.groupInk ? 'text-xs font-bold uppercase tracking-widest text-navy' : 'text-xs font-bold uppercase tracking-widest'}
                   style={t.groupInk ? undefined : { color: meta.color }}
                 >
-                  {meta.label}
+                  {typeLabel(type, meta.label)}
                   {items.length > 1 ? ` · ${items.length}` : ''}
                 </span>
               </div>
@@ -92,15 +116,15 @@ export default function TownEventsPanel({ events, townName, tone = 'dark' }: { e
                 {items.map((e) => (
                   <Link
                     key={e.id}
-                    href={eventPath(e)}
+                    href={withLang(eventPath(e), locale)}
                     className={t.row}
                   >
                     <p className={t.title}>{e.title}</p>
                     <p className={t.meta}>
-                      {e.recurring_weekday ? `${e.recurring_weekday}s · next ` : ''}
-                      {eventDateLabel(e)}
+                      {recurring(e)}
+                      {when(e)}
                       {e.location_name ? ` · ${e.location_name}` : ''}
-                      {` · ${formatDistance(e.distance_miles)} away`}
+                      {` · ${tr('ev.away', { distance: en ? formatDistance(e.distance_miles) : tr('unit.mi', { n: formatDistance(e.distance_miles).replace(/ mi$/, '') }) })}`}
                     </p>
                     {e.tags.length > 0 && (
                       <span className="mt-1.5 flex flex-wrap gap-1.5">
@@ -112,7 +136,7 @@ export default function TownEventsPanel({ events, townName, tone = 'dark' }: { e
                               className="rounded-full px-2 py-0.5 text-[10px] font-semibold"
                               style={{ color: meta.color, backgroundColor: meta.bg }}
                             >
-                              {meta.label}
+                              {tagLabel(tag, meta.label)}
                             </span>
                           )
                         })}
@@ -125,8 +149,8 @@ export default function TownEventsPanel({ events, townName, tone = 'dark' }: { e
           )
         })}
       </div>
-      <Link href="/events" className={t.all}>
-        All community events &rarr;
+      <Link href={withLang('/events', locale)} className={t.all}>
+        {tr('ev.all')}
       </Link>
     </div>
   )

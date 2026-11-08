@@ -1,6 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { translator, type SiteLocale } from '@/lib/site-i18n'
+import { townsStrings } from '@/lib/site-strings/towns'
 
 /**
  * Town page section nav with scrollspy (Keith 07-14: the old chip ribbon was
@@ -29,9 +31,11 @@ const THEME: Record<Tone, { nav: string; label: string; active: string; idle: st
   },
 }
 
-export default function TownToc({ sections, tone = 'dark' }: { sections: Array<[href: string, label: string]>; tone?: Tone }) {
+/** `sections` labels come translated from the page; `locale` covers the nav's own words. */
+export default function TownToc({ sections, tone = 'dark', locale = 'en' }: { sections: Array<[href: string, label: string]>; tone?: Tone; locale?: SiteLocale }) {
   const [activeId, setActiveId] = useState<string | null>(null)
   const t = THEME[tone]
+  const tr = translator(townsStrings, locale)
 
   useEffect(() => {
     const ids = sections.map(([href]) => href.slice(1))
@@ -56,13 +60,13 @@ export default function TownToc({ sections, tone = 'dark' }: { sections: Array<[
 
   return (
     <nav
-      aria-label="Page sections"
+      aria-label={tr('toc.aria')}
       className={t.nav}
     >
       <div className="relative mx-auto max-w-[960px]">
         <div className="flex items-center gap-2 overflow-x-auto whitespace-nowrap px-4 py-2.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <span className={t.label}>
-            On this page
+            {tr('toc.on_page')}
           </span>
           {sections.map(([href, label]) => {
             const isActive = activeId === href.slice(1)

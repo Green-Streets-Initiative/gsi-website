@@ -9,6 +9,9 @@ export interface TownTrail {
   miles: number | null
   closed: boolean
   fromTo: string | null
+  /** The stored end names behind `fromTo`, for pages that word "X to Y" in another language. */
+  from: string | null
+  to: string | null
   /** The trail's line drawn in a 120×72 box, or null when no line is stored. */
   path: string | null
   /** In the town itself (trails.towns), not just near it. */
@@ -55,6 +58,8 @@ export async function getTownTrails(townName: string, centroid: { lat: number; l
         miles: t.full_miles,
         closed: t.closed,
         fromTo: t.from_label && t.to_label ? `${t.from_label} to ${t.to_label}` : null,
+        from: t.from_label || null,
+        to: t.to_label || null,
         path: shape?.d ?? null,
         inTown,
       }

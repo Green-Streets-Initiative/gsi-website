@@ -1,4 +1,6 @@
 import type { TownCivicEvent, TownResource } from '@/lib/towns/queries'
+import { siteDate, siteTime, translator, type SiteLocale } from '@/lib/site-i18n'
+import { townsStrings } from '@/lib/site-strings/towns'
 
 /**
  * Shared "what's happening now" selection for a town — used by BOTH the
@@ -10,22 +12,25 @@ import type { TownCivicEvent, TownResource } from '@/lib/towns/queries'
  * All town pages are Massachusetts — format meeting times in ET explicitly.
  * Vercel renders in UTC; relying on server-local time showed the July 14
  * McGrath meeting as "11:00 PM" in production (caught 07-13).
+ *
+ * The town page passes its `locale` (translation plan, batch 5); the digest
+ * email passes nothing and stays English. Stored titles and labels stay as is.
  */
 
 export const TOWN_TZ = 'America/New_York'
 
-export function featuredDateChip(iso: string): string {
+export function featuredDateChip(iso: string, locale: SiteLocale = 'en'): string {
   const d = new Date(iso)
   return (
-    d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: TOWN_TZ }) +
+    siteDate(locale, d, { weekday: 'short', month: 'short', day: 'numeric', timeZone: TOWN_TZ }) +
     ' · ' +
-    d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: TOWN_TZ })
+    siteTime(locale, d, { hour: 'numeric', minute: '2-digit', timeZone: TOWN_TZ })
   )
 }
 
 /** Date-only strings ("2026-07-16") — no timezone round-trip at all. */
-export function dateOnlyChip(isoDate: string): string {
-  return new Date(isoDate + 'T12:00:00Z').toLocaleDateString('en-US', {
+export function dateOnlyChip(isoDate: string, locale: SiteLocale = 'en'): string {
+  return siteDate(locale, isoDate + 'T12:00:00Z', {
     weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC',
   })
 }
@@ -47,10 +52,11 @@ export function isVolunteerDrive(item: TownCivicEvent): boolean {
 }
 
 /** Wall-clock "19:00[:00]" → "7:00 PM" — pipeline times are already local. */
-export function wallTime(hhmm: string | null): string | null {
+export function wallTime(hhmm: string | null, locale: SiteLocale = 'en'): string | null {
   const m = hhmm?.match(/^(\d{2}):(\d{2})/)
   if (!m) return null
   const h = Number(m[1])
+  if (locale !== 'en') return siteTime(locale, Date.UTC(2000, 0, 1, h, Number(m[2])), { hour: 'numeric', minute: '2-digit', timeZone: 'UTC' })
   return `${h % 12 === 0 ? 12 : h % 12}:${m[2]} ${h >= 12 ? 'PM' : 'AM'}`
 }
 
@@ -91,8 +97,10 @@ export function buildFeaturedCandidates(
   linkFor: (url: string | null) => string,
   now: number = Date.now(),
   horizonDays = 30,
+  locale: SiteLocale = 'en',
 ): FeaturedSelection {
   const horizon = now + horizonDays * 24 * 3600 * 1000
+  const tr = translator(townsStrings, locale)
 
   // Pipeline items (admin-published meetings/hearings/comment periods).
   // Fully undated items are open-ended feedback windows: always in-window,
@@ -104,16 +112,16 @@ export function buildFeaturedCandidates(
         : ce.comment_deadline
         ? new Date(`${ce.comment_deadline}T23:59:00-04:00`).getTime()
         : horizon - 60000
-      const t = wallTime(ce.hearing_time)
+      const t = wallTime(ce.hearing_time, locale)
       const chip = ce.hearing_date
-        ? dateOnlyChip(ce.hearing_date) + (t ? ` · ${t}` : '') + (ce.hearing_type === 'virtual' ? ' · virtual' : '')
+        ? dateOnlyChip(ce.hearing_date, locale) + (t ? ` · ${t}` : '') + (ce.hearing_type === 'virtual' ? ` · ${tr('civic.virtual')}` : '')
         : ce.comment_deadline
         ? isVolunteerDrive(ce)
-          ? `Sign up by ${dateOnlyChip(ce.comment_deadline)}`
-          : `Comment by ${dateOnlyChip(ce.comment_deadline)}`
+          ? tr('civic.sign_up_by', { date: dateOnlyChip(ce.comment_deadline, locale) })
+          : tr('civic.comment_by', { date: dateOnlyChip(ce.comment_deadline, locale) })
         : isRecruitment(ce)
-        ? 'Applications open'
-        : 'Open for feedback'
+        ? tr('civic.apps_open')
+        : tr('civic.open_feedback')
       // Lead with the community name ("Reid Overpass") when the official
       // title doesn't carry it — that's the name residents scan for.
       const name = ce.community_name?.trim()
@@ -128,8 +136,8 @@ export function buildFeaturedCandidates(
       // A generic "See details" from the pipeline yields to the email label.
       const generic = !ce.action_label || /^see details$/i.test(ce.action_label.trim())
       const label = !url && email && generic
-        ? (isVolunteerDrive(ce) ? 'Email to volunteer' : 'Email to comment')
-        : ce.action_label ?? (ce.virtual_link ? 'Register' : 'See details')
+        ? tr(isVolunteerDrive(ce) ? 'civic.email_volunteer' : 'civic.email_comment')
+        : ce.action_label ?? tr(ce.virtual_link ? 'civic.register' : 'civic.see_details')
       return {
         key: `civic-${ce.id}`,
         chip,
@@ -164,10 +172,10 @@ export function buildFeaturedCandidates(
   })
   const resourceFeatured: FeaturedItem[] = datedResources.map((r) => ({
     key: `res-${r.id}`,
-    chip: featuredDateChip(r.happens_at!),
+    chip: featuredDateChip(r.happens_at!, locale),
     title: r.name,
     desc: r.description,
-    label: r.action_label ?? 'See details',
+    label: r.action_label ?? tr('civic.see_details'),
     href: linkFor(r.url),
     sort: new Date(r.happens_at!).getTime(),
     resource: r,

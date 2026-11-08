@@ -40,10 +40,19 @@ import {
   TownLeaderboard,
   WhatIsShift,
 } from '@/components/towns/TownSections'
+import HtmlLang from '@/components/HtmlLang'
+import { rich } from '@/components/towns/rich'
+import { siteLocale } from '@/lib/site-locale'
+import { translator, withLang } from '@/lib/site-i18n'
+import { townsStrings } from '@/lib/site-strings/towns'
 
-// Evergreen, crawlable town pages — ISR, not force-dynamic. Stats refresh
-// hourly, which is plenty for month-to-date aggregates.
+// Evergreen, crawlable town pages. Stats refresh hourly, which is plenty for
+// month-to-date aggregates. The page renders in the reader's language (?lang=
+// from the app, else Accept-Language), which reads headers and so renders per
+// request; the OG images below stay prebuilt.
 export const revalidate = 3600
+
+type Props = { params: Promise<{ slug: string }>; searchParams: Promise<{ lang?: string | string[] }> }
 
 // Prebuild every published town (and its OG image) so the first Facebook scrape
 // of a cold slug doesn't pay the full Supabase chain inside the scraper's
@@ -66,12 +75,13 @@ const ANDROID_URL = process.env.NEXT_PUBLIC_ANDROID_URL || ''
 // stateLabel now lives with the directory data so the hub, the board and this
 // page all label states the same way (and cover all 50, not just the northeast).
 
-export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
   const { slug } = await params
+  const t = translator(townsStrings, await siteLocale((await searchParams).lang))
   const result = await getTownBySlug(slug)
-  if (!result) return { title: 'Town not found' }
+  if (!result) return { title: t('meta.not_found') }
   const { town } = result
-  const title = `Walking, Biking & Transit in ${town.town_name}, ${town.state} — Shift`
+  const title = t('meta.title', { town: town.town_name, state: town.state })
   // Lead with what the page helps you do, not with a stat. Four weeks of Search
   // Console data (2026-07-04→08-01) says the searches this page can win are
   // practical and personal — "how long does it take to walk a 20 minute drive",
@@ -80,7 +90,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   // The trip total stays, one clause later, as supporting proof.
   // Kept under ~155 chars so Google doesn't truncate it mid-sentence; the
   // longest town name in the directory still lands inside the budget.
-  const description = `Walking, biking and transit in ${town.town_name}: the routes neighbors use, local rides and events, and community stats.`
+  const description = t('meta.desc', { town: town.town_name })
   return {
     title,
     description,
@@ -96,8 +106,10 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   }
 }
 
-export default async function TownPage({ params }: { params: Promise<{ slug: string }> }) {
+export default async function TownPage({ params, searchParams }: Props) {
   const { slug } = await params
+  const locale = await siteLocale((await searchParams).lang)
+  const t = translator(townsStrings, locale)
   const result = await getTownBySlug(slug)
   if (!result) notFound()
   const { town, directory } = result
@@ -135,9 +147,9 @@ export default async function TownPage({ params }: { params: Promise<{ slug: str
     '@graph': [
       {
         '@type': 'WebPage',
-        name: `Walking, Biking & Transit in ${name}, ${town.state}`,
+        name: t('ld.name', { town: name, state: town.state }),
         url: `${SITE_URL}/shift/towns/${slug}`,
-        description: `Walking, biking and transit in ${name}, ${stateLabel(town.state)}: routes, local rides and events, and live community stats from the Shift app by Green Streets Initiative.`,
+        description: t('ld.desc', { town: name, stateName: stateLabel(town.state) }),
         isPartOf: { '@type': 'WebSite', name: 'Green Streets Initiative', url: SITE_URL },
         about: { '@type': 'City', name, address: { '@type': 'PostalAddress', addressLocality: name, addressRegion: town.state, addressCountry: 'US' } },
       },
@@ -170,7 +182,8 @@ export default async function TownPage({ params }: { params: Promise<{ slug: str
 
   return (
     <>
-      <Nav variant="light" />
+      <Nav variant="light" locale={locale} />
+      <HtmlLang locale={locale} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <main className="bg-cream">
         {/* Hero */}
@@ -180,7 +193,7 @@ export default async function TownPage({ params }: { params: Promise<{ slug: str
             <div className="hidden md:block" />
             <div className="max-w-[780px] pb-10 pt-12 md:pt-16">
               <Eyebrow>
-                <Link href="/shift/towns" className="underline-offset-4 hover:underline">Shift Towns</Link>
+                <Link href={withLang('/shift/towns', locale)} className="underline-offset-4 hover:underline">{t('eyebrow')}</Link>
                 {' '}&middot; {stateLabel(town.state)}
               </Eyebrow>
               {/* The h1 names the subject rather than making a claim about it.
@@ -189,26 +202,26 @@ export default async function TownPage({ params }: { params: Promise<{ slug: str
                   title tag and the practical, how-do-I-get-around intent behind
                   the queries the site actually receives. */}
               <h1 className="font-serif text-[clamp(2.5rem,6vw,4.25rem)] font-normal leading-[1.02] tracking-[-0.01em] text-navy">
-                Walking, biking &amp; transit in {name}
+                {t('hero.h1', { town: name })}
               </h1>
               <p className="mt-5 max-w-[600px] text-[1.125rem] leading-[1.6] text-ink-soft">
-                See the routes {name}{' '}neighbors actually walk, ride and take transit on, what&apos;s
-                happening locally, and how the town is trending — built from real trips logged in the
-                Shift app.
+                {t('hero.lede', { town: name })}
               </p>
               {/* Game-day parking pages (launch venue-parking, 2026-11-03). */}
               {slug === 'boston-ma' && (
                 <p className="mt-4 text-[1rem] leading-[1.6] text-navy">
-                  Going to a game? Parking and the T for{' '}
-                  <Link href="/parking/td-garden" className="whitespace-nowrap font-semibold text-forest underline underline-offset-4 hover:opacity-80">TD Garden</Link>
-                  {' '}and{' '}
-                  <Link href="/parking/fenway-park" className="whitespace-nowrap font-semibold text-forest underline underline-offset-4 hover:opacity-80">Fenway Park</Link>
+                  {rich(t('hero.game'), {
+                    nodes: {
+                      td: <Link href="/parking/td-garden" className="whitespace-nowrap font-semibold text-forest underline underline-offset-4 hover:opacity-80">TD Garden</Link>,
+                      fenway: <Link href="/parking/fenway-park" className="whitespace-nowrap font-semibold text-forest underline underline-offset-4 hover:opacity-80">Fenway Park</Link>,
+                    },
+                  })}
                 </p>
               )}
               {slug === 'foxborough-ma' && (
                 <p className="mt-4 text-[1rem] leading-[1.6] text-navy">
                   <Link href="/parking/gillette-stadium" className="font-semibold text-forest underline underline-offset-4 hover:opacity-80">
-                    Going to Gillette? The lots, the event train and rideshare
+                    {t('hero.gillette')}
                   </Link>
                 </p>
               )}
@@ -216,7 +229,7 @@ export default async function TownPage({ params }: { params: Promise<{ slug: str
                   actually are. Anchored: digest emails' forward-nudge links
                   land forwarded readers right here. */}
               <div id="digest" className="mt-7 scroll-mt-28">
-                <TownDigestSignup townName={name} townSlug={slug} variant="inline" />
+                <TownDigestSignup townName={name} townSlug={slug} variant="inline" locale={locale} />
               </div>
             </div>
           </div>
@@ -225,17 +238,18 @@ export default async function TownPage({ params }: { params: Promise<{ slug: str
         {/* Table of contents — scrollspy chips, sticky under the site nav */}
         <TownToc
           tone="light"
+          locale={locale}
           sections={[
-            ...(resources.length > 0 || civicEvents.length > 0 ? [['#involved', 'Get Involved'] as [string, string]] : []),
-            ...(newInfra.opened.length > 0 ? [['#new', "What's new"] as [string, string]] : []),
-            ...(events.length > 0 || roams.length > 0 ? [['#events', 'Events & Roams'] as [string, string]] : []),
-            ...(townTrails.length > 0 ? [['#trails', 'Trails'] as [string, string]] : []),
-            ['#stats', 'Stats'],
-            ...(heatmapLayers.length > 0 ? [['#moves', 'Where we move'] as [string, string]] : []),
-            ['#momentum', 'Momentum'],
-            ...(showCompetition ? [['#competition', 'Competition'] as [string, string]] : []),
-            ['#modes', 'Modes'],
-            ...(partners.length > 0 ? [['#rewards', 'Rewards'] as [string, string]] : []),
+            ...(resources.length > 0 || civicEvents.length > 0 ? [['#involved', t('toc.involved')] as [string, string]] : []),
+            ...(newInfra.opened.length > 0 ? [['#new', t('toc.new')] as [string, string]] : []),
+            ...(events.length > 0 || roams.length > 0 ? [['#events', t('toc.events')] as [string, string]] : []),
+            ...(townTrails.length > 0 ? [['#trails', t('toc.trails')] as [string, string]] : []),
+            ['#stats', t('toc.stats')],
+            ...(heatmapLayers.length > 0 ? [['#moves', t('toc.moves')] as [string, string]] : []),
+            ['#momentum', t('toc.momentum')],
+            ...(showCompetition ? [['#competition', t('toc.competition')] as [string, string]] : []),
+            ['#modes', t('toc.modes')],
+            ...(partners.length > 0 ? [['#rewards', t('toc.rewards')] as [string, string]] : []),
           ]}
         />
 
@@ -244,7 +258,7 @@ export default async function TownPage({ params }: { params: Promise<{ slug: str
             so they come before anything derived from Shift. */}
         {(resources.length > 0 || civicEvents.length > 0) && (
           <Section id="involved" shape="straight" tone="white" width="read" className="scroll-mt-28">
-            <GetInvolved resources={resources} civicEvents={civicEvents} townName={name} townSlug={slug} />
+            <GetInvolved resources={resources} civicEvents={civicEvents} townName={name} townSlug={slug} locale={locale} />
           </Section>
         )}
 
@@ -252,7 +266,7 @@ export default async function TownPage({ params }: { params: Promise<{ slug: str
             After Get involved, which already lists what's coming. */}
         {newInfra.opened.length > 0 && (
           <Section id="new" shape="straight" width="read" className="scroll-mt-28">
-            <NewInTown info={newInfra} townName={name} hasInvolved={resources.length > 0 || civicEvents.length > 0} />
+            <NewInTown info={newInfra} townName={name} hasInvolved={resources.length > 0 || civicEvents.length > 0} locale={locale} />
           </Section>
         )}
 
@@ -260,14 +274,14 @@ export default async function TownPage({ params }: { params: Promise<{ slug: str
             heavy traffic, and both speak to readers who are not Shift users. */}
         {(events.length > 0 || roams.length > 0) && (
           <Section id="events" shape="wanderRight" className="scroll-mt-28">
-            <EventsRoamsPanels events={events} roams={roams} townName={name} tone="light" />
+            <EventsRoamsPanels events={events} roams={roams} townName={name} tone="light" locale={locale} />
           </Section>
         )}
 
         {/* Trails in and near the town (2026-11-04): each links to its trail page. */}
         {townTrails.length > 0 && (
           <Section id="trails" shape="straight" className="scroll-mt-28">
-            <TownTrails trails={townTrails} townName={name} />
+            <TownTrails trails={townTrails} townName={name} locale={locale} />
           </Section>
         )}
 
@@ -277,13 +291,14 @@ export default async function TownPage({ params }: { params: Promise<{ slug: str
           <StatRow
             stats={stats}
             townName={name}
+            locale={locale}
             rank={town.rank > 0 ? { rank: town.rank, of: town.rankedInState, stateName: town.stateName } : null}
             unrankedNote={
               town.rank > 0
                 ? undefined
                 : hasStateBoard
-                  ? `${name} joins the ${town.stateName} board once it logs ${MIN_RANKED_TRIPS}+ trips in a month.`
-                  : `A ${town.stateName} board opens once more towns there are on Shift.`
+                  ? t('stat.unranked_board', { town: name, state: town.stateName, trips: MIN_RANKED_TRIPS })
+                  : t('stat.unranked_none', { state: town.stateName })
             }
           />
         </Section>
@@ -291,66 +306,64 @@ export default async function TownPage({ params }: { params: Promise<{ slug: str
         {/* Corridor heatmap */}
         {heatmapLayers.length > 0 && (
           <Section id="moves" shape="wanderLeft" className="scroll-mt-28">
-            <HeatmapSection layers={heatmapLayers} townName={name} centroid={centroid} />
+            <HeatmapSection layers={heatmapLayers} townName={name} centroid={centroid} locale={locale} />
           </Section>
         )}
 
         {/* Momentum */}
         <Section id="momentum" shape="wanderLeft" width="read" className="scroll-mt-28">
-          <MomentumSparkline stats={stats} townName={name} />
+          <MomentumSparkline stats={stats} townName={name} locale={locale} />
         </Section>
 
         {/* Leaderboard — only where the town's state actually has a board. */}
         {showCompetition && (
           <Section id="competition" shape="straight" tone="white" width="read" className="scroll-mt-28">
-            <TownLeaderboard directory={directory} state={town.state} highlightGroupId={town.group_id} />
+            <TownLeaderboard directory={directory} state={town.state} highlightGroupId={town.group_id} locale={locale} />
           </Section>
         )}
 
         {/* Mode split */}
         <Section id="modes" shape="wanderRight" width="read" className="scroll-mt-28">
-          <ModeSplit stats={stats} townName={name} />
+          <ModeSplit stats={stats} townName={name} locale={locale} />
         </Section>
 
         {/* Explainer */}
         <Section shape="straight" width="read">
-          <WhatIsShift townName={name} />
+          <WhatIsShift townName={name} locale={locale} />
         </Section>
 
         {/* Rewards Partners */}
         {partners.length > 0 && (
           <Section id="rewards" shape="straight" tone="white" className="scroll-mt-28">
-            <RewardsPartners partners={partners} townName={name} />
+            <RewardsPartners partners={partners} townName={name} locale={locale} />
           </Section>
         )}
 
         {/* CTA */}
         <Section shape="terminal" closing>
           <h2 className="font-serif text-[clamp(2.25rem,5vw,3.75rem)] font-normal leading-[1.02] text-navy">
-            {town.rank === 1 ? (
-              <>Keep {name} <em className="text-green-deep">on top.</em></>
-            ) : town.rank > 0 ? (
-              <>Help {name} <em className="text-green-deep">climb the board.</em></>
-            ) : (
-              <>Put {name} <em className="text-green-deep">on the board.</em></>
-            )}
+            {rich(t(town.rank === 1 ? 'cta.top' : town.rank > 0 ? 'cta.climb' : 'cta.put', { town: name }), {
+              em: (c) => <em className="text-green-deep">{c}</em>,
+            })}
           </h2>
           <p className="mt-5 max-w-[520px] text-[1.0625rem] leading-[1.65] text-ink-soft">
-            Every walk, ride, and transit trip counts automatically. Download Shift free and put
-            your trips on {name}&apos;s board.
+            {t('cta.body', { town: name })}
           </p>
           <StoreButtons iosUrl={iosUrl} androidUrl={androidUrl} placement="town_page" tone="light" className="mt-8 [&>a]:max-[420px]:basis-full" />
           <p className="mt-8 max-w-[620px] text-[12px] leading-relaxed text-ink-soft">
-            Community stats reflect trips by Shift community members that start or end in {name} and refresh
-            hourly. Municipalities and community groups can request aggregate data at{' '}
-            <a href="mailto:info@gogreenstreets.org" className="font-semibold text-forest underline underline-offset-2">
-              info@gogreenstreets.org
-            </a>
-            . A project of Green Streets Initiative, a 501(c)(3) nonprofit.
+            {rich(t('cta.note', { town: name }), {
+              nodes: {
+                email: (
+                  <a href="mailto:info@gogreenstreets.org" className="font-semibold text-forest underline underline-offset-2">
+                    info@gogreenstreets.org
+                  </a>
+                ),
+              },
+            })}
           </p>
         </Section>
       </main>
-      <Footer variant="light" />
+      <Footer variant="light" locale={locale} />
     </>
   )
 }

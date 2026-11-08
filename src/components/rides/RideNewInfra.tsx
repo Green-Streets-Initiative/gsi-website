@@ -21,7 +21,7 @@ export default function RideNewInfra({ info, onRoute, locale = 'en' }: { info: N
         <ul className="mt-3 space-y-3">
           {info.opened.slice(0, 4).map((o) => (
             <li key={`${o.name}|${o.facility}`}>
-              <NewInfraRow o={o} onRoute={onRoute} showTown tone="ride" />
+              <NewInfraRow o={o} onRoute={onRoute} showTown tone="ride" locale={locale} />
             </li>
           ))}
         </ul>
@@ -38,7 +38,7 @@ export default function RideNewInfra({ info, onRoute, locale = 'en' }: { info: N
                 <div className="min-w-0">
                   <p className="text-[15px] font-semibold text-(--ev-ink)">{c.what}</p>
                   <p className="mt-0.5 text-[14px] text-(--ev-ink-75)">
-                    {comingWhen(c, today)}
+                    {comingWhen(c, today, locale)}
                     {c.href && (
                       <>
                         {' · '}
