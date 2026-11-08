@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from 'react'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { loadMaplibre } from '@/lib/map/loadMaplibre'
+import { translator, type SiteLocale } from '@/lib/site-i18n'
+import { parkingStrings } from '@/lib/site-strings/parking'
 
 /*
  * The garages around the venue on a map, numbered like the list beside it,
@@ -24,7 +26,8 @@ const STYLE: Record<Pin['kind'], string> = {
     'background:#fff;color:#191A2E;border-radius:9999px;width:26px;height:26px;display:flex;align-items:center;justify-content:center;font:800 15px/1 Arial,sans-serif;border:3px solid #191A2E',
 }
 
-export default function VenueMap({ pins, name, label }: { pins: Pin[]; name: string; label?: string }) {
+export default function VenueMap({ pins, name, label, locale = 'en' }: { pins: Pin[]; name: string; label?: string; locale?: SiteLocale }) {
+  const t = translator(parkingStrings, locale)
   const boxRef = useRef<HTMLDivElement>(null)
   const mapEl = useRef<HTMLDivElement>(null)
   const [inView, setInView] = useState(false)
@@ -97,14 +100,14 @@ export default function VenueMap({ pins, name, label }: { pins: Pin[]; name: str
       <div
         ref={boxRef}
         role="img"
-        aria-label={label ?? `Map of the garages near ${name}`}
+        aria-label={label ?? t('parking.map_label', { name })}
         className="relative aspect-[4/3] overflow-hidden rounded-[18px] border border-navy/10 bg-[#E9EFE3]"
       >
         <div className="pointer-events-none absolute inset-0">
           <div ref={mapEl} className="h-full w-full" />
         </div>
       </div>
-      <p className="mt-2 text-[0.8125rem] text-navy/70">Map © OpenStreetMap contributors, © CARTO.</p>
+      <p className="mt-2 text-[0.8125rem] text-navy/70">{t('parking.map_credit')}</p>
     </div>
   )
 }
