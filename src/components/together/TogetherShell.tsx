@@ -260,15 +260,16 @@ function Gate({ children }: { children: ReactNode }) {
 }
 
 const LOGAN_POINTS: { label: string; Icon: LucideIcon }[] = [
-  { label: 'Take the T to the airport with someone from near you', Icon: TrainFront },
+  { label: 'Take the T or Logan Express with someone from near you', Icon: TrainFront },
   { label: 'Or share a taxi or ride app and split the fare', Icon: Car },
   { label: 'Going there, coming home, or both', Icon: Plane },
 ]
 
-const LOGAN_STEPS: { title: string; hint: string }[] = [
-  { title: 'Tell us your flight', hint: 'When it leaves or lands, and where you live.' },
-  { title: 'We find someone', hint: 'Near you, at the airport when you are.' },
-  { title: 'You both say yes', hint: 'Then you get the plan and each other’s email.' },
+/** Keith's three steps and drawings (approved 2026-11-08; public/images/logan, also in the launch email). */
+const LOGAN_STEPS: { title: string; hint: string; img: string; alt: string; chips: string[] }[] = [
+  { title: 'Add your flight', hint: 'Say when you fly and where you leave from. Other people flying for the holidays do the same.', img: '/images/logan/step-1.svg', alt: 'Three phones, each with a flight added; the middle one is yours', chips: [] },
+  { title: 'We find someone near you', hint: 'Someone near you, at Logan within 45 minutes of you. Coming home, someone landing when you do.', img: '/images/logan/step-2.svg', alt: 'A map: you and another person, both near the same T station, with flights half an hour apart', chips: [] },
+  { title: 'Choose how you go together', hint: 'Take the T or Logan Express together, or share a ride and split the fare.', img: '/images/logan/step-3.svg', alt: 'Two ways to go: the T together, or one shared car with the fare split in half', chips: ['Split the fare', 'Free Silver Line home', 'One car, not two'] },
 ]
 
 function SignIn() {
@@ -357,12 +358,21 @@ function SignIn() {
         {logan ? (
           <ol className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             {LOGAN_STEPS.map((st, i) => (
-              <li key={st.title} className="flex items-start gap-3 rounded-2xl border border-(--ev-line) bg-white p-4">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-(--ev-accent-fill) font-display text-[17px] font-extrabold text-(--ev-on-accent-fill)" aria-hidden>{i + 1}</span>
+              <li key={st.title} className="grid content-start gap-3 rounded-2xl border border-(--ev-line) bg-white p-4">
+                {/* eslint-disable-next-line @next/next/no-img-element -- a small static SVG */}
+                <img src={st.img} alt={st.alt} width={240} height={170} className="h-auto w-full max-w-[360px]" />
                 <span className="min-w-0">
-                  <span className="block text-[17px] font-bold leading-snug">{st.title}</span>
+                  <span className="block font-display text-[13px] font-extrabold tracking-[0.08em] text-(--ev-accent)">STEP {i + 1}</span>
+                  <span className="mt-1 block text-[17px] font-bold leading-snug">{st.title}</span>
                   <span className="mt-1 block text-[15px] leading-snug text-(--ev-ink-80)">{st.hint}</span>
                 </span>
+                {st.chips.length ? (
+                  <span className="flex flex-wrap gap-2">
+                    {st.chips.map((c) => (
+                      <span key={c} className="rounded-full bg-(--ev-panel) px-3 py-1 text-[13px] font-bold text-(--ev-accent)">{c}</span>
+                    ))}
+                  </span>
+                ) : null}
               </li>
             ))}
           </ol>

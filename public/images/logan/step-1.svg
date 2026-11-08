@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="170" viewBox="0 0 240 170" role="img" aria-label="Three phones, each with a flight added; the middle one is yours">
+  <defs>
+    <symbol id="plane" viewBox="0 0 24 24"><path d="M12 1.5c.8 0 1.4.9 1.4 2V9l8.1 4.6v2l-8.1-2.4v5l2.3 1.7v1.6L12 20.6l-3.7.9v-1.6l2.3-1.7v-5l-8.1 2.4v-2L10.6 9V3.5c0-1.1.6-2 1.4-2z"/></symbol>
+    <symbol id="person" viewBox="0 0 24 24"><circle cx="12" cy="7" r="4.2"/><path d="M3.5 22c0-4.9 3.8-8.4 8.5-8.4s8.5 3.5 8.5 8.4z"/></symbol>
+  </defs>
+  <rect width="240" height="170" rx="14" fill="#f6f8f3"/>
+    <g transform="translate(18 34) rotate(-8 40 60)" opacity="0.55">
+      <rect x="0" y="0" width="70" height="112" rx="12" fill="#ffffff" stroke="#191a2e" stroke-width="2.5"/>
+      <use href="#plane" x="25" y="18" width="20" height="20" fill="#2f6e52"/>
+      <rect x="14" y="50" width="42" height="6" rx="3" fill="#c9d3cc"/><rect x="14" y="62" width="30" height="6" rx="3" fill="#c9d3cc"/>
+    </g>
+    <g transform="translate(152 34) rotate(8 40 60)" opacity="0.55">
+      <rect x="0" y="0" width="70" height="112" rx="12" fill="#ffffff" stroke="#191a2e" stroke-width="2.5"/>
+      <use href="#plane" x="25" y="18" width="20" height="20" fill="#2f6e52"/>
+      <rect x="14" y="50" width="42" height="6" rx="3" fill="#c9d3cc"/><rect x="14" y="62" width="30" height="6" rx="3" fill="#c9d3cc"/>
+    </g>
+    <g transform="translate(76 12)">
+      <rect x="0" y="0" width="88" height="148" rx="15" fill="#ffffff" stroke="#191a2e" stroke-width="3"/>
+      <rect x="32" y="8" width="24" height="4" rx="2" fill="#191a2e"/>
+      <use href="#plane" x="32" y="22" width="24" height="24" fill="#2f6e52"/>
+      <text x="44" y="64" text-anchor="middle" font-family="Trebuchet MS, Verdana, sans-serif" font-size="10" font-weight="700" fill="#191a2e">Flight leaves</text>
+      <rect x="12" y="72" width="64" height="20" rx="6" fill="#eef3ee"/>
+      <text x="44" y="86" text-anchor="middle" font-family="Trebuchet MS, Verdana, sans-serif" font-size="10" fill="#191a2e">Wed · 9:00 AM</text>
+      <rect x="12" y="98" width="64" height="20" rx="6" fill="#eef3ee"/>
+      <text x="44" y="112" text-anchor="middle" font-family="Trebuchet MS, Verdana, sans-serif" font-size="10" fill="#191a2e">Near home</text>
+      <rect x="12" y="124" width="64" height="16" rx="8" fill="#2f6e52"/>
+    </g>
+  </svg>

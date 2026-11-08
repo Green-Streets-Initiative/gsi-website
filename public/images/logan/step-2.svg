@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="170" viewBox="0 0 240 170" role="img" aria-label="A map: you and another person, both near the same T station, with flights half an hour apart">
+  <defs>
+    <symbol id="plane" viewBox="0 0 24 24"><path d="M12 1.5c.8 0 1.4.9 1.4 2V9l8.1 4.6v2l-8.1-2.4v5l2.3 1.7v1.6L12 20.6l-3.7.9v-1.6l2.3-1.7v-5l-8.1 2.4v-2L10.6 9V3.5c0-1.1.6-2 1.4-2z"/></symbol>
+    <symbol id="person" viewBox="0 0 24 24"><circle cx="12" cy="7" r="4.2"/><path d="M3.5 22c0-4.9 3.8-8.4 8.5-8.4s8.5 3.5 8.5 8.4z"/></symbol>
+  </defs>
+  <rect width="240" height="170" rx="14" fill="#f6f8f3"/>
+    <rect x="8" y="8" width="224" height="154" rx="14" fill="#e3eee5"/>
+    <path d="M8 60 H232 M8 118 H232 M70 8 V162 M160 8 V162" stroke="#ffffff" stroke-width="7"/>
+    <path d="M8 30 L232 150" stroke="#ffffff" stroke-width="4"/>
+    <path d="M52 44 L118 88 M186 136 L118 88" stroke="#191a2e" stroke-width="2.5" stroke-dasharray="5 5" fill="none"/>
+    <circle cx="118" cy="88" r="17" fill="#ffffff" stroke="#191a2e" stroke-width="3"/>
+    <text x="118" y="94" text-anchor="middle" font-family="Trebuchet MS, Verdana, sans-serif" font-size="17" font-weight="700" fill="#191a2e">T</text>
+    <circle cx="52" cy="44" r="16" fill="#2f6e52"/>
+    <use href="#person" x="42" y="33" width="20" height="20" fill="#ffffff"/>
+    <circle cx="186" cy="136" r="16" fill="#3f5fa8"/>
+    <use href="#person" x="176" y="125" width="20" height="20" fill="#ffffff"/>
+    <rect x="16" y="66" width="56" height="20" rx="10" fill="#ffffff"/>
+    <use href="#plane" x="21" y="69" width="13" height="13" fill="#2f6e52"/>
+    <text x="54" y="80" text-anchor="middle" font-family="Trebuchet MS, Verdana, sans-serif" font-size="10" font-weight="700" fill="#191a2e">9:00</text>
+    <rect x="166" y="96" width="56" height="20" rx="10" fill="#ffffff"/>
+    <use href="#plane" x="171" y="99" width="13" height="13" fill="#3f5fa8"/>
+    <text x="204" y="110" text-anchor="middle" font-family="Trebuchet MS, Verdana, sans-serif" font-size="10" font-weight="700" fill="#191a2e">9:30</text>
+  </svg>
