@@ -10,6 +10,7 @@ import { ArrowLink, PILL, Section, SectionHeading } from '@/components/org/Secti
 import { ANDROID_URL, IOS_URL, IS_LIVE } from '@/app/shift-your-semester/_lib/load'
 import { loadWalkRideDays, type WalkRideDayData } from '@/app/programs/walk-ride-days/_lib/load'
 import { wt, type WalkRideDayKey } from '@/lib/walk-ride-day/i18n'
+import { withLang } from '@/lib/site-i18n'
 import { HTML_LANG, dollars, num, shortDate, translatedPath, weekdayDate, type DraftLocale } from '@/lib/translated-pages'
 import { AiNote, ReadInEnglish } from './TranslationNotes'
 
@@ -77,7 +78,7 @@ export default async function TranslatedWalkRideDayPage({ locale }: { locale: Dr
   const bring = [
     { title: t('b1_title'), body: t('b1_body'), href: '/shift/employers', label: t('b1_link') },
     { title: t('b2_title'), body: t('b2_body'), href: '/shift/schools', label: t('b2_link') },
-    { title: t('b3_title'), body: t('b3_body'), href: '/shift/towns', label: t('b3_link') },
+    { title: t('b3_title'), body: t('b3_body'), href: withLang('/shift/towns', locale), label: t('b3_link') },
   ]
 
   return (

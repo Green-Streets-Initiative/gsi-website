@@ -13,25 +13,33 @@ off and the go-live steps below are done.
 ## What each reviewer reads
 
 Two reviewers: one native Spanish speaker, one native Brazilian Portuguese
-speaker. Each one reads four pages, plus one town page for each town. The town
-pages share every fixed sentence, so the first town page is the long read.
-After that, only the names and numbers change.
+speaker. Each one reads three drafts and the town pages. The town pages share
+every fixed sentence, so the first town is the long read. After that, only the
+names and numbers change.
 
 | Page | Spanish | Portuguese | Read time |
 |---|---|---|---|
 | Walk/Ride Day | /preview/es/walk-ride-day | /preview/pt-BR/walk-ride-day | 5 min |
 | Official rules (legal) | /preview/es/walk-ride-day/rules | /preview/pt-BR/walk-ride-day/rules | 25 min |
 | Privacy policy (legal) | /preview/es/privacy | /preview/pt-BR/privacy | 40 min |
-| Chelsea town page | /preview/es/towns/chelsea-ma | /preview/pt-BR/towns/chelsea-ma | 10 min |
-| Lynn, Revere, Everett | /preview/es/towns/lynn-ma (and revere-ma, everett-ma) | same under /preview/pt-BR/ | 5 min |
-| Lawrence | /preview/es/towns/lawrence-ma | /preview/pt-BR/towns/lawrence-ma | (see below) |
+| Chelsea town page | /shift/towns/chelsea-ma?lang=es | /shift/towns/chelsea-ma?lang=pt-BR | 10 min |
+| Lynn, Revere, Everett | /shift/towns/lynn-ma?lang=es (and revere-ma, everett-ma) | same with ?lang=pt-BR | 5 min |
 
 Put https://www.gogreenstreets.org in front of each address.
 
+**The town pages are not drafts.** Site languages, part 3 (gsi-website
+dacebb82, the same evening) translated every town page in place: Spanish,
+Portuguese and Chinese, at the town's own address. A visitor sees them when
+the app sends `?lang=` or their browser asks for Spanish or Portuguese. They
+are public now, with no "pending review" note. The reviewer reads them the
+same way as the drafts. Corrections go in `src/lib/site-strings/towns.ts`
+(plus `new-infra.ts` and `roam-card.ts` for the new-lane rows and roam cards).
+Claude's own draft of the five town pages was withdrawn, so the site keeps one
+translation per page.
+
 **Lawrence** has no town page yet, in English either. A town gets a page once
-enough people there have joined Shift. The Lawrence page is already
-translated: it uses the same sentences as the other four towns, and it appears
-on its own when the English one does. There's nothing extra to review.
+enough people there have joined Shift. When it does, it opens in all three
+languages, using the same sentences as the other towns.
 
 **The two legal pages** (rules and privacy) need a careful, word-for-word
 reading against the English. The reviewer checks that every obligation,
@@ -51,7 +59,7 @@ natural, the way a neighbor would say it, not word for word.
   marks them `lang="en"`.
 - **The town digest emails and the newsletter:** these go out in English, and
   the sign-up line says so ("por ahora en inglés" / "por enquanto em inglês").
-- **The site footer:** it stays English on the preview pages (see go-live).
+- **The site footer:** it stays English on the preview drafts (see go-live).
   The top menu is translated, from the shared site dictionary
   (`src/lib/site-strings/chrome.ts`).
 - **The name "Walk/Ride Day":** it stays in English, used with an article
@@ -87,6 +95,9 @@ natural, the way a neighbor would say it, not word for word.
 - The legal banner says the English version is official and wins if the two
   differ. That's a legal choice. Keep it, or let the reviewed translation
   stand on its own?
+- The town pages already show in Spanish and Portuguese to anyone whose
+  browser asks for it, before a native speaker has read them. Keep them on,
+  or hold them behind `?lang=` until the review is done?
 - Reviewers: the Communities Lead keeps the bench of paid native-speaker
   reviewers (Shift `docs/programs/communities/state.json`).
 
@@ -99,12 +110,12 @@ reviewer's notes.
 - Rules: `src/components/translated/rules-es.tsx`, `rules-pt-BR.tsx`
 - Privacy: `src/components/translated/privacy-es.tsx`, `privacy-pt-BR.tsx`
   (page title and date in `PrivacyPolicy.tsx`)
-- Town pages: `src/lib/towns/i18n.ts`
+- Town pages: `src/lib/site-strings/towns.ts` (the site languages work, not
+  these drafts)
 - Shared banners and notes: `src/lib/translated-pages.ts` (`SHARED`)
 
-Live numbers stay live: dates, prizes, the referral cap, town stats, ranks,
-events and the map all come from the same database queries as the English
-pages.
+Live numbers stay live: dates, prizes and the referral window come from
+the same database queries as the English pages.
 
 ## Go-live, once a reviewer signs off
 
@@ -113,10 +124,10 @@ work: one address per page, with the language taken from `?lang=` (the app
 sends it), then the browser's language, then English (`src/lib/site-i18n.ts`,
 `siteLocale()`). Follow that rather than adding /es/ routes:
 
-1. **Each English route renders the translation.**
-   `/programs/walk-ride-days`, `/events/walk-ride-day/rules`, `/privacy` and
-   `/shift/towns/[slug]` call `siteLocale(searchParams.lang)`. For `es` or
-   `pt-BR` (and, for towns, a slug in `TRANSLATED_TOWNS`), they return the
+1. **Each English route renders the translation**, the way
+   `/shift/towns/[slug]` already does. `/programs/walk-ride-days`,
+   `/events/walk-ride-day/rules` and `/privacy` call
+   `siteLocale(searchParams.lang)`. For `es` or `pt-BR` they return the
    translated component that the preview route uses today
    (`src/components/translated/*`).
 2. **Switch the links in one place.** `translatedPath()` in
@@ -135,22 +146,20 @@ sends it), then the browser's language, then English (`src/lib/site-i18n.ts`,
 7. **Delete the preview routes** under `src/app/preview/{es,pt-BR}/` (not
    `/preview/es/guides`).
 8. **Parity map.** Update Shift `docs/programs/product/parity.md` and
-   `parity.json`, under **Languages**: Walk/Ride Day, its rules, privacy and
-   five town pages in es and pt-BR. This draft didn't touch the map, because
-   other sessions had uncommitted edits in both files.
+   `parity.json`, under **Languages**: Walk/Ride Day, its rules and privacy
+   in es and pt-BR. This draft didn't touch the map, because other sessions
+   had uncommitted edits in both files.
 
 ### Keeping the copies in step
 
-The town page and the Walk/Ride Day page are rebuilt as translated twins
-(`TownPage.tsx`, `town-sections.tsx`, `TownClient.tsx`,
-`WalkRideDayPage.tsx`), not English components with a language prop. That's
-because the English components had other sessions' uncommitted edits when
-these were written. Until the two are merged, a change to the English town
-page, Walk/Ride Day page, rules or privacy policy needs the same change in the
-twin. Uncommitted work already waiting on the English side when these were
-written: a "Work for {town}?" box for town staff and a "no trips yet this
-month" stats line (`TownSections.tsx`), and a Walk/Ride Day page redesign
-(`src/app/programs/walk-ride-days/page.tsx`).
+The Walk/Ride Day page is a translated twin (`WalkRideDayPage.tsx`), not the
+English page with a language prop, because the English page had another
+session's uncommitted redesign in progress
+(`src/app/programs/walk-ride-days/page.tsx`). Until the two are merged, a
+change to the English Walk/Ride Day page, rules or privacy policy needs the
+same change in the twin. At go-live, the simplest path for the Walk/Ride Day
+page is to move its words into `src/lib/site-strings/` and give the English
+page a `locale`, as the town pages did.
 
 The privacy and rules translations follow the English as of 2026-11-07
 (privacy "Last updated: November 2026"). If the English changes, the

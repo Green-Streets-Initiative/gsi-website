@@ -3,12 +3,12 @@
  * 2026-11-07: "Translate the entry pages into Spanish and Portuguese:
  * Walk/Ride Day and its rules, privacy, and town pages for Chelsea,
  * Lawrence, Lynn, Revere and Everett. Claude drafts; a native-speaker
- * reviewer reads before publishing.").
+ * reviewer reads before publishing."). The town pages are translated in
+ * place by the site languages work (src/lib/site-strings/towns.ts).
  *
  * Same hand-rolled dictionary pattern as /visiting (src/lib/visiting/i18n.ts)
  * and /nearby: English is the source, every language carries every key.
- * Each page's own strings live next to it (src/lib/walk-ride-day/i18n.ts,
- * src/lib/towns/i18n.ts); the two legal pages are whole translated texts
+ * Each page's own strings live next to it (src/lib/walk-ride-day/i18n.ts); the two legal pages are whole translated texts
  * (src/components/translated/). This file holds what they share: the
  * languages, number and date formatting, and where each page lives.
  *
@@ -33,14 +33,13 @@ export const INTL_TAG: Record<DraftLocale | 'en', string> = {
 
 export const HTML_LANG: Record<DraftLocale, string> = { es: 'es', 'pt-BR': 'pt-BR' }
 
-export type TranslatedPage = 'walk-ride-day' | 'walk-ride-day-rules' | 'privacy' | `town:${string}`
+export type TranslatedPage = 'walk-ride-day' | 'walk-ride-day-rules' | 'privacy'
 
 /** The English page each translated page mirrors. */
 export function englishPath(page: TranslatedPage): string {
   if (page === 'walk-ride-day') return '/programs/walk-ride-days'
   if (page === 'walk-ride-day-rules') return '/events/walk-ride-day/rules'
-  if (page === 'privacy') return '/privacy'
-  return `/shift/towns/${page.slice(5)}`
+  return '/privacy'
 }
 
 /** Where a translated page lives. Drafts sit under /preview until review. */
@@ -48,13 +47,8 @@ export function translatedPath(locale: DraftLocale, page: TranslatedPage): strin
   const base = `/preview/${locale}`
   if (page === 'walk-ride-day') return `${base}/walk-ride-day`
   if (page === 'walk-ride-day-rules') return `${base}/walk-ride-day/rules`
-  if (page === 'privacy') return `${base}/privacy`
-  return `${base}/towns/${page.slice(5)}`
+  return `${base}/privacy`
 }
-
-/** The five towns with drafts (Census: Spanish and Portuguese spoken at home,
- *  Shift docs/programs/social/multilingual-strategy-2026-10.md §1). */
-export const TRANSLATED_TOWNS = ['chelsea-ma', 'lawrence-ma', 'lynn-ma', 'revere-ma', 'everett-ma'] as const
 
 const ET = 'America/New_York'
 

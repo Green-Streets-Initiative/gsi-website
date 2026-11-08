@@ -139,7 +139,7 @@ const es: Dict = {
   b2_link: 'Shift para Escuelas (en inglés)',
   b3_title: 'Tu ciudad',
   b3_body: 'Cada ciudad tiene su página: cuánto se movió, quién va adelante y los eventos del calendario de ese viernes.',
-  b3_link: 'Busca tu ciudad (en inglés)',
+  b3_link: 'Busca tu ciudad',
 
   see_you: 'Nos vemos el {date}.',
   see_you_last: 'Nos vemos el último viernes.',
@@ -205,7 +205,7 @@ const ptBR: Dict = {
   b2_link: 'Shift para Escolas (em inglês)',
   b3_title: 'Sua cidade',
   b3_body: 'Cada cidade tem sua página: quanto se movimentou, quem está na frente e os eventos daquela sexta-feira.',
-  b3_link: 'Encontre sua cidade (em inglês)',
+  b3_link: 'Encontre sua cidade',
 
   see_you: 'Nos vemos na {date}.',
   see_you_last: 'Nos vemos na última sexta-feira.',
