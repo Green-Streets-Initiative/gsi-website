@@ -29,8 +29,9 @@ Statuses: `proposed` → `shipped` → `won` / `lost` / `inconclusive`.
 
 The middle of the growth loop (see `seo/methodology.md`). Each row came from an
 insight. ICE = impact × confidence × ease, each scored 1–5. Every run re-scores
-and re-ranks. The top rows get promoted to the experiment table above when
-fewer than 2–4 experiments are running. Retire a row with a one-line reason and
+and re-ranks. Every ready row (ICE ≥ 20, or time-sensitive) goes to Keith as a
+proposed experiment every week, with no cap on how many run at once (Keith
+2026-11-08; see methodology.md, step 5). Retire a row with a one-line reason and
 never silently delete it.
 
 | ID | Added | Insight (evidence) | Hypothesis: if we… then… by… | Metric | I | C | E | ICE | Status |

@@ -28,10 +28,15 @@ Decisions and experiments are.
    A hypothesis is falsifiable: *"If we <change>, <metric> moves <direction> by
    <verdict date>, because <insight>."* Score each **ICE** (impact, confidence,
    ease, 1–5 each), and take the product.
-5. **Experiment.** The top of the backlog becomes a proposed experiment with an
-   exact change, a metric, a baseline and a verdict date. Keep **2–4
-   experiments running** at all times. Fewer than 2 running is itself a finding,
-   and the run must propose enough to refill the pipeline.
+5. **Experiment.** Every backlog row that is ready becomes a proposed
+   experiment with an exact change, a metric, a baseline and a verdict date.
+   There is **no cap on how many run at once** (Keith, 2026-11-08: "We don't
+   need the SEO lead to mete out 1 idea a week, we need all good
+   ideas/experiments for consideration every week"). The only limit is
+   measurement: two changes that would move the same page's metric in the
+   same window confound each other, so ship those together as one experiment
+   or say which goes first and why. Changes on different pages or page classes
+   run side by side. Fewer than 2 running is itself a finding.
 6. **Data → verdict → learning.** At the verdict date the result is won / lost /
    inconclusive-extend. Each verdict writes one line to *Learnings* in
    `seo/strategy.md`. Learnings are where the next hypotheses come from, which
@@ -50,8 +55,17 @@ Decisions and experiments are.
 - **Cheap and reversible beats perfect.** Titles, snippets, internal links,
   structured data, llms.txt, a new guide: all reversible. Bias toward shipping
   these and letting the verdict decide.
-- **Decision queue ≤ 3.** More than three open asks is a routine failure, not
-  Keith's. Consolidate, drop the weakest, or age items out.
+- **Every good idea, every week, ranked.** Bring Keith every play the run
+  considered that is ready to act on: every backlog row with ICE ≥ 20, every
+  time-sensitive one regardless of score, and anything carried in the report
+  "for an interactive session" (llms.txt gaps, answer-page refreshes, tracking
+  fixes). Never hold a ready idea back to pace the queue, and never keep a
+  slot open for later. Order them for him (most growth per effort first, with
+  anything that has a deadline flagged at the top), each with a
+  recommendation, and give one phrase that ships all the recommended ones at
+  once ("ship SEO items 1-N"). Ideas below the bar, or not ready, still get
+  one line each under *Considered, not proposed* with the reason, so nothing
+  the run thought of is invisible.
 - **Organic and paid are one system.** Paid search is the fastest test bed we
   have: search terms reveal demand we don't rank for, and ad headlines that
   win are title candidates. Organic pages that rank well can take paid budget
@@ -248,14 +262,18 @@ In this order:
    Grants / other paid / answer engines) with app-intent rate; Ad Grants
    month-to-date CTR vs the 5% floor, and conversions; non-brand discovery
    impressions.
-3. **Decisions for Keith** (≤3). Each: what, the recommendation, why (the
-   insight), the cost of waiting, and the ship phrase: *"to ship: open Claude
-   Code and say 'ship SEO item N'"* (and "decline SEO item N").
+3. **Plays for Keith, ranked** (every ready one, no cap). Each: what, the
+   recommendation, why (the insight), the cost of waiting, and its number.
+   Deadline-bound plays first. Close the list with the ship phrases: *"to
+   ship: open Claude Code and say 'ship SEO items 1-N'"* for all recommended,
+   or "ship SEO item N" / "decline SEO item N" one at a time.
 4. **Experiment board.** Running experiments, one line each: what, metric,
    verdict date, early read. Plus any verdicts this week and the learning each
    produced.
-5. **Insights → next hypotheses.** The top 3 backlog items by ICE, one line
-   each, so Keith sees what's coming and can redirect early.
+5. **Considered, not proposed.** Every other idea the run weighed this week
+   (backlog rows below the bar, ideas waiting on data or on a launch, ideas
+   dropped), one line each with the reason, so Keith can pull any of them
+   forward.
 6. **Health.** One line. Link to the full report.
 
 Don't put diagnostic detail in the email (cohort tables, pattern coverage,
