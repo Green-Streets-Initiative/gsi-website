@@ -12,6 +12,7 @@ import RoamHeroMedia from '@/components/roams/RoamHeroMedia'
 import TrainsHome from '@/components/roams/TrainsHome'
 import { withUtm } from '@/lib/utm'
 import { getRoamDetail, getNextRoamEvent, getRoamTrailInfo, getRoamKeepGoing, type RoamDetail } from '@/lib/roams/queries'
+import { localizeRoamDetail } from '@/lib/stored-translations'
 import RoamKeepGoing from '@/components/roams/RoamKeepGoing'
 import { getBluebikesDocks } from '@/lib/server/bluebikes'
 import RoamDisruptions from '@/components/roams/RoamDisruptions'
@@ -96,7 +97,8 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
   await forwardTour(id, lang)
   const locale = await siteLocale(lang)
   const tr = translator(roamStrings, locale)
-  const roam = await getRoamDetail(decodeURIComponent(id))
+  // The Roam's text and stops in the page's language (translation plan, batch 8).
+  const roam = await localizeRoamDetail(await getRoamDetail(decodeURIComponent(id)), locale)
   if (!roam) return { title: tr('meta.not_found') }
   const dist = distanceMiles(roam.distance_miles)
   const mode = modeWord(roam.mode, tr, locale)
@@ -206,7 +208,8 @@ export default async function RoamDetailPage({ params, searchParams }: PageProps
   await forwardTour(id, lang)
   const locale = await siteLocale(lang)
   const tr = translator(roamStrings, locale)
-  const roam = await getRoamDetail(decodeURIComponent(id))
+  // The Roam's text and stops in the page's language (translation plan, batch 8).
+  const roam = await localizeRoamDetail(await getRoamDetail(decodeURIComponent(id)), locale)
   if (!roam) notFound()
 
   const requiredStops = roam.checkpoints.filter((c) => c.required)

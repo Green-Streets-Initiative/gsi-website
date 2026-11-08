@@ -8,6 +8,7 @@ import JsonLd from '@/components/JsonLd'
 import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
 import { getRoamsInSeason, getUpcomingRoamEvents } from '@/lib/roams/queries'
+import { localizeRoams } from '@/lib/stored-translations'
 import { getTourTrails, roamHref } from '@/lib/trails/tours'
 import HtmlLang from '@/components/HtmlLang'
 import { siteLocale } from '@/lib/site-locale'
@@ -56,7 +57,9 @@ const GROUPS = [
 ] as const
 
 export default async function RoamsIndexPage({ searchParams }: PageProps) {
-  const [roams, upcoming, tours, locale] = await Promise.all([roamsOnce(), getUpcomingRoamEvents(), getTourTrails(), searchParams.then((p) => siteLocale(p.lang))])
+  const [english, upcoming, tours, locale] = await Promise.all([roamsOnce(), getUpcomingRoamEvents(), getTourTrails(), searchParams.then((p) => siteLocale(p.lang))])
+  // Roam names and blurbs in the page's language (translation plan, batch 8).
+  const roams = await localizeRoams(english, locale)
   const tr = translator(roamStrings, locale)
   const known = new Set<string>(GROUPS.flatMap((g) => [...g.modes]))
   const groups = GROUPS.map((g, i) => ({
