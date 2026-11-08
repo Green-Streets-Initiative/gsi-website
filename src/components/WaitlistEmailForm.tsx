@@ -2,8 +2,12 @@
 
 import { useState } from 'react'
 import { gaEvent } from '@/lib/ga'
+import { translator, type SiteLocale } from '@/lib/site-i18n'
+import { shiftClientStrings } from '@/lib/site-strings/shift-page'
 
-export default function WaitlistEmailForm({ source = 'app_page' }: { source?: string }) {
+/** `locale`: the translated /shift page passes its language; other callers stay English. */
+export default function WaitlistEmailForm({ source = 'app_page', locale = 'en' }: { source?: string; locale?: SiteLocale }) {
+  const t = translator(shiftClientStrings, locale)
   const [email, setEmail] = useState('')
   const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle')
   const [errorMsg, setErrorMsg] = useState('')
@@ -14,7 +18,7 @@ export default function WaitlistEmailForm({ source = 'app_page' }: { source?: st
     const trimmed = email.trim()
     if (!trimmed || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
       setStatus('error')
-      setErrorMsg('Please enter a valid email address.')
+      setErrorMsg(t('shiftp.wl_invalid'))
       return
     }
 
@@ -30,14 +34,14 @@ export default function WaitlistEmailForm({ source = 'app_page' }: { source?: st
 
       if (!res.ok) {
         const data = await res.json().catch(() => null)
-        throw new Error(data?.error || 'Something went wrong')
+        throw new Error(data?.error || t('shiftp.wl_error'))
       }
 
       setStatus('success')
       gaEvent('shift_waitlist_signup', { source })
     } catch (err: unknown) {
       setStatus('error')
-      setErrorMsg(err instanceof Error ? err.message : 'Something went wrong. Please try again.')
+      setErrorMsg(err instanceof Error ? err.message : t('shiftp.wl_error_retry'))
     }
   }
 
@@ -45,7 +49,7 @@ export default function WaitlistEmailForm({ source = 'app_page' }: { source?: st
     return (
       <div className="rounded-2xl border border-lime/20 bg-lime/[0.06] px-6 py-5 text-center">
         <p className="font-display text-sm font-bold text-lime">
-          You&apos;re on the list. We&apos;ll email you when Shift launches.
+          {t('shiftp.wl_success')}
         </p>
       </div>
     )
@@ -61,7 +65,7 @@ export default function WaitlistEmailForm({ source = 'app_page' }: { source?: st
             setEmail(e.target.value)
             if (status === 'error') setStatus('idle')
           }}
-          placeholder="you@email.com"
+          placeholder={t('shiftp.wl_placeholder')}
           required
           className="min-h-[48px] flex-1 rounded-xl border border-white/[0.12] bg-white/[0.06] px-4 py-3 text-[0.9375rem] text-white outline-none transition-colors placeholder:text-white/40 focus:border-lime"
         />
@@ -70,7 +74,7 @@ export default function WaitlistEmailForm({ source = 'app_page' }: { source?: st
           disabled={status === 'submitting'}
           className="min-h-[48px] whitespace-nowrap rounded-xl bg-lime px-6 py-3 text-sm font-bold text-navy transition-opacity hover:opacity-85 disabled:opacity-50"
         >
-          {status === 'submitting' ? 'Joining...' : 'Notify me at launch'}
+          {status === 'submitting' ? t('shiftp.wl_joining') : t('shiftp.wl_submit')}
         </button>
       </div>
       {/* Honeypot — hidden from users, visible to bots */}

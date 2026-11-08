@@ -1,8 +1,10 @@
 import Link from 'next/link'
+import { unstable_cache } from 'next/cache'
 import { getQualifyingTowns } from '@/lib/towns/queries'
-import { translator, withLang, type SiteLocale } from '@/lib/site-i18n'
+import { SITE_LOCALE_TAG, translator, withLang, type SiteLocale } from '@/lib/site-i18n'
 import { eventsStrings } from '@/lib/site-strings/events'
 import { chromeStrings } from '@/lib/site-strings/chrome'
+import { shiftPageStrings } from '@/lib/site-strings/shift-page'
 
 /**
  * Cross-link modules pointing at the town pages (paths Phase 1). Both read the
@@ -101,29 +103,39 @@ async function topTowns() {
  * set the hub lists) so the headline can't drift out of date. Digits, not
  * words: spelled-out compounds ("Twenty-five towns") only get worse from here.
  * Falls back to a countless headline if the directory query comes back empty.
+ *
+ * /shift renders per request now (it reads the visitor's language), so the
+ * count is cached for an hour here, the cadence the page's ISR had.
  */
-export async function TownsTeaserBand() {
-  const published = await getQualifyingTowns()
-  const lead = published.length >= 2 ? `${published.length.toLocaleString()} towns.` : 'Your town.'
+const publishedTownCount = unstable_cache(
+  async () => (await getQualifyingTowns()).length,
+  ['shift-page-town-count'],
+  { revalidate: 3600 },
+)
+
+export async function TownsTeaserBand({ locale = 'en' }: { locale?: SiteLocale } = {}) {
+  const t = translator(shiftPageStrings, locale)
+  const count = await publishedTownCount()
+  const title = count >= 2
+    ? t('shiftp.towns_title_count', { n: count.toLocaleString(SITE_LOCALE_TAG[locale]) })
+    : t('shiftp.towns_title_none')
 
   return (
     <section className="border-t border-navy/10 bg-white px-8 py-12">
       <div className="mx-auto flex max-w-[960px] flex-col items-center gap-5 text-center md:flex-row md:justify-between md:text-left">
         <div>
           <h2 className="mb-2 font-serif text-[clamp(1.75rem,3.5vw,2.5rem)] font-normal leading-[1.1] text-navy">
-            {lead} One friendly competition.
+            {title}
           </h2>
           <p className="max-w-[480px] text-[15px] leading-relaxed text-ink-soft">
-            Every trip on Shift counts toward your town&apos;s standing — see the
-            live leaderboard, where your neighbors walk and ride, and what&apos;s
-            happening on your streets.
+            {t('shiftp.towns_body')}
           </p>
         </div>
         <Link
-          href="/shift/towns"
+          href={withLang('/shift/towns', locale)}
           className="shrink-0 rounded-full bg-navy px-6 py-3 text-sm font-bold text-white transition-opacity hover:opacity-90"
         >
-          Is your town on the board? &rarr;
+          {t('shiftp.towns_cta')}
         </Link>
       </div>
     </section>

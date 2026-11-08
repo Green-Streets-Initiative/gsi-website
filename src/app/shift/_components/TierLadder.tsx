@@ -1,12 +1,16 @@
+import { translator, type SiteLocale } from '@/lib/site-i18n'
+import { shiftPageStrings, type ShiftPageKey } from '@/lib/site-strings/shift-page'
+
+// Tier names stay in English, as in the app; the tags around them translate.
 const TIERS: {
   name: string
   chevrons: number
   color: string
   current?: boolean
-  tag?: string
+  tag?: ShiftPageKey
 }[] = [
   { name: 'Starter', chevrons: 1, color: '#B6BBC9' },
-  { name: 'Mover', chevrons: 1, color: '#2966E5', tag: 'Perks unlock here' },
+  { name: 'Mover', chevrons: 1, color: '#2966E5', tag: 'shiftp.tier_perks' },
   { name: 'Shifter', chevrons: 2, color: '#BAF14D' },
   { name: 'Pacesetter', chevrons: 3, color: '#E8A93C', current: true },
   { name: 'Trailblazer', chevrons: 3, color: 'url(#tbGrad)' },
@@ -44,7 +48,8 @@ function ChevronBadge({ count, color }: { count: number; color: string }) {
   )
 }
 
-export default function TierLadder() {
+export default function TierLadder({ locale = 'en' }: { locale?: SiteLocale }) {
+  const t = translator(shiftPageStrings, locale)
   return (
     <div className="flex flex-col gap-2.5">
       {TIERS.map((tier) => (
@@ -67,12 +72,12 @@ export default function TierLadder() {
           </span>
           {tier.current && (
             <span className="ml-3 rounded-full bg-[rgba(186,241,77,0.18)] px-3 py-1 font-display text-xs font-bold tracking-[0.02em] text-[#BAF14D]">
-              Current
+              {t('shiftp.tier_current')}
             </span>
           )}
           {tier.tag && (
             <span className="ml-auto font-display text-xs font-semibold text-[#52B788]">
-              {tier.tag}
+              {t(tier.tag)}
             </span>
           )}
         </div>
