@@ -19,6 +19,7 @@ import { useIsWide } from '@/components/commute/useIsWide'
 import LoadingMessages from '@/components/commute/LoadingMessages'
 import CommutePlanPrint from '@/components/commute/CommutePlanPrint'
 import TagAlong from '@/components/commute/TagAlong'
+import type { AskTrip } from '@/components/commute/AskAboutTrip'
 import { haversineMeters } from '@/lib/geo/measure'
 import { COMFORT_COLORS, comfortLabel, comfortPieces, fetchCalmRoute, formatStretchMiles, legPhotoSpec, type CalmRoute } from '@/components/commute/calm-route'
 import { ReportRouteLink, type RouteIssueStretch, type RouteIssueSurface } from '@/components/commute/ReportRouteSheet'
@@ -106,6 +107,8 @@ export interface AdvisorFlowProps {
   step1Extra?: ReactNode
   /** Anything after the plan (the HR contact line). */
   afterPlan?: ReactNode
+  /** Under the plan's next steps, given the trip on screen: the public page's "Ask about this trip" box. */
+  askAboutTrip?: (trip: AskTrip) => ReactNode
   companyName?: string | null
   /** The host page hears each step change, so its hero can get out of the plan's way on step 3. */
   onStepChange?: (step: number) => void
@@ -231,6 +234,7 @@ export default function AdvisorFlow({
   persistSession = false,
   step1Extra,
   afterPlan,
+  askAboutTrip,
   companyName = null,
   onStepChange,
   locale = 'en',
@@ -1093,6 +1097,18 @@ export default function AdvisorFlow({
                   />
                 </div>
               </div>
+
+              {askAboutTrip?.({
+                from: { lat: home.lat, lng: home.lng },
+                to: { lat: office.lat, lng: office.lng, name: office4Links.label },
+                arrive_by: arriveBy,
+                route_date: plan.route_date,
+                miles: plan.distance_miles,
+                recommended: plan.recommended_mode,
+                no_car: noCar,
+                transit: plan.modes.transit ? legTitle(plan) : null,
+                ways: order.filter((k) => plan.modes[k]).map((k) => ({ way: k, minutes: plan.modes[k].minutes, cost_per_day: plan.modes[k].cost_per_day, leave_by: plan.modes[k].leave_by })),
+              })}
 
               {afterPlan && <div className="mt-3">{afterPlan}</div>}
 

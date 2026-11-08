@@ -5,6 +5,7 @@ import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
 import JsonLd from '@/components/JsonLd'
 import AdvisorFlow, { PLAN_STEP } from '@/components/commute/AdvisorFlow'
+import AskAboutTrip from '@/components/commute/AskAboutTrip'
 import { PRICES } from '@/lib/facts/prices'
 import { translator, type SiteLocale } from '@/lib/site-i18n'
 import { advisorStrings } from '@/lib/site-strings/advisor'
@@ -90,7 +91,15 @@ export default function PublicAdvisorPage({ locale = 'en' }: { locale?: SiteLoca
           </div>
         )}
 
-        <AdvisorFlow variant="public" persistSession trackProps={PUBLIC_TRACK_PROPS} onStepChange={setStep} locale={locale} />
+        <AdvisorFlow
+          variant="public"
+          persistSession
+          trackProps={PUBLIC_TRACK_PROPS}
+          onStepChange={setStep}
+          locale={locale}
+          // Off unless its switch is on (or ?ask=1); keyed by the trip so a new plan starts fresh.
+          askAboutTrip={(trip) => <AskAboutTrip key={`${trip.from.lat},${trip.from.lng}-${trip.to.lat},${trip.to.lng}`} trip={trip} locale={locale} />}
+        />
 
         {/* Methodology */}
         <div className="mx-auto mt-8 max-w-[860px] px-6 lg:px-8">

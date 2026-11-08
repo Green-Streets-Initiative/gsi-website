@@ -279,6 +279,16 @@ export default function PrivacyPage() {
                 in the app, or by contacting <a href="mailto:info@gogreenstreets.org" className="font-semibold text-forest underline-offset-4 hover:underline">info@gogreenstreets.org</a>.
               </P>
               <P>
+                On this website, the Commute Advisor can show an Ask about this trip box under
+                your plan. To answer, it sends your question, your last few questions in that box
+                and the plan on your screen (your start and destination rounded to about 100
+                meters, your arrival time and the ways compared) to Anthropic, and looks up
+                transit, weather and places as above. We don&apos;t save what you type or the
+                answers. To keep the box to a few questions a day per visitor, we count questions
+                by a random number stored in your browser and a scrambled form of your internet
+                address that can&apos;t be turned back into it, and delete those counts after 400 days.
+              </P>
+              <P>
                 More detail is in{' '}
                 <a href="/shift/assistant-data" className="font-semibold text-forest underline-offset-4 hover:underline">The Shift assistant and your data</a>.
               </P>

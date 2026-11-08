@@ -12,6 +12,24 @@
 export const DAILY_PERSON_CAP = Number(process.env.SHIFT_ASSISTANT_DAILY_CAP) || 30
 export const MONTHLY_CAP = Number(process.env.SHIFT_ASSISTANT_MONTHLY_CAP) || 3000
 
+/**
+ * "Ask about this trip" on the Commute Advisor, for visitors without an
+ * account (Keith 2026-11-08): its own pool, never the members' MONTHLY_CAP.
+ * Counted in visitor_assistant_usage (Shift 01704). At about 6 cents a
+ * question, 1,000 a month holds it near $60.
+ *   - VISITOR_DAILY_CAP: one browser on one address, per Boston day.
+ *   - VISITOR_IP_DAILY_CAP: one address, however many browsers (an office
+ *     or a library shares one), so clearing the browser doesn't reset it.
+ *   - PREVIEW_DAILY_CAP: every ?ask=1 preview together while the switch is
+ *     off, so the preview can't run up costs either.
+ */
+export const VISITOR_DAILY_CAP = Number(process.env.VISITOR_ASSISTANT_DAILY_CAP) || 5
+export const VISITOR_IP_DAILY_CAP = Number(process.env.VISITOR_ASSISTANT_IP_DAILY_CAP) || 25
+export const VISITOR_MONTHLY_CAP = Number(process.env.VISITOR_ASSISTANT_MONTHLY_CAP) || 1000
+export const PREVIEW_DAILY_CAP = Number(process.env.VISITOR_ASSISTANT_PREVIEW_DAILY_CAP) || 40
+/** A preview visitor can ask more than five while testing. */
+export const PREVIEW_PERSON_CAP = 20
+
 /** List prices, dollars per million tokens: input, output, cache read, cache write (5 min). */
 export const PRICES: Record<string, { in: number; out: number; read: number; write: number }> = {
   'claude-sonnet-5-5': { in: 2, out: 10, read: 0.2, write: 2.5 },

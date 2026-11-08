@@ -57,6 +57,9 @@ export type ToolCtx = {
   screens?: Set<string>
   /** The newest picture they attached in this conversation, sent with a problem report. */
   screenshot?: string | null
+  /** A website visitor with no account ("Ask about this trip", lib/shift-assistant/visitor):
+   *  nothing of theirs to read, so tools skip their own rows. */
+  visitor?: boolean
 }
 
 /** A button under the reply: a screen the app maps to one of its own routes,
@@ -992,7 +995,7 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
         // The drive priced for their own car, plus what parking costs them at
         // their office when the trip goes there (the app's commute screen
         // prices it the same way).
-        const [workplace, carQ] = await Promise.all([
+        const [workplace, carQ] = ctx.visitor ? [null, { data: null }] : await Promise.all([
           myWorkplace(ctx).catch(() => null),
           ctx.user.from('users').select('vehicle_type').eq('id', ctx.userId).single(),
         ])
