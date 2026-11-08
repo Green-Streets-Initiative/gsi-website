@@ -8,6 +8,7 @@ import { typeInk, tagInk, rideStyleInk, TINT } from '@/lib/events-tone'
 import { townFromAddress } from '@/lib/events-seo'
 import { EVENT_TYPE_ICONS } from './event-type-icons'
 import { useEventsTone } from './EventsTone'
+import { eventLanguages, ledInLine, ownNames } from '@/lib/languages'
 
 interface EventCardProps {
   event: CommunityEvent
@@ -40,6 +41,7 @@ export default function EventCard({ event, userLat, userLng, showAway, showDate,
   // Easy / Moderate / Rec, only when the listing supports the call.
   const level = eventRideStyle(event)
   const noDrop = isNoDrop(event)
+  const langs = eventLanguages(event.languages).filter((c) => c !== 'en')
   // Pace, distance, and drop policy are the three things a rider needs (Keith).
   // The level carries the pace; the length rides beside it when the listing states one.
   // Two distances sit on a ride's card, so each says what it is (Keith 2026-11-03):
@@ -172,7 +174,7 @@ export default function EventCard({ event, userLat, userLng, showAway, showDate,
             {event.event_type === 'walking_tour' ? 'Walks' : 'Rides'} to {ridesTo}
           </p>
         )}
-        {(event.ride_series_id || noDrop || event.tags.length > 0) && (
+        {(event.ride_series_id || noDrop || langs.length > 0 || event.tags.length > 0) && (
           <div className="mt-1.5 flex flex-wrap gap-1 lg:mt-1">
             {noDrop && (
               <span className="inline-block rounded-full bg-(--ev-accent-tint-15) px-2 py-0.5 text-[10px] font-semibold leading-tight text-(--ev-accent)">
@@ -186,7 +188,14 @@ export default function EventCard({ event, userLat, userLng, showAway, showDate,
                 RSVP, no app needed
               </span>
             )}
-            {event.tags.slice(0, 3).map(tag => {
+            {/* Led in another language (Shift 01697), in its own words: "Español". */}
+            {langs.length > 0 && (
+              <span lang={langs[0]} title={ledInLine(event.languages, event.event_type) ?? undefined}
+                className="inline-block rounded-full bg-(--ev-accent-tint-15) px-2 py-0.5 text-[10px] font-semibold leading-tight text-(--ev-accent)">
+                {ownNames(langs)}
+              </span>
+            )}
+            {(langs.length > 0 ? event.tags.filter((t) => t !== 'spanish' && t !== 'bilingual') : event.tags).slice(0, 3).map(tag => {
               const tm = tagInk(getTagMeta(tag), tone)
               return (
                 <span

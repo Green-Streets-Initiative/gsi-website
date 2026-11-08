@@ -107,6 +107,8 @@ export interface RideRow {
   organizer_name: string | null
   organizer_url: string | null
   tags: string[]
+  /** Language codes it's led in (Shift 01697); missing before then. */
+  languages?: string[]
   ride_date: string | null
   frequency: Frequency
   week_of_month: number | null

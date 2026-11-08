@@ -21,7 +21,7 @@ import AppliedFilters from './AppliedFilters'
 import MiniMonth from './MiniMonth'
 import Agenda, { AGENDA_PAGE } from './Agenda'
 import EventAlertSignup from './EventAlertSignup'
-import { TypePills, LevelPills, LocationControl, DistancePills, WhenPills, TagToggles, AudienceToggles, hasAudienceChoices } from './FilterControls'
+import { TypePills, LevelPills, LocationControl, DistancePills, WhenPills, TagToggles, AudienceToggles, hasAudienceChoices, LanguageToggles } from './FilterControls'
 import { useEventFilters } from './useEventFilters'
 import { useSavedEvents } from './useSavedEvents'
 import { eventBodyPlain } from '@/lib/event-body'
@@ -414,6 +414,13 @@ export default function EventsPage({ events, tone = 'dark', hrefBase = '/events'
         resultCount={f.filtered.length}
       >
         <div className="flex flex-col gap-5">
+          {/* First when there is a choice: for someone who'd rather ride in Spanish, it is the question (Shift 01697). */}
+          {f.languageChoices.length > 0 && (
+            <div>
+              <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-(--ev-ink-75)">Led in</p>
+              <LanguageToggles choices={f.languageChoices} selected={f.langs} counts={f.languageCounts} onToggle={f.toggleLang} />
+            </div>
+          )}
           <div>
             <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-(--ev-ink-75)">Event type</p>
             <TypePills value={f.typeFilter} counts={f.typeCounts} onChange={f.setTypeFilter} />

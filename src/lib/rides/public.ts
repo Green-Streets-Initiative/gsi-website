@@ -84,6 +84,8 @@ export interface PublicRide {
   pace: 'kids' | 'relaxed' | 'moderate' | 'brisk' | 'fast' | null
   no_drop: boolean | null
   tags: string[] | null
+  /** Language codes it's led in (Shift 01697). get_ride_public leaves it out; the page adds it from rideExtras. */
+  languages?: string[] | null
   flyer_url: string | null
   registration_url: string | null
   live_sharing: string | null

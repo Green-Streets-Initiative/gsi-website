@@ -9,9 +9,10 @@ import { typeInk, rideStyleInk } from '@/lib/events-tone'
 import { useEventsTone } from './EventsTone'
 import CityAutocomplete from './CityAutocomplete'
 import {
-  DISTANCE_OPTIONS, WHEN_OPTIONS, GOOD_FOR_TAGS, AUDIENCE_TAGS,
+  DISTANCE_OPTIONS, WHEN_OPTIONS, GOOD_FOR_TAGS, AUDIENCE_TAGS, languageFilterLabel,
   type DistanceValue, type WhenValue, type GeoStatus, type UserLoc,
 } from './useEventFilters'
+import { languageLabel, type PartnerLanguage } from '@/lib/languages'
 
 /**
  * The individual filter controls, shared by the phone filters sheet and the
@@ -282,4 +283,34 @@ export function AudienceToggles({ selected, counts, onToggle }: TagProps) {
 
 export function hasAudienceChoices(selected: string[], counts: Record<string, number>): boolean {
   return AUDIENCE_TAGS.some((t) => (counts[t] ?? 0) > 0 || selected.includes(t))
+}
+
+// --- Language ---
+
+/**
+ * "In Spanish · Español": only languages with events under the other filters
+ * (and any picked one), so the row is absent when there is nothing to pick.
+ * Each also carries its own name, for the reader who speaks it. Shift 01697.
+ */
+export function LanguageToggles({ choices, selected, counts, onToggle }: {
+  choices: PartnerLanguage[]
+  selected: PartnerLanguage[]
+  counts: Partial<Record<PartnerLanguage, number>>
+  onToggle: (c: PartnerLanguage) => void
+}) {
+  if (choices.length === 0) return null
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {choices.map((c) => {
+        const active = selected.includes(c)
+        return (
+          <button key={c} onClick={() => onToggle(c)} aria-pressed={active} className={pillClass(active)}>
+            {languageFilterLabel(c)}
+            <span lang={c} className={`ml-1 ${active ? 'text-(--ev-accent-90)' : 'text-(--ev-ink-75)'}`}>· {languageLabel(c)}</span>
+            <span className={`ml-1.5 font-mono text-[11px] ${active ? 'text-(--ev-accent-90)' : 'text-(--ev-ink-70)'}`}>{counts[c] ?? 0}</span>
+          </button>
+        )
+      })}
+    </div>
+  )
 }

@@ -36,6 +36,8 @@ export interface CommunityEvent {
   extra_image_urls?: string[]
   source_id: string | null
   tags: string[]
+  /** Language codes it is led in (Shift 01697; src/lib/languages.ts). Empty or missing = not said (English). */
+  languages?: string[]
   featured: boolean
   /** Set when this event came from a ride planned in the Shift app (00817). */
   ride_series_id: string | null

@@ -6,8 +6,9 @@ import { eventPath } from '@/lib/events-url'
 import {
   MapPin, Calendar, Users,
   ChevronLeft, Bookmark, Share2, Globe, ExternalLink, Ticket,
-  Clock, Mail, ArrowRight, Route,
+  Clock, Mail, ArrowRight, Route, Languages,
 } from 'lucide-react'
+import { eventLanguages, ledInLine, ownNames } from '@/lib/languages'
 import dynamic from 'next/dynamic'
 import posthog from 'posthog-js'
 import FixListingLink from '@/components/hosts/FixListingLink'
@@ -162,6 +163,11 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
     if (event.pace && PACE_BAND_LABEL[event.pace]) rideFacts.push(PACE_BAND_LABEL[event.pace])
     if (event.distance_text) rideFacts.push(event.distance_text)
   }
+  // The language it's led in (Shift 01697), and each in its own words.
+  const ledIn = ledInLine(event.languages, event.event_type)
+  const ownLangs = eventLanguages(event.languages).filter((c) => c !== 'en')
+  // The line says it, so the Spanish / Bilingual chips would only repeat it.
+  const chipTags = ledIn ? event.tags.filter((t) => t !== 'spanish' && t !== 'bilingual') : event.tags
   // "November 1 to 30, 2026" for a multi-day event (Shift 01557).
   const dateText = dateRangeLong(event)
   // Deadline-style events (contests) are places to enter, not places to go —
@@ -347,8 +353,19 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
               </p>
             )}
 
+            {/* What language it's led in (Shift 01697). */}
+            {ledIn && (
+              <p className="mb-4 flex flex-wrap items-center gap-x-2 gap-y-1 text-[15px] font-semibold text-(--ev-ink)">
+                <Languages size={18} className="shrink-0 text-(--ev-accent)" aria-hidden />
+                {ledIn}
+                {ownLangs.length > 0 && (
+                  <span lang={ownLangs[0]} className="font-normal text-(--ev-ink-75)">· {ownNames(ownLangs)}</span>
+                )}
+              </p>
+            )}
+
             {/* Tags */}
-            {(noDrop || event.tags.length > 0) && (
+            {(noDrop || chipTags.length > 0) && (
               <div className="mb-6 flex flex-wrap gap-1.5">
                 {noDrop && (
                   <span
@@ -358,7 +375,7 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
                     No-drop
                   </span>
                 )}
-                {event.tags.map(tag => {
+                {chipTags.map(tag => {
                   const tm = tagInk(getTagMeta(tag), tone)
                   return (
                     <span

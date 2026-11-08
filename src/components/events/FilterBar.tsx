@@ -4,8 +4,8 @@ import { useState } from 'react'
 import { Bookmark, Search } from 'lucide-react'
 import { getTagMeta } from '@/lib/events'
 import FilterPill from './FilterPill'
-import { WhenList, LocationControl, DistancePills, TypeList, TagToggles, AudienceToggles, hasAudienceChoices } from './FilterControls'
-import { WHEN_OPTIONS, typeFilterLabel, type EventFilters } from './useEventFilters'
+import { WhenList, LocationControl, DistancePills, TypeList, TagToggles, AudienceToggles, hasAudienceChoices, LanguageToggles } from './FilterControls'
+import { WHEN_OPTIONS, typeFilterLabel, languageFilterLabel, type EventFilters } from './useEventFilters'
 
 /**
  * Desktop filter bar: one sticky row under the site nav. Search, then a pill
@@ -19,7 +19,7 @@ interface FilterBarProps {
   resultCount: number
 }
 
-type PillKey = 'when' | 'near' | 'type' | 'tags'
+type PillKey = 'when' | 'near' | 'type' | 'tags' | 'lang'
 
 export default function FilterBar({ filters: f, savedCount, resultCount }: FilterBarProps) {
   const [open, setOpen] = useState<PillKey | null>(null)
@@ -39,6 +39,8 @@ export default function FilterBar({ filters: f, savedCount, resultCount }: Filte
   const picked = [...f.tags, ...f.audience]
   const tagLabel =
     picked.length === 0 ? 'Good for' : picked.length === 1 ? getTagMeta(picked[0]).label : `Good for · ${picked.length}`
+  // Its own pill, shown only when some upcoming event is led in another language (Shift 01697).
+  const langLabel = f.langs.length === 0 ? 'Language' : f.langs.length === 1 ? languageFilterLabel(f.langs[0]) : `Language · ${f.langs.length}`
 
   return (
     <section className="sticky top-[60px] z-30 hidden border-b border-(--ev-line) bg-(--ev-bar) px-8 backdrop-blur lg:block">
@@ -92,6 +94,13 @@ export default function FilterBar({ filters: f, savedCount, resultCount }: Filte
             </>
           )}
         </FilterPill>
+
+        {f.languageChoices.length > 0 && (
+          <FilterPill label={langLabel} active={f.langs.length > 0} open={open === 'lang'} onOpen={() => setOpen('lang')} onClose={close} panelClassName="w-[300px]">
+            <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-(--ev-ink-75)">Led in</p>
+            <LanguageToggles choices={f.languageChoices} selected={f.langs} counts={f.languageCounts} onToggle={f.toggleLang} />
+          </FilterPill>
+        )}
 
         {(savedCount > 0 || f.savedOnly) && (
           <button

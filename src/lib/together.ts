@@ -1,5 +1,6 @@
 import posthog from 'posthog-js'
 import { supabase } from '@/lib/supabase'
+import type { PartnerLanguage } from './languages'
 
 /**
  * Shift Together on the web (Phase A, Keith 2026-10-27): the same account,
@@ -40,15 +41,8 @@ export const TIMES: { id: PartnerTime; label: string }[] = [
   { id: 'morning', label: 'Morning' }, { id: 'midday', label: 'Midday' }, { id: 'evening', label: 'Evening' },
 ]
 
-/** Languages someone is comfortable riding in (01476; the app's PARTNER_LANGUAGES). A shared one ranks a match first; nobody is left out over it. */
-export type PartnerLanguage = 'en' | 'es' | 'pt' | 'zh' | 'ht' | 'vi' | 'ar' | 'fr'
-/** Each in its own words, so people find theirs (the app's LANGUAGE_OWN_NAMES). */
-export const LANGUAGES: { id: PartnerLanguage; label: string; english: string }[] = [
-  { id: 'en', label: 'English', english: 'English' }, { id: 'es', label: 'Español', english: 'Spanish' },
-  { id: 'pt', label: 'Português', english: 'Portuguese' }, { id: 'zh', label: '中文', english: 'Chinese' },
-  { id: 'ht', label: 'Kreyòl ayisyen', english: 'Haitian Creole' }, { id: 'vi', label: 'Tiếng Việt', english: 'Vietnamese' },
-  { id: 'ar', label: 'العربية', english: 'Arabic' }, { id: 'fr', label: 'Français', english: 'French' },
-]
+/** Languages someone is comfortable riding in (01476; the app's PARTNER_LANGUAGES). A shared one ranks a match first; nobody is left out over it. The list lives in languages.ts, shared with events (01697). */
+export { LANGUAGES, type PartnerLanguage } from './languages'
 
 /** The app's PARTNER_TERMS_VERSION and its words (partners.terms_check). */
 export const TERMS_VERSION = 'ST-2026-10-21'

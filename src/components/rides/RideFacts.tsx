@@ -1,5 +1,6 @@
 import type { ComponentType } from 'react'
-import { CurrencyDollar, Gift, HandHeart, Plant, Baby, UsersThree, ClipboardText } from '@phosphor-icons/react/dist/ssr'
+import { CurrencyDollar, Gift, HandHeart, Plant, Baby, UsersThree, ClipboardText, Translate } from '@phosphor-icons/react/dist/ssr'
+import { eventLanguages, languageList, ownNames } from '@/lib/languages'
 import { PACE_OPTIONS, TAG_OPTIONS, WALK_PACE_OPTIONS, travelMph } from '@/lib/organizers/ride-words'
 import { RIDE_STYLE_BLURB, RIDE_STYLE_INK, RIDE_STYLE_LABEL, RIDE_STYLE_ORDER, rideStyle } from '@/lib/ride-style'
 import type { PublicRide } from '@/lib/rides/public'
@@ -87,6 +88,7 @@ export function rideFacts(ride: PublicRide, miles: number | null, ascentFt: numb
   const walk = ride.activity === 'walk'
   const pace = (walk ? WALK_PACE_OPTIONS : PACE_OPTIONS).find((p) => p.key === ride.pace) ?? null
   const tags = ride.tags ?? []
+  const langs = eventLanguages(ride.languages)
   const mph = travelMph(ride.pace, walk ? 'walk' : 'bike')
   const ridingMin = miles && mph ? (miles / mph) * 60 : null
   // A walk has no bike-ride level (rideStyle answers only for rides).
@@ -109,9 +111,12 @@ export function rideFacts(ride: PublicRide, miles: number | null, ascentFt: numb
     tags.includes('family_friendly') ? { Icon: Baby, title: 'Family friendly', line: 'Kids are welcome' } : null,
     tags.includes('free') ? { Icon: Gift, title: 'Free', line: walk ? 'No cost to join' : 'No cost to ride' } : tags.includes('paid') ? { Icon: CurrencyDollar, title: 'Paid', line: 'The organizer charges a fee' } : null,
     tags.includes('registration_required') ? { Icon: ClipboardText, title: 'Sign-up required', line: 'Register with the organizer' } : null,
+    // The language it's led in (Shift 01697), each also in its own words.
+    langs.length > 0 ? { Icon: Translate, title: `Led in ${languageList(langs)}`, line: ownNames(langs) } : null,
   ].filter(Boolean) as { Icon: Icon; title: string; line: string }[]
 
-  const audience = tags.filter((t) => AUDIENCE.includes(t) && t !== 'family_friendly').map((t) => TAG_OPTIONS.find((o) => o.key === t)?.label).filter(Boolean) as string[]
+  // The language row says Spanish / bilingual already.
+  const audience = tags.filter((t) => AUDIENCE.includes(t) && t !== 'family_friendly' && !(langs.length > 0 && (t === 'spanish' || t === 'bilingual'))).map((t) => TAG_OPTIONS.find((o) => o.key === t)?.label).filter(Boolean) as string[]
   return { stats, level, policies, audience }
 }
 

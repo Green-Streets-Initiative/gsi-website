@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { ArrowLeft, ArrowRight, Bike, CalendarDays, Check, Footprints, ImagePlus, MapPin, MessageSquareText, Trash2 } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Bike, CalendarDays, Check, Footprints, ImagePlus, Languages, MapPin, MessageSquareText, Trash2 } from 'lucide-react'
 import { comfortableShare } from '@/components/commute/calm-route'
 import { scheduleText } from '@/lib/rides/public'
 import { routeMiles } from '@/lib/organizers/route-geo'
@@ -14,6 +14,7 @@ import { decodePlan, draftOf, routePayload } from '@/lib/organizers/saved-route'
 import { DAY_LABELS, TAG_OPTIONS, WEEK_OPTIONS, dateLabel, paceOptionsFor, todayKey, travelMph, type Activity } from '@/lib/organizers/ride-words'
 import { biweeklyStarts, scheduleDates } from '@/lib/organizers/schedule'
 import type { Frequency, Pace, RideRow, RouteDraft } from '@/lib/organizers/types'
+import { LANGUAGES, isLanguage, ledInLine, type PartnerLanguage } from '@/lib/languages'
 import { ROUTE_IMPORT_KEY, openAssistant } from './AssistantPanel'
 import { useConsole } from './ConsoleContext'
 import EndShopCard from './EndShopCard'
@@ -47,6 +48,8 @@ interface Form {
   pace: Pace | ''
   no_drop: boolean
   tags: string[]
+  /** What it's led in (Shift 01697). Empty = English, not said. */
+  languages: PartnerLanguage[]
   registration_url: string
   contact_url: string
   /** Update emails carry Reply-To with the organizer's address (Shift 01598); saved on its own. */
@@ -69,7 +72,7 @@ function blank(): Form {
     season_start: '', season_end: '', start_time: '10:00', end_time: '',
     meetup_name: '', meetup_address: '', meetup_lat: null, meetup_lng: null,
     route: null, route_google_maps_url: '',
-    activity: 'bike', pace: '', no_drop: false, tags: [],
+    activity: 'bike', pace: '', no_drop: false, tags: [], languages: [],
     registration_url: '', contact_url: '', replies_to_organizer: false, live_sharing: 'members',
     visibility: 'public', event_organizer_id: '', organizer_name: '', organizer_url: '',
     end_location_id: null,
@@ -88,7 +91,7 @@ function fromRow(r: RideRow): Form {
     route: draftOf(r),
     route_google_maps_url: r.route_google_maps_url ?? '',
     activity: r.activity === 'walk' ? 'walk' : 'bike',
-    pace: r.pace ?? '', no_drop: !!r.no_drop, tags: r.tags ?? [],
+    pace: r.pace ?? '', no_drop: !!r.no_drop, tags: r.tags ?? [], languages: rowLanguages(r),
     registration_url: r.registration_url ?? '', contact_url: r.contact_url ?? '',
     replies_to_organizer: !!r.replies_to_organizer,
     live_sharing: r.live_sharing ?? 'off',
@@ -97,6 +100,25 @@ function fromRow(r: RideRow): Form {
     organizer_name: r.organizer_name ?? '', organizer_url: r.organizer_url ?? '',
     end_location_id: r.end_location_id ?? null,
   }
+}
+
+/** A ride saved before 01697 said Spanish with its tags; read that as its languages. */
+function rowLanguages(r: RideRow): PartnerLanguage[] {
+  const set = (r.languages ?? []).filter(isLanguage)
+  if (set.length) return set
+  const tags = r.tags ?? []
+  return tags.includes('spanish') ? (tags.includes('bilingual') ? ['en', 'es'] : ['es']) : []
+}
+
+/** The Spanish and Bilingual tags installed apps show, kept in step with the languages. */
+function languageTags(tags: string[], languages: PartnerLanguage[]): string[] {
+  const rest = tags.filter((t) => t !== 'spanish' && t !== 'bilingual')
+  return [...rest, ...(languages.includes('es') ? ['spanish'] : []), ...(languages.length > 1 ? ['bilingual'] : [])]
+}
+
+/** The languages as the picker shows them: English when nothing else is said. */
+function shownLanguages(languages: PartnerLanguage[]): PartnerLanguage[] {
+  return languages.length ? languages : ['en']
 }
 
 function toPayload(f: Form): Record<string, unknown> {
@@ -108,7 +130,7 @@ function toPayload(f: Form): Record<string, unknown> {
     start_time: f.start_time, end_time: f.end_time || null,
     meetup_name: f.meetup_name, meetup_address: f.meetup_address, meetup_lat: f.meetup_lat, meetup_lng: f.meetup_lng,
     ...routePayload(f.route, f.route_google_maps_url),
-    activity: f.activity, pace: f.pace || null, no_drop: f.no_drop, tags: f.tags,
+    activity: f.activity, pace: f.pace || null, no_drop: f.no_drop, tags: languageTags(f.tags, f.languages), languages: f.languages,
     registration_url: f.registration_url, contact_url: f.contact_url, live_sharing: f.live_sharing,
     visibility: f.visibility, event_organizer_id: f.event_organizer_id || null,
     organizer_name: f.organizer_name, organizer_url: f.organizer_url,
@@ -256,6 +278,7 @@ function Preview({ f, route, hostName }: { f: Form; route: RouteDraft | null; ho
         <div className="grid gap-2.5 px-4 py-4">
           <PreviewRow icon={CalendarDays} empty={!sched}>{sched ?? 'When it happens'}</PreviewRow>
           <PreviewRow icon={MapPin} empty={!f.meetup_name && !f.meetup_address}>{f.meetup_name || f.meetup_address || 'Where people meet'}</PreviewRow>
+          {ledInLine(f.languages) && <PreviewRow icon={Languages}>{ledInLine(f.languages)}</PreviewRow>}
         </div>
         <dl className="grid grid-cols-3 border-t border-(--ev-line)">
           {([
@@ -888,9 +911,26 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
                 <span className="block text-[14px] text-(--ev-ink-75)">The group waits or regroups so slower people stay with it.</span>
               </span>
             </label>
+            <Field label="Led in" hint={`Every language you lead in, so people can find ${noun}s in theirs.`}>
+              <div className="flex flex-wrap gap-2">
+                {LANGUAGES.map((l) => {
+                  const shown = shownLanguages(f.languages)
+                  const on = shown.includes(l.id)
+                  const next = on ? shown.filter((x) => x !== l.id) : [...shown, l.id]
+                  // English alone, or nothing, is the default: saved as not said.
+                  const stored = next.length === 0 || (next.length === 1 && next[0] === 'en') ? [] : next
+                  return (
+                    <Toggle key={l.id} on={on} onClick={() => set('languages', stored)} lang={l.id}
+                      aria-label={l.label === l.english ? l.label : `${l.label} (${l.english})`}>
+                      {l.label}
+                    </Toggle>
+                  )
+                })}
+              </div>
+            </Field>
             <Field label="Tags" optional>
               <div className="flex flex-wrap gap-2">
-                {TAG_OPTIONS.map((t) => (
+                {TAG_OPTIONS.filter((t) => t.key !== 'spanish' && t.key !== 'bilingual').map((t) => (
                   <Toggle key={t.key} on={f.tags.includes(t.key)} onClick={() => set('tags', f.tags.includes(t.key) ? f.tags.filter((x) => x !== t.key) : [...f.tags, t.key])}>{t.label}</Toggle>
                 ))}
               </div>
