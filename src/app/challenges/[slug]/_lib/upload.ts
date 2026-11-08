@@ -9,7 +9,11 @@
  * Before uploading, the browser reads the file itself: its length, a still
  * for the gallery, three frames for the automatic check, and its format, so
  * nothing about the video has to be guessed later.
+ *
+ * Its messages follow the page's language (`locale`, English by default).
  */
+import { translator, type SiteLocale } from '@/lib/site-i18n'
+import { creativeStrings } from '@/lib/site-strings/challenges'
 
 export const UPLOAD_TYPES: Record<string, string> = { mp4: 'video/mp4', mov: 'video/quicktime', m4v: 'video/mp4', webm: 'video/webm' }
 export const ACCEPT = 'video/mp4,video/quicktime,video/webm,.mp4,.mov,.m4v,.webm'
@@ -31,7 +35,7 @@ export interface Probe {
 }
 
 /** Reads a picked file in the browser. Throws a plain message if it can't. */
-export async function probeVideo(file: File): Promise<Probe> {
+export async function probeVideo(file: File, locale: SiteLocale = 'en'): Promise<Probe> {
   const url = URL.createObjectURL(file)
   const v = document.createElement('video')
   v.muted = true
@@ -69,7 +73,7 @@ export async function probeVideo(file: File): Promise<Probe> {
 
     return { duration, thumb, sheet: sheet.toDataURL('image/jpeg', 0.72), codec: await sniffCodec(file), portrait: h > w }
   } catch {
-    throw new Error('This browser can’t open that video. Try another browser or your phone, export it as MP4, or paste a link instead.')
+    throw new Error(translator(creativeStrings, locale)('file.cant_read'))
   } finally {
     v.removeAttribute('src')
     v.load()
@@ -102,7 +106,8 @@ async function sniffCodec(file: File): Promise<string> {
 }
 
 /** Sends the file to its signed link, reporting progress from 0 to 1. */
-export function sendFile(uploadUrl: string, file: File, type: string, onProgress: (p: number) => void): Promise<void> {
+export function sendFile(uploadUrl: string, file: File, type: string, onProgress: (p: number) => void, locale: SiteLocale = 'en'): Promise<void> {
+  const t = translator(creativeStrings, locale)
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest()
     xhr.open('PUT', uploadUrl)
@@ -111,8 +116,8 @@ export function sendFile(uploadUrl: string, file: File, type: string, onProgress
     xhr.upload.onprogress = (e) => { if (e.lengthComputable) onProgress(e.loaded / e.total) }
     xhr.onload = () => (xhr.status >= 200 && xhr.status < 300
       ? resolve()
-      : reject(new Error(xhr.status === 413 ? `That file is over ${MAX_MB} MB.` : 'The upload didn’t finish. Check your connection and try again.')))
-    xhr.onerror = () => reject(new Error('The upload didn’t finish. Check your connection and try again.'))
+      : reject(new Error(xhr.status === 413 ? t('upload.over', { mb: MAX_MB }) : t('upload.unfinished'))))
+    xhr.onerror = () => reject(new Error(t('upload.unfinished')))
     xhr.send(file)
   })
 }

@@ -5,6 +5,8 @@
  * page's preview key (while the switch is off) and, once the person has
  * confirmed their email, their person token.
  */
+import { siteDate, translator, type SiteLocale } from '@/lib/site-i18n'
+import { creativeStrings } from '@/lib/site-strings/challenges'
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -182,27 +184,36 @@ export async function joinNewsletter(email: string, firstName: string) {
 }
 
 // ---- Words ----
+//
+// `locale` is the page's language (translation plan, batch 5). English is
+// the default and reads exactly as before.
 
 const ET = 'America/New_York'
 
 /** "Sun, Jan 17" */
-export function shortDay(iso: string): string {
-  return new Date(iso).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: ET })
+export function shortDay(iso: string, locale: SiteLocale = 'en'): string {
+  const opts: Intl.DateTimeFormatOptions = { weekday: 'short', month: 'short', day: 'numeric', timeZone: ET }
+  if (locale !== 'en') return siteDate(locale, iso, opts)
+  return new Date(iso).toLocaleDateString('en-US', opts)
 }
 
 /** "Sunday, January 17" */
-export function longDay(iso: string): string {
-  return new Date(iso).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', timeZone: ET })
+export function longDay(iso: string, locale: SiteLocale = 'en'): string {
+  const opts: Intl.DateTimeFormatOptions = { weekday: 'long', month: 'long', day: 'numeric', timeZone: ET }
+  if (locale !== 'en') return siteDate(locale, iso, opts)
+  return new Date(iso).toLocaleDateString('en-US', opts)
 }
 
 /** "Sunday, January 17, 2027" */
-export function fullDay(iso: string): string {
-  return new Date(iso).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', timeZone: ET })
+export function fullDay(iso: string, locale: SiteLocale = 'en'): string {
+  const opts: Intl.DateTimeFormatOptions = { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', timeZone: ET }
+  if (locale !== 'en') return siteDate(locale, iso, opts)
+  return new Date(iso).toLocaleDateString('en-US', opts)
 }
 
 /** The last day entries count: entries_close_at is 11:59 PM that night. */
-export function lastDay(iso: string): string {
-  return shortDay(new Date(new Date(iso).getTime() - 60_000).toISOString())
+export function lastDay(iso: string, locale: SiteLocale = 'en'): string {
+  return shortDay(new Date(new Date(iso).getTime() - 60_000).toISOString(), locale)
 }
 
 export function withPreview(path: string, preview: string): string {
@@ -210,8 +221,79 @@ export function withPreview(path: string, preview: string): string {
   return `${path}${path.includes('?') ? '&' : '?'}preview=${encodeURIComponent(preview)}`
 }
 
-export function categoryLabel(c: ChallengeView, key: string): string {
+export function categoryLabel(c: ChallengeView, key: string, locale: SiteLocale = 'en'): string {
+  if (locale !== 'en' && isKnownCategory(key)) return translator(creativeStrings, locale)(`cat.${key}`)
   return c.categories.find((x) => x.key === key)?.label ?? key
+}
+
+/** The three categories the challenges use; any other keeps its database label. */
+const KNOWN_CATEGORIES = ['walking', 'biking', 'transit'] as const
+function isKnownCategory(key: string): key is (typeof KNOWN_CATEGORIES)[number] {
+  return (KNOWN_CATEGORIES as readonly string[]).includes(key)
+}
+
+/** "walking, biking or transit", for the rules (a translated page uses its own words). */
+export function categoryList(c: ChallengeView, locale: SiteLocale = 'en'): string {
+  if (locale === 'en') {
+    const cats = c.categories.map((k) => k.label.toLowerCase())
+    return cats.length > 1 ? `${cats.slice(0, -1).join(', ')} or ${cats[cats.length - 1]}` : cats[0]
+  }
+  const t = translator(creativeStrings, locale)
+  const cats = c.categories.map((k) => (isKnownCategory(k.key) ? t(`catl.${k.key}`) : k.label.toLowerCase()))
+  return cats.length > 1 ? t('list.or', { rest: cats.slice(0, -1).join(t('list.sep')), last: cats[cats.length - 1] }) : cats[0]
+}
+
+/**
+ * What to show for a failed call. English shows the server's own message,
+ * as before. The other languages say the same thing in their words, by the
+ * server's error code (creative-challenges/index.ts `fail(...)`); a code not
+ * listed here keeps the server's English message.
+ */
+export function errorText(
+  err: unknown,
+  locale: SiteLocale,
+  fallback: string,
+  ctx: { action?: 'code' | 'verify' | 'enter' | 'vote'; maxEntries?: number; source?: 'upload' | 'link'; maxMb?: number } = {},
+): string {
+  if (!(err instanceof ApiError)) return fallback
+  if (locale === 'en') return err.message
+  const t = translator(creativeStrings, locale)
+  const vote = ctx.action === 'vote'
+  switch (err.code) {
+    case 'network': return t('err.network')
+    case 'error': return t('err.try_minute')
+    case 'server_error':
+    case 'not_found': return t('err.try_again')
+    case 'invalid_email': return t('api.invalid_email')
+    case 'slow_down': return t('api.slow_down')
+    case 'send_failed': return t('api.send_failed')
+    case 'expired': return t('api.expired')
+    case 'wrong_code': return t('api.wrong_code')
+    case 'name_required': return t('gate.name_required')
+    case 'sign_in': return t(vote ? 'api.sign_in_vote' : 'api.sign_in_enter')
+    case 'closed': return t(vote ? 'api.closed_vote' : 'api.closed_enter')
+    case 'confirm': return t('api.confirm')
+    case 'bad_link': return t('api.bad_link')
+    case 'title': return t('api.title')
+    case 'says': return t('api.says')
+    case 'category': return t('api.category')
+    case 'last_name': return t('api.last_name')
+    case 'town': return t('api.town')
+    case 'limit': return ctx.maxEntries ? t('api.limit', { n: ctx.maxEntries }) : err.message
+    case 'cant_open': return t(ctx.source === 'upload' ? 'api.cant_open_upload' : 'api.cant_open_link')
+    case 'too_long':
+    case 'too_short': {
+      // "Ads run 30 to 60 seconds. This one is 1:12."
+      const m = err.message.match(/(\d+) to (\d+) seconds\. This one is (\d+:\d{2})/)
+      return m ? t('api.length', { min: m[1], max: m[2], len: m[3] }) : err.message
+    }
+    case 'duplicate': return t('api.duplicate')
+    case 'blocked': return t('api.blocked')
+    case 'bad_type': return t('api.bad_type')
+    case 'too_big': return ctx.maxMb ? t('api.too_big', { mb: ctx.maxMb }) : err.message
+    case 'not_finalist': return t('api.not_finalist')
+    default: return err.message
+  }
 }
 
 export function prizeFor(c: ChallengeView, key: string | null): PrizeView | null {

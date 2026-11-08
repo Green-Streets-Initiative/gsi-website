@@ -79,6 +79,8 @@ export interface Promotable {
     windowDays: number
     /** "$15 reward". Derived from value_cents. Never a code. */
     rewardLabel: string
+    /** The same amount in whole dollars (null: "A reward of your choice"), so a translated page can say it in its own words. */
+    rewardDollars: number | null
     /** "First 200" — curated copy, not the live cap. */
     supplyLabel: string | null
     /** "Verify a school email", or null. */

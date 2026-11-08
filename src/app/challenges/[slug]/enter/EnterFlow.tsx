@@ -3,13 +3,15 @@
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import {
-  ApiError, joinNewsletter, lastDay, post, readPerson, withPreview, writePerson,
+  ApiError, categoryLabel, errorText, joinNewsletter, lastDay, post, readPerson, withPreview, writePerson,
   type ChallengeView, type EntryView, type Person,
 } from '../_lib/api'
 import EmailGate, { INPUT, LABEL, PRIMARY } from '../_components/EmailGate'
 import ShareButton from '../_components/ShareButton'
 import { track } from '../_lib/track'
 import { ACCEPT, MAX_MB, probeVideo, sendFile, typeOf, type Probe } from '../_lib/upload'
+import { translator, withLang, type SiteLocale } from '@/lib/site-i18n'
+import { creativeStrings, rich } from '@/lib/site-strings/challenges'
 
 /**
  * Entering: confirm an email (first time only), then one short form, then the
@@ -17,7 +19,8 @@ import { ACCEPT, MAX_MB, probeVideo, sendFile, typeOf, type Probe } from '../_li
  * read from the video itself: an uploaded file (the browser reads its length
  * and stills) or a YouTube, Vimeo or TikTok link (the platform tells us).
  */
-export default function EnterFlow({ c, preview }: { c: ChallengeView; preview: string }) {
+export default function EnterFlow({ c, preview, locale = 'en' }: { c: ChallengeView; preview: string; locale?: SiteLocale }) {
+  const t = translator(creativeStrings, locale)
   const [person, setPerson] = useState<Person | null>(null)
   const [ready, setReady] = useState(false)
   const [done, setDone] = useState<{ entry: EntryView; share_url: string } | null>(null)
@@ -27,77 +30,80 @@ export default function EnterFlow({ c, preview }: { c: ChallengeView; preview: s
     setReady(true)
   }, [])
 
-  const back = withPreview(`/challenges/${c.slug}`, preview)
+  const link = (path: string) => withLang(withPreview(path, preview), locale)
+  const back = link(`/challenges/${c.slug}`)
 
   if (c.phase !== 'open') {
     return (
-      <Panel title={c.phase === 'soon' ? 'Entries aren’t open yet' : 'Entries have closed'}>
+      <Panel title={c.phase === 'soon' ? t('enter.not_yet') : t('enter.closed')}>
         <p className="text-[16px] text-navy">
-          {c.phase === 'soon' ? 'Come back when entries open.' : 'Thanks to everyone who entered. See the entries and what happens next.'}
+          {c.phase === 'soon' ? t('enter.come_back') : t('enter.thanks')}
         </p>
-        <Link href={back} className={`${PRIMARY} mt-5`}>Back to {c.title}</Link>
+        <Link href={back} className={`${PRIMARY} mt-5`}>{t('enter.back', { title: c.title })}</Link>
       </Panel>
     )
   }
 
   if (done) {
     return (
-      <Panel title="Your ad is in.">
+      <Panel title={t('done.title')}>
         <p className="text-[16px] leading-relaxed text-navy">
-          <span className="font-bold">{done.entry.title}</span> is entered.
-          {done.entry.status === 'pending' ? ' It shows in the gallery once our quick check finishes, usually within minutes.' : ' It’s in the gallery now.'}
+          {rich(t(done.entry.status === 'pending' ? 'done.pending' : 'done.ok'), {
+            title: <span className="font-bold">{done.entry.title}</span>,
+          })}
         </p>
-        <p className="mt-3 text-[16px] leading-relaxed text-navy">
-          Send it around now. If it makes the final {c.finalist_count}, the people who&rsquo;ve seen it are the ones who&rsquo;ll vote.
-        </p>
+        <p className="mt-3 text-[16px] leading-relaxed text-navy">{t('done.send', { n: c.finalist_count })}</p>
         <div className="mt-6 flex flex-wrap items-center gap-3">
-          <ShareButton url={done.share_url} title={done.entry.title} />
-          <Link href={withPreview(`/challenges/${c.slug}/e/${done.entry.id}`, preview)} className="inline-flex min-h-[48px] items-center px-2 font-bold text-forest underline-offset-4 hover:underline">
-            See its page
+          <ShareButton url={done.share_url} title={done.entry.title} locale={locale} />
+          <Link href={link(`/challenges/${c.slug}/e/${done.entry.id}`)} className="inline-flex min-h-[48px] items-center px-2 font-bold text-forest underline-offset-4 hover:underline">
+            {t('done.see_page')}
           </Link>
         </div>
         <div className="mt-8 flex flex-wrap gap-x-6 border-t-2 border-navy/[0.1] pt-5">
           <button type="button" onClick={() => setDone(null)} className="inline-flex min-h-[44px] items-center font-bold text-navy underline-offset-4 hover:underline">
-            Enter another ad
+            {t('mine.another')}
           </button>
           <Link href={back} className="inline-flex min-h-[44px] items-center font-bold text-navy underline-offset-4 hover:underline">
-            Back to {c.title}
+            {t('enter.back', { title: c.title })}
           </Link>
         </div>
       </Panel>
     )
   }
 
-  if (!ready) return <Panel title={`Enter ${c.title}`}><div className="h-40" /></Panel>
+  if (!ready) return <Panel title={t('enter.title', { title: c.title })}><div className="h-40" /></Panel>
 
   if (!person) {
     return (
-      <Panel title={`Enter ${c.title}`}>
+      <Panel title={t('enter.title', { title: c.title })}>
         <EmailGate
           slug={c.slug}
           preview={preview}
-          intro="First, your email. We'll send a code to confirm it, and tell you if your ad makes the final."
+          intro={t('enter.intro')}
           onVerified={setPerson}
+          locale={locale}
         />
       </Panel>
     )
   }
 
   return (
-    <Panel title={`Enter ${c.title}`}>
-      <EntryForm c={c} preview={preview} person={person} onDone={setDone}
+    <Panel title={t('enter.title', { title: c.title })}>
+      <EntryForm c={c} preview={preview} person={person} onDone={setDone} locale={locale}
         onSignOut={() => { writePerson(null); setPerson(null) }} />
     </Panel>
   )
 }
 
-function EntryForm({ c, preview, person, onDone, onSignOut }: {
+function EntryForm({ c, preview, person, onDone, onSignOut, locale }: {
   c: ChallengeView
   preview: string
   person: Person
   onDone: (d: { entry: EntryView; share_url: string }) => void
   onSignOut: () => void
+  locale: SiteLocale
 }) {
+  const t = translator(creativeStrings, locale)
   const [source, setSource] = useState<'upload' | 'link'>('upload')
   const [link, setLink] = useState('')
   const [file, setFile] = useState<File | null>(null)
@@ -129,16 +135,16 @@ function EntryForm({ c, preview, person, onDone, onSignOut }: {
     setFileError(null)
     if (!f) return
     const type = typeOf(f)
-    if (!type) { setFileError('Choose an MP4, MOV or WebM video.'); return }
+    if (!type) { setFileError(t('file.type')); return }
     if (f.size > MAX_MB * 1024 * 1024) {
-      setFileError(`That file is ${Math.round(f.size / 1024 / 1024)} MB. Videos can be up to ${MAX_MB} MB: export it at 1080p, or post it on YouTube, Vimeo or TikTok and paste the link.`)
+      setFileError(t('file.too_big', { size: Math.round(f.size / 1024 / 1024), max: MAX_MB }))
       return
     }
     setProbing(true)
     try {
-      const p = await probeVideo(f)
+      const p = await probeVideo(f, locale)
       if (p.duration > maxS + 5 || p.duration < minS - 5) {
-        setFileError(`Ads run ${minS} to ${maxS} seconds. This one is ${mmss(p.duration)}.`)
+        setFileError(t('api.length', { min: minS, max: maxS, len: mmss(p.duration) }))
         return
       }
       setFile(f)
@@ -152,7 +158,7 @@ function EntryForm({ c, preview, person, onDone, onSignOut }: {
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()
-    if (source === 'upload' && (!file || !probe)) { setError('Choose your video file first.'); return }
+    if (source === 'upload' && (!file || !probe)) { setError(t('file.first')); return }
     setBusy(true)
     setError(null)
     try {
@@ -161,7 +167,7 @@ function EntryForm({ c, preview, person, onDone, onSignOut }: {
         const type = typeOf(file)!
         const start = await post<{ path: string; upload_url: string }>({ action: 'upload_start', slug: c.slug, preview, type, size: file.size }, person.token)
         setProgress(0)
-        await sendFile(start.upload_url, file, type, setProgress)
+        await sendFile(start.upload_url, file, type, setProgress, locale)
         upload = { path: start.path, duration_s: probe.duration, codec: probe.codec, thumb: probe.thumb, sheet: probe.sheet }
       }
       const r = await post<{ entry: EntryView; share_url: string }>({
@@ -176,7 +182,10 @@ function EntryForm({ c, preview, person, onDone, onSignOut }: {
       window.scrollTo({ top: 0, behavior: 'smooth' })
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) { onSignOut(); return }
-      setError(err instanceof Error && err.message ? err.message : 'Something went wrong. Try again in a minute.')
+      const fallback = t('err.try_minute')
+      setError(err instanceof ApiError
+        ? errorText(err, locale, fallback, { action: 'enter', maxEntries: c.max_entries_per_person, source, maxMb: MAX_MB }) || fallback
+        : err instanceof Error && err.message ? err.message : fallback)
     } finally {
       setBusy(false)
       setProgress(null)
@@ -186,14 +195,14 @@ function EntryForm({ c, preview, person, onDone, onSignOut }: {
   return (
     <form onSubmit={submit} className="space-y-6">
       <p className="text-[15px] text-ink-soft">
-        Entering as <span className="font-bold text-navy">{person.first_name}</span> ({person.email}).{' '}
-        <button type="button" onClick={onSignOut} className="font-bold text-forest underline-offset-4 hover:underline">Not you?</button>
+        {rich(t('form.as'), { name: <span className="font-bold text-navy">{person.first_name}</span>, email: person.email })}{' '}
+        <button type="button" onClick={onSignOut} className="font-bold text-forest underline-offset-4 hover:underline">{t('form.not_you')}</button>
       </p>
 
       <fieldset>
-        <legend className={LABEL}>Your video</legend>
+        <legend className={LABEL}>{t('form.video')}</legend>
         <div className="mt-2 flex flex-wrap gap-2" role="radiogroup">
-          {([['upload', 'Upload the file'], ['link', 'Paste a link']] as const).map(([k, label]) => (
+          {([['upload', t('form.upload')], ['link', t('form.link')]] as const).map(([k, label]) => (
             <label key={k} className={`inline-flex min-h-[46px] cursor-pointer items-center rounded-full border-2 px-5 text-[16px] font-bold ${source === k ? 'border-navy bg-navy text-white' : 'border-navy/[0.16] bg-white text-navy hover:border-navy/40'}`}>
               <input type="radio" name="source" value={k} checked={source === k} onChange={() => { setSource(k); setError(null) }} className="sr-only" />
               {label}
@@ -211,15 +220,15 @@ function EntryForm({ c, preview, person, onDone, onSignOut }: {
                   <p className="truncate text-[16px] font-bold text-navy">{file.name}</p>
                   <p className="text-[15px] text-ink-soft">{mmss(probe.duration)} · {Math.max(1, Math.round(file.size / 1024 / 1024))} MB</p>
                   <label className="mt-1 inline-flex min-h-[40px] cursor-pointer items-center font-bold text-forest underline-offset-4 hover:underline">
-                    Choose a different file
+                    {t('form.choose_other')}
                     <input id="cb-file-change" type="file" accept={ACCEPT} className="sr-only" onChange={(e) => void pick(e.target.files?.[0] ?? null)} />
                   </label>
                 </div>
               </div>
             ) : (
               <label className="flex min-h-[120px] cursor-pointer flex-col items-center justify-center rounded-[16px] border-2 border-dashed border-navy/[0.24] bg-white px-4 py-6 text-center hover:border-navy/50">
-                <span className="text-[17px] font-bold text-navy">{probing ? 'Reading your video…' : 'Choose your video'}</span>
-                <span className="mt-1 text-[14px] text-ink-soft">MP4, MOV or WebM, up to {MAX_MB} MB, {minS} to {maxS} seconds</span>
+                <span className="text-[17px] font-bold text-navy">{probing ? t('form.reading') : t('form.choose')}</span>
+                <span className="mt-1 text-[14px] text-ink-soft">{t('form.file_hint', { mb: MAX_MB, min: minS, max: maxS })}</span>
                 <input id="cb-file" type="file" accept={ACCEPT} className="sr-only" disabled={probing} onChange={(e) => void pick(e.target.files?.[0] ?? null)} />
               </label>
             )}
@@ -227,34 +236,32 @@ function EntryForm({ c, preview, person, onDone, onSignOut }: {
           </div>
         ) : (
           <label className="mt-4 block">
-            <span className="sr-only">Link to your video</span>
+            <span className="sr-only">{t('form.link_label')}</span>
             <input id="cb-link" required value={link} onChange={(e) => setLink(e.target.value)} inputMode="url" autoComplete="off"
-              placeholder="youtube.com/…, vimeo.com/… or tiktok.com/…" className={INPUT} />
-            <span className="mt-1.5 block text-[14px] text-ink-soft">
-              Public or unlisted, and kept up until the winners are announced. {minS} to {maxS} seconds.
-            </span>
+              placeholder={t('form.link_placeholder')} className={INPUT} />
+            <span className="mt-1.5 block text-[14px] text-ink-soft">{t('form.link_hint', { min: minS, max: maxS })}</span>
           </label>
         )}
       </fieldset>
 
       <label className="block">
-        <span className={LABEL}>Title</span>
+        <span className={LABEL}>{t('form.title')}</span>
         <input required value={title} onChange={(e) => setTitle(e.target.value)} maxLength={80} className={INPUT} />
       </label>
 
       <label className="block">
-        <span className={LABEL}>In one line, what does your ad say?</span>
+        <span className={LABEL}>{t('form.says')}</span>
         <input required value={says} onChange={(e) => setSays(e.target.value)} maxLength={140}
-          placeholder="The bus gets you there before you'd find parking." className={INPUT} />
+          placeholder={t('form.says_placeholder')} className={INPUT} />
       </label>
 
       <fieldset>
-        <legend className={LABEL}>It&rsquo;s mostly about</legend>
+        <legend className={LABEL}>{t('form.about')}</legend>
         <div className="mt-2 flex flex-wrap gap-2">
           {c.categories.map((k) => (
             <label key={k.key} className={`inline-flex min-h-[46px] cursor-pointer items-center rounded-full border-2 px-5 text-[16px] font-bold ${category === k.key ? 'border-forest bg-forest text-white' : 'border-navy/[0.16] bg-white text-navy hover:border-navy/40'}`}>
               <input type="radio" name="category" value={k.key} checked={category === k.key} onChange={() => setCategory(k.key)} required className="sr-only" />
-              {k.label}
+              {categoryLabel(c, k.key, locale)}
             </label>
           ))}
         </div>
@@ -262,39 +269,43 @@ function EntryForm({ c, preview, person, onDone, onSignOut }: {
 
       <div className="grid gap-6 sm:grid-cols-2">
         <label className="block">
-          <span className={LABEL}>Last name</span>
+          <span className={LABEL}>{t('form.last')}</span>
           <input required value={lastName} onChange={(e) => setLastName(e.target.value)} maxLength={40} autoComplete="family-name" className={INPUT} />
-          <span className="mt-1.5 block text-[14px] text-ink-soft">For a prize. Only the initial shows.</span>
+          <span className="mt-1.5 block text-[14px] text-ink-soft">{t('form.last_hint')}</span>
         </label>
         <label className="block">
-          <span className={LABEL}>Your city or town</span>
-          <input required value={town} onChange={(e) => setTown(e.target.value)} maxLength={60} autoComplete="address-level2" placeholder="Somerville" className={INPUT} />
+          <span className={LABEL}>{t('form.town')}</span>
+          <input required value={town} onChange={(e) => setTown(e.target.value)} maxLength={60} autoComplete="address-level2" placeholder={t('form.town_placeholder')} className={INPUT} />
         </label>
       </div>
 
       <label className="block">
-        <span className={LABEL}>Credit it as</span>
+        <span className={LABEL}>{t('form.credit')}</span>
         <input value={credit} onChange={(e) => setCredit(e.target.value)} maxLength={80} placeholder={defaultCredit} className={INPUT} />
-        <span className="mt-1.5 block text-[14px] text-ink-soft">Made it with others? Name the team.</span>
+        <span className="mt-1.5 block text-[14px] text-ink-soft">{t('form.credit_hint')}</span>
       </label>
 
       <div className="space-y-3 rounded-[16px] bg-white p-4">
-        <Check checked={eligible} onChange={setEligible}>I&rsquo;m 18 or older and live in Massachusetts.</Check>
-        <Check checked={rights} onChange={setRights}>I made this, I have the rights to its music and images, and everyone in it agreed to be in it.</Check>
+        <Check checked={eligible} onChange={setEligible}>{t('form.eligible')}</Check>
+        <Check checked={rights} onChange={setRights}>{t('form.rights')}</Check>
         <Check checked={rules} onChange={setRules}>
-          I agree to the{' '}
-          <Link href={withPreview(`/challenges/${c.slug}/rules`, preview)} target="_blank" className="font-bold text-forest underline underline-offset-4">official rules</Link>,
-          including that Green Streets may share and run my ad, with credit.
+          {rich(t('form.agree'), {
+            link: (
+              <Link href={withLang(withPreview(`/challenges/${c.slug}/rules`, preview), locale)} target="_blank" className="font-bold text-forest underline underline-offset-4">
+                {t('form.agree_link')}
+              </Link>
+            ),
+          })}
         </Check>
-        <Check checked={newsletter} onChange={setNewsletter}>Send me the Green Streets newsletter, once a month. (Optional)</Check>
+        <Check checked={newsletter} onChange={setNewsletter}>{t('form.newsletter')}</Check>
       </div>
 
       {error && <p role="alert" className="text-[15px] font-semibold text-ep-danger">{error}</p>}
       <div className="flex flex-wrap items-center gap-4">
         <button type="submit" disabled={busy || !eligible || !rights || !rules} className={PRIMARY}>
-          {progress != null ? `Uploading… ${Math.round(progress * 100)}%` : busy ? 'Checking your video…' : 'Enter my ad'}
+          {progress != null ? t('form.uploading', { pct: Math.round(progress * 100) }) : busy ? t('form.checking') : t('form.submit')}
         </button>
-        <span className="text-[15px] text-ink-soft">Entries close {lastDay(c.entries_close_at)}.</span>
+        <span className="text-[15px] text-ink-soft">{t('form.closes', { date: lastDay(c.entries_close_at, locale) })}</span>
       </div>
     </form>
   )

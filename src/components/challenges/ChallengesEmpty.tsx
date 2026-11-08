@@ -1,5 +1,7 @@
 import TrackedLink from '@/components/TrackedLink'
 import { weekdayDateET } from '@/lib/campaigns/format'
+import { translator, withLang, type SiteLocale } from '@/lib/site-i18n'
+import { hubStrings } from '@/lib/site-strings/challenges'
 
 /**
  * Shown when nothing is running, coming up, or freshly wrapped.
@@ -9,15 +11,14 @@ import { weekdayDateET } from '@/lib/campaigns/format'
  * page. The thing that disappears when there is nothing on is the nav item,
  * not this page.
  */
-export default function ChallengesEmpty({ nextWalkRideDay }: { nextWalkRideDay?: string | null }) {
+export default function ChallengesEmpty({ nextWalkRideDay, locale = 'en' }: { nextWalkRideDay?: string | null; locale?: SiteLocale }) {
+  const t = translator(hubStrings, locale)
   return (
     <div className="max-w-[620px] py-6">
       <p className="text-[1.0625rem] leading-[1.65] text-ink-soft">
-        Nothing is running right now.{' '}
         {nextWalkRideDay
-          ? `The next Walk/Ride Day is ${weekdayDateET(nextWalkRideDay)}.`
-          : 'Walk/Ride Day comes back the last Friday of every month.'}{' '}
-        New challenges are announced here first.
+          ? t('empty.body_next', { date: weekdayDateET(nextWalkRideDay, locale) })
+          : t('empty.body_monthly')}
       </p>
       <div className="mt-6 flex flex-wrap gap-x-8 gap-y-3 text-[15px]">
         <TrackedLink
@@ -25,14 +26,14 @@ export default function ChallengesEmpty({ nextWalkRideDay }: { nextWalkRideDay?:
           placement="challenges_empty"
           className="inline-flex min-h-[44px] items-center font-semibold text-navy underline-offset-4 hover:underline"
         >
-          Get the newsletter
+          {t('empty.newsletter')}
         </TrackedLink>
         <TrackedLink
-          href="/events"
+          href={withLang('/events', locale)}
           placement="challenges_empty"
           className="inline-flex min-h-[44px] items-center font-semibold text-navy underline-offset-4 hover:underline"
         >
-          Browse community events
+          {t('empty.events')}
         </TrackedLink>
       </div>
     </div>

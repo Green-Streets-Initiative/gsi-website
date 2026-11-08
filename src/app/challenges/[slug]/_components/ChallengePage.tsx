@@ -4,24 +4,31 @@ import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { SignHero, SignTop, StreetHeading, StreetSection, StepSign, H3 } from './street'
 import {
-  ApiError, categoryLabel, fetchChallenge, joinNewsletter, lastDay, longDay, post, prizeFor, readPerson, shortDay,
-  withPreview, writePerson, type ChallengeResponse, type EntryView, type Person,
+  categoryLabel, errorText, fetchChallenge, joinNewsletter, lastDay as lastDayEn, longDay as longDayEn, post, prizeFor,
+  readPerson, shortDay as shortDayEn, withPreview, writePerson, type ChallengeResponse, type EntryView, type Person,
 } from '../_lib/api'
 import { EntryCard, PlayerDialog } from './Video'
 import EmailGate, { PRIMARY } from './EmailGate'
 import ShareButton from './ShareButton'
 import { track } from '../_lib/track'
+import { translator, withLang, type SiteLocale } from '@/lib/site-i18n'
+import { creativeStrings, rich } from '@/lib/site-strings/challenges'
 
-const PHASE_TOP: Record<string, string> = {
-  soon: 'Coming soon',
-  open: 'Entries open',
-  judging: 'Judges are scoring',
-  voting: 'Vote now',
-  counting: 'Votes are in',
-  results: 'The winners',
-}
+const PHASE_TOP = {
+  soon: 'phase.soon',
+  open: 'phase.open',
+  judging: 'phase.judging',
+  voting: 'phase.voting',
+  counting: 'phase.counting',
+  results: 'phase.results',
+} as const
 
-export default function ChallengePage({ initial, preview }: { initial: ChallengeResponse; preview: string }) {
+export default function ChallengePage({ initial, preview, locale = 'en' }: { initial: ChallengeResponse; preview: string; locale?: SiteLocale }) {
+  const t = translator(creativeStrings, locale)
+  const shortDay = (iso: string) => shortDayEn(iso, locale)
+  const longDay = (iso: string) => longDayEn(iso, locale)
+  const lastDay = (iso: string) => lastDayEn(iso, locale)
+  const link = (path: string) => withLang(withPreview(path, preview), locale)
   const [data, setData] = useState<ChallengeResponse>(initial)
   const [person, setPerson] = useState<Person | null>(null)
   const [playing, setPlaying] = useState<EntryView | null>(null)
@@ -65,7 +72,7 @@ export default function ChallengePage({ initial, preview }: { initial: Challenge
       setVoteFor(null)
       await reload(p)
     } catch (err) {
-      setVoteError(err instanceof ApiError ? err.message : 'Something went wrong. Try again.')
+      setVoteError(errorText(err, locale, t('err.try_again'), { action: 'vote' }))
     } finally {
       setVoteBusy(false)
     }
@@ -78,41 +85,46 @@ export default function ChallengePage({ initial, preview }: { initial: Challenge
     else setVoteFor(entry)
   }
 
-  const enterHref = withPreview(`/challenges/${c.slug}/enter`, preview)
-  const rulesHref = withPreview(`/challenges/${c.slug}/rules`, preview)
+  const enterHref = link(`/challenges/${c.slug}/enter`)
+  const rulesHref = link(`/challenges/${c.slug}/rules`)
 
   const cta = c.phase === 'open'
-    ? <Link href={enterHref} className={PRIMARY}>Enter your ad</Link>
+    ? <Link href={enterHref} className={PRIMARY}>{t('cta.enter')}</Link>
     : c.phase === 'voting' && c.finalists_ready
-    ? <a href="#finalists" className={PRIMARY}>Vote for People&rsquo;s Choice</a>
+    ? <a href="#finalists" className={PRIMARY}>{t('vote.peoples')}</a>
     : c.phase === 'results' && c.results_ready
-    ? <a href="#winners" className={PRIMARY}>See the winners</a>
+    ? <a href="#winners" className={PRIMARY}>{t('cta.winners')}</a>
     : null
 
   const when = c.phase === 'soon'
-    ? `Entries open ${longDay(c.opens_at)}`
+    ? t('when.soon', { date: longDay(c.opens_at) })
     : c.phase === 'open'
-    ? `Enter by ${lastDay(c.entries_close_at)}`
+    ? t('when.open', { date: lastDay(c.entries_close_at) })
     : c.phase === 'judging'
-    ? `Finalists named ${shortDay(c.judging_close_at)}`
+    ? t('when.judging', { date: shortDay(c.judging_close_at) })
     : c.phase === 'voting'
-    ? `Vote by ${lastDay(c.voting_close_at)}`
+    ? t('when.voting', { date: lastDay(c.voting_close_at) })
     : c.phase === 'counting'
-    ? `Winners announced ${longDay(c.results_at)}`
+    ? t('when.counting', { date: longDay(c.results_at) })
     : null
 
   return (
     <>
       <SignHero
-        top={<SignTop strong={PHASE_TOP[c.phase]}>A Green Streets creative challenge</SignTop>}
+        top={<SignTop strong={t(PHASE_TOP[c.phase])}>{t('hero.kicker')}</SignTop>}
         title={c.title}
         lede={<p>{c.tagline}</p>}
         after={
           <div className="mt-5 flex flex-wrap items-center gap-x-6 gap-y-4">
             {cta}
             <ul className="flex flex-wrap gap-2 text-[15px] font-semibold text-navy">
-              <li className="rounded-full bg-white px-3.5 py-1.5">{c.total_prizes} in prizes</li>
-              {grand && <li className="rounded-full bg-white px-3.5 py-1.5">{grand.amount} for the {grand.label.toLowerCase()}</li>}
+              <li className="rounded-full bg-white px-3.5 py-1.5">{t('chip.total', { amount: c.total_prizes })}</li>
+              {grand && (
+                <li className="rounded-full bg-white px-3.5 py-1.5">
+                  {/* The prize's name is the database's, in English; only English lowercases it mid-sentence. */}
+                  {t('chip.grand', { amount: grand.amount, label: locale === 'en' ? grand.label.toLowerCase() : grand.label })}
+                </li>
+              )}
               {when && <li className="rounded-full bg-white px-3.5 py-1.5">{when}</li>}
             </ul>
           </div>
@@ -121,26 +133,26 @@ export default function ChallengePage({ initial, preview }: { initial: Challenge
 
       {data.me && data.me.entries.length > 0 && (
         <StreetSection tone="white">
-          <StreetHeading as="h2" title="Your entries" lede={c.phase === 'open' ? `You can enter up to ${c.max_entries_per_person}. Share your ad's page so people see it.` : undefined} />
+          <StreetHeading as="h2" title={t('mine.title')} lede={c.phase === 'open' ? t('mine.lede', { n: c.max_entries_per_person }) : undefined} />
           <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {data.me.entries.map((e) => (
               <li key={e.id} className="rounded-[16px] border-2 border-navy/[0.12] bg-cream p-4">
                 <p className="font-headline text-[1.125rem] font-extrabold text-navy">{e.title}</p>
                 <p className="mt-1 text-[15px] text-ink-soft">
-                  {e.status === 'pending' ? 'Being checked. It shows in the gallery in a few minutes.' : `In the gallery · ${categoryLabel(c, e.category)}`}
+                  {e.status === 'pending' ? t('mine.pending') : t('mine.in_gallery', { category: categoryLabel(c, e.category, locale) })}
                 </p>
                 <div className="mt-3 flex flex-wrap items-center gap-x-4">
-                  <Link href={withPreview(`/challenges/${c.slug}/e/${e.id}`, preview)} className="inline-flex min-h-[44px] items-center font-bold text-forest underline-offset-4 hover:underline">
-                    Its page
+                  <Link href={link(`/challenges/${c.slug}/e/${e.id}`)} className="inline-flex min-h-[44px] items-center font-bold text-forest underline-offset-4 hover:underline">
+                    {t('mine.its_page')}
                   </Link>
-                  <ShareButton url={e.share_url} title={e.title} compact />
+                  <ShareButton url={e.share_url} title={e.title} compact locale={locale} />
                 </div>
               </li>
             ))}
           </ul>
           {data.me.can_enter && (
             <Link href={enterHref} className="mt-5 inline-flex min-h-[44px] items-center font-bold text-forest underline-offset-4 hover:underline">
-              Enter another ad &rarr;
+              {t('mine.another')} &rarr;
             </Link>
           )}
         </StreetSection>
@@ -148,10 +160,10 @@ export default function ChallengePage({ initial, preview }: { initial: Challenge
 
       {c.results_ready && winners.length > 0 && (
         <StreetSection id="winners">
-          <StreetHeading title="The winners" lede={`Picked by the judges, plus People's Choice from ${finalists.length} finalists.`} />
+          <StreetHeading title={t('winners.title')} lede={t('winners.lede', { n: finalists.length })} />
           <ul className="grid gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
             {winners.map((e) => (
-              <EntryCard key={e.id} c={c} entry={e} onOpen={setPlaying}
+              <EntryCard key={e.id} c={c} entry={e} onOpen={setPlaying} locale={locale}
                 footer={<p className="mt-2 text-[15px] font-bold text-forest">{prizeFor(c, e.award)?.label} · {prizeFor(c, e.award)?.amount}</p>} />
             ))}
           </ul>
@@ -161,27 +173,27 @@ export default function ChallengePage({ initial, preview }: { initial: Challenge
       {c.finalists_ready && finalists.length > 0 && (
         <StreetSection id="finalists" tone={c.results_ready ? 'white' : 'cream'}>
           <StreetHeading
-            title={c.phase === 'voting' ? 'Pick your favorite' : 'The finalists'}
+            title={c.phase === 'voting' ? t('finalists.pick') : t('finalists.title')}
             lede={c.phase === 'voting'
-              ? `One vote each, with your email. You can change it until ${lastDay(c.voting_close_at)}.`
-              : `The judges' top ${finalists.length}.`}
+              ? t('finalists.lede_voting', { date: lastDay(c.voting_close_at) })
+              : t('finalists.lede', { n: finalists.length })}
           />
           {votedEntry && c.phase === 'voting' && (
             <p className="mb-6 rounded-[14px] bg-accent-soft px-4 py-3 text-[16px] text-navy">
-              You voted for <span className="font-bold">{votedEntry.title}</span>. Thanks!
+              {rich(t('voted.banner'), { title: <span className="font-bold">{votedEntry.title}</span> })}
             </p>
           )}
           {voteError && <p role="alert" className="mb-4 text-[15px] font-semibold text-ep-danger">{voteError}</p>}
           <ul className="grid gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
             {finalists.map((e) => (
-              <EntryCard key={e.id} c={c} entry={e} onOpen={setPlaying}
+              <EntryCard key={e.id} c={c} entry={e} onOpen={setPlaying} locale={locale}
                 footer={c.phase === 'voting' ? (
                   <button type="button" disabled={voteBusy || voted === e.id} onClick={() => startVote(e)}
                     className={`mt-3 inline-flex min-h-[46px] items-center justify-center rounded-full px-6 text-[16px] font-bold ${voted === e.id ? 'bg-accent-soft text-forest' : 'bg-navy text-white hover:opacity-90'} disabled:cursor-default`}>
-                    {voted === e.id ? 'Your vote' : voted ? 'Vote for this one instead' : 'Vote'}
+                    {voted === e.id ? t('vote.yours') : voted ? t('vote.instead') : t('vote.vote')}
                   </button>
                 ) : c.results_ready && e.vote_count != null ? (
-                  <p className="mt-2 text-[15px] text-ink-soft">{e.vote_count} {e.vote_count === 1 ? 'vote' : 'votes'}</p>
+                  <p className="mt-2 text-[15px] text-ink-soft">{t(e.vote_count === 1 ? 'votes.one' : 'votes.other', { n: e.vote_count })}</p>
                 ) : null} />
             ))}
           </ul>
@@ -192,7 +204,7 @@ export default function ChallengePage({ initial, preview }: { initial: Challenge
         <StreetSection tone="white">
           <div className="grid gap-10 lg:grid-cols-[3fr_2fr]">
             <div>
-              <StreetHeading title="What to make" />
+              <StreetHeading title={t('make.title')} />
               <ul className="space-y-3">
                 {c.brief.map((line, i) => (
                   <li key={i} className="flex gap-3 text-[1.0625rem] leading-relaxed text-navy">
@@ -202,11 +214,11 @@ export default function ChallengePage({ initial, preview }: { initial: Challenge
                 ))}
               </ul>
               <p className="mt-6 text-[16px] leading-relaxed text-ink-soft">
-                Upload the file, or paste a YouTube, Vimeo or TikTok link. Up to {c.max_entries_per_person} ads each. Massachusetts residents 18 and older.
+                {t('make.how', { n: c.max_entries_per_person })}
               </p>
             </div>
             <div>
-              <h3 className={H3}>Prizes</h3>
+              <h3 className={H3}>{t('prizes.title')}</h3>
               <ul className="mt-4 divide-y-2 divide-navy/[0.08] border-y-2 border-navy/[0.14]">
                 {c.prizes.map((p) => (
                   <li key={p.key} className="flex items-baseline justify-between gap-4 py-3">
@@ -215,20 +227,20 @@ export default function ChallengePage({ initial, preview }: { initial: Challenge
                   </li>
                 ))}
               </ul>
-              <p className="mt-3 text-[15px] text-ink-soft">Gift cards, by email. One prize per ad.</p>
+              <p className="mt-3 text-[15px] text-ink-soft">{t('prizes.note')}</p>
             </div>
           </div>
         </StreetSection>
       )}
 
       <StreetSection>
-        <StreetHeading title="How it works" />
+        <StreetHeading title={t('how.title')} />
         <ol className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {[
-            { t: 'Make your ad', d: `${c.min_seconds ?? 30} to ${c.max_seconds ?? 60} seconds. Enter by ${lastDay(c.entries_close_at)}.` },
-            { t: 'Judges score it', d: `They pick ${c.finalist_count} finalists by ${shortDay(c.judging_close_at)}.` },
-            { t: 'Everyone votes', d: `People's Choice, ${shortDay(c.judging_close_at)} to ${lastDay(c.voting_close_at)}.` },
-            { t: 'Winners named', d: `${longDay(c.results_at)}${c.slug.endsWith('commercial-break') ? ', the week of the big game' : ''}.` },
+            { t: t('how.make'), d: t('how.make_d', { min: c.min_seconds ?? 30, max: c.max_seconds ?? 60, date: lastDay(c.entries_close_at) }) },
+            { t: t('how.judges'), d: t('how.judges_d', { n: c.finalist_count, date: shortDay(c.judging_close_at) }) },
+            { t: t('how.votes'), d: t('how.votes_d', { start: shortDay(c.judging_close_at), end: lastDay(c.voting_close_at) }) },
+            { t: t('how.winners'), d: t(c.slug.endsWith('commercial-break') ? 'how.winners_d_game' : 'how.winners_d', { date: longDay(c.results_at) }) },
           ].map((s, i) => (
             <li key={s.t} className="flex gap-4">
               <StepSign n={i + 1} />
@@ -241,7 +253,7 @@ export default function ChallengePage({ initial, preview }: { initial: Challenge
         </ol>
         {data.judges.length > 0 && (
           <p className="mt-8 text-[16px] text-navy">
-            <span className="font-bold">Judges: </span>
+            <span className="font-bold">{t('judges.label')}</span>
             {data.judges.map((j) => j.affiliation ? `${j.name}, ${j.affiliation}` : j.name).join(' · ')}
           </p>
         )}
@@ -249,57 +261,56 @@ export default function ChallengePage({ initial, preview }: { initial: Challenge
 
       <StreetSection tone="white" id="entries">
         <StreetHeading
-          title={c.phase === 'open' || c.phase === 'soon' ? 'Entries so far' : 'Every entry'}
+          title={c.phase === 'open' || c.phase === 'soon' ? t('gallery.so_far') : t('gallery.every')}
           lede={data.count === 0
-            ? (c.phase === 'open' ? 'Be the first. Your ad shows here a few minutes after you enter it.' : 'No entries yet.')
+            ? (c.phase === 'open' ? t('gallery.first') : t('gallery.none'))
             : undefined}
-          aside={data.count > 0 ? <span className="text-[16px] font-bold text-navy">{data.count} {data.count === 1 ? 'ad' : 'ads'}</span> : undefined}
+          aside={data.count > 0 ? <span className="text-[16px] font-bold text-navy">{t(data.count === 1 ? 'gallery.ads_one' : 'gallery.ads_other', { n: data.count })}</span> : undefined}
         />
         {data.count > 0 && (
           <ul className="grid gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
-            {data.entries.map((e) => <EntryCard key={e.id} c={c} entry={e} onOpen={setPlaying} />)}
+            {data.entries.map((e) => <EntryCard key={e.id} c={c} entry={e} onOpen={setPlaying} locale={locale} />)}
           </ul>
         )}
       </StreetSection>
 
       <StreetSection closing>
         <div className="flex flex-wrap items-center gap-x-8 gap-y-3 text-[16px]">
-          {c.phase === 'open' && <Link href={enterHref} className={PRIMARY}>Enter your ad</Link>}
-          <ShareButton url={c.share_url} title={c.title} />
-          <Link href={rulesHref} className="inline-flex min-h-[44px] items-center font-bold text-navy underline-offset-4 hover:underline">Official rules</Link>
-          <a href="mailto:info@gogreenstreets.org" className="inline-flex min-h-[44px] items-center font-bold text-navy underline-offset-4 hover:underline">Questions? info@gogreenstreets.org</a>
+          {c.phase === 'open' && <Link href={enterHref} className={PRIMARY}>{t('cta.enter')}</Link>}
+          <ShareButton url={c.share_url} title={c.title} locale={locale} />
+          <Link href={rulesHref} className="inline-flex min-h-[44px] items-center font-bold text-navy underline-offset-4 hover:underline">{t('closing.rules')}</Link>
+          <a href="mailto:info@gogreenstreets.org" className="inline-flex min-h-[44px] items-center font-bold text-navy underline-offset-4 hover:underline">{t('closing.questions')}</a>
         </div>
-        <p className="mt-6 max-w-[640px] text-[15px] leading-relaxed text-ink-soft">
-          Judged on how well it gets the point across, how fresh the idea is, how much it makes you want to go and how well it&rsquo;s made. Not affiliated with the NFL or any league.
-        </p>
+        <p className="mt-6 max-w-[640px] text-[15px] leading-relaxed text-ink-soft">{t('closing.fine')}</p>
       </StreetSection>
 
-      <PlayerDialog c={c} entry={playing} onClose={() => setPlaying(null)}>
+      <PlayerDialog c={c} entry={playing} onClose={() => setPlaying(null)} locale={locale}>
         <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2">
           {playing && c.phase === 'voting' && playing.finalist_rank && voted !== playing.id && (
-            <button type="button" onClick={() => startVote(playing)} className={PRIMARY}>Vote for this one</button>
+            <button type="button" onClick={() => startVote(playing)} className={PRIMARY}>{t('player.vote')}</button>
           )}
           {playing && (
-            <Link href={withPreview(`/challenges/${c.slug}/e/${playing.id}`, preview)} className="inline-flex min-h-[44px] items-center font-bold text-forest underline-offset-4 hover:underline">
-              Its page
+            <Link href={link(`/challenges/${c.slug}/e/${playing.id}`)} className="inline-flex min-h-[44px] items-center font-bold text-forest underline-offset-4 hover:underline">
+              {t('mine.its_page')}
             </Link>
           )}
-          {playing && <ShareButton url={playing.share_url} title={playing.title} compact />}
+          {playing && <ShareButton url={playing.share_url} title={playing.title} compact locale={locale} />}
         </div>
       </PlayerDialog>
 
       {voteFor && (
-        <VoteDialog title={voteFor.title} onClose={() => setVoteFor(null)}>
+        <VoteDialog title={voteFor.title} onClose={() => setVoteFor(null)} label={t('votedialog.aria', { title: voteFor.title })} heading={t('vote.peoples')}>
           <EmailGate
             slug={c.slug}
             preview={preview}
-            intro={`Confirm your email to vote for "${voteFor.title}". One vote each.`}
+            intro={t('votegate.intro', { title: voteFor.title })}
             onVerified={(p) => { setPerson(p); castVote(voteFor, p) }}
             onCancel={() => setVoteFor(null)}
+            locale={locale}
           />
           <label className="mt-5 flex items-start gap-3 text-[15px] text-navy">
             <input type="checkbox" checked={newsletter} onChange={(e) => setNewsletter(e.target.checked)} className="mt-1 h-5 w-5 accent-forest" />
-            <span>Also send me the Green Streets newsletter, once a month.</span>
+            <span>{t('newsletter.also')}</span>
           </label>
           {voteError && <p role="alert" className="mt-3 text-[15px] font-semibold text-ep-danger">{voteError}</p>}
         </VoteDialog>
@@ -308,12 +319,12 @@ export default function ChallengePage({ initial, preview }: { initial: Challenge
   )
 }
 
-function VoteDialog({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
+function VoteDialog({ onClose, children, label, heading }: { title: string; onClose: () => void; children: React.ReactNode; label: string; heading: string }) {
   return (
-    <div role="dialog" aria-modal="true" aria-label={`Vote for ${title}`} className="fixed inset-0 z-50 flex items-end justify-center bg-navy/70 p-4 sm:items-center"
+    <div role="dialog" aria-modal="true" aria-label={label} className="fixed inset-0 z-50 flex items-end justify-center bg-navy/70 p-4 sm:items-center"
       onClick={(e) => { if (e.target === e.currentTarget) onClose() }}>
       <div className="w-full max-w-[460px] rounded-[20px] bg-cream p-6">
-        <p className="mb-4 font-headline text-[1.375rem] font-extrabold text-navy">Vote for People&rsquo;s Choice</p>
+        <p className="mb-4 font-headline text-[1.375rem] font-extrabold text-navy">{heading}</p>
         {children}
       </div>
     </div>

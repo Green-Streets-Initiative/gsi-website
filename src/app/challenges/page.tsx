@@ -10,18 +10,27 @@ import { LANE, RouteSegment } from '@/components/home/RouteLine'
 import { getPromotables } from '@/lib/campaigns'
 import { bucket, collapseSeries } from '@/lib/campaigns/rank'
 import type { Promotable, PromotablePhase } from '@/lib/campaigns/types'
+import HtmlLang from '@/components/HtmlLang'
+import { translator, withLang, type SiteLocale } from '@/lib/site-i18n'
+import { siteLocale } from '@/lib/site-locale'
+import { hubStrings, rich } from '@/lib/site-strings/challenges'
 
 /*
  * The programme hub: everything running now or coming up, plus the archive
  * of past campaigns with a written report. Linked from the nav and footer,
  * in the sitemap, and the target of the old /shift/leaderboard redirect.
+ *
+ * In English, Spanish, Portuguese and Chinese (?lang=, else the browser's
+ * language). The list itself stays cached (getPromotables); only the page
+ * renders per request.
  */
 export const revalidate = 600
 
-export const metadata: Metadata = {
-  title: 'Challenges & events — Green Streets Initiative',
-  description:
-    'Every Green Streets challenge that is running now or coming up: Walk/Ride Days, seasonal campaigns, and rewards you can pick up along the way.',
+type Search = Promise<{ lang?: string | string[] }>
+
+export async function generateMetadata({ searchParams }: { searchParams: Search }): Promise<Metadata> {
+  const t = translator(hubStrings, await siteLocale((await searchParams).lang))
+  return { title: t('meta.title'), description: t('meta.description') }
 }
 
 function Section({
@@ -29,11 +38,13 @@ function Section({
   shape,
   items,
   phase,
+  locale,
 }: {
   title: string
   shape: 'straight' | 'wanderLeft' | 'wanderRight'
   items: Promotable[]
   phase: PromotablePhase
+  locale: SiteLocale
 }) {
   if (!items.length) return null
   return (
@@ -48,7 +59,7 @@ function Section({
           <ul className="mt-6 border-t border-navy/15">
             {items.map((p) => (
               // The section owns the phase, so heading and copy always agree.
-              <ChallengeRow key={p.id} p={p} phase={phase} />
+              <ChallengeRow key={p.id} p={p} phase={phase} locale={locale} />
             ))}
           </ul>
         </div>
@@ -57,7 +68,9 @@ function Section({
   )
 }
 
-export default async function ChallengesPage() {
+export default async function ChallengesPage({ searchParams }: { searchParams: Search }) {
+  const locale = await siteLocale((await searchParams).lang)
+  const t = translator(hubStrings, locale)
   const now = new Date()
   const all = await getPromotables()
   const b = bucket(all, now)
@@ -71,24 +84,21 @@ export default async function ChallengesPage() {
 
   return (
     <>
-      <Nav variant="light" />
+      <HtmlLang locale={locale} />
+      <Nav variant="light" locale={locale} />
       <main className="bg-cream">
         <PageHero
-          eyebrow="What's on"
-          title={
-            <>
-              Something to <em className="text-green-deep">shift</em> toward.
-            </>
-          }
-          lede="Walk/Ride Days, seasonal challenges, and rewards worth picking up. Everything running now or coming up, in one place."
+          eyebrow={t('hero.eyebrow')}
+          title={rich(t('hero.title'), { em: <em className="text-green-deep">{t('hero.title_em')}</em> })}
+          lede={t('hero.lede')}
         >
-          {isEmpty && <ChallengesEmpty nextWalkRideDay={nextWalkRide} />}
+          {isEmpty && <ChallengesEmpty nextWalkRideDay={nextWalkRide} locale={locale} />}
         </PageHero>
 
-        <Section title="Happening now" shape="straight" items={active} phase="active" />
-        <Section title="Coming up" shape="wanderRight" items={upcoming} phase="upcoming" />
-        <Section title="Just wrapped" shape="wanderLeft" items={wrapped} phase="wrapped" />
-        <ArchiveSection />
+        <Section title={t('section.now')} shape="straight" items={active} phase="active" locale={locale} />
+        <Section title={t('section.upcoming')} shape="wanderRight" items={upcoming} phase="upcoming" locale={locale} />
+        <Section title={t('section.wrapped')} shape="wanderLeft" items={wrapped} phase="wrapped" locale={locale} />
+        <ArchiveSection locale={locale} />
 
         {/* Always renders, so the page is never bare. */}
         <section className="relative overflow-x-clip bg-white">
@@ -97,27 +107,25 @@ export default async function ChallengesPage() {
             <div className="hidden md:block" />
             <div className="pb-20 pt-8 lg:pb-24 lg:pt-10">
               <h2 className="max-w-[620px] font-serif text-[clamp(1.75rem,3.5vw,2.5rem)] font-normal leading-[1.15] text-navy">
-                Every challenge runs on the same thing: <em className="text-green-deep">one shifted trip.</em>
+                {rich(t('closing.title'), { em: <em className="text-green-deep">{t('closing.title_em')}</em> })}
               </h2>
-              <p className="mt-5 max-w-[560px] text-[1.0625rem] leading-[1.65] text-ink-soft">
-                Shift counts your trips automatically. For most of these, all you have to do is go.
-              </p>
+              <p className="mt-5 max-w-[560px] text-[1.0625rem] leading-[1.65] text-ink-soft">{t('closing.body')}</p>
               <div className="mt-6 flex flex-wrap gap-x-8 gap-y-3 text-[15px]">
                 <TrackedLink
-                  href="/shift"
+                  href={withLang('/shift', locale)}
                   placement="challenges_hub"
                   destination="closing:app"
                   className="inline-flex min-h-[44px] items-center font-semibold text-navy underline-offset-4 hover:underline"
                 >
-                  Get the Shift app
+                  {t('closing.app')}
                 </TrackedLink>
                 <TrackedLink
-                  href="/events"
+                  href={withLang('/events', locale)}
                   placement="challenges_hub"
                   destination="closing:events"
                   className="inline-flex min-h-[44px] items-center font-semibold text-navy underline-offset-4 hover:underline"
                 >
-                  Community events
+                  {t('closing.events')}
                 </TrackedLink>
                 <TrackedLink
                   href="/contact"
@@ -126,14 +134,14 @@ export default async function ChallengesPage() {
                   destination="closing:partner"
                   className="inline-flex min-h-[44px] items-center font-semibold text-navy underline-offset-4 hover:underline"
                 >
-                  Sponsor a challenge
+                  {t('closing.sponsor')}
                 </TrackedLink>
               </div>
             </div>
           </div>
         </section>
       </main>
-      <Footer variant="light" />
+      <Footer variant="light" locale={locale} />
     </>
   )
 }

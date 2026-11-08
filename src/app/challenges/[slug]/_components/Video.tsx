@@ -3,13 +3,15 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ChallengeView, EntryView } from '../_lib/api'
 import { categoryLabel, prizeFor } from '../_lib/api'
+import { translator, type SiteLocale } from '@/lib/site-i18n'
+import { creativeStrings } from '@/lib/site-strings/challenges'
 
 /** TikTok plays tall; YouTube and Vimeo wide. */
 export const tall = (e: EntryView) => e.platform === 'tiktok'
 
 /** The platform's own player, or ours for an uploaded file. */
-export function Player({ entry, autoPlay = false }: { entry: EntryView; autoPlay?: boolean }) {
-  if (entry.platform === 'upload') return <FilePlayer entry={entry} autoPlay={autoPlay} />
+export function Player({ entry, autoPlay = false, locale = 'en' }: { entry: EntryView; autoPlay?: boolean; locale?: SiteLocale }) {
+  if (entry.platform === 'upload') return <FilePlayer entry={entry} autoPlay={autoPlay} locale={locale} />
   if (!entry.embed_url) return null
   const src = autoPlay && entry.platform !== 'tiktok'
     ? `${entry.embed_url}${entry.embed_url.includes('?') ? '&' : '?'}autoplay=1`
@@ -35,7 +37,8 @@ export function Player({ entry, autoPlay = false }: { entry: EntryView; autoPlay
  * file's format (an iPhone HEVC video in an older browser), say so plainly and
  * offer the file itself.
  */
-function FilePlayer({ entry, autoPlay }: { entry: EntryView; autoPlay: boolean }) {
+function FilePlayer({ entry, autoPlay, locale }: { entry: EntryView; autoPlay: boolean; locale: SiteLocale }) {
+  const t = translator(creativeStrings, locale)
   const [portrait, setPortrait] = useState(false)
   const [failed, setFailed] = useState(false)
   if (!entry.video_url) return null
@@ -43,9 +46,9 @@ function FilePlayer({ entry, autoPlay }: { entry: EntryView; autoPlay: boolean }
   if (failed) {
     return (
       <div className={`flex flex-col items-center justify-center gap-3 rounded-[16px] bg-navy px-6 text-center ${box}`}>
-        <p className="text-[16px] text-white/85">This video won&rsquo;t play in this browser. Try Safari, or open it on your phone.</p>
+        <p className="text-[16px] text-white/85">{t('video.cant_play')}</p>
         <a href={entry.video_url} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-[44px] items-center font-bold text-lime underline-offset-4 hover:underline">
-          Open the video file
+          {t('video.open_file')}
         </a>
       </div>
     )
@@ -69,12 +72,14 @@ function FilePlayer({ entry, autoPlay }: { entry: EntryView; autoPlay: boolean }
 }
 
 /** One entry in a grid: its still, title and who made it. Opens the player. */
-export function EntryCard({ c, entry, onOpen, footer }: {
+export function EntryCard({ c, entry, onOpen, footer, locale = 'en' }: {
   c: ChallengeView
   entry: EntryView
   onOpen: (e: EntryView) => void
   footer?: React.ReactNode
+  locale?: SiteLocale
 }) {
+  const t = translator(creativeStrings, locale)
   const prize = prizeFor(c, entry.award)
   return (
     <li className="flex flex-col">
@@ -82,7 +87,7 @@ export function EntryCard({ c, entry, onOpen, footer }: {
         type="button"
         onClick={() => onOpen(entry)}
         className="group relative block aspect-video w-full overflow-hidden rounded-[14px] bg-navy text-left"
-        aria-label={`Play ${entry.title}`}
+        aria-label={t('card.play', { title: entry.title })}
       >
         {entry.thumbnail_url ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -99,13 +104,13 @@ export function EntryCard({ c, entry, onOpen, footer }: {
           <span className="absolute left-3 top-3 rounded-full bg-gold px-3 py-1 text-[14px] font-bold text-navy">{prize.label}</span>
         )}
         {!prize && entry.finalist_rank && (
-          <span className="absolute left-3 top-3 rounded-full bg-lime px-3 py-1 text-[14px] font-bold text-navy">Finalist</span>
+          <span className="absolute left-3 top-3 rounded-full bg-lime px-3 py-1 text-[14px] font-bold text-navy">{t('card.finalist')}</span>
         )}
       </button>
       <div className="mt-3 flex-1">
         <p className="font-headline text-[1.125rem] font-extrabold leading-snug text-navy">{entry.title}</p>
         <p className="mt-1 text-[15px] text-ink-soft">
-          {entry.credit_name} · {categoryLabel(c, entry.category)}
+          {entry.credit_name} · {categoryLabel(c, entry.category, locale)}
         </p>
       </div>
       {footer}
@@ -114,12 +119,14 @@ export function EntryCard({ c, entry, onOpen, footer }: {
 }
 
 /** The player in a dialog over the page; Escape or the button closes it. */
-export function PlayerDialog({ c, entry, onClose, children }: {
+export function PlayerDialog({ c, entry, onClose, children, locale = 'en' }: {
   c: ChallengeView
   entry: EntryView | null
   onClose: () => void
   children?: React.ReactNode
+  locale?: SiteLocale
 }) {
+  const t = translator(creativeStrings, locale)
   const ref = useRef<HTMLDialogElement>(null)
   useEffect(() => {
     const d = ref.current
@@ -139,13 +146,13 @@ export function PlayerDialog({ c, entry, onClose, children }: {
           <div className="mb-4 flex items-start justify-between gap-4">
             <div>
               <p className="font-headline text-[1.375rem] font-extrabold leading-tight text-navy">{entry.title}</p>
-              <p className="mt-1 text-[15px] text-ink-soft">{entry.credit_name} · {categoryLabel(c, entry.category)}</p>
+              <p className="mt-1 text-[15px] text-ink-soft">{entry.credit_name} · {categoryLabel(c, entry.category, locale)}</p>
             </div>
-            <button type="button" onClick={onClose} className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full text-navy hover:bg-navy/[0.06]" aria-label="Close">
+            <button type="button" onClick={onClose} className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full text-navy hover:bg-navy/[0.06]" aria-label={t('dialog.close')}>
               <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" /></svg>
             </button>
           </div>
-          <Player entry={entry} autoPlay />
+          <Player entry={entry} autoPlay locale={locale} />
           <p className="mt-4 text-[16px] leading-relaxed text-navy">&ldquo;{entry.says}&rdquo;</p>
           {children}
         </div>

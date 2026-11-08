@@ -113,6 +113,7 @@ function unlockFrom(
       tripsRequired: row.trips_required,
       windowDays: row.window_days,
       rewardLabel: dollars ? `$${dollars} reward` : 'A reward of your choice',
+      rewardDollars: dollars,
       supplyLabel: entry.supplyLabel ?? null,
       gateLabel: entry.gateLabel ?? null,
     },

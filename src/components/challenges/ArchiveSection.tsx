@@ -2,6 +2,8 @@ import { ArrowRight } from '@phosphor-icons/react/dist/ssr'
 import TrackedLink from '@/components/TrackedLink'
 import { LANE, RouteSegment } from '@/components/home/RouteLine'
 import { campaigns } from '@/content/sponsor-reports'
+import { translator, type SiteLocale } from '@/lib/site-i18n'
+import { hubStrings } from '@/lib/site-strings/challenges'
 
 /*
  * Past campaigns with a written report. Sourced from the sponsor-reports
@@ -9,6 +11,9 @@ import { campaigns } from '@/content/sponsor-reports'
  * report to that index adds it here too. Figures are the report's own
  * summary rows, which are static by design: a report keeps saying what it
  * said when it was published.
+ *
+ * `locale`: the section's own words follow the hub's language; the report
+ * names, periods and figures are the reports' and stay in English.
  */
 
 function Fact({ label, value }: { label: string; value: string }) {
@@ -21,7 +26,8 @@ function Fact({ label, value }: { label: string; value: string }) {
   )
 }
 
-export default function ArchiveSection() {
+export default function ArchiveSection({ locale = 'en' }: { locale?: SiteLocale } = {}) {
+  const t = translator(hubStrings, locale)
   const past = campaigns.filter((c) => c.wrap)
   if (!past.length) return null
 
@@ -31,9 +37,9 @@ export default function ArchiveSection() {
         <RouteSegment shape="wanderRight" />
         <div className="hidden md:block" />
         <div className="py-7 lg:py-8">
-          <h2 className="font-serif text-[clamp(1.75rem,3.5vw,2.5rem)] font-normal leading-[1.1] text-navy">Past campaigns</h2>
+          <h2 className="font-serif text-[clamp(1.75rem,3.5vw,2.5rem)] font-normal leading-[1.1] text-navy">{t('archive.title')}</h2>
           <p className="mt-2 max-w-[560px] text-[15px] leading-relaxed text-ink-soft">
-            What each one added up to, with the full report.
+            {t('archive.lede')}
           </p>
           <ul className="mt-6 border-t border-navy/15">
             {past.map((c) => {
@@ -56,7 +62,7 @@ export default function ArchiveSection() {
                           <Fact key={r.label} label={r.label} value={r.value} />
                         ))}
                       </dl>
-                      <span className="mt-3 block text-[14px] font-semibold text-forest">Read the report</span>
+                      <span className="mt-3 block text-[14px] font-semibold text-forest">{t('archive.read')}</span>
                     </span>
                     <ArrowRight size={20} className="col-start-2 row-start-1 mt-1 text-forest transition-transform group-hover:translate-x-1 md:col-start-3" />
                   </TrackedLink>

@@ -1,7 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { ApiError, post, writePerson, type Person } from '../_lib/api'
+import { ApiError, errorText, post, writePerson, type Person } from '../_lib/api'
+import { translator, type SiteLocale } from '@/lib/site-i18n'
+import { creativeStrings, rich } from '@/lib/site-strings/challenges'
 
 /**
  * Confirming an email, the first time only: the address, then the six-digit
@@ -9,14 +11,16 @@ import { ApiError, post, writePerson, type Person } from '../_lib/api'
  * when the server doesn't already know the person's name. Entering and voting
  * both start here; nobody needs a Shift account.
  */
-export default function EmailGate({ slug, preview, intro, onVerified, onCancel }: {
+export default function EmailGate({ slug, preview, intro, onVerified, onCancel, locale = 'en' }: {
   slug: string
   preview: string
   /** One line above the email field. */
   intro: string
   onVerified: (p: Person) => void
   onCancel?: () => void
+  locale?: SiteLocale
 }) {
+  const t = translator(creativeStrings, locale)
   const [step, setStep] = useState<'email' | 'code'>('email')
   const [email, setEmail] = useState('')
   const [code, setCode] = useState('')
@@ -37,7 +41,7 @@ export default function EmailGate({ slug, preview, intro, onVerified, onCancel }
       if (step === 'code') setResent(true)
       setStep('code')
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Something went wrong. Try again in a minute.')
+      setError(errorText(err, locale, t('err.try_minute'), { action: 'code' }))
     } finally {
       setBusy(false)
     }
@@ -58,9 +62,9 @@ export default function EmailGate({ slug, preview, intro, onVerified, onCancel }
     } catch (err) {
       if (err instanceof ApiError && err.code === 'name_required') {
         setNeedsName(true)
-        setError('Add your first name.')
+        setError(t('gate.name_required'))
       } else {
-        setError(err instanceof ApiError ? err.message : 'Something went wrong. Try again in a minute.')
+        setError(errorText(err, locale, t('err.try_minute'), { action: 'verify' }))
       }
     } finally {
       setBusy(false)
@@ -72,20 +76,20 @@ export default function EmailGate({ slug, preview, intro, onVerified, onCancel }
       <form onSubmit={sendCode} className="space-y-4">
         <p className="text-[16px] leading-relaxed text-navy">{intro}</p>
         <label className="block">
-          <span className={LABEL}>Your email</span>
+          <span className={LABEL}>{t('gate.your_email')}</span>
           <input
             type="email" required autoFocus value={email} onChange={(e) => setEmail(e.target.value)}
-            autoComplete="email" inputMode="email" placeholder="you@example.com" className={INPUT}
+            autoComplete="email" inputMode="email" placeholder={t('gate.placeholder')} className={INPUT}
           />
         </label>
         {error && <p role="alert" className="text-[15px] font-semibold text-ep-danger">{error}</p>}
         <div className="flex flex-wrap items-center gap-2">
           <button type="submit" disabled={busy} className={PRIMARY}>
-            {busy ? 'Sending…' : 'Send me a code'}
+            {busy ? t('gate.sending') : t('gate.send')}
           </button>
           {onCancel && (
             <button type="button" onClick={onCancel} className={QUIET}>
-              Cancel
+              {t('gate.cancel')}
             </button>
           )}
         </div>
@@ -96,10 +100,10 @@ export default function EmailGate({ slug, preview, intro, onVerified, onCancel }
   return (
     <form onSubmit={verify} className="space-y-4">
       <p className="text-[16px] leading-relaxed text-navy">
-        We sent a 6-digit code to <span className="font-bold">{email.trim()}</span>.
+        {rich(t('gate.sent'), { email: <span className="font-bold">{email.trim()}</span> })}
       </p>
       <label className="block">
-        <span className={LABEL}>Code</span>
+        <span className={LABEL}>{t('gate.code')}</span>
         <input
           required autoFocus value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
           inputMode="numeric" autoComplete="one-time-code" pattern="\d{6}" maxLength={6}
@@ -108,21 +112,21 @@ export default function EmailGate({ slug, preview, intro, onVerified, onCancel }
       </label>
       {needsName && (
         <label className="block">
-          <span className={LABEL}>First name</span>
+          <span className={LABEL}>{t('gate.first_name')}</span>
           <input required value={firstName} onChange={(e) => setFirstName(e.target.value)} maxLength={40} autoComplete="given-name" className={INPUT} />
         </label>
       )}
       {error && <p role="alert" className="text-[15px] font-semibold text-ep-danger">{error}</p>}
-      {resent && !error && <p className="text-[15px] text-ink-soft">We sent a new code.</p>}
+      {resent && !error && <p className="text-[15px] text-ink-soft">{t('gate.resent')}</p>}
       <button type="submit" disabled={busy || code.length !== 6} className={PRIMARY}>
-        {busy ? 'Checking…' : 'Confirm'}
+        {busy ? t('gate.checking') : t('gate.confirm')}
       </button>
       <div className="flex flex-wrap items-center gap-x-5">
         <button type="button" disabled={busy} onClick={() => sendCode()} className={LINK}>
-          Send a new code
+          {t('gate.new_code')}
         </button>
         <button type="button" disabled={busy} onClick={() => { setStep('email'); setError(null); setResent(false) }} className={LINK}>
-          Use another email
+          {t('gate.other_email')}
         </button>
       </div>
     </form>

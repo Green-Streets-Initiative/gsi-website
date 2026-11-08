@@ -17,22 +17,31 @@
  */
 
 import type { Promotable } from './types'
+import { siteDate, type SiteLocale } from '@/lib/site-i18n'
 
 export const ET = 'America/New_York'
 const LOCALE = 'en-US'
 
+/*
+ * `locale` (optional, translated pages only): the page's language, still
+ * pinned and still Eastern. Every other caller leaves it out and gets en-US.
+ */
+
 /** "Sep 25" */
-export function shortDateET(iso: string): string {
+export function shortDateET(iso: string, locale: SiteLocale = 'en'): string {
+  if (locale !== 'en') return siteDate(locale, iso, { timeZone: ET, month: 'short', day: 'numeric' })
   return new Date(iso).toLocaleDateString(LOCALE, { timeZone: ET, month: 'short', day: 'numeric' })
 }
 
 /** "September 25" */
-export function longDateET(iso: string): string {
+export function longDateET(iso: string, locale: SiteLocale = 'en'): string {
+  if (locale !== 'en') return siteDate(locale, iso, { timeZone: ET, month: 'long', day: 'numeric' })
   return new Date(iso).toLocaleDateString(LOCALE, { timeZone: ET, month: 'long', day: 'numeric' })
 }
 
 /** "Friday, September 25" */
-export function weekdayDateET(iso: string): string {
+export function weekdayDateET(iso: string, locale: SiteLocale = 'en'): string {
+  if (locale !== 'en') return siteDate(locale, iso, { timeZone: ET, weekday: 'long', month: 'long', day: 'numeric' })
   return new Date(iso).toLocaleDateString(LOCALE, { timeZone: ET, weekday: 'long', month: 'long', day: 'numeric' })
 }
 
@@ -49,9 +58,9 @@ function daysBetween(a: Date, b: Date): number {
  * The date range a card shows. Always anchored on startsAt (trap 1); for a
  * single-day event the end instant is not shown at all.
  */
-export function dateRangeET(p: Promotable): string {
-  if (p.singleDay) return weekdayDateET(p.startsAt)
-  return `${longDateET(p.startsAt)} – ${longDateET(p.endsAt)}`
+export function dateRangeET(p: Promotable, locale: SiteLocale = 'en'): string {
+  if (p.singleDay) return weekdayDateET(p.startsAt, locale)
+  return `${longDateET(p.startsAt, locale)} – ${longDateET(p.endsAt, locale)}`
 }
 
 const MAX_LABEL = 34

@@ -2,9 +2,12 @@
 
 import { useState } from 'react'
 import { track } from '../_lib/track'
+import { translator, type SiteLocale } from '@/lib/site-i18n'
+import { creativeStrings } from '@/lib/site-strings/challenges'
 
 /** The phone's share sheet where there is one; otherwise copies the link. */
-export default function ShareButton({ url, title, compact = false }: { url: string; title: string; compact?: boolean }) {
+export default function ShareButton({ url, title, compact = false, locale = 'en' }: { url: string; title: string; compact?: boolean; locale?: SiteLocale }) {
+  const t = translator(creativeStrings, locale)
   const [copied, setCopied] = useState(false)
   async function share() {
     track('creative_share_tap', { url })
@@ -25,7 +28,7 @@ export default function ShareButton({ url, title, compact = false }: { url: stri
       className={compact
         ? 'inline-flex min-h-[44px] items-center font-bold text-forest underline-offset-4 hover:underline'
         : 'inline-flex min-h-[48px] items-center rounded-full border-2 border-navy px-6 text-[16px] font-bold text-navy hover:bg-navy/[0.06]'}>
-      {copied ? 'Link copied' : 'Share'}
+      {copied ? t('share.copied') : t('share.share')}
     </button>
   )
 }
