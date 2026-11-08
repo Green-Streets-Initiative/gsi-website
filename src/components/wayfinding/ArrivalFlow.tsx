@@ -33,7 +33,7 @@ export default function ArrivalFlow({
     cards.push({
       icon: <BicycleIcon size={22} className="text-blue-700" />,
       title: closest.name,
-      subtitle: `${closest.num_bikes_available - closest.num_ebikes_available} ${t(locale, 'bikes')}${closest.num_ebikes_available > 0 ? ` + ${closest.num_ebikes_available} e-bikes` : ''} · ${closest.num_docks_available} ${t(locale, 'docks_free')} · ${formatDistance(closest.distance_meters)}`,
+      subtitle: `${closest.num_bikes_available - closest.num_ebikes_available} ${t(locale, 'bikes')}${closest.num_ebikes_available > 0 ? ` + ${closest.num_ebikes_available} ${t(locale, 'ebikes')}` : ''} · ${closest.num_docks_available} ${t(locale, 'docks_free')} · ${formatDistance(closest.distance_meters)}`,
       feature: { type: 'bluebike', data: closest },
     })
   }
@@ -45,7 +45,7 @@ export default function ArrivalFlow({
       : ''
     cards.push({
       icon: <BusIcon size={22} className="text-blue-600" />,
-      title: `${closest.route_name ? `Route ${closest.route_name}` : ''}${closest.direction ? ` ${t(locale, 'toward')} ${closest.direction}` : closest.name}`,
+      title: `${closest.route_name ? t(locale, 'route_n', { route: closest.route_name }) : ''}${closest.direction ? ` ${t(locale, 'toward')} ${closest.direction}` : closest.name}`,
       subtitle: `${arrivalText}${closest.name} · ${formatDistance(closest.distance_meters)}`,
       feature: { type: 'mbta', data: closest },
     })

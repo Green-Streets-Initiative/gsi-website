@@ -1,4 +1,4 @@
-export type Locale = 'en' | 'es' | 'pt'
+export type Locale = 'en' | 'es' | 'pt' | 'zh'
 
 export type LayerKey = 'festival' | 'food' | 'shopping' | 'services' | 'bus' | 'train' | 'bluebike' | 'bike-parking'
 

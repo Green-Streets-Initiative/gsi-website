@@ -1,7 +1,7 @@
 'use client'
 
 import { WayfindingEvent, Locale } from '@/lib/wayfinding/types'
-import { t } from '@/lib/wayfinding/i18n'
+import { LOCALE_TAG, t } from '@/lib/wayfinding/i18n'
 import LanguagePill from './LanguagePill'
 
 interface Props {
@@ -12,12 +12,13 @@ interface Props {
 
 function formatDate(dateStr: string, locale: Locale): string {
   const date = new Date(dateStr + 'T00:00:00')
-  const loc = locale === 'pt' ? 'pt-BR' : locale === 'es' ? 'es' : 'en-US'
+  const loc = LOCALE_TAG[locale]
   return date.toLocaleDateString(loc, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
 }
 
-function formatTime(timeStr: string): string {
+function formatTime(timeStr: string, locale: Locale): string {
   const [h, m] = timeStr.split(':').map(Number)
+  if (locale !== 'en') return new Date(2026, 0, 5, h, m).toLocaleTimeString(LOCALE_TAG[locale], { hour: 'numeric', minute: '2-digit' })
   const ampm = h >= 12 ? 'PM' : 'AM'
   const hour = h % 12 || 12
   return m === 0 ? `${hour} ${ampm}` : `${hour}:${String(m).padStart(2, '0')} ${ampm}`
@@ -26,7 +27,7 @@ function formatTime(timeStr: string): string {
 export default function EventHeader({ event, locale, displayDate }: Props) {
   const dateLabel = formatDate(displayDate, locale)
   const timeLabel = event.time_start && event.time_end
-    ? `${formatTime(event.time_start)}–${formatTime(event.time_end)}`
+    ? `${formatTime(event.time_start, locale)}–${formatTime(event.time_end, locale)}`
     : ''
 
   const handleShare = async () => {

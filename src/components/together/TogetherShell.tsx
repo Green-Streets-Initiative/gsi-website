@@ -6,6 +6,8 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState, ty
 import { Car, Handshake, LogOut, MailCheck, MapPinned, Plane, Sprout, TrainFront, UsersRound, type LucideIcon } from 'lucide-react'
 import { toneClass } from '@/components/events/EventsTone'
 import { Button, Card, Field, Input, Notice, Spinner, cx } from '@/components/organizers/ui'
+import { translator, withLang, type SiteLocale, type T } from '@/lib/site-i18n'
+import { togetherStrings, type TogetherKey } from '@/lib/site-strings/together'
 import { supabase } from '@/lib/supabase'
 import { togetherOn, track } from '@/lib/together'
 import '@/components/events/events-tone.css'
@@ -23,13 +25,14 @@ type Phase = 'checking' | 'signed_out' | 'off' | 'ready' | 'error'
 /** 'logan': gogreenstreets.org/logan (Shift 01518), open to anyone signed in, with its own words. */
 export type ShellVariant = 'together' | 'logan'
 
-type State = { phase: Phase; userId: string | null; email: string | null; notice: string | null; signOut: () => Promise<void>; variant: ShellVariant }
+/** `locale`: /together's language (Shift Together pages pass it; /logan stays English). */
+type State = { phase: Phase; userId: string | null; email: string | null; notice: string | null; signOut: () => Promise<void>; variant: ShellVariant; locale: SiteLocale; t: T<TogetherKey> }
 const Ctx = createContext<State | null>(null)
 
-const WAYS_TO_GO: { label: string; Icon: LucideIcon }[] = [
-  { label: 'Have someone show you how to bike, walk or take transit', Icon: Sprout },
-  { label: 'Show someone how you bike, walk or take transit', Icon: UsersRound },
-  { label: 'Find a carpool partner', Icon: Car },
+const WAYS_TO_GO: { label: TogetherKey; Icon: LucideIcon }[] = [
+  { label: 'kind.newcomer', Icon: Sprout },
+  { label: 'kind.guide', Icon: UsersRound },
+  { label: 'kind.carpool', Icon: Car },
 ]
 
 export function useTogether(): State {
@@ -38,7 +41,8 @@ export function useTogether(): State {
   return v
 }
 
-export default function TogetherShell({ children, variant = 'together' }: { children: ReactNode; variant?: ShellVariant }) {
+export default function TogetherShell({ children, variant = 'together', locale = 'en' }: { children: ReactNode; variant?: ShellVariant; locale?: SiteLocale }) {
+  const t = translator(togetherStrings, locale)
   const [phase, setPhase] = useState<Phase>('checking')
   const [userId, setUserId] = useState<string | null>(null)
   const [email, setEmail] = useState<string | null>(null)
@@ -62,7 +66,7 @@ export default function TogetherShell({ children, variant = 'together' }: { chil
           if (error) {
             const { data: { session } } = await supabase.auth.getSession()
             if (!session) {
-              setNotice('That sign-in link has expired or was already used. Send yourself a new one.')
+              setNotice(t('signin.expired'))
               setPhase('signed_out')
               return
             }
@@ -100,7 +104,7 @@ export default function TogetherShell({ children, variant = 'together' }: { chil
   }, [])
 
   return (
-    <Ctx.Provider value={{ phase, userId, email, notice, signOut, variant }}>
+    <Ctx.Provider value={{ phase, userId, email, notice, signOut, variant, locale, t }}>
       <div className={cx('min-h-[70dvh] bg-(--ev-bg) text-(--ev-ink)', toneClass('light'))}>
         <SubBar />
         <div className="mx-auto w-full max-w-[920px] px-4 pb-16 pt-6 sm:px-6 sm:pt-8">
@@ -113,12 +117,12 @@ export default function TogetherShell({ children, variant = 'together' }: { chil
 
 /** Under the site header once signed in: the two pages and the account. */
 function SubBar() {
-  const { phase, email, signOut, variant } = useTogether()
+  const { phase, email, signOut, variant, locale, t } = useTogether()
   const path = usePathname()
   if (phase !== 'ready' && phase !== 'off') return null
   const nav = [
-    { href: '/together', label: 'Your sign-up', active: path === '/together' || path.startsWith('/together/practice') },
-    { href: '/together/matches', label: 'Your matches', active: path.startsWith('/together/matches') },
+    { href: '/together', label: t('shell.your_signup'), active: path === '/together' || path.startsWith('/together/practice') },
+    { href: '/together/matches', label: t('shell.your_matches'), active: path.startsWith('/together/matches') },
   ]
   return (
     <div className="border-b border-(--ev-line) bg-(--ev-bar)">
@@ -131,7 +135,7 @@ function SubBar() {
             {nav.map((n) => (
               <Link
                 key={n.href}
-                href={n.href}
+                href={withLang(n.href, locale)}
                 aria-current={n.active ? 'page' : undefined}
                 className={cx(
                   'inline-flex min-h-[44px] items-center rounded-lg px-3 text-[15px] font-semibold',
@@ -148,11 +152,11 @@ function SubBar() {
           <button
             type="button"
             onClick={() => void signOut()}
-            aria-label="Sign out"
+            aria-label={t('shell.sign_out')}
             className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center gap-1.5 rounded-lg px-2.5 text-[14px] font-semibold text-(--ev-ink-80) hover:bg-(--ev-panel)"
           >
             <LogOut className="h-4 w-4" aria-hidden />
-            <span className="hidden sm:inline">Sign out</span>
+            <span className="hidden sm:inline">{t('shell.sign_out')}</span>
           </button>
         </div>
       </div>
@@ -160,10 +164,10 @@ function SubBar() {
   )
 }
 
-const STEPS: { title: string; hint: string; Icon: LucideIcon }[] = [
-  { title: 'Tell us your trip', hint: 'What you\u2019d like to do, and where and when you go.', Icon: MapPinned },
-  { title: 'We find a match', hint: 'Someone who lives near you and can go when you can.', Icon: UsersRound },
-  { title: 'You both say yes', hint: 'Then you see each other\u2019s email and plan the first trip.', Icon: Handshake },
+const STEPS: { title: TogetherKey; hint: TogetherKey; Icon: LucideIcon }[] = [
+  { title: 'step.trip', hint: 'step.trip_hint', Icon: MapPinned },
+  { title: 'step.match', hint: 'step.match_hint', Icon: UsersRound },
+  { title: 'step.yes', hint: 'step.yes_hint', Icon: Handshake },
 ]
 
 /**
@@ -171,7 +175,8 @@ const STEPS: { title: string; hint: string; Icon: LucideIcon }[] = [
  * you both say yes. Full (with a line each) on the sign-in page; compact on
  * the signed-in pages, with the current step marked.
  */
-export function Journey({ at, full = false }: { at?: 1 | 2 | 3; full?: boolean }) {
+export function Journey({ at, full = false, locale = 'en' }: { at?: 1 | 2 | 3; full?: boolean; locale?: SiteLocale }) {
+  const t = translator(togetherStrings, locale)
   const step = at ? STEPS[at - 1] : null
   return (
     <>
@@ -181,17 +186,17 @@ export function Journey({ at, full = false }: { at?: 1 | 2 | 3; full?: boolean }
           <span className="flex gap-1" aria-hidden>
             {[1, 2, 3].map((n) => <span key={n} className={cx('h-2 w-6 rounded-full', n <= at ? 'bg-(--ev-accent)' : 'bg-(--ev-line-strong)')} />)}
           </span>
-          <span className="text-[15px] font-semibold">Step {at} of 3: {step.title}</span>
+          <span className="text-[15px] font-semibold">{t('step.of', { n: at, title: t(step.title) })}</span>
         </div>
       ) : null}
-      <JourneySteps at={at} full={full} />
+      <JourneySteps at={at} full={full} t={t} />
     </>
   )
 }
 
-function JourneySteps({ at, full }: { at?: 1 | 2 | 3; full: boolean }) {
+function JourneySteps({ at, full, t }: { at?: 1 | 2 | 3; full: boolean; t: T<TogetherKey> }) {
   return (
-    <ol className={cx('gap-3', full ? 'grid grid-cols-1 sm:grid-cols-3' : 'hidden grid-cols-3 gap-2 sm:grid')} aria-label="How Shift Together works">
+    <ol className={cx('gap-3', full ? 'grid grid-cols-1 sm:grid-cols-3' : 'hidden grid-cols-3 gap-2 sm:grid')} aria-label={t('step.aria')}>
       {STEPS.map(({ title, hint, Icon }, i) => {
         const n = (i + 1) as 1 | 2 | 3
         const now = at === n
@@ -218,9 +223,9 @@ function JourneySteps({ at, full }: { at?: 1 | 2 | 3; full: boolean }) {
             </span>
             <span className="min-w-0">
               <span className={cx('block font-bold leading-snug', full ? 'text-[17px]' : 'text-[14px] sm:text-[15px]')}>
-                {full ? `${n}. ${title}` : title}
+                {full ? `${n}. ${t(title)}` : t(title)}
               </span>
-              {full ? <span className="mt-1 block text-[15px] leading-snug text-(--ev-ink-80)">{hint}</span> : null}
+              {full ? <span className="mt-1 block text-[15px] leading-snug text-(--ev-ink-80)">{t(hint)}</span> : null}
             </span>
           </li>
         )
@@ -230,15 +235,15 @@ function JourneySteps({ at, full }: { at?: 1 | 2 | 3; full: boolean }) {
 }
 
 function Gate({ children }: { children: ReactNode }) {
-  const { phase, variant } = useTogether()
-  if (phase === 'checking') return <Spinner label={variant === 'logan' ? 'Opening your trips' : 'Opening Shift Together'} />
+  const { phase, variant, t } = useTogether()
+  if (phase === 'checking') return <Spinner label={variant === 'logan' ? 'Opening your trips' : t('shell.opening')} />
   if (phase === 'signed_out') return <SignIn />
   if (phase === 'off') {
     return (
       <Card className="mx-auto max-w-lg text-center">
-        <h1 className="font-display text-[24px] font-extrabold">Shift Together opens soon</h1>
+        <h1 className="font-display text-[24px] font-extrabold">{t('shell.off_title')}</h1>
         <p className="mt-2 text-[16px] leading-relaxed text-(--ev-ink-85)">
-          You&rsquo;re signed in. We&rsquo;ll email you when you can sign up here.
+          {t('shell.off_body')}
         </p>
       </Card>
     )
@@ -246,8 +251,8 @@ function Gate({ children }: { children: ReactNode }) {
   if (phase === 'error') {
     return (
       <Card className="mx-auto max-w-lg text-center">
-        <p className="text-[16px] text-(--ev-ink-85)">Something went wrong opening Shift Together.</p>
-        <Button variant="primary" className="mt-4" onClick={() => window.location.reload()}>Try again</Button>
+        <p className="text-[16px] text-(--ev-ink-85)">{t('shell.error')}</p>
+        <Button variant="primary" className="mt-4" onClick={() => window.location.reload()}>{t('shell.try_again')}</Button>
       </Card>
     )
   }
@@ -267,18 +272,20 @@ const LOGAN_STEPS: { title: string; hint: string }[] = [
 ]
 
 function SignIn() {
-  const { notice, variant } = useTogether()
+  const { notice, variant, locale, t } = useTogether()
   const logan = variant === 'logan'
   const [email, setEmail] = useState('')
   const [sent, setSent] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
+  // "We sent a sign-in link to {email}. …" with the address in bold, in any word order.
+  const [sentBefore, sentAfter = ''] = t('signin.sent').split('{email}')
 
   async function send(e?: FormEvent) {
     e?.preventDefault()
     const addr = email.trim().toLowerCase()
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(addr)) {
-      setErr('Enter your email address.')
+      setErr(t('signin.need_email'))
       return
     }
     setBusy(true)
@@ -289,7 +296,7 @@ function SignIn() {
     })
     setBusy(false)
     if (error) {
-      setErr(/rate|seconds/i.test(error.message) ? 'A link was just sent. Give it a minute, then try again.' : "We couldn't send the link. Try again in a minute.")
+      setErr(/rate|seconds/i.test(error.message) ? t('signin.rate') : t('signin.failed'))
       return
     }
     setSent(addr)
@@ -301,41 +308,41 @@ function SignIn() {
       {/* Phone: heading, then the sign-in, then how it works. Wide: heading and ways left, sign-in right. */}
       <div className="grid grid-cols-1 gap-6 md:grid-cols-[1.15fr_1fr] md:items-start md:gap-x-10">
         <div className="md:col-start-1 md:row-start-1">
-          <p className="text-[15px] font-semibold text-(--ev-accent)">{logan ? 'Shift, from Green Streets Initiative' : 'Shift Together, from Green Streets Initiative'}</p>
+          <p className="text-[15px] font-semibold text-(--ev-accent)">{logan ? 'Shift, from Green Streets Initiative' : t('signin.eyebrow')}</p>
           <h1 className="mt-2 font-display text-[clamp(30px,4.2vw,44px)] font-extrabold leading-[1.05] text-balance">
-            {logan ? 'Going to Logan? Find someone to go with' : 'Try a new way to get there, with someone who knows it'}
+            {logan ? 'Going to Logan? Find someone to go with' : t('signin.title')}
           </h1>
         </div>
         <Card className="shadow-(--ev-shadow) md:col-start-2 md:row-span-2 md:row-start-1">
           {sent ? (
             <div>
               <MailCheck className="h-8 w-8 text-(--ev-accent)" aria-hidden />
-              <h2 className="mt-3 font-display text-[22px] font-extrabold">Check your inbox</h2>
+              <h2 className="mt-3 font-display text-[22px] font-extrabold">{t('signin.inbox')}</h2>
               <p className="mt-2 text-[16px] leading-relaxed text-(--ev-ink-85)">
-                We sent a sign-in link to <strong>{sent}</strong>. Open it on this phone or computer to continue.
+                {sentBefore}<strong>{sent}</strong>{sentAfter}
               </p>
               <button type="button" onClick={() => setSent(null)} className="mt-3 min-h-[44px] text-[15px] font-semibold text-(--ev-accent) underline">
-                Use a different email
+                {t('signin.other_email')}
               </button>
             </div>
           ) : (
             <form onSubmit={send} className="grid gap-4">
-              <h2 className="font-display text-[22px] font-extrabold">Sign in with your email</h2>
+              <h2 className="font-display text-[22px] font-extrabold">{t('signin.heading')}</h2>
               {notice ? <Notice tone="warn">{notice}</Notice> : null}
-              <Field label="Email" htmlFor="together-email" error={err ?? undefined}>
+              <Field label={t('signin.email')} htmlFor="together-email" error={err ?? undefined}>
                 <Input id="together-email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />
               </Field>
-              <Button type="submit" variant="primary" busy={busy}>Email me a sign-in link</Button>
+              <Button type="submit" variant="primary" busy={busy}>{t('signin.send')}</Button>
               {logan ? null : (
                 <p className="text-[15px] leading-snug text-(--ev-ink-80)">
-                  Met us at the Somerville Connection Expo? Use the email you gave us.
+                  {t('signin.expo')}
                 </p>
               )}
             </form>
           )}
         </Card>
-        <ul className="grid gap-2 md:col-start-1 md:row-start-2" aria-label="Ways to take part">
-          {(logan ? LOGAN_POINTS : WAYS_TO_GO).map(({ label, Icon }) => (
+        <ul className="grid gap-2 md:col-start-1 md:row-start-2" aria-label={t('signin.ways_aria')}>
+          {(logan ? LOGAN_POINTS : WAYS_TO_GO.map((w) => ({ label: t(w.label), Icon: w.Icon }))).map(({ label, Icon }) => (
             <li key={label} className="flex items-center gap-3 text-[17px] font-semibold">
               <span className="flex h-9 w-9 items-center justify-center rounded-full bg-(--ev-panel) text-(--ev-accent)" aria-hidden>
                 <Icon className="h-5 w-5" />
@@ -346,7 +353,7 @@ function SignIn() {
         </ul>
       </div>
       <section aria-labelledby="together-how">
-        <h2 id="together-how" className="mb-3 font-display text-[22px] font-extrabold">How it works</h2>
+        <h2 id="together-how" className="mb-3 font-display text-[22px] font-extrabold">{t('signin.how')}</h2>
         {logan ? (
           <ol className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             {LOGAN_STEPS.map((st, i) => (
@@ -359,11 +366,11 @@ function SignIn() {
               </li>
             ))}
           </ol>
-        ) : <Journey full />}
+        ) : <Journey full locale={locale} />}
         <p className="mt-4 text-[15px] leading-snug text-(--ev-ink-80)">
           {logan
             ? 'Free, and no app needed. Your match sees only your first name and town until you both say yes.'
-            : 'Free, and no app needed. Your match sees only your first name until you both say yes.'}
+            : t('signin.free')}
         </p>
       </section>
     </div>

@@ -9,7 +9,7 @@ interface Props {
   variant?: 'light' | 'dark' | 'accent'
 }
 
-const LABELS: Record<Locale, string> = { en: 'EN', es: 'ES', pt: 'PT' }
+const LABELS: Record<Locale, string> = { en: 'EN', es: 'ES', pt: 'PT', zh: '中文' }
 
 export default function LanguagePill({ event, locale, variant = 'light' }: Props) {
   const router = useRouter()

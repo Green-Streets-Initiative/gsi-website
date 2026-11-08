@@ -490,7 +490,7 @@ export function WayfindingClient({ event, businesses, detours, locale, isEmbed }
       {!isEmbed && (
         <div className="bg-white border-t border-gray-100 py-2 px-4">
           <div className="flex items-center justify-center gap-1.5">
-            <span className="text-[11px] text-gray-400">Wayfinding by</span>
+            <span className="text-[11px] text-gray-400">{t(locale, 'wayfinding_by')}</span>
             <a
               href="https://www.gogreenstreets.org"
               target="_blank"

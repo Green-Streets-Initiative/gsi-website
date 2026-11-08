@@ -60,13 +60,14 @@ export function Button({
   )
 }
 
-export function Field({ label, hint, htmlFor, children, error, optional }: {
-  label: ReactNode; hint?: ReactNode; htmlFor?: string; children: ReactNode; error?: string | null; optional?: boolean
+/** `optionalLabel`: a translated page's "(optional)"; the console leaves it English. */
+export function Field({ label, hint, htmlFor, children, error, optional, optionalLabel = '(optional)' }: {
+  label: ReactNode; hint?: ReactNode; htmlFor?: string; children: ReactNode; error?: string | null; optional?: boolean; optionalLabel?: string
 }) {
   return (
     <div>
       {(() => {
-        const inner = <>{label}{optional && <span className="ml-1.5 font-normal text-(--ev-ink-75)">(optional)</span>}</>
+        const inner = <>{label}{optional && <span className="ml-1.5 font-normal text-(--ev-ink-75)">{optionalLabel}</span>}</>
         const cls = 'block text-[15px] font-semibold text-(--ev-ink-85)'
         return htmlFor ? <label htmlFor={htmlFor} className={cls}>{inner}</label> : <p className={cls}>{inner}</p>
       })()}
@@ -175,12 +176,12 @@ export function Badge({ tone = 'plain', children, className }: { tone?: Tone; ch
   return <span className={cx('inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[13px] font-semibold', TONE[tone], className)}>{children}</span>
 }
 
-export function Notice({ tone = 'plain', children, onClose }: { tone?: Tone; children: ReactNode; onClose?: () => void }) {
+export function Notice({ tone = 'plain', children, onClose, dismissLabel = 'Dismiss' }: { tone?: Tone; children: ReactNode; onClose?: () => void; dismissLabel?: string }) {
   return (
     <div role={tone === 'off' ? 'alert' : 'status'} className={cx('flex items-start gap-3 rounded-xl px-4 py-3 text-[14px] leading-snug', TONE[tone])}>
       <div className="min-w-0 flex-1">{children}</div>
       {onClose && (
-        <button type="button" onClick={onClose} aria-label="Dismiss" className="-m-1 rounded p-1 hover:bg-black/5">
+        <button type="button" onClick={onClose} aria-label={dismissLabel} className="-m-1 rounded p-1 hover:bg-black/5">
           <X className="h-4 w-4" aria-hidden />
         </button>
       )}

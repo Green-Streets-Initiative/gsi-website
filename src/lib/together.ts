@@ -1,4 +1,5 @@
 import posthog from 'posthog-js'
+import { siteTime, type SiteLocale } from '@/lib/site-i18n'
 import { supabase } from '@/lib/supabase'
 import type { PartnerLanguage } from './languages'
 
@@ -408,11 +409,13 @@ export function overallFit(m: Match, myArrive?: string | null): FitLevel {
   return avg >= 2.6 ? 3 : avg >= 1.8 ? 2 : 1
 }
 
-/** "8:30 AM" from "08:30". */
-export function clock(hhmm: string | null | undefined): string | null {
+/** "8:30 AM" from "08:30"; in the page's language when one is given (/logan stays English). */
+export function clock(hhmm: string | null | undefined, locale: SiteLocale = 'en'): string | null {
   if (!hhmm) return null
   const [h, m] = hhmm.split(':').map(Number)
-  return new Date(2026, 0, 5, h, m).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+  const d = new Date(2026, 0, 5, h, m)
+  if (locale === 'en') return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+  return siteTime(locale, d, { hour: 'numeric', minute: '2-digit' })
 }
 
 /** The free road lesson (Shift 01454/01455/01475), measured from their saved Home. */

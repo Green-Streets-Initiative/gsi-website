@@ -1,7 +1,7 @@
 'use client'
 
 import { WayfindingEvent, Locale } from '@/lib/wayfinding/types'
-import { t } from '@/lib/wayfinding/i18n'
+import { LOCALE_TAG, t } from '@/lib/wayfinding/i18n'
 
 interface Props {
   event: WayfindingEvent
@@ -10,7 +10,7 @@ interface Props {
 }
 
 export default function RainBanner({ event, locale, displayDate }: Props) {
-  const loc = locale === 'pt' ? 'pt-BR' : locale === 'es' ? 'es' : 'en-US'
+  const loc = LOCALE_TAG[locale]
   const formattedDate = new Date(displayDate + 'T00:00:00').toLocaleDateString(loc, {
     weekday: 'short', month: 'short', day: 'numeric',
   })

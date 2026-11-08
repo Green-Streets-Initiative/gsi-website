@@ -458,7 +458,7 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
                               {isFirst && mbtaPred && (
                                 <div className="mt-1">
                                   <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">
-                                    {t(locale, 'next_departure')}: {mbtaPred.minutesAway <= 0 ? 'Now' : `${mbtaPred.minutesAway} ${t(locale, 'min')}`}
+                                    {t(locale, 'next_departure')}: {mbtaPred.minutesAway <= 0 ? t(locale, 'now') : `${mbtaPred.minutesAway} ${t(locale, 'min')}`}
                                   </span>
                                 </div>
                               )}
@@ -530,7 +530,7 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
                               </span>
                               {nearestBluebike.num_ebikes_available > 0 && (
                                 <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-xs font-semibold">
-                                  {nearestBluebike.num_ebikes_available} e-bikes
+                                  {nearestBluebike.num_ebikes_available} {t(locale, 'ebikes')}
                                 </span>
                               )}
                               <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 text-xs font-semibold">
