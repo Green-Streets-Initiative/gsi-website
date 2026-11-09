@@ -7,6 +7,7 @@ import {
   dateOnlyChip,
   isRecruitment,
   isVolunteerDrive,
+  isPetition,
   TOWN_TZ,
   wallTime,
   type FeaturedItem,
@@ -226,6 +227,7 @@ export function buildTownDigest(opts: {
   // meeting/feedback copy. Dated ones (e.g. an info session) keep meeting copy.
   const recruit = isRecruitment(item) && !item.hearing_date
   const volunteer = isVolunteerDrive(item)
+  const petition = isPetition(item) && !item.hearing_date
   const townNames = [...(item.affected_towns ?? []), item.municipality, townName]
   const headline = headlineFor(item, townNames)
   const todayIso = new Date(now).toLocaleDateString('en-CA', { timeZone: TOWN_TZ })
@@ -241,7 +243,9 @@ export function buildTownDigest(opts: {
         : `Comments open through ${dateOnlyChip(item.comment_deadline)}`
       : recruit
         ? 'Applications open now'
-        : 'Open for feedback now'
+        : isPetition(item)
+          ? 'Petition · sign now'
+          : 'Open for feedback now'
 
   // Subject + lede state the thing — via the generated headline, never a
   // truncated scrape title.
@@ -267,6 +271,8 @@ export function buildTownDigest(opts: {
         ? `<a href="${linkFor('featured_register')(item.virtual_link)}" style="color:#191A2E;">${escapeHtml(item.action_label ?? 'Sign up online')}</a> — the application takes a few minutes`
         : recruit
         ? `<a href="${linkFor('featured_register')(item.virtual_link)}" style="color:#191A2E;">Apply online</a> — the application takes a few minutes`
+        : petition
+        ? `<a href="${linkFor('featured_register')(item.virtual_link)}" style="color:#191A2E;">${escapeHtml(item.action_label ?? 'Sign the petition')}</a> — it takes a minute`
         : `<a href="${linkFor('featured_register')(item.virtual_link)}" style="color:#191A2E;">Join the ${item.hearing_type === 'virtual' ? 'virtual ' : ''}${noun} online</a> — registration takes a minute`,
     )
   }
@@ -289,7 +295,7 @@ export function buildTownDigest(opts: {
   const noticeHost = hostLabel(item.source_url)
   if (item.source_url) {
     weighIn.push(
-      `<a href="${linkFor('featured_notice')(item.source_url)}" style="color:#191A2E;">Read the full notice${noticeHost ? ` on ${escapeHtml(noticeHost)}` : ''}</a>`,
+      `<a href="${linkFor('featured_notice')(item.source_url)}" style="color:#191A2E;">${petition ? 'Read the organizers’ case' : 'Read the full notice'}${noticeHost ? ` on ${escapeHtml(noticeHost)}` : ''}</a>`,
     )
   }
 
@@ -408,7 +414,9 @@ export function buildTownDigest(opts: {
           ? `feedback open through ${dateOnlyChip(c.comment_deadline)}`
           : isRecruitment(c)
             ? 'applications open now'
-            : 'open for feedback now'
+            : isPetition(c)
+              ? 'petition, sign now'
+              : 'open for feedback now'
       : a.chip
     let proximitySlot = ''
     if (c && c.lat != null && c.lng != null) {

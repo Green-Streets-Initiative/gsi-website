@@ -46,6 +46,13 @@ export function isRecruitment(item: TownCivicEvent): boolean {
   return /\bmember(ship)? application\b|\bseeking (new )?members\b|\brecruiting members\b/.test(text)
 }
 
+/** A petition someone else runs (Fenway Missing Link, Memorial Drive): no
+ * meeting, no comment window, so "open for feedback" misdescribes it. Same
+ * detection as the Shift app's lib/civic.ts inputNoun(). */
+export function isPetition(item: TownCivicEvent): boolean {
+  return /\bpetition\b/i.test(item.title)
+}
+
 export function isVolunteerDrive(item: TownCivicEvent): boolean {
   const text = `${item.title} ${item.description ?? ''}`.toLowerCase()
   return /\bvolunteer(s|ing)?\b/.test(text)
@@ -121,6 +128,8 @@ export function buildFeaturedCandidates(
           : tr('civic.comment_by', { date: dateOnlyChip(ce.comment_deadline, locale) })
         : isRecruitment(ce)
         ? tr('civic.apps_open')
+        : isPetition(ce)
+        ? tr('civic.petition_open')
         : tr('civic.open_feedback')
       // Lead with the community name ("Reid Overpass") when the official
       // title doesn't carry it — that's the name residents scan for.
