@@ -1,6 +1,6 @@
 'use client'
 
-import type { ComponentProps } from 'react'
+import { useRef, type ComponentProps } from 'react'
 import Link from 'next/link'
 import posthog from 'posthog-js'
 import ModeIcon from '@/components/commute/ModeIcon'
@@ -8,7 +8,7 @@ import { modeOptions, hasTransitRoute, hasBikeRoute, defaultRouteMode, reachMode
 import { directionsUrl } from '@/lib/nearby/transit-ui'
 import type { ModeFilter } from './useNearbyModel'
 import type { RouteLegTapInfo } from './NearbyMap'
-import BikeComfortBlock, { NEARBY_COMFORT_COLORS } from './BikeComfortBlock'
+import BikeComfortBlock, { AvoidChanges, NEARBY_COMFORT_COLORS } from './BikeComfortBlock'
 import type { ReachRow, ReachStep, ReachSegment, BikeComfortTier, BikeComfortData } from './types'
 import { useNearbyT, useNearbyLocale } from './NearbyI18n'
 import { TripPerks } from './NearbyPerks'
@@ -219,6 +219,274 @@ export function RouteChoice({ row, alt, onPick }: {
   )
 }
 
+/* ── Around You v2: the simpler trip view (the app's SimpleTrip) ── */
+
+/** Comfort tiers in the order the strip's legend lists them. */
+const COMFORT_ORDER: BikeComfortTier[] = ['path', 'protected', 'bike_lane', 'shared_road']
+
+/** A tier as it reads in a sentence ("mostly protected lanes"). */
+const TIER_PHRASE_KEY: Record<BikeComfortTier, string> = {
+  path: 'v2.trip_tier_path',
+  protected: 'v2.trip_tier_protected',
+  bike_lane: 'v2.trip_tier_painted',
+  shared_road: 'v2.trip_tier_shared',
+}
+
+type Tr = ReturnType<typeof useNearbyT>
+
+/** "2.7 mi, mostly paths on Somerville Community Path." (the app's
+ *  bikeTripSummary): the kind of lane that covers most of the ride, and the
+ *  longest street of that kind. Under half? Name the top two instead. */
+export function bikeTripSummary(comfort: BikeComfortData, tr: Tr): string | null {
+  const total = comfort.segments.reduce((a, s) => a + s.distance_mi, 0)
+  if (total <= 0) return null
+  const byTier = new Map<BikeComfortTier, number>()
+  for (const s of comfort.segments) byTier.set(s.rating, (byTier.get(s.rating) ?? 0) + s.distance_mi)
+  const ranked = [...byTier.entries()].sort((a, b) => b[1] - a[1])
+  const [top, topMi] = ranked[0]
+  const distance = tr('reach.mi', { miles: total.toFixed(1) })
+  const tier = tr(TIER_PHRASE_KEY[top])
+  if (topMi / total < 0.5 && ranked.length > 1) {
+    return tr('v2.trip_mix', { distance, a: tier, b: tr(TIER_PHRASE_KEY[ranked[1][0]]) })
+  }
+  // The longest named street of that kind, without its town
+  const street = comfort.streets
+    .filter(s => s.rating === top)
+    .sort((a, b) => b.distance_mi - a.distance_mi)[0]
+    ?.label.split(',')[0]
+    .trim()
+  return street
+    ? tr('v2.trip_mostly_on', { distance, tier, street })
+    : tr('v2.trip_mostly', { distance, tier })
+}
+
+/**
+ * Around You v2: a trip is ONE answer (Keith 2026-11-04, ported from the
+ * app's SimpleTrip). A Bike | Transit switch, one sentence, the comfort strip
+ * in travel order with a percent per kind, one line about the faster route,
+ * the main button; the streets (bike) or each step (transit) sit below. The
+ * two-card Calmest / Fastest deck is gone here. The app's Save and "Go a
+ * different way" have no web counterpart yet, so they're left out.
+ *
+ * Used by the desktop rail's open row (ReachList, title in the row) and the
+ * mobile sheet's detail (NearbyShell, `showTitle`).
+ */
+export function V2Trip({ row, mode, onMode, center, legInfo, highlightedStreetKey, onHighlightStreet, bikeAlt, onPickRoute, avoidFor, onPlanCommute, partnerSlug, showTitle = false, onExpand }: {
+  row: ReachRow
+  mode: 'transit' | 'bike'
+  onMode: (mode: 'transit' | 'bike') => void
+  center: { lat: number; lng: number }
+  legInfo?: RouteLegTapInfo | null
+  highlightedStreetKey?: string | null
+  onHighlightStreet?: (key: string | null) => void
+  bikeAlt: boolean
+  onPickRoute: (alt: boolean) => void
+  avoidFor: (row: ReachRow, comfort: BikeComfortData, minutes: number) => ComponentProps<typeof BikeComfortBlock>['avoid']
+  onPlanCommute?: (row: ReachRow) => void
+  partnerSlug?: string | null
+  showTitle?: boolean
+  /** Mobile sheet at half height: raise it so the streets / steps show. */
+  onExpand?: () => void
+}) {
+  const tr = useNearbyT()
+  const belowRef = useRef<HTMLDivElement>(null)
+  const canTransit = hasTransitRoute(row)
+  const canBike = hasBikeRoute(row)
+  const bike = mode === 'bike'
+  const showingAlt = bikeAlt && !!row.bike_alt
+  const comfort = bike ? ((showingAlt ? row.bike_alt?.comfort : row.bike_comfort) ?? row.bike_comfort ?? null) : null
+  const bikeMinutes = showingAlt && row.bike_alt ? row.bike_alt.minutes : row.bike_minutes
+  const avoid = comfort ? avoidFor(row, comfort, bikeMinutes) : undefined
+  const changed = !!avoid && avoid.state.avoiding.length > 0
+
+  const total = comfort ? comfort.segments.reduce((a, s) => a + s.distance_mi, 0) : 0
+  const shares = comfort && total > 0
+    ? COMFORT_ORDER.map(tier => ({
+        tier,
+        pct: Math.round((comfort.segments.filter(s => s.rating === tier).reduce((a, s) => a + s.distance_mi, 0) / total) * 100),
+      })).filter(s => s.pct > 0)
+    : []
+  const tierLabels: Record<BikeComfortTier, string> = {
+    path: tr('bike.path'),
+    protected: tr('bike.protected'),
+    bike_lane: tr('bike.bike_lane'),
+    shared_road: tr('bike.shared_road'),
+  }
+
+  // The faster way, as one line (the two cards said the same thing twice).
+  // With no other route, saying so keeps what the deck was for: the rider
+  // knows the comparison happened.
+  const savedMin = row.bike_alt ? row.bike_minutes - row.bike_alt.minutes : 0
+  const busier = !!row.bike_alt
+    && (protectedShare(row.bike_alt.comfort) ?? 0) < (protectedShare(row.bike_comfort) ?? 0) - 0.05
+  const altLine = !bike || !comfort || changed ? null
+    : !row.bike_alt ? { text: tr('v2.trip_also_fastest'), action: null }
+    : showingAlt ? { text: tr('v2.trip_showing_faster'), action: tr('v2.trip_back_to_calmer') }
+    : {
+        text: savedMin > 0
+          ? tr(busier ? 'v2.trip_faster_way_busier' : 'v2.trip_faster_way', { minutes: savedMin })
+          : tr('v2.trip_other_way'),
+        action: tr('v2.trip_show_it'),
+      }
+
+  const wayLabel = (m: 'transit' | 'bike') => m === 'bike'
+    ? tr('v2.trip_way_bike', { minutes: `${row.bike_is_estimate ? '~' : ''}${bikeMinutes}` })
+    : tr('v2.trip_way_transit', { minutes: row.transit_minutes ?? '' })
+  const ways = (['bike', 'transit'] as const).filter(m => (m === 'bike' ? canBike : canTransit))
+
+  // Maps rides our line on a bike trip (via points), so say whose map it is
+  const route = bike ? (showingAlt ? row.bike_alt?.polyline : row.bike_polyline) : null
+
+  return (
+    <div>
+      {showTitle && <div className="text-[1.1rem] font-bold leading-snug text-(--nb-ink)">{row.name}</div>}
+
+      {/* The way: a switch when both can be drawn, otherwise just its time */}
+      {ways.length > 1 ? (
+        <div role="tablist" className={`${showTitle ? 'mt-3' : ''} flex gap-1 rounded-xl bg-(--nb-panel) p-1`}>
+          {ways.map(m => (
+            <button
+              key={m}
+              role="tab"
+              aria-selected={mode === m}
+              onClick={() => { if (mode !== m) onMode(m) }}
+              className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-2.5 text-[15px] font-bold tabular-nums transition-colors ${
+                mode === m ? 'bg-(--nb-accent-fill) text-(--nb-on-accent-fill)' : 'text-(--nb-ink-80) hover:text-(--nb-ink)'
+              }`}
+            >
+              <ModeIcon mode={m} size={15} /> {wayLabel(m)}
+            </button>
+          ))}
+        </div>
+      ) : ways.length === 1 ? (
+        <div className={`${showTitle ? 'mt-2' : ''} flex items-center gap-1.5 text-[15px] font-bold tabular-nums text-(--nb-ink)`}>
+          <ModeIcon mode={ways[0]} size={15} /> {wayLabel(ways[0])}
+        </div>
+      ) : null}
+
+      {legInfo && <div className="mt-3"><RouteLegNote info={legInfo} /></div>}
+
+      {bike && comfort ? (
+        <>
+          {(() => {
+            const summary = bikeTripSummary(comfort, tr)
+            return summary ? <p className="mt-3 text-[16px] font-semibold leading-snug text-(--nb-ink)">{summary}</p> : null
+          })()}
+          {shares.length > 0 && (
+            <>
+              {/* The ride in travel order, each stretch its own color */}
+              <div className="mt-2.5 flex h-2.5 gap-[2px] overflow-hidden rounded-full" aria-hidden="true">
+                {comfort.segments.map((s, i) => (
+                  <span
+                    key={i}
+                    className="h-full"
+                    style={{ flexGrow: Math.max(0.04, s.distance_mi / total), flexBasis: 0, backgroundColor: NEARBY_COMFORT_COLORS[s.rating] }}
+                  />
+                ))}
+              </div>
+              <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
+                {shares.map(s => (
+                  <li key={s.tier} className="flex items-center gap-1.5 text-[14px] tabular-nums text-(--nb-ink-80)">
+                    <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: NEARBY_COMFORT_COLORS[s.tier] }} aria-hidden="true" />
+                    {tierLabels[s.tier]} {s.pct}%
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+          {/* Clears the desktop rail's sticky search and place chips (~260px) */}
+          {changed && <div className="mt-3"><AvoidChanges avoid={avoid} scrollMargin="scroll-mt-4 lg:scroll-mt-[280px]" /></div>}
+          {altLine && (altLine.action ? (
+            <button
+              onClick={() => onPickRoute(!showingAlt)}
+              className="mt-3 flex w-full items-center justify-between gap-3 rounded-xl border border-(--nb-line-mid) px-3.5 py-2.5 text-left transition-colors hover:bg-(--nb-panel)"
+            >
+              <span className="min-w-0 text-[14px] leading-snug text-(--nb-ink-80)">{altLine.text}</span>
+              <span className="shrink-0 text-[14px] font-bold text-(--nb-accent)">{altLine.action}</span>
+            </button>
+          ) : (
+            <p className="mt-3 text-[14px] leading-snug text-(--nb-ink-80)">{altLine.text}</p>
+          ))}
+        </>
+      ) : !bike ? (
+        <div className="mt-3">
+          {row.steps.length > 0 ? (
+            <div className="flex flex-wrap items-center gap-1.5">
+              <TransitChain steps={row.steps} />
+            </div>
+          ) : (
+            <p className="text-[14px] text-(--nb-ink-80)">
+              {row.transit_minutes !== null ? tr('reach.close_enough') : tr('reach.no_direct_transit')}
+            </p>
+          )}
+          <TripFacts row={row} />
+        </div>
+      ) : null}
+
+      {/* The one thing to do: hand off to their maps app for the trip */}
+      <a
+        href={directionsUrl(row.lat, row.lng, { mode: bike ? 'bicycling' : 'transit', origin: center, route })}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={() => posthog.capture('snapshot_directions_clicked', { type: 'reach', mode, v2: true })}
+        className="mt-4 block rounded-xl bg-(--nb-accent-fill) px-4 py-3 text-center text-[15px] font-bold text-(--nb-on-accent-fill) transition-opacity hover:opacity-85"
+      >
+        {bike && route ? tr('v2.trip_follow_google') : tr('reach.open_in_maps')}
+      </a>
+
+      {/* Raising the sheet is optional: this opens it the rest of the way */}
+      {onExpand && (
+        <button
+          onClick={() => {
+            onExpand()
+            const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+            window.setTimeout(() => belowRef.current?.scrollIntoView({ block: 'start', behavior: reduce ? 'auto' : 'smooth' }), 320)
+          }}
+          className="mt-3 block w-full py-1.5 text-center text-[15px] font-semibold text-(--nb-accent) hover:opacity-80"
+        >
+          {bike ? tr('v2.trip_more_bike') : tr('v2.trip_more_transit')}
+        </button>
+      )}
+
+      <div ref={belowRef} className="scroll-mt-2">
+        {bike && comfort && comfort.segments.length > 0 && (
+          <>
+            <h3 className="mt-6 text-[13px] font-bold uppercase tracking-wider text-(--nb-ink-70)">{tr('v2.trip_streets')}</h3>
+            <BikeComfortBlock
+              comfort={comfort}
+              highlightedStreetKey={highlightedStreetKey}
+              onHighlightStreet={onHighlightStreet}
+              avoid={avoid}
+              streetsOnly
+            />
+          </>
+        )}
+        {!bike && (
+          <>
+            <h3 className="mt-6 text-[13px] font-bold uppercase tracking-wider text-(--nb-ink-70)">{tr('v2.trip_steps')}</h3>
+            <TransitLegs toned steps={row.steps} segments={row.transit_segments} />
+            <SpotCautionsList segments={row.transit_segments} />
+            <p className="mt-2.5 text-[14px] leading-snug text-(--nb-ink-70)">{tr('reach.transit_leg_hint')}</p>
+          </>
+        )}
+      </div>
+
+      {bike && <TripPerks row={row} />}
+
+      {/* The trip they repeat, compared across every way to make it */}
+      {onPlanCommute && (
+        <Link
+          href={partnerSlug ? `/commute-advisor?partner=${partnerSlug}` : '/commute-advisor'}
+          onClick={() => onPlanCommute(row)}
+          className="mt-5 block text-center text-[15px] font-semibold text-(--nb-accent) hover:opacity-80"
+        >
+          {tr('v2.trip_plan_commute')}
+        </Link>
+      )}
+    </div>
+  )
+}
+
 /**
  * What you actually do on each ride: get on here, going that way, ride this
  * many stops, get off there. The chip chain answers "which lines"; without
@@ -229,7 +497,13 @@ export function RouteChoice({ row, alt, onPick }: {
  * Fragments are assembled rather than one big sentence so a missing headsign
  * or stop count drops out cleanly instead of leaving a gap in the copy.
  */
-export function TransitLegs({ steps, segments }: { steps: ReachStep[]; segments?: ReachSegment[] }) {
+export function TransitLegs({ steps, segments, toned = false }: {
+  steps: ReachStep[]
+  segments?: ReachSegment[]
+  /** v2: the Walk badge in the page's tone. Its fixed white-on-12%-white
+   *  vanishes on the cream page; v1 keeps it as it was. */
+  toned?: boolean
+}) {
   const tr = useNearbyT()
   const legs = steps.filter(s => s.boardStop || s.alightStop || s.headsign)
   if (legs.length === 0) return null
@@ -260,8 +534,8 @@ export function TransitLegs({ steps, segments }: { steps: ReachStep[]; segments?
           return (
             <li key={`w-${idx}`} className="flex items-start gap-2">
               <span
-                className="mt-0.5 shrink-0 rounded px-1.5 py-0.5 text-[0.7rem] font-bold"
-                style={{ backgroundColor: 'rgba(255,255,255,0.12)', color: '#fff' }}
+                className={`mt-0.5 shrink-0 rounded px-1.5 py-0.5 text-[0.7rem] font-bold ${toned ? 'bg-(--nb-panel-raised) text-(--nb-ink)' : ''}`}
+                style={toned ? undefined : { backgroundColor: 'rgba(255,255,255,0.12)', color: '#fff' }}
               >
                 {tr('reach.leg_walk_badge')}
               </span>
@@ -381,7 +655,12 @@ export function ReachList({ center, rows, onRowTap, modeFilter, routeSelection, 
 
             // Collapsed by default: name, distance, and the time by mode.
             // The line/corridor chips live in the expanded (or detail) view
-            const compactBody = (chevron: boolean) => (
+            // v2's open trip says its times in the switch below: the row
+            // keeps just the place (and no as-the-crow-flies miles)
+            const v2Open = !!avoidFor && isOpen && !onRowTap
+            const compactBody = (chevron: boolean) => v2Open ? (
+              <div className="text-[1.05rem] font-bold leading-snug text-(--nb-ink)">{row.name}</div>
+            ) : (
               <div>
                 <div className="flex items-baseline justify-between gap-3">
                   <span className="min-w-0 truncate text-[0.9rem] font-semibold text-(--nb-ink)">{row.name}</span>
@@ -453,7 +732,25 @@ export function ReachList({ center, rows, onRowTap, modeFilter, routeSelection, 
 
                 {/* The route, drawn right here under the tapped row — the
                     page never scrolls anywhere as a side effect */}
-                {isOpen && expanded && (
+                {isOpen && expanded && avoidFor && (
+                  <div className="border-t border-(--nb-line) bg-(--nb-card-deep) px-4 pb-4 pt-3">
+                    <V2Trip
+                      row={row}
+                      mode={expanded.mode}
+                      onMode={(m) => switchMode(row, m)}
+                      center={center}
+                      legInfo={legInfo}
+                      highlightedStreetKey={highlightedStreetKey}
+                      onHighlightStreet={onHighlightStreet}
+                      bikeAlt={bikeAlt}
+                      onPickRoute={onPickRoute}
+                      avoidFor={avoidFor}
+                      onPlanCommute={onPlanCommute}
+                      partnerSlug={partnerSlug}
+                    />
+                  </div>
+                )}
+                {isOpen && expanded && !avoidFor && (
                   <div className="border-t border-(--nb-line) bg-(--nb-card-deep) px-4 pb-4 pt-3">
                     {chipsBlock(expanded.mode)}
                     {hasTransitRoute(row) && hasBikeRoute(row) && (
@@ -503,11 +800,6 @@ export function ReachList({ center, rows, onRowTap, modeFilter, routeSelection, 
                           comfort={(bikeAlt ? row.bike_alt?.comfort : row.bike_comfort) ?? row.bike_comfort}
                           highlightedStreetKey={highlightedStreetKey}
                           onHighlightStreet={onHighlightStreet}
-                          avoid={avoidFor?.(
-                            row,
-                            (bikeAlt ? row.bike_alt?.comfort : row.bike_comfort) ?? row.bike_comfort,
-                            bikeAlt && row.bike_alt ? row.bike_alt.minutes : row.bike_minutes,
-                          )}
                         />
                       </>
                     )}
@@ -517,8 +809,6 @@ export function ReachList({ center, rows, onRowTap, modeFilter, routeSelection, 
                       href={directionsUrl(row.lat, row.lng, {
                         mode: expanded.mode === 'bike' ? 'bicycling' : 'transit',
                         origin: center,
-                        // v2 (the only place avoidFor is passed): Maps rides our line
-                        route: avoidFor ? (bikeAlt ? row.bike_alt?.polyline : row.bike_polyline) : null,
                       })}
                       target="_blank"
                       rel="noopener noreferrer"

@@ -26,7 +26,7 @@ import { DetailContent } from './DetailPanel'
 import ModeFilterChips from './ModeFilterChips'
 import { StationList, BikeRouteList, DockList, BorrowRentList, RepairList, ServiceDisruptionsCard, firstBikeShelfKey } from './AroundYouLists'
 import { nearbyAlerts, type SurfacedAlert } from '@/lib/nearby/alerts'
-import { ReachList, RouteChoice, RouteLegNote, TransitChain, TransitLegs, TripFacts } from './ReachSection'
+import { ReachList, RouteChoice, RouteLegNote, TransitChain, TransitLegs, TripFacts, V2Trip } from './ReachSection'
 import TripPlanner from './TripPlanner'
 import { ExploreBody } from './ExploreBody'
 import { ExplorePerks, TripPerks, isPerkMarker, useNearbyPerks, usePerkMarkers } from './NearbyPerks'
@@ -386,7 +386,9 @@ export default function NearbyShell({
   // v2: the search leads the sheet; focusing it raises the sheet so the
   // suggestions have room
   const v2Header = (
-    <div className="mx-4 mb-2.5" onFocusCapture={() => setSnap('full')}>
+    // A trip opens over everything, as in the app: the search and chips step
+    // aside so the answer sits right under the thumb; Back brings them back.
+    <div className={`mx-4 mb-2.5${selection ? ' hidden' : ''}`} onFocusCapture={() => setSnap('full')}>
       {/* The original planner below (always mounted) plans a ?to= link on
           arrival, before the v2 check answers, so this one never does */}
       <TripPlanner bare center={center} onPlanned={onPlanned} partnerSlug={partnerSlug} autoFocus={planFirst && !planTo} />
@@ -529,6 +531,7 @@ export default function NearbyShell({
                   onPlanCommute={onPlanCommute}
                   partnerSlug={partnerSlug}
                   avoidFor={isV2 ? avoidFor : undefined}
+                  onExpand={isV2 && snap !== 'full' ? () => setSnap('full') : undefined}
                 />
               ) : null
             ) : (
@@ -765,7 +768,7 @@ export default function NearbyShell({
 
 /* ── Destination route detail: the route is on the MAIN map above ── */
 
-function ReachDetail({ row, mode, center, onMode, legInfo, highlightedStreetKey, onHighlightStreet, bikeAlt, onPickRoute, onPlanCommute, partnerSlug, avoidFor }: {
+function ReachDetail({ row, mode, center, onMode, legInfo, highlightedStreetKey, onHighlightStreet, bikeAlt, onPickRoute, onPlanCommute, partnerSlug, avoidFor, onExpand }: {
   row: ReachRow
   mode: 'transit' | 'bike'
   center: { lat: number; lng: number }
@@ -779,8 +782,31 @@ function ReachDetail({ row, mode, center, onMode, legInfo, highlightedStreetKey,
   partnerSlug?: string | null
   /** Around You v2: "Avoid this street" on a lit street. */
   avoidFor?: (row: ReachRow, comfort: BikeComfortData, minutes: number) => ComponentProps<typeof BikeComfortBlock>['avoid']
+  /** v2, sheet below full: raise it to show the streets or steps. */
+  onExpand?: () => void
 }) {
   const tr = useNearbyT()
+  // Around You v2 (the only place avoidFor is passed): the trip as one answer
+  if (avoidFor) {
+    return (
+      <V2Trip
+        showTitle
+        row={row}
+        mode={mode}
+        onMode={onMode}
+        center={center}
+        legInfo={legInfo}
+        highlightedStreetKey={highlightedStreetKey}
+        onHighlightStreet={onHighlightStreet}
+        bikeAlt={bikeAlt}
+        onPickRoute={onPickRoute}
+        avoidFor={avoidFor}
+        onPlanCommute={onPlanCommute}
+        partnerSlug={partnerSlug}
+        onExpand={onExpand}
+      />
+    )
+  }
   const hasTransit = (row.transit_segments?.length ?? 0) > 0
   const hasBike = !!row.bike_polyline
   const steps = mode === 'transit' ? row.steps : (row.bike_steps ?? [])
@@ -838,11 +864,6 @@ function ReachDetail({ row, mode, center, onMode, legInfo, highlightedStreetKey,
             comfort={(bikeAlt ? row.bike_alt?.comfort : row.bike_comfort) ?? row.bike_comfort}
             highlightedStreetKey={highlightedStreetKey}
             onHighlightStreet={onHighlightStreet}
-            avoid={avoidFor?.(
-              row,
-              (bikeAlt ? row.bike_alt?.comfort : row.bike_comfort) ?? row.bike_comfort,
-              bikeAlt && row.bike_alt ? row.bike_alt.minutes : row.bike_minutes,
-            )}
           />
         </>
       )}
@@ -854,8 +875,6 @@ function ReachDetail({ row, mode, center, onMode, legInfo, highlightedStreetKey,
         href={directionsUrl(row.lat, row.lng, {
           mode: mode === 'bike' ? 'bicycling' : 'transit',
           origin: center,
-          // v2 (the only place avoidFor is passed): Maps rides our line
-          route: avoidFor ? (bikeAlt ? row.bike_alt?.polyline : row.bike_polyline) : null,
         })}
         target="_blank"
         rel="noopener noreferrer"

@@ -59,30 +59,70 @@ function streetPhotoSpec(
   return { lat, lng, heading }
 }
 
-export default function BikeComfortBlock({ comfort, highlightedStreetKey, onHighlightStreet, avoid }: {
+type AvoidProp = {
+  state: AvoidState
+  onAvoid: (key: string, label: string) => void
+  onUndo: () => void
+}
+
+/** What this ride was changed to do, in one line, with Undo (v2). The simpler
+ *  trip view shows it up top, under the comfort strip (the app's
+ *  AvoidChanges). */
+export function AvoidChanges({ avoid, scrollMargin = 'scroll-mt-4' }: {
+  avoid: AvoidProp | undefined
+  /** Room to leave above it when it scrolls into view (sticky headers). */
+  scrollMargin?: string
+}) {
+  const tr = useNearbyT()
+  // Avoid is pressed far down the list; the line saying what changed (and
+  // Undo) is at the top, so bring it into view when it changes
+  const avoidingCount = avoid?.state.avoiding.length ?? 0
+  const avoidingRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (avoidingCount > 0) avoidingRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+  }, [avoidingCount])
+  const av = avoid?.state
+  if (!av || av.avoiding.length === 0) return null
+  const delta = av.deltaMin
+  return (
+    <div ref={avoidingRef} className={`${scrollMargin} flex items-center justify-between gap-2 rounded-lg bg-(--nb-panel) px-2.5 py-1.5 text-[0.875rem] text-(--nb-ink)`}>
+      <span className="min-w-0">
+        {tr('v2.avoiding', { streets: av.avoiding.join(tr('v2.avoid_and')) })}
+        {delta !== null && (
+          <span className="whitespace-nowrap text-(--nb-ink-70)">
+            {' · '}
+            {delta > 0
+              ? tr('v2.avoid_longer', { minutes: delta })
+              : delta < 0 ? tr('v2.avoid_quicker', { minutes: -delta }) : tr('v2.avoid_same')}
+          </span>
+        )}
+      </span>
+      <button
+        onClick={avoid!.onUndo}
+        className="min-h-[44px] shrink-0 px-3 text-[0.875rem] font-semibold text-(--nb-accent)"
+      >
+        {tr('v2.avoid_undo')}
+      </button>
+    </div>
+  )
+}
+
+export default function BikeComfortBlock({ comfort, highlightedStreetKey, onHighlightStreet, avoid, streetsOnly = false }: {
   comfort: BikeComfortData
   /** The street currently lit on the map, if any. */
   highlightedStreetKey?: string | null
   /** Point at a street (or null to clear). Undefined leaves rows inert. */
   onHighlightStreet?: (key: string | null) => void
   /** Around You v2: a lit street can be avoided (useAvoidStreets). */
-  avoid?: {
-    state: AvoidState
-    onAvoid: (key: string, label: string) => void
-    onUndo: () => void
-  }
+  avoid?: AvoidProp
+  /** The simpler v2 trip view shows the strip and the changes up top: rows
+   *  only, at a readable size. */
+  streetsOnly?: boolean
 }) {
   const tr = useNearbyT()
   // ComfortBar defaults to the navy styling (white text); on the cream page
   // its header and legend were white-on-cream, leaving bare dots
   const tone = useNearbyTone()
-  // Avoid is pressed far down the list; the line saying what changed (and
-  // Undo) is at the top of the block, so bring it into view when it changes
-  const avoidingCount = avoid?.state.avoiding.length ?? 0
-  const avoidingRef = useRef<HTMLDivElement>(null)
-  useEffect(() => {
-    if (avoidingCount > 0) avoidingRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
-  }, [avoidingCount])
   if (!comfort.segments || comfort.segments.length === 0) return null
   const labels: Record<BikeComfortTier, string> = {
     path: tr('bike.path'),
@@ -91,37 +131,21 @@ export default function BikeComfortBlock({ comfort, highlightedStreetKey, onHigh
     shared_road: tr('bike.shared_road'),
   }
   const av = avoid?.state
-  const delta = av?.deltaMin ?? null
+  // v1 sizes are unchanged; v2's rows meet the 14px floor
+  const rowText = streetsOnly ? 'py-1 text-[14px]' : 'py-0.5 text-[0.78rem]'
+  const inertText = streetsOnly ? 'py-1 text-[14px]' : 'text-[0.78rem]'
   return (
-    <div className="mt-2.5 space-y-2">
-      {av && av.avoiding.length > 0 && (
-        <div ref={avoidingRef} className="scroll-mt-4 flex items-center justify-between gap-2 rounded-lg bg-(--nb-panel) px-2.5 py-1.5 text-[0.875rem] text-(--nb-ink)">
-          <span className="min-w-0">
-            {tr('v2.avoiding', { streets: av.avoiding.join(tr('v2.avoid_and')) })}
-            {delta !== null && (
-              <span className="whitespace-nowrap text-(--nb-ink-70)">
-                {' · '}
-                {delta > 0
-                  ? tr('v2.avoid_longer', { minutes: delta })
-                  : delta < 0 ? tr('v2.avoid_quicker', { minutes: -delta }) : tr('v2.avoid_same')}
-              </span>
-            )}
-          </span>
-          <button
-            onClick={avoid!.onUndo}
-            className="min-h-[44px] shrink-0 px-3 text-[0.875rem] font-semibold text-(--nb-accent)"
-          >
-            {tr('v2.avoid_undo')}
-          </button>
-        </div>
+    <div className={streetsOnly ? 'mt-1.5 space-y-2' : 'mt-2.5 space-y-2'}>
+      {!streetsOnly && <AvoidChanges avoid={avoid} />}
+      {!streetsOnly && (
+        <ComfortBar
+          rating={comfort.rating}
+          segments={comfort.segments.map(s => ({ label: '', rating: s.rating, distance_mi: s.distance_mi }))}
+          colors={NEARBY_COMFORT_COLORS}
+          labels={labels}
+          theme={tone}
+        />
       )}
-      <ComfortBar
-        rating={comfort.rating}
-        segments={comfort.segments.map(s => ({ label: '', rating: s.rating, distance_mi: s.distance_mi }))}
-        colors={NEARBY_COMFORT_COLORS}
-        labels={labels}
-        theme={tone}
-      />
       {comfort.streets.length > 0 && (() => {
         // The server hands us the leftover already derived, so the rows plus
         // "Connecting stretches" equal the bar's total by construction. The
@@ -161,7 +185,7 @@ export default function BikeComfortBlock({ comfort, highlightedStreetKey, onHigh
                   <button
                     onClick={() => onHighlightStreet(on ? null : s.key!)}
                     aria-pressed={on}
-                    className={`flex w-full items-baseline justify-between gap-2 rounded px-1 py-0.5 text-left text-[0.78rem] transition-colors ${
+                    className={`flex w-full items-baseline justify-between gap-2 rounded px-1 ${rowText} text-left transition-colors ${
                       on ? 'bg-(--nb-panel-raised) text-(--nb-ink)' : 'text-(--nb-ink-80) hover:bg-(--nb-panel)'
                     }`}
                   >
@@ -199,7 +223,7 @@ export default function BikeComfortBlock({ comfort, highlightedStreetKey, onHigh
                   )}
                 </div>
               ) : (
-                <div key={s.label} className="flex items-baseline justify-between gap-2 px-1 text-[0.78rem] text-(--nb-ink-80)">
+                <div key={s.label} className={`flex items-baseline justify-between gap-2 px-1 ${inertText} text-(--nb-ink-80)`}>
                   {body}
                 </div>
               )
@@ -243,7 +267,7 @@ export default function BikeComfortBlock({ comfort, highlightedStreetKey, onHigh
                     onClick={() => onHighlightStreet(on ? null : OTHER_OWNER)}
                     aria-pressed={on}
                     aria-label={tr('bike.connecting_stretches_a11y', { miles: otherMi })}
-                    className={`flex w-full items-baseline justify-between gap-2 rounded px-1 py-0.5 text-left text-[0.78rem] transition-colors ${
+                    className={`flex w-full items-baseline justify-between gap-2 rounded px-1 ${rowText} text-left transition-colors ${
                       on ? 'bg-(--nb-panel-raised) text-(--nb-ink)' : 'text-(--nb-ink-80) hover:bg-(--nb-panel)'
                     }`}
                   >
@@ -252,7 +276,7 @@ export default function BikeComfortBlock({ comfort, highlightedStreetKey, onHigh
                   {photo && <PanelPhoto spec={{ kind: 'sv', ...photo }} alt={tr('bike.connecting_stretches')} />}
                 </div>
               ) : (
-                <div key="other" className="flex items-baseline justify-between gap-2 px-1 text-[0.78rem] text-(--nb-ink-80)">
+                <div key="other" className={`flex items-baseline justify-between gap-2 px-1 ${inertText} text-(--nb-ink-80)`}>
                   {body}
                 </div>
               )
