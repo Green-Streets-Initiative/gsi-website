@@ -48,6 +48,19 @@ const nextConfig: NextConfig = {
         permanent: false,
       },
 
+      // Shift Together guide renamed 2026-11-09 (it was a draft at the old
+      // slug, so this only catches links copied before the rename)
+      {
+        source: '/guides/showing-someone-the-way',
+        destination: '/guides/going-together-the-first-time',
+        permanent: true,
+      },
+      {
+        source: '/:locale(es|pt-BR|zh-Hans)/guides/showing-someone-the-way',
+        destination: '/:locale/guides/going-together-the-first-time',
+        permanent: true,
+      },
+
       // Shift leaderboard shortcut
       {
         source: '/shift/leaderboard',

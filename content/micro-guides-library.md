@@ -1466,10 +1466,10 @@ Before you sign a lease, [put the address into our trip planner](https://www.gog
 
 ```yaml
 id: mg_show_someone_the_way
-reviewed: 2026-10-28
-title: "How to show someone a new way to get where they're going"
-summary: "How to plan a first trip together and make it go well, for the person leading and the person going for the first time."
-slug: showing-someone-the-way
+reviewed: 2026-11-09
+title: "How to go with someone the first time they bike or take the T"
+summary: "Shift introduces people who want to start biking or taking the T to someone nearby who already does, and they go together the first time. Here's how it works and how to make that first ride go well."
+slug: going-together-the-first-time
 mode: multimodal
 barrier: safety
 status: draft
@@ -1479,36 +1479,43 @@ topics: [getting-started, safety, planning]
 related: [mg_low_stress_routes, mg_first_bike_lane, mg_pay_for_t]
 ```
 
-### Plan the trip together
+### Who this is for
 
-- Pick a day, a time and a place to meet.
-- Plan the route in Shift and send it to each other. By bike, pick the calmest route, not the fastest.
-- Decide what you'll do if it rains.
+- You want to start biking or taking the T (the subway or a bus), and you'd rather not go alone the first time.
+- Or you already bike or take the T, and you'd go with a neighbor the first time they try it. You don't need to be an expert.
+- You need to be 18 or older.
 
-### Meet safely
+### What Shift does
 
-- Meet somewhere public the first time, like a T station entrance or a coffee shop.
-- Tell a friend where you're going. Either of you can end the trip at any time.
-- If something feels wrong, open Your matches in Shift and tap "Something wrong?". If you're in danger, call 911.
+- You sign up in the Shift app or at gogreenstreets.org/together. You say where you go, and whether you want to bike or take the T.
+- Shift looks for someone who lives within 2 miles of you and already bikes or takes the T to the same part of town. For example, you both go from Davis Square to Kendall.
+- Before you both say yes, you each see only a first name, how close your routes are and the times you usually go. Never an address.
+- When you both say yes, Shift gives you each other's email address and suggests a public place to meet.
 
-### If you're leading the trip
+### Before you go
 
-- You only need to plan and lead this one trip.
+- Email each other to pick a day, a time and a public place to meet, like a T station entrance or a coffee shop. Pick a backup day too.
+- Plan the route at gogreenstreets.org/plan or in the Shift app, and send it to each other. By bike, pick the calmest route, not the fastest.
+- Tell a friend where you're going and when you'll be back.
+- Bring a charged phone and a way to pay for the T: a CharlieCard, or a phone or card you can tap. By bike, bring a helmet.
+
+### By bike: check the bikes
+
+- Squeeze the tires, squeeze the brakes, and spin the pedals to check the chain. Do it on both bikes.
+- Wear a helmet that fits snugly.
+- From a half hour after sunset to a half hour before sunrise, Massachusetts law requires a white light on the front of the bike, a red light and a red reflector on the back, and reflectors on the pedals or your ankles ([state law](https://malegislature.gov/Laws/GeneralLaws/PartI/TitleXIV/Chapter85/Section11B)).
+
+### On the way, if you already bike or take the T
+
 - Go at their pace. Point out hard crossings before you reach them.
-- By bus or train: show how to pay with a [CharlieCard](https://www.mbta.com/fares/charliecard) or a phone, and where to wait.
+- On the T or a bus, show how to pay with a [CharlieCard](https://www.mbta.com/fares/charliecard) or a phone, where to wait, and how to see when the next one comes in the Shift app.
 - Don't lend a bike, carry anyone on your bike, or give a ride in your car.
 
-### If it's your first time
+### On the way, if it's your first time
 
-- Bring a charged phone and a way to pay for transit. By bike, bring a helmet, and lights if you'll be out after dark.
-- Ask questions along the way.
-- Want more practice on a bike? Boston Bikes runs [free learn-to-bike classes for adults](https://www.boston.gov/departments/boston-bikes/adults-learn-to-bike).
-
-### By bike: before you go
-
-- Check both bikes. Squeeze the tires, squeeze the brakes, and spin the pedals to check the chain.
-- Wear a helmet that fits snugly.
-- After dark, use a white light in front and a red light in back. Massachusetts law requires them.
+- Ask anything. That's why you're going together.
+- Either of you can stop and head home at any time.
+- Want more practice on a bike first? Boston Bikes runs [free learn-to-bike classes for adults](https://www.boston.gov/departments/boston-bikes/adults-learn-to-bike), with bikes and helmets provided.
 
 ### By bike: stops and turns
 
@@ -1520,11 +1527,16 @@ related: [mg_low_stress_routes, mg_first_bike_lane, mg_pay_for_t]
 
 - Ride at least 4 feet from parked cars, even in a bike lane. A door can open without warning.
 - At corners, stay behind trucks and buses, not beside them.
-- On busy streets, ride one behind the other, with the leader in front.
+- On busy streets, ride one behind the other, with the person who already bikes in front.
 
-### After the trip
+### If something feels wrong
 
-Shift will ask how it went. Only the Green Streets team sees your answer. Then take the same trip on your own within a week, while you still remember the route.
+- Open Your matches in the Shift app or at gogreenstreets.org/together/matches, and tap "Something wrong?" to end the match or tell us what happened.
+- If you're in danger, call 911.
+
+### After you go
+
+Shift will ask whether you went together and how it went. Only the Green Streets team sees your answer. Then make the same trip on your own within a week, while you still remember the route.
 
 ---
 

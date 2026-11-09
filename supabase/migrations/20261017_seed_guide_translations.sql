@@ -732,6 +732,131 @@ Antes de firmar un contrato de alquiler, [pon la dirección en nuestro planifica
     NULL
   ),
   (
+    'mg_show_someone_the_way',
+    'es',
+    'Cómo acompañar a alguien la primera vez que va en bici o toma el T',
+    'Shift presenta a personas que quieren empezar a andar en bici o tomar el T con alguien cercano que ya lo hace, y la primera vez van juntos. Aquí te explicamos cómo funciona y cómo hacer que ese primer viaje salga bien.',
+    $guidebody$### Para quién es
+
+- Quieres empezar a andar en bici o tomar el T (el metro o el autobús), y prefieres no ir solo la primera vez.
+- O ya andas en bici o tomas el T, y acompañarías a un vecino la primera vez que lo intente. No tienes que ser experto.
+- Tienes que tener 18 años o más.
+
+### Qué hace Shift
+
+- Te inscribes en la app de Shift o en gogreenstreets.org/together. Dices a dónde vas y si quieres ir en bici o tomar el T.
+- Shift busca a alguien que vive a menos de 2 millas de ti y que ya va en bici o toma el T a la misma zona. Por ejemplo, los dos van de Davis Square a Kendall.
+- Antes de que los dos digan que sí, cada uno ve solo un nombre de pila, qué tan cerca están sus rutas y a qué horas suelen ir. Nunca una dirección.
+- Cuando los dos dicen que sí, Shift les da el correo electrónico del otro y les sugiere un lugar público para encontrarse.
+
+### Antes de salir
+
+- Escríbanse por correo para elegir un día, una hora y un lugar público para encontrarse, como la entrada de una estación del T o un café. Elijan también un día de reserva.
+- Planeen la ruta en gogreenstreets.org/plan o en la app de Shift, y mándensela. En bici, elijan la ruta más tranquila, no la más rápida.
+- Dile a alguien a dónde vas y a qué hora vas a volver.
+- Lleva el teléfono cargado y una forma de pagar el T: una CharlieCard, o un teléfono o tarjeta que puedas acercar al lector. En bici, lleva casco.
+
+### En bici: revisen las bicis
+
+- Aprieta las llantas, aprieta los frenos y gira los pedales para revisar la cadena. Háganlo en las dos bicis.
+- Usa un casco que te quede ajustado.
+- Desde media hora después de la puesta del sol hasta media hora antes del amanecer, la ley de Massachusetts exige una luz blanca adelante, una luz roja y un reflector rojo atrás, y reflectores en los pedales o en los tobillos ([ley estatal](https://malegislature.gov/Laws/GeneralLaws/PartI/TitleXIV/Chapter85/Section11B), en inglés).
+
+### En el camino, si tú ya vas en bici o tomas el T
+
+- Ve a su ritmo. Avísale de los cruces difíciles antes de llegar a ellos.
+- En el T o en el autobús, muéstrale cómo pagar con una [CharlieCard](https://www.mbta.com/fares/charliecard) (en inglés) o con el teléfono, dónde esperar y cómo ver en la app de Shift cuándo llega el próximo.
+- No prestes una bici, no lleves a nadie en tu bici y no lleves a nadie en tu auto.
+
+### En el camino, si es tu primera vez
+
+- Pregunta lo que quieras. Para eso van juntos.
+- Cualquiera de los dos puede parar y volver a casa en cualquier momento.
+- ¿Quieres practicar más en bici antes? Boston Bikes da [clases gratis para que los adultos aprendan a andar en bici](https://www.boston.gov/departments/boston-bikes/adults-learn-to-bike) (en inglés), con bicis y cascos incluidos.
+
+### En bici: paradas y vueltas
+
+- Detente en cada señal de alto y en cada luz roja, aunque parezca que no viene nadie.
+- Antes de dar vuelta o cambiar de carril, mira por encima del hombro y luego señala con el brazo hacia dónde vas.
+- Para dar vuelta a la izquierda, pásate al carril izquierdo cuando esté libre y da la vuelta, o sigue derecho, espera en la esquina de enfrente y sigue con la próxima luz verde.
+
+### En bici: por dónde ir
+
+- Ve por lo menos a 4 pies (1.2 m) de los autos estacionados, aunque estés en un carril para bicis. Una puerta se puede abrir sin aviso.
+- En las esquinas, quédate detrás de los camiones y autobuses, no a su lado.
+- En calles con mucho tráfico, vayan uno detrás del otro, con la persona que ya anda en bici adelante.
+
+### Si algo no se siente bien
+
+- Abre Tus coincidencias en la app de Shift o en gogreenstreets.org/together/matches, y toca "¿Algo salió mal?" para terminar la coincidencia o contarnos qué pasó.
+- Si estás en peligro, llama al 911.
+
+### Después de ir
+
+Shift te va a preguntar si fueron juntos y cómo les fue. Solo el equipo de Green Streets ve tu respuesta. Después, haz el mismo viaje por tu cuenta en menos de una semana, mientras todavía recuerdas la ruta.$guidebody$,
+    $guidebody$### Para quién es
+
+- Quieres empezar a andar en bici o tomar el T (el metro o el autobús), y prefieres no ir solo la primera vez.
+- O ya andas en bici o tomas el T, y acompañarías a un vecino la primera vez que lo intente. No tienes que ser experto.
+- Tienes que tener 18 años o más.
+
+### Qué hace Shift
+
+- Te inscribes en la app de Shift o en gogreenstreets.org/together. Dices a dónde vas y si quieres ir en bici o tomar el T.
+- Shift busca a alguien que vive a menos de 2 millas de ti y que ya va en bici o toma el T a la misma zona. Por ejemplo, los dos van de Davis Square a Kendall.
+- Antes de que los dos digan que sí, cada uno ve solo un nombre de pila, qué tan cerca están sus rutas y a qué horas suelen ir. Nunca una dirección.
+- Cuando los dos dicen que sí, Shift les da el correo electrónico del otro y les sugiere un lugar público para encontrarse.
+
+### Antes de salir
+
+- Escríbanse por correo para elegir un día, una hora y un lugar público para encontrarse, como la entrada de una estación del T o un café. Elijan también un día de reserva.
+- Planeen la ruta en gogreenstreets.org/plan o en la app de Shift, y mándensela. En bici, elijan la ruta más tranquila, no la más rápida.
+- Dile a alguien a dónde vas y a qué hora vas a volver.
+- Lleva el teléfono cargado y una forma de pagar el T: una CharlieCard, o un teléfono o tarjeta que puedas acercar al lector. En bici, lleva casco.
+
+### En bici: revisen las bicis
+
+- Aprieta las llantas, aprieta los frenos y gira los pedales para revisar la cadena. Háganlo en las dos bicis.
+- Usa un casco que te quede ajustado.
+- Desde media hora después de la puesta del sol hasta media hora antes del amanecer, la ley de Massachusetts exige una luz blanca adelante, una luz roja y un reflector rojo atrás, y reflectores en los pedales o en los tobillos ([ley estatal](https://malegislature.gov/Laws/GeneralLaws/PartI/TitleXIV/Chapter85/Section11B), en inglés).
+
+### En el camino, si tú ya vas en bici o tomas el T
+
+- Ve a su ritmo. Avísale de los cruces difíciles antes de llegar a ellos.
+- En el T o en el autobús, muéstrale cómo pagar con una [CharlieCard](https://www.mbta.com/fares/charliecard) (en inglés) o con el teléfono, dónde esperar y cómo ver en la app de Shift cuándo llega el próximo.
+- No prestes una bici, no lleves a nadie en tu bici y no lleves a nadie en tu auto.
+
+### En el camino, si es tu primera vez
+
+- Pregunta lo que quieras. Para eso van juntos.
+- Cualquiera de los dos puede parar y volver a casa en cualquier momento.
+- ¿Quieres practicar más en bici antes? Boston Bikes da [clases gratis para que los adultos aprendan a andar en bici](https://www.boston.gov/departments/boston-bikes/adults-learn-to-bike) (en inglés), con bicis y cascos incluidos.
+
+### En bici: paradas y vueltas
+
+- Detente en cada señal de alto y en cada luz roja, aunque parezca que no viene nadie.
+- Antes de dar vuelta o cambiar de carril, mira por encima del hombro y luego señala con el brazo hacia dónde vas.
+- Para dar vuelta a la izquierda, pásate al carril izquierdo cuando esté libre y da la vuelta, o sigue derecho, espera en la esquina de enfrente y sigue con la próxima luz verde.
+
+### En bici: por dónde ir
+
+- Ve por lo menos a 4 pies (1.2 m) de los autos estacionados, aunque estés en un carril para bicis. Una puerta se puede abrir sin aviso.
+- En las esquinas, quédate detrás de los camiones y autobuses, no a su lado.
+- En calles con mucho tráfico, vayan uno detrás del otro, con la persona que ya anda en bici adelante.
+
+### Si algo no se siente bien
+
+- Abre Tus coincidencias en la app de Shift o en gogreenstreets.org/together/matches, y toca "¿Algo salió mal?" para terminar la coincidencia o contarnos qué pasó.
+- Si estás en peligro, llama al 911.
+
+### Después de ir
+
+Shift te va a preguntar si fueron juntos y cómo les fue. Solo el equipo de Green Streets ve tu respuesta. Después, haz el mismo viaje por tu cuenta en menos de una semana, mientras todavía recuerdas la ruta.$guidebody$,
+    timezone('America/New_York', '2026-11-09 12:00'::timestamp),
+    'ai',
+    NULL
+  ),
+  (
     'mg_bus_transfers',
     'es',
     'Cómo funcionan los transbordos de autobús',
@@ -1187,107 +1312,6 @@ Transit y Google Maps te dejan marcar como favoritos o fijar los lugares adonde 
 
 La primera vez que hagas un viaje con varios tramos, toma una captura de pantalla de las indicaciones por si pierdes la señal en el andén.$guidebody$,
     timezone('America/New_York', '2026-05-08 12:00'::timestamp),
-    'ai',
-    NULL
-  ),
-  (
-    'mg_show_someone_the_way',
-    'es',
-    'Cómo mostrarle a alguien una nueva forma de llegar a donde va',
-    'Cómo planear un primer viaje juntos y que salga bien, para quien guía y para quien va por primera vez.',
-    $guidebody$### Planeen el viaje juntos
-
-- Elijan un día, una hora y un lugar para encontrarse.
-- Planeen la ruta en Shift y mándensela. En bici, elijan la ruta más tranquila, no la más rápida.
-- Decidan qué van a hacer si llueve.
-
-### Encuéntrense con seguridad
-
-- La primera vez, encuéntrense en un lugar público, como la entrada de una estación del T o un café.
-- Dile a alguien a dónde vas. Cualquiera de los dos puede terminar el viaje en cualquier momento.
-- Si algo no se siente bien, abre Tus coincidencias en Shift y toca "¿Algo salió mal?". Si estás en peligro, llama al 911.
-
-### Si tú guías el viaje
-
-- Solo tienes que planear y guiar este viaje.
-- Ve a su ritmo. Avísale de los cruces difíciles antes de llegar a ellos.
-- En autobús o tren: muéstrale cómo pagar con una [CharlieCard](https://www.mbta.com/fares/charliecard) (en inglés) o con el teléfono, y dónde esperar.
-- No prestes una bici, no lleves a nadie en tu bici y no lleves a nadie en tu auto.
-
-### Si es tu primera vez
-
-- Lleva el teléfono cargado y una forma de pagar el transporte público. En bici, lleva casco, y luces si vas a estar afuera después del anochecer.
-- Haz preguntas en el camino.
-- ¿Quieres practicar más en bici? Boston Bikes da [clases gratis para que los adultos aprendan a andar en bici](https://www.boston.gov/departments/boston-bikes/adults-learn-to-bike) (en inglés).
-
-### En bici: antes de salir
-
-- Revisen las dos bicis. Aprieta las llantas, aprieta los frenos y gira los pedales para revisar la cadena.
-- Usa un casco que te quede ajustado.
-- Después del anochecer, usa una luz blanca adelante y una luz roja atrás. La ley de Massachusetts las exige.
-
-### En bici: paradas y vueltas
-
-- Detente en cada señal de alto y en cada luz roja, aunque parezca que no viene nadie.
-- Antes de dar vuelta o cambiar de carril, mira por encima del hombro y luego señala con el brazo hacia dónde vas.
-- Para dar vuelta a la izquierda, pásate al carril izquierdo cuando esté libre y da la vuelta, o sigue derecho, espera en la esquina de enfrente y sigue con la próxima luz verde.
-
-### En bici: por dónde ir
-
-- Ve por lo menos a 4 pies (1.2 m) de los autos estacionados, aunque estés en un carril para bicis. Una puerta se puede abrir sin aviso.
-- En las esquinas, quédate detrás de los camiones y autobuses, no a su lado.
-- En calles con mucho tráfico, vayan uno detrás del otro, con quien guía adelante.
-
-### Después del viaje
-
-Shift te va a preguntar cómo te fue. Solo el equipo de Green Streets ve tu respuesta. Después, haz el mismo viaje por tu cuenta en menos de una semana, mientras todavía recuerdas la ruta.$guidebody$,
-    $guidebody$### Planeen el viaje juntos
-
-- Elijan un día, una hora y un lugar para encontrarse.
-- Planeen la ruta en Shift y mándensela. En bici, elijan la ruta más tranquila, no la más rápida.
-- Decidan qué van a hacer si llueve.
-
-### Encuéntrense con seguridad
-
-- La primera vez, encuéntrense en un lugar público, como la entrada de una estación del T o un café.
-- Dile a alguien a dónde vas. Cualquiera de los dos puede terminar el viaje en cualquier momento.
-- Si algo no se siente bien, abre Tus coincidencias en Shift y toca "¿Algo salió mal?". Si estás en peligro, llama al 911.
-
-### Si tú guías el viaje
-
-- Solo tienes que planear y guiar este viaje.
-- Ve a su ritmo. Avísale de los cruces difíciles antes de llegar a ellos.
-- En autobús o tren: muéstrale cómo pagar con una [CharlieCard](https://www.mbta.com/fares/charliecard) (en inglés) o con el teléfono, y dónde esperar.
-- No prestes una bici, no lleves a nadie en tu bici y no lleves a nadie en tu auto.
-
-### Si es tu primera vez
-
-- Lleva el teléfono cargado y una forma de pagar el transporte público. En bici, lleva casco, y luces si vas a estar afuera después del anochecer.
-- Haz preguntas en el camino.
-- ¿Quieres practicar más en bici? Boston Bikes da [clases gratis para que los adultos aprendan a andar en bici](https://www.boston.gov/departments/boston-bikes/adults-learn-to-bike) (en inglés).
-
-### En bici: antes de salir
-
-- Revisen las dos bicis. Aprieta las llantas, aprieta los frenos y gira los pedales para revisar la cadena.
-- Usa un casco que te quede ajustado.
-- Después del anochecer, usa una luz blanca adelante y una luz roja atrás. La ley de Massachusetts las exige.
-
-### En bici: paradas y vueltas
-
-- Detente en cada señal de alto y en cada luz roja, aunque parezca que no viene nadie.
-- Antes de dar vuelta o cambiar de carril, mira por encima del hombro y luego señala con el brazo hacia dónde vas.
-- Para dar vuelta a la izquierda, pásate al carril izquierdo cuando esté libre y da la vuelta, o sigue derecho, espera en la esquina de enfrente y sigue con la próxima luz verde.
-
-### En bici: por dónde ir
-
-- Ve por lo menos a 4 pies (1.2 m) de los autos estacionados, aunque estés en un carril para bicis. Una puerta se puede abrir sin aviso.
-- En las esquinas, quédate detrás de los camiones y autobuses, no a su lado.
-- En calles con mucho tráfico, vayan uno detrás del otro, con quien guía adelante.
-
-### Después del viaje
-
-Shift te va a preguntar cómo te fue. Solo el equipo de Green Streets ve tu respuesta. Después, haz el mismo viaje por tu cuenta en menos de una semana, mientras todavía recuerdas la ruta.$guidebody$,
-    timezone('America/New_York', '2026-10-28 12:00'::timestamp),
     'ai',
     NULL
   ),
@@ -2743,6 +2767,131 @@ Antes de assinar um contrato de aluguel, [coloque o endereço no nosso planejado
     NULL
   ),
   (
+    'mg_show_someone_the_way',
+    'pt-BR',
+    'Como ir junto com alguém na primeira vez que essa pessoa anda de bicicleta ou pega o T',
+    'O Shift apresenta quem quer começar a andar de bicicleta ou pegar o T a alguém por perto que já faz isso, e na primeira vez vocês vão juntos. Veja como funciona e como fazer essa primeira viagem dar certo.',
+    $guidebody$### Para quem é
+
+- Você quer começar a andar de bicicleta ou pegar o T (o metrô ou o ônibus), e prefere não ir sozinho na primeira vez.
+- Ou você já anda de bicicleta ou pega o T, e iria junto com um vizinho na primeira vez que ele tentar. Você não precisa ser especialista.
+- Você precisa ter 18 anos ou mais.
+
+### O que o Shift faz
+
+- Você se inscreve no app do Shift ou em gogreenstreets.org/together. Diz aonde você vai e se quer ir de bicicleta ou pegar o T.
+- O Shift procura alguém que mora a menos de 2 milhas de você e que já vai de bicicleta ou de T para a mesma parte da cidade. Por exemplo, vocês dois vão da Davis Square para Kendall.
+- Antes de os dois dizerem sim, cada um vê só um primeiro nome, o quanto os trajetos são próximos e os horários de costume. Nunca um endereço.
+- Quando os dois dizem sim, o Shift passa o e-mail de um para o outro e sugere um lugar público para se encontrarem.
+
+### Antes de sair
+
+- Mandem e-mail um para o outro para escolher um dia, um horário e um lugar público para se encontrar, como a entrada de uma estação do T ou um café. Escolham também um dia reserva.
+- Planejem o trajeto em gogreenstreets.org/plan ou no app do Shift, e mandem um para o outro. De bicicleta, escolham o trajeto mais tranquilo, não o mais rápido.
+- Conte a alguém aonde você vai e a que horas vai voltar.
+- Leve o celular carregado e um jeito de pagar o T: um CharlieCard, ou um celular ou cartão que dê para encostar no leitor. De bicicleta, leve capacete.
+
+### De bicicleta: confiram as bicicletas
+
+- Aperte os pneus, aperte os freios e gire os pedais para conferir a corrente. Façam isso nas duas bicicletas.
+- Use um capacete que fique bem firme na cabeça.
+- De meia hora depois do pôr do sol até meia hora antes do nascer do sol, a lei de Massachusetts exige uma luz branca na frente, uma luz vermelha e um refletor vermelho atrás, e refletores nos pedais ou nos tornozelos ([lei estadual](https://malegislature.gov/Laws/GeneralLaws/PartI/TitleXIV/Chapter85/Section11B), em inglês).
+
+### No caminho, se você já anda de bicicleta ou pega o T
+
+- Vá no ritmo da outra pessoa. Avise sobre os cruzamentos difíceis antes de chegar a eles.
+- No T ou no ônibus, mostre como pagar com um [CharlieCard](https://www.mbta.com/fares/charliecard) (em inglês) ou com o celular, onde esperar e como ver no app do Shift quando o próximo chega.
+- Não empreste bicicleta, não leve ninguém na sua bicicleta e não dê carona no seu carro.
+
+### No caminho, se é a sua primeira vez
+
+- Pergunte o que quiser. É para isso que vocês vão juntos.
+- Qualquer um dos dois pode parar e voltar para casa a qualquer momento.
+- Quer praticar mais de bicicleta antes? A Boston Bikes dá [aulas gratuitas para adultos aprenderem a andar de bicicleta](https://www.boston.gov/departments/boston-bikes/adults-learn-to-bike) (em inglês), com bicicleta e capacete incluídos.
+
+### De bicicleta: paradas e conversões
+
+- Pare em toda placa de pare e em todo sinal vermelho, mesmo quando parecer livre.
+- Antes de virar ou mudar de faixa, olhe por cima do ombro e depois aponte com o braço para onde você vai.
+- Para virar à esquerda, passe para a faixa da esquerda quando estiver livre e vire, ou siga reto, espere na esquina do outro lado e continue no próximo sinal verde.
+
+### De bicicleta: por onde ir
+
+- Fique a pelo menos 4 pés (1,2 m) dos carros estacionados, mesmo numa ciclofaixa. Uma porta pode abrir sem aviso.
+- Nas esquinas, fique atrás dos caminhões e ônibus, não do lado deles.
+- Em ruas movimentadas, vão um atrás do outro, com a pessoa que já anda de bicicleta na frente.
+
+### Se algo não parecer certo
+
+- Abra Suas combinações no app do Shift ou em gogreenstreets.org/together/matches, e toque em "Algo deu errado?" para encerrar a combinação ou contar o que aconteceu.
+- Se você estiver em perigo, ligue para o 911.
+
+### Depois de ir
+
+O Shift vai perguntar se vocês foram juntos e como foi. Só a equipe da Green Streets vê a sua resposta. Depois, faça a mesma viagem sozinho em até uma semana, enquanto ainda lembra do trajeto.$guidebody$,
+    $guidebody$### Para quem é
+
+- Você quer começar a andar de bicicleta ou pegar o T (o metrô ou o ônibus), e prefere não ir sozinho na primeira vez.
+- Ou você já anda de bicicleta ou pega o T, e iria junto com um vizinho na primeira vez que ele tentar. Você não precisa ser especialista.
+- Você precisa ter 18 anos ou mais.
+
+### O que o Shift faz
+
+- Você se inscreve no app do Shift ou em gogreenstreets.org/together. Diz aonde você vai e se quer ir de bicicleta ou pegar o T.
+- O Shift procura alguém que mora a menos de 2 milhas de você e que já vai de bicicleta ou de T para a mesma parte da cidade. Por exemplo, vocês dois vão da Davis Square para Kendall.
+- Antes de os dois dizerem sim, cada um vê só um primeiro nome, o quanto os trajetos são próximos e os horários de costume. Nunca um endereço.
+- Quando os dois dizem sim, o Shift passa o e-mail de um para o outro e sugere um lugar público para se encontrarem.
+
+### Antes de sair
+
+- Mandem e-mail um para o outro para escolher um dia, um horário e um lugar público para se encontrar, como a entrada de uma estação do T ou um café. Escolham também um dia reserva.
+- Planejem o trajeto em gogreenstreets.org/plan ou no app do Shift, e mandem um para o outro. De bicicleta, escolham o trajeto mais tranquilo, não o mais rápido.
+- Conte a alguém aonde você vai e a que horas vai voltar.
+- Leve o celular carregado e um jeito de pagar o T: um CharlieCard, ou um celular ou cartão que dê para encostar no leitor. De bicicleta, leve capacete.
+
+### De bicicleta: confiram as bicicletas
+
+- Aperte os pneus, aperte os freios e gire os pedais para conferir a corrente. Façam isso nas duas bicicletas.
+- Use um capacete que fique bem firme na cabeça.
+- De meia hora depois do pôr do sol até meia hora antes do nascer do sol, a lei de Massachusetts exige uma luz branca na frente, uma luz vermelha e um refletor vermelho atrás, e refletores nos pedais ou nos tornozelos ([lei estadual](https://malegislature.gov/Laws/GeneralLaws/PartI/TitleXIV/Chapter85/Section11B), em inglês).
+
+### No caminho, se você já anda de bicicleta ou pega o T
+
+- Vá no ritmo da outra pessoa. Avise sobre os cruzamentos difíceis antes de chegar a eles.
+- No T ou no ônibus, mostre como pagar com um [CharlieCard](https://www.mbta.com/fares/charliecard) (em inglês) ou com o celular, onde esperar e como ver no app do Shift quando o próximo chega.
+- Não empreste bicicleta, não leve ninguém na sua bicicleta e não dê carona no seu carro.
+
+### No caminho, se é a sua primeira vez
+
+- Pergunte o que quiser. É para isso que vocês vão juntos.
+- Qualquer um dos dois pode parar e voltar para casa a qualquer momento.
+- Quer praticar mais de bicicleta antes? A Boston Bikes dá [aulas gratuitas para adultos aprenderem a andar de bicicleta](https://www.boston.gov/departments/boston-bikes/adults-learn-to-bike) (em inglês), com bicicleta e capacete incluídos.
+
+### De bicicleta: paradas e conversões
+
+- Pare em toda placa de pare e em todo sinal vermelho, mesmo quando parecer livre.
+- Antes de virar ou mudar de faixa, olhe por cima do ombro e depois aponte com o braço para onde você vai.
+- Para virar à esquerda, passe para a faixa da esquerda quando estiver livre e vire, ou siga reto, espere na esquina do outro lado e continue no próximo sinal verde.
+
+### De bicicleta: por onde ir
+
+- Fique a pelo menos 4 pés (1,2 m) dos carros estacionados, mesmo numa ciclofaixa. Uma porta pode abrir sem aviso.
+- Nas esquinas, fique atrás dos caminhões e ônibus, não do lado deles.
+- Em ruas movimentadas, vão um atrás do outro, com a pessoa que já anda de bicicleta na frente.
+
+### Se algo não parecer certo
+
+- Abra Suas combinações no app do Shift ou em gogreenstreets.org/together/matches, e toque em "Algo deu errado?" para encerrar a combinação ou contar o que aconteceu.
+- Se você estiver em perigo, ligue para o 911.
+
+### Depois de ir
+
+O Shift vai perguntar se vocês foram juntos e como foi. Só a equipe da Green Streets vê a sua resposta. Depois, faça a mesma viagem sozinho em até uma semana, enquanto ainda lembra do trajeto.$guidebody$,
+    timezone('America/New_York', '2026-11-09 12:00'::timestamp),
+    'ai',
+    NULL
+  ),
+  (
     'mg_bus_transfers',
     'pt-BR',
     'Como funcionam as baldeações de ônibus',
@@ -3198,107 +3347,6 @@ O Transit e o Google Maps deixam você salvar ou fixar os lugares aonde vai com 
 
 Nas primeiras viagens com mais de um trecho, tire um print das instruções, caso o sinal do celular caia na plataforma.$guidebody$,
     timezone('America/New_York', '2026-05-08 12:00'::timestamp),
-    'ai',
-    NULL
-  ),
-  (
-    'mg_show_someone_the_way',
-    'pt-BR',
-    'Como mostrar a alguém um novo jeito de chegar aonde vai',
-    'Como planejar uma primeira viagem juntos e fazer dar certo, para quem guia e para quem vai pela primeira vez.',
-    $guidebody$### Planejem a viagem juntos
-
-- Escolham um dia, um horário e um lugar para se encontrar.
-- Planejem o trajeto no Shift e mandem um para o outro. De bicicleta, escolham o trajeto mais tranquilo, não o mais rápido.
-- Combinem o que fazer se chover.
-
-### Encontrem-se com segurança
-
-- Na primeira vez, encontrem-se num lugar público, como a entrada de uma estação do T ou um café.
-- Conte a alguém aonde você vai. Qualquer um dos dois pode encerrar a viagem a qualquer momento.
-- Se algo não parecer certo, abra Suas combinações no Shift e toque em "Algo deu errado?". Se você estiver em perigo, ligue para o 911.
-
-### Se você guia a viagem
-
-- Você só precisa planejar e guiar esta viagem.
-- Vá no ritmo da outra pessoa. Avise sobre os cruzamentos difíceis antes de chegar a eles.
-- De ônibus ou metrô: mostre como pagar com um [CharlieCard](https://www.mbta.com/fares/charliecard) (em inglês) ou com o celular, e onde esperar.
-- Não empreste bicicleta, não leve ninguém na sua bicicleta e não dê carona no seu carro.
-
-### Se é a sua primeira vez
-
-- Leve o celular carregado e um jeito de pagar o transporte público. De bicicleta, leve capacete, e luzes se for ficar na rua depois que escurecer.
-- Faça perguntas pelo caminho.
-- Quer praticar mais de bicicleta? A Boston Bikes dá [aulas gratuitas para adultos aprenderem a andar de bicicleta](https://www.boston.gov/departments/boston-bikes/adults-learn-to-bike) (em inglês).
-
-### De bicicleta: antes de sair
-
-- Confiram as duas bicicletas. Aperte os pneus, aperte os freios e gire os pedais para conferir a corrente.
-- Use um capacete que fique bem firme na cabeça.
-- Depois que escurecer, use uma luz branca na frente e uma luz vermelha atrás. A lei de Massachusetts exige as duas.
-
-### De bicicleta: paradas e conversões
-
-- Pare em toda placa de pare e em todo sinal vermelho, mesmo quando parecer livre.
-- Antes de virar ou mudar de faixa, olhe por cima do ombro e depois aponte com o braço para onde você vai.
-- Para virar à esquerda, passe para a faixa da esquerda quando estiver livre e vire, ou siga reto, espere na esquina do outro lado e continue no próximo sinal verde.
-
-### De bicicleta: por onde ir
-
-- Fique a pelo menos 4 pés (1,2 m) dos carros estacionados, mesmo numa ciclofaixa. Uma porta pode abrir sem aviso.
-- Nas esquinas, fique atrás dos caminhões e ônibus, não do lado deles.
-- Em ruas movimentadas, vão um atrás do outro, com quem guia na frente.
-
-### Depois da viagem
-
-O Shift vai perguntar como foi. Só a equipe da Green Streets vê a sua resposta. Depois, faça a mesma viagem sozinho em até uma semana, enquanto ainda lembra do trajeto.$guidebody$,
-    $guidebody$### Planejem a viagem juntos
-
-- Escolham um dia, um horário e um lugar para se encontrar.
-- Planejem o trajeto no Shift e mandem um para o outro. De bicicleta, escolham o trajeto mais tranquilo, não o mais rápido.
-- Combinem o que fazer se chover.
-
-### Encontrem-se com segurança
-
-- Na primeira vez, encontrem-se num lugar público, como a entrada de uma estação do T ou um café.
-- Conte a alguém aonde você vai. Qualquer um dos dois pode encerrar a viagem a qualquer momento.
-- Se algo não parecer certo, abra Suas combinações no Shift e toque em "Algo deu errado?". Se você estiver em perigo, ligue para o 911.
-
-### Se você guia a viagem
-
-- Você só precisa planejar e guiar esta viagem.
-- Vá no ritmo da outra pessoa. Avise sobre os cruzamentos difíceis antes de chegar a eles.
-- De ônibus ou metrô: mostre como pagar com um [CharlieCard](https://www.mbta.com/fares/charliecard) (em inglês) ou com o celular, e onde esperar.
-- Não empreste bicicleta, não leve ninguém na sua bicicleta e não dê carona no seu carro.
-
-### Se é a sua primeira vez
-
-- Leve o celular carregado e um jeito de pagar o transporte público. De bicicleta, leve capacete, e luzes se for ficar na rua depois que escurecer.
-- Faça perguntas pelo caminho.
-- Quer praticar mais de bicicleta? A Boston Bikes dá [aulas gratuitas para adultos aprenderem a andar de bicicleta](https://www.boston.gov/departments/boston-bikes/adults-learn-to-bike) (em inglês).
-
-### De bicicleta: antes de sair
-
-- Confiram as duas bicicletas. Aperte os pneus, aperte os freios e gire os pedais para conferir a corrente.
-- Use um capacete que fique bem firme na cabeça.
-- Depois que escurecer, use uma luz branca na frente e uma luz vermelha atrás. A lei de Massachusetts exige as duas.
-
-### De bicicleta: paradas e conversões
-
-- Pare em toda placa de pare e em todo sinal vermelho, mesmo quando parecer livre.
-- Antes de virar ou mudar de faixa, olhe por cima do ombro e depois aponte com o braço para onde você vai.
-- Para virar à esquerda, passe para a faixa da esquerda quando estiver livre e vire, ou siga reto, espere na esquina do outro lado e continue no próximo sinal verde.
-
-### De bicicleta: por onde ir
-
-- Fique a pelo menos 4 pés (1,2 m) dos carros estacionados, mesmo numa ciclofaixa. Uma porta pode abrir sem aviso.
-- Nas esquinas, fique atrás dos caminhões e ônibus, não do lado deles.
-- Em ruas movimentadas, vão um atrás do outro, com quem guia na frente.
-
-### Depois da viagem
-
-O Shift vai perguntar como foi. Só a equipe da Green Streets vê a sua resposta. Depois, faça a mesma viagem sozinho em até uma semana, enquanto ainda lembra do trajeto.$guidebody$,
-    timezone('America/New_York', '2026-10-28 12:00'::timestamp),
     'ai',
     NULL
   ),
@@ -4754,6 +4802,131 @@ Zipcar 这样的汽车共享服务，在全市各处的停车场按小时出租�
     NULL
   ),
   (
+    'mg_show_someone_the_way',
+    'zh-Hans',
+    '别人第一次骑自行车或坐 T 时，怎样陪他们一起去',
+    'Shift 把想开始骑自行车或坐 T 的人，介绍给附近已经这样出行的人，第一次由你们一起去。下面说明它怎么运作，以及怎样让第一次出行顺利。',
+    $guidebody$### 适合谁
+
+- 你想开始骑自行车或坐 T（波士顿的地铁和公交系统），但第一次不想一个人去。
+- 或者你已经骑自行车或坐 T，愿意在邻居第一次尝试时陪他们一起去。你不需要是专家。
+- 你必须年满 18 岁。
+
+### Shift 做什么
+
+- 你在 Shift 应用里或在 gogreenstreets.org/together 报名。告诉我们你去哪里，以及你想骑自行车还是坐 T。
+- Shift 会找一个住在你 2 英里以内、已经骑自行车或坐 T 去同一片地方的人。比如，你们都从 Davis Square 去 Kendall。
+- 在你们两人都同意之前，你们只能看到对方的名字、路线有多接近、通常几点出发。绝不会显示地址。
+- 你们两人都同意后，Shift 会把对方的电子邮件地址发给你们，并建议一个公共场所见面。
+
+### 出发前
+
+- 用电子邮件商量好日期、时间和见面的公共场所，比如 T 车站入口或咖啡店。也定一个备用日期。
+- 在 gogreenstreets.org/plan 或 Shift 应用里规划路线，然后发给对方。骑自行车时，选最安静的路线，不一定是最快的。
+- 告诉朋友你要去哪里、几点回来。
+- 带上充好电的手机和坐 T 的付款方式：CharlieCard，或者可以在读卡器上碰一下付款的手机或银行卡。骑自行车时，戴上头盔。
+
+### 骑车：检查自行车
+
+- 捏一捏轮胎，捏一捏刹车，再转一转脚踏板，看看链条好不好。两辆车都要检查。
+- 戴一顶贴合头部的头盔。
+- 从日落后半小时到日出前半小时，马萨诸塞州法律要求车前有白灯，车后有红灯和红色反光片，脚踏板或脚踝上也要有反光片（[州法律](https://malegislature.gov/Laws/GeneralLaws/PartI/TitleXIV/Chapter85/Section11B)，英文）。
+
+### 路上：如果你已经骑自行车或坐 T
+
+- 跟着对方的速度走。快到难走的路口前，先提醒对方。
+- 坐 T 或公交车时，教对方怎样用 [CharlieCard](https://www.mbta.com/fares/charliecard)（英文）或手机付车费、在哪里等车，以及怎样在 Shift 应用里看下一班车什么时候到。
+- 不要借自行车给对方，不要用你的自行车载人，也不要开车载对方。
+
+### 路上：如果这是你第一次
+
+- 有什么问题都可以问。这就是一起去的原因。
+- 你们任何一方都可以随时停下来回家。
+- 想先多练习骑车？Boston Bikes 有[免费的成人学骑车课程](https://www.boston.gov/departments/boston-bikes/adults-learn-to-bike)（英文），提供自行车和头盔。
+
+### 骑车：停车和转弯
+
+- 每个停车标志和红灯都要停下，就算看起来没有车也要停。
+- 转弯或换车道前，先回头看，再用手臂指向你要去的方向。
+- 左转时，可以在左边车道空出来时并过去再转弯；也可以先直行过路口，在对面路口等着，下一个绿灯再走。
+
+### 骑车：骑在哪里
+
+- 离停着的汽车至少 4 英尺（1.2 米），在自行车道里也一样。车门可能会突然打开。
+- 在路口，待在卡车和公交车后面，不要在它们旁边。
+- 在车多的街道上，排成一列骑，已经常骑车的人在前面。
+
+### 如果感觉不对
+
+- 在 Shift 应用里或在 gogreenstreets.org/together/matches 打开「你的配对」，点「遇到问题？」，可以结束配对或告诉我们发生了什么。
+- 如果你有危险，请拨打 911。
+
+### 出行之后
+
+Shift 会问你们有没有一起去、感觉怎么样。只有 Green Streets 团队能看到你的回答。然后，在一周之内自己再走一次同样的路线，趁你还记得怎么走。$guidebody$,
+    $guidebody$### 适合谁
+
+- 你想开始骑自行车或坐 T（波士顿的地铁和公交系统），但第一次不想一个人去。
+- 或者你已经骑自行车或坐 T，愿意在邻居第一次尝试时陪他们一起去。你不需要是专家。
+- 你必须年满 18 岁。
+
+### Shift 做什么
+
+- 你在 Shift 应用里或在 gogreenstreets.org/together 报名。告诉我们你去哪里，以及你想骑自行车还是坐 T。
+- Shift 会找一个住在你 2 英里以内、已经骑自行车或坐 T 去同一片地方的人。比如，你们都从 Davis Square 去 Kendall。
+- 在你们两人都同意之前，你们只能看到对方的名字、路线有多接近、通常几点出发。绝不会显示地址。
+- 你们两人都同意后，Shift 会把对方的电子邮件地址发给你们，并建议一个公共场所见面。
+
+### 出发前
+
+- 用电子邮件商量好日期、时间和见面的公共场所，比如 T 车站入口或咖啡店。也定一个备用日期。
+- 在 gogreenstreets.org/plan 或 Shift 应用里规划路线，然后发给对方。骑自行车时，选最安静的路线，不一定是最快的。
+- 告诉朋友你要去哪里、几点回来。
+- 带上充好电的手机和坐 T 的付款方式：CharlieCard，或者可以在读卡器上碰一下付款的手机或银行卡。骑自行车时，戴上头盔。
+
+### 骑车：检查自行车
+
+- 捏一捏轮胎，捏一捏刹车，再转一转脚踏板，看看链条好不好。两辆车都要检查。
+- 戴一顶贴合头部的头盔。
+- 从日落后半小时到日出前半小时，马萨诸塞州法律要求车前有白灯，车后有红灯和红色反光片，脚踏板或脚踝上也要有反光片（[州法律](https://malegislature.gov/Laws/GeneralLaws/PartI/TitleXIV/Chapter85/Section11B)，英文）。
+
+### 路上：如果你已经骑自行车或坐 T
+
+- 跟着对方的速度走。快到难走的路口前，先提醒对方。
+- 坐 T 或公交车时，教对方怎样用 [CharlieCard](https://www.mbta.com/fares/charliecard)（英文）或手机付车费、在哪里等车，以及怎样在 Shift 应用里看下一班车什么时候到。
+- 不要借自行车给对方，不要用你的自行车载人，也不要开车载对方。
+
+### 路上：如果这是你第一次
+
+- 有什么问题都可以问。这就是一起去的原因。
+- 你们任何一方都可以随时停下来回家。
+- 想先多练习骑车？Boston Bikes 有[免费的成人学骑车课程](https://www.boston.gov/departments/boston-bikes/adults-learn-to-bike)（英文），提供自行车和头盔。
+
+### 骑车：停车和转弯
+
+- 每个停车标志和红灯都要停下，就算看起来没有车也要停。
+- 转弯或换车道前，先回头看，再用手臂指向你要去的方向。
+- 左转时，可以在左边车道空出来时并过去再转弯；也可以先直行过路口，在对面路口等着，下一个绿灯再走。
+
+### 骑车：骑在哪里
+
+- 离停着的汽车至少 4 英尺（1.2 米），在自行车道里也一样。车门可能会突然打开。
+- 在路口，待在卡车和公交车后面，不要在它们旁边。
+- 在车多的街道上，排成一列骑，已经常骑车的人在前面。
+
+### 如果感觉不对
+
+- 在 Shift 应用里或在 gogreenstreets.org/together/matches 打开「你的配对」，点「遇到问题？」，可以结束配对或告诉我们发生了什么。
+- 如果你有危险，请拨打 911。
+
+### 出行之后
+
+Shift 会问你们有没有一起去、感觉怎么样。只有 Green Streets 团队能看到你的回答。然后，在一周之内自己再走一次同样的路线，趁你还记得怎么走。$guidebody$,
+    timezone('America/New_York', '2026-11-09 12:00'::timestamp),
+    'ai',
+    NULL
+  ),
+  (
     'mg_bus_transfers',
     'zh-Hans',
     '公交换乘怎么算钱',
@@ -5209,107 +5382,6 @@ Transit 和 Google Maps 都可以收藏或固定常去的地方。这样用一�
 
 第一次走需要换乘好几次的路线时，先把路线截图保存，以防站台上没有信号。$guidebody$,
     timezone('America/New_York', '2026-05-08 12:00'::timestamp),
-    'ai',
-    NULL
-  ),
-  (
-    'mg_show_someone_the_way',
-    'zh-Hans',
-    '怎样带别人用新的方式去目的地',
-    '怎样一起计划第一次出行并让它顺利，写给带路的人，也写给第一次出行的人。',
-    $guidebody$### 一起计划这次出行
-
-- 定好日期、时间和见面地点。
-- 在 Shift 里规划路线，然后发给对方。骑自行车时，选最安静的路线，不一定是最快的。
-- 商量好下雨怎么办。
-
-### 安全见面
-
-- 第一次见面选公共场所，比如 T（波士顿的地铁和公交系统）车站入口或咖啡店。
-- 告诉朋友你要去哪里。你们任何一方都可以随时结束这次出行。
-- 如果感觉不对，在 Shift 里打开「你的配对」，点「遇到问题？」。如果你有危险，请拨打 911。
-
-### 如果你是带路的人
-
-- 你只需要计划并带好这一次出行。
-- 跟着对方的速度走。快到难走的路口前，先提醒对方。
-- 坐公交车或地铁时：教对方怎样用 [CharlieCard](https://www.mbta.com/fares/charliecard)（英文）或手机付车费，以及在哪里等车。
-- 不要借自行车给对方，不要用你的自行车载人，也不要开车载对方。
-
-### 如果这是你第一次
-
-- 带上充好电的手机和坐公共交通的付款方式。骑自行车时，戴上头盔；天黑后还在外面的话，带上车灯。
-- 路上有问题就问。
-- 想多练习骑车？Boston Bikes 有[免费的成人学骑车课程](https://www.boston.gov/departments/boston-bikes/adults-learn-to-bike)（英文）。
-
-### 骑车：出发前
-
-- 检查两辆自行车。捏一捏轮胎，捏一捏刹车，再转一转脚踏板，看看链条好不好。
-- 戴一顶贴合头部的头盔。
-- 天黑后，车前要有白灯，车后要有红灯。这是马萨诸塞州法律的要求。
-
-### 骑车：停车和转弯
-
-- 每个停车标志和红灯都要停下，就算看起来没有车也要停。
-- 转弯或换车道前，先回头看，再用手臂指向你要去的方向。
-- 左转时，可以在左边车道空出来时并过去再转弯；也可以先直行过路口，在对面路口等着，下一个绿灯再走。
-
-### 骑车：骑在哪里
-
-- 离停着的汽车至少 4 英尺（1.2 米），在自行车道里也一样。车门可能会突然打开。
-- 在路口，待在卡车和公交车后面，不要在它们旁边。
-- 在车多的街道上，排成一列骑，带路的人在前面。
-
-### 出行之后
-
-Shift 会问你这次怎么样。只有 Green Streets 团队能看到你的回答。然后，在一周之内自己再走一次同样的路线，趁你还记得怎么走。$guidebody$,
-    $guidebody$### 一起计划这次出行
-
-- 定好日期、时间和见面地点。
-- 在 Shift 里规划路线，然后发给对方。骑自行车时，选最安静的路线，不一定是最快的。
-- 商量好下雨怎么办。
-
-### 安全见面
-
-- 第一次见面选公共场所，比如 T（波士顿的地铁和公交系统）车站入口或咖啡店。
-- 告诉朋友你要去哪里。你们任何一方都可以随时结束这次出行。
-- 如果感觉不对，在 Shift 里打开「你的配对」，点「遇到问题？」。如果你有危险，请拨打 911。
-
-### 如果你是带路的人
-
-- 你只需要计划并带好这一次出行。
-- 跟着对方的速度走。快到难走的路口前，先提醒对方。
-- 坐公交车或地铁时：教对方怎样用 [CharlieCard](https://www.mbta.com/fares/charliecard)（英文）或手机付车费，以及在哪里等车。
-- 不要借自行车给对方，不要用你的自行车载人，也不要开车载对方。
-
-### 如果这是你第一次
-
-- 带上充好电的手机和坐公共交通的付款方式。骑自行车时，戴上头盔；天黑后还在外面的话，带上车灯。
-- 路上有问题就问。
-- 想多练习骑车？Boston Bikes 有[免费的成人学骑车课程](https://www.boston.gov/departments/boston-bikes/adults-learn-to-bike)（英文）。
-
-### 骑车：出发前
-
-- 检查两辆自行车。捏一捏轮胎，捏一捏刹车，再转一转脚踏板，看看链条好不好。
-- 戴一顶贴合头部的头盔。
-- 天黑后，车前要有白灯，车后要有红灯。这是马萨诸塞州法律的要求。
-
-### 骑车：停车和转弯
-
-- 每个停车标志和红灯都要停下，就算看起来没有车也要停。
-- 转弯或换车道前，先回头看，再用手臂指向你要去的方向。
-- 左转时，可以在左边车道空出来时并过去再转弯；也可以先直行过路口，在对面路口等着，下一个绿灯再走。
-
-### 骑车：骑在哪里
-
-- 离停着的汽车至少 4 英尺（1.2 米），在自行车道里也一样。车门可能会突然打开。
-- 在路口，待在卡车和公交车后面，不要在它们旁边。
-- 在车多的街道上，排成一列骑，带路的人在前面。
-
-### 出行之后
-
-Shift 会问你这次怎么样。只有 Green Streets 团队能看到你的回答。然后，在一周之内自己再走一次同样的路线，趁你还记得怎么走。$guidebody$,
-    timezone('America/New_York', '2026-10-28 12:00'::timestamp),
     'ai',
     NULL
   ),

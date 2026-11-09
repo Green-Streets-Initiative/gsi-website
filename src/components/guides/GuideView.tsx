@@ -82,12 +82,13 @@ export const searchMeta: Record<string, { title?: string; description: string; h
     description: `Boston Common Garage is ${usd(PRICES.parking.bostonCommonDay)} for 3 to 10 hours, meters ${usd(PRICES.parking.meterStandard)} an hour, an expired meter a ${usd(PRICES.parking.meterTicket)} ticket, and T lots like Oak Grove and Alewife ${usd(PRICES.parking.mbtaGarageDay)} a weekday. What a year of parking adds up to, and cheaper ways in.`,
   },
   // 2026-11-08 (SEO play 5): the Shift Together guide goes live at the launch
-  // flip. "Showing someone the way" names no search; people look for a first
-  // bike ride or T trip with someone who knows the way. Heading unchanged.
-  'showing-someone-the-way': {
-    title: 'Your first bike ride or T trip, with someone who knows the way',
+  // flip; people look for a first bike ride or T trip with someone who already
+  // does it. 2026-11-09: renamed from showing-someone-the-way and reworded in
+  // plain words (Keith: "show you the way" is vague). Heading unchanged.
+  'going-together-the-first-time': {
+    title: 'Your first bike ride or T trip in Boston, with a neighbor who already does it',
     description:
-      'How to make a first trip together go well, whether a neighbor is showing you the way around Boston or you are showing them.',
+      'Shift introduces people who want to start biking or taking the T to someone nearby who already does, and they go together the first time. How it works, and what to do before, during and after.',
   },
 }
 
