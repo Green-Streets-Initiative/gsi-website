@@ -202,7 +202,7 @@ If you only buy two things, make them lights and a U-lock. Everything else can w
 
 ```yaml
 id: mg_bike_time
-reviewed: 2026-05-08
+reviewed: 2026-11-09
 title: "When biking is actually the faster option"
 summary: "Door-to-door, biking beats driving for more trips than people expect. The five situations where it definitely wins."
 slug: when-biking-is-faster
@@ -235,7 +235,7 @@ A 5-7 mile commute that's a slow slog on a regular bike is a comfortable 20-25 m
 
 ### 5. Errands and trips with kids — on an e-cargo bike.
 
-An e-cargo bike (a long-tail or front-bucket frame with pedal-assist) can carry two kids plus a week of groceries, and uses bike infrastructure that skips the school-pickup line entirely. It handles most of what people assume requires a car. You don't have to buy one to find out: [CargoB](https://www.ridecargob.com/) rents cargo bikes by the minute around the region, and [Community Pedal Power](https://communitypedalpower.org/) in Cambridge runs an e-bike library where you can borrow one for free.
+An e-cargo bike (a long-tail or front-bucket frame with pedal-assist) can carry two kids plus a week of groceries, and uses bike infrastructure that skips the school-pickup line entirely. It handles most of what people assume requires a car. You don't have to buy one to find out: [CargoB](https://www.ridecargob.com/) rents cargo bikes by the minute around the region, and [Community Pedal Power](https://communitypedalpower.org/) lends e-bikes and cargo bikes free for up to a week, with pickups near Porter Square, Roslindale, Newton Corner and Brookline Hills. Its library takes a winter break: last loans December 15, back in March.
 
 ---
 
@@ -292,7 +292,7 @@ August humidity is real. On the worst handful of days, take the T or work from h
 
 ```yaml
 id: mg_cargo_bike
-reviewed: 2026-05-08
+reviewed: 2026-11-09
 title: "What you can do with an e-cargo bike"
 summary: "An e-cargo bike replaces most car trips a family makes in a week. What they handle, and where to try one before buying."
 slug: what-you-can-do-with-an-e-cargo-bike
@@ -322,7 +322,7 @@ An e-cargo bike is a regular bike with two changes: a longer or wider frame for 
 
 ### How to try one without buying
 
-- **[Community Pedal Power](https://communitypedalpower.org/)** (Cambridge) runs a free e-bike library — borrow one for a weekend.
+- **[Community Pedal Power](https://communitypedalpower.org/)** lends e-bikes and e-cargo bikes free for up to a week, with pickups near Porter Square, Roslindale, Newton Corner and Brookline Hills. The library closes for the winter: last loans December 15, back in March.
 - **[CargoB](https://www.ridecargob.com/)** rents e-cargo bikes by the minute around Greater Boston.
 - Most local bike shops do test rides; some run demo days.
 
@@ -334,7 +334,7 @@ An e-cargo bike is a regular bike with two changes: a longer or wider frame for 
 
 ### Try this first
 
-Borrow one from Community Pedal Power for a weekend. Use it for one school pickup and one grocery run. You'll know quickly whether it fits your life.
+Borrow one from Community Pedal Power for a week (March to mid-December), or rent one from CargoB for an afternoon. Use it for one school pickup and one grocery run. You'll know quickly whether it fits your life.
 
 ---
 

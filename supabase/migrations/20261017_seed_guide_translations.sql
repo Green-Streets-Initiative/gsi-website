@@ -1672,7 +1672,7 @@ Y si quieres saber cómo serían esos viajes, el [Commute Advisor](https://www.g
 
 ### Cómo probar una sin comprarla
 
-- **[Community Pedal Power](https://communitypedalpower.org/)** (en inglés), en Cambridge, tiene una biblioteca gratuita de bicis eléctricas: pide una prestada para un fin de semana.
+- **[Community Pedal Power](https://communitypedalpower.org/)** (en inglés) presta bicis eléctricas y bicis de carga eléctricas gratis hasta por una semana, con puntos de recogida cerca de Porter Square, Roslindale, Newton Corner y Brookline Hills. La biblioteca cierra en invierno: los últimos préstamos son el 15 de diciembre y vuelve en marzo.
 - **[CargoB](https://www.ridecargob.com/)** (en inglés) renta bicis de carga eléctricas por minuto en el área de Boston.
 - La mayoría de las tiendas de bicis de la zona te dejan dar una vuelta de prueba; algunas organizan días de prueba.
 
@@ -1684,7 +1684,7 @@ Y si quieres saber cómo serían esos viajes, el [Commute Advisor](https://www.g
 
 ### Prueba esto primero
 
-Pide una prestada a Community Pedal Power para un fin de semana. Úsala una vez para recoger a los niños en la escuela y otra vez para hacer las compras. Vas a saber rápido si va con tu vida.$guidebody$,
+Pide una prestada a Community Pedal Power por una semana (de marzo a mediados de diciembre), o renta una de CargoB por una tarde. Úsala una vez para recoger a los niños en la escuela y otra vez para hacer las compras. Vas a saber rápido si va con tu vida.$guidebody$,
     $guidebody$Una bici de carga eléctrica es una bici normal con dos cambios: un marco más largo o más ancho para llevar cosas, y un motor que te ayuda al pedalear en las subidas y con peso. Quienes prueban una descubren que sirve para la mayoría de los viajes que creían que necesitaban un auto: llevar a los niños a la guardería, las compras de la semana, cargar cosas de la ferretería, un día de playa y alguna que otra visita a Costco.
 
 ### Los tipos principales
@@ -1702,7 +1702,7 @@ Pide una prestada a Community Pedal Power para un fin de semana. Úsala una vez 
 
 ### Cómo probar una sin comprarla
 
-- **[Community Pedal Power](https://communitypedalpower.org/)** (en inglés), en Cambridge, tiene una biblioteca gratuita de bicis eléctricas: pide una prestada para un fin de semana.
+- **[Community Pedal Power](https://communitypedalpower.org/)** (en inglés) presta bicis eléctricas y bicis de carga eléctricas gratis hasta por una semana, con puntos de recogida cerca de Porter Square, Roslindale, Newton Corner y Brookline Hills. La biblioteca cierra en invierno: los últimos préstamos son el 15 de diciembre y vuelve en marzo.
 - **[CargoB](https://www.ridecargob.com/)** (en inglés) renta bicis de carga eléctricas por minuto en el área de Boston.
 - La mayoría de las tiendas de bicis de la zona te dejan dar una vuelta de prueba; algunas organizan días de prueba.
 
@@ -1714,8 +1714,8 @@ Pide una prestada a Community Pedal Power para un fin de semana. Úsala una vez 
 
 ### Prueba esto primero
 
-Pide una prestada a Community Pedal Power para un fin de semana. Úsala una vez para recoger a los niños en la escuela y otra vez para hacer las compras. Vas a saber rápido si va con tu vida.$guidebody$,
-    timezone('America/New_York', '2026-05-08 12:00'::timestamp),
+Pide una prestada a Community Pedal Power por una semana (de marzo a mediados de diciembre), o renta una de CargoB por una tarde. Úsala una vez para recoger a los niños en la escuela y otra vez para hacer las compras. Vas a saber rápido si va con tu vida.$guidebody$,
+    timezone('America/New_York', '2026-11-09 12:00'::timestamp),
     'ai',
     NULL
   ),
@@ -1744,7 +1744,7 @@ Un trayecto de 5 a 7 millas (8 a 11 km) que se hace pesado en una bici normal es
 
 ### 5. Mandados y viajes con niños, en bici de carga eléctrica.
 
-Una bici de carga eléctrica (con un marco largo atrás o una caja adelante, y un motor que te ayuda al pedalear) puede llevar a dos niños y las compras de toda una semana. Además usa los carriles para bici, así que te saltas por completo la fila de autos a la salida de la escuela. Sirve para la mayoría de las cosas que la gente cree que necesitan un auto. No tienes que comprar una para probar: [CargoB](https://www.ridecargob.com/) (en inglés) renta bicis de carga por minuto en la región, y [Community Pedal Power](https://communitypedalpower.org/) (en inglés), en Cambridge, tiene una biblioteca de bicis eléctricas donde puedes pedir una prestada gratis.$guidebody$,
+Una bici de carga eléctrica (con un marco largo atrás o una caja adelante, y un motor que te ayuda al pedalear) puede llevar a dos niños y las compras de toda una semana. Además usa los carriles para bici, así que te saltas por completo la fila de autos a la salida de la escuela. Sirve para la mayoría de las cosas que la gente cree que necesitan un auto. No tienes que comprar una para probar: [CargoB](https://www.ridecargob.com/) (en inglés) renta bicis de carga por minuto en la región, y [Community Pedal Power](https://communitypedalpower.org/) (en inglés) presta bicis eléctricas y bicis de carga gratis hasta por una semana, con puntos de recogida cerca de Porter Square, Roslindale, Newton Corner y Brookline Hills. Su biblioteca cierra en invierno: los últimos préstamos son el 15 de diciembre y vuelve en marzo.$guidebody$,
     $guidebody$Ir en bici es más rápido que manejar en más viajes de lo que la gente cree, cuando cuentas el tiempo de puerta a puerta. Estos son los casos en que de verdad gana.
 
 ### 1. Viajes de menos de tres millas (4.8 km), sobre todo en barrios con mucha gente.
@@ -1765,8 +1765,8 @@ Un trayecto de 5 a 7 millas (8 a 11 km) que se hace pesado en una bici normal es
 
 ### 5. Mandados y viajes con niños, en bici de carga eléctrica.
 
-Una bici de carga eléctrica (con un marco largo atrás o una caja adelante, y un motor que te ayuda al pedalear) puede llevar a dos niños y las compras de toda una semana. Además usa los carriles para bici, así que te saltas por completo la fila de autos a la salida de la escuela. Sirve para la mayoría de las cosas que la gente cree que necesitan un auto. No tienes que comprar una para probar: [CargoB](https://www.ridecargob.com/) (en inglés) renta bicis de carga por minuto en la región, y [Community Pedal Power](https://communitypedalpower.org/) (en inglés), en Cambridge, tiene una biblioteca de bicis eléctricas donde puedes pedir una prestada gratis.$guidebody$,
-    timezone('America/New_York', '2026-05-08 12:00'::timestamp),
+Una bici de carga eléctrica (con un marco largo atrás o una caja adelante, y un motor que te ayuda al pedalear) puede llevar a dos niños y las compras de toda una semana. Además usa los carriles para bici, así que te saltas por completo la fila de autos a la salida de la escuela. Sirve para la mayoría de las cosas que la gente cree que necesitan un auto. No tienes que comprar una para probar: [CargoB](https://www.ridecargob.com/) (en inglés) renta bicis de carga por minuto en la región, y [Community Pedal Power](https://communitypedalpower.org/) (en inglés) presta bicis eléctricas y bicis de carga gratis hasta por una semana, con puntos de recogida cerca de Porter Square, Roslindale, Newton Corner y Brookline Hills. Su biblioteca cierra en invierno: los últimos préstamos son el 15 de diciembre y vuelve en marzo.$guidebody$,
+    timezone('America/New_York', '2026-11-09 12:00'::timestamp),
     'ai',
     NULL
   ),
@@ -3707,7 +3707,7 @@ E se você quiser saber como essas viagens ficariam, o [Commute Advisor](https:/
 
 ### Como experimentar sem comprar
 
-- **[Community Pedal Power](https://communitypedalpower.org/)** (em inglês), em Cambridge, tem uma biblioteca gratuita de bicicletas elétricas: pegue uma emprestada por um fim de semana.
+- **[Community Pedal Power](https://communitypedalpower.org/)** (em inglês) empresta bicicletas elétricas e bicicletas elétricas de carga de graça por até uma semana, com retirada perto de Porter Square, Roslindale, Newton Corner e Brookline Hills. A biblioteca fecha no inverno: os últimos empréstimos são em 15 de dezembro, e ela volta em março.
 - **[CargoB](https://www.ridecargob.com/)** (em inglês) aluga bicicletas elétricas de carga por minuto na região de Boston.
 - A maioria das lojas de bicicleta da região deixa você dar uma volta de teste, e algumas organizam dias de demonstração.
 
@@ -3719,7 +3719,7 @@ E se você quiser saber como essas viagens ficariam, o [Commute Advisor](https:/
 
 ### Experimente primeiro
 
-Pegue uma emprestada na Community Pedal Power por um fim de semana. Use para buscar as crianças na escola uma vez e para fazer uma compra no mercado. Você logo vai saber se ela combina com a sua vida.$guidebody$,
+Pegue uma emprestada na Community Pedal Power por uma semana (de março a meados de dezembro), ou alugue uma da CargoB por uma tarde. Use para buscar as crianças na escola uma vez e para fazer uma compra no mercado. Você logo vai saber se ela combina com a sua vida.$guidebody$,
     $guidebody$Uma bicicleta elétrica de carga é uma bicicleta comum com duas mudanças: um quadro mais comprido ou mais largo para levar coisas, e um motor de pedal assistido, que ajuda enquanto você pedala nas subidas e com peso. Quem experimenta uma descobre que ela dá conta da maioria das viagens que achava que só dava para fazer de carro: deixar as crianças na creche, a compra da semana no mercado, trazer coisas da loja de ferragens, um dia de praia, uma ida de vez em quando ao Costco.
 
 ### Os principais tipos
@@ -3737,7 +3737,7 @@ Pegue uma emprestada na Community Pedal Power por um fim de semana. Use para bus
 
 ### Como experimentar sem comprar
 
-- **[Community Pedal Power](https://communitypedalpower.org/)** (em inglês), em Cambridge, tem uma biblioteca gratuita de bicicletas elétricas: pegue uma emprestada por um fim de semana.
+- **[Community Pedal Power](https://communitypedalpower.org/)** (em inglês) empresta bicicletas elétricas e bicicletas elétricas de carga de graça por até uma semana, com retirada perto de Porter Square, Roslindale, Newton Corner e Brookline Hills. A biblioteca fecha no inverno: os últimos empréstimos são em 15 de dezembro, e ela volta em março.
 - **[CargoB](https://www.ridecargob.com/)** (em inglês) aluga bicicletas elétricas de carga por minuto na região de Boston.
 - A maioria das lojas de bicicleta da região deixa você dar uma volta de teste, e algumas organizam dias de demonstração.
 
@@ -3749,8 +3749,8 @@ Pegue uma emprestada na Community Pedal Power por um fim de semana. Use para bus
 
 ### Experimente primeiro
 
-Pegue uma emprestada na Community Pedal Power por um fim de semana. Use para buscar as crianças na escola uma vez e para fazer uma compra no mercado. Você logo vai saber se ela combina com a sua vida.$guidebody$,
-    timezone('America/New_York', '2026-05-08 12:00'::timestamp),
+Pegue uma emprestada na Community Pedal Power por uma semana (de março a meados de dezembro), ou alugue uma da CargoB por uma tarde. Use para buscar as crianças na escola uma vez e para fazer uma compra no mercado. Você logo vai saber se ela combina com a sua vida.$guidebody$,
+    timezone('America/New_York', '2026-11-09 12:00'::timestamp),
     'ai',
     NULL
   ),
@@ -3779,7 +3779,7 @@ Um trajeto de 5 a 7 milhas (8 a 11 km), que é lento e cansativo numa bicicleta 
 
 ### 5. Compras e viagens com crianças, de bicicleta elétrica de carga.
 
-Uma bicicleta elétrica de carga tem um quadro mais comprido atrás ou uma caixa na frente, e um motor de pedal assistido, que ajuda enquanto você pedala. Ela leva duas crianças e as compras da semana, e usa as ciclofaixas, sem pegar a fila de carros na saída da escola. Ela dá conta da maior parte do que as pessoas acham que só se faz de carro. Você não precisa comprar uma para descobrir: a [CargoB](https://www.ridecargob.com/) (em inglês) aluga bicicletas de carga por minuto em vários pontos da região, e a [Community Pedal Power](https://communitypedalpower.org/) (em inglês), em Cambridge, tem uma biblioteca de bicicletas elétricas onde você pode pegar uma emprestada de graça.$guidebody$,
+Uma bicicleta elétrica de carga tem um quadro mais comprido atrás ou uma caixa na frente, e um motor de pedal assistido, que ajuda enquanto você pedala. Ela leva duas crianças e as compras da semana, e usa as ciclofaixas, sem pegar a fila de carros na saída da escola. Ela dá conta da maior parte do que as pessoas acham que só se faz de carro. Você não precisa comprar uma para descobrir: a [CargoB](https://www.ridecargob.com/) (em inglês) aluga bicicletas de carga por minuto em vários pontos da região, e a [Community Pedal Power](https://communitypedalpower.org/) (em inglês) empresta bicicletas elétricas e de carga de graça por até uma semana, com retirada perto de Porter Square, Roslindale, Newton Corner e Brookline Hills. A biblioteca fecha no inverno: os últimos empréstimos são em 15 de dezembro, e ela volta em março.$guidebody$,
     $guidebody$A bicicleta é mais rápida que o carro em mais viagens do que as pessoas imaginam, quando você conta o tempo de porta a porta. Veja quando ela realmente vence.
 
 ### 1. Viagens de menos de três milhas (4.8 km), principalmente em bairros onde tudo fica perto.
@@ -3800,8 +3800,8 @@ Um trajeto de 5 a 7 milhas (8 a 11 km), que é lento e cansativo numa bicicleta 
 
 ### 5. Compras e viagens com crianças, de bicicleta elétrica de carga.
 
-Uma bicicleta elétrica de carga tem um quadro mais comprido atrás ou uma caixa na frente, e um motor de pedal assistido, que ajuda enquanto você pedala. Ela leva duas crianças e as compras da semana, e usa as ciclofaixas, sem pegar a fila de carros na saída da escola. Ela dá conta da maior parte do que as pessoas acham que só se faz de carro. Você não precisa comprar uma para descobrir: a [CargoB](https://www.ridecargob.com/) (em inglês) aluga bicicletas de carga por minuto em vários pontos da região, e a [Community Pedal Power](https://communitypedalpower.org/) (em inglês), em Cambridge, tem uma biblioteca de bicicletas elétricas onde você pode pegar uma emprestada de graça.$guidebody$,
-    timezone('America/New_York', '2026-05-08 12:00'::timestamp),
+Uma bicicleta elétrica de carga tem um quadro mais comprido atrás ou uma caixa na frente, e um motor de pedal assistido, que ajuda enquanto você pedala. Ela leva duas crianças e as compras da semana, e usa as ciclofaixas, sem pegar a fila de carros na saída da escola. Ela dá conta da maior parte do que as pessoas acham que só se faz de carro. Você não precisa comprar uma para descobrir: a [CargoB](https://www.ridecargob.com/) (em inglês) aluga bicicletas de carga por minuto em vários pontos da região, e a [Community Pedal Power](https://communitypedalpower.org/) (em inglês) empresta bicicletas elétricas e de carga de graça por até uma semana, com retirada perto de Porter Square, Roslindale, Newton Corner e Brookline Hills. A biblioteca fecha no inverno: os últimos empréstimos são em 15 de dezembro, e ela volta em março.$guidebody$,
+    timezone('America/New_York', '2026-11-09 12:00'::timestamp),
     'ai',
     NULL
   ),
@@ -5742,7 +5742,7 @@ Transit 和 Google Maps 都可以收藏或固定常去的地方。这样用一�
 
 ### 不买也能试骑的办法
 
-- Cambridge 的 **[Community Pedal Power](https://communitypedalpower.org/)**（英文）有一个免费的电动自行车“图书馆”：借一辆，骑一个周末。
+- **[Community Pedal Power](https://communitypedalpower.org/)**（英文）免费出借电动自行车和电动载货自行车，最长一周，取车点在 Porter Square、Roslindale、Newton Corner 和 Brookline Hills 附近。冬季暂停借车：最后借车日为 12 月 15 日，3 月重新开放。
 - **[CargoB](https://www.ridecargob.com/)**（英文）在大波士顿地区按分钟出租电动载货自行车。
 - 大多数本地自行车店都可以试骑，有些店还会办试骑日活动。
 
@@ -5754,7 +5754,7 @@ Transit 和 Google Maps 都可以收藏或固定常去的地方。这样用一�
 
 ### 先试试这个
 
-从 Community Pedal Power 借一辆，骑一个周末。用它接一次孩子放学，再去买一次菜。你很快就会知道它适不适合你的生活。$guidebody$,
+从 Community Pedal Power 借一辆骑一周（3 月到 12 月中旬），或者从 CargoB 租一辆骑一个下午。用它接一次孩子放学，再去买一次菜。你很快就会知道它适不适合你的生活。$guidebody$,
     $guidebody$电动载货自行车就是一辆普通自行车，加上两个变化：车身更长或者更宽，用来装东西；还有一个电机，踩踏板时帮你出力，爬坡和载重都更轻松。试过的人会发现，很多他们以为必须开车的出行，它都能做到：送孩子去托儿所、每周去超市买菜、去五金店拉东西、去海边玩一天，偶尔还能去一趟 Costco。
 
 ### 主要类型
@@ -5772,7 +5772,7 @@ Transit 和 Google Maps 都可以收藏或固定常去的地方。这样用一�
 
 ### 不买也能试骑的办法
 
-- Cambridge 的 **[Community Pedal Power](https://communitypedalpower.org/)**（英文）有一个免费的电动自行车“图书馆”：借一辆，骑一个周末。
+- **[Community Pedal Power](https://communitypedalpower.org/)**（英文）免费出借电动自行车和电动载货自行车，最长一周，取车点在 Porter Square、Roslindale、Newton Corner 和 Brookline Hills 附近。冬季暂停借车：最后借车日为 12 月 15 日，3 月重新开放。
 - **[CargoB](https://www.ridecargob.com/)**（英文）在大波士顿地区按分钟出租电动载货自行车。
 - 大多数本地自行车店都可以试骑，有些店还会办试骑日活动。
 
@@ -5784,8 +5784,8 @@ Transit 和 Google Maps 都可以收藏或固定常去的地方。这样用一�
 
 ### 先试试这个
 
-从 Community Pedal Power 借一辆，骑一个周末。用它接一次孩子放学，再去买一次菜。你很快就会知道它适不适合你的生活。$guidebody$,
-    timezone('America/New_York', '2026-05-08 12:00'::timestamp),
+从 Community Pedal Power 借一辆骑一周（3 月到 12 月中旬），或者从 CargoB 租一辆骑一个下午。用它接一次孩子放学，再去买一次菜。你很快就会知道它适不适合你的生活。$guidebody$,
+    timezone('America/New_York', '2026-11-09 12:00'::timestamp),
     'ai',
     NULL
   ),
@@ -5814,7 +5814,7 @@ Transit 和 Google Maps 都可以收藏或固定常去的地方。这样用一�
 
 ### 5. 办事和带孩子出门：骑电动载货自行车。
 
-电动载货自行车（后面加长或者前面有货箱的自行车，踩踏板时有电机助力）能带两个孩子，再加上一个星期的菜。它走自行车道，完全不用排接孩子放学的车队。很多人以为只有汽车才能做的事，它大多都能做。你不用先买一辆来试：[CargoB](https://www.ridecargob.com/)（英文）在这一带按分钟出租载货自行车，Cambridge 的 [Community Pedal Power](https://communitypedalpower.org/)（英文）有一个电动自行车“图书馆”，你可以免费借一辆来骑。$guidebody$,
+电动载货自行车（后面加长或者前面有货箱的自行车，踩踏板时有电机助力）能带两个孩子，再加上一个星期的菜。它走自行车道，完全不用排接孩子放学的车队。很多人以为只有汽车才能做的事，它大多都能做。你不用先买一辆来试：[CargoB](https://www.ridecargob.com/)（英文）在这一带按分钟出租载货自行车，[Community Pedal Power](https://communitypedalpower.org/)（英文）免费出借电动自行车和电动载货自行车，最长一周，取车点在 Porter Square、Roslindale、Newton Corner 和 Brookline Hills 附近。冬季暂停借车：最后借车日为 12 月 15 日，3 月重新开放。$guidebody$,
     $guidebody$只要把从出门到进门的全部时间都算上，骑自行车比开车快的情况，比很多人想的要多。下面是骑车真正更快的时候。
 
 ### 1. 3 英里（4.8 公里）以内的路程，尤其是在房子密、商店多的街区。
@@ -5835,8 +5835,8 @@ Transit 和 Google Maps 都可以收藏或固定常去的地方。这样用一�
 
 ### 5. 办事和带孩子出门：骑电动载货自行车。
 
-电动载货自行车（后面加长或者前面有货箱的自行车，踩踏板时有电机助力）能带两个孩子，再加上一个星期的菜。它走自行车道，完全不用排接孩子放学的车队。很多人以为只有汽车才能做的事，它大多都能做。你不用先买一辆来试：[CargoB](https://www.ridecargob.com/)（英文）在这一带按分钟出租载货自行车，Cambridge 的 [Community Pedal Power](https://communitypedalpower.org/)（英文）有一个电动自行车“图书馆”，你可以免费借一辆来骑。$guidebody$,
-    timezone('America/New_York', '2026-05-08 12:00'::timestamp),
+电动载货自行车（后面加长或者前面有货箱的自行车，踩踏板时有电机助力）能带两个孩子，再加上一个星期的菜。它走自行车道，完全不用排接孩子放学的车队。很多人以为只有汽车才能做的事，它大多都能做。你不用先买一辆来试：[CargoB](https://www.ridecargob.com/)（英文）在这一带按分钟出租载货自行车，[Community Pedal Power](https://communitypedalpower.org/)（英文）免费出借电动自行车和电动载货自行车，最长一周，取车点在 Porter Square、Roslindale、Newton Corner 和 Brookline Hills 附近。冬季暂停借车：最后借车日为 12 月 15 日，3 月重新开放。$guidebody$,
+    timezone('America/New_York', '2026-11-09 12:00'::timestamp),
     'ai',
     NULL
   ),

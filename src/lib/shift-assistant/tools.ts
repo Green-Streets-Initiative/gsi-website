@@ -23,7 +23,7 @@ import { PRICES, usd } from '@/lib/facts/prices'
 import { VENUES } from '@/lib/venues'
 import { bigEventPath, bigEventWhen, loadBigEvents } from '@/lib/big-events'
 import { feederPlace, shortOrganizer } from '@/lib/go-together'
-import { BORROW_RENT_BLURB, nearbyBorrowRent } from '@/lib/nearby/borrow-rent'
+import { BORROW_RENT_BLURB, nearbyBorrowRent, pedalPowerLending, pedalPowerSeasonNote } from '@/lib/nearby/borrow-rent'
 import { getBikeShareDocks } from '@/lib/server/bluebikes'
 import { bikePerkPool } from '@/lib/server/bike-perks'
 import { PERK_KIND_LABEL, perksAlong, perksNear, perkWhere, type PerkStop } from '@/lib/bike-perks'
@@ -586,7 +586,7 @@ export const TOOLS: Anthropic.Tool[] = [
   },
   {
     name: 'find_bikes_to_try',
-    description: 'Ways to try a bike near a place without buying one: CargoB e-cargo bikes rented by the minute (fixed hubs), Community Pedal Power free one-week e-bike loans (pickup areas), and Bluebikes stations with e-bikes there right now, with e-bike prices. For someone weighing an e-bike, getting back on a bike, or carrying groceries or kids.',
+    description: 'Ways to try a bike near a place without buying one: CargoB e-cargo bikes rented by the minute (fixed hubs), Community Pedal Power free one-week e-bike loans (pickup areas; closed for the winter from Dec 16 until March), and Bluebikes stations with e-bikes there right now, with e-bike prices. For someone weighing an e-bike, getting back on a bike, or carrying groceries or kids.',
     input_schema: {
       type: 'object',
       properties: {
@@ -1708,7 +1708,11 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
         const at = asPlace(input.near)
         if (!at) return fail('Need a place with coordinates.')
         const kind = input.kind === 'cargo' || input.kind === 'ebike' ? input.kind : null
+        // Community Pedal Power's winter break: last loans Dec 15, back in March.
+        const lending = pedalPowerLending()
+        const seasonNote = pedalPowerSeasonNote()
         const borrow = nearbyBorrowRent(at.lat, at.lng, 4)
+          .filter((p) => lending || p.org !== 'pedal_power')
           .filter((p) => !kind || (kind === 'cargo' ? p.org === 'cargob' : p.org === 'pedal_power'))
           .slice(0, 4)
           .map((p) => ({ program: p.org === 'cargob' ? 'cargob' : 'pedal_power', what: BORROW_RENT_BLURB[p.org], where: p.name.replace(/^.* — /, ''), miles_away: round1(p.distMiles), ...(p.approximate ? { exact_spot: 'given when they book' } : {}) }))
@@ -1721,6 +1725,7 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
           borrow_or_rent: borrow,
           bluebikes_ebikes: docks,
           bluebikes_ebike_price: `${usd(bb.ebikePerMinNonMember)} a minute without a membership, ${usd(bb.ebikePerMinMember)} with one, ${usd(bb.ebikePerMinIncomeEligible)} on the income-eligible membership`,
+          ...(seasonNote ? { pedal_power_season: seasonNote + (lending ? ' Say the date when you offer it.' : ' Say so if they ask about borrowing an e-bike, and offer a Bluebikes e-bike instead.') } : {}),
           ...(borrow.length || docks.length ? {} : { note: 'Nothing within reach of there. Offer the nearest anyway with a wider look, or a bike class from find_rides_and_events.' }),
           next: 'Offer the one that fits best, in a sentence, with open_link kind bike_to_try for CargoB or Community Pedal Power. Bike classes and test rides come from find_rides_and_events; nervous about traffic, offer open_screen bike_confidence.',
         })

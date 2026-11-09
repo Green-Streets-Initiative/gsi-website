@@ -249,7 +249,7 @@ A 5-7 mile commute that's a slow slog on a regular bike is a comfortable 20-25 m
 
 ### 5. Errands and trips with kids — on an e-cargo bike.
 
-An e-cargo bike (a long-tail or front-bucket frame with pedal-assist) can carry two kids plus a week of groceries, and uses bike infrastructure that skips the school-pickup line entirely. It handles most of what people assume requires a car. You don't have to buy one to find out: [CargoB](https://www.ridecargob.com/) rents cargo bikes by the minute around the region, and [Community Pedal Power](https://communitypedalpower.org/) in Cambridge runs an e-bike library where you can borrow one for free.$guidebody$,
+An e-cargo bike (a long-tail or front-bucket frame with pedal-assist) can carry two kids plus a week of groceries, and uses bike infrastructure that skips the school-pickup line entirely. It handles most of what people assume requires a car. You don't have to buy one to find out: [CargoB](https://www.ridecargob.com/) rents cargo bikes by the minute around the region, and [Community Pedal Power](https://communitypedalpower.org/) lends e-bikes and cargo bikes free for up to a week, with pickups near Porter Square, Roslindale, Newton Corner and Brookline Hills. Its library takes a winter break: last loans December 15, back in March.$guidebody$,
     $guidebody$Biking is faster than driving for more trips than people expect — once you count door-to-door time. Here's when it actually wins.
 
 ### 1. Trips under three miles, especially in dense neighborhoods.
@@ -270,7 +270,7 @@ A 5-7 mile commute that's a slow slog on a regular bike is a comfortable 20-25 m
 
 ### 5. Errands and trips with kids — on an e-cargo bike.
 
-An e-cargo bike (a long-tail or front-bucket frame with pedal-assist) can carry two kids plus a week of groceries, and uses bike infrastructure that skips the school-pickup line entirely. It handles most of what people assume requires a car. You don't have to buy one to find out: [CargoB](https://www.ridecargob.com/) rents cargo bikes by the minute around the region, and [Community Pedal Power](https://communitypedalpower.org/) in Cambridge runs an e-bike library where you can borrow one for free.$guidebody$,
+An e-cargo bike (a long-tail or front-bucket frame with pedal-assist) can carry two kids plus a week of groceries, and uses bike infrastructure that skips the school-pickup line entirely. It handles most of what people assume requires a car. You don't have to buy one to find out: [CargoB](https://www.ridecargob.com/) rents cargo bikes by the minute around the region, and [Community Pedal Power](https://communitypedalpower.org/) lends e-bikes and cargo bikes free for up to a week, with pickups near Porter Square, Roslindale, Newton Corner and Brookline Hills. Its library takes a winter break: last loans December 15, back in March.$guidebody$,
     'cycling',
     'time',
     'approved',
@@ -280,7 +280,7 @@ An e-cargo bike (a long-tail or front-bucket frame with pedal-assist) can carry 
     ARRAY['mg_low_stress_routes', 'mg_cargo_bike', 'mg_bike_commute_gear']::text[],
     false,
     2,
-    timezone('America/New_York', '2026-05-08 12:00'::timestamp)
+    timezone('America/New_York', '2026-11-09 12:00'::timestamp)
   ),
   (
     'mg_bike_sweat',
@@ -378,7 +378,7 @@ August humidity is real. On the worst handful of days, take the T or work from h
 
 ### How to try one without buying
 
-- **[Community Pedal Power](https://communitypedalpower.org/)** (Cambridge) runs a free e-bike library — borrow one for a weekend.
+- **[Community Pedal Power](https://communitypedalpower.org/)** lends e-bikes and e-cargo bikes free for up to a week, with pickups near Porter Square, Roslindale, Newton Corner and Brookline Hills. The library closes for the winter: last loans December 15, back in March.
 - **[CargoB](https://www.ridecargob.com/)** rents e-cargo bikes by the minute around Greater Boston.
 - Most local bike shops do test rides; some run demo days.
 
@@ -390,7 +390,7 @@ August humidity is real. On the worst handful of days, take the T or work from h
 
 ### Try this first
 
-Borrow one from Community Pedal Power for a weekend. Use it for one school pickup and one grocery run. You'll know quickly whether it fits your life.$guidebody$,
+Borrow one from Community Pedal Power for a week (March to mid-December), or rent one from CargoB for an afternoon. Use it for one school pickup and one grocery run. You'll know quickly whether it fits your life.$guidebody$,
     $guidebody$An e-cargo bike is a regular bike with two changes: a longer or wider frame for carrying things, and a pedal-assist motor that helps with hills and loads. People who try one find it covers most of the trips they'd assumed required a car — daycare drop-off, the weekly grocery run, hardware store hauls, beach day, the occasional Costco trip.
 
 ### The main types
@@ -408,7 +408,7 @@ Borrow one from Community Pedal Power for a weekend. Use it for one school picku
 
 ### How to try one without buying
 
-- **[Community Pedal Power](https://communitypedalpower.org/)** (Cambridge) runs a free e-bike library — borrow one for a weekend.
+- **[Community Pedal Power](https://communitypedalpower.org/)** lends e-bikes and e-cargo bikes free for up to a week, with pickups near Porter Square, Roslindale, Newton Corner and Brookline Hills. The library closes for the winter: last loans December 15, back in March.
 - **[CargoB](https://www.ridecargob.com/)** rents e-cargo bikes by the minute around Greater Boston.
 - Most local bike shops do test rides; some run demo days.
 
@@ -420,7 +420,7 @@ Borrow one from Community Pedal Power for a weekend. Use it for one school picku
 
 ### Try this first
 
-Borrow one from Community Pedal Power for a weekend. Use it for one school pickup and one grocery run. You'll know quickly whether it fits your life.$guidebody$,
+Borrow one from Community Pedal Power for a week (March to mid-December), or rent one from CargoB for an afternoon. Use it for one school pickup and one grocery run. You'll know quickly whether it fits your life.$guidebody$,
     'cycling',
     NULL,
     'approved',
@@ -430,7 +430,7 @@ Borrow one from Community Pedal Power for a weekend. Use it for one school picku
     ARRAY['mg_bike_sweat', 'mg_bike_commute_gear', 'mg_bike_time', 'mg_walking_carrying']::text[],
     false,
     2,
-    timezone('America/New_York', '2026-05-08 12:00'::timestamp)
+    timezone('America/New_York', '2026-11-09 12:00'::timestamp)
   ),
   (
     'mg_bluebikes',

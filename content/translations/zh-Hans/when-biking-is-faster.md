@@ -2,7 +2,7 @@
 
 ```yaml
 id: mg_bike_time
-reviewed: 2026-05-08
+reviewed: 2026-11-09
 title: "什么时候骑自行车真的更快"
 summary: "从出门到进门一起算，骑自行车比开车快的情况，比很多人想的要多。在这五种情况下，骑车一定更快。"
 slug: when-biking-is-faster
@@ -36,4 +36,4 @@ related: [mg_low_stress_routes, mg_cargo_bike, mg_bike_commute_gear]
 
 ### 5. 办事和带孩子出门：骑电动载货自行车。
 
-电动载货自行车（后面加长或者前面有货箱的自行车，踩踏板时有电机助力）能带两个孩子，再加上一个星期的菜。它走自行车道，完全不用排接孩子放学的车队。很多人以为只有汽车才能做的事，它大多都能做。你不用先买一辆来试：[CargoB](https://www.ridecargob.com/)（英文）在这一带按分钟出租载货自行车，Cambridge 的 [Community Pedal Power](https://communitypedalpower.org/)（英文）有一个电动自行车“图书馆”，你可以免费借一辆来骑。
+电动载货自行车（后面加长或者前面有货箱的自行车，踩踏板时有电机助力）能带两个孩子，再加上一个星期的菜。它走自行车道，完全不用排接孩子放学的车队。很多人以为只有汽车才能做的事，它大多都能做。你不用先买一辆来试：[CargoB](https://www.ridecargob.com/)（英文）在这一带按分钟出租载货自行车，[Community Pedal Power](https://communitypedalpower.org/)（英文）免费出借电动自行车和电动载货自行车，最长一周，取车点在 Porter Square、Roslindale、Newton Corner 和 Brookline Hills 附近。冬季暂停借车：最后借车日为 12 月 15 日，3 月重新开放。

@@ -77,9 +77,66 @@ function haversineMiles(lat1: number, lng1: number, lat2: number, lng2: number):
   )
 }
 
-/** Points within 2 mi of the visitor (or `radiusMiles`), nearest first. */
-export function nearbyBorrowRent(lat: number, lng: number, radiusMiles = RADIUS_MILES): (BorrowRentPoint & { distMiles: number })[] {
-  return [...CARGOB_HUBS, ...PEDAL_POWER_PICKUPS]
+/**
+ * Community Pedal Power's winter break (their post of 2026-11-08, and their
+ * library page: "Last Pickup Day this Season is Dec 15th 2026"): last loans
+ * Dec 15, back in March 2027 (day not announced yet). Same dates and rules as
+ * the app's lib/nearby/borrow-rent.ts: change both together, and move
+ * PEDAL_POWER_OPEN_AGAIN to the day they name.
+ *
+ *   open        normal season
+ *   last_weeks  through Dec 15: still offered, with the last-loan date
+ *   winter      Dec 16 to the end of February: pickups hidden, no suggestions
+ *   reopening   March: pickups shown with "back in March, check dates"; no suggestions
+ */
+export const PEDAL_POWER_LAST_LOAN = '2026-12-15'
+export const PEDAL_POWER_REOPENING = '2027-03-01'
+export const PEDAL_POWER_OPEN_AGAIN = '2027-04-01'
+
+export type PedalPowerSeason = 'open' | 'last_weeks' | 'winter' | 'reopening'
+
+/** Today's date in Boston (EST, UTC-5, holds for every boundary above). */
+function bostonDate(now: Date): string {
+  return new Date(now.getTime() - 5 * 3600 * 1000).toISOString().slice(0, 10)
+}
+
+export function pedalPowerSeason(now: Date = new Date()): PedalPowerSeason {
+  const d = bostonDate(now)
+  if (d >= PEDAL_POWER_OPEN_AGAIN) return 'open'
+  if (d >= PEDAL_POWER_REOPENING) return 'reopening'
+  if (d > PEDAL_POWER_LAST_LOAN) return 'winter'
+  if (d >= '2026-11-08') return 'last_weeks'
+  return 'open'
+}
+
+/** Whether to suggest a loan (the assistant, first-try help). */
+export function pedalPowerLending(now: Date = new Date()): boolean {
+  const s = pedalPowerSeason(now)
+  return s === 'open' || s === 'last_weeks'
+}
+
+/** The Nearby dictionary key for a pickup's one-line blurb this season. */
+export function pedalPowerBlurbKey(now: Date = new Date()): string {
+  const s = pedalPowerSeason(now)
+  if (s === 'last_weeks') return 'borrow.pedal_power_last'
+  if (s === 'reopening') return 'borrow.pedal_power_reopening'
+  return 'borrow.pedal_power'
+}
+
+/** A plain-English line on the library's season for the assistant, or null
+ *  in the normal season. */
+export function pedalPowerSeasonNote(now: Date = new Date()): string | null {
+  const s = pedalPowerSeason(now)
+  if (s === 'last_weeks') return 'Community Pedal Power makes its last loans of the season on Dec 15, then closes until March.'
+  if (s === 'winter') return 'Community Pedal Power\'s e-bike library is closed for the winter (last loans were Dec 15) and reopens in March.'
+  if (s === 'reopening') return 'Community Pedal Power\'s e-bike library reopens in March; the exact date is on communitypedalpower.org.'
+  return null
+}
+
+/** Points within 2 mi of the visitor (or `radiusMiles`), nearest first.
+ *  Pedal Power pickups drop out over the winter break. */
+export function nearbyBorrowRent(lat: number, lng: number, radiusMiles = RADIUS_MILES, now: Date = new Date()): (BorrowRentPoint & { distMiles: number })[] {
+  return [...CARGOB_HUBS, ...(pedalPowerSeason(now) === 'winter' ? [] : PEDAL_POWER_PICKUPS)]
     .map(p => ({ ...p, distMiles: haversineMiles(lat, lng, p.lat, p.lng) }))
     .filter(p => p.distMiles <= radiusMiles)
     .sort((a, b) => a.distMiles - b.distMiles)

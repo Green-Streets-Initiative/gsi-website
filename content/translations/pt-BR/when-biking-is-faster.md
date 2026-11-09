@@ -2,7 +2,7 @@
 
 ```yaml
 id: mg_bike_time
-reviewed: 2026-05-08
+reviewed: 2026-11-09
 title: "Quando a bicicleta é mesmo a opção mais rápida"
 summary: "De porta a porta, a bicicleta ganha do carro em mais viagens do que as pessoas imaginam. As cinco situações em que ela com certeza vence."
 slug: when-biking-is-faster
@@ -36,4 +36,4 @@ Um trajeto de 5 a 7 milhas (8 a 11 km), que é lento e cansativo numa bicicleta 
 
 ### 5. Compras e viagens com crianças, de bicicleta elétrica de carga.
 
-Uma bicicleta elétrica de carga tem um quadro mais comprido atrás ou uma caixa na frente, e um motor de pedal assistido, que ajuda enquanto você pedala. Ela leva duas crianças e as compras da semana, e usa as ciclofaixas, sem pegar a fila de carros na saída da escola. Ela dá conta da maior parte do que as pessoas acham que só se faz de carro. Você não precisa comprar uma para descobrir: a [CargoB](https://www.ridecargob.com/) (em inglês) aluga bicicletas de carga por minuto em vários pontos da região, e a [Community Pedal Power](https://communitypedalpower.org/) (em inglês), em Cambridge, tem uma biblioteca de bicicletas elétricas onde você pode pegar uma emprestada de graça.
+Uma bicicleta elétrica de carga tem um quadro mais comprido atrás ou uma caixa na frente, e um motor de pedal assistido, que ajuda enquanto você pedala. Ela leva duas crianças e as compras da semana, e usa as ciclofaixas, sem pegar a fila de carros na saída da escola. Ela dá conta da maior parte do que as pessoas acham que só se faz de carro. Você não precisa comprar uma para descobrir: a [CargoB](https://www.ridecargob.com/) (em inglês) aluga bicicletas de carga por minuto em vários pontos da região, e a [Community Pedal Power](https://communitypedalpower.org/) (em inglês) empresta bicicletas elétricas e de carga de graça por até uma semana, com retirada perto de Porter Square, Roslindale, Newton Corner e Brookline Hills. A biblioteca fecha no inverno: os últimos empréstimos são em 15 de dezembro, e ela volta em março.

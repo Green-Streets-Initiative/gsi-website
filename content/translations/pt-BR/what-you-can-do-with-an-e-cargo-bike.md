@@ -2,7 +2,7 @@
 
 ```yaml
 id: mg_cargo_bike
-reviewed: 2026-05-08
+reviewed: 2026-11-09
 title: "O que dá para fazer com uma bicicleta elétrica de carga"
 summary: "Uma bicicleta elétrica de carga substitui a maioria das viagens de carro que uma família faz na semana. O que ela consegue fazer e onde experimentar uma antes de comprar."
 slug: what-you-can-do-with-an-e-cargo-bike
@@ -33,7 +33,7 @@ Uma bicicleta elétrica de carga é uma bicicleta comum com duas mudanças: um q
 
 ### Como experimentar sem comprar
 
-- **[Community Pedal Power](https://communitypedalpower.org/)** (em inglês), em Cambridge, tem uma biblioteca gratuita de bicicletas elétricas: pegue uma emprestada por um fim de semana.
+- **[Community Pedal Power](https://communitypedalpower.org/)** (em inglês) empresta bicicletas elétricas e bicicletas elétricas de carga de graça por até uma semana, com retirada perto de Porter Square, Roslindale, Newton Corner e Brookline Hills. A biblioteca fecha no inverno: os últimos empréstimos são em 15 de dezembro, e ela volta em março.
 - **[CargoB](https://www.ridecargob.com/)** (em inglês) aluga bicicletas elétricas de carga por minuto na região de Boston.
 - A maioria das lojas de bicicleta da região deixa você dar uma volta de teste, e algumas organizam dias de demonstração.
 
@@ -45,4 +45,4 @@ Uma bicicleta elétrica de carga é uma bicicleta comum com duas mudanças: um q
 
 ### Experimente primeiro
 
-Pegue uma emprestada na Community Pedal Power por um fim de semana. Use para buscar as crianças na escola uma vez e para fazer uma compra no mercado. Você logo vai saber se ela combina com a sua vida.
+Pegue uma emprestada na Community Pedal Power por uma semana (de março a meados de dezembro), ou alugue uma da CargoB por uma tarde. Use para buscar as crianças na escola uma vez e para fazer uma compra no mercado. Você logo vai saber se ela combina com a sua vida.

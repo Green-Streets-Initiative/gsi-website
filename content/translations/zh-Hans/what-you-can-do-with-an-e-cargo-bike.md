@@ -2,7 +2,7 @@
 
 ```yaml
 id: mg_cargo_bike
-reviewed: 2026-05-08
+reviewed: 2026-11-09
 title: "电动载货自行车能做什么"
 summary: "一辆电动载货自行车，能代替一个家庭一周里大部分的开车出行。它能做什么，买之前去哪里试骑。"
 slug: what-you-can-do-with-an-e-cargo-bike
@@ -33,7 +33,7 @@ related: [mg_bike_sweat, mg_bike_commute_gear, mg_bike_time, mg_walking_carrying
 
 ### 不买也能试骑的办法
 
-- Cambridge 的 **[Community Pedal Power](https://communitypedalpower.org/)**（英文）有一个免费的电动自行车“图书馆”：借一辆，骑一个周末。
+- **[Community Pedal Power](https://communitypedalpower.org/)**（英文）免费出借电动自行车和电动载货自行车，最长一周，取车点在 Porter Square、Roslindale、Newton Corner 和 Brookline Hills 附近。冬季暂停借车：最后借车日为 12 月 15 日，3 月重新开放。
 - **[CargoB](https://www.ridecargob.com/)**（英文）在大波士顿地区按分钟出租电动载货自行车。
 - 大多数本地自行车店都可以试骑，有些店还会办试骑日活动。
 
@@ -45,4 +45,4 @@ related: [mg_bike_sweat, mg_bike_commute_gear, mg_bike_time, mg_walking_carrying
 
 ### 先试试这个
 
-从 Community Pedal Power 借一辆，骑一个周末。用它接一次孩子放学，再去买一次菜。你很快就会知道它适不适合你的生活。
+从 Community Pedal Power 借一辆骑一周（3 月到 12 月中旬），或者从 CargoB 租一辆骑一个下午。用它接一次孩子放学，再去买一次菜。你很快就会知道它适不适合你的生活。

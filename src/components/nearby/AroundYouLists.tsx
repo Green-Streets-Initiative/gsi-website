@@ -8,7 +8,7 @@ import type { BluebikeStationLive } from '@/lib/wayfinding/types'
 import { formatDistance, walkTimeMinutes, bikeTimeMinutes } from '@/lib/wayfinding/geo'
 import { directionsUrl, lineColor, lineTextColor } from '@/lib/nearby/transit-ui'
 import { protectionLabel } from '@/lib/nearby/bike-labels'
-import { type BorrowRentPoint } from '@/lib/nearby/borrow-rent'
+import { pedalPowerBlurbKey, type BorrowRentPoint } from '@/lib/nearby/borrow-rent'
 import type { RepairPlaceNearby } from '@/lib/nearby/repair'
 import { repairStatus } from '@/lib/nearby/repair-status'
 import { repairStatusLine, type RepairTone } from '@/lib/nearby/repair-format'
@@ -680,7 +680,7 @@ export function BorrowRentList({ points, onSelect, selectedId, isSectionOpen, on
               </span>
             </div>
             <div className="mt-1 text-[0.82rem] text-(--nb-ink-80)">
-              {tr(p.org === 'cargob' ? 'borrow.cargob' : 'borrow.pedal_power')}
+              {tr(p.org === 'cargob' ? 'borrow.cargob' : pedalPowerBlurbKey())}
               {p.approximate ? tr('lists.exact_address_note') : ''}
             </div>
           </button>

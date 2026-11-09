@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import posthog from 'posthog-js'
-import { type BorrowRentPoint } from '@/lib/nearby/borrow-rent'
+import { pedalPowerBlurbKey, type BorrowRentPoint } from '@/lib/nearby/borrow-rent'
 import type { RepairPlaceNearby } from '@/lib/nearby/repair'
 import { repairStatus } from '@/lib/nearby/repair-status'
 import { lastConfirmedLine, repairStatusLine, weekRows } from '@/lib/nearby/repair-format'
@@ -517,7 +517,7 @@ export function DetailContent({ selection, stationByKey, corridorById, docks, bo
           {tr('detail.walk_distance', { minutes: walkTimeMinutes(p.distMiles * 1609.34), distance: formatDistance(p.distMiles * 1609.34) })}
         </div>
         <div className="mt-1 text-[0.82rem] text-(--nb-ink-80)">
-          {tr(p.org === 'cargob' ? 'borrow.cargob' : 'borrow.pedal_power')}
+          {tr(p.org === 'cargob' ? 'borrow.cargob' : pedalPowerBlurbKey())}
           {p.approximate ? tr('detail.exact_address_note') : ''}
         </div>
         <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1">

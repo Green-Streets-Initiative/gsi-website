@@ -2,7 +2,7 @@
 
 ```yaml
 id: mg_bike_time
-reviewed: 2026-05-08
+reviewed: 2026-11-09
 title: "Cuándo la bici es de verdad la opción más rápida"
 summary: "De puerta a puerta, la bici le gana al auto en más viajes de lo que la gente cree. Las cinco situaciones donde gana seguro."
 slug: when-biking-is-faster
@@ -36,4 +36,4 @@ Un trayecto de 5 a 7 millas (8 a 11 km) que se hace pesado en una bici normal es
 
 ### 5. Mandados y viajes con niños, en bici de carga eléctrica.
 
-Una bici de carga eléctrica (con un marco largo atrás o una caja adelante, y un motor que te ayuda al pedalear) puede llevar a dos niños y las compras de toda una semana. Además usa los carriles para bici, así que te saltas por completo la fila de autos a la salida de la escuela. Sirve para la mayoría de las cosas que la gente cree que necesitan un auto. No tienes que comprar una para probar: [CargoB](https://www.ridecargob.com/) (en inglés) renta bicis de carga por minuto en la región, y [Community Pedal Power](https://communitypedalpower.org/) (en inglés), en Cambridge, tiene una biblioteca de bicis eléctricas donde puedes pedir una prestada gratis.
+Una bici de carga eléctrica (con un marco largo atrás o una caja adelante, y un motor que te ayuda al pedalear) puede llevar a dos niños y las compras de toda una semana. Además usa los carriles para bici, así que te saltas por completo la fila de autos a la salida de la escuela. Sirve para la mayoría de las cosas que la gente cree que necesitan un auto. No tienes que comprar una para probar: [CargoB](https://www.ridecargob.com/) (en inglés) renta bicis de carga por minuto en la región, y [Community Pedal Power](https://communitypedalpower.org/) (en inglés) presta bicis eléctricas y bicis de carga gratis hasta por una semana, con puntos de recogida cerca de Porter Square, Roslindale, Newton Corner y Brookline Hills. Su biblioteca cierra en invierno: los últimos préstamos son el 15 de diciembre y vuelve en marzo.

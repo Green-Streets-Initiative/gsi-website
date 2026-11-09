@@ -20,7 +20,7 @@ export const SCENARIOS = [
     rubric: 'Acknowledges the frustration briefly, then offers a more predictable way. A card for the suggested way.' },
   { id: 'cost-weigher', group: 'trips', says: ['Would an e-bike be worth it for getting from home to the Longwood Medical Area every day?'],
     checks: { requireTools: ['find_bikes_to_try'] },
-    rubric: 'Answers the e-bike question with real facts (minutes, cost vs transit) or says plainly what it lacks; suggests one way to try an e-bike before buying (a free week from Community Pedal Power or a Bluebikes e-bike), named with where.' },
+    rubric: 'Answers the e-bike question with real facts (minutes, cost vs transit) or says plainly what it lacks; suggests one way to try an e-bike before buying (a free week from Community Pedal Power while it is lending, or a Bluebikes e-bike; Pedal Power is closed Dec 16 until March), named with where.' },
   { id: 'first-timer', group: 'trips', says: ["I haven't biked in the city in years. Is there a calm way to bike from home to Harvard Square, and anyone I could ride with?"],
     rubric: 'A calm route card, and a beginner-friendly group ride that has not already started. Encouraging, not preachy.' },
   { id: 'student', group: 'trips', says: ["I'm a Tufts student. What's the cheapest way to get from campus to Fenway Park on Saturday?"],

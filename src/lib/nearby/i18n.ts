@@ -366,6 +366,8 @@ const en: Dict = {
   // ── borrow (borrow-rent.ts blurbs) + misc shared notes ──
   'borrow.cargob': 'Rent an e-cargo bike by the minute',
   'borrow.pedal_power': 'Borrow an e-bike free for a week',
+  'borrow.pedal_power_last': 'Borrow an e-bike free for a week. Last loans Dec 15, then closed until March',
+  'borrow.pedal_power_reopening': 'Closed for the winter, back in March: check their site for the date',
 
   // ── repair ("Fix your bike": community co-ops from town_resources; ported
   //    from the app's nearby.repair_* keys — keep in step) ──
@@ -780,6 +782,8 @@ const es: Dict = {
   "dock.pin_bikes": "{count} bicis",
   "borrow.cargob": "Renta una bici de carga eléctrica por minuto",
   "borrow.pedal_power": "Pide prestada una bici eléctrica gratis por una semana",
+  "borrow.pedal_power_last": "Pide prestada una bici eléctrica gratis por una semana. Últimos préstamos el 15 de dic., luego cierra hasta marzo",
+  "borrow.pedal_power_reopening": "Cerrado por el invierno, vuelve en marzo: consulta la fecha en su sitio",
 
   // ── repair ──
   "lists.repair_heading": "Arregla tu bici",
@@ -1189,6 +1193,8 @@ const ptBR: Dict = {
   "dock.pin_bikes": "{count} bikes",
   "borrow.cargob": "Alugue uma cargo bike elétrica por minuto",
   "borrow.pedal_power": "Empreste uma bike elétrica grátis por uma semana",
+  "borrow.pedal_power_last": "Empreste uma bike elétrica grátis por uma semana. Últimos empréstimos em 15 de dez., depois fecha até março",
+  "borrow.pedal_power_reopening": "Fechado no inverno, volta em março: veja a data no site deles",
 
   // ── repair ──
   "lists.repair_heading": "Conserte sua bike",
@@ -1598,6 +1604,8 @@ const zhHans: Dict = {
   "dock.pin_bikes": "{count} 辆车",
   "borrow.cargob": "按分钟租用电动载货自行车",
   "borrow.pedal_power": "免费借用电动自行车一周",
+  "borrow.pedal_power_last": "免费借用电动自行车一周。最后借车日为 12 月 15 日，之后关闭至 3 月",
+  "borrow.pedal_power_reopening": "冬季暂停，3 月重新开放：请在他们的网站查看具体日期",
 
   // ── repair ──
   "lists.repair_heading": "修理自行车",
