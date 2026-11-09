@@ -68,7 +68,7 @@ function TripSketch({ t }: { t: T<TogetherKey> }) {
 
 function Row({ n, title, hint, extra, picture, flip = false }: { n: number; title: string; hint: string; extra?: string; picture: ReactNode; flip?: boolean }) {
   return (
-    <li className="grid grid-cols-1 gap-5 md:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] md:items-center md:gap-10">
+    <li className={cx('grid grid-cols-1 gap-5 md:items-center md:gap-10', flip ? 'md:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]' : 'md:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]')}>
       <div className={cx('min-w-0', flip && 'md:order-2')}>
         <h3 className="font-display text-[22px] font-extrabold leading-tight">{n}. {title}</h3>
         <p className="mt-2 text-[17px] leading-snug text-(--ev-ink-85)">{hint}</p>
@@ -92,10 +92,10 @@ export default function HowItWorks({ locale = 'en' }: { locale?: SiteLocale }) {
         hint={t('step.yes_hint')}
         extra={t('matches.safety')}
         picture={(
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <PinMap pins={MEET_PINS(t)} title={t('how.map_alt')} caption={t('how.meet')} boxClassName="aspect-[4/3]" width={400} height={300} />
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+            <PinMap pins={MEET_PINS(t)} title={t('how.map_alt')} caption={t('how.meet')} boxClassName="aspect-[4/3]" width={360} height={270} quiet />
             <PhotoBand photo={PHOTOS.gilman} alt={t('how.gilman_alt')} place={t('how.gilman_place')} creditLabel={t('photo.by', { who: PHOTOS.gilman.credit })}
-              className="aspect-[4/3]" sizes="(min-width: 920px) 260px, (min-width: 640px) 45vw, 100vw" />
+              className="aspect-[4/3]" sizes="(min-width: 920px) 220px, (min-width: 640px) 40vw, 100vw" />
           </div>
         )}
       />
