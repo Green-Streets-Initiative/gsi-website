@@ -6,6 +6,8 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState, ty
 import { Car, Handshake, LogOut, MailCheck, MapPinned, Plane, Sprout, TrainFront, UsersRound, type LucideIcon } from 'lucide-react'
 import { toneClass } from '@/components/events/EventsTone'
 import { Button, Card, Field, Input, Notice, Spinner, cx } from '@/components/organizers/ui'
+import HowItWorks from '@/components/together/HowItWorks'
+import { PHOTOS, PhotoBand } from '@/components/together/photos'
 import { translator, withLang, type SiteLocale, type T } from '@/lib/site-i18n'
 import { togetherStrings, type TogetherKey } from '@/lib/site-strings/together'
 import { loganStrings, type LoganKey } from '@/lib/site-strings/logan'
@@ -381,12 +383,19 @@ function SignIn() {
   }
 
   return (
-    <div className="grid grid-cols-1 gap-8 pt-2 md:pt-6">
-      {/* Phone: what this is, then the sign-in, then how it works. Wide: heading and ways left, sign-in right. */}
+    <div className={cx('grid grid-cols-1 pt-2 md:pt-6', logan ? 'gap-8' : 'gap-12 md:gap-14')}>
+      {/* Phone: a photo band, what this is, then the sign-in, then how it works. Wide: the band, then heading and ways left, sign-in right.
+          The band stays short on phones so the email field is still on the first screen (390x844). */}
+      <div className="grid grid-cols-1 gap-5 md:gap-8">
+      {logan ? null : (
+        <PhotoBand photo={PHOTOS.concord} alt={t('hero.alt')} place={t('hero.place')} creditLabel={t('photo.by', { who: PHOTOS.concord.credit })}
+          className="h-[136px] sm:h-[220px] md:h-[280px]" priority />
+      )}
       <div className="grid grid-cols-1 gap-6 md:grid-cols-[1.15fr_1fr] md:items-start md:gap-x-10">
         <div className="md:col-start-1 md:row-start-1">
-          <p className="text-[15px] font-semibold text-(--ev-accent)">{logan ? tl('logan.eyebrow') : t('signin.eyebrow')}</p>
-          <h1 className="mt-2 font-display text-[clamp(30px,4.2vw,44px)] font-extrabold leading-[1.05] text-balance">
+          {/* No line above the heading on Shift Together (no eyebrows, enrich pass 2026-11-09); Logan keeps its own. */}
+          {logan ? <p className="mb-2 text-[15px] font-semibold text-(--ev-accent)">{tl('logan.eyebrow')}</p> : null}
+          <h1 className="font-display text-[clamp(30px,4.2vw,44px)] font-extrabold leading-[1.05] text-balance">
             {logan ? tl('logan.signin_title') : t('signin.title')}
           </h1>
           {logan ? null : <p className="mt-3 text-[clamp(18px,2vw,21px)] font-semibold leading-snug text-(--ev-ink-85)">{t('signin.lead')}</p>}
@@ -403,8 +412,9 @@ function SignIn() {
           ))}
         </ul>
       </div>
+      </div>
       <section aria-labelledby="together-how">
-        <h2 id="together-how" className="mb-3 font-display text-[22px] font-extrabold">{t('signin.how')}</h2>
+        <h2 id="together-how" className={cx('font-display font-extrabold', logan ? 'mb-3 text-[22px]' : 'mb-8 text-[28px]')}>{t('signin.how')}</h2>
         {logan ? (
           <ol className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             {LOGAN_STEPS.map((st, i) => (
@@ -426,12 +436,8 @@ function SignIn() {
               </li>
             ))}
           </ol>
-        ) : <Journey full locale={locale} />}
-        <p className="mt-4 text-[15px] leading-snug text-(--ev-ink-80)">
-          {logan
-            ? tl('logan.free')
-            : t('signin.free')}
-        </p>
+        ) : <HowItWorks locale={locale} />}
+        {logan ? <p className="mt-4 text-[15px] leading-snug text-(--ev-ink-80)">{tl('logan.free')}</p> : null}
       </section>
     </div>
   )

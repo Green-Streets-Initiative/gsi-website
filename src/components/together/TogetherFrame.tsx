@@ -4,6 +4,7 @@ import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
 import HtmlLang from '@/components/HtmlLang'
 import TogetherShell, { type ShellVariant } from '@/components/together/TogetherShell'
+import { SHARE_IMAGE } from '@/components/together/photos'
 import { translator, type SiteLocale } from '@/lib/site-i18n'
 import { togetherStrings } from '@/lib/site-strings/together'
 
@@ -29,10 +30,10 @@ export default function TogetherFrame({ locale, variant = 'together', children }
 
 export function togetherMetadata(locale: SiteLocale): Metadata {
   const t = translator(togetherStrings, locale)
-  // A shared link (the newsletter, texts, social) shows what this is and the Shift card, like /shift.
-  // No photo of people biking or at a T station is in /public yet; swap one in here when there is.
+  // A shared link (the newsletter, texts, social) shows the page's own photo: two riders taking their
+  // bikes on the commuter rail at Concord, cropped to 1200x630 (credited on the page; see together/photos.tsx).
   const share = `Shift Together: ${t('signin.title')}`
-  const image = { url: '/og/shift-og.png', width: 1200, height: 630, alt: 'Shift by Green Streets Initiative' }
+  const image = { url: SHARE_IMAGE, width: 1200, height: 630, alt: t('hero.alt') }
   return {
     title: t('meta.title'),
     description: t('meta.description'),

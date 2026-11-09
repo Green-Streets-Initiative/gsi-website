@@ -1,11 +1,13 @@
 'use client'
 
+import Image from 'next/image'
 import Link from 'next/link'
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import { Bike, Car, CheckCircle2, Sprout, UsersRound, type LucideIcon } from 'lucide-react'
 import AddressAutocomplete from '@/components/AddressAutocomplete'
 import NextSteps from '@/components/together/NextSteps'
 import { Chip, WAY_ICON } from '@/components/together/bits'
+import { PHOTOS, type TogetherPhoto } from '@/components/together/photos'
 import { Journey, takeKindParam, useTogether } from '@/components/together/TogetherShell'
 import { Badge, Button, Card, Field, Input, Notice, Spinner, Textarea, cx } from '@/components/organizers/ui'
 import { translator, withLang, type SiteLocale, type T } from '@/lib/site-i18n'
@@ -27,10 +29,16 @@ import {
  * (translation plan, batch 5); page.tsx resolves it.
  */
 
-const KINDS: { id: PartnerKind; title: TogetherKey; hint: TogetherKey; Icon: LucideIcon }[] = [
-  { id: 'newcomer', title: 'kind.newcomer', hint: 'kind.newcomer_hint', Icon: Sprout },
-  { id: 'guide', title: 'kind.guide', hint: 'kind.guide_hint', Icon: UsersRound },
-  { id: 'carpool', title: 'kind.carpool', hint: 'kind.carpool_hint', Icon: Car },
+/** Each choice shows a real place (enrich pass 2026-11-09): bikes onto the train at Concord, the Gilman Square stop, a Park and Ride lot. */
+const KINDS: { id: PartnerKind; title: TogetherKey; hint: TogetherKey; photo: TogetherPhoto; alt: TogetherKey }[] = [
+  { id: 'newcomer', title: 'kind.newcomer', hint: 'kind.newcomer_hint', photo: PHOTOS.concord, alt: 'hero.alt' },
+  { id: 'guide', title: 'kind.guide', hint: 'kind.guide_hint', photo: PHOTOS.gilman, alt: 'how.gilman_alt' },
+  { id: 'carpool', title: 'kind.carpool', hint: 'kind.carpool_hint', photo: PHOTOS.parkRide, alt: 'kind.carpool_alt' },
+]
+const PHOTO_CREDITS: { place: string; photo: TogetherPhoto }[] = [
+  { place: 'Concord', photo: PHOTOS.concord },
+  { place: 'Gilman Square', photo: PHOTOS.gilman },
+  { place: 'Framingham', photo: PHOTOS.parkRide },
 ]
 const KIND_ICON: Record<PartnerKind, LucideIcon> = { newcomer: Sprout, guide: UsersRound, carpool: Car }
 const KIND_LABEL: Record<PartnerKind, TogetherKey> = { newcomer: 'kind.newcomer_short', guide: 'kind.guide_short', carpool: 'kind.carpool_short' }
@@ -398,31 +406,41 @@ export default function SignUp({ locale }: { locale: SiteLocale }) {
               </p>
             ) : null}
           </div>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3" role="radiogroup" aria-label={t('signup.title')}>
-            {KINDS.map(({ id, title, hint, Icon }) => (
-              <button
-                key={id}
-                type="button"
-                role="radio"
-                onClick={() => pickKind(id)}
-                aria-checked={kind === id}
-                className={cx(
-                  'flex items-start gap-3 rounded-2xl border bg-white p-4 text-left transition sm:flex-col sm:gap-2',
-                  kind === id ? 'border-(--ev-accent) ring-2 ring-(--ev-accent-tint-15)' : 'border-(--ev-line-strong) hover:bg-(--ev-panel)',
-                )}
-              >
-                <span
-                  className={cx('flex h-10 w-10 shrink-0 items-center justify-center rounded-full', kind === id ? 'bg-(--ev-accent-fill) text-(--ev-on-accent-fill)' : 'bg-(--ev-panel) text-(--ev-accent)')}
-                  aria-hidden
+          <div className="grid grid-cols-1 gap-2">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3" role="radiogroup" aria-label={t('signup.title')}>
+              {KINDS.map(({ id, title, hint, photo, alt }) => (
+                <button
+                  key={id}
+                  type="button"
+                  role="radio"
+                  onClick={() => pickKind(id)}
+                  aria-checked={kind === id}
+                  className={cx(
+                    'flex items-start gap-3 overflow-hidden rounded-2xl border bg-white p-3 text-left transition sm:flex-col sm:gap-3 sm:p-0 sm:pb-4',
+                    kind === id ? 'border-(--ev-accent) ring-2 ring-(--ev-accent-tint-15)' : 'border-(--ev-line-strong) hover:bg-(--ev-panel)',
+                  )}
                 >
-                  <Icon className="h-5 w-5" />
+                  {/* Phones: a thumbnail beside the words; wider: a photo across the top. */}
+                  <span className="relative h-[76px] w-[92px] shrink-0 overflow-hidden rounded-xl bg-(--ev-panel) sm:h-[128px] sm:w-full sm:rounded-none">
+                    <Image src={photo.src} alt={t(alt)} fill sizes="(min-width: 640px) 300px, 92px" className="object-cover" />
+                  </span>
+                  <span className="grid grid-cols-1 gap-1 sm:px-4">
+                    <span className="text-[17px] font-bold leading-snug">{t(title)}</span>
+                    <span className="text-[15px] leading-snug text-(--ev-ink-80)">{t(hint)}</span>
+                  </span>
+                </button>
+              ))}
+            </div>
+            <p className="text-[13px] leading-snug text-(--ev-ink-75)">
+              {t('photos.by', { who: '' }).trim()}{' '}
+              {PHOTO_CREDITS.map((c, i) => (
+                <span key={c.place}>
+                  {i ? ' · ' : ''}
+                  <a href={c.photo.url} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2">{c.place}: {c.photo.credit.replace(' / Wikimedia Commons', '')}</a>
                 </span>
-                <span className="grid grid-cols-1 gap-1">
-                  <span className="text-[17px] font-bold leading-snug">{t(title)}</span>
-                  <span className="text-[15px] leading-snug text-(--ev-ink-80)">{t(hint)}</span>
-                </span>
-              </button>
-            ))}
+              ))}
+              {' / Wikimedia Commons'}
+            </p>
           </div>
 
           {kind && copy && (

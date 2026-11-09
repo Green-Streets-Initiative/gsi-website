@@ -5,13 +5,15 @@ import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { CheckCircle2, Home, Route } from 'lucide-react'
 import AddressAutocomplete from '@/components/AddressAutocomplete'
 import NextSteps from '@/components/together/NextSteps'
+import PinMap from '@/components/together/PinMap'
 import { Chip } from '@/components/together/bits'
+import { PHOTOS, PhotoBand } from '@/components/together/photos'
 import { Journey, useTogether } from '@/components/together/TogetherShell'
 import { Badge, Button, Card, Field, Notice, Spinner, Textarea, cx } from '@/components/organizers/ui'
 import { translator, withLang, type SiteLocale } from '@/lib/site-i18n'
 import { SLOT_KEY, slotWords, togetherStrings, type TogetherKey } from '@/lib/site-strings/together'
 import {
-  LANGUAGES, SLOTS, acceptTerms, hasAcceptedTerms, isSlot, mySignUps, practicePlaces, savePlace, savePractice,
+  LANGUAGES, SLOTS, acceptTerms, hasAcceptedTerms, isSlot, myPlaces, mySignUps, practicePlaces, savePlace, savePractice,
   stopSignUp, track,
   type PartnerLanguage, type PartnerRequest, type PracticePlace, type PracticeRequest, type PracticeSlot,
 } from '@/lib/together'
@@ -46,6 +48,8 @@ export default function Practice({ locale }: { locale: SiteLocale }) {
   const [loading, setLoading] = useState(true)
   const [hasHome, setHasHome] = useState(false)
   const [places, setPlaces] = useState<PracticePlace[]>([])
+  // Where Home is, for the map of the paths near it.
+  const [homeAt, setHomeAt] = useState<{ lat: number; lng: number } | null>(null)
   const [existing, setExisting] = useState<PracticeRequest | null>(null)
   const [termsDone, setTermsDone] = useState(false)
   const [editing, setEditing] = useState(false)
@@ -66,11 +70,14 @@ export default function Practice({ locale }: { locale: SiteLocale }) {
 
   const load = useCallback(async () => {
     if (!userId) return
-    const [signUps, near, terms] = await Promise.all([
+    const [signUps, near, terms, saved] = await Promise.all([
       mySignUps().catch(() => ({ trips: [] as PartnerRequest[], practice: null })),
       practicePlaces().catch(() => ({ home: false, places: [] as PracticePlace[] })),
       hasAcceptedTerms(userId),
+      myPlaces(userId).catch(() => []),
     ])
+    const h = saved.find((x) => x.label === 'Home')
+    setHomeAt(h && h.lat != null && h.lng != null ? { lat: Number(h.lat), lng: Number(h.lng) } : null)
     const p = signUps.practice && signUps.practice.status !== 'closed' ? signUps.practice : null
     setExisting(p)
     setHasHome(near.home)
@@ -149,6 +156,11 @@ export default function Practice({ locale }: { locale: SiteLocale }) {
   }
 
   if (loading) return <Spinner label={t('practice.opening')} />
+  // A quiet path like the ones on offer: the Charles River path in Allston (credited).
+  const riverPhoto = (
+    <PhotoBand photo={PHOTOS.river} alt={t('practice.photo_alt')} place={t('practice.photo_place')} creditLabel={t('photo.by', { who: PHOTOS.river.credit })}
+      className="h-[160px] sm:h-[220px]" sizes="(min-width: 768px) 440px, 100vw" />
+  )
   const showForm = hasHome && (editing || !existing)
   const pickedLabel = existing?.practice_label ?? t('quiet_streets')
 
@@ -179,6 +191,7 @@ export default function Practice({ locale }: { locale: SiteLocale }) {
               {t('practice.home_intro')}
             </p>
           </div>
+          {riverPhoto}
           <Field label={t('practice.your_home')} hint={t('home.hint')} error={homeErr}>
             <AddressAutocomplete
               value={home.address}
@@ -242,17 +255,34 @@ export default function Practice({ locale }: { locale: SiteLocale }) {
 
       {showForm ? (
         <form onSubmit={submit} className="grid grid-cols-1 gap-6" noValidate>
-          <div>
-            <h1 className="font-display text-[clamp(28px,4vw,38px)] font-extrabold leading-tight">{t('practice.title')}</h1>
-            <p className="mt-2 text-[16px] text-(--ev-ink-85)">
-              {t('practice.intro')}
-            </p>
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] md:items-center md:gap-8">
+            <div>
+              <h1 className="font-display text-[clamp(28px,4vw,38px)] font-extrabold leading-tight">{t('practice.title')}</h1>
+              <p className="mt-2 text-[16px] text-(--ev-ink-85)">
+                {t('practice.intro')}
+              </p>
+            </div>
+            {riverPhoto}
           </div>
           <Card className="grid grid-cols-1 gap-6">
             <Field
               label={t('practice.where_q')}
               hint={places.length ? undefined : t('practice.no_paths')}
             >
+              {/* Their own Home and the path entrances near it, labeled as on the choices below. */}
+              {homeAt && places.length ? (
+                <PinMap
+                  className="mb-3"
+                  boxClassName="aspect-[16/9] sm:aspect-[5/2]"
+                  width={560}
+                  height={260}
+                  title={t('practice.map_alt')}
+                  pins={[
+                    { lat: homeAt.lat, lng: homeAt.lng, kind: 'home', label: t('practice.map_home') },
+                    ...places.map((pl) => ({ lat: pl.lat, lng: pl.lng, kind: 'path' as const, label: pl.trail })),
+                  ]}
+                />
+              ) : null}
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2" role="radiogroup" aria-label={t('practice.where_q')}>
                 {places.map((p) => (
                   <PlaceCard
