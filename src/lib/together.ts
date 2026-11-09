@@ -17,9 +17,11 @@ export type CarpoolRole = 'driver' | 'rider' | 'either'
 export type PartnerDay = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun'
 export type PartnerTime = 'morning' | 'midday' | 'evening'
 
+// No Walk choice: Shift Together dropped walking on 2026-10-30 (Shift 01506 strips
+// it on save, so a walk-only sign-up matched nobody). Walking with someone is the
+// app's own "Find someone to walk with". 'walk' stays a PartnerWay for older rows.
 export const WAYS: { id: PartnerWay; label: string }[] = [
   { id: 'bike', label: 'Bike' },
-  { id: 'walk', label: 'Walk' },
   { id: 'transit', label: 'Bus or train' },
   { id: 'micro', label: 'Scooter or board' },
 ]
@@ -27,9 +29,9 @@ export const WAYS: { id: PartnerWay; label: string }[] = [
 const WAY_DO: Record<PartnerWay, string> = { bike: 'bike', walk: 'walk', transit: 'take the bus or train', micro: 'ride a scooter' }
 const WAY_DOES: Record<PartnerWay, string> = { bike: 'bikes', walk: 'walks', transit: 'takes the bus or train', micro: 'rides a scooter' }
 const WAY_ING: Record<PartnerWay, string> = { bike: 'biking', walk: 'walking', transit: 'taking the bus or train', micro: 'riding a scooter' }
-/** "bike", "bike or walk", "biking, walking or riding a scooter"; with no way picked, the three main ones. */
+/** "bike", "bike or take the bus or train"; with no way picked, the two main ones. */
 export function waysText(ways: PartnerWay[], form: 'do' | 'does' | 'ing'): string {
-  const list: PartnerWay[] = ways.length ? ways : ['bike', 'walk', 'transit']
+  const list: PartnerWay[] = ways.length ? ways : ['bike', 'transit']
   const words = list.map((w) => ({ do: WAY_DO, does: WAY_DOES, ing: WAY_ING }[form])[w])
   return words.length === 1 ? words[0] : `${words.slice(0, -1).join(', ')} or ${words[words.length - 1]}`
 }
