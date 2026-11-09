@@ -1,19 +1,19 @@
 'use client'
 
 import Link from 'next/link'
-import { useCallback, useEffect, useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import { Bike, Car, CheckCircle2, Sprout, UsersRound, type LucideIcon } from 'lucide-react'
 import AddressAutocomplete from '@/components/AddressAutocomplete'
 import NextSteps from '@/components/together/NextSteps'
 import { Chip, WAY_ICON } from '@/components/together/bits'
-import { Journey, useTogether } from '@/components/together/TogetherShell'
+import { Journey, takeKindParam, useTogether } from '@/components/together/TogetherShell'
 import { Badge, Button, Card, Field, Input, Notice, Spinner, Textarea, cx } from '@/components/organizers/ui'
 import { translator, withLang, type SiteLocale, type T } from '@/lib/site-i18n'
 import { DAY_KEY, ROLE_KEY, SLOT_KEY, TIME_KEY, WAY_KEY, slotWords, togetherStrings, waysWords, type TogetherKey } from '@/lib/site-strings/together'
 import {
-  DAYS, LANGUAGES, SLOTS, TIMES, WAYS, acceptTerms, clock, hasAcceptedTerms, isSlot, isWay, myPlaces, mySignUps,
+  DAYS, LANGUAGES, SLOTS, TIMES, WAYS, acceptTerms, clock, hasAcceptedTerms, isSlot, isWay, myMatches, myPlaces, mySignUps,
   saveExtras, savePlace, saveSignUp, stopSignUp, track,
-  type CarpoolRole, type PartnerDay, type PartnerKind, type PartnerLanguage, type PartnerRequest, type PartnerTime, type PartnerWay,
+  type CarpoolRole, type Match, type PartnerDay, type PartnerKind, type PartnerLanguage, type PartnerRequest, type PartnerTime, type PartnerWay,
   type PracticeRequest, type PracticeSlot,
 } from '@/lib/together'
 
@@ -118,15 +118,26 @@ export default function SignUp({ locale }: { locale: SiteLocale }) {
   const [saved, setSaved] = useState<{ kind: PartnerKind; ways: PartnerWay[]; matches: number } | null>(null)
   const [fromExpo, setFromExpo] = useState(false)
   const [stopping, setStopping] = useState<PartnerKind | null>(null)
+  // A match to answer, or one already made: then the page points to Your matches, not "While you wait".
+  const [matchState, setMatchState] = useState<'waiting' | 'connected' | null>(null)
+  const kindAsked = useRef(false)
 
   const load = useCallback(async () => {
     if (!userId) return
-    const [signUps, places, terms] = await Promise.all([
+    const [signUps, places, terms, matches] = await Promise.all([
       mySignUps().catch(() => ({ trips: [] as PartnerRequest[], practice: null })), myPlaces(userId), hasAcceptedTerms(userId),
+      myMatches().catch(() => [] as Match[]),
     ])
     const reqs = signUps.trips
-    setRequests(reqs.filter((r) => r.status !== 'closed'))
-    setPractice(signUps.practice && signUps.practice.status !== 'closed' ? signUps.practice : null)
+    const active = reqs.filter((r) => r.status !== 'closed')
+    const prac = signUps.practice && signUps.practice.status !== 'closed' ? signUps.practice : null
+    setRequests(active)
+    setPractice(prac)
+    setMatchState(
+      matches.some((m) => m.status === 'proposed' && m.my_answer == null) ? 'waiting'
+        : matches.some((m) => m.status === 'connected' || m.status === 'went_together') || active.some((r) => r.status === 'matched') || prac?.status === 'matched' ? 'connected'
+          : null,
+    )
     setTermsDone(terms)
     const h = places.find((p) => p.label === 'Home')
     const w = places.find((p) => p.label === 'Work')
@@ -146,6 +157,17 @@ export default function SignUp({ locale }: { locale: SiteLocale }) {
       // The sheet never asked about other times: start from the usual default.
       setSlots(paper.kind === 'newcomer' ? NEWCOMER_SLOTS : [])
       if (paper.note) setNote(paper.note)
+    }
+    // A link that names the choice (?kind=guide from the Shift email): open the sign-up on it, unless they have one already.
+    if (!kindAsked.current) {
+      kindAsked.current = true
+      const k = takeKindParam()
+      if (k && !paper && !active.some((r) => r.kind === k)) {
+        setEditing(true)
+        setKind(k)
+        setSlots(k === 'newcomer' ? NEWCOMER_SLOTS : [])
+        track('together_kind_from_link', { kind: k })
+      }
     }
     setLoading(false)
   }, [userId])
@@ -285,6 +307,7 @@ export default function SignUp({ locale }: { locale: SiteLocale }) {
             {saved && saved.matches === 0 ? copyFor(saved.kind, locale, t).doneTitle : t('signed_up')}
           </h1>
           {saved && saved.matches === 0 ? <p className="mt-1 text-[16px] text-(--ev-ink-85)">{copyFor(saved.kind, locale, t).doneBody(saved.ways)}</p> : null}
+          {matchState === 'waiting' && !(saved && saved.matches > 0) ? <p className="mt-1 text-[17px] font-semibold">{t('signup.matched_waiting')}</p> : null}
           <ul className="mt-4 grid gap-3">
             {requests.map((r) => {
               const Icon = KIND_ICON[r.kind]
@@ -349,13 +372,21 @@ export default function SignUp({ locale }: { locale: SiteLocale }) {
             ) : null}
           </ul>
           <div className="mt-5 flex flex-wrap gap-3">
-            <Link href={withLang('/together/matches', locale)} className="inline-flex min-h-[44px] items-center rounded-[10px] border border-(--ev-line-strong) bg-white px-4 text-[15px] font-semibold">{t('see_matches')}</Link>
+            <Link
+              href={withLang('/together/matches', locale)}
+              className={cx(
+                'inline-flex min-h-[44px] items-center rounded-[10px] px-4 text-[15px] font-semibold',
+                matchState ? 'bg-(--ev-accent-fill) text-(--ev-on-accent-fill) hover:opacity-90' : 'border border-(--ev-line-strong) bg-white',
+              )}
+            >
+              {t('see_matches')}
+            </Link>
             {requests.length < 3 ? <Button onClick={() => startEdit()}>{t('signup.else')}</Button> : null}
           </div>
         </Card>
       )}
 
-      {!showForm && latest && latest.matches === 0 ? <NextSteps kind={latest.kind} ways={latest.ways} source="saved" locale={locale} /> : null}
+      {!showForm && latest && latest.matches === 0 && !matchState ? <NextSteps kind={latest.kind} ways={latest.ways} source="saved" locale={locale} /> : null}
 
       {showForm && (
         <form onSubmit={submit} className="grid grid-cols-1 gap-6" noValidate>

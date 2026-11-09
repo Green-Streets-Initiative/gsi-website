@@ -118,7 +118,9 @@ export default function Matches({ locale }: { locale: SiteLocale }) {
           <>
             <Card>
               <h2 className="font-display text-[22px] font-extrabold">{t('matches.empty')}</h2>
-              <p className="mt-2 text-[16px] text-(--ev-ink-85)">{t('matches.empty_open')}</p>
+              <p className="mt-2 text-[16px] text-(--ev-ink-85)">
+                {open.kind === 'carpool' ? t('matches.empty_open_carpool') : open.kind === 'guide' ? t('matches.empty_open_guide') : t('matches.empty_open')}
+              </p>
             </Card>
             <NextSteps kind={open.kind} ways={open.modes.filter(isWay)} source="matches" locale={locale} />
           </>

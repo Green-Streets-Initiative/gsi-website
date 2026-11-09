@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useEffect, useState, type ReactNode } from 'react'
-import { Check, Link2, MapPinned, Smartphone, type LucideIcon } from 'lucide-react'
+import { Bike, Check, Link2, MapPinned, Smartphone, type LucideIcon } from 'lucide-react'
 import { Badge, Card } from '@/components/organizers/ui'
 import { translator, withLang, type SiteLocale, type T } from '@/lib/site-i18n'
 import { togetherStrings, waysWords, type TogetherKey } from '@/lib/site-strings/together'
@@ -11,8 +11,8 @@ import { lessonOffer, track, type LessonOffer, type PartnerKind, type PartnerWay
 /**
  * What to do while Shift looks for a match, so "we'll email you" is never the
  * end of the page (the app's PartnerFallback, for the web): the free road
- * lesson for people trying a bike near the school, plan the route, invite
- * someone, and the app.
+ * lesson for people trying a bike near the school, an easy group ride this
+ * week for anyone on a bike, plan the route, invite someone, and the app.
  */
 
 const PLAN_SUB: Record<PartnerWay, TogetherKey> = {
@@ -22,10 +22,12 @@ const PLAN_SUB: Record<PartnerWay, TogetherKey> = {
   micro: 'next.plan_micro',
 }
 
-export default function NextSteps({ kind, ways, source, locale = 'en' }: { kind: PartnerKind; ways: PartnerWay[]; source: 'saved' | 'matches'; locale?: SiteLocale }) {
+export default function NextSteps({ kind, ways, source, locale = 'en' }: { kind: PartnerKind; ways: PartnerWay[]; source: 'saved' | 'matches' | 'practice'; locale?: SiteLocale }) {
   const t = translator(togetherStrings, locale)
   const way: PartnerWay = ways[0] ?? 'bike'
   const [copied, setCopied] = useState(false)
+  // Nobody near yet: a beginner group ride goes this week (/events?level=easy, no-drop rides with dates and meeting spots).
+  const rides = kind !== 'carpool' && ways.includes('bike')
   const invite = async () => {
     const url = 'https://www.gogreenstreets.org/together'
     try {
@@ -40,7 +42,10 @@ export default function NextSteps({ kind, ways, source, locale = 'en' }: { kind:
     <section aria-labelledby="together-meanwhile" className="grid grid-cols-1 gap-3">
       <h2 id="together-meanwhile" className="font-display text-[22px] font-extrabold">{t('next.title')}</h2>
       {kind === 'newcomer' && ways.includes('bike') ? <LessonCard locale={locale} /> : null}
-      <div className={kind === 'carpool' ? 'grid grid-cols-1 gap-3 sm:max-w-[320px]' : 'grid grid-cols-1 gap-3 sm:grid-cols-3'}>
+      <div className={kind === 'carpool' ? 'grid grid-cols-1 gap-3 sm:max-w-[320px]' : rides ? 'grid grid-cols-1 gap-3 sm:grid-cols-2' : 'grid grid-cols-1 gap-3 sm:grid-cols-3'}>
+        {rides ? (
+          <Tile Icon={Bike} title={t('next.rides')} sub={t('next.rides_sub')} href={withLang('/events?level=easy', locale)} onClick={() => track('together_easy_rides_opened', { kind, source })} />
+        ) : null}
         {kind !== 'carpool' ? (
           <Tile Icon={MapPinned} title={t('next.plan')} sub={t(PLAN_SUB[way])} href={withLang('/nearby?plan=1', locale)} onClick={() => track('together_plan_opened', { source })} />
         ) : null}

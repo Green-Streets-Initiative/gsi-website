@@ -29,9 +29,22 @@ export default function TogetherFrame({ locale, variant = 'together', children }
 
 export function togetherMetadata(locale: SiteLocale): Metadata {
   const t = translator(togetherStrings, locale)
+  // A shared link (the newsletter, texts, social) shows what this is and the Shift card, like /shift.
+  // No photo of people biking or at a T station is in /public yet; swap one in here when there is.
+  const share = `Shift Together: ${t('signin.title')}`
+  const image = { url: '/og/shift-og.png', width: 1200, height: 630, alt: 'Shift by Green Streets Initiative' }
   return {
     title: t('meta.title'),
     description: t('meta.description'),
+    openGraph: {
+      title: share,
+      description: t('meta.description'),
+      url: 'https://www.gogreenstreets.org/together',
+      siteName: 'Green Streets Initiative',
+      type: 'website',
+      images: [image],
+    },
+    twitter: { card: 'summary_large_image', title: share, description: t('meta.description'), images: [image.url] },
     // Not listed until Keith launches it (held 2026-10-27).
     robots: { index: false, follow: false },
   }

@@ -273,9 +273,34 @@ const LOGAN_STEPS: { title: LoganKey; hint: LoganKey; img: string; alt: LoganKey
   { title: 'logan.step3_title', hint: 'logan.step3_hint', img: '/images/logan/step-3.svg', alt: 'logan.step3_alt', chips: ['logan.chip_split', 'logan.chip_silver', 'logan.chip_one_car'] },
 ]
 
+const KIND_STORE = 'together_kind'
+const KINDS = ['newcomer', 'guide', 'carpool'] as const
+export type KindParam = (typeof KINDS)[number]
+
+/** Before the sign-in link goes out: keep ?kind= in this browser too, in case the email link drops it. */
+function rememberKind() {
+  const k = new URLSearchParams(window.location.search).get('kind')
+  try {
+    if (k && (KINDS as readonly string[]).includes(k)) localStorage.setItem(KIND_STORE, k)
+  } catch { /* private window: the link still carries it */ }
+}
+
+/** The choice the link asked for (?kind=guide | newcomer | carpool), else the one kept at sign-in. Read once. */
+export function takeKindParam(): KindParam | null {
+  let k = new URLSearchParams(window.location.search).get('kind')
+  try {
+    k = k ?? localStorage.getItem(KIND_STORE)
+    localStorage.removeItem(KIND_STORE)
+  } catch { /* storage blocked */ }
+  return k && (KINDS as readonly string[]).includes(k) ? (k as KindParam) : null
+}
+
 function SignIn() {
   const { notice, variant, locale, t } = useTogether()
   const logan = variant === 'logan'
+  // Arrived from a match email: just the sign-in, in the email's words.
+  const path = usePathname()
+  const forMatch = !logan && path.startsWith('/together/matches')
   const tl = translator(loganStrings, locale)
   const [email, setEmail] = useState('')
   const [sent, setSent] = useState<string | null>(null)
@@ -293,57 +318,80 @@ function SignIn() {
     }
     setBusy(true)
     setErr(null)
+    // Back to this same page with its ?lang, ?kind and campaign tags (the Thursday email's buttons carry &kind=).
+    rememberKind()
     const { error } = await supabase.auth.signInWithOtp({
       email: addr,
-      options: { emailRedirectTo: `${window.location.origin}${window.location.pathname}` },
+      options: { emailRedirectTo: `${window.location.origin}${window.location.pathname}${window.location.search}` },
     })
     setBusy(false)
     if (error) {
-      setErr(/rate|seconds/i.test(error.message) ? t('signin.rate') : t('signin.failed'))
+      // "only request this after N seconds" is this person; "email rate limit exceeded" is everyone at once.
+      setErr(/seconds/i.test(error.message) ? t('signin.rate') : /rate limit/i.test(error.message) ? t('signin.busy') : t('signin.failed'))
       return
     }
     setSent(addr)
     track('together_signin_link_sent')
   }
 
+  const card = (
+    <Card className={cx('shadow-(--ev-shadow)', !forMatch && 'md:col-start-2 md:row-span-2 md:row-start-1')}>
+      {sent ? (
+        <div>
+          <MailCheck className="h-8 w-8 text-(--ev-accent)" aria-hidden />
+          <h2 className="mt-3 font-display text-[22px] font-extrabold">{t('signin.inbox')}</h2>
+          <p className="mt-2 text-[16px] leading-relaxed text-(--ev-ink-85)">
+            {sentBefore}<strong>{sent}</strong>{sentAfter}
+          </p>
+          <p className="mt-2 text-[16px] leading-relaxed text-(--ev-ink-85)">{t('signin.look_for')}</p>
+          <button type="button" onClick={() => setSent(null)} className="mt-3 min-h-[44px] text-[15px] font-semibold text-(--ev-accent) underline">
+            {t('signin.other_email')}
+          </button>
+        </div>
+      ) : (
+        <form onSubmit={send} className="grid gap-4">
+          {/* Shift Together says what's free and what happens next in place of a heading; Logan keeps its heading. */}
+          {logan ? <h2 className="font-display text-[22px] font-extrabold">{t('signin.heading')}</h2> : null}
+          {logan || forMatch ? null : <p className="text-[17px] font-semibold leading-snug">{t('signin.form_lead')}</p>}
+          {notice ? <Notice tone="warn">{notice}</Notice> : null}
+          <Field label={t('signin.email')} htmlFor="together-email" error={err ?? undefined}>
+            <Input id="together-email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />
+          </Field>
+          <Button type="submit" variant="primary" busy={busy}>{t('signin.send')}</Button>
+          {logan || forMatch ? null : (
+            <p className="text-[15px] leading-snug text-(--ev-ink-80)">
+              {t('signin.expo')}
+            </p>
+          )}
+        </form>
+      )}
+    </Card>
+  )
+
+  if (forMatch) {
+    return (
+      <div className="mx-auto grid w-full max-w-md grid-cols-1 gap-6 pt-2 md:pt-6">
+        <div>
+          <h1 className="font-display text-[clamp(28px,4vw,36px)] font-extrabold leading-tight text-balance">{t('signin.match_title')}</h1>
+          <p className="mt-2 text-[17px] leading-snug text-(--ev-ink-85)">{t('signin.match_body')}</p>
+        </div>
+        {card}
+      </div>
+    )
+  }
+
   return (
     <div className="grid grid-cols-1 gap-8 pt-2 md:pt-6">
-      {/* Phone: heading, then the sign-in, then how it works. Wide: heading and ways left, sign-in right. */}
+      {/* Phone: what this is, then the sign-in, then how it works. Wide: heading and ways left, sign-in right. */}
       <div className="grid grid-cols-1 gap-6 md:grid-cols-[1.15fr_1fr] md:items-start md:gap-x-10">
         <div className="md:col-start-1 md:row-start-1">
           <p className="text-[15px] font-semibold text-(--ev-accent)">{logan ? tl('logan.eyebrow') : t('signin.eyebrow')}</p>
           <h1 className="mt-2 font-display text-[clamp(30px,4.2vw,44px)] font-extrabold leading-[1.05] text-balance">
             {logan ? tl('logan.signin_title') : t('signin.title')}
           </h1>
+          {logan ? null : <p className="mt-3 text-[clamp(18px,2vw,21px)] font-semibold leading-snug text-(--ev-ink-85)">{t('signin.lead')}</p>}
         </div>
-        <Card className="shadow-(--ev-shadow) md:col-start-2 md:row-span-2 md:row-start-1">
-          {sent ? (
-            <div>
-              <MailCheck className="h-8 w-8 text-(--ev-accent)" aria-hidden />
-              <h2 className="mt-3 font-display text-[22px] font-extrabold">{t('signin.inbox')}</h2>
-              <p className="mt-2 text-[16px] leading-relaxed text-(--ev-ink-85)">
-                {sentBefore}<strong>{sent}</strong>{sentAfter}
-              </p>
-              <button type="button" onClick={() => setSent(null)} className="mt-3 min-h-[44px] text-[15px] font-semibold text-(--ev-accent) underline">
-                {t('signin.other_email')}
-              </button>
-            </div>
-          ) : (
-            <form onSubmit={send} className="grid gap-4">
-              <h2 className="font-display text-[22px] font-extrabold">{t('signin.heading')}</h2>
-              {notice ? <Notice tone="warn">{notice}</Notice> : null}
-              <Field label={t('signin.email')} htmlFor="together-email" error={err ?? undefined}>
-                <Input id="together-email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />
-              </Field>
-              <Button type="submit" variant="primary" busy={busy}>{t('signin.send')}</Button>
-              {logan ? null : (
-                <p className="text-[15px] leading-snug text-(--ev-ink-80)">
-                  {t('signin.expo')}
-                </p>
-              )}
-            </form>
-          )}
-        </Card>
+        {card}
         <ul className="grid gap-2 md:col-start-1 md:row-start-2" aria-label={t('signin.ways_aria')}>
           {(logan ? LOGAN_POINTS.map((p) => ({ label: tl(p.label), Icon: p.Icon })) : WAYS_TO_GO.map((w) => ({ label: t(w.label), Icon: w.Icon }))).map(({ label, Icon }) => (
             <li key={label} className="flex items-center gap-3 text-[17px] font-semibold">

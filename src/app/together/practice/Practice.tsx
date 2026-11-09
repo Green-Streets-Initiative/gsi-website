@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { CheckCircle2, Home, Route } from 'lucide-react'
 import AddressAutocomplete from '@/components/AddressAutocomplete'
+import NextSteps from '@/components/together/NextSteps'
 import { Chip } from '@/components/together/bits'
 import { Journey, useTogether } from '@/components/together/TogetherShell'
 import { Badge, Button, Card, Field, Notice, Spinner, Textarea, cx } from '@/components/organizers/ui'
@@ -232,6 +233,11 @@ export default function Practice({ locale }: { locale: SiteLocale }) {
             <Link href={withLang('/together', locale)} className="inline-flex min-h-[44px] items-center rounded-[10px] px-4 text-[15px] font-semibold text-(--ev-ink-85) hover:bg-(--ev-panel)">{t('practice.back')}</Link>
           </div>
         </Card>
+      ) : null}
+
+      {/* Waiting for a guide: the lesson, an easy group ride this week, the route, an invite. */}
+      {hasHome && !showForm && existing && existing.status !== 'matched' && !(saved && saved.matches > 0) ? (
+        <NextSteps kind="newcomer" ways={['bike']} source="practice" locale={locale} />
       ) : null}
 
       {showForm ? (
