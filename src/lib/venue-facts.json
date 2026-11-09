@@ -1,7 +1,7 @@
 {
   "_comment": "The parts of the venue parking pages that go out of date: prices, rules, event trains and the day each venue was last confirmed. The weekly venue-parking-prices routine reads every `verify` source, confirms each line, and changes this file only through scripts/venues/facts.mjs. Everything else about a venue (garages, walk times, stations) is in src/lib/venues.ts. After 45 days without a confirm, a page says its prices may be out of date.",
   "td-garden": {
-    "checked": "2026-11-03",
+    "checked": "2026-11-09",
     "prices": [
       {
         "label": "Bought ahead",
@@ -37,7 +37,7 @@
     ]
   },
   "fenway-park": {
-    "checked": "2026-11-03",
+    "checked": "2026-11-09",
     "priceNote": "These are the 2026 season rates.",
     "othersNote": "Prices change by game. Cash lots on game days often ask $50 to $65.",
     "prices": [
@@ -75,7 +75,7 @@
     ]
   },
   "gillette-stadium": {
-    "checked": "2026-11-03",
+    "checked": "2026-11-09",
     "prices": [
       {
         "label": "Patriots, concerts and Revolution",
@@ -100,12 +100,6 @@
       "fare": "$20 round trip",
       "buy": "mTicket app only. Patriots tickets go on sale at 11 AM the Monday before the game.",
       "trips": [
-        {
-          "date": "2026-11-08",
-          "event": "Patriots vs. Packers",
-          "times": "South Station 1:55 and 2:20 PM · Providence 1:50 PM",
-          "onSale": "2026-11-02"
-        },
         {
           "date": "2026-12-06",
           "event": "Patriots vs. Bills",
