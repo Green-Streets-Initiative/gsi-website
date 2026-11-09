@@ -128,8 +128,8 @@ export const BIO_LINKS: BioLink[] = [
   },
   {
     slug: 'fenway',
-    label: 'Help finish the Fenway path: sign the petition',
-    sublabel: '1,000 feet would join the Fenway path to the Muddy River path',
+    label: "Sign the Fenway Missing Link Coalition's petition",
+    sublabel: 'Their ask: build the 1,000 feet joining the Fenway path to the Muddy River path',
     url: 'https://actionnetwork.org/petitions/complete-the-fenway-path-missing-link/',
     until: '2026-11-30T23:59:00-05:00',
   },
