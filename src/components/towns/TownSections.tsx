@@ -397,7 +397,15 @@ export function GetInvolved({
 
   const { candidates, civicDupIds } = buildFeaturedCandidates(civicEvents, resources, civicUrl, undefined, undefined, locale)
   const featured = candidates[0] ?? null
+  // Undated asks (a coalition's petition) sort after every dated meeting, so
+  // a busy town would never show one; the first open-ended item not already
+  // shown gets its own row (Fenway Missing Link petition, Keith 2026-11-09).
+  const isOpenEnded = (c: FeaturedItem) => !!c.civic && !c.civic.hearing_date && !c.civic.comment_deadline
   const upNext = candidates.slice(1, 3)
+  const ongoing = [featured, ...upNext].some((c) => c && isOpenEnded(c))
+    ? undefined
+    : candidates.slice(3).find(isOpenEnded)
+  if (ongoing) upNext.push(ongoing)
   const shownResourceIds = new Set(
     [featured, ...upNext].filter((c): c is FeaturedItem => Boolean(c && c.key.startsWith('res-'))).map((c) => c.key.slice(4)),
   )
@@ -450,7 +458,7 @@ export function GetInvolved({
         )
       })()}
 
-      {/* Also coming up — at most two rows. A closing window gets a
+      {/* Also coming up — at most two rows, plus one ongoing ask. A closing window gets a
           Deadline badge and a countdown so it can't fade behind the lead. */}
       {upNext.length > 0 && (
         <ul className="mb-4 border-t border-navy/15">
