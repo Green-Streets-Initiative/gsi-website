@@ -2253,7 +2253,7 @@ Shift will ask whether you went together and how it went. Only the Green Streets
 Shift will ask whether you went together and how it went. Only the Green Streets team sees your answer. Then make the same trip on your own within a week, while you still remember the route.$guidebody$,
     'multimodal',
     'safety',
-    'draft',
+    'approved',
     'micro_guide',
     ARRAY['guide_library']::text[],
     ARRAY['getting-started', 'safety', 'planning']::text[],

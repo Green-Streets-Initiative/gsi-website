@@ -1,10 +1,9 @@
 import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
 
-export const metadata: Metadata = {
-  // Not listed until Keith launches it (held 2026-10-27).
-  robots: { index: false, follow: false },
-}
+// Listed since the launch (Keith 2026-11-09). /together/matches stays
+// noindex in its own page: it's personal.
+export const metadata: Metadata = {}
 
 /**
  * Each page renders its own frame (TogetherFrame): the header, footer and

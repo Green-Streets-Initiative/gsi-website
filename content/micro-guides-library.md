@@ -1472,7 +1472,7 @@ summary: "Shift introduces people who want to start biking or taking the T to so
 slug: going-together-the-first-time
 mode: multimodal
 barrier: safety
-status: draft
+status: approved
 content_type: micro_guide
 surfaces: [guide_library]
 topics: [getting-started, safety, planning]

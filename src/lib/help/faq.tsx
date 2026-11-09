@@ -19,7 +19,7 @@ type HelpKey = keyof (typeof helpStrings)['en']
 const SECTIONS: [id: string, count: number][] = [
   ['getting-started', 5],
   ['trip-tracking', 9],
-  ['getting-around', 2],
+  ['getting-around', 3],
   ['points-rewards', 9],
   ['badges-streaks-tiers', 6],
   ['roams', 7],

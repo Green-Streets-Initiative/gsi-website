@@ -6,7 +6,8 @@ import Matches from './Matches'
 type Props = { searchParams: Promise<{ lang?: string | string[] }> }
 
 export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
-  return togetherMetadata(await siteLocale((await searchParams).lang))
+  // Someone's own matches: never in search.
+  return { ...togetherMetadata(await siteLocale((await searchParams).lang)), robots: { index: false, follow: false } }
 }
 
 /** gogreenstreets.org/together/matches in the page's language: ?lang= (the app sends it), else the browser's. */

@@ -46,7 +46,5 @@ export function togetherMetadata(locale: SiteLocale): Metadata {
       images: [image],
     },
     twitter: { card: 'summary_large_image', title: share, description: t('meta.description'), images: [image.url] },
-    // Not listed until Keith launches it (held 2026-10-27).
-    robots: { index: false, follow: false },
   }
 }
