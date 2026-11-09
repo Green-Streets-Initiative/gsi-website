@@ -746,7 +746,7 @@ Antes de firmar un contrato de alquiler, [pon la dirección en nuestro planifica
 
 - Te inscribes en la app de Shift o en gogreenstreets.org/together. Dices a dónde vas y si quieres ir en bici o tomar el T.
 - Shift busca a alguien que vive a menos de 2 millas de ti y que ya va en bici o toma el T a la misma zona. Por ejemplo, los dos van de Davis Square a Kendall.
-- Antes de que los dos digan que sí, cada uno ve solo un nombre de pila, qué tan cerca están sus rutas y a qué horas suelen ir. Nunca una dirección.
+- Antes de que los dos digan que sí, cada uno ve un nombre de pila, qué tan cerca están sus rutas y a qué horas suelen ir. Shift no comparte la dirección de ninguno de los dos.
 - Cuando los dos dicen que sí, Shift les da el correo electrónico del otro y les sugiere un lugar público para encontrarse.
 
 ### Antes de salir
@@ -804,7 +804,7 @@ Shift te va a preguntar si fueron juntos y cómo les fue. Solo el equipo de Gree
 
 - Te inscribes en la app de Shift o en gogreenstreets.org/together. Dices a dónde vas y si quieres ir en bici o tomar el T.
 - Shift busca a alguien que vive a menos de 2 millas de ti y que ya va en bici o toma el T a la misma zona. Por ejemplo, los dos van de Davis Square a Kendall.
-- Antes de que los dos digan que sí, cada uno ve solo un nombre de pila, qué tan cerca están sus rutas y a qué horas suelen ir. Nunca una dirección.
+- Antes de que los dos digan que sí, cada uno ve un nombre de pila, qué tan cerca están sus rutas y a qué horas suelen ir. Shift no comparte la dirección de ninguno de los dos.
 - Cuando los dos dicen que sí, Shift les da el correo electrónico del otro y les sugiere un lugar público para encontrarse.
 
 ### Antes de salir
@@ -2781,7 +2781,7 @@ Antes de assinar um contrato de aluguel, [coloque o endereço no nosso planejado
 
 - Você se inscreve no app do Shift ou em gogreenstreets.org/together. Diz aonde você vai e se quer ir de bicicleta ou pegar o T.
 - O Shift procura alguém que mora a menos de 2 milhas de você e que já vai de bicicleta ou de T para a mesma parte da cidade. Por exemplo, vocês dois vão da Davis Square para Kendall.
-- Antes de os dois dizerem sim, cada um vê só um primeiro nome, o quanto os trajetos são próximos e os horários de costume. Nunca um endereço.
+- Antes de os dois dizerem sim, cada um vê um primeiro nome, o quanto os trajetos são próximos e os horários de costume. O Shift não compartilha o endereço de nenhum dos dois.
 - Quando os dois dizem sim, o Shift passa o e-mail de um para o outro e sugere um lugar público para se encontrarem.
 
 ### Antes de sair
@@ -2839,7 +2839,7 @@ O Shift vai perguntar se vocês foram juntos e como foi. Só a equipe da Green S
 
 - Você se inscreve no app do Shift ou em gogreenstreets.org/together. Diz aonde você vai e se quer ir de bicicleta ou pegar o T.
 - O Shift procura alguém que mora a menos de 2 milhas de você e que já vai de bicicleta ou de T para a mesma parte da cidade. Por exemplo, vocês dois vão da Davis Square para Kendall.
-- Antes de os dois dizerem sim, cada um vê só um primeiro nome, o quanto os trajetos são próximos e os horários de costume. Nunca um endereço.
+- Antes de os dois dizerem sim, cada um vê um primeiro nome, o quanto os trajetos são próximos e os horários de costume. O Shift não compartilha o endereço de nenhum dos dois.
 - Quando os dois dizem sim, o Shift passa o e-mail de um para o outro e sugere um lugar público para se encontrarem.
 
 ### Antes de sair
@@ -4816,7 +4816,7 @@ Zipcar 这样的汽车共享服务，在全市各处的停车场按小时出租�
 
 - 你在 Shift 应用里或在 gogreenstreets.org/together 报名。告诉我们你去哪里，以及你想骑自行车还是坐 T。
 - Shift 会找一个住在你 2 英里以内、已经骑自行车或坐 T 去同一片地方的人。比如，你们都从 Davis Square 去 Kendall。
-- 在你们两人都同意之前，你们只能看到对方的名字、路线有多接近、通常几点出发。绝不会显示地址。
+- 在你们两人都同意之前，你们只能看到对方的名字、路线有多接近、通常几点出发。Shift 不会透露任何一方的地址。
 - 你们两人都同意后，Shift 会把对方的电子邮件地址发给你们，并建议一个公共场所见面。
 
 ### 出发前
@@ -4874,7 +4874,7 @@ Shift 会问你们有没有一起去、感觉怎么样。只有 Green Streets �
 
 - 你在 Shift 应用里或在 gogreenstreets.org/together 报名。告诉我们你去哪里，以及你想骑自行车还是坐 T。
 - Shift 会找一个住在你 2 英里以内、已经骑自行车或坐 T 去同一片地方的人。比如，你们都从 Davis Square 去 Kendall。
-- 在你们两人都同意之前，你们只能看到对方的名字、路线有多接近、通常几点出发。绝不会显示地址。
+- 在你们两人都同意之前，你们只能看到对方的名字、路线有多接近、通常几点出发。Shift 不会透露任何一方的地址。
 - 你们两人都同意后，Shift 会把对方的电子邮件地址发给你们，并建议一个公共场所见面。
 
 ### 出发前

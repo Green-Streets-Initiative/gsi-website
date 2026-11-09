@@ -26,7 +26,7 @@ related: [mg_low_stress_routes, mg_first_bike_lane, mg_pay_for_t]
 
 - 你在 Shift 应用里或在 gogreenstreets.org/together 报名。告诉我们你去哪里，以及你想骑自行车还是坐 T。
 - Shift 会找一个住在你 2 英里以内、已经骑自行车或坐 T 去同一片地方的人。比如，你们都从 Davis Square 去 Kendall。
-- 在你们两人都同意之前，你们只能看到对方的名字、路线有多接近、通常几点出发。绝不会显示地址。
+- 在你们两人都同意之前，你们只能看到对方的名字、路线有多接近、通常几点出发。Shift 不会透露任何一方的地址。
 - 你们两人都同意后，Shift 会把对方的电子邮件地址发给你们，并建议一个公共场所见面。
 
 ### 出发前

@@ -1489,7 +1489,7 @@ related: [mg_low_stress_routes, mg_first_bike_lane, mg_pay_for_t]
 
 - You sign up in the Shift app or at gogreenstreets.org/together. You say where you go, and whether you want to bike or take the T.
 - Shift looks for someone who lives within 2 miles of you and already bikes or takes the T to the same part of town. For example, you both go from Davis Square to Kendall.
-- Before you both say yes, you each see only a first name, how close your routes are and the times you usually go. Never an address.
+- Before you both say yes, you each see a first name, how close your routes are and the times you usually go. Shift doesn't share either person's address.
 - When you both say yes, Shift gives you each other's email address and suggests a public place to meet.
 
 ### Before you go

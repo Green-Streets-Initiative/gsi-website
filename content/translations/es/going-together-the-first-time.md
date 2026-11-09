@@ -26,7 +26,7 @@ related: [mg_low_stress_routes, mg_first_bike_lane, mg_pay_for_t]
 
 - Te inscribes en la app de Shift o en gogreenstreets.org/together. Dices a dónde vas y si quieres ir en bici o tomar el T.
 - Shift busca a alguien que vive a menos de 2 millas de ti y que ya va en bici o toma el T a la misma zona. Por ejemplo, los dos van de Davis Square a Kendall.
-- Antes de que los dos digan que sí, cada uno ve solo un nombre de pila, qué tan cerca están sus rutas y a qué horas suelen ir. Nunca una dirección.
+- Antes de que los dos digan que sí, cada uno ve un nombre de pila, qué tan cerca están sus rutas y a qué horas suelen ir. Shift no comparte la dirección de ninguno de los dos.
 - Cuando los dos dicen que sí, Shift les da el correo electrónico del otro y les sugiere un lugar público para encontrarse.
 
 ### Antes de salir
