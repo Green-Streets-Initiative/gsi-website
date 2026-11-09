@@ -608,7 +608,14 @@ export async function getTownCivicEvents(townName: string): Promise<TownCivicEve
     .select('id, title, description, hearing_date, hearing_time, hearing_end_time, hearing_type, hearing_location_name, virtual_link, source_url, comment_deadline, comment_email, action_label, municipality, affected_towns, access_notes, digest_headline, community_name, whats_deciding, community_links, digest_can_trigger, lat, lng')
     .eq('status', 'published')
     .or(`municipality.eq.${townName},affected_towns.cs.{${townName}}`)
+    // Live rows only, in the query: a town's past meetings stay published, and
+    // reading the 20 oldest then filtering left Brookline (22 rows, 17 past)
+    // without its open-ended items, the Fenway petition among them (2026-11-09).
+    .or(`hearing_date.gte.${todayStr},and(hearing_date.is.null,comment_deadline.is.null),and(hearing_date.is.null,comment_deadline.gte.${todayStr})`)
     .order('hearing_date', { ascending: true, nullsFirst: false })
+    // Among open-ended items, the newest published leads (the town page keeps
+    // this order for items that tie on date).
+    .order('published_at', { ascending: false })
     .limit(20)
   // Upcoming only: a dated meeting must be today-or-later; a comment period
   // must have a live deadline — or none at all (open-ended surveys stay live).
