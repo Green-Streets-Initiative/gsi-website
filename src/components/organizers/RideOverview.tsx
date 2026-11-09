@@ -16,13 +16,13 @@ import { SkipDatesDialog } from './SkipDates'
 import { StopRideDialog, resume } from './StopRide'
 import { Badge, Button, Card, Empty, Notice, SectionTitle, Tabs, Toast, copyText, cx, tabPanel } from './ui'
 
-function ShareCard({ code, fresh, rideId }: { code: string; fresh: boolean; rideId: string }) {
+function ShareCard({ code, fresh, rideId, walk = false }: { code: string; fresh: boolean; rideId: string; walk?: boolean }) {
   const url = ridePageUrl(code)
   const [copied, setCopied] = useState(false)
   return (
     <Card className={cx(fresh && 'border-(--ev-accent-line) ring-1 ring-(--ev-accent-line-30)')}>
       <SectionTitle hint="Anyone can answer Going there, with or without the app.">
-        {fresh ? 'Your ride is set up. Share its page' : 'Share the ride'}
+        {fresh ? `Your ${walk ? 'walk' : 'ride'} is set up. Share its page` : `Share the ${walk ? 'walk' : 'ride'}`}
       </SectionTitle>
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
         <code className="min-w-0 flex-1 truncate rounded-[10px] border border-(--ev-line-mid) bg-(--ev-panel-faint) px-3 py-2.5 text-[14px] text-(--ev-ink)">{url}</code>
@@ -196,16 +196,17 @@ export default function RideOverview() {
     <div className="grid grid-cols-[minmax(0,1fr)] gap-5">
       {msg && <Toast tone={msg.tone} onClose={closeMsg}>{msg.text}</Toast>}
 
-      {(params.get('created') || detail.updates.length === 0) && !ended && <ShareCard code={r.invite_code} fresh={!!params.get('created')} rideId={r.id} />}
+      {(params.get('created') || detail.updates.length === 0) && !ended && <ShareCard code={r.invite_code} fresh={!!params.get('created')} rideId={r.id} walk={r.activity === 'walk'} />}
 
       {nextDate && !ended && (
         <Card>
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <p className="text-[15px] font-semibold text-(--ev-ink-75)">{rideTime ? 'Today' : 'Next ride'}</p>
+              <p className="text-[15px] font-semibold text-(--ev-ink-75)">{rideTime ? 'Today' : r.activity === 'walk' ? 'Next walk' : 'Next ride'}</p>
               <p className="font-display text-[26px] font-extrabold leading-tight">{rideTime ? clock(nextDate.start_time) : `${dateLabel(nextDate.date)} · ${clock(nextDate.start_time)}`}</p>
+              {nextDate.time_moved && <p className="text-[14px] font-semibold text-(--ev-ink-75)">Time changed for this date</p>}
               {nextDate.title && <p className="mt-0.5 text-[17px] font-bold text-(--ev-ink)">{nextDate.title}</p>}
-              <p className="mt-0.5 text-[15px] text-(--ev-ink-80)">{nextDate.meetup_name ?? r.meetup_name}{nextDate.time_moved || nextDate.place_moved ? ' (changed for this date)' : ''}</p>
+              <p className="mt-0.5 text-[15px] text-(--ev-ink-80)">{nextDate.meetup_name ?? r.meetup_name}{nextDate.place_moved ? ' (changed for this date)' : ''}</p>
               <span className="mt-2 inline-block"><RouteChip d={nextDate} usualMiles={r.route_miles} hasUsual={hasUsual} /></span>
               {nextForecast && <p className="mt-0.5 text-[15px] text-(--ev-ink-80)">Forecast: {nextForecast}</p>}
               {nextDate.confirmed && <span className="mt-2 inline-block"><Badge tone="good">It&rsquo;s on</Badge></span>}
@@ -225,7 +226,7 @@ export default function RideOverview() {
           <div className="mt-4 flex flex-wrap gap-2">
             {detail.can_edit && (
               <Link href={`/organizers/rides/${r.id}/dates/${nextDate.id}`} className="inline-flex min-h-[44px] items-center gap-1.5 rounded-[10px] border border-(--ev-line-strong) bg-white px-4 text-[15px] font-semibold text-(--ev-ink) hover:bg-(--ev-panel)">
-                <RouteIcon className="h-4 w-4" aria-hidden />Plan this ride
+                <RouteIcon className="h-4 w-4" aria-hidden />{r.activity === 'walk' ? 'Plan this walk' : 'Plan this ride'}
               </Link>
             )}
             <Button variant="primary" onClick={() => setPosting(true)}>Post an update</Button>

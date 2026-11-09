@@ -622,7 +622,7 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
       <Link href={ride ? `/organizers/rides/${ride.id}` : '/organizers'} className="mb-3 inline-flex items-center gap-1.5 text-[14px] font-semibold text-(--ev-ink-80) hover:text-(--ev-ink)">
         <ArrowLeft className="h-4 w-4" aria-hidden />{ride ? ride.name : 'Your rides'}
       </Link>
-      <h1 className="font-display text-[clamp(28px,3.6vw,38px)] font-extrabold leading-tight">{ride ? (walk ? 'Edit walk' : 'Edit ride') : first ? 'Make your first ride' : walk ? 'New walk' : 'New ride'}</h1>
+      <h1 className="font-display text-[clamp(28px,3.6vw,38px)] font-extrabold leading-tight">{ride ? (walk ? 'Edit walk' : 'Edit ride') : first ? (walk ? 'Make your first walk' : 'Make your first ride') : walk ? 'New walk' : 'New ride'}</h1>
       <p className="mt-1 max-w-2xl text-[15px] leading-snug text-(--ev-ink-80)">
         {ride
           ? 'Changes show on the ride page and in the app right away. To change one date only, open that date from Dates & updates.'
@@ -682,7 +682,7 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
                   ? 'An easy loop along the river with a coffee stop halfway. Comfortable shoes, and a layer after October.'
                   : 'An easy loop along the river with a coffee stop halfway. Bring lights after October.'} />
             </Field>
-            <Field label="Flyer" optional hint="Shows on your ride page and in the app.">
+            <Field label="Flyer" optional hint={walk ? 'Shows on your walk page and in the app.' : 'Shows on your ride page and in the app.'}>
               {f.flyer_url ? (
                 <div className="flex items-start gap-3">
                   {/* eslint-disable-next-line @next/next/no-img-element */}

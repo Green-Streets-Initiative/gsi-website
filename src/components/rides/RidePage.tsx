@@ -403,7 +403,7 @@ export default function RidePage({ ride, host = null, hostPerson = null, ascentF
                where to meet and Going / Maybe / Can't go are the first
                screen; the right column on desktop ---- */}
           <aside className="lg:col-start-2 lg:row-start-1">
-            <div className="rounded-2xl border border-(--ev-line-mid) bg-(--ev-card) p-5 shadow-(--ev-shadow) lg:sticky lg:top-24">
+            <div className="rounded-2xl border border-(--ev-line-mid) bg-(--ev-card) p-5 shadow-(--ev-shadow) lg:sticky lg:top-24 lg:max-h-[calc(100dvh-7rem)] lg:overflow-y-auto lg:overscroll-contain">
               {ride.occurrences.length === 0 ? (
                 <div>
                   <p className="text-[16px] font-bold text-(--ev-ink)">

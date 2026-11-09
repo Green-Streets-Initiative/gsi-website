@@ -158,16 +158,16 @@ function SignIn() {
       <div className={cx(linkToken && 'order-2 md:order-none')}>
         <p className="text-[15px] font-semibold text-(--ev-accent)">{linkToken ? 'You\u2019re invited' : 'Shift for ride organizers'}</p>
         <h1 className="mt-2 font-display text-[clamp(30px,4.2vw,44px)] font-extrabold leading-[1.05] text-(--ev-ink)">
-          Plan and run your group&rsquo;s rides
+          Plan and run your group&rsquo;s rides and walks
         </h1>
         <ul className="mt-5 space-y-2.5 text-[16px] leading-snug text-(--ev-ink-85)">
-          <li>Set up a one-off ride or a whole season, with a route drawn on the map or brought in from Ride with GPS.</li>
+          <li>Set up a one-off ride or walk, or a whole season, with a route planned on comfortable streets or brought in from Ride with GPS or a GPX file.</li>
           <li>See who&rsquo;s coming to each date, from the app and from your ride page.</li>
           <li>Post &ldquo;It&rsquo;s on&rdquo; or &ldquo;Running late&rdquo; once, and everyone hears it.</li>
           <li>Pull monthly turnout for your funders.</li>
         </ul>
         <p className="mt-5 text-[14px] leading-snug text-(--ev-ink-75)">
-          Same account and same rides as the Shift app: a ride you set up here shows up on your phone.
+          Same account as the Shift app: a ride or walk you set up here shows up on your phone.
         </p>
       </div>
 

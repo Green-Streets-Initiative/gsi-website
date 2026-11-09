@@ -134,7 +134,7 @@ export function rideFacts(ride: PublicRide, miles: number | null, ascentFt: numb
 
   const w = walk ? 'walk' : 'ride'
   const policies = [
-    ride.no_drop === true ? { Icon: HandHeart, title: t('pol.nodrop'), line: t('pol.nodrop_line') } : ride.no_drop === false ? { Icon: UsersThree, title: t('pol.drop'), line: t('pol.drop_line') } : null,
+    ride.no_drop === true ? { Icon: HandHeart, title: t('pol.nodrop'), line: t('pol.nodrop_line') } : ride.no_drop === false && !walk ? { Icon: UsersThree, title: t('pol.drop'), line: t('pol.drop_line') } : null,
     // A ride the level calls Rec isn't beginner friendly whatever its tag
     // says (a "beginner road ride" is beginner at the sport): the same guard
     // the calendar sync applies (Shift sync-community-events, Keith 2026-09-14).

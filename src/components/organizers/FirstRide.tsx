@@ -43,8 +43,16 @@ export default function FirstRide() {
   }
   if (!start) return <Spinner label="Finding your rides on the calendar" />
 
-  const first = (start.link_name ?? '').trim().split(/\s+/)[0] || me?.first_name
   const host = start.organizer?.name
+  // The account's own first name first. The link's name is whatever Keith
+  // typed in Organizer Links, which for a shared inbox is the group's name
+  // ("Welcome, Boston"), so it's used only when it isn't the group.
+  const linkName = (start.link_name ?? '').trim()
+  const linkIsGroup = !!host && !!linkName && (host.toLowerCase().includes(linkName.toLowerCase()) || linkName.toLowerCase().includes(host.toLowerCase()))
+  const first = me?.first_name || (linkName && !linkIsGroup ? linkName.split(/\s+/)[0] : '')
+  // A walking group's listings are walks: say walk, not ride.
+  const walks = start.listings.filter((l) => l.activity === 'walk').length
+  const thing = walks === 0 ? 'ride' : walks === start.listings.length ? 'walk' : 'ride or walk'
   const use = (l: CalendarListing) => {
     keepPrefill(prefillFrom(l, start.organizer))
     router.push('/organizers/rides/new?from=calendar')
@@ -53,11 +61,11 @@ export default function FirstRide() {
   return (
     <div className="mx-auto max-w-[720px]">
       <p className="text-[15px] font-semibold text-(--ev-accent)">{first ? `Welcome, ${first}` : 'Welcome'}</p>
-      <h1 className="mt-1 font-display text-[clamp(28px,3.6vw,38px)] font-extrabold leading-tight">Make your first ride</h1>
+      <h1 className="mt-1 font-display text-[clamp(28px,3.6vw,38px)] font-extrabold leading-tight">Make your first {thing}</h1>
       <p className="mt-2 text-[16px] leading-snug text-(--ev-ink-85)">
         {start.listings.length === 1
-          ? 'Here\u2019s your ride on the GSI calendar. Use it and we\u2019ll fill in the details for you to check.'
-          : 'Pick one of your rides on the GSI calendar and we\u2019ll fill in the details for you to check.'}
+          ? `Here\u2019s your ${thing} on the GSI calendar. Use it and we\u2019ll fill in the details for you to check.`
+          : `Pick one of your ${thing === 'ride or walk' ? 'rides or walks' : `${thing}s`} on the GSI calendar and we\u2019ll fill in the details for you to check.`}
       </p>
 
       {host && <p className="mt-6 text-[14px] font-semibold text-(--ev-ink-75)">Listed under {host}</p>}
@@ -77,7 +85,7 @@ export default function FirstRide() {
                 </span>
               </span>
               <span className="inline-flex shrink-0 items-center gap-1 text-[15px] font-semibold text-(--ev-accent-90)">
-                <span className="hidden sm:inline">Use this ride</span>
+                <span className="hidden sm:inline">{l.activity === 'walk' ? 'Use this walk' : 'Use this ride'}</span>
                 <ArrowRight className="h-5 w-5 transition group-hover:translate-x-0.5" aria-hidden />
               </span>
             </button>
@@ -93,7 +101,7 @@ export default function FirstRide() {
       </p>
 
       <p className="mt-8 border-t border-(--ev-line) pt-4 text-[14px] leading-snug text-(--ev-ink-75)">
-        Saving gives your ride a page to share, and nobody needs the app to say they&rsquo;re coming.
+        Saving gives your {thing} a page to share, and nobody needs the app to say they&rsquo;re coming.
       </p>
     </div>
   )

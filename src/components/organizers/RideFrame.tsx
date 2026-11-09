@@ -68,6 +68,7 @@ export default function RideFrame({ id, children }: { id: string; children: Reac
   if (!detail) return <Spinner label="Loading the ride" />
 
   const r = detail.ride
+  const thing = r.activity === 'walk' ? 'walk' : 'ride'
   const base = `/organizers/rides/${id}`
   const tabs = [
     { href: base, label: 'Dates & updates', short: 'Dates' },
@@ -75,7 +76,7 @@ export default function RideFrame({ id, children }: { id: string; children: Reac
     { href: `${base}/promote`, label: 'Promote', short: 'Promote' },
     { href: `${base}/turnout`, label: 'Turnout', short: 'Turnout' },
     { href: `${base}/team`, label: 'Leaders', short: 'Leaders' },
-    ...(detail.can_edit ? [{ href: `${base}/edit`, label: 'Edit ride', short: 'Edit' }] : []),
+    ...(detail.can_edit ? [{ href: `${base}/edit`, label: `Edit ${thing}`, short: 'Edit' }] : []),
   ]
   // Edit ride and Plan a date are full-page forms with their own heading.
   const editing = path === `${base}/edit` || path.startsWith(`${base}/dates/`)
@@ -102,12 +103,12 @@ export default function RideFrame({ id, children }: { id: string; children: Reac
               {assistant && (
                 <button type="button" onClick={() => openAssistant('What needs doing next on this ride?')}
                   className="inline-flex min-h-[40px] items-center gap-1.5 rounded-[10px] border border-(--ev-line-strong) bg-white px-3.5 text-[14px] font-semibold text-(--ev-ink) hover:bg-(--ev-panel)">
-                  <MessageSquareText className="h-4 w-4" aria-hidden />Ask about this ride
+                  <MessageSquareText className="h-4 w-4" aria-hidden />Ask about this {thing}
                 </button>
               )}
               <a href={ridePageUrl(r.invite_code)} target="_blank" rel="noopener noreferrer"
                 className="inline-flex min-h-[40px] items-center gap-1.5 rounded-[10px] border border-(--ev-line-strong) bg-white px-3.5 text-[14px] font-semibold text-(--ev-ink) hover:bg-(--ev-panel)">
-                Ride page<ExternalLink className="h-4 w-4" aria-hidden />
+                {thing === 'walk' ? 'Walk page' : 'Ride page'}<ExternalLink className="h-4 w-4" aria-hidden />
               </a>
             </div>
           </div>
