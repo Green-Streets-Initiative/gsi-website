@@ -466,8 +466,9 @@ const BASE: Record<string, VenueBase> = {
       ],
       note: 'Both docks are by Airport station, minutes from the free Massport shuttle to every terminal.',
     },
-    // Massport's ride-app page (massport.com/logan-airport/getting-to-logan/ride-apps-uber-lyft, 2026-11-08).
-    rideshare: 'Uber and Lyft pick up in the Central Parking Garage. Follow the signs from your terminal; the app shows where to meet your driver.',
+    // Massport's ride-app page (massport.com/logan-airport/getting-to-logan/ride-apps-uber-lyft,
+    // 2026-11-09: Terminal B moved to Level 2 of the Terminal B Parking Garage).
+    rideshare: 'Uber and Lyft pick up and drop off in the Central Parking Garage for Terminals A, C and E, and on Level 2 of the Terminal B Garage for Terminal B. Follow the signs; the app shows where to meet your driver.',
   },
 }
 

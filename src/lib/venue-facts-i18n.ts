@@ -837,10 +837,10 @@ export const VENUE_TEXT: Record<string, Record<string, VenueText>> = {
       'zh-Hans': '两个站点都在 Airport 站旁边，几分钟就能到前往各航站楼的免费 Massport 接驳车。',
     },
     'rideshare': {
-      en: 'Uber and Lyft pick up in the Central Parking Garage. Follow the signs from your terminal; the app shows where to meet your driver.',
-      es: 'Uber y Lyft recogen en el Central Parking Garage. Sigue las señales desde tu terminal; la app te muestra dónde encontrar a tu conductor.',
-      'pt-BR': 'Uber e Lyft embarcam no Central Parking Garage. Siga as placas a partir do seu terminal; o app mostra onde encontrar seu motorista.',
-      'zh-Hans': 'Uber 和 Lyft 在 Central Parking Garage 接客。从航站楼跟着指示牌走，App 会告诉你在哪里与司机碰面。',
+      en: 'Uber and Lyft pick up and drop off in the Central Parking Garage for Terminals A, C and E, and on Level 2 of the Terminal B Garage for Terminal B. Follow the signs; the app shows where to meet your driver.',
+      es: 'Uber y Lyft recogen y dejan pasajeros en el Central Parking Garage para las terminales A, C y E, y en el nivel 2 del Terminal B Garage para la terminal B. Sigue las señales; la app te muestra dónde encontrar a tu conductor.',
+      'pt-BR': 'Uber e Lyft embarcam e desembarcam passageiros no Central Parking Garage para os terminais A, C e E, e no nível 2 do Terminal B Garage para o terminal B. Siga as placas; o app mostra onde encontrar seu motorista.',
+      'zh-Hans': 'Uber 和 Lyft 在 Central Parking Garage 为 A、C、E 航站楼接送乘客，B 航站楼则在 Terminal B Garage 的 2 层。跟着指示牌走，App 会告诉你在哪里与司机碰面。',
     },
     'airport.buses.title': {
       en: 'Logan Express buses',

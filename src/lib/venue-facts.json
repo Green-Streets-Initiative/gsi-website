@@ -303,7 +303,7 @@
       {
         "url": "https://www.massport.com/logan-airport/getting-to-logan/ride-apps-uber-lyft",
         "confirm": [
-          "Ride apps pick up in the Central Parking Garage (the rideshare line in src/lib/venues.ts)"
+          "Ride apps pick up and drop off in the Central Parking Garage for Terminals A, C and E, and on Level 2 (Departures) of the Terminal B Parking Garage for Terminal B (the rideshare line in src/lib/venues.ts)"
         ]
       }
     ]
