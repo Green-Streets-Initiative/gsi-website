@@ -61,6 +61,11 @@ site.
 - Run `/polish` on every screen you touch (see below); its "Visual, not
   text" section is the checklist. Before finishing, grep the diff for
   `text-\[1[0-3](\.5)?px\]` and justify or fix every hit.
+- **Pictures that tell, made by people** (Keith 2026-11-08): every page
+  shows the places and things it names (credited real photos, maps from real
+  routes, charts of real numbers, people), varies its layouts, and avoids the
+  templated AI look. Plan the pictures in the first sketch and run `/enrich`
+  (`~/.claude/skills/enrich`); `/polish` runs it as step 4d.
 
 ## Positioning: Shift is about shifting (HARD RULE)
 
