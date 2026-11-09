@@ -1126,6 +1126,41 @@
       "month_end_math": "8.86% on 1,163 impr after 6 days; well above 5%. Venue Parking kill rule (account MTD < 6.5%) not triggered.",
       "alerts": [],
       "emailed": false
+    },
+    {
+      "date": "2026-11-09",
+      "source": "scheduled quick check (ad-grants-pulse), ~10:10 ET, live account via authuser=walkrideday%40gmail.com (resolved to 5; the task's authuser=9 opens another Google account per the 11-03 note). This month = Nov 1-9.",
+      "mtd": {
+        "window": "2026-11-01..2026-11-09",
+        "impressions": 2009,
+        "clicks": 162,
+        "ctr_pct": 8.06,
+        "cost": 619.93,
+        "conversions": 19
+      },
+      "by_campaign": {
+        "How-to Guides": { "impressions": 1463, "clicks": 136, "ctr_pct": 9.35, "conversions": 18 },
+        "Venue Parking": { "impressions": 438, "clicks": 21, "ctr_pct": 4.81, "conversions": 1, "note": "now 'Eligible (Limited) Limited by search volume'. Under 5% at campaign level, but started 11-04 (5 days, inside the 14-day rule) and the kill rule is per ad group after 300 impr; left to the Wed 11-11 paid desk. Account MTD 8.06% stays above its 6.5% campaign kill line." },
+        "Town Walking & Biking": { "impressions": 110, "clicks": 5, "ctr_pct": 4.59 },
+        "Shift App — Massachusetts": { "impressions": 7, "clicks": 0 },
+        "GSI — Brand": { "impressions": 2, "clicks": 0 },
+        "Shift Your Semester — Students": { "impressions": 0, "clicks": 0 },
+        "New Routes — Movers": { "impressions": 0, "clicks": 0, "note": "Paused 11-04 as approved" }
+      },
+      "campaign_status": "How-to Guides, Venue Parking and Brand Eligible (Limited) Limited by search volume; New Routes Paused (expected); others Eligible. Account budget $365.00/day.",
+      "banners": "Only the known 'Apply for healthcare certification' and 'Protect your account' notices plus a 'Prioritize your highest-value channels' tip and the broad-match recommendation card (not applied). Nothing serving-related.",
+      "ads": {
+        "total": 48,
+        "disapproved_seen": 0,
+        "limited_by_policy": 0,
+        "not_eligible": "4, all New Routes — Movers ads (campaign paused 11-04; expected)",
+        "strength": "28 Average, 12 Good, 1 Excellent, 7 Poor",
+        "poor": "7: the 6 known plus 'Paying for the MBTA | New to the T?' (How-to Guides / Paying for the T), newly rated Poor (was Good after the 10-05 rewrite); it is the top ad at 74 clicks / 802 impr (9.23%) this month, so no action; the Wednesday review can judge."
+      },
+      "search_terms": "Top ~30 by impressions read. All How-to Guides / Paying for the T fare and transit lookups (boston public transportation 6/33, the t boston 2/14, boston transit 0/13, charliecard 4/13 + 2/9, charlie card 0/12, mbta monthly pass 2/12, mbta passes 1/11) plus Venue Parking (gillette stadium parking 1/22, fenway park parking 1/10, td garden parking 0/5, gillette stadium parking map 0/5), Town 'bradford rail trail' 1/10, and 'green line closure' 0/5 in How-to Guides (T closures, on target). Zero-click rows are on target; nothing off-target. No negatives proposed.",
+      "month_end_math": "8.06% on 2,009 impr after 9 days; well above 5%.",
+      "alerts": [],
+      "emailed": false
     }
   ],
   "snapshots": [
