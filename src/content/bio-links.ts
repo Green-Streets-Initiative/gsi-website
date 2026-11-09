@@ -136,9 +136,9 @@ export const BIO_LINKS: BioLink[] = [
   {
     slug: 'remember',
     label: 'World Day of Remembrance gatherings near you',
-    sublabel: 'Boston, Holyoke, Pittsfield, Worcester and New Bedford, Nov 10 to 15',
+    sublabel: 'Boston, Holyoke, Pittsfield, Worcester, New Bedford and Brockton, Nov 10 to 16',
     url: 'https://www.gogreenstreets.org/events?utm_source=social&utm_medium=instagram&utm_campaign=wdor',
-    until: '2026-11-15T15:00:00-05:00',
+    until: '2026-11-16T16:00:00-05:00',
   },
   {
     slug: 'tourdestreets',
