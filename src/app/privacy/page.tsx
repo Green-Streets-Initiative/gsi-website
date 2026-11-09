@@ -319,35 +319,64 @@ export default function PrivacyPage() {
 
             <Section title="Finding Someone to Go With">
               <P>
-                If you sign up to go with someone who knows the way, to show someone the way, to
-                find someone to walk with, or to find a carpool partner, we use your saved Home and
-                Work (or the trip you tell us about), the times you give us and your recent trips
-                between those places to suggest people who make a similar trip. We use your Home
-                only to find people near you: we never show your address to anyone. We only do
-                this after you sign up, and you can stop at any time.
+                You can sign up to find someone to bike or take the bus or train with the first
+                time, to offer to go with someone the first time they bike or take the bus or train,
+                to find someone to walk with, or to find a carpool partner. When you do, we use your
+                saved Home, your saved Work or School (or the place you tell us about), the days and
+                times you give us, and your recent trips between those places to suggest another
+                member. We use your Home only to measure how far you live from other members. We
+                never show your address to anyone, except as described below for a carpool pickup.
+                We only do this after you sign up, and you can stop at any time.
+              </P>
+              <P>Before you both say yes, the other person sees:</P>
+              <Ul>
+                <li>your first name, and your profile photo if your profile is public;</li>
+                <li>
+                  about how many miles apart your homes are, and how many miles apart your
+                  destinations are;
+                </li>
+                <li>
+                  how you get around (bike, bus or train, scooter, or walking) and which one you use
+                  most;
+                </li>
+                <li>your usual days and times, and the languages you said you speak;</li>
+                <li>when you joined Shift, and your Shift status;</li>
+                <li>any workplace, school or neighborhood group you both belong to.</li>
+              </Ul>
+              <P>
+                If you signed up to find someone to go with you, the person who offered to go with
+                you also sees how long your trip is and the towns it starts and ends in. If you
+                offered to go with someone, they also see how many trips you made by bike, bus,
+                train or scooter in the last 60 days. For a carpool, they see whether you&apos;d
+                drive or ride along, when you get to work, and how many extra minutes picking up and
+                dropping off would add to the drive.
               </P>
               <P>
-                Before you both say yes, the other person sees your first name, how far apart your
-                trips start and end, the ways you get around and the one you use most, your usual
-                days and times, the languages you said you speak, when you joined Shift, your Shift
-                status, and any workplace, school or neighborhood group you both belong to. If your profile is public, they also see
-                your profile photo. If you offered to show the way, they see how many trips you
-                made that way recently. For a carpool, they see whether you&apos;d drive or ride
-                along, when you get to work, and how many extra minutes picking up and dropping
-                off would add to the drive. They never see your address. Only if you both say yes
-                do you each see the other&apos;s email and, if you belong to a workplace in Shift,
-                its name.
+                Only if you both say yes do you each see the other&apos;s email, last initial, and,
+                if you belong to a workplace in Shift, its name. You can also choose to add a phone
+                number to one match so the other person can text you. We delete it when the match
+                ends.
               </P>
               <P>
-                When you plan a first trip with someone who is showing you the way, Shift suggests
-                public places to meet and to finish, like the nearest T station, so neither of you
-                has to share a home or work address.
+                The other person never sees your home address, with one exception: in a carpool, if
+                you are the rider and you offer your home as the pickup spot, the driver sees it
+                once you both confirm the pickup plan.
               </P>
               <P>
-                To help people find each other, Shift may tell someone nearby who makes a similar
-                trip how many people near them asked to be shown the way, or offered to show it.
-                That message is a number only: it never includes your name, photo or where you
-                live.
+                When you plan a first trip with the person who offered to go with you, Shift
+                suggests public places to meet and to finish, like the nearest T station, so
+                neither of you has to share a home or work address. For a walk, either of you can
+                pick a public place to meet. If you choose, you can share your live location with
+                the other person around the meeting time (from 15 minutes before a first trip until
+                30 minutes after, or around a carpool pickup) so you can find each other. You see
+                their location only if you share yours, and sharing stops on its own soon after you
+                meet. To record whether you went together, Shift compares your recorded trip with
+                theirs.
+              </P>
+              <P>
+                To help people find each other, Shift may tell a member nearby how many people near
+                them signed up to find someone to go with, or offered to go with someone. That
+                message is a number only: it never includes your name, photo or where you live.
               </P>
               <P>
                 Your feedback after a trip and any problem you report go only to the Green Streets

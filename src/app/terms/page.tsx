@@ -377,25 +377,49 @@ export default function TermsPage() {
             </Section>
 
             <Section title="Meeting Other People Through Shift">
+              <P>Shift can introduce you to another Shift member in these ways:</P>
+              <Ul>
+                <li>
+                  If you want to start biking, riding a scooter, or taking the bus or train, Shift
+                  can suggest a member who lives within 2 miles of you and has offered to go with
+                  someone the first time. In these Terms, that member is &ldquo;the person who
+                  offered to go with you.&rdquo; The two of you make one trip together, or one easy
+                  practice bike ride near your home.
+                </li>
+                <li>
+                  If you already bike or take the bus or train, you can offer to go with a member
+                  who lives near you the first time they make a trip that way.
+                </li>
+                <li>Shift can suggest a member who lives near you to walk with.</li>
+                <li>
+                  Shift can suggest a member who lives near you and works near your work to share
+                  the drive to work (a carpool).
+                </li>
+                <li>
+                  Shift can suggest a member going to or coming home from Logan Airport around the
+                  same time as you.
+                </li>
+              </Ul>
               <P>
-                Shift can suggest other people who make a trip like yours: someone who already bikes
-                or takes transit on that trip and can show you the way, someone who would like you
-                to show them, someone near you to walk with, or someone who lives near you and works
-                near your work and could share the drive, or someone going to or coming home from
-                Logan Airport around the same time as you. You only see each other&apos;s email if
-                you both say yes.
+                Before you both say yes, neither of you sees the other&apos;s address or email. You
+                each see the other&apos;s email only if you both say yes.
               </P>
               <P>
-                If you share a taxi or ride-app car, one of you books it and the others pay that
-                person back for their share. GSI does not book rides, set or collect fares, or
-                handle any payment between you.
+                In a carpool, the driver uses their own car, and the driver&apos;s own car insurance
+                applies. GSI does not provide insurance. If you share costs, share only the cost of
+                gas for that trip. If you share a taxi or ride-app car, one of you books it and the
+                others pay that person back for their share. GSI does not book rides, set or collect
+                fares, or handle any payment between you.
               </P>
               <P>
-                These features are for people 18 and older. GSI introduces people; it does not
-                check, screen, train, supervise, or employ anyone you meet through Shift, and people
-                who offer to show the way are not GSI staff, volunteers, or agents. Any trip you
-                take with someone you meet through Shift is arranged by the two of you, and you
-                take it on your own and at your own risk.
+                These features are for people 18 and older. GSI introduces people. GSI does not
+                check, screen, train, supervise, or employ anyone you meet through Shift, and GSI
+                is not there when you meet. The person who offered to go with you is a member like
+                you. They are not GSI staff, volunteers, or agents. You and the other person each
+                decide whether to meet, and when and where. Any trip you take with someone you meet
+                through Shift is arranged by the two of you, and you take it on your own and at
+                your own risk. You are responsible for your own safety and for your own bike, car,
+                and other equipment.
               </P>
               <P>
                 To the fullest extent permitted by law, you release GSI from any claim arising from
@@ -403,10 +427,12 @@ export default function TermsPage() {
                 conduct of any user, on or off Shift.
               </P>
               <P>
-                Meet somewhere public the first time, and tell someone where you are going. If
-                something goes wrong, use &ldquo;Something wrong?&rdquo; in Your matches to end the
-                match or report it, or write to info@gogreenstreets.org. GSI may pause or remove
-                anyone from these features at any time. If you are in danger, call 911.
+                Meet in a public place the first time, such as a T station, and tell
+                someone where you are going. If something goes wrong, use &ldquo;Something
+                wrong?&rdquo; in Your matches to end the match or report it, or write to
+                info@gogreenstreets.org. A report (other than one saying the person did not show
+                up) pauses all of that person&apos;s matches until GSI reviews it. GSI may pause or
+                remove anyone from these features at any time. If you are in danger, call 911.
               </P>
             </Section>
 

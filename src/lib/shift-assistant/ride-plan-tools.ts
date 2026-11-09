@@ -106,7 +106,7 @@ export const RIDE_PLAN_ACTIVITY: Record<string, string> = {
 export const RIDE_PLAN_TOOLS: Anthropic.Tool[] = [
   {
     name: 'get_my_go_together',
-    description: "This person's Go together sign-ups and matches (the program is Shift Together; the app's Profile row and screen say Go together). Sign-ups: kind (newcomer = go with someone who knows the way, guide = show someone the way, carpool, practice = an easy practice bike ride near home, walk = someone to walk with), the ways, days and times, and whether it's still looking. Matches: match_id, kind, where it stands (proposed = waiting for answers, with whether each of them said yes; connected = both said yes; went_together; dropped = ended), the other person's first name, and for a carpool who drives and the detour. Use it for \"did I get a match?\" or \"what's next with my match?\", then get_ride_plan (guide, practice or walk matches) or get_my_carpool_pickup (carpool) with the match_id.",
+    description: "This person's Go together sign-ups and matches (the program is Shift Together; the app's Profile row and screen say Go together). Sign-ups: kind (newcomer = find someone to bike or take the T with the first time, guide = go with someone the first time they bike or take the T, carpool, practice = an easy practice bike ride near home, walk = someone to walk with), the ways, days and times, and whether it's still looking. Matches: match_id, kind, where it stands (proposed = waiting for answers, with whether each of them said yes; connected = both said yes; went_together; dropped = ended), the other person's first name, and for a carpool who drives and the detour. Use it for \"did I get a match?\" or \"what's next with my match?\", then get_ride_plan (guide, practice or walk matches) or get_my_carpool_pickup (carpool) with the match_id.",
     input_schema: { type: 'object', properties: {} },
   },
   {
@@ -116,7 +116,7 @@ export const RIDE_PLAN_TOOLS: Anthropic.Tool[] = [
   },
   {
     name: 'get_ride_plan',
-    description: "A Shift Together first trip plan (by bike, on foot or by transit), as this person sees it: the way, whether they are the guide or the learner, both first names, how the learner gets around now and what they want help with, the meeting spot and end spot (public places, never anyone's home or work), the route's length or the transit trip's lines, the spots shown on the way (in order, with the guide's notes), the day and time, any new time one of them asked for, and where it stands (learner_shared = the guide plans next; planned = waiting on the learner's OK; confirmed; ridden).",
+    description: "A Shift Together first trip plan (by bike, on foot or by transit), as this person sees it: bike, on foot or transit, whether they are the guide or the learner, both first names, how the learner gets around now and what they want help with, the meeting spot and end spot (public places, never anyone's home or work), the route's length or the transit trip's lines, the spots shown on the way (in order, with the guide's notes), the day and time, any new time one of them asked for, and where it stands (learner_shared = the guide plans next; planned = waiting on the learner's OK; confirmed; ridden).",
     input_schema: { type: 'object', properties: { match_id: { type: 'string' } }, required: ['match_id'] },
   },
   {
@@ -614,7 +614,7 @@ export async function ridePlanCard(ctx: Ctx, name: string, input: Record<string,
       lines: [
         `${when}`,
         `${places.meet.label} to ${places.end.label}, ${r1(built.miles)} miles`,
-        `${shown.length} spots shown on the way`,
+        `${shown.length} stops marked along the route`,
         `Nothing goes to ${v.learner_name} yet: you check it on the plan, then send it.`,
       ],
       cta: 'Put it on the plan',
