@@ -190,7 +190,7 @@ export async function sendInfoNotice(
       : notice.kind === 'company_exists'
         ? `<p>${s(signup.email)} confirmed their email for ${s(signup.company)}, but that looks like <b>${s(notice.company.name)}</b>, ${describe(notice.company)}, matched by ${notice.by === 'domain' ? 'email domain' : 'company name'}. No new team was made. They were told we'll be in touch within one business day: add them to ${s(notice.company.name)}, or set them up separately if it's a different company.</p>
            <p><a href="${ADMIN}/${notice.company.groupId}">Open ${s(notice.company.name)} in the admin dashboard</a></p>`
-        : `<p>${s(signup.email)} confirmed their email, but they already manage <b>${s(notice.company.name)}</b> (${describe(notice.company)}) in the portal, so no new team was made. They were sent to sign in and pick November's statewide challenge from their Challenges page.</p>
+        : `<p>${s(signup.email)} confirmed their email, but they already manage <b>${s(notice.company.name)}</b> (${describe(notice.company)}) in the portal, so no new team was made. They were sent to sign in and pick ${TEAM_CHALLENGE.label.monthName}'s statewide challenge from their Challenges page.</p>
            <p><a href="${ADMIN}/${notice.company.groupId}">Open ${s(notice.company.name)} in the admin dashboard</a></p>`
   const html = `${lead}
     <p><b>Name:</b> ${s(signup.name || '(not given)')}<br/><b>Email:</b> ${s(signup.email)}<br/><b>Company:</b> ${s(signup.company)}<br/><b>Website:</b> ${s(signup.website || '(not given)')}<br/><b>About how many people:</b> ${signup.headcount}</p>
