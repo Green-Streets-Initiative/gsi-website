@@ -8,13 +8,19 @@
  * - Only what is live for everyone. Nothing behind a switch that's off, held
  *   for a launch, or on for a test group (check the product ledger,
  *   Shift docs/programs/product/state.json, and the launch ledger).
- * - Plain words: a `short` name for the list (two or three words), a title that says what a person can now do, and one
- *   sentence (about 25 words at most). Never "earn"; lead with trying
- *   something new, never "the way you already move".
- * - A picture that shows it: an app screenshot (`app`, saved 600px wide under
- *   public/images/whats-new), a screenshot of the web page (`web`), a real
- *   credited photo of the place it names (`photo`), or a `sign` / `languages`
- *   drawing when the fact itself is the picture. No stock photos.
+ * - Lead with what people get, in plain words: the title is the thing a
+ *   person can now do or have ("A free bike lesson near Somerville"), not the
+ *   feature's name. One sentence under it (about 25 words at most). `short`
+ *   is two or three words for the page's list. Never "earn"; lead with
+ *   trying something new, never "the way you already move".
+ * - The page doesn't show dates (Keith 2026-11-10: "I don't think anybody
+ *   cares about the date features were released on"); `date` only keeps the
+ *   list honest about order.
+ * - A real picture of what it names: a credited photo of the place, vehicle
+ *   or people (`photo`; Wikimedia Commons or our own, saved ~1200px wide
+ *   under public/images/whats-new), an app screenshot when the screen itself
+ *   is the news (`app`, 600px wide), or a `sign` / `languages` drawing when
+ *   the fact itself is the picture. No posed stock photos.
  * - `link` goes to the feature's own page; app-only features go to /shift.
  *
  * The /shift page shows the newest entry's title as its "What's new" line.
@@ -22,14 +28,13 @@
 
 export type ShiftUpdatePicture =
   | { kind: 'app'; src: string; width: number; height: number; alt: string }
-  | { kind: 'web'; src: string; width: number; height: number; alt: string; address: string }
   | { kind: 'photo'; src: string; width: number; height: number; alt: string; credit: string; creditUrl: string }
   | { kind: 'sign'; name: string; detail: string; place: string }
   | { kind: 'languages'; lines: { lang: string; text: string }[] }
 
 export type ShiftUpdate = {
   id: string
-  /** The day it reached everyone, YYYY-MM-DD (Eastern). */
+  /** The day it reached everyone, YYYY-MM-DD (Eastern). Not shown; keeps the order honest. */
   date: string
   where: 'app' | 'web' | 'both'
   /** Two or three words for the page's list of updates. */
@@ -45,7 +50,7 @@ export type ShiftUpdate = {
 export const SHIFT_UPDATES: ShiftUpdate[] = [
   {
     id: 'shift-together',
-    short: 'Shift Together',
+    short: 'Someone to go with',
     date: '2026-11-09',
     where: 'both',
     title: 'Try it the first time with someone who knows the way',
@@ -66,11 +71,11 @@ export const SHIFT_UPDATES: ShiftUpdate[] = [
   },
   {
     id: 'around-you-v2',
-    short: 'Around You',
+    short: 'Next bus, train and bike',
     date: '2026-11-09',
     where: 'both',
-    title: 'Around You: tap "Where to?" and go',
-    body: 'Live departures, Bluebikes and the places you go open first. Type where you\'re going for a bike or transit route, and skip any street you don\'t like.',
+    title: 'Your next bus, train and bike, and the way anywhere',
+    body: 'Open Shift and the next departures and Bluebikes near you come first. Type where you\'re going for a bike or transit route, and skip any street you don\'t like.',
     link: { href: '/nearby', label: 'Try it on the web' },
     picture: {
       kind: 'app',
@@ -82,11 +87,11 @@ export const SHIFT_UPDATES: ShiftUpdate[] = [
   },
   {
     id: 'site-languages',
-    short: 'Pages in four languages',
+    short: 'In your language',
     date: '2026-11-08',
     where: 'web',
-    title: 'Our Shift pages in Spanish, Portuguese and Chinese',
-    body: 'Town pages, trails, Roams, bike lessons, parking and help now read in your language, like the app does.',
+    title: 'Read our pages in Spanish, Portuguese or Chinese',
+    body: 'Town pages, trails, Roams, bike lessons, parking and help, in your language, like the app.',
     link: { href: '/shift/towns?lang=es', label: 'See the town pages in Spanish' },
     picture: {
       kind: 'languages',
@@ -107,31 +112,37 @@ export const SHIFT_UPDATES: ShiftUpdate[] = [
     title: 'A free 1:1 bike lesson near Somerville',
     body: 'Nervous in traffic? An instructor from the Bicycle Riding School rides real streets with you for 90 minutes. Green Streets covers the cost.',
     link: { href: '/bike-lessons#street-lesson', label: 'Ask for a lesson' },
+    // "Older woman with flowers protected bike lane boston" (a parking-protected
+    // lane in Cambridge, per its description), Adam Coppola, CC0.
     picture: {
-      kind: 'web',
-      src: '/images/whats-new/bike-lessons.jpg',
-      width: 600,
-      height: 1116,
-      address: 'gogreenstreets.org/bike-lessons',
-      alt: 'The bike lessons page: "Where are you starting?" with a free 1:1 lesson for people who can ride but find traffic nervous',
+      kind: 'photo',
+      src: '/images/whats-new/cambridge-protected-lane.jpg',
+      width: 1200,
+      height: 720,
+      alt: 'A woman with flowers in her bike basket rides a parking-protected bike lane in Cambridge',
+      credit: 'Photo: Adam Coppola / Wikimedia Commons, CC0',
+      creditUrl: 'https://commons.wikimedia.org/wiki/File:Older_woman_with_flowers_protected_bike_lane_boston.jpg',
     },
     personas: ['first-timer'],
   },
   {
     id: 'thursday-events-email',
-    short: 'Thursday events email',
+    short: 'Rides and walks by email',
     date: '2026-11-04',
     where: 'both',
-    title: 'The week\'s rides and walks, every Thursday',
-    body: 'Pick the kinds of events and how far you\'ll go. Each Thursday we email what\'s coming up that matches. One tap in the app\'s Events tab.',
+    title: 'This week\'s group rides and walks, every Thursday',
+    body: 'Pick the kinds of events and how far you\'ll go, and each Thursday we email what\'s coming up near you. One tap in the app\'s Events tab.',
     link: { href: '/events', label: 'Get the Thursday email' },
+    // Unsplash, mood only (not a named place): "people riding bicycle on road
+    // during daytime", Leo_Visions.
     picture: {
-      kind: 'web',
-      src: '/images/whats-new/thursday-email.jpg',
-      width: 600,
-      height: 572,
-      address: 'gogreenstreets.org/events',
-      alt: 'The events calendar\'s "Get these by email" box with an "Email me every Thursday" button, above a group ride listing',
+      kind: 'photo',
+      src: '/images/whats-new/group-ride.jpg',
+      width: 1200,
+      height: 800,
+      alt: 'A group of people riding bikes together down a city street',
+      credit: 'Photo by Leo_Visions on Unsplash',
+      creditUrl: 'https://unsplash.com/photos/people-riding-bicycle-on-road-during-daytime-O7EOZ-yd8qk',
     },
   },
   {
@@ -139,16 +150,18 @@ export const SHIFT_UPDATES: ShiftUpdate[] = [
     short: 'Trail pages',
     date: '2026-11-04',
     where: 'web',
-    title: 'A page for each trail',
-    body: 'Is it open? How long is it, what\'s underfoot, where do you get on, and which train gets you there and home?',
+    title: 'Know a trail before you go',
+    body: 'Is it open, how long is it, what\'s underfoot, where do you get on, and which train gets you there and home.',
     link: { href: '/trails', label: 'See the trails' },
+    // "Minuteman Bikeway - Arlington, MA - 01", Daderot, public domain; cropped.
     picture: {
-      kind: 'web',
-      src: '/images/whats-new/trail-page.jpg',
-      width: 600,
-      height: 1168,
-      address: 'gogreenstreets.org/trails',
-      alt: 'The Minuteman Bikeway page: 10 miles, paved, 7 places to get on, open with no closures, and a photo of the path',
+      kind: 'photo',
+      src: '/images/whats-new/minuteman-bikeway.jpg',
+      width: 1000,
+      height: 667,
+      alt: 'A rider on the Minuteman Bikeway in Arlington, under green trees',
+      credit: 'Photo: Daderot / Wikimedia Commons, public domain (cropped)',
+      creditUrl: 'https://commons.wikimedia.org/wiki/File:Minuteman_Bikeway_-_Arlington,_MA_-_01.jpg',
     },
   },
   {
@@ -177,18 +190,18 @@ export const SHIFT_UPDATES: ShiftUpdate[] = [
     short: 'New lanes near you',
     date: '2026-11-01',
     where: 'both',
-    title: 'New lanes and paths near you',
-    body: 'Town pages and group ride pages list the bike lanes and paths opened in the last six months, and street projects with a hearing coming up.',
+    title: 'See the bike lanes and paths that just opened near you',
+    body: 'Town pages and group ride pages list what opened in the last six months, and street projects with a hearing coming up.',
     link: { href: '/shift/towns/malden-ma#new', label: 'See what\'s new in Malden' },
     picture: { kind: 'sign', name: 'Malden River Greenway', detail: 'Opened Oct 2026 · 0.3 mi', place: 'New in Malden' },
   },
   {
     id: 'saved-trips',
-    short: 'Saved trips',
+    short: 'Your trips, one tap away',
     date: '2026-10-29',
     where: 'app',
-    title: 'Save a trip you make often',
-    body: 'Plan it once and tap "Save this trip." Next time it\'s one tap from Home, by foot, bike or transit.',
+    title: 'Your regular trips, one tap away',
+    body: 'Plan a trip once and tap "Save this trip." Next time it\'s on Home, on foot, by bike or by transit.',
     link: { href: '/shift', label: 'Get Shift' },
     picture: {
       kind: 'app',
@@ -200,12 +213,12 @@ export const SHIFT_UPDATES: ShiftUpdate[] = [
   },
   {
     id: 'northern-strand-roam',
-    short: 'Northern Strand Roam',
+    short: 'Northern Strand ride',
     date: '2026-10-22',
     where: 'both',
-    title: 'A new Roam on the Northern Strand Trail',
-    body: 'A self-guided bike ride on the old rail line from Everett to Lynn, across the Rumney Marsh. Suggested by Samantha LeBlanc.',
-    link: { href: '/shift/roams/northern-strand-trail', label: 'See the Roam' },
+    title: 'A new self-guided ride on the Northern Strand Trail',
+    body: 'Ride the old rail line from Everett to Lynn, across the Rumney Marsh, with stops along the way. Suggested by Samantha LeBlanc.',
+    link: { href: '/shift/roams/northern-strand-trail', label: 'See the ride' },
     // The Roam's own hero (roams.hero_image_url), cropped from
     // "Northern Strand trail and MassDOT hopper cars ... July 2026", 4300streetcar, CC BY 4.0.
     picture: {
@@ -220,40 +233,37 @@ export const SHIFT_UPDATES: ShiftUpdate[] = [
   },
   {
     id: 'closure-heads-up',
-    short: 'T closure heads-up',
+    short: 'T closure plans',
     date: '2026-10-19',
     where: 'app',
-    title: 'A heads-up before the T closes your line',
-    body: 'A day or two before a planned MBTA closure, people who ride that line get a note with their usual trip planned around it.',
+    title: 'A plan for your usual trip when the T closes your line',
+    body: 'A day or two before a planned MBTA closure, people who ride that line get their usual trip planned around it: which shuttle, then which train.',
     link: { href: '/shift', label: 'Get Shift' },
+    // "MBTA D branch shuttle bus at Reservoir September 2026", 4300streetcar, CC BY 4.0.
     picture: {
-      kind: 'app',
-      src: '/images/whats-new/closure-plan.jpg',
-      width: 600,
-      height: 1116,
-      alt: 'Shift\'s plan for a usual trip during a Green Line closure: a shuttle bus, then the Orange Line, step by step',
+      kind: 'photo',
+      src: '/images/whats-new/shuttle-bus-reservoir.jpg',
+      width: 1200,
+      height: 800,
+      alt: 'Riders board a Green Line shuttle bus to Kenmore at Reservoir at night',
+      credit: 'Photo: 4300streetcar / Wikimedia Commons, CC BY 4.0',
+      creditUrl: 'https://commons.wikimedia.org/wiki/File:MBTA_D_branch_shuttle_bus_at_Reservoir_September_2026.jpg',
     },
   },
   {
     id: 'commute-advisor',
-    short: 'Commute Advisor',
+    short: 'Compare your commute',
     date: '2026-10-15',
     where: 'both',
-    title: 'The Commute Advisor, rebuilt',
-    body: 'Put in your commute and see each way to go: when to leave, the route on a map, and what it costs next to driving.',
+    title: 'Every way to get to work, side by side',
+    body: 'Put in your commute and see when to leave, the route on a map, and what each way costs next to driving.',
     link: { href: '/commute-advisor', label: 'Try your commute' },
     picture: {
-      kind: 'web',
+      kind: 'app',
       src: '/images/whats-new/commute-advisor.jpg',
       width: 600,
       height: 1116,
-      address: 'gogreenstreets.org/commute-advisor',
       alt: 'The Commute Advisor: a bike route from Medford to Kendall Square on a map, with "Leave by 8:23 AM on a bike"',
     },
   },
 ]
-
-/** "2026-11-09" -> a Date at noon UTC, so the Eastern day never shifts. */
-export function updateDay(date: string): Date {
-  return new Date(`${date}T12:00:00Z`)
-}

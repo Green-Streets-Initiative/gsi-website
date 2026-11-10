@@ -6,13 +6,13 @@ import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
 import PhotoCredit from '@/components/PhotoCredit'
 import StoreBadges from '@/components/StoreBadges'
-import { SHIFT_UPDATES, updateDay, type ShiftUpdate, type ShiftUpdatePicture } from '@/lib/shift-updates'
+import { SHIFT_UPDATES, type ShiftUpdate, type ShiftUpdatePicture } from '@/lib/shift-updates'
 
 /*
  * gogreenstreets.org/shift/whats-new: every Shift update people can use
- * today, newest first, each with its date, a picture and the way to try it
- * (Keith 2026-11-10: the GSI newsletter leads with programs and events and
- * points here for the app news). The list is src/lib/shift-updates.ts; add
+ * today, newest first, each with a picture and the way to try it (no dates:
+ * Keith 2026-11-10, nobody cares when it shipped). The GSI newsletter leads
+ * with programs and events and points here for the app news. The list is src/lib/shift-updates.ts; add
  * each release's entry at its top. English only for now, like the newsletter.
  *
  * Serves every Shift persona (docs/programs/personas.md), the newsletter
@@ -54,25 +54,8 @@ export const metadata: Metadata = {
 
 const WHERE: Record<ShiftUpdate['where'], string> = {
   app: 'In the app',
-  web: 'On gogreenstreets.org',
-  both: 'In the app and on the web',
-}
-
-const dayLabel = (date: string) =>
-  updateDay(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })
-const monthLabel = (date: string) =>
-  updateDay(date).toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' })
-
-/** Updates grouped by month, newest month first, keeping the list's order. */
-function byMonth(updates: ShiftUpdate[]): { month: string; items: { u: ShiftUpdate; index: number }[] }[] {
-  const groups: { month: string; items: { u: ShiftUpdate; index: number }[] }[] = []
-  updates.forEach((u, index) => {
-    const month = monthLabel(u.date)
-    const last = groups[groups.length - 1]
-    if (last?.month === month) last.items.push({ u, index })
-    else groups.push({ month, items: [{ u, index }] })
-  })
-  return groups
+  web: 'On the web',
+  both: 'App and web',
 }
 
 /** A phone screenshot from the app, cut at a phone-ish height so long screens don't run on. */
@@ -81,18 +64,6 @@ function AppShot({ p, priority }: { p: Extract<ShiftUpdatePicture, { kind: 'app'
     <div className="mx-auto w-[228px] rounded-[32px] bg-navy p-[7px] shadow-[0_28px_60px_-30px_rgba(25,26,46,0.65)]">
       <div className="relative max-h-[420px] overflow-hidden rounded-[26px] bg-navy">
         <Image src={p.src} alt={p.alt} width={p.width} height={p.height} priority={priority} sizes="214px" className="block w-full" />
-      </div>
-    </div>
-  )
-}
-
-/** A screenshot of one of our web pages, under the address it lives at. */
-function WebShot({ p }: { p: Extract<ShiftUpdatePicture, { kind: 'web' }> }) {
-  return (
-    <div className="mx-auto w-full max-w-[280px] overflow-hidden rounded-[18px] border border-navy/15 bg-white shadow-[0_24px_50px_-30px_rgba(25,26,46,0.55)]">
-      <p className="truncate border-b border-navy/10 bg-[#EEF1EA] px-4 py-2 text-[13px] text-navy/80">{p.address}</p>
-      <div className="max-h-[400px] overflow-hidden">
-        <Image src={p.src} alt={p.alt} width={p.width} height={p.height} sizes="280px" className="block w-full" />
       </div>
     </div>
   )
@@ -154,8 +125,6 @@ function Picture({ p, priority, big }: { p: ShiftUpdatePicture; priority?: boole
   switch (p.kind) {
     case 'app':
       return <AppShot p={p} priority={priority} />
-    case 'web':
-      return <WebShot p={p} />
     case 'photo':
       return <Photo p={p} priority={priority} big={big} />
     case 'sign':
@@ -168,9 +137,7 @@ function Picture({ p, priority, big }: { p: ShiftUpdatePicture; priority?: boole
 function Words({ u, lead }: { u: ShiftUpdate; lead?: boolean }) {
   return (
     <div>
-      <p className="text-[15px] text-navy/80">
-        <time dateTime={u.date} className="font-bold text-navy">{dayLabel(u.date)}</time> · {WHERE[u.where]}
-      </p>
+      <p className="inline-flex rounded-full bg-forest/10 px-3 py-1 text-[14px] font-bold text-forest">{WHERE[u.where]}</p>
       <h3
         className={
           lead
@@ -222,8 +189,7 @@ function Contents() {
     <ol className="flex flex-col">
       {SHIFT_UPDATES.map((u) => (
         <li key={u.id} className="border-b border-navy/10 last:border-b-0">
-          <a href={`#${u.id}`} className="flex min-h-[44px] items-baseline gap-3 py-2 text-[15px] leading-snug text-navy hover:text-forest">
-            <time dateTime={u.date} className="w-[52px] shrink-0 font-bold text-forest">{dayLabel(u.date)}</time>
+          <a href={`#${u.id}`} className="flex min-h-[44px] items-center py-2 text-[15px] leading-snug text-navy hover:text-forest">
             <span>{u.short}</span>
           </a>
         </li>
@@ -233,7 +199,6 @@ function Contents() {
 }
 
 export default function WhatsNewPage() {
-  const months = byMonth(SHIFT_UPDATES)
   return (
     <div className="street min-h-screen bg-cream text-navy" style={{ fontFamily: GSI_FONT }}>
       <Nav variant="light" street />
@@ -245,8 +210,8 @@ export default function WhatsNewPage() {
               {TITLE}
             </h1>
             <p className="mt-5 max-w-[600px] text-[1.0625rem] leading-[1.55] text-white md:text-[1.1875rem]">
-              Find better ways to get around. Get rewarded when you try them. Here&apos;s what&apos;s new in the app
-              and on our site, newest first.
+              Find better ways to get around. Get rewarded when you try them. Here&apos;s what you can do with
+              Shift now, newest first.
             </p>
           </div>
           <details className="mt-4 rounded-[16px] bg-white px-5 py-1 ring-1 ring-navy/10 lg:hidden">
@@ -268,18 +233,9 @@ export default function WhatsNewPage() {
             <Contents />
           </div>
         </nav>
-        <div className="flex min-w-0 flex-col gap-14">
-          {months.map((m, mi) => (
-            <section key={m.month} aria-labelledby={`m-${mi}`}>
-              <h2 id={`m-${mi}`} className="font-headline text-[1.5rem] font-extrabold text-forest">
-                {m.month}
-              </h2>
-              <div className="mt-6 flex flex-col divide-y divide-navy/10 [&>*:not(:first-child)]:pt-10 [&>*:not(:last-child)]:pb-10 lg:[&>*:not(:first-child)]:pt-12 lg:[&>*:not(:last-child)]:pb-12">
-                {m.items.map(({ u, index }) => (
-                  <Entry key={u.id} u={u} index={index} />
-                ))}
-              </div>
-            </section>
+        <div className="flex min-w-0 flex-col divide-y divide-navy/10 [&>*:not(:first-child)]:pt-10 [&>*:not(:last-child)]:pb-10 lg:[&>*:not(:first-child)]:pt-12 lg:[&>*:not(:last-child)]:pb-12">
+          {SHIFT_UPDATES.map((u, index) => (
+            <Entry key={u.id} u={u} index={index} />
           ))}
         </div>
       </div>
