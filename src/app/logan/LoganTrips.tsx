@@ -547,18 +547,25 @@ function TripCard({ trip, onChange, onEdit }: { trip: LoganTrip; onChange: () =>
 }
 
 /**
- * The meeting spot the server sends (English, 01518 airport_back_meet) in the
+ * The meeting spot the server sends (English, 01734 airport_back_spot) in the
  * page's language; any other spot as sent. In Chinese, a spot that starts or
  * ends in Latin letters gets a space there, so it doesn't run into the hanzi.
  */
 function placeText(raw: string, t: T<LoganKey>, locale: SiteLocale): string {
   const sl = /^the Silver Line stop at Terminal ([A-Z])$/.exec(raw)
+  const taxi = taxiTerminal(raw)
   const p = raw === 'the ride app pickup in the Central Parking garage' ? t('logan.place_rideapp')
     : raw === 'the same Silver Line bus into town' ? t('logan.place_same_bus')
       : sl ? t('logan.place_sl_stop', { terminal: sl[1] })
-        : raw
+        : taxi ? t('logan.place_taxi', { terminal: taxi })
+          : raw
   if (locale !== 'zh-Hans') return p
   return `${/^[A-Za-z0-9]/.test(p) ? ' ' : ''}${p}${/[A-Za-z0-9]$/.test(p) ? ' ' : ''}`
+}
+
+/** The terminal when two people sharing a car home meet at its taxi stand (01734), else null. */
+function taxiTerminal(place: string | null | undefined): string | null {
+  return place ? /^the taxi stand on the Terminal ([A-Z]) Arrivals level$/.exec(place)?.[1] ?? null : null
 }
 
 /** "1 hr 5 min" in the page's language. */
@@ -599,7 +606,7 @@ function planLine(trip: LoganTrip, m: LoganMatch, t: T<LoganKey>, locale: SiteLo
   }
   const how = out
     ? (m.way === 'split' ? t('logan.how_out_split') : t('logan.how_out_t'))
-    : (m.way === 'split' ? t('logan.how_back_split') : t('logan.how_back_t'))
+    : (m.way === 'split' ? t(taxiTerminal(m.meet_place) ? 'logan.how_back_taxi' : 'logan.how_back_split') : t('logan.how_back_t'))
   if (out) return t('logan.plan_out', { station: m.meet_station, time, how })
   const place = m.meet_place == null ? m.meet_place : placeText(m.meet_place, t, locale)
   if (m.way === 'transit' && m.meet_place?.startsWith('the same')) return t('logan.plan_same_bus', { place, time })
@@ -667,6 +674,7 @@ function Plan({ trip, m, onChange }: { trip: LoganTrip; m: LoganMatch; onChange:
   const [saved, setSaved] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const busBoard = trip.kind === 'airport_back' && m.way === 'transit' && m.meet_place?.startsWith('the same')
+  const taxiStand = trip.kind === 'airport_back' ? taxiTerminal(m.meet_place) : null
   const gone = m.delay_state === 'go_ahead'
   const mineWatched = !!trip.flight
   const theirsWatched = !!m.other.watched
@@ -734,7 +742,12 @@ function Plan({ trip, m, onChange }: { trip: LoganTrip; m: LoganMatch; onChange:
             <a href="https://www.massport.com/logan-airport/getting-to-logan/logan-express" target="_blank" rel="noopener noreferrer" className="font-semibold underline underline-offset-2">massport.com</a>{t('logan.lx_ticket_b')}
           </p>
         ) : null}
-        {m.way === 'split' ? (
+        {m.way === 'split' && taxiStand ? (
+          <>
+            <p className="mt-2 text-[15px] leading-snug text-(--ev-ink-85)">{t('logan.taxi_note')}</p>
+            <p className="mt-2 text-[15px] leading-snug text-(--ev-ink-85)">{t(taxiStand === 'B' ? 'logan.rideapp_b' : 'logan.rideapp_central')}</p>
+          </>
+        ) : m.way === 'split' ? (
           <p className="mt-2 text-[15px] leading-snug text-(--ev-ink-85)">{t('logan.split_note')}</p>
         ) : null}
         <p className="mt-2 text-[15px] leading-snug text-(--ev-ink-85)">
