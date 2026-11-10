@@ -1,15 +1,15 @@
 'use client'
 
 import { useState } from 'react'
-import { ApiError, post, writeGuest, type Guest } from './photo-api'
+import { ApiError, post, writeGuest, type AlbumRef, type Guest } from './photo-api'
 
 /**
  * Confirming an email, the first time only: the address, then the six-digit
  * code we send to it (the same code email used for signing in). A first-name
  * field shows only when the server doesn't already know the person's name.
  */
-export default function EmailCode({ event, preview, intro, onVerified, onCancel }: {
-  event: string
+export default function EmailCode({ albumRef, preview, intro, onVerified, onCancel }: {
+  albumRef: AlbumRef
   preview: string
   /** One line above the email field. */
   intro: string
@@ -30,7 +30,7 @@ export default function EmailCode({ event, preview, intro, onVerified, onCancel 
     setBusy(true)
     setError(null)
     try {
-      const r = await post<{ ok: boolean; needs_name?: boolean }>({ action: 'code', email: email.trim(), event, preview })
+      const r = await post<{ ok: boolean; needs_name?: boolean }>({ action: 'code', email: email.trim(), ...albumRef, preview })
       setNeedsName(!!r.needs_name)
       setCode('')
       if (step === 'code') setResent(true)
@@ -48,7 +48,7 @@ export default function EmailCode({ event, preview, intro, onVerified, onCancel 
     setError(null)
     try {
       const r = await post<{ token: string; first_name: string }>({
-        action: 'verify', email: email.trim(), code: code.trim(), event, preview,
+        action: 'verify', email: email.trim(), code: code.trim(), ...albumRef, preview,
         ...(firstName.trim() ? { first_name: firstName.trim() } : {}),
       })
       const g: Guest = { token: r.token, first_name: r.first_name, email: email.trim().toLowerCase() }

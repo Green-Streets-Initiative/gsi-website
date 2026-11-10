@@ -1,7 +1,7 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { Download, ImagePlus, Play } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Download, ImagePlus, Lock, Play } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { EventsToneProvider, toneClass } from '@/components/events/EventsTone'
 import '@/components/events/events-tone.css'
@@ -10,7 +10,7 @@ import PhotoViewer from './PhotoViewer'
 import { PrepError, isVideo, preparePhoto, prepareVideo, videoType } from './prepare-media'
 import {
   ApiError, clockTime, countLine, dayLabel, duration, fetchAlbum, fileName, post, readGuest, shortDate, writeGuest,
-  type AlbumResponse, type Guest,
+  type AlbumRef, type AlbumResponse, type Guest,
 } from './photo-api'
 
 interface Slot { path: string; token?: string; signed_url?: string; error?: string }
@@ -43,19 +43,32 @@ function saveBlob(blob: Blob, name: string) {
 
 const plural = (n: number, one: string, many: string) => (n === 1 ? one : many)
 
-export default function PhotoAlbum({ initial, preview }: { initial: AlbumResponse; preview: string }) {
+export default function PhotoAlbum({ initial, preview, albumRef, back, autoAdd = false, goingHref }: {
+  initial: AlbumResponse
+  preview: string
+  /** A Shift ride date's album, reached by the ride's link code; default: the calendar event. */
+  albumRef?: AlbumRef
+  /** A link back to the ride's page. */
+  back?: { href: string; label: string }
+  /** Arrived from an "Add yours" button: open the first step of adding. */
+  autoAdd?: boolean
+  /** An invite-only ride: where to say Going (the ride page's Going card). */
+  goingHref?: string
+}) {
   const [data, setData] = useState(initial)
   const [guest, setGuest] = useState<Guest | null>(null)
   // For callbacks that finish after a confirm step changed who's signed in.
   const guestRef = useRef<Guest | null>(null)
   useEffect(() => { guestRef.current = guest }, [guest])
   const eventId = initial.event.id
+  // Every call names the album the same way the page was opened.
+  const ref = useMemo<AlbumRef>(() => albumRef ?? { event: eventId }, [albumRef, eventId])
   const { album, photos, event } = data
 
   // ---- The album, again with the person's token (their own photos, Remove) ----
   const refresh = useCallback(async (g: Guest | null) => {
     try {
-      const next = await fetchAlbum(eventId, preview, g?.token)
+      const next = await fetchAlbum(ref, preview, g?.token)
       if (!next) return
       if (g && next.album.needs_code) {
         // The token has expired or isn't valid any more: confirm again next time.
@@ -64,13 +77,20 @@ export default function PhotoAlbum({ initial, preview }: { initial: AlbumRespons
       }
       setData(next)
     } catch { /* keep what's on screen */ }
-  }, [eventId, preview])
+  }, [ref, preview])
 
   useEffect(() => {
     const g = readGuest()
+    // From an "Add yours" button: straight to the email step, or to choosing
+    // (a file picker can't open without a tap of its own).
+    if (autoAdd && initial.album.state === 'open' && !initial.album.locked) setStep(g ? 'choose' : 'email')
+    // Invite-only, not confirmed yet: the email step is the way in.
+    if (autoAdd && initial.album.locked === 'code' && !g) setStep('email')
     if (!g) return
     setGuest(g)
     refresh(g)
+    // Once, on arrival.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [refresh])
 
   // ---- Adding ----
@@ -98,7 +118,8 @@ export default function PhotoAlbum({ initial, preview }: { initial: AlbumRespons
 
   function onVerified(g: Guest) {
     setGuest(g)
-    setStep('choose')
+    // Confirming to see an invite-only ride's photos isn't asking to add any.
+    setStep(album.locked ? 'idle' : 'choose')
     refresh(g)
   }
 
@@ -139,7 +160,7 @@ export default function PhotoAlbum({ initial, preview }: { initial: AlbumRespons
     const slots: Slot[] = []
     try {
       for (let i = 0; i < specs.length; i += 60) {
-        const r = await post<{ files: Slot[] }>({ action: 'upload_urls', web: true, event: eventId, preview, files: specs.slice(i, i + 60) }, guest.token)
+        const r = await post<{ files: Slot[] }>({ action: 'upload_urls', web: true, ...ref, preview, files: specs.slice(i, i + 60) }, guest.token)
         slots.push(...r.files)
       }
     } catch (err) {
@@ -176,7 +197,7 @@ export default function PhotoAlbum({ initial, preview }: { initial: AlbumRespons
           await upload(main, p.blob, 'image/jpeg')
           item = { path: main.path, kind: 'photo', width: p.width, height: p.height, ...(p.taken_at ? { taken_at: p.taken_at } : {}) }
         }
-        const r = await post<{ items: AddResult[] }>({ action: 'add', web: true, event: eventId, preview, items: [item] }, guest.token)
+        const r = await post<{ items: AddResult[] }>({ action: 'add', web: true, ...ref, preview, items: [item] }, guest.token)
         const res = r.items[0]
         if (res?.status === 'ok') out.added++
         else if (res?.status === 'pending') out.pending++
@@ -268,8 +289,9 @@ export default function PhotoAlbum({ initial, preview }: { initial: AlbumRespons
   }
 
   // ---- Words ----
-  const meta = [photos.length > 0 ? countLine(photos, album.people) : 'No photos yet', event.organizer_name].filter(Boolean).join(' · ')
-  const canAdd = album.state === 'open'
+  const locked = album.locked ?? null
+  const meta = locked ? '' : [photos.length > 0 ? countLine(photos, album.people) : 'No photos yet', event.organizer_name].filter(Boolean).join(' · ')
+  const canAdd = album.state === 'open' && !locked
   const pickedCount = Math.min(picked.length, room)
   const pickedVideos = picked.slice(0, room).filter((p) => isVideo(p.file)).length
   const pickedNoun = pickedVideos === 0 ? plural(pickedCount, 'photo', 'photos') : pickedVideos === pickedCount ? plural(pickedCount, 'video', 'videos') : 'photos and videos'
@@ -282,15 +304,62 @@ export default function PhotoAlbum({ initial, preview }: { initial: AlbumRespons
       <div className={`min-h-screen bg-(--ev-bg) px-4 pb-24 pt-6 sm:px-8 sm:pt-10 ${toneClass('light')}`}>
         <div className="mx-auto max-w-[1040px]">
           {/* ---- Header ---- */}
+          {back && (
+            <a href={back.href} className="mb-3 inline-flex min-h-[44px] items-center text-[15px] font-semibold text-(--ev-accent) hover:underline">
+              ← {back.label}
+            </a>
+          )}
           <p className="text-[14px] font-semibold text-(--ev-accent)">Photos · {dayLabel(event.date)}</p>
           <h1 className="mt-2 font-display text-[clamp(26px,4vw,40px)] font-extrabold leading-[1.1] tracking-tight text-(--ev-ink)">
             {event.title}
           </h1>
-          <p className="mt-2 text-[15px] font-medium text-(--ev-ink-80)">{meta}</p>
-          {album.state === 'soon' && (
+          {meta && <p className="mt-2 text-[15px] font-medium text-(--ev-ink-80)">{meta}</p>}
+
+          {/* ---- Invite-only, and not (yet) on the list: one line and the way in ---- */}
+          {locked && (
+            <div className="mt-6 max-w-[560px] rounded-2xl border border-(--ev-line-mid) bg-(--ev-card) p-5 shadow-(--ev-shadow)" aria-live="polite">
+              <div className="flex items-start gap-3">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-(--ev-panel) text-(--ev-ink)" aria-hidden>
+                  <Lock size={20} />
+                </span>
+                <p className="pt-1 text-[16px] leading-snug text-(--ev-ink)">
+                  <span className="font-bold">These photos are just for people who said Going.</span>{' '}
+                  {locked === 'code'
+                    ? 'Confirm the email you used to see them.'
+                    : <><span className="font-semibold">{guest?.email || 'That email'}</span> hasn&apos;t said Going yet.</>}
+                </p>
+              </div>
+              {locked === 'code' && step === 'email' && !guest ? (
+                <div className="mt-4">
+                  <EmailCode
+                    albumRef={ref} preview={preview}
+                    intro="We'll send a 6-digit code to it."
+                    onVerified={onVerified}
+                    onCancel={() => setStep('idle')}
+                  />
+                </div>
+              ) : (
+                <div className="mt-4 flex flex-wrap items-center gap-2">
+                  {locked === 'code' ? (
+                    <>
+                      <button type="button" onClick={() => setStep('email')} className={primary}>Confirm my email</button>
+                      {goingHref && <a href={goingHref} className={secondary}>Say Going</a>}
+                    </>
+                  ) : (
+                    <>
+                      {goingHref && <a href={goingHref} className={primary}>Say Going</a>}
+                      <button type="button" onClick={() => { notMe(); setStep('email') }} className={secondary}>Use another email</button>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {!locked && album.state === 'soon' && (
             <p className="mt-2 text-[15px] text-(--ev-ink-80)">Photos open when the ride starts, {dayLabel(event.date)} at {clockTime(album.starts_at)}.</p>
           )}
-          {album.state === 'closed' && album.add_closes_at && (
+          {!locked && album.state === 'closed' && album.add_closes_at && (
             <p className="mt-2 text-[15px] text-(--ev-ink-80)">Adding photos closed on {shortDate(album.add_closes_at)}.</p>
           )}
 
@@ -336,7 +405,7 @@ export default function PhotoAlbum({ initial, preview }: { initial: AlbumRespons
                 {addError && <p role="alert" className="mt-1 text-[14px] font-semibold text-(--ev-danger)">{addError}</p>}
                 <div className="mt-2">
                   <EmailCode
-                    event={eventId} preview={preview}
+                    albumRef={ref} preview={preview}
                     intro="First, your email. We'll send a 6-digit code. You only do this once."
                     onVerified={onVerified}
                     onCancel={() => setStep('idle')}
@@ -374,7 +443,7 @@ export default function PhotoAlbum({ initial, preview }: { initial: AlbumRespons
                   <p className="mt-2 text-[14px] text-(--ev-ink-80)">You can add up to {album.max_per_person} to one ride, so we&apos;ll add the first {room}.</p>
                 )}
                 <p className="mt-3 text-[14px] leading-snug text-(--ev-ink-75)">
-                  Anyone with this page&apos;s link can see them, with your first name. Anyone in a photo can take it down. We remove where each photo was taken before saving it.
+                  {event.invite_only ? 'People who said Going to this ride can see them' : 'Anyone with this page\u2019s link can see them'}, with your first name. Anyone in a photo can take it down. We remove where each photo was taken before saving it.
                 </p>
                 {addError && <p role="alert" className="mt-2 text-[14px] font-semibold text-(--ev-danger)">{addError}</p>}
                 <div className="mt-4 flex flex-wrap items-center gap-2">
@@ -451,16 +520,18 @@ export default function PhotoAlbum({ initial, preview }: { initial: AlbumRespons
                 </li>
               ))}
             </ul>
-          ) : album.state === 'open' ? (
+          ) : album.state === 'open' && !locked ? (
             <div className="mt-6 rounded-2xl border border-dashed border-(--ev-line-strong) px-5 py-10 text-center">
               <p className="text-[16px] font-semibold text-(--ev-ink)">No photos yet</p>
               <p className="mt-1 text-[15px] text-(--ev-ink-80)">Were you there? Add the first ones.</p>
             </div>
           ) : null}
 
-          <p className="mt-10 max-w-[560px] text-[14px] leading-relaxed text-(--ev-ink-75)">
-            Anyone in a photo can take it down from the photo itself. This page doesn&apos;t show up in search.
-          </p>
+          {!locked && (
+            <p className="mt-10 max-w-[560px] text-[14px] leading-relaxed text-(--ev-ink-75)">
+              Anyone in a photo can take it down from the photo itself. This page doesn&apos;t show up in search.
+            </p>
+          )}
         </div>
       </div>
 
@@ -470,7 +541,7 @@ export default function PhotoAlbum({ initial, preview }: { initial: AlbumRespons
         <PhotoViewer
           photos={photos} index={open} onIndex={setOpen} onClose={() => setOpen(null)}
           guest={guest} onGuest={setGuest} onRemoved={onRemoved}
-          event={eventId} preview={preview}
+          albumRef={ref} preview={preview}
         />
       )}
     </EventsToneProvider>

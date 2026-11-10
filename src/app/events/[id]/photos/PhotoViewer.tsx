@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { ChevronLeft, ChevronRight, Download, Flag, Trash2, UserX, X } from 'lucide-react'
 import EmailCode from './EmailCode'
-import { ApiError, clockTime, fileName, post, type AlbumPhoto, type Guest } from './photo-api'
+import { ApiError, clockTime, fileName, post, type AlbumPhoto, type AlbumRef, type Guest } from './photo-api'
 
 type Reason = 'in_photo' | 'remove' | 'report'
 
@@ -14,7 +14,7 @@ type Reason = 'in_photo' | 'remove' | 'report'
  * the person who posted it and the organizer; Report hides it too. Taking a
  * photo down needs a confirmed email, so a first-timer confirms right here.
  */
-export default function PhotoViewer({ photos, index, onIndex, onClose, guest, onGuest, onRemoved, event, preview }: {
+export default function PhotoViewer({ photos, index, onIndex, onClose, guest, onGuest, onRemoved, albumRef, preview }: {
   photos: AlbumPhoto[]
   index: number
   onIndex: (i: number) => void
@@ -22,7 +22,7 @@ export default function PhotoViewer({ photos, index, onIndex, onClose, guest, on
   guest: Guest | null
   onGuest: (g: Guest) => void
   onRemoved: (id: string) => void
-  event: string
+  albumRef: AlbumRef
   preview: string
 }) {
   const photo = photos[index]
@@ -69,7 +69,8 @@ export default function PhotoViewer({ photos, index, onIndex, onClose, guest, on
     setBusy(true)
     setError(null)
     try {
-      await post({ action: 'remove', web: true, preview, photo_id: photo.id, reason }, token)
+      // A Shift ride date's album carries its link code: that's what opens it on the web.
+      await post({ action: 'remove', web: true, preview, photo_id: photo.id, reason, ...('ride' in albumRef ? { ride: albumRef.ride } : {}) }, token)
       setConfirm(null)
       onRemoved(photo.id)
     } catch (err) {
@@ -161,7 +162,7 @@ export default function PhotoViewer({ photos, index, onIndex, onClose, guest, on
                 {error && <p role="alert" className="mt-2 text-[14px] font-semibold text-(--ev-danger)">{error}</p>}
                 <div className="mt-3">
                   <EmailCode
-                    event={event} preview={preview}
+                    albumRef={albumRef} preview={preview}
                     intro="First, confirm your email. We'll send you a 6-digit code."
                     onVerified={(g) => { onGuest(g); takeDown(confirm, g.token) }}
                     onCancel={() => { setConfirm(null); setError(null) }}

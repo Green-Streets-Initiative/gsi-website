@@ -12,6 +12,13 @@ const FN = `${SUPABASE_URL}/functions/v1/event-photos`
 
 export type AlbumState = 'none' | 'soon' | 'open' | 'closed'
 
+/**
+ * Which album: a calendar event, or one date of a Shift ride reached by its
+ * link code (/rides/<code>/photos/<date>; `latest` is its newest date that
+ * has started). The code is what lets the web open an invite-only ride's album.
+ */
+export type AlbumRef = { event: string } | { ride: string; date: string }
+
 export interface AlbumPhoto {
   id: string
   kind: 'photo' | 'video'
@@ -31,7 +38,7 @@ export interface AlbumPhoto {
 }
 
 export interface AlbumResponse {
-  event: { id: string; title: string; date: string; organizer_name: string | null }
+  event: { id: string; kind?: 'content' | 'occurrence'; title: string; date: string; organizer_name: string | null; ride_code?: string | null; invite_only?: boolean }
   album: {
     state: AlbumState
     count: number
@@ -44,8 +51,16 @@ export interface AlbumResponse {
     mine_count: number
     max_per_person: number
     max_video_seconds: number
+    /**
+     * An invite-only Shift ride's date, on the web: "code" until the person
+     * confirms their email, "not_on_list" when that email never said Going
+     * (or was removed). Photos stay empty; `count` still says how many.
+     */
+    locked?: 'code' | 'not_on_list' | null
   }
   photos: AlbumPhoto[]
+  /** Before a date starts, or while its album is empty: the last date with photos. */
+  last_ride?: { event_id: string; date: string; count: number; photos: { id: string; thumb_url: string | null }[] } | null
   share_url: string | null
 }
 
@@ -65,8 +80,9 @@ function headers(token?: string | null): Record<string, string> {
 }
 
 /** The album, or null when the server says there's nothing here (404). */
-export async function fetchAlbum(event: string, preview: string, token?: string | null): Promise<AlbumResponse | null> {
-  const q = new URLSearchParams({ event, web: '1', preview })
+export async function fetchAlbum(ref: AlbumRef | string, preview: string, token?: string | null): Promise<AlbumResponse | null> {
+  const r: AlbumRef = typeof ref === 'string' ? { event: ref } : ref
+  const q = new URLSearchParams({ ...r, web: '1', preview })
   const res = await fetch(`${FN}?${q}`, { headers: headers(token), cache: 'no-store' })
   if (res.status === 404) return null
   if (!res.ok) throw new Error(`event-photos ${res.status}`)

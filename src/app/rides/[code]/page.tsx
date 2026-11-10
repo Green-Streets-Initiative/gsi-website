@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
 import RidePage from '@/components/rides/RidePage'
+import { fetchAlbum } from '@/app/events/[id]/photos/photo-api'
 import AppOnlyRidePage from '@/components/rides/AppOnlyRidePage'
 import type { RideCoffeeInfo } from '@/components/rides/RideCoffee'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
@@ -42,7 +43,7 @@ async function loadRide(code: string, date: string | null = null): Promise<RideL
   }
 }
 
-type Search = Promise<{ date?: string | string[]; lang?: string | string[] }>
+type Search = Promise<{ date?: string | string[]; lang?: string | string[]; preview?: string | string[] }>
 const dateParam = (v: string | string[] | undefined) => (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : null)
 
 export async function generateMetadata({ params, searchParams }: { params: Promise<{ code: string }>; searchParams: Search }): Promise<Metadata> {
@@ -92,16 +93,22 @@ export default async function Page({ params, searchParams }: { params: Promise<{
   // the Bicycle Benefits members by any of its meeting spots or routes; and
   // what's new on each of its routes (or by each meeting spot).
   // Plus where it ends and who buys the coffee there (Ride Fund, Shift 01596).
-  const [extras, perks, newInfra, coffee] = ride.web
-    ? await Promise.all([rideExtras(ride.id).catch(() => null), bikePerksForPlaces(ridePlaces(ride)).catch(() => []), newInfraForPlaces(ridePlaces(ride)), rideCoffee(ride.code)])
-    : [null, [], [], null]
+  // And the newest date's shared photos (Shift ride photos): null while the
+  // switch is off, unless the link carries that date's preview key.
+  const preview = typeof sp.preview === 'string' ? sp.preview.slice(0, 64) : ''
+  const [extras, perks, newInfra, coffee, album] = ride.web
+    ? await Promise.all([rideExtras(ride.id).catch(() => null), bikePerksForPlaces(ridePlaces(ride)).catch(() => []), newInfraForPlaces(ridePlaces(ride)), rideCoffee(ride.code), fetchAlbum({ ride: ride.code, date: 'latest' }, preview).catch(() => null)])
+    : [null, [], [], null, null]
+  const photos = album && album.album.state !== 'none'
+    ? { album, preview, albumRef: { ride: ride.code, date: album.event.date }, href: withLang(`/rides/${encodeURIComponent(ride.code)}/photos/${album.event.date}${preview ? `?preview=${encodeURIComponent(preview)}` : ''}`, locale) }
+    : null
 
   return (
     <>
       <HtmlLang locale={locale} />
       <Nav variant="light" locale={locale} />
       <main className="bg-cream" style={{ paddingTop: '60px' }}>
-        {ride.web ? <RidePage ride={{ ...ride, languages: extras?.languages ?? null }} host={extras?.host ?? null} hostPerson={hostLabel(extras)} ascentFt={extras?.ascentFt ?? null} comfort={extras?.comfortSegments ?? null} initialDate={initialDate} perks={perks} newInfra={newInfra} coffee={coffee} locale={locale} /> : <AppOnlyRidePage ride={ride} locale={locale} />}
+        {ride.web ? <RidePage ride={{ ...ride, languages: extras?.languages ?? null }} host={extras?.host ?? null} hostPerson={hostLabel(extras)} ascentFt={extras?.ascentFt ?? null} comfort={extras?.comfortSegments ?? null} initialDate={initialDate} perks={perks} newInfra={newInfra} coffee={coffee} photos={photos} locale={locale} /> : <AppOnlyRidePage ride={ride} locale={locale} />}
       </main>
       <Footer variant="light" locale={locale} />
     </>

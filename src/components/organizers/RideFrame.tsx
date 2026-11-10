@@ -6,6 +6,7 @@ import { createContext, useCallback, useContext, useEffect, useState, type React
 import { ArrowLeft, ExternalLink, MessageSquareText } from 'lucide-react'
 import { scheduleText } from '@/lib/rides/public'
 import { errorText, getRide } from '@/lib/organizers/api'
+import { loadDatePhotos, photoDates } from '@/lib/organizers/photos'
 import type { RideDetail } from '@/lib/organizers/types'
 import { ASSISTANT_CHANGED_EVENT, openAssistant } from './AssistantPanel'
 import { useConsole } from './ConsoleContext'
@@ -54,6 +55,18 @@ export default function RideFrame({ id, children }: { id: string; children: Reac
     return () => { live = false; window.removeEventListener(ASSISTANT_CHANGED_EVENT, changed) }
   }, [id, reload])
 
+  // The Photos tab, once there's an album to look at: the newest date that
+  // has started answers for the whole ride (404 while the event_photos
+  // switch is off for this person, and for kids' rides, which have none).
+  const [hasPhotos, setHasPhotos] = useState(false)
+  const newestStarted = detail ? photoDates(detail.occurrences)[0]?.id ?? null : null
+  useEffect(() => {
+    if (!newestStarted) return
+    let gone = false
+    loadDatePhotos(newestStarted).then((a) => { if (!gone) setHasPhotos(!!a) }).catch(() => {})
+    return () => { gone = true }
+  }, [newestStarted])
+
   if (err && !detail) {
     return (
       <Card className="mx-auto max-w-lg text-center">
@@ -75,6 +88,7 @@ export default function RideFrame({ id, children }: { id: string; children: Reac
     { href: `${base}/roster`, label: "Who's coming", short: "Who's coming" },
     { href: `${base}/promote`, label: 'Promote', short: 'Promote' },
     { href: `${base}/turnout`, label: 'Turnout', short: 'Turnout' },
+    ...(hasPhotos ? [{ href: `${base}/photos`, label: 'Photos', short: 'Photos' }] : []),
     { href: `${base}/team`, label: 'Leaders', short: 'Leaders' },
     ...(detail.can_edit ? [{ href: `${base}/edit`, label: `Edit ${thing}`, short: 'Edit' }] : []),
   ]
@@ -116,13 +130,15 @@ export default function RideFrame({ id, children }: { id: string; children: Reac
           {/* Phones get every tab as a pill in a three-across grid (two rows, short
               names), so none hides off-screen and the page starts on screen one. */}
           <nav aria-label="Ride" className="mt-5">
-            <ul className="grid grid-cols-3 gap-1.5 sm:flex sm:gap-1 sm:border-b sm:border-(--ev-line-mid)">
+            {/* Seven tabs (Photos on) wrap as two full rows instead of a lone seventh pill. */}
+            <ul className={cx(tabs.length > 6 ? 'flex flex-wrap gap-1.5' : 'grid grid-cols-3 gap-1.5', 'sm:flex sm:flex-nowrap sm:gap-1 sm:border-b sm:border-(--ev-line-mid)')}>
               {tabs.map((t) => {
                 const active = t.href === base ? path === base : path.startsWith(t.href)
                 return (
-                  <li key={t.href}>
+                  <li key={t.href} className={tabs.length > 6 ? 'grow sm:grow-0' : undefined}>
                     <Link href={t.href} aria-current={active ? 'page' : undefined}
-                      className={cx('flex min-h-[44px] items-center justify-center whitespace-nowrap rounded-full border px-2 text-[14px] font-semibold sm:inline-flex sm:justify-start',
+                      className={cx('flex min-h-[44px] items-center justify-center whitespace-nowrap rounded-full border text-[14px] font-semibold sm:inline-flex sm:justify-start',
+                        tabs.length > 6 ? 'px-3' : 'px-2',
                         'sm:-mb-px sm:min-h-0 sm:rounded-none sm:border-0 sm:border-b-2 sm:bg-transparent sm:px-3 sm:py-2.5',
                         active
                           ? 'border-(--ev-accent-fill) bg-(--ev-accent-fill) text-(--ev-on-accent-fill) sm:text-(--ev-ink)'

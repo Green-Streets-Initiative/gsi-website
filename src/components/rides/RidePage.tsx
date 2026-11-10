@@ -15,6 +15,8 @@ import RideFacts, { rideFacts } from '@/components/rides/RideFacts'
 import RidePerks from '@/components/rides/RidePerks'
 import RideCoffee, { type RideCoffeeInfo } from '@/components/rides/RideCoffee'
 import RideNewInfra from '@/components/rides/RideNewInfra'
+import RidePhotos from '@/components/rides/RidePhotos'
+import type { AlbumResponse } from '@/app/events/[id]/photos/photo-api'
 import { hasNewInfra, newInfraKey, type NewInfraFor } from '@/lib/new-infra'
 import { perksAlong, type BikePerk } from '@/lib/bike-perks'
 import type { RideHost } from '@/lib/rides/host'
@@ -152,7 +154,7 @@ function downloadGpx(ride: PublicRide, line: { lat: number; lng: number }[], dat
   a.remove()
 }
 
-export default function RidePage({ ride, host = null, hostPerson = null, ascentFt = null, comfort = null, initialDate = null, perks = [], newInfra = [], coffee = null, locale = 'en' }: {
+export default function RidePage({ ride, host = null, hostPerson = null, ascentFt = null, comfort = null, initialDate = null, perks = [], newInfra = [], coffee = null, photos = null, locale = 'en' }: {
   ride: PublicRide; host?: RideHost | null; ascentFt?: number | null
   /** The page's language (?lang= from the app, else the browser's). */
   locale?: SiteLocale
@@ -168,6 +170,8 @@ export default function RidePage({ ride, host = null, hostPerson = null, ascentF
   newInfra?: NewInfraFor[]
   /** Where it ends and who buys the coffee there (get_ride_coffee). */
   coffee?: RideCoffeeInfo | null
+  /** The newest date's shared photos, when the server hands them over (the event_photos switch). */
+  photos?: { album: AlbumResponse; href: string; albumRef: { ride: string; date: string }; preview: string } | null
 }) {
   const t = translator(ridesStrings, locale)
   const hostHref = host?.href ?? null
@@ -402,7 +406,7 @@ export default function RidePage({ ride, host = null, hostPerson = null, ascentF
           {/* ---- RSVP card: right under the title on phones, so the date,
                where to meet and Going / Maybe / Can't go are the first
                screen; the right column on desktop ---- */}
-          <aside className="lg:col-start-2 lg:row-start-1">
+          <aside id="going" className="scroll-mt-24 lg:col-start-2 lg:row-start-1">
             <div className="rounded-2xl border border-(--ev-line-mid) bg-(--ev-card) p-5 shadow-(--ev-shadow) lg:sticky lg:top-24 lg:max-h-[calc(100dvh-7rem)] lg:overflow-y-auto lg:overscroll-contain">
               {ride.occurrences.length === 0 ? (
                 <div>
@@ -662,6 +666,9 @@ export default function RidePage({ ride, host = null, hostPerson = null, ascentF
 
           {/* What it's like (distance, pace, hills, calm streets, level, policies). */}
           <RideFacts ride={ride} miles={miles} ascentFt={climb} comfort={comfortHere} className="" locale={locale} />
+
+          {/* What it looked like last time: that date's photos, and adding yours for a week after. */}
+          {photos && <RidePhotos album={photos.album} href={photos.href} albumRef={photos.albumRef} preview={photos.preview} locale={locale} />}
 
           {/* ---- The rest, by tab, so nothing waits at the bottom of a long scroll ---- */}
           <section aria-label={t(nk('more_about'))}>
