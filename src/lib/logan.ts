@@ -24,6 +24,13 @@ export type LoganMatch = {
   my_answer: 'yes' | 'no' | null
   their_answer: 'yes' | 'no' | 'waiting' | null
   my_phone: string | null
+  /** A late flight moved the meeting, or someone was told not to wait (Shift 01733). */
+  delay_state: 'moved' | 'go_ahead' | null
+  orig_meet_at: string | null
+  /** The last "Running late": how many minutes (30 = go without me), when, and whether it was you. */
+  late_minutes: 10 | 20 | 30 | null
+  late_at: string | null
+  late_mine: boolean | null
   other: {
     first_name: string | null
     town: string | null
@@ -37,6 +44,10 @@ export type LoganMatch = {
     last_initial: string | null
     email: string | null
     phone: string | null
+    /** Once you both said yes: whether we watch their flight, and the last check (never the number). */
+    watched: boolean | null
+    expected_at: string | null
+    flight_status: string | null
   }
 }
 
@@ -54,6 +65,11 @@ export type LoganTrip = {
   place_lat: number
   place_lng: number
   at_airport: string
+  /** "B6 1234", the words the form showed, and the last check on the day (Shift 01733). */
+  flight: string | null
+  flight_label: string | null
+  flight_expected_at: string | null
+  flight_status: string | null
   matches: LoganMatch[]
 }
 
@@ -75,6 +91,9 @@ export type TripInput = {
   lat: number
   lng: number
   label: string
+  /** "B6 1234", or null when they gave a time instead. */
+  flight: string | null
+  flightLabel: string | null
 }
 
 const REASON: Record<string, string> = {
@@ -83,6 +102,7 @@ const REASON: Record<string, string> = {
   has_match: 'You and your match both said yes, so this trip is set. If plans changed, use "Can’t make it?" below.',
   needs_terms: 'Check the box to agree first.',
   under_18: 'Going to Logan with someone is for people 18 and older.',
+  bad_flight: 'That doesn’t look like a flight number. It starts with the airline’s two-letter code, like B6 1234 or DL 456.',
 }
 
 /** `code` (the server's reason, or 'error') lets a translated page say `reason` in its own words. */
@@ -98,12 +118,52 @@ export async function saveTrip(t: TripInput): Promise<{ ok: true; matches: numbe
     p_lat: t.lat,
     p_lng: t.lng,
     p_label: t.label,
+    p_flight: t.flight,
+    p_flight_label: t.flight ? t.flightLabel : null,
   })
   if (error) return { ok: false, reason: "We couldn't save that. Try again in a minute.", code: 'error' }
   const r = data as { ok: boolean; reason?: string; matches?: number }
   return r.ok
     ? { ok: true, matches: r.matches ?? 0 }
     : { ok: false, reason: REASON[r.reason ?? ''] ?? "We couldn't save that. Try again in a minute.", code: r.reason ?? 'error' }
+}
+
+/** "b6 1234" -> "B6 1234"; null when it isn't a flight number (Shift 01733 set_airport_trip, logan-flights). */
+export function normalizeFlight(raw: string): string | null {
+  const m = /^([A-Z][A-Z0-9]|[0-9][A-Z]|[A-Z]{3})([0-9]{1,4}[A-Z]?)$/.exec(raw.replace(/\s+/g, '').toUpperCase())
+  return m ? `${m[1]} ${m[2]}` : null
+}
+
+export type FlightInfo =
+  | {
+    found: true
+    number: string
+    airline: string | null
+    city: string | null
+    international: boolean
+    /** When it leaves or lands at Logan, as scheduled. */
+    sched: string
+    expected: string
+    terminal: Terminal | null
+    status: string
+  }
+  | { found: false; reason: 'not_found' | 'not_logan' | 'bad_number' | 'unavailable' | 'not_signed_in' | 'bad_input' }
+
+/** The flight's time at Logan, terminal and other city (edge function logan-flights, AeroDataBox). */
+export async function lookupFlight(flight: string, date: string, kind: TripKind): Promise<FlightInfo> {
+  try {
+    const { data, error } = await supabase.functions.invoke('logan-flights', { body: { action: 'lookup', flight, date, kind } })
+    if (error || !data) return { found: false, reason: 'unavailable' }
+    return data as FlightInfo
+  } catch {
+    return { found: false, reason: 'unavailable' }
+  }
+}
+
+/** On the day: running about 10 or 20 minutes late, or 30 for "go without me". The other person is emailed at once. */
+export async function runningLate(matchId: string, minutes: 10 | 20 | 30): Promise<boolean> {
+  const { data, error } = await supabase.rpc('airport_running_late', { p_match: matchId, p_minutes: minutes })
+  return !error && !!(data as { ok?: boolean } | null)?.ok
 }
 
 export async function stopTrip(kind: TripKind): Promise<boolean> {

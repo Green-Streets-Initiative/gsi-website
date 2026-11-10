@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
-import { CheckCircle2, Mail, MessageSquare, Minus, Plane, PlaneLanding, Plus, Search } from 'lucide-react'
+import { CheckCircle2, Clock, Loader2, Mail, MessageSquare, Minus, Plane, PlaneLanding, Plus, Search } from 'lucide-react'
 import AddressAutocomplete from '@/components/AddressAutocomplete'
 import { Avatar, Chip } from '@/components/together/bits'
 import { useTogether } from '@/components/together/TogetherShell'
@@ -10,8 +10,8 @@ import { acceptTerms, myPlaces, track } from '@/lib/together'
 import { SITE_LOCALE_TAG, translator, type SiteLocale, type T } from '@/lib/site-i18n'
 import { loganStrings, type LoganKey } from '@/lib/site-strings/logan'
 import {
-  answer, bostonInstant, bostonParts, leaveMatch, myTrips, saveTrip, setPhone, stopTrip,
-  type LoganMatch, type LoganTrip, type Terminal, type TripKind, type TripWay,
+  answer, bostonInstant, bostonParts, leaveMatch, lookupFlight, myTrips, normalizeFlight, runningLate, saveTrip, setPhone, stopTrip,
+  type FlightInfo, type LoganMatch, type LoganTrip, type Terminal, type TripKind, type TripWay,
 } from '@/lib/logan'
 
 /**
@@ -43,6 +43,7 @@ const REASON_KEY: Record<string, LoganKey> = {
   has_match: 'logan.reason_has_match',
   needs_terms: 'logan.err_terms',
   under_18: 'logan.reason_under_18',
+  bad_flight: 'logan.reason_bad_flight',
 }
 
 /** This page's words and the shared Shift Together ones, in the shell's language. */
@@ -157,13 +158,8 @@ function TripForm({ userId, trips, only, termsDone, onCancel, onSaved }: {
   const [which, setWhich] = useState<'out' | 'back' | 'both'>(
     only === 'airport_out' ? 'out' : only === 'airport_back' ? 'back' : out && !back ? 'back' : back && !out ? 'out' : 'out',
   )
-  const [outDate, setOutDate] = useState(out ? bostonParts(out.trip_at).date : '')
-  const [outTime, setOutTime] = useState(out ? bostonParts(out.trip_at).time : '')
-  const [outIntl, setOutIntl] = useState(out?.international ?? false)
-  const [backDate, setBackDate] = useState(back ? bostonParts(back.trip_at).date : '')
-  const [backTime, setBackTime] = useState(back ? bostonParts(back.trip_at).time : '')
-  const [backIntl, setBackIntl] = useState(back?.international ?? false)
-  const [terminal, setTerminal] = useState<Terminal | null>(back?.terminal ?? null)
+  const outF = useFlight('airport_out', out)
+  const backF = useFlight('airport_back', back)
   const [place, setPlace] = useState<Place>(first ? { address: first.place_label ?? '', lat: first.place_lat, lng: first.place_lng } : noPlace)
   const [way, setWay] = useState<TripWay>(first?.way ?? 'either')
   const [party, setParty] = useState(first?.party_size ?? 1)
@@ -190,23 +186,23 @@ function TripForm({ userId, trips, only, termsDone, onCancel, onSaved }: {
   async function submit(e: FormEvent) {
     e.preventDefault()
     setErr(null)
-    const outAt = goOut ? bostonInstant(outDate, outTime) : null
-    const backAt = goBack ? bostonInstant(backDate, backTime) : null
-    if (goOut && !outAt) return setErr(t('logan.err_leave'))
-    if (goBack && !backAt) return setErr(t('logan.err_land'))
+    const outR = goOut ? outF.result() : null
+    const backR = goBack ? backF.result() : null
+    if (outR && 'error' in outR) return setErr(outR.error === 'bad_flight' ? t('logan.flight_bad') : t('logan.err_leave'))
+    if (backR && 'error' in backR) return setErr(backR.error === 'bad_flight' ? t('logan.flight_bad') : t('logan.err_land'))
     if (place.lat == null || place.lng == null) return setErr(t('logan.err_place'))
     if (!termsDone && !agreed) return setErr(t('logan.err_terms'))
     setBusy(true)
     try {
       if (!termsDone) await acceptTerms()
       let matches = 0
-      for (const [kind, at, intl] of [
-        ...(goOut ? [['airport_out', outAt!, outIntl] as const] : []),
-        ...(goBack ? [['airport_back', backAt!, backIntl] as const] : []),
+      for (const [kind, f] of [
+        ...(outR && !('error' in outR) ? [['airport_out', outR] as const] : []),
+        ...(backR && !('error' in backR) ? [['airport_back', backR] as const] : []),
       ]) {
         const r = await saveTrip({
-          kind, tripAt: at, international: intl, terminal, way, party, bags,
-          lat: place.lat, lng: place.lng, label: place.address,
+          kind, tripAt: f.at, international: f.international, terminal: f.terminal, way, party, bags,
+          lat: place.lat, lng: place.lng, label: place.address, flight: f.flight, flightLabel: f.label,
         })
         if (!r.ok) {
           setErr(locale === 'en' ? r.reason : t(REASON_KEY[r.code] ?? 'logan.err_save'))
@@ -215,7 +211,7 @@ function TripForm({ userId, trips, only, termsDone, onCancel, onSaved }: {
         }
         matches += r.matches
       }
-      track('together_logan_saved', { which, way, party, matches })
+      track('together_logan_saved', { which, way, party, matches, by_number: !!(outR && !('error' in outR) && outR.flight) || !!(backR && !('error' in backR) && backR.flight) })
       onSaved(matches)
     } catch {
       setErr(t('logan.err_save'))
@@ -242,34 +238,8 @@ function TripForm({ userId, trips, only, termsDone, onCancel, onSaved }: {
           </Field>
         )}
 
-        {goOut ? (
-          <fieldset className="grid grid-cols-1 gap-3">
-            <legend className="mb-1 text-[16px] font-bold">{t('logan.leave_q')}</legend>
-            <div className="grid grid-cols-2 gap-3 sm:max-w-[420px]">
-              <Input type="date" aria-label={t('logan.leave_date')} min={today} value={outDate} onChange={(e) => setOutDate(e.target.value)} />
-              <Input type="time" aria-label={t('logan.leave_time')} value={outTime} onChange={(e) => setOutTime(e.target.value)} />
-            </div>
-            <Check checked={outIntl} onChange={setOutIntl} label={t('logan.intl_out')} />
-          </fieldset>
-        ) : null}
-
-        {goBack ? (
-          <fieldset className="grid grid-cols-1 gap-3">
-            <legend className="mb-1 text-[16px] font-bold">{t('logan.land_q')}</legend>
-            <div className="grid grid-cols-2 gap-3 sm:max-w-[420px]">
-              <Input type="date" aria-label={t('logan.land_date')} min={outDate || today} value={backDate} onChange={(e) => setBackDate(e.target.value)} />
-              <Input type="time" aria-label={t('logan.land_time')} value={backTime} onChange={(e) => setBackTime(e.target.value)} />
-            </div>
-            <Check checked={backIntl} onChange={setBackIntl} label={t('logan.intl_back')} />
-            <div>
-              <p className="mb-2 text-[15px] font-semibold">{t('logan.terminal_q')} <span className="font-normal text-(--ev-ink-75)">{t('logan.terminal_hint')}</span></p>
-              <div className="flex flex-wrap gap-2">
-                {TERMINALS.map((x) => <Chip key={x} on={terminal === x} onClick={() => setTerminal(x)}>{x}</Chip>)}
-                <Chip on={terminal === null} onClick={() => setTerminal(null)}>{t('logan.not_sure')}</Chip>
-              </div>
-            </div>
-          </fieldset>
-        ) : null}
+        {goOut ? <FlightFields f={outF} minDate={today} /> : null}
+        {goBack ? <FlightFields f={backF} minDate={(goOut && outF.date) || today} /> : null}
 
         <Field label={which === 'out' ? t('logan.place_out') : which === 'back' ? t('logan.place_back') : t('logan.place_both')} hint={t('logan.place_hint')}>
           <AddressAutocomplete
@@ -316,6 +286,171 @@ function TripForm({ userId, trips, only, termsDone, onCancel, onSaved }: {
   )
 }
 
+/* ------------------------------------------------------------- the flight */
+
+type Look =
+  | { state: 'idle' }
+  | { state: 'looking'; key: string }
+  | { state: 'found'; key: string; info: Extract<FlightInfo, { found: true }>; label: string }
+  | { state: 'missing'; key: string; reason: string }
+
+type FlightResult =
+  | { at: string; international: boolean; terminal: Terminal | null; flight: string | null; label: string | null }
+  | { error: 'time' | 'bad_flight' }
+
+/**
+ * One direction's flight: the date and the flight number, looked up as they
+ * type (logan-flights), which fills in the time, terminal and whether it's
+ * international. When it can't be found, or they have no number yet, they
+ * type the time instead, as before.
+ */
+function useFlight(kind: TripKind, trip: LoganTrip | undefined) {
+  const { t } = useWords()
+  const init = trip ? bostonParts(trip.trip_at) : null
+  const [date, setDate] = useState(init?.date ?? '')
+  const [number, setNumber] = useState(trip?.flight ?? '')
+  const [manual, setManual] = useState(!!trip && !trip.flight)
+  const [time, setTime] = useState(init?.time ?? '')
+  const [intl, setIntl] = useState(trip?.international ?? false)
+  const [terminal, setTerminal] = useState<Terminal | null>(trip?.terminal ?? null)
+  const storedKey = trip?.flight && init ? `${trip.flight}|${init.date}` : ''
+  const [stored] = useState<Look>(() => (trip?.flight && init
+    ? {
+      state: 'found', key: storedKey, label: trip.flight_label ?? trip.flight,
+      info: { found: true, number: trip.flight, airline: null, city: null, international: trip.international, sched: trip.trip_at, expected: trip.trip_at, terminal: trip.terminal, status: '' },
+    }
+    : { state: 'idle' }))
+  const [look, setLook] = useState<Look>(stored)
+
+  const norm = normalizeFlight(number)
+  const key = norm && /^\d{4}-\d{2}-\d{2}$/.test(date) ? `${norm}|${date}` : ''
+  useEffect(() => {
+    if (manual || !key) return
+    if (key === storedKey) { setLook(stored); return }
+    let live = true
+    const timer = window.setTimeout(async () => {
+      setLook({ state: 'looking', key })
+      const [flight, day] = key.split('|')
+      const r = await lookupFlight(flight, day, kind)
+      if (!live) return
+      if (r.found) {
+        const num = r.number.split(' ')[1] ?? r.number
+        const name = r.airline ? `${r.airline} ${num}` : r.number
+        const label = r.city ? t(kind === 'airport_out' ? 'logan.flight_to' : 'logan.flight_from', { flight: name, city: r.city }) : name
+        setLook({ state: 'found', key, info: r, label })
+        track('together_logan_flight_found', { kind })
+      } else {
+        setLook({ state: 'missing', key, reason: r.reason })
+        track('together_logan_flight_missing', { kind, reason: r.reason })
+      }
+    }, 600)
+    return () => { live = false; window.clearTimeout(timer) }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- looks up when the number or date settles
+  }, [key, manual, kind])
+
+  const found = !manual && look.state === 'found' && look.key === key ? look : null
+  const missing = !manual && look.state === 'missing' && look.key === key ? look : null
+  const looking = !manual && !!key && !found && !missing
+
+  function result(): FlightResult {
+    if (found) {
+      return { at: found.info.sched, international: found.info.international, terminal: found.info.terminal ?? terminal, flight: norm, label: found.label }
+    }
+    if (!manual && number.trim() && !norm) return { error: 'bad_flight' }
+    const at = bostonInstant(date, time)
+    if (!at) return { error: 'time' }
+    // A number we couldn't find today is still kept: on the day it may show up.
+    return { at, international: intl, terminal, flight: manual ? null : norm, label: null }
+  }
+
+  return { kind, date, setDate, number, setNumber, manual, setManual, time, setTime, intl, setIntl, terminal, setTerminal, norm, found, missing, looking, result }
+}
+
+function FlightFields({ f, minDate }: { f: ReturnType<typeof useFlight>; minDate: string }) {
+  const { t, locale } = useWords()
+  const out = f.kind === 'airport_out'
+  const showTime = f.manual || !!f.missing
+  const id = out ? 'out' : 'back'
+  const info = f.found?.info
+  const facts = info ? [
+    t(out ? 'logan.found_out' : 'logan.found_back', { time: clockText(info.sched, locale) }),
+    info.terminal ? t('logan.found_terminal', { terminal: info.terminal }) : null,
+    info.international ? t('logan.found_intl') : null,
+  ].filter(Boolean).join(' · ') : ''
+  return (
+    <fieldset className="grid grid-cols-1 gap-3">
+      <legend className="mb-2 text-[16px] font-bold">{t(out ? 'logan.out_legend' : 'logan.back_legend')}</legend>
+      <div className="grid grid-cols-2 gap-3 sm:max-w-[420px]">
+        <label className="grid gap-1 text-[15px] font-semibold">
+          {t('logan.date')}
+          <Input type="date" aria-label={t(out ? 'logan.leave_date' : 'logan.land_date')} min={minDate} value={f.date} onChange={(e) => f.setDate(e.target.value)} />
+        </label>
+        {f.manual ? (
+          <label className="grid gap-1 text-[15px] font-semibold">
+            {t('logan.time')}
+            <Input type="time" aria-label={t(out ? 'logan.leave_time' : 'logan.land_time')} value={f.time} onChange={(e) => f.setTime(e.target.value)} />
+          </label>
+        ) : (
+          <label className="grid gap-1 text-[15px] font-semibold" htmlFor={`flight-${id}`}>
+            {t('logan.flight_number')}
+            <Input
+              id={`flight-${id}`} aria-label={t('logan.flight_number')} placeholder="B6 1234" value={f.number}
+              autoComplete="off" autoCapitalize="characters" spellCheck={false} enterKeyHint="next"
+              onChange={(e) => f.setNumber(e.target.value)}
+            />
+          </label>
+        )}
+      </div>
+      {!f.manual && !f.found && !f.missing && !f.looking ? (
+        <p className="text-[14px] leading-snug text-(--ev-ink-75)">
+          {f.number.trim() && !f.norm ? t('logan.flight_bad') : t('logan.flight_hint')}
+        </p>
+      ) : null}
+      {f.looking ? (
+        <p className="flex items-center gap-2 text-[15px] text-(--ev-ink-80)" role="status">
+          <Loader2 className="h-4 w-4 animate-spin text-(--ev-accent)" aria-hidden /> {t('logan.flight_looking')}
+        </p>
+      ) : null}
+      {f.found ? (
+        <div className="flex items-start gap-3 rounded-xl bg-(--ev-panel) px-4 py-3" role="status">
+          {out ? <Plane className="mt-0.5 h-5 w-5 shrink-0 text-(--ev-accent)" aria-hidden /> : <PlaneLanding className="mt-0.5 h-5 w-5 shrink-0 text-(--ev-accent)" aria-hidden />}
+          <span className="min-w-0">
+            <span className="block text-[16px] font-bold leading-snug">{f.found.label}</span>
+            <span className="block text-[15px] leading-snug text-(--ev-ink-80)">{facts}</span>
+            {f.found.info.status ? <span className="mt-1 block text-[13px] leading-snug text-(--ev-ink-75)">{t('logan.adb_credit')}</span> : null}
+          </span>
+        </div>
+      ) : null}
+      {f.missing ? (
+        <p className="text-[15px] leading-snug text-(--ev-ink-85)" role="status">
+          {f.missing.reason === 'unavailable' ? t('logan.flight_unavailable') : t(out ? 'logan.nf_out' : 'logan.nf_back')}
+        </p>
+      ) : null}
+      {f.missing ? (
+        <label className="grid gap-1 text-[15px] font-semibold sm:max-w-[260px]">
+          {t(out ? 'logan.leave_time' : 'logan.land_time')}
+          <Input type="time" aria-label={t(out ? 'logan.leave_time' : 'logan.land_time')} value={f.time} onChange={(e) => f.setTime(e.target.value)} />
+        </label>
+      ) : null}
+      {showTime ? <Check checked={f.intl} onChange={f.setIntl} label={t(out ? 'logan.intl_out' : 'logan.intl_back')} /> : null}
+      {showTime && !out ? (
+        <div>
+          <p className="mb-2 text-[15px] font-semibold">{t('logan.terminal_q')} <span className="font-normal text-(--ev-ink-75)">{t('logan.terminal_hint')}</span></p>
+          <div className="flex flex-wrap gap-2">
+            {TERMINALS.map((x) => <Chip key={x} on={f.terminal === x} onClick={() => f.setTerminal(x)}>{x}</Chip>)}
+            <Chip on={f.terminal === null} onClick={() => f.setTerminal(null)}>{t('logan.not_sure')}</Chip>
+          </div>
+        </div>
+      ) : null}
+      {f.missing ? null : <p className="text-[14px]">
+        <button type="button" className="font-semibold text-(--ev-accent) underline underline-offset-2" onClick={() => f.setManual(!f.manual)}>
+          {f.manual ? t('logan.use_number') : f.found ? t('logan.not_mine') : t('logan.no_number')}
+        </button>
+      </p>}
+    </fieldset>
+  )
+}
+
 function Check({ checked, onChange, label }: { checked: boolean; onChange: (v: boolean) => void; label: string }) {
   return (
     <label className="flex min-h-[44px] items-center gap-3 text-[15px]">
@@ -357,6 +492,9 @@ function TripCard({ trip, onChange, onEdit }: { trip: LoganTrip; onChange: () =>
   const Icon = outbound ? Plane : PlaneLanding
   const day = dayText(trip.trip_at, locale)
   const time = clockText(trip.trip_at, locale)
+  const now = flightNow(trip.trip_at, trip.flight_expected_at, trip.flight_status, outbound, t, locale)
+  // Told not to wait because of my own flight: they can add the new one.
+  const goneMine = set?.delay_state === 'go_ahead' && whoseGo(trip, set) === 'my_flight'
 
   async function notGoing() {
     if (!window.confirm(outbound ? t('logan.stop_out') : t('logan.stop_back'))) return
@@ -381,6 +519,12 @@ function TripCard({ trip, onChange, onEdit }: { trip: LoganTrip; onChange: () =>
               ? t('logan.card_out_line', { time, at: clockText(trip.at_airport, locale) })
               : trip.terminal ? t('logan.card_back_terminal', { time, terminal: trip.terminal }) : t('logan.card_back_line', { time })}
           </p>
+          {trip.flight ? <p className="text-[15px] text-(--ev-ink-80)">{trip.flight_label ?? trip.flight}</p> : null}
+          {now ? (
+            <p className="mt-1 flex items-start gap-1.5 text-[15px] font-bold leading-snug">
+              <Clock className="mt-0.5 h-4 w-4 shrink-0 text-(--ev-accent)" aria-hidden />{now}
+            </p>
+          ) : null}
         </div>
       </div>
 
@@ -392,9 +536,9 @@ function TripCard({ trip, onChange, onEdit }: { trip: LoganTrip; onChange: () =>
           </div>
         ) : <Looking />}
 
-      {set ? null : (
+      {set && !goneMine ? null : (
         <div className="flex flex-wrap gap-2 border-t border-(--ev-line) pt-3">
-          <Button size="sm" onClick={onEdit}>{tt('change')}</Button>
+          <Button size="sm" variant={goneMine ? 'primary' : undefined} onClick={onEdit}>{goneMine ? t('logan.add_new_flight') : tt('change')}</Button>
           <Button size="sm" variant="ghost" busy={busy} onClick={() => void notGoing()}>{t('logan.not_going')}</Button>
         </div>
       )}
@@ -415,6 +559,33 @@ function placeText(raw: string, t: T<LoganKey>, locale: SiteLocale): string {
         : raw
   if (locale !== 'zh-Hans') return p
   return `${/^[A-Za-z0-9]/.test(p) ? ' ' : ''}${p}${/[A-Za-z0-9]$/.test(p) ? ' ' : ''}`
+}
+
+/** "1 hr 5 min" in the page's language. */
+function lateText(min: number, t: T<LoganKey>): string {
+  const h = Math.floor(min / 60)
+  const m = min % 60
+  return h === 0 ? t('logan.late_min', { n: m }) : m === 0 ? t('logan.late_hr', { h }) : t('logan.late_hr_min', { h, m })
+}
+
+const GONE = new Set(['Canceled', 'CanceledUncertain', 'Diverted'])
+
+/** What the last check said, when it's news: "Now lands 6:40 PM, 35 min late." or "Canceled." */
+function flightNow(sched: string, expected: string | null, status: string | null, out: boolean, t: T<LoganKey>, locale: SiteLocale): string | null {
+  if (status && GONE.has(status)) return t('logan.flight_canceled')
+  if (!expected) return null
+  const late = Math.round((new Date(expected).getTime() - new Date(sched).getTime()) / 60_000)
+  if (late < 10) return null
+  return t(out ? 'logan.now_leaves' : 'logan.now_lands', { time: clockText(expected, locale), late: lateText(late, t) })
+}
+
+/** Why the plan became "go on your own": who said so, or whose flight. */
+function whoseGo(trip: LoganTrip, m: LoganMatch): 'i_said' | 'they_said' | 'my_flight' | 'their_flight' {
+  if (m.late_minutes === 30 && m.late_mine != null) return m.late_mine ? 'i_said' : 'they_said'
+  if (trip.flight_status && GONE.has(trip.flight_status)) return 'my_flight'
+  if (m.other.flight_status && GONE.has(m.other.flight_status)) return 'their_flight'
+  const lateBy = (sched: string, exp: string | null) => (exp ? new Date(exp).getTime() - new Date(sched).getTime() : 0)
+  return lateBy(trip.trip_at, trip.flight_expected_at) > lateBy(m.other.trip_at, m.other.expected_at) ? 'my_flight' : 'their_flight'
 }
 
 /** The plan in one line: where, when, how. */
@@ -496,6 +667,11 @@ function Plan({ trip, m, onChange }: { trip: LoganTrip; m: LoganMatch; onChange:
   const [saved, setSaved] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const busBoard = trip.kind === 'airport_back' && m.way === 'transit' && m.meet_place?.startsWith('the same')
+  const gone = m.delay_state === 'go_ahead'
+  const mineWatched = !!trip.flight
+  const theirsWatched = !!m.other.watched
+  const watch = mineWatched && theirsWatched ? t('logan.watch_both')
+    : theirsWatched ? t('logan.watch_theirs', { name }) : mineWatched ? t('logan.watch_mine', { name }) : null
 
   async function savePhone() {
     setBusy(true)
@@ -510,6 +686,29 @@ function Plan({ trip, m, onChange }: { trip: LoganTrip; m: LoganMatch; onChange:
     await onChange()
   }
 
+  if (gone) {
+    const why = whoseGo(trip, m)
+    return (
+      <div className="grid grid-cols-1 gap-3">
+        <div className="flex items-center gap-3">
+          <Avatar name={name} url={m.other.avatar_url} size={48} />
+          <p className="text-[18px] font-bold leading-snug">{full}</p>
+        </div>
+        <Notice tone="warn">
+          <span className="text-[16px] leading-snug">
+            {why === 'i_said' ? t('logan.go_i_said', { name }) : why === 'they_said' ? t('logan.go_they_said', { name })
+              : why === 'my_flight' ? t('logan.go_my_flight', { name }) : t('logan.go_their_flight', { name })}
+          </span>
+        </Notice>
+        {m.other.email ? (
+          <a href={`mailto:${m.other.email}`} className="inline-flex min-h-[44px] items-center gap-2 text-[16px] font-semibold text-(--ev-accent) underline">
+            <Mail className="h-5 w-5" aria-hidden /> {m.other.email}
+          </a>
+        ) : null}
+      </div>
+    )
+  }
+
   return (
     <div className="grid grid-cols-1 gap-4">
       <div className="flex items-center gap-3">
@@ -518,6 +717,12 @@ function Plan({ trip, m, onChange }: { trip: LoganTrip; m: LoganMatch; onChange:
       </div>
       <div className="rounded-2xl bg-(--ev-panel) p-4">
         <p className="text-[19px] font-extrabold leading-snug">{planLine(trip, m, t, locale)}</p>
+        {m.delay_state === 'moved' && m.orig_meet_at ? (
+          <p className="mt-2 flex items-start gap-2 text-[15px] font-semibold leading-snug">
+            <Clock className="mt-0.5 h-4 w-4 shrink-0 text-(--ev-accent)" aria-hidden />
+            {t('logan.moved_note', { time: clockText(m.orig_meet_at, locale) })}
+          </p>
+        ) : null}
         {busBoard ? (
           <p className="mt-2 text-[15px] leading-snug text-(--ev-ink-85)">
             {t('logan.bus_board')}
@@ -535,7 +740,9 @@ function Plan({ trip, m, onChange }: { trip: LoganTrip; m: LoganMatch; onChange:
         <p className="mt-2 text-[15px] leading-snug text-(--ev-ink-85)">
           {t('logan.wait_note', { name })}
         </p>
+        {watch ? <p className="mt-2 text-[15px] leading-snug text-(--ev-ink-85)">{watch}</p> : null}
       </div>
+      <RunningLate m={m} name={name} onChange={onChange} />
       <div className="grid grid-cols-1 gap-2 text-[16px]">
         {m.other.email ? (
           <a href={`mailto:${m.other.email}`} className="inline-flex min-h-[44px] items-center gap-2 font-semibold text-(--ev-accent) underline">
@@ -558,6 +765,59 @@ function Plan({ trip, m, onChange }: { trip: LoganTrip; m: LoganMatch; onChange:
       <div className="border-t border-(--ev-line) pt-3">
         <Button size="sm" variant="ghost" onClick={() => void cantGo()}>{t('logan.cant_go')}</Button>
       </div>
+    </div>
+  )
+}
+
+/**
+ * On the day (6 hours before to 2 hours after meeting): "About 10 min",
+ * "About 20 min" or "Go without me"; the other person is emailed at once
+ * (airport_running_late). Before then, a line saying it will be here.
+ */
+function RunningLate({ m, name, onChange }: { m: LoganMatch; name: string; onChange: () => Promise<void> }) {
+  const { t, locale } = useWords()
+  const [busy, setBusy] = useState<10 | 20 | 30 | null>(null)
+  const [failed, setFailed] = useState(false)
+  const meet = new Date(m.meet_at).getTime()
+  const [nowMs] = useState(() => Date.now())
+  const open = nowMs >= meet - 6 * 3600_000 && nowMs <= meet + 2 * 3600_000
+  const theirs = m.late_mine === false && (m.late_minutes === 10 || m.late_minutes === 20) ? m.late_minutes : null
+  const mine = m.late_mine === true && (m.late_minutes === 10 || m.late_minutes === 20) ? m.late_minutes : null
+
+  async function tell(min: 10 | 20 | 30) {
+    if (min === 30 && !window.confirm(t('logan.late_go_confirm', { name }))) return
+    setBusy(min)
+    setFailed(false)
+    const ok = await runningLate(m.id, min)
+    track('together_logan_running_late', { minutes: min, ok })
+    if (!ok) setFailed(true)
+    await onChange()
+    setBusy(null)
+  }
+
+  return (
+    <div className="grid grid-cols-1 gap-3">
+      {theirs ? (
+        <Notice tone="warn">
+          <span className="text-[16px] leading-snug">
+            {t('logan.late_theirs', { name, n: theirs, time: clockText(new Date(meet + theirs * 60_000).toISOString(), locale) })}
+          </span>
+        </Notice>
+      ) : null}
+      {open ? (
+        <div>
+          <p className="mb-2 text-[16px] font-bold">{t('logan.late_q')}</p>
+          <div className="flex flex-wrap gap-2">
+            <Button busy={busy === 10} onClick={() => void tell(10)}>{t('logan.late_10')}</Button>
+            <Button busy={busy === 20} onClick={() => void tell(20)}>{t('logan.late_20')}</Button>
+            <Button variant="ghost" busy={busy === 30} onClick={() => void tell(30)}>{t('logan.late_go')}</Button>
+          </div>
+          {mine ? <p className="mt-2 text-[15px] leading-snug" role="status">{t('logan.late_mine', { name, n: mine })}</p> : null}
+          {failed ? <p className="mt-2 text-[15px] leading-snug" role="alert">{t('logan.late_failed', { name })}</p> : null}
+        </div>
+      ) : nowMs < meet ? (
+        <p className="text-[15px] leading-snug text-(--ev-ink-80)">{t('logan.late_later', { name })}</p>
+      ) : null}
     </div>
   )
 }
