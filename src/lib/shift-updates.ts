@@ -53,8 +53,9 @@ export const SHIFT_UPDATES: ShiftUpdate[] = [
     short: 'Someone to go with',
     date: '2026-11-09',
     where: 'both',
-    title: 'Try it the first time with someone who knows the way',
-    body: 'Want to bike or take the T somewhere new? Shift Together finds a neighbor who makes that trip and can go with you the first time.',
+    // Wording from Shift docs/programs/plain-words.md (2026-11-09), as in the newsletter.
+    title: 'Start biking or taking the T with a neighbor who already does',
+    body: 'Shift Together introduces people who want to start biking or taking the T to someone nearby who already does, and they go together the first time.',
     link: { href: '/together', label: 'Find someone to go with' },
     // "Bicyclists boarding MBTA train in Concord", 4300streetcar, CC BY 4.0
     // (the photo the Shift Together pages use; see components/together/photos.tsx).
@@ -74,7 +75,7 @@ export const SHIFT_UPDATES: ShiftUpdate[] = [
     short: 'Next bus, train and bike',
     date: '2026-11-09',
     where: 'both',
-    title: 'Your next bus, train and bike, and the way anywhere',
+    title: 'Your next bus, train and Bluebike, and a route to anywhere',
     body: 'Open Shift and the next departures and Bluebikes near you come first. Type where you\'re going for a bike or transit route, and skip any street you don\'t like.',
     link: { href: '/nearby', label: 'Try it on the web' },
     picture: {
@@ -110,7 +111,7 @@ export const SHIFT_UPDATES: ShiftUpdate[] = [
     date: '2026-11-05',
     where: 'both',
     title: 'A free 1:1 bike lesson near Somerville',
-    body: 'Nervous in traffic? An instructor from the Bicycle Riding School rides real streets with you for 90 minutes. Green Streets covers the cost.',
+    body: 'An instructor from the Bicycle Riding School rides real streets with you for 90 minutes, and Green Streets covers the cost.',
     link: { href: '/bike-lessons#street-lesson', label: 'Ask for a lesson' },
     // "Older woman with flowers protected bike lane boston" (a parking-protected
     // lane in Cambridge, per its description), Adam Coppola, CC0.
@@ -151,7 +152,7 @@ export const SHIFT_UPDATES: ShiftUpdate[] = [
     date: '2026-11-04',
     where: 'web',
     title: 'Know a trail before you go',
-    body: 'Is it open, how long is it, what\'s underfoot, where do you get on, and which train gets you there and home.',
+    body: 'Each trail page says whether it\'s open, how long it is, what\'s underfoot, where to get on, and which train gets you there and home.',
     link: { href: '/trails', label: 'See the trails' },
     // "Minuteman Bikeway - Arlington, MA - 01", Daderot, public domain; cropped.
     picture: {
@@ -217,7 +218,7 @@ export const SHIFT_UPDATES: ShiftUpdate[] = [
     date: '2026-10-22',
     where: 'both',
     title: 'A new self-guided ride on the Northern Strand Trail',
-    body: 'Ride the old rail line from Everett to Lynn, across the Rumney Marsh, with stops along the way. Suggested by Samantha LeBlanc.',
+    body: 'Ride the old rail line from Everett to Lynn, across the Rumney Marsh, with stops to check off. Suggested by Samantha LeBlanc.',
     link: { href: '/shift/roams/northern-strand-trail', label: 'See the ride' },
     // The Roam's own hero (roams.hero_image_url), cropped from
     // "Northern Strand trail and MassDOT hopper cars ... July 2026", 4300streetcar, CC BY 4.0.
