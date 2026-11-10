@@ -1,4 +1,5 @@
 import 'server-only'
+import { unstable_cache } from 'next/cache'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { slugify } from '@/lib/utm'
 
@@ -225,10 +226,29 @@ const exactRate = (t: TownDirectoryRow) =>
     ? (t.shifted_trips_month ?? t.active_trips_month) / t.total_trips_month
     : 0
 
+/**
+ * Held in the Next data cache for an hour. The pages that use it read the
+ * visitor's language (site languages, 2026-11-07), so they render on every
+ * visit; uncached, get_town_directory ran about once a second and was 63% of
+ * the database's time on 2026-11-10, the day the database hung. A failed call
+ * throws so it isn't cached. Outside Next (scripts/resend-bounced-digests.ts)
+ * there is no cache, so that falls back to one direct call; then [] as before.
+ */
+async function fetchTownDirectoryRows(): Promise<TownDirectoryRow[]> {
+  const { data, error } = await createServerSupabaseClient().rpc('get_town_directory')
+  if (error || !data) throw new Error(error?.message ?? 'get_town_directory returned nothing')
+  return data as TownDirectoryRow[]
+}
+const cachedTownDirectoryRows = unstable_cache(fetchTownDirectoryRows, ['get_town_directory'], {
+  revalidate: 3600,
+  tags: ['town-directory'],
+})
+
 export async function getTownDirectory(): Promise<TownSummary[]> {
-  const supabase = createServerSupabaseClient()
-  const { data, error } = await supabase.rpc('get_town_directory')
-  if (error || !data) return []
+  const data = await cachedTownDirectoryRows()
+    .catch(() => fetchTownDirectoryRows())
+    .catch(() => null)
+  if (!data) return []
   // Coverage scope first — an out-of-state town shouldn't count toward a board,
   // a headline count, or the sitemap. See COVERED_STATES.
   const rows = (data as TownDirectoryRow[]).filter((r) => COVERED_STATES.includes(r.state))
@@ -297,11 +317,19 @@ export async function getTownBySlug(slug: string): Promise<{ town: TownSummary; 
   return { town, directory }
 }
 
+/** Cached for an hour per town, for the same reason as the directory above. */
+const cachedTownPageStats = unstable_cache(
+  async (groupId: string): Promise<TownPageStats> => {
+    const { data, error } = await createServerSupabaseClient().rpc('get_town_page_stats', { p_group_id: groupId })
+    if (error || !data) throw new Error(error?.message ?? 'get_town_page_stats returned nothing')
+    return data as TownPageStats
+  },
+  ['get_town_page_stats'],
+  { revalidate: 3600, tags: ['town-page-stats'] },
+)
+
 export async function getTownPageStats(groupId: string): Promise<TownPageStats | null> {
-  const supabase = createServerSupabaseClient()
-  const { data, error } = await supabase.rpc('get_town_page_stats', { p_group_id: groupId })
-  if (error || !data) return null
-  return data as TownPageStats
+  return cachedTownPageStats(groupId).catch(() => null)
 }
 
 function haversineMiles(lat1: number, lng1: number, lat2: number, lng2: number): number {
