@@ -15,6 +15,7 @@ import NewRoutesShiftBanner from './_components/NewRoutesShiftBanner'
 import SemesterShiftBanner from './_components/SemesterShiftBanner'
 import JsonLd from '@/components/JsonLd'
 import { shiftAppSchema } from '@/lib/structured-data'
+import { SHIFT_UPDATES } from '@/lib/shift-updates'
 import { siteLocale } from '@/lib/site-locale'
 import { translator, withLang, type SiteLocale } from '@/lib/site-i18n'
 import { shiftPageStrings, type ShiftPageKey } from '@/lib/site-strings/shift-page'
@@ -155,6 +156,18 @@ export default async function ShiftPage({ searchParams }: { searchParams: Search
                   {t('shiftp.trips_worth_link')}
                 </Link>
               </div>
+
+              {/* The newest update from src/lib/shift-updates.ts (English names it). */}
+              <Link
+                href="/shift/whats-new"
+                className="mt-3 flex max-w-[46ch] items-baseline gap-2 font-display text-[15px] font-semibold text-navy hover:underline"
+              >
+                {CHEV}
+                <span>
+                  <b className="font-bold text-forest">{t('shiftp.whats_new')}</b>
+                  {locale === 'en' && `: ${SHIFT_UPDATES[0].title}`}
+                </span>
+              </Link>
             </div>
 
             {/* Right — fanned phones */}

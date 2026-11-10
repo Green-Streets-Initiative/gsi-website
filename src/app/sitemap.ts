@@ -26,6 +26,7 @@ const STATIC_PAGES: { path: string; changeFrequency: ChangeFreq; priority: numbe
   // Shift app + audience landing pages
   { path: '/shift', changeFrequency: 'weekly', priority: 0.9 },
   { path: '/shift/towns', changeFrequency: 'daily', priority: 0.9 },
+  { path: '/shift/whats-new', changeFrequency: 'weekly', priority: 0.7 },
   { path: '/shift/roams', changeFrequency: 'weekly', priority: 0.8 },
   { path: '/shift/employers', changeFrequency: 'monthly', priority: 0.8 },
   { path: '/shift/schools', changeFrequency: 'monthly', priority: 0.8 },
