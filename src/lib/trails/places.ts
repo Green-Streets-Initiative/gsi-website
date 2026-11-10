@@ -20,6 +20,7 @@ export const MAP_PLACES: Array<{ trail: string; match: string; label: string }> 
   { trail: 'emerald-necklace-paths', match: 'Jamaica Pond', label: 'Jamaica Pond' },
   { trail: 'emerald-necklace-paths', match: 'Forest Hills', label: 'Forest Hills' },
   { trail: 'mystic-river-greenway', match: 'Medford Square', label: 'Medford Square' },
+  { trail: 'mystic-river-greenway', match: 'Draw Seven Park', label: 'Draw Seven Park' },
   { trail: 'northern-strand-trail', match: 'Gateway Center', label: 'Everett' },
   { trail: 'northern-strand-trail', match: 'Western Avenue', label: 'West Lynn' },
   { trail: 'east-boston-greenway', match: 'Constitution Beach', label: 'Constitution Beach' },

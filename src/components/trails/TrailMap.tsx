@@ -2,7 +2,8 @@
 
 import { useEffect, useRef } from 'react'
 import 'maplibre-gl/dist/maplibre-gl.css'
-import { QUIET_STYLE, LABEL_FONT_BOLD, quietBasemap } from '@/lib/maps/quietBasemap'
+import { QUIET_LABELED_STYLE, LABEL_FONT_BOLD, quietBasemap } from '@/lib/maps/quietBasemap'
+import { addStations } from '@/lib/maps/stations'
 import { translator, type SiteLocale } from '@/lib/site-i18n'
 import { trailStrings } from '@/lib/site-strings/trails'
 
@@ -71,7 +72,7 @@ export default function TrailMap({ locale = 'en', name, lines, points, closed = 
       }
       const map = new maplibregl.Map({
         container: el,
-        style: QUIET_STYLE,
+        style: QUIET_LABELED_STYLE,
         bounds,
         fitBoundsOptions: { padding: padding() },
         attributionControl: false,
@@ -87,7 +88,8 @@ export default function TrailMap({ locale = 'en', name, lines, points, closed = 
       requestAnimationFrame(fit)
 
       map.on('load', async () => {
-        quietBasemap(map)
+        // Town, river and street names and the T stations, so you can tell where the trail is (Keith 2026-11-10).
+        quietBasemap(map, { labels: true })
         fit()
         try {
           const net = await fetch('/data/bike-network-greater-boston.json').then((r) => r.json())
@@ -114,6 +116,7 @@ export default function TrailMap({ locale = 'en', name, lines, points, closed = 
           layout: { 'line-join': 'round', 'line-cap': 'round' },
           paint: { 'line-color': '#2D6A4F', 'line-width': 4.2 },
         })
+        await addStations(map, 'trail-casing')
         if (reports.length > 0) {
           map.addSource('trail-reports', {
             type: 'geojson',

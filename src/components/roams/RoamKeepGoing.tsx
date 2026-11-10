@@ -1,12 +1,13 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { ChevronDown } from 'lucide-react'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { gaEvent } from '@/lib/ga'
 import type { KeepGoingRow } from '@/lib/roams/queries'
-import { QUIET_STYLE, LABEL_FONT_BOLD, quietBasemap } from '@/lib/maps/quietBasemap'
+import { QUIET_LABELED_STYLE, LABEL_FONT_BOLD, quietBasemap } from '@/lib/maps/quietBasemap'
+import { addStations } from '@/lib/maps/stations'
 import { translator, withLang, type SiteLocale } from '@/lib/site-i18n'
 import { roamStrings } from '@/lib/site-strings/roams'
 
@@ -18,6 +19,13 @@ import { roamStrings } from '@/lib/site-strings/roams'
  * same columns (where to, starts at, length, how much is protected); opening a
  * row lights its line in gold, fits the map to it, and shows its steps and the
  * roam that rides it.
+ *
+ * Keith 2026-11-10: it wasn't clear which line was "this trail", how a route
+ * joins it, or where anything was. So the legend names the trail, an open
+ * route gets a pin where it starts (its "Starts at" place) and its last stop's
+ * name at the far end, a gap between the trail and the route is drawn dashed,
+ * the map frames the place where they meet, and the trail-page map keeps
+ * town, river and street names and the T stations.
  */
 
 type LngLat = [number, number]
@@ -34,6 +42,22 @@ function bounds(lines: LngLat[][]): [LngLat, LngLat] | null {
   }
   return x0 <= x1 ? [[x0, y0], [x1, y1]] : null
 }
+
+const kmBetween = (a: LngLat, b: LngLat) => Math.hypot((a[0] - b[0]) * 82, (a[1] - b[1]) * 111.2)
+
+/** Where the open route comes closest to this trail: the pair of points, and how far apart. */
+function junction(own: LngLat[][], route: LngLat[][]): { own: LngLat; route: LngLat; km: number } | null {
+  let best: { own: LngLat; route: LngLat; km: number } | null = null
+  const ownPts = own.flat()
+  if (ownPts.length === 0) return null
+  for (const l of route) for (const p of l) for (const q of ownPts) {
+    const d = kmBetween(p, q)
+    if (!best || d < best.km) best = { own: q, route: p, km: d }
+  }
+  return best
+}
+
+const EMPTY: GeoJSON.FeatureCollection = { type: 'FeatureCollection', features: [] }
 
 function Bar({ row }: { row: KeepGoingRow }) {
   return (
@@ -90,7 +114,7 @@ export default function RoamKeepGoing({
       const b = bounds(allLines)
       const map = new maplibregl.Map({
         container: mapEl.current,
-        style: quiet ? QUIET_STYLE : 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
+        style: QUIET_LABELED_STYLE,
         bounds: b ?? undefined,
         fitBoundsOptions: { padding: 36 },
         attributionControl: false,
@@ -100,7 +124,7 @@ export default function RoamKeepGoing({
       map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right')
       mapRef.current = map
       map.on('load', async () => {
-        if (quiet) quietBasemap(map)
+        if (quiet) quietBasemap(map, { labels: true })
         if (b) map.fitBounds(b, { padding: 36, animate: false })
         try {
           const net = await fetch('/data/bike-network-greater-boston.json').then((r) => r.json())
@@ -145,6 +169,30 @@ export default function RoamKeepGoing({
             paint: { 'text-color': '#191A2E', 'text-halo-color': '#FAFAF6', 'text-halo-width': 2 },
           })
         }
+        // The open route's link to this trail (dashed, when they don't touch) and its two ends.
+        map.addSource('kg-link', { type: 'geojson', data: EMPTY })
+        map.addLayer({ id: 'kg-link', type: 'line', source: 'kg-link', layout: { 'line-cap': 'round' }, paint: { 'line-color': '#191A2E', 'line-width': 2.5, 'line-dasharray': [0.2, 1.8] } })
+        await addStations(map, 'kg-dest')
+        map.addSource('kg-ends', { type: 'geojson', data: EMPTY })
+        map.addLayer({
+          id: 'kg-ends-dot',
+          type: 'circle',
+          source: 'kg-ends',
+          paint: {
+            'circle-radius': 6.5,
+            'circle-color': ['case', ['==', ['get', 'end'], 'start'], '#FFFFFF', '#EDB93C'],
+            'circle-stroke-color': '#191A2E',
+            'circle-stroke-width': 2.5,
+          },
+        })
+        map.addLayer({
+          id: 'kg-ends',
+          type: 'symbol',
+          source: 'kg-ends',
+          // Each end's name sits on the side away from the other end, so the far one stays inside the map.
+          layout: { 'text-field': ['get', 'label'], 'text-font': LABEL_FONT_BOLD, 'text-size': 13.5, 'text-anchor': ['get', 'anchor'], 'text-offset': ['get', 'offset'], 'text-allow-overlap': true, 'text-max-width': 9 },
+          paint: { 'text-color': '#191A2E', 'text-halo-color': '#FFFFFF', 'text-halo-width': 2.4 },
+        })
         setReady(true)
       })
     })()
@@ -157,18 +205,54 @@ export default function RoamKeepGoing({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Light the open row's line and fit the map to it (with this roam's nearer end in view).
+  const openRow = rows.find((r) => r.key === open) ?? null
+  const meet = useMemo(
+    () => (openRow?.lines?.length ? junction(own, openRow.lines) : null),
+    // own and the rows are fixed per page load.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [open],
+  )
+
+  // Light the open row's line, mark where it starts and ends, and fit the map
+  // to it together with the part of this trail it leaves from.
   useEffect(() => {
     const map = mapRef.current
     if (!map || !ready) return
     map.setFilter('kg-halo', ['==', ['get', 'key'], open ?? '__none__'])
-    const row = rows.find((r) => r.key === open)
-    // The open route together with this roam, so the link between them shows.
-    // On a long trail, only the part of it near where the row starts.
-    const start = row?.lines?.[0]?.[0]
-    const near = routeLines && start ? own.filter((l) => l.some(([x, y]) => Math.abs(x - start[0]) < 0.03 && Math.abs(y - start[1]) < 0.02)) : own
-    const b = bounds(row?.lines?.length ? [...row.lines, ...near] : allLines)
-    if (b) map.fitBounds(b, { padding: 44, maxZoom: 15, duration: 600 })
+    const linkSrc = map.getSource('kg-link') as import('maplibre-gl').GeoJSONSource | undefined
+    const endsSrc = map.getSource('kg-ends') as import('maplibre-gl').GeoJSONSource | undefined
+    if (!openRow?.lines?.length) {
+      linkSrc?.setData(EMPTY)
+      endsSrc?.setData(EMPTY)
+      const b = bounds(allLines)
+      if (b) map.fitBounds(b, { padding: 36, maxZoom: 15, duration: 600 })
+      return
+    }
+    const routePts = openRow.lines.flat()
+    const from = meet?.route ?? routePts[0]
+    // The far end: the route's point farthest from where it starts. A short
+    // route or a loop (Fresh Pond) gets no far-end name; its start says enough.
+    let far = from
+    for (const p of routePts) if (kmBetween(p, from) > kmBetween(far, from)) far = p
+    const last = openRow.steps[openRow.steps.length - 1]?.title
+    // A name to the left of its dot when that end is the eastern one, else to the right.
+    const side = (p: LngLat, other: LngLat) => (p[0] >= other[0] ? { anchor: 'right', offset: [-1, 0] } : { anchor: 'left', offset: [1, 0] })
+    const showFar = !!last && kmBetween(far, from) > 1.6
+    const ends: GeoJSON.Feature[] = [
+      { type: 'Feature', properties: { end: 'start', label: openRow.start_label, ...side(from, showFar ? far : (meet?.own ?? from)) }, geometry: { type: 'Point', coordinates: from } },
+    ]
+    if (showFar) ends.push({ type: 'Feature', properties: { end: 'far', label: last, ...side(far, from) }, geometry: { type: 'Point', coordinates: far } })
+    endsSrc?.setData({ type: 'FeatureCollection', features: ends })
+    // More than ~100 m between the trail and the route: show the gap.
+    linkSrc?.setData(
+      meet && meet.km > 0.1
+        ? { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: [meet.own, meet.route] } }
+        : EMPTY,
+    )
+    // On a long trail, only the part of it within ~1.5 km of where the route leaves it.
+    const near = meet ? own.filter((l) => l.some((p) => kmBetween(p, meet.own) < 1.5)) : own
+    const b = bounds([...openRow.lines, ...near])
+    if (b) map.fitBounds(b, { padding: 48, maxZoom: 15, duration: 600 })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, ready])
 
@@ -177,8 +261,12 @@ export default function RoamKeepGoing({
       <div className="overflow-hidden rounded-[18px] bg-white shadow-[0_1px_2px_rgba(25,26,46,0.05),0_0_0_1px_rgba(25,26,46,0.06)] lg:sticky lg:top-[124px]">
         <div ref={mapEl} className="h-[300px] w-full sm:h-[380px] lg:h-[460px]" role="img" aria-label={t('kg.map_aria', { name: roamName })} />
         <p className="flex flex-wrap gap-x-4 gap-y-1 border-t border-navy/[0.07] px-4 py-2.5 text-[0.8125rem] text-ink-soft">
-          <span className="inline-flex items-center gap-1.5"><i className="inline-block h-1 w-4 rounded bg-[#2966E5]" aria-hidden /> {subject === 'trail' ? t('kg.this_trail') : t('kg.this_roam')}</span>
-          <span className="inline-flex items-center gap-1.5"><i className="inline-block h-1 w-4 rounded bg-[#2D6A4F]" aria-hidden /> {t('kg.where')}</span>
+          <span className="inline-flex items-center gap-1.5"><i className="inline-block h-1 w-4 rounded bg-[#2966E5]" aria-hidden /> {subject === 'trail' ? roamName : t('kg.this_roam')}</span>
+          {openRow ? (
+            <span className="inline-flex items-center gap-1.5 font-semibold text-navy"><i className="inline-block h-1.5 w-4 rounded bg-[#EDB93C]" aria-hidden /> {openRow.title}</span>
+          ) : (
+            <span className="inline-flex items-center gap-1.5"><i className="inline-block h-1 w-4 rounded bg-[#2D6A4F]" aria-hidden /> {t('kg.where')}</span>
+          )}
           {closed.length > 0 && <span className="inline-flex items-center gap-1.5"><i className="inline-block h-1 w-4 rounded bg-[#C2410C]" aria-hidden /> {t('kg.closed')}</span>}
           <span className="inline-flex items-center gap-1.5"><i className="inline-block h-1 w-4 rounded bg-[#5E8466]/60" aria-hidden /> {t('kg.other')}</span>
         </p>
