@@ -21,7 +21,7 @@ const PRELOAD_FONTS = [
 
 export const metadata: Metadata = {
   title: 'Green Streets Initiative — Walking, biking and transit in Massachusetts',
-  description: 'A Somerville nonprofit since 2006. Walk/Ride Day, group rides and walks, route planning, town pages, guides and Shift, the free app for finding better ways to get around.',
+  description: 'A Somerville-based nonprofit founded in 2006. Walk/Ride Day, group rides and walks, route planning, town pages, guides and Shift, the free app for finding better ways to get around.',
   metadataBase: new URL('https://www.gogreenstreets.org'),
   openGraph: {
     title: 'Green Streets Initiative',

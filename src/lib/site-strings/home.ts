@@ -12,7 +12,7 @@ import { defineStrings } from '@/lib/site-i18n'
 export const homeStrings = defineStrings(
   {
     'home.meta_title': 'Green Streets Initiative — Walking, biking and transit in Massachusetts',
-    'home.meta_description': 'A Somerville nonprofit since 2006. Walk/Ride Day, group rides and walks, route planning, town pages, guides and Shift, the free app for finding better ways to get around.',
+    'home.meta_description': 'A Somerville-based nonprofit founded in 2006. Walk/Ride Day, group rides and walks, route planning, town pages, guides and Shift, the free app for finding better ways to get around.',
     'home.hero_top_strong': 'A Massachusetts nonprofit',
     'home.hero_top_rest': 'since 2006',
     'home.hero_title_1': 'Find better ways',
@@ -77,7 +77,7 @@ export const homeStrings = defineStrings(
   {
     es: {
       'home.meta_title': 'Green Streets Initiative — Caminar, andar en bici y transporte público en Massachusetts',
-      'home.meta_description': 'Una organización sin fines de lucro de Somerville desde 2006. Walk/Ride Day, paseos y caminatas en grupo, planificación de rutas, páginas de tu ciudad, guías y Shift, la app gratis para encontrar mejores formas de moverte.',
+      'home.meta_description': 'Una organización sin fines de lucro con sede en Somerville, fundada en 2006. Walk/Ride Day, paseos y caminatas en grupo, planificación de rutas, páginas de tu ciudad, guías y Shift, la app gratis para encontrar mejores formas de moverte.',
       'home.hero_top_strong': 'Una organización sin fines de lucro de Massachusetts',
       'home.hero_top_rest': 'desde 2006',
       'home.hero_title_1': 'Encuentra mejores',
@@ -141,7 +141,7 @@ export const homeStrings = defineStrings(
     },
     'pt-BR': {
       'home.meta_title': 'Green Streets Initiative — A pé, de bike e de transporte público em Massachusetts',
-      'home.meta_description': 'Uma organização sem fins lucrativos de Somerville desde 2006. Walk/Ride Day, passeios e caminhadas em grupo, planejamento de rotas, páginas da sua cidade, guias e o Shift, o app gratuito para encontrar jeitos melhores de se locomover.',
+      'home.meta_description': 'Uma organização sem fins lucrativos com sede em Somerville, fundada em 2006. Walk/Ride Day, passeios e caminhadas em grupo, planejamento de rotas, páginas da sua cidade, guias e o Shift, o app gratuito para encontrar jeitos melhores de se locomover.',
       'home.hero_top_strong': 'Uma organização sem fins lucrativos de Massachusetts',
       'home.hero_top_rest': 'desde 2006',
       'home.hero_title_1': 'Encontre jeitos melhores',
@@ -205,7 +205,7 @@ export const homeStrings = defineStrings(
     },
     'zh-Hans': {
       'home.meta_title': 'Green Streets Initiative — 在马萨诸塞州步行、骑车和乘坐公共交通',
-      'home.meta_description': '自 2006 年起扎根 Somerville 的非营利组织。Walk/Ride Day、团体骑行和步行、路线规划、城镇页面、指南，以及帮你找到更好出行方式的免费应用 Shift。',
+      'home.meta_description': '总部位于 Somerville、成立于 2006 年的非营利组织。Walk/Ride Day、团体骑行和步行、路线规划、城镇页面、指南，以及帮你找到更好出行方式的免费应用 Shift。',
       'home.hero_top_strong': '马萨诸塞州非营利组织',
       'home.hero_top_rest': '始于 2006 年',
       'home.hero_title_1': '找到更好的',
