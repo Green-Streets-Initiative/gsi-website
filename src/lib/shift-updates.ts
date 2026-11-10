@@ -10,8 +10,9 @@
  *   Shift docs/programs/product/state.json, and the launch ledger).
  * - Lead with what people get, in plain words: the title is the thing a
  *   person can now do or have ("A free bike lesson near Somerville"), not the
- *   feature's name. One sentence under it (about 25 words at most). `short`
- *   is two or three words for the page's list. Never "earn"; lead with
+ *   feature's name, and it names the concrete thing (the mode, place or
+ *   action; Shift docs/programs/plain-words.md). One sentence under it
+ *   (about 25 words at most). Never "earn"; lead with
  *   trying something new, never "the way you already move".
  * - The page doesn't show dates (Keith 2026-11-10: "I don't think anybody
  *   cares about the date features were released on"); `date` only keeps the
@@ -27,7 +28,8 @@
  */
 
 export type ShiftUpdatePicture =
-  | { kind: 'app'; src: string; width: number; height: number; alt: string }
+  /** `focus` says which end of a tall screen the card shows (default top). */
+  | { kind: 'app'; src: string; width: number; height: number; alt: string; focus?: 'top' | 'bottom' }
   | { kind: 'photo'; src: string; width: number; height: number; alt: string; credit: string; creditUrl: string }
   | { kind: 'sign'; name: string; detail: string; place: string }
   | { kind: 'languages'; lines: { lang: string; text: string }[] }
@@ -37,8 +39,6 @@ export type ShiftUpdate = {
   /** The day it reached everyone, YYYY-MM-DD (Eastern). Not shown; keeps the order honest. */
   date: string
   where: 'app' | 'web' | 'both'
-  /** Two or three words for the page's list of updates. */
-  short: string
   title: string
   body: string
   link: { href: string; label: string }
@@ -50,7 +50,6 @@ export type ShiftUpdate = {
 export const SHIFT_UPDATES: ShiftUpdate[] = [
   {
     id: 'shift-together',
-    short: 'Someone to go with',
     date: '2026-11-09',
     where: 'both',
     // Wording from Shift docs/programs/plain-words.md (2026-11-09), as in the newsletter.
@@ -72,10 +71,9 @@ export const SHIFT_UPDATES: ShiftUpdate[] = [
   },
   {
     id: 'around-you-v2',
-    short: 'Next bus, train and bike',
     date: '2026-11-09',
     where: 'both',
-    title: 'Your next bus, train and Bluebike, and a route to anywhere',
+    title: 'See the next bus, train and Bluebike near you, and plan a route',
     body: 'Open Shift and the next departures and Bluebikes near you come first. Type where you\'re going for a bike or transit route, and skip any street you don\'t like.',
     link: { href: '/nearby', label: 'Try it on the web' },
     picture: {
@@ -88,10 +86,9 @@ export const SHIFT_UPDATES: ShiftUpdate[] = [
   },
   {
     id: 'site-languages',
-    short: 'In your language',
     date: '2026-11-08',
     where: 'web',
-    title: 'Read our pages in Spanish, Portuguese or Chinese',
+    title: 'Read gogreenstreets.org in Spanish, Portuguese or Chinese',
     body: 'Town pages, trails, Roams, bike lessons, parking and help, in your language, like the app.',
     link: { href: '/shift/towns?lang=es', label: 'See the town pages in Spanish' },
     picture: {
@@ -107,10 +104,9 @@ export const SHIFT_UPDATES: ShiftUpdate[] = [
   },
   {
     id: 'free-bike-lesson',
-    short: 'A free bike lesson',
     date: '2026-11-05',
     where: 'both',
-    title: 'A free 1:1 bike lesson near Somerville',
+    title: 'Get a free bike lesson on real streets near Somerville',
     body: 'An instructor from the Bicycle Riding School rides real streets with you for 90 minutes, and Green Streets covers the cost.',
     link: { href: '/bike-lessons#street-lesson', label: 'Ask for a lesson' },
     // "Older woman with flowers protected bike lane boston" (a parking-protected
@@ -128,10 +124,9 @@ export const SHIFT_UPDATES: ShiftUpdate[] = [
   },
   {
     id: 'thursday-events-email',
-    short: 'Rides and walks by email',
     date: '2026-11-04',
     where: 'both',
-    title: 'This week\'s group rides and walks, every Thursday',
+    title: 'Get this week\'s group rides and walks by email every Thursday',
     body: 'Pick the kinds of events and how far you\'ll go, and each Thursday we email what\'s coming up near you. One tap in the app\'s Events tab.',
     link: { href: '/events', label: 'Get the Thursday email' },
     // Unsplash, mood only (not a named place): "people riding bicycle on road
@@ -148,11 +143,10 @@ export const SHIFT_UPDATES: ShiftUpdate[] = [
   },
   {
     id: 'trail-pages',
-    short: 'Trail pages',
     date: '2026-11-04',
     where: 'web',
-    title: 'Know a trail before you go',
-    body: 'Each trail page says whether it\'s open, how long it is, what\'s underfoot, where to get on, and which train gets you there and home.',
+    title: 'Check if a trail is open, what it\'s like, and which train gets you there',
+    body: 'Each trail page says how long it is, what\'s underfoot, where to get on, and which train gets you there and home.',
     link: { href: '/trails', label: 'See the trails' },
     // "Minuteman Bikeway - Arlington, MA - 01", Daderot, public domain; cropped.
     picture: {
@@ -167,11 +161,10 @@ export const SHIFT_UPDATES: ShiftUpdate[] = [
   },
   {
     id: 'venue-parking',
-    short: 'Game-day parking',
     date: '2026-11-02',
     where: 'web',
-    title: 'Going to the game? Where to park, and the train right there',
-    body: 'TD Garden, Fenway Park and Gillette Stadium: official garage prices, the walk from each one, and the next train.',
+    title: 'Find parking and the next train for TD Garden, Fenway Park and Gillette',
+    body: 'Official garage prices, the walk from each garage, and the train that stops right at the arena or ballpark.',
     link: { href: '/parking/td-garden', label: 'Parking at TD Garden' },
     // "Hub on Causeway and North Station entrance, October 2020",
     // Pi.1415926535, CC BY-SA 4.0; resized to 1000px.
@@ -188,7 +181,6 @@ export const SHIFT_UPDATES: ShiftUpdate[] = [
   },
   {
     id: 'new-in-your-town',
-    short: 'New lanes near you',
     date: '2026-11-01',
     where: 'both',
     title: 'See the bike lanes and paths that just opened near you',
@@ -198,10 +190,9 @@ export const SHIFT_UPDATES: ShiftUpdate[] = [
   },
   {
     id: 'saved-trips',
-    short: 'Your trips, one tap away',
     date: '2026-10-29',
     where: 'app',
-    title: 'Your regular trips, one tap away',
+    title: 'Save your regular trips and plan them again in one tap',
     body: 'Plan a trip once and tap "Save this trip." Next time it\'s on Home, on foot, by bike or by transit.',
     link: { href: '/shift', label: 'Get Shift' },
     picture: {
@@ -214,10 +205,9 @@ export const SHIFT_UPDATES: ShiftUpdate[] = [
   },
   {
     id: 'northern-strand-roam',
-    short: 'Northern Strand ride',
     date: '2026-10-22',
     where: 'both',
-    title: 'A new self-guided ride on the Northern Strand Trail',
+    title: 'Ride the Northern Strand Trail with a new self-guided route',
     body: 'Ride the old rail line from Everett to Lynn, across the Rumney Marsh, with stops to check off. Suggested by Samantha LeBlanc.',
     link: { href: '/shift/roams/northern-strand-trail', label: 'See the ride' },
     // The Roam's own hero (roams.hero_image_url), cropped from
@@ -234,11 +224,10 @@ export const SHIFT_UPDATES: ShiftUpdate[] = [
   },
   {
     id: 'closure-heads-up',
-    short: 'T closure plans',
     date: '2026-10-19',
     where: 'app',
-    title: 'A plan for your usual trip when the T closes your line',
-    body: 'A day or two before a planned MBTA closure, people who ride that line get their usual trip planned around it: which shuttle, then which train.',
+    title: 'Backup plans for T disruptions',
+    body: 'A day or two before a planned MBTA closure, Shift tells people who ride that line which shuttle bus to take and where to get back on the train.',
     link: { href: '/shift', label: 'Get Shift' },
     // "MBTA D branch shuttle bus at Reservoir September 2026", 4300streetcar, CC BY 4.0.
     picture: {
@@ -253,18 +242,20 @@ export const SHIFT_UPDATES: ShiftUpdate[] = [
   },
   {
     id: 'commute-advisor',
-    short: 'Compare your commute',
     date: '2026-10-15',
     where: 'both',
-    title: 'Every way to get to work, side by side',
-    body: 'Put in your commute and see when to leave, the route on a map, and what each way costs next to driving.',
+    title: 'Compare every way to get to work: when to leave, time and cost',
+    body: 'Put in home and work and see biking, the bus and T, and driving side by side, with when to leave and how long each takes.',
     link: { href: '/commute-advisor', label: 'Try your commute' },
     picture: {
       kind: 'app',
-      src: '/images/whats-new/commute-advisor.jpg',
-      width: 600,
-      height: 1116,
-      alt: 'The Commute Advisor: a bike route from Medford to Kendall Square on a map, with "Leave by 8:23 AM on a bike"',
+      // The comparison under the map is what's special, so the card shows it
+      // (Keith 2026-11-10). Medford Square to Technology Square, live site.
+      src: '/images/whats-new/commute-advisor-compare.jpg',
+      width: 533,
+      height: 1000,
+      focus: 'bottom',
+      alt: 'The Commute Advisor comparing ways from Medford to Kendall Square: bike, leave by 8:23 AM, 37 minutes; drive, 18 to 25 minutes; Route 96 then the Red Line, 50 minutes',
     },
   },
 ]
