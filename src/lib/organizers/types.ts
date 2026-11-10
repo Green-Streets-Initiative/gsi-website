@@ -155,7 +155,13 @@ export interface DetailDate {
   going: number
   maybe: number
   cant: number
+  /** Came: the head count when there is one, never less than Shift's count (Shift 01725). */
   attended: number
+  /** People Shift saw: matched trips, approved requests, "yes, I made it". */
+  shift_counted: number
+  /** How many came, as the organizer counted them; null = not counted. */
+  headcount: number | null
+  headcount_new: number | null
   requests: number
   /** This date's own details (Shift 01432); null means the ride's own. */
   title: string | null
@@ -246,11 +252,16 @@ export interface CreditRequest {
 }
 
 export interface TurnoutDate {
+  id: string
   date: string
   status: string
   going: number
   maybe: number
+  /** Came: the head count when there is one, never less than Shift's count. */
   attended: number
+  shift_counted: number
+  headcount: number | null
+  headcount_new: number | null
   kids: number
   first_timers: number
   came_back: number
@@ -262,6 +273,7 @@ export interface TurnoutMonth {
   dates_canceled: number
   going: number
   attended: number
+  shift_counted: number
   people: number
   first_timers: number
   came_back: number

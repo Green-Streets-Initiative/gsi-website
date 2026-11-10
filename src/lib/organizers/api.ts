@@ -139,6 +139,13 @@ export const setChatAccess = (memberId: string, ok: boolean) => rpc<boolean>('se
 export const getCreditRequests = async (occurrenceId: string) =>
   (await rpc<CreditRequest[] | null>('get_ride_credit_requests', { p_occurrence_id: occurrenceId })) ?? []
 export const getTurnout = (seriesId: string) => rpc<Turnout>('organizer_ride_turnout', { p_series_id: seriesId })
+
+/** Save (or with null, remove) how many came on a date and how many were new (Shift 01725). */
+export async function setHeadcount(occurrenceId: string, count: number | null, isNew: number | null): Promise<{ came: number; shift_counted: number }> {
+  const r = await rpc<{ came: number; shift_counted: number }>('set_ride_date_headcount', { p_occurrence_id: occurrenceId, p_count: count, p_new: isNew })
+  track('organizer_headcount_saved', { occurrence_id: occurrenceId, counted: count != null, with_new: isNew != null, added: count == null ? 0 : Math.max(0, count - r.shift_counted) })
+  return r
+}
 export const getPromoStats = (seriesId: string) => rpc<PromoStats>('organizer_ride_promo', { p_series_id: seriesId })
 export const getStopPreview = (seriesId: string, until: string | null) =>
   rpc<{ notify: number; notify_guests: number; upcoming: number; past: number; can_delete: boolean }>(

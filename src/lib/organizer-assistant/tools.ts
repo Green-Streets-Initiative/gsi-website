@@ -341,6 +341,20 @@ export const TOOLS: Anthropic.Tool[] = [
     },
   },
   {
+    name: 'set_headcount',
+    description: "Save how many came on a date that has started, and optionally how many were new (Shift 01725). The count is everyone, kids too, Shift's own people included: it replaces Shift's count, it isn't added to it, and can't be lower than shift_counted. It covers people who answered on Partiful, Meetup or the group chat, or just showed up, so turnout for funders includes them. count null removes the head count. Card first.",
+    input_schema: {
+      type: 'object',
+      properties: {
+        series_id: uuid,
+        occurrence_id: uuid,
+        count: { type: ['integer', 'null'], minimum: 0, maximum: 1000 },
+        new_people: { type: ['integer', 'null'], minimum: 0, description: 'How many were there for the first time. Leave out if the organizer did not say.' },
+      },
+      required: ['series_id', 'occurrence_id', 'count'],
+    },
+  },
+  {
     name: 'set_chat_access',
     description: "Share the ride's group chat invite with people, or stop sharing it (Shift 01686). Sharing with someone covers all of this organizer's rides; anyone who came to one of their rides has it already. Pick people on one date: who 'came', 'going', 'going_or_maybe', or 'named' (names as get_whos_coming shows them). let_in false stops sharing it. Card first. The chat app (WhatsApp) still asks the organizer to approve each request; organizers with the Shift app get a notification when someone opens it.",
     input_schema: {
@@ -358,7 +372,7 @@ export const TOOLS: Anthropic.Tool[] = [
 ]
 
 export const NEEDS_APPROVAL = new Set([
-  'create_ride', 'update_ride', 'post_update', 'cancel_date', 'change_date', 'plan_date', 'stop_ride', 'resume_ride', 'invite_co_organizer', 'settle_credit', 'set_chat_access',
+  'create_ride', 'update_ride', 'post_update', 'cancel_date', 'change_date', 'plan_date', 'stop_ride', 'resume_ride', 'invite_co_organizer', 'settle_credit', 'set_chat_access', 'set_headcount',
 ])
 
 /** What the panel shows while a tool runs. */
@@ -386,10 +400,11 @@ export const ACTIVITY: Record<string, string> = {
   invite_co_organizer: 'Sending the invite',
   settle_credit: 'Settling the request',
   set_chat_access: 'Updating the group chat',
+  set_headcount: 'Saving the head count',
 }
 
 /** Labels whose completion means a screen should reload. */
-export const CHANGES = new Set(['create_ride', 'update_ride', 'post_update', 'cancel_date', 'change_date', 'plan_date', 'stop_ride', 'resume_ride', 'invite_co_organizer', 'settle_credit', 'set_chat_access'].map((n) => ACTIVITY[n]))
+export const CHANGES = new Set(['create_ride', 'update_ride', 'post_update', 'cancel_date', 'change_date', 'plan_date', 'stop_ride', 'resume_ride', 'invite_co_organizer', 'settle_credit', 'set_chat_access', 'set_headcount'].map((n) => ACTIVITY[n]))
 
 /** Who on the ride has the group chat invite (Shift 01686); null when there's nothing to share. */
 async function chatAccess(ctx: ToolCtx, seriesId: string): Promise<Map<string, { chat_ok: boolean }> | null> {
@@ -1085,6 +1100,33 @@ export async function approvalCard(ctx: ToolCtx, name: string, input: Record<str
           input: { series_id: d.ride.id, member_ids: change.map((r) => r.member_id), let_in: letIn },
         }
       }
+      case 'set_headcount': {
+        const d = await loadDetail(ctx, input.series_id)
+        const o = findDate(d, input.occurrence_id)
+        if (o.status === 'canceled') return { result: fail('That date was cancelled, so there is no one to count.') }
+        if (o.date > todayKey()) return { result: fail('That date has not happened yet. Count it once the ride has started.') }
+        const count = input.count == null ? null : Math.round(Number(input.count))
+        const fresh = count == null || input.new_people == null ? null : Math.round(Number(input.new_people))
+        if (count != null && (!Number.isFinite(count) || count < 0 || count > 1000)) return { result: fail('The count must be a number from 0 to 1,000.') }
+        if (count != null && count < o.shift_counted) return { result: fail(`Shift already saw ${o.shift_counted} people on that date; the head count is everyone, so it can't be lower.`) }
+        if (fresh != null && count != null && (fresh < 0 || fresh > count)) return { result: fail("New people can't be more than everyone who came.") }
+        const label = dateLabel(o.date)
+        return {
+          card: count == null ? {
+            title: `Remove the head count for ${label}?`,
+            lines: [`Turnout goes back to the ${o.shift_counted} people Shift saw.`],
+            cta: 'Remove it', tone: 'danger',
+          } : {
+            title: `${count} came on ${label}?`,
+            lines: [
+              o.shift_counted > 0 ? `That's everyone, including the ${o.shift_counted} Shift saw. Turnout shows ${count}.` : `Turnout shows ${count}.`,
+              ...(fresh != null ? [`${fresh} of them new.`] : []),
+            ],
+            cta: 'Save the count', tone: 'primary',
+          },
+          input: { series_id: d.ride.id, occurrence_id: o.id, count, new_people: fresh },
+        }
+      }
       case 'settle_credit': {
         const d = await loadDetail(ctx, input.series_id)
         if (d.my_role === 'leader') return { result: fail("Only the ride's organizer can settle credit requests.") }
@@ -1183,6 +1225,12 @@ export async function runApproved(ctx: ToolCtx, name: string, input: Record<stri
         const ids = (Array.isArray(input.member_ids) ? input.member_ids : []).map(String)
         const results = await Promise.all(ids.map((id) => rpc<boolean>(ctx, 'set_ride_chat_access', { p_member_id: id, p_ok: input.let_in !== false })))
         return ok({ changed: results.length, can_see_chat_link: results.filter(Boolean).length, note: 'They have the chat invite now; they are in the chat itself once the organizer approves their request in the chat app. Say it that way.' }, { href: `/organizers/rides/${input.series_id}/roster`, label: "See who's coming" })
+      }
+      case 'set_headcount': {
+        const r = await rpc<{ came: number; shift_counted: number }>(ctx, 'set_ride_date_headcount', {
+          p_occurrence_id: input.occurrence_id, p_count: input.count ?? null, p_new: input.new_people ?? null,
+        })
+        return ok({ came: r.came, shift_counted: r.shift_counted }, { href: `/organizers/rides/${input.series_id}/turnout`, label: 'See turnout' })
       }
       case 'settle_credit': {
         const r = await rpc<{ ok: boolean; state: string; remaining: number }>(ctx, 'settle_ride_credit_request', {

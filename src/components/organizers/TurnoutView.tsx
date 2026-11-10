@@ -3,10 +3,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Download } from 'lucide-react'
 import { errorText, getTurnout } from '@/lib/organizers/api'
-import { dateLabel, monthLabel, plural } from '@/lib/organizers/ride-words'
-import type { Turnout } from '@/lib/organizers/types'
+import { dateLabel, monthLabel } from '@/lib/organizers/ride-words'
+import type { Turnout, TurnoutDate } from '@/lib/organizers/types'
+import { HeadcountDialog } from './Headcount'
 import { useRide } from './RideFrame'
-import { Button, Card, Empty, Notice, SectionTitle, Spinner } from './ui'
+import { Button, Card, Empty, Notice, SectionTitle, Spinner, Toast } from './ui'
 import { downloadCsv } from '@/lib/csv'
 import { track } from '@/lib/organizers/track'
 
@@ -19,6 +20,8 @@ export default function TurnoutView() {
   const r = detail.ride
   const [t, setT] = useState<Turnout | null>(null)
   const [err, setErr] = useState<string | null>(null)
+  const [counting, setCounting] = useState<TurnoutDate | null>(null)
+  const [saved, setSaved] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     try {
@@ -56,25 +59,34 @@ export default function TurnoutView() {
   const file = slug(r.name)
   // The on-screen note travels with the file, so a funder reading the CSV
   // knows what "Came" counts.
-  const NOTE = ['Came counts people the Shift app saw on the ride, requests the organizer approved, and people who answered on the ride page and then said yes when we emailed to ask if they made it.']
+  const NOTE = ['Came is the organizer\'s head count for a date when they gave one (everyone who came, including people who answered on Partiful, Meetup or a group chat, or just showed up). Otherwise it counts people the Shift app saw on the ride, requests the organizer approved, and people who answered on the ride page and then said yes when we emailed to ask if they made it. "On Shift" is that second number alone. First-timers use the organizer\'s "how many were new" when given.']
   const monthRows = (): (string | number)[][] => [
-    ['Ride', 'Month', 'Dates run', 'Dates cancelled', 'Said going', 'Came (attendances)', 'People', 'First-timers', 'Came back'],
-    ...t.months.map((m) => [r.name, m.month.slice(0, 7), m.dates_run, m.dates_canceled, m.going, m.attended, m.people, m.first_timers, m.came_back]),
+    ['Ride', 'Month', 'Dates run', 'Dates cancelled', 'Said going', 'Came (attendances)', 'On Shift', 'People', 'First-timers', 'Came back'],
+    ...t.months.map((m) => [r.name, m.month.slice(0, 7), m.dates_run, m.dates_canceled, m.going, m.attended, m.shift_counted, m.people, m.first_timers, m.came_back]),
     [],
     NOTE,
   ]
   const dateRows = (): (string | number)[][] => [
-    ['Ride', 'Date', 'Status', 'Said going', 'Maybe', 'Came', 'Kids', 'First-timers', 'Came back'],
-    ...t.dates.map((d) => [r.name, d.date, d.status === 'canceled' ? 'cancelled' : 'ran', d.going, d.maybe, d.attended, d.kids, d.first_timers, d.came_back]),
+    ['Ride', 'Date', 'Status', 'Said going', 'Maybe', 'Came', 'On Shift', 'Head count', 'First-timers', 'Came back'],
+    ...t.dates.map((d) => [r.name, d.date, d.status === 'canceled' ? 'cancelled' : 'ran', d.going, d.maybe, d.attended, d.shift_counted, d.headcount ?? '', d.first_timers, d.came_back]),
     [],
     NOTE,
   ]
 
   return (
     <div className="grid grid-cols-[minmax(0,1fr)] gap-5">
+      {saved && <Toast onClose={() => setSaved(null)}>{saved}</Toast>}
+      {counting && (
+        <HeadcountDialog
+          d={counting}
+         
+          onClose={() => setCounting(null)}
+          onSaved={(m) => { setCounting(null); setSaved(m); void load() }}
+        />
+      )}
       <Card>
         <SectionTitle
-          hint="Came counts people the Shift app saw on the ride and requests you approve. People who answered on your ride page get an email afterwards asking if they made it, and count when they say yes."
+          hint="Came is your head count when you add one, so it includes people who aren't on Shift. Otherwise it's the people Shift saw on the ride."
           action={
             <div className="flex flex-wrap gap-2">
               <Button size="sm" onClick={() => { downloadCsv(`${file}-turnout-by-month.csv`, monthRows()); track('organizer_turnout_exported', { ride_id: r.id, by: 'month' }) }}><Download className="h-4 w-4" aria-hidden />Monthly CSV</Button>
@@ -128,14 +140,15 @@ export default function TurnoutView() {
       </Card>
 
       <Card>
-        <SectionTitle>Every date</SectionTitle>
+        <SectionTitle hint="Add a head count to any date to include everyone who came.">Every date</SectionTitle>
         <div className="-mx-5 overflow-x-auto px-5 sm:mx-0 sm:px-0">
-          <table className="w-full min-w-[560px] text-left text-[14px]">
+          <table className="w-full min-w-[640px] text-left text-[14px]">
             <thead>
               <tr className="border-b border-(--ev-line-mid) text-[14px] text-(--ev-ink-75)">
                 {['Date', 'Said going', 'Maybe', 'Came', 'First-timers', 'Came back'].map((h, i) => (
                   <th key={h} scope="col" className={i ? 'py-2 pl-3 text-right font-semibold' : 'py-2 font-semibold'}>{h}</th>
                 ))}
+                <th scope="col" className="py-2 pl-3"><span className="sr-only">Head count</span></th>
               </tr>
             </thead>
             <tbody>
@@ -146,9 +159,19 @@ export default function TurnoutView() {
                   </th>
                   <td className="py-2.5 pl-3 text-right tabular-nums">{d.going}</td>
                   <td className="py-2.5 pl-3 text-right tabular-nums">{d.maybe}</td>
-                  <td className="py-2.5 pl-3 text-right tabular-nums font-semibold">{d.attended}{d.kids ? <span className="font-normal text-(--ev-ink-75)"> +{plural(d.kids, 'kid')}</span> : ''}</td>
+                  <td className="py-2.5 pl-3 text-right tabular-nums font-semibold">
+                    {d.attended}
+                    {d.headcount != null && d.shift_counted > 0 && <span className="block text-[13px] font-normal text-(--ev-ink-75)">{d.shift_counted} on Shift</span>}
+                  </td>
                   <td className="py-2.5 pl-3 text-right tabular-nums">{d.first_timers}</td>
                   <td className="py-2.5 pl-3 text-right tabular-nums">{d.came_back}</td>
+                  <td className="py-1.5 pl-3 text-right">
+                    {d.status !== 'canceled' && (
+                      <Button size="sm" variant="ghost" className="whitespace-nowrap px-2!" onClick={() => setCounting(d)} aria-label={`${d.headcount == null ? 'Add head count' : 'Change count'} for ${dateLabel(d.date)}`}>
+                        {d.headcount == null ? 'Add head count' : 'Change count'}
+                      </Button>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>

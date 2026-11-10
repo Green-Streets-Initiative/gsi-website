@@ -9,6 +9,7 @@ import { errorText, setDateCanceled } from '@/lib/organizers/api'
 import { UPDATE_KIND_LABEL, dateLabel, plural, todayKey } from '@/lib/organizers/ride-words'
 import type { DetailDate } from '@/lib/organizers/types'
 import { CancelDateDialog, ChangeDateDialog } from './DateDialogs'
+import { HeadcountDialog, HeadcountPrompt, dateToCount } from './Headcount'
 import PostUpdate from './PostUpdate'
 import { NoMeetupHint, RideDayRiders, useRideDay, useRideTime } from './RideDay'
 import { ridePageUrl, useRide } from './RideFrame'
@@ -49,9 +50,9 @@ function RouteChip({ d, usualMiles, hasUsual }: { d: DetailDate; usualMiles: num
   )
 }
 
-function DateRow({ d, canManage, canEdit, rideId, usualMiles, hasUsual, onCancel, onChange, onRestore }: {
+function DateRow({ d, canManage, canEdit, rideId, usualMiles, hasUsual, onCancel, onChange, onRestore, onCount }: {
   d: DetailDate; canManage: boolean; canEdit: boolean; rideId: string; usualMiles: number | null; hasUsual: boolean
-  onCancel: () => void; onChange: () => void; onRestore: () => void
+  onCancel: () => void; onChange: () => void; onRestore: () => void; onCount?: () => void
 }) {
   const off = d.status === 'canceled'
   const past = d.date < todayKey()
@@ -70,6 +71,8 @@ function DateRow({ d, canManage, canEdit, rideId, usualMiles, hasUsual, onCancel
           <>
             <span className="text-[14px] font-semibold text-(--ev-ink-85)">
               {past ? `${d.attended} came` : `${d.going} going`}
+              {/* A head count (Shift 01725): say how many of them Shift saw. */}
+              {past && d.headcount != null && d.shift_counted > 0 ? <span className="font-normal text-(--ev-ink-75)">{` (${d.shift_counted} on Shift)`}</span> : ''}
               {!past && d.maybe > 0 ? ` · ${d.maybe} maybe` : ''}
               {!past && d.cant > 0 ? ` · ${d.cant} can't` : ''}
             </span>
@@ -86,6 +89,9 @@ function DateRow({ d, canManage, canEdit, rideId, usualMiles, hasUsual, onCancel
           <Link href={`/organizers/rides/${rideId}/roster?date=${d.id}`} className="inline-flex min-h-[36px] items-center rounded-[10px] px-2 text-[14px] font-semibold text-(--ev-ink-85) hover:bg-(--ev-panel)">
             {past ? 'Who came' : "Who's coming"}
           </Link>
+        )}
+        {past && !off && onCount && (
+          <Button size="sm" variant="ghost" className="px-2!" onClick={onCount}>{d.headcount == null ? 'Add head count' : 'Change count'}</Button>
         )}
         {canEdit && !past && !off && (
           <Link href={`/organizers/rides/${rideId}/dates/${d.id}`} className="inline-flex min-h-[36px] items-center rounded-[10px] px-2 text-[14px] font-semibold text-(--ev-ink-85) hover:bg-(--ev-panel)">
@@ -119,12 +125,18 @@ export default function RideOverview() {
   const [skipping, setSkipping] = useState(false)
   // Just back from a break: offer the "it's back" note, ready to send.
   const [backOffer, setBackOffer] = useState(false)
+  // Head counts (Shift 01725): the date being counted in the dialog, and
+  // dates whose after-ride card the organizer put off this visit.
+  const [counting, setCounting] = useState<DetailDate | null>(null)
+  const [skipped, setSkipped] = useState<string[]>([])
 
   const upcoming = useMemo(() => detail.occurrences.filter((d) => d.date >= today), [detail.occurrences, today])
   const past = useMemo(() => detail.occurrences.filter((d) => d.date < today).reverse(), [detail.occurrences, today])
   const ended = r.status === 'archived'
   const nextDate = upcoming.find((d) => d.status === 'scheduled') ?? null
   const onBreak = !!r.break_until && r.break_until > today
+  // The latest date this past week that ran and has no head count yet.
+  const toCount = useMemo(() => dateToCount(detail.occurrences.filter((d) => !skipped.includes(d.id))), [detail.occurrences, skipped])
   const hasUsual = (r.route_waypoints?.length ?? 0) >= 2 || !!r.route_google_maps_url
 
   const closeMsg = useCallback(() => {
@@ -141,6 +153,7 @@ export default function RideOverview() {
     setChanging(null)
     setStopping(false)
     setSkipping(false)
+    setCounting(null)
     void reload()
   }
 
@@ -195,6 +208,8 @@ export default function RideOverview() {
   return (
     <div className="grid grid-cols-[minmax(0,1fr)] gap-5">
       {msg && <Toast tone={msg.tone} onClose={closeMsg}>{msg.text}</Toast>}
+
+      {toCount && <HeadcountPrompt d={toCount} onSaved={done} onSkip={() => setSkipped((s) => [...s, toCount.id])} />}
 
       {(params.get('created') || detail.updates.length === 0) && !ended && <ShareCard code={r.invite_code} fresh={!!params.get('created')} rideId={r.id} walk={r.activity === 'walk'} />}
 
@@ -312,7 +327,10 @@ export default function RideOverview() {
           )}
 
           {shownTab === 'past' && (
-            <ul>{past.map((d) => <DateRow key={d.id} d={d} canManage={false} canEdit={false} rideId={r.id} usualMiles={r.route_miles} hasUsual={hasUsual} onCancel={() => {}} onChange={() => {}} onRestore={() => {}} />)}</ul>
+            <>
+              <p className="mb-1 text-[14px] text-(--ev-ink-75)">Add a head count to include people who aren&rsquo;t on Shift, like those who answered on Partiful or just showed up.</p>
+              <ul>{past.map((d) => <DateRow key={d.id} d={d} canManage={false} canEdit={false} rideId={r.id} usualMiles={r.route_miles} hasUsual={hasUsual} onCancel={() => {}} onChange={() => {}} onRestore={() => {}} onCount={() => setCounting(d)} />)}</ul>
+            </>
           )}
 
           {shownTab === 'updates' && (detail.updates.length === 0 ? (
@@ -345,6 +363,7 @@ export default function RideOverview() {
 
       {cancelling && <CancelDateDialog key={cancelling.id} date={cancelling} onClose={() => setCancelling(null)} onDone={done} />}
       {changing && <ChangeDateDialog key={changing.id} date={changing} ride={r} onClose={() => setChanging(null)} onDone={done} />}
+      {counting && <HeadcountDialog d={counting} onClose={() => setCounting(null)} onSaved={done} />}
       {detail.can_manage && <StopRideDialog ride={r} open={stopping} onClose={() => setStopping(false)} onDone={done} />}
       {skipping && <SkipDatesDialog ride={r} dates={detail.occurrences} open={skipping} onClose={() => setSkipping(false)} onDone={done} />}
     </div>
