@@ -17,6 +17,22 @@ export default async function DemoPage({
   const str = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v)
   const locale = await siteLocale(params.lang)
 
+  // ?benefits=none leaves out the sample benefits below. Cold-email previews
+  // carry it: a named company must never be shown perks it may not offer.
+  const sampleBenefits = str(params.benefits) === 'none' ? {} : {
+    transit_subsidy_monthly: 45,
+    transit_subsidy_type: 'pre_tax' as const,
+    transit_subsidy_label: 'Pre-tax transit benefit',
+    bikeshare_subsidized: true,
+    bikeshare_system: 'Bluebikes',
+    bikeshare_subsidy_type: 'full' as const,
+    bikeshare_subsidy_label: 'Free Bluebikes annual membership',
+    bike_parking: true,
+    bike_parking_details: 'Secure bike storage on-site',
+    showers: true,
+    shower_details: 'Locker rooms with showers available',
+  }
+
   const demoGroup: EmployerGroup = {
     id: 'demo',
     name: str(params.company) ?? 'Your Company',
@@ -27,17 +43,7 @@ export default async function DemoPage({
       destination_address: str(params.address) ?? null,
       destination_lat: parseFloat(str(params.lat) ?? '0') || null,
       destination_lng: parseFloat(str(params.lng) ?? '0') || null,
-      transit_subsidy_monthly: 45,
-      transit_subsidy_type: 'pre_tax',
-      transit_subsidy_label: 'Pre-tax transit benefit',
-      bikeshare_subsidized: true,
-      bikeshare_system: 'Bluebikes',
-      bikeshare_subsidy_type: 'full',
-      bikeshare_subsidy_label: 'Free Bluebikes annual membership',
-      bike_parking: true,
-      bike_parking_details: 'Secure bike storage on-site',
-      showers: true,
-      shower_details: 'Locker rooms with showers available',
+      ...sampleBenefits,
     },
   }
 
