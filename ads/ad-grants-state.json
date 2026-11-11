@@ -200,14 +200,14 @@
       "added": "2026-11-03",
       "from": "Keith (calendar growth plan, 'Approve through March')",
       "what": "Calendar growth plan (Shift docs/programs/product/calendar-growth-plan-2026-11/plan.html): winter Local Events ad groups from the week of Nov 9 on year-round 'find an event' searches (bike repair workshop, walking group boston, winter bike ride); event-alert sign-up imported as a conversion once it fires a GA4 event; ride-season terms from Mar 1, 2027. 5% CTR rule: pause any ad group under 5% after 300 impressions; no broad 'things to do' terms. Supersedes the 10-15 note to wait for spring. Shift handoff h-calendar-20261103-ads.",
-      "status": "APPROVED 2026-11-03, not started"
+      "status": "APPROVED 2026-11-03, not started. 11-11 weekly: still not started (due week of Nov 9); recommended as weekly item 2."
     },
     {
       "id": "venue-parking",
       "added": "2026-11-03",
       "from": "Launch venue-parking (Shift docs/programs/launches/venue-parking/plan.md), Keith approved 2026-11-02",
       "what": "Campaign 'Venue Parking' (24426572849): TD Garden, Fenway Park and Gillette Stadium ad groups -> /parking/<venue>, judged on venue_trip_planned (Primary, Engagement). Kill rules: pause any ad group under 5% CTR after 300 impressions; pause the campaign the same day if the account's month-to-date CTR falls under 6.5%; never undo a change younger than 14 days.",
-      "status": "BUILT 2026-11-03, serves from Wed 2026-11-04 at $25/day. Paid desk Wed Nov 11 (handoff h-launch-20261102-vp-ads): read search terms, add negatives (consider 'tickets' only if ticket-buyer searches show up), raise to $50/day if every ad group is >= 5% after 300 impressions, else pause the ones under. Check the six ads read 'Eligible' (policy review) once the campaign starts. 11-04 weekly: started, 'Eligible (Learning)', 9 impr / 0 clicks on day one; all 6 ads Eligible (3 pinned Ad 1s rated Poor, expected); 16 keywords eligible; venue_trip_planned Awaiting conversions."
+      "status": "BUILT 2026-11-03, serves from Wed 2026-11-04 at $25/day. Paid desk Wed Nov 11 (handoff h-launch-20261102-vp-ads): read search terms, add negatives (consider 'tickets' only if ticket-buyer searches show up), raise to $50/day if every ad group is >= 5% after 300 impressions, else pause the ones under. Check the six ads read 'Eligible' (policy review) once the campaign starts. 11-04 weekly: started, 'Eligible (Learning)', 9 impr / 0 clicks on day one; all 6 ads Eligible (3 pinned Ad 1s rated Poor, expected); 16 keywords eligible; venue_trip_planned Awaiting conversions. 11-11 weekly (paid desk read): Nov 1-11 600 impr / 25 clicks / 4.17% / 1 conv (first venue_trip_planned, Gillette); 'Limited by search volume', so the $50/day raise is moot. Only Gillette passed 300 impr (5.4%); TD Garden 3.1% and Fenway 2.8% under 150 each. Keith's 11-11 rewrite replaced the pinned Ad 1s; judge every group 11-25. Search terms on target (north station garage/parking, parking near fenway park); no ticket-buyer searches, so no 'tickets' negative. Account MTD 8.01% stays above the 6.5% campaign kill line."
     },
     {
       "id": "messaging-rewrite-2026-11-11",
@@ -2484,6 +2484,96 @@
       "emailed": true,
       "verdict": "Act this week (two small rule fixes): November MTD 8.63% (59/684), 4 conversions; fail: QS 2 keyword 'walking trails quincy' enabled; T closures ad group still has 1 ad.",
       "items_outcome": "Items 1, 2 and 3 DONE the same day by Claude on Keith's 'Do Ad Grants weekly items 1-3' (see the 2026-11-04 change entry). Both rule failures cleared."
+    },
+    {
+      "date": "2026-11-11",
+      "source": "scheduled weekly run (afternoon, after Keith's interactive Town/Venue rewrite the same day): live account via Claude in Chrome (authuser=walkrideday%40gmail.com resolved to 5; This month = Nov 1-11; campaigns, all 325 keywords at 500 rows/page, all 57 ads, conversions/all, search terms at /aw/keywords/searchterms 100 rows sorted by impressions) + 11-11 script email (rolling 30d: 5,646 impr, 500 clicks, 8.9%, $2,019.23, 58 conv; warnings: Town 4.8%, Venue Parking 4.2%, Semester 0 impr) + GSC weekly-2026-11-06. Removed a leftover 'Keyword text contains trail' view filter on the Keywords page and changed rows-per-page (view settings only); nothing in the account changed.",
+      "window": "2026-11-01..2026-11-11",
+      "impressions": 2646,
+      "clicks": 212,
+      "ctr_pct": 8.01,
+      "cost": 794.18,
+      "conversions": 20.08,
+      "avg_cpc": 3.75,
+      "rolling_30d_script": { "impressions": 5646, "clicks": 500, "ctr_pct": 8.9, "cost": 2019.23, "conversions": 58 },
+      "by_campaign": {
+        "How-to Guides": { "impressions": 1876, "clicks": 179, "ctr_pct": 9.54, "cost": 565.53, "conversions": 19 },
+        "Venue Parking": { "impressions": 600, "clicks": 25, "ctr_pct": 4.17, "cost": 120.02, "conversions": 1, "note": "Limited by search volume. By group (from Keith's 11-11 session, before the new ads): Gillette 17/317 5.4%, TD Garden 4/131, Fenway 4/144. Rewritten 11-11; judge 11-25." },
+        "Town Walking & Biking": { "impressions": 153, "clicks": 7, "ctr_pct": 4.58, "cost": 106.66, "conversions": 0, "note": "Trails ad group added 11-11; judge 11-25" },
+        "Shift App — Massachusetts": { "impressions": 11, "clicks": 0, "cost": 0, "conversions": 0 },
+        "GSI — Brand": { "impressions": 6, "clicks": 1, "cost": 1.97, "conversions": 0 },
+        "Shift Your Semester — Students": { "impressions": 0, "clicks": 0, "cost": 0, "conversions": 0 },
+        "New Routes — Movers": { "impressions": 0, "clicks": 0, "cost": 0, "conversions": 0, "note": "Paused 11-04" }
+      },
+      "keywords": {
+        "total": 325,
+        "status": "224 eligible, 64 Not eligible: Low search volume, 13 Not eligible: Campaign is paused (Movers), 24 paused; 0 under review",
+        "match": "185 broad, 138 phrase, 2 exact",
+        "by_campaign": { "Town Walking & Biking": 133, "How-to Guides": 68, "Shift Your Semester — Students": 52, "Shift App — Massachusetts": 31, "Venue Parking": 16, "New Routes — Movers": 14, "GSI — Brand": 11 },
+        "trails_group": "65 keywords: 62 eligible, 3 low search volume; 0 impressions yet",
+        "single_word": ["\"gogreenstreets\" (brand, allowed)"],
+        "low_quality_score": [],
+        "low_qs_paused": ["bike trails near me", "biking in boston", "boston bike paths", "biking in worcester", "walking trails quincy"]
+      },
+      "ads": {
+        "total": 57,
+        "ad_groups": 25,
+        "status": "46 Eligible, 7 Paused (old Town routes and Venue ads paused 11-11), 4 Not eligible (Movers campaign paused)",
+        "disapproved_seen": 0,
+        "limited_by_policy": 0,
+        "strength_active": "24 Average, 17 Good, 3 Excellent, 2 Poor",
+        "poor": ["Shift App — Massachusetts / Active challenges: Walk More, Win More (0 impr)", "Town Walking & Biking / Walk and bike to school: Walking School Bus Ideas (0 impr)"],
+        "under_two_ads": [],
+        "new_11_11": "Trails 2 ads Good, Town routes 2 Average, TD Garden 2 Good, Fenway 2 Good, Gillette new ad Good + kept 'Parking at Gillette Stadium' Good (17/299); all Eligible"
+      },
+      "sitelinks": 20,
+      "sitelinks_source": "script email",
+      "campaign_status": "How-to Guides, Venue Parking and Brand 'Eligible (Limited) Limited by search volume'; Town, Shift App, Semester Eligible; New Routes Paused; all Maximize conversions.",
+      "conversion_tracking_status": "8 actions. Active: cheat_sheet_download (15), shift_store_click (4), venue_trip_planned (1, first one). Awaiting: newsletter_signup, email_signup (NEW since 11-04, Primary, count One, Engagements account-default goal; origin not recorded in this file), event_register_click, event_calendar_save; donate_page_view not in goals. free_lesson_code_requested and employer_inquiry not imported.",
+      "brand_search_gsc_week": {
+        "range": "2026-10-31..2026-11-06",
+        "impressions": 16,
+        "clicks": 8,
+        "note": "green streets initiative 16/8 (pos 1); no other brand query in the stored top list; lower bound"
+      },
+      "month_end_math": "8.01% on 2,646 impr after 11 days. Pace ~240 impr/day -> ~7,200 for November; 5% needs ~360 clicks, on course for ~580. With zero further clicks the account stays >= 5% until ~4,240 impressions. October passed, so no two-month risk.",
+      "grant_utilization": "$794.18 of $10,000 (~7.9%) through Nov 11; main campaigns limited by search volume, not budget",
+      "search_terms": [
+        { "term": "boston public transportation", "impressions": 40, "clicks": 6, "conversions": 1 },
+        { "term": "gillette stadium parking", "impressions": 27, "clicks": 1, "conversions": 0 },
+        { "term": "green line closure", "impressions": 25, "clicks": 0, "conversions": 0 },
+        { "term": "charliecard", "impressions": 25, "clicks": 6, "conversions": 1 },
+        { "term": "bradford rail trail", "impressions": 23, "clicks": 0, "conversions": 0 },
+        { "term": "charlie card", "impressions": 22, "clicks": 1, "conversions": 0 },
+        { "term": "mbta monthly pass", "impressions": 19, "clicks": 2, "conversions": 0 },
+        { "term": "boston transit", "impressions": 18, "clicks": 1, "conversions": 0 },
+        { "term": "the t boston", "impressions": 17, "clicks": 2, "conversions": 0 },
+        { "term": "boston subway", "impressions": 16, "clicks": 3, "conversions": 0 },
+        { "term": "mbta passes", "impressions": 13, "clicks": 1, "conversions": 0 },
+        { "term": "public transportation in boston", "impressions": 10, "clicks": 1, "conversions": 0 },
+        { "term": "fenway park parking", "impressions": 10, "clicks": 1, "conversions": 0 },
+        { "term": "boston t", "impressions": 9, "clicks": 1, "conversions": 0 },
+        { "term": "boston train system", "impressions": 9, "clicks": 2, "conversions": 0 },
+        { "term": "boston transportation", "impressions": 9, "clicks": 2, "conversions": 0 },
+        { "term": "north station garage", "impressions": 9, "clicks": 1, "conversions": 0 },
+        { "term": "boston metro", "impressions": 8, "clicks": 1, "conversions": 0 },
+        { "term": "boston t pass", "impressions": 8, "clicks": 2, "conversions": 0 },
+        { "term": "td garden parking", "impressions": 8, "clicks": 0, "conversions": 0 },
+        { "term": "parking near fenway park", "impressions": 8, "clicks": 0, "conversions": 0 },
+        { "term": "how to use the t in boston", "impressions": 7, "clicks": 2, "conversions": 0 },
+        { "term": "the t in boston", "impressions": 7, "clicks": 0, "conversions": 0 },
+        { "term": "charliecard boston", "impressions": 7, "clicks": 2, "conversions": 0 },
+        { "term": "north station parking", "impressions": 7, "clicks": 0, "conversions": 0 }
+      ],
+      "search_terms_note": "648 term rows Nov 1-11; top 100 read and merged by term across match types. All on target: T fare/transit lookups (Paying for the T), venue parking (incl. North Station garage/parking under TD Garden), 'green line closure' (T closures, 0 clicks on 25 around the Nov 7 closure; second ad added 11-04, judge 11-18), 'bradford rail trail' (Town routes before the 11-11 Trails group). No negatives proposed.",
+      "recommended": [
+        "1 add a 'Fares and passes' ad group to How-to Guides (keyword-analysis item 1, open since 10-14)",
+        "2 start the winter Local Events ad groups (calendar-local-events, approved 11-03 for the week of Nov 9; Keyword Planner check first)"
+      ],
+      "not_recommended": "Town and Venue (script warnings) rewritten by Keith/Claude 11-11; 14-day rule, judge 11-25. Paying for the T ads edited 11-09 (judge after 11-23). T closures second ad 11-04 (judge 11-18). Events sitelink still open; fits with item 2 if Keith wants it. Two Poor ads have 0 impressions; not worth an item.",
+      "emailed": false,
+      "email_note": "Quiet week: no compliance risk, nothing Google paused; ads/reports/2026-11-11-email.txt left for the Marketing Lead's Wednesday email.",
+      "verdict": "On track: November MTD 8.01% (212/2,646), 20 conversions; all grant rules pass."
     }
   ]
 }

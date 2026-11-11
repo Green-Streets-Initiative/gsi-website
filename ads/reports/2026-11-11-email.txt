@@ -1,0 +1,9 @@
+On track: every grant rule passes. November is at 8.0% click rate (212 clicks on 2,646 impressions) with 20 conversions; the 5% floor is far off.
+
+Today's script email flagged Town Walking & Biking (4.8%) and Venue Parking (4.2%). You already rewrote both this afternoon; they get judged Nov 25. The account-level rate is what the grant counts, and it is fine.
+
+Recommended:
+1. Add a "Fares and passes" ad group to How-to Guides: fare searches are the strongest pool, and the campaign runs out of searches, not money (about 8% of the grant used). Say "do ad grants item 1".
+2. Start the winter Local Events ad groups you approved Nov 3 for this week: keyword check first, then groups sent to /events. Say "do ad grants item 2".
+
+Report: https://claude.ai/artifact/UuoYJsktAySt3HY5KinrbF
