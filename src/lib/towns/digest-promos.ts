@@ -26,6 +26,21 @@ export interface DigestPromo {
 }
 
 export const DIGEST_PROMOS: DigestPromo[] = [
+  // Shift Together launch week (product item 34; Shift repo docs/programs/
+  // launches/buddy-pairing/plan.md, "Newsletter section and town digest
+  // item"). First, so it wins over the free-lesson line for these two weeks;
+  // that line comes back on its own Nov 26.
+  {
+    key: 'shift_together_2026',
+    towns: ['boston-ma', 'somerville-ma', 'cambridge-ma', 'medford-ma', 'arlington-ma'],
+    from: '2026-11-12',
+    until: '2026-11-25',
+    title: 'Start biking or taking the T with someone who already does',
+    body:
+      'Shift Together introduces people who want to start biking or taking the T to someone nearby who already does, and they go together the first time. You both say yes before you share an email, and you meet somewhere public. Bike or take the T most days? Offer to go with a neighbor the first time they try it.',
+    label: 'Find someone to go with',
+    url: 'https://www.gogreenstreets.org/together?utm_source=digest',
+  },
   {
     key: 'free_lesson_2026',
     towns: ['somerville-ma', 'cambridge-ma', 'arlington-ma', 'medford-ma', 'watertown-ma'],
