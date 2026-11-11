@@ -30,9 +30,26 @@ export const PREVIEW_DAILY_CAP = Number(process.env.VISITOR_ASSISTANT_PREVIEW_DA
 /** A preview visitor can ask more than five while testing. */
 export const PREVIEW_PERSON_CAP = 20
 
-/** List prices, dollars per million tokens: input, output, cache read, cache write (5 min). */
+/**
+ * List prices, dollars per million tokens: input, output, cache read, cache
+ * write (5 min). Every model a scheduled job or assistant calls, so the daily
+ * spend check (api/cron/assistant-spend) can total all of them.
+ */
 export const PRICES: Record<string, { in: number; out: number; read: number; write: number }> = {
-  'claude-sonnet-5-5': { in: 2, out: 10, read: 0.2, write: 2.5 },
+  'claude-sonnet-5-5': { in: 2, out: 10, read: 0.1, write: 2.5 },
   'claude-opus-5-5': { in: 4, out: 20, read: 0.2, write: 5 },
   'claude-haiku-5-5': { in: 0.1, out: 0.5, read: 0.01, write: 0.125 },
+  'claude-sonnet-5': { in: 2, out: 10, read: 0.2, write: 2.5 },
+  'claude-opus-5': { in: 5, out: 25, read: 0.5, write: 6.25 },
+  'claude-sonnet-4-6': { in: 3, out: 15, read: 0.3, write: 3.75 },
+  'claude-haiku-4-5': { in: 1, out: 5, read: 0.1, write: 1.25 },
+}
+
+/** One web search, in dollars ($10 per 1,000). */
+export const WEB_SEARCH_USD = 0.01
+
+/** A model's prices; dated ids (claude-haiku-4-5-20251001) match their alias, and an unknown model is priced as Opus so it never reads cheap. */
+export function priceOf(model: string | null | undefined) {
+  const id = (model ?? '').replace(/-\d{8}$/, '')
+  return PRICES[id] ?? PRICES['claude-opus-5-5']
 }

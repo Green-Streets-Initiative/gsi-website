@@ -1,6 +1,6 @@
 import { Resend } from 'resend'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
-import { MONTHLY_CAP, PRICES, VISITOR_MONTHLY_CAP } from '@/lib/shift-assistant/caps'
+import { MONTHLY_CAP, VISITOR_MONTHLY_CAP, WEB_SEARCH_USD, priceOf } from '@/lib/shift-assistant/caps'
 
 /**
  * Daily: a heads-up when the Shift assistant's spending moves (launch
@@ -13,6 +13,12 @@ import { MONTHLY_CAP, PRICES, VISITOR_MONTHLY_CAP } from '@/lib/shift-assistant/
  * The same two checks run for "Ask about this trip", the visitors' pool on
  * the Commute Advisor (VISITOR_MONTHLY_CAP, fn shift-visitor-assistant,
  * Shift 01704), with its own lines in the same email.
+ * And for all Claude spending together (Keith 2026-11-11, "$12"): every
+ * scheduled job and assistant that logs to ai_usage_log, plus the employer
+ * and organizer assistants (their message tables keep their usage). Over
+ * ALL_DAILY_ALERT_USD yesterday, the email says so and names what drove it.
+ * Not counted: the employer assistant's GitHub stress test (~$2-3 a run,
+ * Mondays and on assistant pushes), which logs nowhere.
  * Stateless: it compares the month through yesterday with the month through
  * the day before, so each line goes out once. Quiet otherwise.
  *
@@ -26,7 +32,36 @@ const FROM = 'Shift assistant <noreply@gogreenstreets.org>'
 const DAILY_ALERT_USD = 15
 /** About two days of a full visitor month (1,000 questions at ~6 cents) in one day. */
 const VISITOR_DAILY_ALERT_USD = 5
+/** Everything Claude does in a day. A normal day runs $8-11 (Nov 2026). */
+const ALL_DAILY_ALERT_USD = 12
 const STEPS = [0.5, 0.8, 1]
+
+/** Plain names for the jobs in ai_usage_log, for the email. */
+const JOB_NAMES: Record<string, string> = {
+  'sync-community-events': 'Events calendar (reading organizer pages)',
+  'civic-staging': 'Town meetings (reading agendas)',
+  'sync-civic-events': 'Town meetings (calendar sync)',
+  'civic-discovery': 'Finding new town meetings',
+  'trail-research': 'Trail research',
+  'town-research': 'Town research',
+  'event-source-medic': 'Fixing broken event feeds',
+  'sync-infrastructure-hearings': 'Street project hearings',
+  'shift-assistant': 'Shift assistant (members)',
+  'shift-visitor-assistant': 'Ask about this trip (visitors)',
+  'employer-assistant': 'Employer assistant',
+  'organizer-assistant': 'Organizer assistant',
+}
+
+/** Every row a query matches, 1,000 at a time (PostgREST's cap). The query must be ordered. */
+async function allRows<T>(page: (from: number, to: number) => PromiseLike<{ data: unknown[] | null; error: { message: string } | null }>): Promise<T[]> {
+  const out: T[] = []
+  for (let from = 0; ; from += 1000) {
+    const { data, error } = await page(from, from + 999)
+    if (error) throw new Error(error.message)
+    out.push(...((data ?? []) as T[]))
+    if (!data || data.length < 1000) return out
+  }
+}
 
 /** A Boston calendar day, YYYY-MM-DD, `back` days before today. */
 function bostonDay(back: number): string {
@@ -51,10 +86,11 @@ export async function GET(req: Request) {
   const end = new Date(start.getTime() + 86_400_000)
 
   type Row = { model: string; input_tokens: number | null; output_tokens: number | null; cache_read_tokens: number | null; cache_write_tokens: number | null }
-  const cost = (rows: Row[]) => rows.reduce((a, r) => {
-    const p = PRICES[r.model] ?? PRICES['claude-opus-5-5']
-    return a + ((r.input_tokens ?? 0) * p.in + (r.output_tokens ?? 0) * p.out + (r.cache_read_tokens ?? 0) * p.read + (r.cache_write_tokens ?? 0) * p.write) / 1e6
-  }, 0)
+  const rowCost = (r: Row) => {
+    const p = priceOf(r.model)
+    return ((r.input_tokens ?? 0) * p.in + (r.output_tokens ?? 0) * p.out + (r.cache_read_tokens ?? 0) * p.read + (r.cache_write_tokens ?? 0) * p.write) / 1e6
+  }
+  const cost = (rows: Row[]) => rows.reduce((a, r) => a + rowCost(r), 0)
   const logOf = (fn: string) => admin.from('ai_usage_log').select('model, input_tokens, output_tokens, cache_read_tokens, cache_write_tokens')
     .eq('fn', fn).gte('at', start.toISOString()).lt('at', end.toISOString()).limit(20_000)
 
@@ -68,6 +104,42 @@ export async function GET(req: Request) {
   ])
   const failed = usage.error ?? log.error ?? vUsage.error ?? vLog.error
   if (failed) return Response.json({ ok: false, error: failed.message }, { status: 500 })
+
+  // All Claude spending yesterday, by job. Read in pages: a runaway day, the
+  // day this check is for, can pass PostgREST's 1,000-row cap.
+  const from = start.toISOString()
+  const to = end.toISOString()
+  type LogRow = Row & { fn: string; web_searches: number | null }
+  type MsgRow = { model: string; usage: Record<string, number> | null }
+  let allLog: LogRow[], employerMsgs: MsgRow[], organizerMsgs: MsgRow[]
+  try {
+    ;[allLog, employerMsgs, organizerMsgs] = await Promise.all([
+      allRows<LogRow>((a, b) => admin.from('ai_usage_log')
+        .select('fn, model, input_tokens, output_tokens, cache_read_tokens, cache_write_tokens, web_searches')
+        .gte('at', from).lt('at', to).order('id').range(a, b)),
+      allRows<MsgRow>((a, b) => admin.from('employer_assistant_messages').select('model, usage')
+        .eq('role', 'assistant').gte('created_at', from).lt('created_at', to).order('id').range(a, b)),
+      allRows<MsgRow>((a, b) => admin.from('ride_assistant_messages').select('model, usage')
+        .eq('role', 'assistant').gte('created_at', from).lt('created_at', to).order('id').range(a, b)),
+    ])
+  } catch (e) {
+    return Response.json({ ok: false, error: (e as Error).message }, { status: 500 })
+  }
+  const byJob = new Map<string, number>()
+  const add = (job: string, usd: number) => byJob.set(job, (byJob.get(job) ?? 0) + usd)
+  for (const r of allLog) add(r.fn, rowCost(r) + (r.web_searches ?? 0) * WEB_SEARCH_USD)
+  const fromMessage = (m: MsgRow): Row => ({
+    model: m.model,
+    input_tokens: m.usage?.input_tokens ?? 0,
+    output_tokens: m.usage?.output_tokens ?? 0,
+    cache_read_tokens: m.usage?.cache_read_input_tokens ?? 0,
+    cache_write_tokens: m.usage?.cache_creation_input_tokens ?? 0,
+  })
+  for (const m of employerMsgs) add('employer-assistant', rowCost(fromMessage(m)))
+  for (const m of organizerMsgs) add('organizer-assistant', rowCost(fromMessage(m)))
+  const jobs = [...byJob].sort((a, b) => b[1] - a[1])
+  const allSpend = jobs.reduce((a, [, usd]) => a + usd, 0)
+  const jobLine = ([fn, usd]: [string, number]) => `${JOB_NAMES[fn] ?? fn} $${usd.toFixed(2)}`
 
   const pool = (rows: { day: string; questions: number }[], cap: number, logged: Row[]) => {
     const month = rows.reduce((a, r) => a + r.questions, 0)
@@ -100,16 +172,32 @@ export async function GET(req: Request) {
   if (visitors.spend > VISITOR_DAILY_ALERT_USD) {
     lines.push(`Yesterday "Ask about this trip" cost about $${visitors.spend.toFixed(2)} for ${visitors.asked + previewAsked} questions, more than the $${VISITOR_DAILY_ALERT_USD} a day we expect.`)
   }
-  const summary = { yesterday, asked, month, spend: Number(spend.toFixed(2)), visitors: { asked: visitors.asked, preview: previewAsked, month: visitors.month, spend: Number(visitors.spend.toFixed(2)) } }
+  const allOver = allSpend > ALL_DAILY_ALERT_USD
+  if (allOver) {
+    lines.push(`Yesterday Claude cost about $${allSpend.toFixed(2)} across everything we run, more than the $${ALL_DAILY_ALERT_USD} a day we set. Most of it: ${jobs.slice(0, 3).map(jobLine).join(', ')}.`)
+  }
+  const summary = {
+    yesterday, asked, month, spend: Number(spend.toFixed(2)),
+    visitors: { asked: visitors.asked, preview: previewAsked, month: visitors.month, spend: Number(visitors.spend.toFixed(2)) },
+    all: { spend: Number(allSpend.toFixed(2)), jobs: Object.fromEntries(jobs.map(([fn, usd]) => [fn, Number(usd.toFixed(2))])) },
+  }
   if (!lines.length) return Response.json({ ok: true, sent: false, ...summary })
 
   const apiKey = process.env.RESEND_API_KEY
   if (!apiKey) return Response.json({ ok: false, error: 'RESEND_API_KEY not set' }, { status: 500 })
-  const html = `${lines.map((l) => `<p>${l}</p>`).join('')}<p>Yesterday: ${asked} questions, about $${spend.toFixed(2)} at list prices. This month: ${month.toLocaleString('en-US')} questions.</p><p>Visitors asking about a trip yesterday: ${visitors.asked + previewAsked} questions, about $${visitors.spend.toFixed(2)}. This month: ${visitors.month.toLocaleString('en-US')} of ${VISITOR_MONTHLY_CAP.toLocaleString('en-US')}.</p>`
+  const breakdown = allOver
+    ? `<p>All of yesterday, at list prices:</p><ul>${jobs.map((j) => `<li>${jobLine(j)}</li>`).join('')}</ul><p>The Anthropic console has the billed numbers: platform.claude.com/cost.</p>`
+    : ''
+  // The assistants' counts only when an assistant line is in the email.
+  const assistantNews = lines.length > (allOver ? 1 : 0)
+  const assistantFooter = assistantNews
+    ? `<p>Yesterday: ${asked} questions, about $${spend.toFixed(2)} at list prices. This month: ${month.toLocaleString('en-US')} questions.</p><p>Visitors asking about a trip yesterday: ${visitors.asked + previewAsked} questions, about $${visitors.spend.toFixed(2)}. This month: ${visitors.month.toLocaleString('en-US')} of ${VISITOR_MONTHLY_CAP.toLocaleString('en-US')}.</p>`
+    : ''
+  const html = `${lines.map((l) => `<p>${l}</p>`).join('')}${breakdown}${assistantFooter}`
   const sent = await new Resend(apiKey).emails.send({
     from: FROM,
     to: RECIPIENT,
-    subject: top === 1 ? 'Shift assistant: monthly limit reached' : top ? `Shift assistant: ${Math.round(top * 100)}% of this month's questions used` : visitors.top === 1 ? 'Ask about this trip: monthly limit reached' : visitors.top ? `Ask about this trip: ${Math.round(visitors.top * 100)}% of this month's questions used` : 'Shift assistant: a costly day',
+    subject: top === 1 ? 'Shift assistant: monthly limit reached' : top ? `Shift assistant: ${Math.round(top * 100)}% of this month's questions used` : visitors.top === 1 ? 'Ask about this trip: monthly limit reached' : visitors.top ? `Ask about this trip: ${Math.round(visitors.top * 100)}% of this month's questions used` : spend > DAILY_ALERT_USD ? 'Shift assistant: a costly day' : visitors.spend > VISITOR_DAILY_ALERT_USD ? 'Ask about this trip: a costly day' : `Claude spending: about $${allSpend.toFixed(2)} yesterday`,
     html,
   })
   return Response.json({ ok: !sent.error, sent: !sent.error, ...summary, error: sent.error?.message })
