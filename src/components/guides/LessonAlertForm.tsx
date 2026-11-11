@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { gaEvent } from '@/lib/ga'
 import type { GuideLocale } from '@/lib/guides/i18n'
+import { useTurnstile } from '@/lib/useTurnstile'
 
 /*
  * "Get an email when a lesson is posted near you" under the bike lessons
@@ -65,6 +66,7 @@ export default function LessonAlertForm({ locale: L = 'en' }: { locale?: GuideLo
   const [website, setWebsite] = useState('')
   const [status, setStatus] = useState<'idle' | 'sending' | 'done' | 'error'>('idle')
   const [error, setError] = useState('')
+  const { boxRef: turnstileRef, prime: primeTurnstile, token: turnstileToken } = useTurnstile()
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()
@@ -83,7 +85,7 @@ export default function LessonAlertForm({ locale: L = 'en' }: { locale?: GuideLo
       const res = await fetch('/api/email-subscribe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ topic: 'lesson_alerts', email: email.trim(), place: place.trim(), locale: L, website }),
+        body: JSON.stringify({ topic: 'lesson_alerts', email: email.trim(), place: place.trim(), locale: L, website, turnstile: await turnstileToken() }),
       })
       const data = await res.json().catch(() => null)
       if (res.ok) {
@@ -120,6 +122,7 @@ export default function LessonAlertForm({ locale: L = 'en' }: { locale?: GuideLo
                 }}
                 placeholder="you@email.com"
                 autoComplete="email"
+                onFocus={primeTurnstile}
                 required
                 className={FIELD}
               />
@@ -158,6 +161,8 @@ export default function LessonAlertForm({ locale: L = 'en' }: { locale?: GuideLo
           >
             {t('button')}
           </button>
+          {/* Turnstile's checkbox appears here only when Cloudflare is unsure (product item 33). */}
+          <div ref={turnstileRef} />
           {status === 'error' && (
             <p className="mt-2 text-[0.9375rem] font-semibold text-[#B42318]" role="alert">
               {error}

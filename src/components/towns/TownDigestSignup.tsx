@@ -1,12 +1,19 @@
 'use client'
 
 import { useState } from 'react'
+import posthog from 'posthog-js'
+import { gaEvent } from '@/lib/ga'
 import { translator, type SiteLocale } from '@/lib/site-i18n'
 import { townsStrings } from '@/lib/site-strings/towns'
+import { useTurnstile } from '@/lib/useTurnstile'
 
 /**
  * Email capture on town pages — the E19 town digest's front door.
- * Posts to /api/towns/subscribe (Loops upsert, townDigest = slug).
+ * Posts to /api/email-subscribe (topic town_digest, source town_page), the
+ * same route and bot checks as the shared EmailSignup box: the hidden
+ * `website` field and Cloudflare Turnstile (product item 33, after a script
+ * used the old /api/towns/subscribe route to add strangers to Newton's list).
+ * A sign-up fires GA4 / PostHog `email_signup` like every other box.
  *
  * `inline` is the slim version that sits under the hero lede (Keith,
  * 2026-09-15: the page is long, so the ask comes first); `card` is the
@@ -16,19 +23,36 @@ import { townsStrings } from '@/lib/site-strings/towns'
 export default function TownDigestSignup({ townName, townSlug, variant = 'card', locale = 'en' }: { townName: string; townSlug: string; variant?: 'card' | 'inline'; locale?: SiteLocale }) {
   const t = translator(townsStrings, locale)
   const [email, setEmail] = useState('')
+  const [website, setWebsite] = useState('')
   const [state, setState] = useState<'idle' | 'busy' | 'done' | 'error'>('idle')
+  const { boxRef: turnstileRef, prime: primeTurnstile, token: turnstileToken } = useTurnstile()
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (state === 'busy' || state === 'done') return
     setState('busy')
     try {
-      const res = await fetch('/api/towns/subscribe', {
+      const res = await fetch('/api/email-subscribe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, town: townSlug }),
+        // The digest emails are English whatever the page's language.
+        body: JSON.stringify({
+          topic: 'town_digest', email: email.trim(), town: townSlug, source: 'town_page', locale: 'en',
+          website, turnstile: await turnstileToken(),
+        }),
       })
-      setState(res.ok ? 'done' : 'error')
+      if (!res.ok) {
+        setState('error')
+        return
+      }
+      setState('done')
+      const props = { topic: 'town_digest', source: 'town_page', town: townSlug }
+      gaEvent('email_signup', props)
+      try {
+        posthog.capture('email_signup', props)
+      } catch {
+        /* analytics must never break the form */
+      }
     } catch {
       setState('error')
     }
@@ -61,9 +85,12 @@ export default function TownDigestSignup({ townName, townSlug, variant = 'card',
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            onFocus={primeTurnstile}
             placeholder={t('dg.placeholder')}
             className="min-w-0 flex-1 rounded-full border border-navy/20 bg-white px-4 py-2.5 text-[15px] text-navy outline-none placeholder:text-ink-soft focus:border-forest"
           />
+          {/* People never fill this in; a bot that does is ignored. */}
+          <input type="text" value={website} onChange={(e) => setWebsite(e.target.value)} tabIndex={-1} autoComplete="off" aria-hidden="true" className="hidden" name="website" />
           <button
             type="submit"
             disabled={state === 'busy'}
@@ -73,6 +100,8 @@ export default function TownDigestSignup({ townName, townSlug, variant = 'card',
           </button>
         </form>
       )}
+      {/* Turnstile's checkbox appears here only when Cloudflare is unsure. */}
+      <div ref={turnstileRef} />
       {state === 'error' && <p className="mt-2 text-[13px] text-red-700">{t('dg.error')}</p>}
     </div>
   )

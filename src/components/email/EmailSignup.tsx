@@ -5,6 +5,7 @@ import posthog from 'posthog-js'
 import { gaEvent } from '@/lib/ga'
 import type { SiteLocale } from '@/lib/site-i18n'
 import { eventsT } from '@/lib/events-i18n'
+import { useTurnstile } from '@/lib/useTurnstile'
 
 /*
  * The one email sign-up box (Shift item 19's subscription system; calendar
@@ -19,6 +20,8 @@ import { eventsT } from '@/lib/events-i18n'
  *
  * Posts to /api/email-subscribe. The answer is the same whether or not the
  * address is already on the list; topics that need a confirmation click say so.
+ * Bot checks: the hidden `website` field and Cloudflare Turnstile, loaded on
+ * first focus and verified by the server (product item 33).
  *
  * Styling uses the events tone (--ev-* variables), so it sits inside an
  * EventsToneProvider. A placement outside the calendar adds its own look.
@@ -63,6 +66,7 @@ export default function EmailSignup({
   const [status, setStatus] = useState<'idle' | 'sending' | 'done' | 'error'>('idle')
   const [error, setError] = useState('')
   const inputId = `${id ?? source}-email`
+  const { boxRef: turnstileRef, prime: primeTurnstile, token: turnstileToken } = useTurnstile()
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()
@@ -76,7 +80,7 @@ export default function EmailSignup({
       const res = await fetch('/api/email-subscribe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ topic, email: email.trim(), ...details, locale, source, website }),
+        body: JSON.stringify({ topic, email: email.trim(), ...details, locale, source, website, turnstile: await turnstileToken() }),
       })
       if (res.ok) {
         setStatus('done')
@@ -121,6 +125,7 @@ export default function EmailSignup({
               }}
               placeholder="you@email.com"
               autoComplete="email"
+              onFocus={primeTurnstile}
               className="min-h-[44px] w-full rounded-[10px] border border-(--ev-line-strong) bg-transparent px-3 text-[15px] text-(--ev-ink) outline-none placeholder:text-(--ev-ink-75) focus:border-(--ev-accent)"
             />
             {/* People never fill this in; a bot that does is ignored. */}
@@ -132,6 +137,8 @@ export default function EmailSignup({
             >
               {cta}
             </button>
+            {/* Turnstile's checkbox appears here only when Cloudflare is unsure. */}
+            <div ref={turnstileRef} />
             {status === 'error' && (
               <p className="mt-2 text-[14px] font-semibold text-(--ev-accent)" role="alert">{error}</p>
             )}
