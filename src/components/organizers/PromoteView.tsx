@@ -219,11 +219,12 @@ export default function PromoteView() {
     `RSVP: ${promoLink(code, 'cal')}`,
   ].filter(Boolean).join('\n\n')
 
-  async function makePlainPost() {
+  /** A plain image with the ride's facts and its QR: a 4:5 feed post, or a 9:16 Story (room in the middle for a link sticker). */
+  async function makePlainPost(story = false) {
     setMaking(true)
     try {
       await document.fonts.ready
-      const W = 1080, H = 1350, P = 88
+      const W = 1080, H = story ? 1920 : 1350, P = 88
       const canvas = document.createElement('canvas')
       canvas.width = W
       canvas.height = H
@@ -250,8 +251,8 @@ export default function PromoteView() {
       ctx.fillText('No app needed', P + q + 20, H - P - q / 2 - 36)
       ctx.font = "500 30px 'DM Sans', sans-serif"
       ctx.fillText(`gogreenstreets.org/r/${code}/qr`, P, H - P - 30)
-      saveFile(`${fileSlug(r.name)}-post.png`, canvas.toDataURL('image/png'))
-      track('organizer_plain_post_made', { ride_id: r.id })
+      saveFile(`${fileSlug(r.name)}-${story ? 'story' : 'post'}.png`, canvas.toDataURL('image/png'))
+      track('organizer_plain_post_made', { ride_id: r.id, format: story ? 'story' : 'post' })
     } finally {
       setMaking(false)
     }
@@ -332,9 +333,15 @@ export default function PromoteView() {
               className="inline-flex min-h-[36px] items-center gap-1.5 rounded-[10px] border border-(--ev-line-strong) bg-white px-3 text-[14px] font-semibold text-(--ev-ink) hover:bg-(--ev-panel)">
               <Printer className="h-4 w-4" aria-hidden />No flyer yet? Print one
             </a>
-            <Button size="sm" busy={making} onClick={() => void makePlainPost()}>
-              <ImageIcon className="h-4 w-4" aria-hidden />A plain post for social
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button size="sm" busy={making} onClick={() => void makePlainPost()}>
+                <ImageIcon className="h-4 w-4" aria-hidden />A plain post for social
+              </Button>
+              <Button size="sm" busy={making} onClick={() => void makePlainPost(true)}>
+                <ImageIcon className="h-4 w-4" aria-hidden />An Instagram Story
+              </Button>
+            </div>
+            <p className="text-[14px] text-(--ev-ink-75)">On a Story, add a link sticker with the bio link from Social posts, Instagram.</p>
             <p className="text-[14px] text-(--ev-ink-75)">
               {r.flyer_url
                 ? <>Your flyer shows on the ride page. <Link href={`/organizers/rides/${r.id}/edit`} className="font-semibold text-(--ev-ink) underline">Change it</Link></>
