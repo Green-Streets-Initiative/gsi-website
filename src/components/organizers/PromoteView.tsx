@@ -27,6 +27,7 @@ const POST_TIP: Record<Post, string> = {
   nd: 'Nextdoor likes a neighborly tone and a clear meeting spot.',
   reddit: 'For r/bikeboston and town subreddits. The first line is the post title.',
   email: 'For your own list or a newsletter that runs local events.',
+  partiful: 'Keep your invites and RSVPs on Partiful. Paste this into the event description; answers left only on Partiful go in your head count after the ride.',
 }
 
 const CALENDARS: { key: string; name: string; how: string; url: string }[] = [
@@ -186,6 +187,11 @@ export default function PromoteView() {
     return { when, nextLine, place, about, extras, welcome, repeats, upcoming: !!next }
   }, [detail.occurrences, r])
 
+  // The live map opens for anyone only on rides shared with the ride link (01747).
+  const liveOpen = r.live_sharing === 'link'
+  const liveLink = `https://gogreenstreets.org/rides/${code}/live`
+  const blast = `${facts.place ? `Meeting at ${facts.place}. ` : ''}Running late? See where the group is, no app needed: ${liveLink}`
+
   const captionFor = (c: Post): string => {
     const link = promoLink(code, c)
     const { nextLine, place, about, extras, welcome, repeats } = facts
@@ -207,6 +213,8 @@ export default function PromoteView() {
         return lines(`[${r.activity === 'walk' ? (repeats ? 'Group walk' : 'Walk') : repeats ? 'Group ride' : 'Ride'}] ${r.name}, ${nextLine ?? when}`, '', `${when}${at}.`, about, extras && `${extras[0].toUpperCase()}${extras.slice(1)}.`, welcome, '', `RSVP and updates if plans change: ${link}`)
       case 'email':
         return lines(r.name, `${when}${at}`, about, welcome, `RSVP: ${link}`)
+      case 'partiful':
+        return lines(extras && `${extras[0].toUpperCase()}${extras.slice(1)}.`, `Route and how comfortable each street is: ${link}`, 'Say you’re coming there too and you’ll get any ride-day changes by email.', liveOpen && `On ride day, see where the group is (no app needed): ${liveLink}`)
     }
   }
   const caption = edits[post] ?? captionFor(post)
@@ -380,6 +388,23 @@ export default function PromoteView() {
           )}
           <span className="ml-auto break-all text-[14px] text-(--ev-ink-75)">{promoLink(code, post).replace('https://www.', '')}</span>
         </div>
+        {post === 'partiful' && (
+          // Ride morning: Partiful's text blast carries the live map to people who answered only there.
+          <div className="mt-5 rounded-xl border border-(--ev-line) bg-(--ev-panel) p-4">
+            <p className="text-[15px] font-semibold text-(--ev-ink)">Ride morning: send this as a Partiful text blast</p>
+            {liveOpen ? (
+              <>
+                <p className="mt-2 rounded-[10px] bg-white px-3.5 py-3 text-[15px] leading-relaxed text-(--ev-ink)">{blast}</p>
+                <div className="mt-3"><CopyButton id="partiful-blast" text={blast} copied={copied} copy={copy} label="Copy text blast" /></div>
+              </>
+            ) : (
+              <p className="mt-1 text-[14px] text-(--ev-ink-75)">
+                Latecomers can follow the group on a live map, no app needed. To send it to everyone on Partiful,{' '}
+                <Link href={`/organizers/rides/${r.id}/edit`} className="font-semibold text-(--ev-ink) underline">set who sees the live map to anyone with the ride link</Link>.
+              </p>
+            )}
+          </div>
+        )}
       </Card>}
 
       {tab === 'calendars' && <Card id="calendars">

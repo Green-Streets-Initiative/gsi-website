@@ -7,12 +7,13 @@
  * from there is stamped with the channel by ride-guest-rsvp. Keep the slugs
  * in step with ride_link_visits.channel and PROMO_CHANNELS in the Shift repo.
  */
-export type PromoChannel = 'ig' | 'fb' | 'wa' | 'strava' | 'nd' | 'reddit' | 'qr' | 'cal' | 'email'
+export type PromoChannel = 'ig' | 'fb' | 'wa' | 'strava' | 'nd' | 'reddit' | 'qr' | 'cal' | 'email' | 'partiful'
 
 export const PROMO_CHANNELS: { key: PromoChannel; label: string }[] = [
   { key: 'ig', label: 'Instagram' },
   { key: 'fb', label: 'Facebook' },
   { key: 'wa', label: 'Group chats' },
+  { key: 'partiful', label: 'Partiful' },
   { key: 'strava', label: 'Strava club' },
   { key: 'nd', label: 'Nextdoor' },
   { key: 'reddit', label: 'Reddit' },
