@@ -4,7 +4,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { clock, scheduleText } from '@/lib/rides/public'
 import { inviteCoOrganizer } from '@/lib/organizers/invite'
 import { PACE_OPTIONS, TAG_OPTIONS, UPDATE_KIND_LABEL, dateLabel, plural, todayKey } from '@/lib/organizers/ride-words'
-import type { DashboardRide, DetailDate, RideDetail, RideRow, RosterRow, Turnout } from '@/lib/organizers/types'
+import type { DashboardRide, DetailDate, RideDetail, RideRow, RosterRow, Turnout, DateHelpersStops } from '@/lib/organizers/types'
 import { designRoute, encodePlan, replanCourse, summarizeRoute } from './route-designer'
 import { courseOf, type RouteCourse } from '@/lib/organizers/route-geo'
 import { fetchRideWithGps } from '@/lib/organizers/rwgps'
@@ -369,10 +369,42 @@ export const TOOLS: Anthropic.Tool[] = [
       required: ['series_id', 'occurrence_id', 'who', 'let_in'],
     },
   },
+  {
+    name: 'get_helpers_and_stops',
+    description: "One date's helpers and join stops (Shift 01744): who leads from the front (the organizer unless someone took it), the sweep at the back, people holding corners, which jobs are still open, and each join stop along the route with the group's time there and who joins at it. Use it when the organizer asks who is helping, what's still open, or where people are joining.",
+    input_schema: { type: 'object', properties: { series_id: uuid, occurrence_id: uuid }, required: ['series_id', 'occurrence_id'] },
+  },
+  {
+    name: 'set_helper_jobs',
+    description: "Ask people to help on every date (Shift 01744), or stop asking: how many sweeps (0-3, ride at the back with the last person) and corners (0-6, wait at a busy crossing until everyone is through). The organizer leads from the front; front above 1 asks for more leaders. People going pick a job on the ride page or in the app; first yes gets it. jobs null stops asking. Card first.",
+    input_schema: {
+      type: 'object',
+      properties: {
+        series_id: uuid,
+        jobs: { type: ['object', 'null'], properties: { front: { type: 'integer', minimum: 1, maximum: 3 }, sweep: { type: 'integer', minimum: 0, maximum: 3 }, corner: { type: 'integer', minimum: 0, maximum: 6 } } },
+      },
+      required: ['series_id', 'jobs'],
+    },
+  },
+  {
+    name: 'give_helper_job',
+    description: "Give someone going on a date a helper job (front, sweep or corner), or take it off them with job null (Shift 01744). Names as get_helpers_and_stops or get_whos_coming shows them. The organizer can give a job even when it's already taken or the ride isn't asking. Card first.",
+    input_schema: {
+      type: 'object',
+      properties: {
+        series_id: uuid,
+        occurrence_id: uuid,
+        name: { type: 'string' },
+        job: { type: ['string', 'null'], enum: ['front', 'sweep', 'corner', null] },
+      },
+      required: ['series_id', 'occurrence_id', 'name', 'job'],
+    },
+  },
 ]
 
 export const NEEDS_APPROVAL = new Set([
   'create_ride', 'update_ride', 'post_update', 'cancel_date', 'change_date', 'plan_date', 'stop_ride', 'resume_ride', 'invite_co_organizer', 'settle_credit', 'set_chat_access', 'set_headcount',
+  'set_helper_jobs', 'give_helper_job',
 ])
 
 /** What the panel shows while a tool runs. */
@@ -401,10 +433,13 @@ export const ACTIVITY: Record<string, string> = {
   settle_credit: 'Settling the request',
   set_chat_access: 'Updating the group chat',
   set_headcount: 'Saving the head count',
+  get_helpers_and_stops: 'Checking helpers and stops',
+  set_helper_jobs: 'Saving the helper jobs',
+  give_helper_job: 'Updating the helpers',
 }
 
 /** Labels whose completion means a screen should reload. */
-export const CHANGES = new Set(['create_ride', 'update_ride', 'post_update', 'cancel_date', 'change_date', 'plan_date', 'stop_ride', 'resume_ride', 'invite_co_organizer', 'settle_credit', 'set_chat_access', 'set_headcount'].map((n) => ACTIVITY[n]))
+export const CHANGES = new Set(['create_ride', 'update_ride', 'post_update', 'cancel_date', 'change_date', 'plan_date', 'stop_ride', 'resume_ride', 'invite_co_organizer', 'settle_credit', 'set_chat_access', 'set_headcount', 'set_helper_jobs', 'give_helper_job'].map((n) => ACTIVITY[n]))
 
 /** Who on the ride has the group chat invite (Shift 01686); null when there's nothing to share. */
 async function chatAccess(ctx: ToolCtx, seriesId: string): Promise<Map<string, { chat_ok: boolean }> | null> {
@@ -633,6 +668,19 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
           came: o.date < todayKey() ? names((r) => !!r.attended) : undefined,
           not_in_group_chat: chat ? names((r) => r.role === 'rider' && !!r.rsvp_status && r.rsvp_status !== 'not_going' && chat.get(r.member_id)?.chat_ok === false) : undefined,
         })
+      }
+      case 'get_helpers_and_stops': {
+        const d = await loadDetail(ctx, input.series_id)
+        const o = findDate(d, input.occurrence_id)
+        const h = await rpc<DateHelpersStops>(ctx, 'organizer_date_helpers_stops', { p_occurrence_id: o.id })
+        return ok({
+          date: o.date, day: dateLabel(o.date),
+          asking_for_help: !!h.help,
+          front: h.help?.front_is_organizer ? `${h.help.organizer_name ?? 'The organizer'} (organizer)` : undefined,
+          helpers: h.help?.helpers.map((x) => ({ name: x.name, job: x.job, every_date: x.every_date })) ?? [],
+          open: h.help?.open,
+          join_stops: h.stops.length > 1 ? h.stops.map((st, i) => ({ stop: st.label, time: st.time, start: i === 0, joining: st.going, names: st.names })) : [],
+        }, { href: `/organizers/rides/${d.ride.id}`, label: 'See the next ride' })
       }
       case 'get_credit_requests': {
         const d = await loadDetail(ctx, input.series_id)
@@ -1127,6 +1175,54 @@ export async function approvalCard(ctx: ToolCtx, name: string, input: Record<str
           input: { series_id: d.ride.id, occurrence_id: o.id, count, new_people: fresh },
         }
       }
+      case 'set_helper_jobs': {
+        const d = await loadDetail(ctx, input.series_id)
+        const walk = d.ride.activity === 'walk'
+        const j = input.jobs && typeof input.jobs === 'object' ? input.jobs as Record<string, number> : null
+        const jobs = j ? { front: Math.min(Math.max(Math.round(j.front ?? 1), 1), 3), sweep: Math.min(Math.max(Math.round(j.sweep ?? 0), 0), 3), corner: walk ? 0 : Math.min(Math.max(Math.round(j.corner ?? 0), 0), 6) } : null
+        if (jobs && jobs.front === 1 && !jobs.sweep && !jobs.corner) return { result: fail('Ask for at least one sweep or corner, or leave helpers off.') }
+        const words = jobs ? [
+          jobs.front > 1 ? plural(jobs.front - 1, 'more leader', 'more leaders') : null,
+          jobs.sweep ? plural(jobs.sweep, 'sweep', 'sweeps') : null,
+          jobs.corner ? plural(jobs.corner, 'corner', 'corners') : null,
+        ].filter(Boolean).join(', ') : ''
+        return {
+          card: jobs ? {
+            title: `Ask for ${words} on every date?`,
+            lines: ['People going pick a job on the ride page or in the app. First yes gets it, and you can swap anyone.'],
+            cta: 'Ask for help', tone: 'primary',
+          } : {
+            title: 'Stop asking people to help?',
+            lines: ['Anyone who took a job keeps their place on the ride; the jobs go away.'],
+            cta: 'Stop asking', tone: 'danger',
+          },
+          input: { series_id: d.ride.id, jobs },
+        }
+      }
+      case 'give_helper_job': {
+        const d = await loadDetail(ctx, input.series_id)
+        const o = findDate(d, input.occurrence_id)
+        const want = String(input.name ?? '').trim().toLowerCase()
+        const rows = (await rpc<RosterRow[] | null>(ctx, 'organizer_date_roster', { p_occurrence_id: o.id })) ?? []
+        const hits = rows.filter((r) => r.display_name.toLowerCase() === want)
+        const match = hits.length ? hits : rows.filter((r) => r.display_name.toLowerCase().startsWith(want))
+        if (match.length !== 1) return { result: fail(match.length ? `More than one person matches ${input.name}: ${match.map((r) => r.display_name).join(', ')}.` : `No one called ${input.name} is on that date.`) }
+        const who = match[0]
+        if (input.job && who.rsvp_status !== 'going' && who.role !== 'organizer') return { result: fail(`${who.display_name} hasn't said Going for ${dateLabel(o.date)}.`) }
+        const JOB: Record<string, string> = { front: 'lead from the front', sweep: 'sweep at the back', corner: 'hold a corner' }
+        return {
+          card: input.job ? {
+            title: `${who.display_name} to ${JOB[String(input.job)]} on ${dateLabel(o.date)}?`,
+            lines: ['They see it on the ride page and in their reminder.'],
+            cta: 'Give the job', tone: 'primary',
+          } : {
+            title: `Take the job off ${who.display_name} for ${dateLabel(o.date)}?`,
+            lines: ['They stay on the ride.'],
+            cta: 'Take it off', tone: 'primary',
+          },
+          input: { series_id: d.ride.id, occurrence_id: o.id, member_id: who.member_id, job: input.job ?? null },
+        }
+      }
       case 'settle_credit': {
         const d = await loadDetail(ctx, input.series_id)
         if (d.my_role === 'leader') return { result: fail("Only the ride's organizer can settle credit requests.") }
@@ -1231,6 +1327,14 @@ export async function runApproved(ctx: ToolCtx, name: string, input: Record<stri
           p_occurrence_id: input.occurrence_id, p_count: input.count ?? null, p_new: input.new_people ?? null,
         })
         return ok({ came: r.came, shift_counted: r.shift_counted }, { href: `/organizers/rides/${input.series_id}/turnout`, label: 'See turnout' })
+      }
+      case 'set_helper_jobs': {
+        const r = await rpc<Record<string, number> | null>(ctx, 'set_ride_helper_jobs', { p_series_id: input.series_id, p_jobs: input.jobs ?? null })
+        return ok({ asking_for: r }, { href: `/organizers/rides/${input.series_id}`, label: 'See the next ride' })
+      }
+      case 'give_helper_job': {
+        const r = await rpc<DateHelpersStops>(ctx, 'organizer_set_ride_helper', { p_occurrence_id: input.occurrence_id, p_member_id: input.member_id, p_job: input.job ?? null })
+        return ok({ helpers: r.help?.helpers.map((x) => ({ name: x.name, job: x.job })) ?? [], open: r.help?.open }, { href: `/organizers/rides/${input.series_id}`, label: 'See the next ride' })
       }
       case 'settle_credit': {
         const r = await rpc<{ ok: boolean; state: string; remaining: number }>(ctx, 'settle_ride_credit_request', {
