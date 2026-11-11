@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { CalendarX, Check, Copy, PauseCircle, PlayCircle, Route as RouteIcon } from 'lucide-react'
+import { CalendarX, Check, Copy, PauseCircle, PlayCircle, Radio, Route as RouteIcon } from 'lucide-react'
 import { ago, clock } from '@/lib/rides/public'
 import { errorText, setDateCanceled } from '@/lib/organizers/api'
 import { UPDATE_KIND_LABEL, dateLabel, plural, todayKey } from '@/lib/organizers/ride-words'
@@ -36,6 +36,30 @@ function ShareCard({ code, fresh, rideId, walk = false }: { code: string; fresh:
         Captions, a flyer QR and calendar listings are ready in <Link href={`/organizers/rides/${rideId}/promote`} className="font-semibold text-(--ev-ink) underline">Promote</Link>.
       </p>
     </Card>
+  )
+}
+
+/** The follow-along map for people without the app (Shift 01747), ready to paste in the group chat. */
+function LiveMapLink({ code, date, members, walk, editHref }: { code: string; date: string; members: boolean; walk: boolean; editHref: string }) {
+  const url = `https://gogreenstreets.org/rides/${code}/live?date=${date}`
+  const [copied, setCopied] = useState(false)
+  const noun = walk ? 'walk' : 'ride'
+  return (
+    <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-(--ev-line-mid) bg-(--ev-panel) px-4 py-3">
+      <div className="min-w-0 flex-1">
+        <p className="flex items-center gap-2 text-[15px] font-semibold text-(--ev-ink)"><Radio className="h-4 w-4 text-[#2E9F4F]" aria-hidden />Live map for followers</p>
+        <p className="text-[14px] text-(--ev-ink-75)">
+          {members
+            ? <>While you lead in the Shift app, people on the {noun} can follow the group on a map from their reminder email. To share it in a group chat, set who sees it to anyone with the link in <Link href={editHref} className="font-semibold text-(--ev-ink) underline">Edit</Link>.</>
+            : <>While you lead in the Shift app, anyone with this link can follow the group on a map in their browser.</>}
+        </p>
+      </div>
+      {!members && (
+        <Button size="sm" onClick={async () => { if (await copyText(url)) { setCopied(true); setTimeout(() => setCopied(false), 2200) } }}>
+          {copied ? <Check className="h-4 w-4" aria-hidden /> : <Copy className="h-4 w-4" aria-hidden />}{copied ? 'Copied' : 'Copy map link'}
+        </Button>
+      )}
+    </div>
   )
 }
 
@@ -244,6 +268,7 @@ export default function RideOverview() {
           <HelpersStops occurrenceId={nextDate.id} dateWords={rideTime ? 'today' : `on ${dateLabel(nextDate.date)}`} walk={r.activity === 'walk'} canManage={detail.can_manage}
             helpUrl={`https://gogreenstreets.org/rides/${r.invite_code}?date=${nextDate.date}&help=1`}
             onAsk={(note) => { setAskNote(note); setPosting(true); setTimeout(() => document.getElementById('post-update')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50) }} />
+          {r.live_sharing !== 'off' && <LiveMapLink code={r.invite_code} date={nextDate.date} members={r.live_sharing === 'members'} walk={r.activity === 'walk'} editHref={`/organizers/rides/${r.id}/edit`} />}
           <div className="mt-4 flex flex-wrap gap-2">
             {detail.can_edit && (
               <Link href={`/organizers/rides/${r.id}/dates/${nextDate.id}`} className="inline-flex min-h-[44px] items-center gap-1.5 rounded-[10px] border border-(--ev-line-strong) bg-white px-4 text-[15px] font-semibold text-(--ev-ink) hover:bg-(--ev-panel)">

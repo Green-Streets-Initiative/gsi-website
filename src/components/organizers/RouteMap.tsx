@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { loadMaplibre } from '@/lib/map/loadMaplibre'
 import type { LatLng } from '@/lib/organizers/types'
+import { guardSignSvg } from '@/lib/rides/guard-sign'
 
 /**
  * The editor's map: the route line, the planner's stops (numbered), and the
@@ -34,6 +35,8 @@ interface Props {
   /** Busy crossings where a crossing guard waits (Shift 01745): a stop paddle, solid once someone has it. */
   guards?: (LatLng & { label: string; guarded: boolean })[]
   meetup: LatLng | null
+  /** Where the group is right now (Shift 01747), with the path it took; `fresh` pulses the dot. */
+  group?: { lat: number; lng: number; trail: LatLng[]; fresh: boolean; walk?: boolean; label: string } | null
   pick: boolean
   onPick?: (p: LatLng) => void
   /** Bumps when the caller wants the view refit to the content. */
@@ -55,16 +58,37 @@ function spotEl(n: number, on: boolean): HTMLElement {
   return el
 }
 
-/** A crossing guard's stop paddle: red once someone has the crossing, outlined while it needs someone. */
+/** A crossing guard's stop paddle on its handle; the handle's tip is the crossing. */
 function guardEl(label: string, guarded: boolean): HTMLElement {
   const el = document.createElement('div')
   el.setAttribute('role', 'img')
   el.setAttribute('aria-label', label)
   el.title = label
-  const fill = guarded ? '#C8102E' : '#fff'
-  const hand = guarded ? '#fff' : '#C8102E'
-  el.innerHTML = `<svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true"><path d="M8.2 1h9.6L25 8.2v9.6L17.8 25H8.2L1 17.8V8.2z" fill="${fill}" stroke="${guarded ? '#fff' : '#C8102E'}" stroke-width="2"/><path d="M10 18.5v-7.2a1 1 0 0 1 2 0V15V9.6a1 1 0 0 1 2 0V15v-4.4a1 1 0 0 1 2 0V15v-2.6a1 1 0 0 1 2 0v3.8c0 2.4-1.7 4.3-4.1 4.3h-.6c-1.3 0-2.4-.7-3-1.8L8.4 16a1 1 0 0 1 1.6-1.1z" fill="${hand}"/></svg>`
-  Object.assign(el.style, { width: '26px', height: '26px', filter: 'drop-shadow(0 1px 3px rgba(0,0,0,.35))' })
+  el.innerHTML = guardSignSvg(guarded, 28, true)
+  Object.assign(el.style, { width: '28px', height: '40px', filter: 'drop-shadow(0 1px 2px rgba(0,0,0,.35))' })
+  return el
+}
+
+const BIKE = '<circle cx="18.5" cy="17.5" r="3.5"/><circle cx="5.5" cy="17.5" r="3.5"/><circle cx="15" cy="5" r="1"/><path d="M12 17.5V14l-3-3 4-3 2 3h2"/>'
+const FEET = '<path d="M4 16v-2.38C4 11.5 2.97 10.5 3 8c.03-2.72 1.49-6 4.5-6C9.37 2 10 3.8 10 5.5c0 3.11-2 5.66-2 8.68V16a2 2 0 1 1-4 0Z"/><path d="M20 20v-2.38c0-2.12 1.03-3.12 1-5.62-.03-2.72-1.49-6-4.5-6C14.63 6 14 7.8 14 9.5c0 3.11 2 5.66 2 8.68V20a2 2 0 1 0 4 0Z"/>'
+
+/** The group: a navy disc with a lime ring and a bike (or feet), pulsing while it's moving. */
+function groupEl(label: string, fresh: boolean, walk: boolean): HTMLElement {
+  if (!document.getElementById('ride-live-pulse')) {
+    const st = document.createElement('style')
+    st.id = 'ride-live-pulse'
+    st.textContent = '@keyframes rideLivePulse{0%{transform:scale(1);opacity:.55}100%{transform:scale(2.4);opacity:0}}@media (prefers-reduced-motion:reduce){.ride-live-ring{animation:none!important}}'
+    document.head.appendChild(st)
+  }
+  const el = document.createElement('div')
+  el.setAttribute('role', 'img')
+  el.setAttribute('aria-label', label)
+  el.title = label
+  Object.assign(el.style, { position: 'relative', width: '40px', height: '40px' })
+  el.innerHTML =
+    (fresh ? '<span class="ride-live-ring" style="position:absolute;inset:0;border-radius:999px;background:#9BE15D;animation:rideLivePulse 1.8s ease-out infinite"></span>' : '') +
+    `<span style="position:absolute;inset:0;display:grid;place-items:center;border-radius:999px;background:#191A2E;border:3px solid ${fresh ? '#9BE15D' : '#B9BBC6'};box-shadow:0 2px 6px rgba(0,0,0,.35)">` +
+    `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${walk ? FEET : BIKE}</svg></span>`
   return el
 }
 
@@ -86,8 +110,9 @@ function pinEl(kind: 'meetup' | 'stop', n?: number): HTMLElement {
 }
 
 export default function RouteMap({
-  line, lanes = null, pieces, spots, focus = null, onPieceClick, onSpotClick, stops, guards, meetup, pick, onPick, fitKey = 0, className, label = 'Route map',
+  line, lanes = null, pieces, spots, focus = null, onPieceClick, onSpotClick, stops, guards, meetup, group = null, pick, onPick, fitKey = 0, className, label = 'Route map',
 }: Props) {
+  const groupMarker = useRef<import('maplibre-gl').Marker | null>(null)
   const box = useRef<HTMLDivElement>(null)
   const mapRef = useRef<import('maplibre-gl').Map | null>(null)
   const libRef = useRef<typeof import('maplibre-gl') | null>(null)
@@ -132,6 +157,9 @@ export default function RouteMap({
         map.addLayer({ id: 'route-casing', type: 'line', source: 'route', paint: { 'line-color': '#2966E5', 'line-width': 9, 'line-opacity': 0.22 }, layout: { 'line-join': 'round', 'line-cap': 'round' } })
         map.addLayer({ id: 'route-line', type: 'line', source: 'route', paint: { 'line-color': ['coalesce', ['get', 'color'], '#2966E5'], 'line-width': 5 }, layout: { 'line-join': 'round', 'line-cap': 'round' } })
         // The stretch being looked at: a dark outline under its colour.
+        // The path the group took (live), drawn over the route.
+        map.addSource('trail', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } })
+        map.addLayer({ id: 'trail-line', type: 'line', source: 'trail', paint: { 'line-color': '#191A2E', 'line-width': 4, 'line-opacity': 0.8, 'line-dasharray': [1, 1.5] }, layout: { 'line-join': 'round', 'line-cap': 'round' } })
         map.addLayer({ id: 'route-focus', type: 'line', source: 'route', filter: ['==', ['get', 'index'], -999], paint: { 'line-color': '#191A2E', 'line-width': 11 }, layout: { 'line-join': 'round', 'line-cap': 'round' } }, 'route-line')
         map.on('click', 'route-line', (e) => {
           const i = e.features?.[0]?.properties?.index
@@ -141,6 +169,13 @@ export default function RouteMap({
         map.on('mouseleave', 'route-line', () => { if (!pickRef.current) map.getCanvas().style.cursor = '' })
         mapRef.current = map
         map.fire('organizer:ready')
+        // A map created before its box has its final size (a lazy-loaded page) draws a corner only.
+        map.resize()
+        if (typeof ResizeObserver !== 'undefined' && box.current) {
+          const ro = new ResizeObserver(() => map.resize())
+          ro.observe(box.current)
+          map.once('remove', () => ro.disconnect())
+        }
       })
       map.on('click', (e) => {
         if (pickRef.current && onPickRef.current) onPickRef.current({ lat: e.lngLat.lat, lng: e.lngLat.lng })
@@ -176,7 +211,7 @@ export default function RouteMap({
         markers.current.push(new ml.Marker({ element: pinEl('stop', i + 1) }).setLngLat([s.lng, s.lat]).addTo(map))
       })
       for (const g of guards ?? []) {
-        markers.current.push(new ml.Marker({ element: guardEl(g.label, g.guarded) }).setLngLat([g.lng, g.lat]).addTo(map))
+        markers.current.push(new ml.Marker({ element: guardEl(g.label, g.guarded), anchor: 'bottom' }).setLngLat([g.lng, g.lat]).addTo(map))
       }
       if (meetup) {
         markers.current.push(new ml.Marker({ element: pinEl('meetup'), anchor: 'bottom' }).setLngLat([meetup.lng, meetup.lat]).addTo(map))
@@ -193,6 +228,29 @@ export default function RouteMap({
       return () => clearInterval(t)
     }
   }, [line, pieces, spots, focus, stops, guards, meetup])
+
+  // The group's dot and trail, moved in place on every update rather than redrawn.
+  useEffect(() => {
+    const draw = () => {
+      const map = mapRef.current
+      const ml = libRef.current
+      if (!map || !ml) return
+      const src = map.getSource('trail') as import('maplibre-gl').GeoJSONSource | undefined
+      const pts = group ? [...group.trail, { lat: group.lat, lng: group.lng }] : []
+      src?.setData({ type: 'FeatureCollection', features: pts.length >= 2 ? [{ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: pts.map((p) => [p.lng, p.lat]) } }] : [] })
+      groupMarker.current?.remove()
+      groupMarker.current = null
+      if (!group) return
+      groupMarker.current = new ml.Marker({ element: groupEl(group.label, group.fresh, !!group.walk) }).setLngLat([group.lng, group.lat]).addTo(map)
+      // Keep the group in view without fighting someone who is panning around.
+      if (!map.getBounds().contains([group.lng, group.lat])) map.easeTo({ center: [group.lng, group.lat], duration: 500 })
+    }
+    if (mapRef.current) draw()
+    else {
+      const t = setInterval(() => { if (mapRef.current) { clearInterval(t); draw() } }, 120)
+      return () => clearInterval(t)
+    }
+  }, [group])
 
   // The bike-lane layer.
   useEffect(() => {

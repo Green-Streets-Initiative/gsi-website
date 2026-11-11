@@ -6,6 +6,7 @@ import { Bike, Calendar, Check, CloudSun, Download, ExternalLink, Footprints, Ma
 import type { CalmSegment } from '@/components/commute/calm-route'
 import EventMap from '@/components/events/EventMap'
 import RouteMap from '@/components/organizers/RouteMap'
+import { guardSignSvg } from '@/lib/rides/guard-sign'
 import { buildIcs, calendarLocation, gcalUrl as eventGcalUrl } from '@/lib/event-calendar'
 import { routeMiles } from '@/lib/organizers/route-geo'
 import { todayKey } from '@/lib/organizers/ride-words'
@@ -183,12 +184,7 @@ interface AfterHelp {
 
 /** A crossing guard's stop paddle, as on the map: red once someone has the crossing. */
 function GuardSign({ guarded, size = 24 }: { guarded: boolean; size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 26 26" aria-hidden className="shrink-0">
-      <path d="M8.2 1h9.6L25 8.2v9.6L17.8 25H8.2L1 17.8V8.2z" fill={guarded ? '#C8102E' : '#fff'} stroke="#C8102E" strokeWidth="2" />
-      <path d="M10 18.5v-7.2a1 1 0 0 1 2 0V15V9.6a1 1 0 0 1 2 0V15v-4.4a1 1 0 0 1 2 0V15v-2.6a1 1 0 0 1 2 0v3.8c0 2.4-1.7 4.3-4.1 4.3h-.6c-1.3 0-2.4-.7-3-1.8L8.4 16a1 1 0 0 1 1.6-1.1z" fill={guarded ? '#fff' : '#C8102E'} />
-    </svg>
-  )
+  return <span className="inline-flex shrink-0" aria-hidden dangerouslySetInnerHTML={{ __html: guardSignSvg(guarded, size) }} />
 }
 
 export default function RidePage({ ride, host = null, hostPerson = null, ascentFt = null, comfort = null, initialDate = null, perks = [], newInfra = [], coffee = null, photos = null, locale = 'en' }: {
@@ -569,6 +565,16 @@ export default function RidePage({ ride, host = null, hostPerson = null, ascentF
                                 {s.tone === 'good' && selected.live ? <Radio size={15} /> : s.tone === 'good' ? <Check size={15} /> : null}
                                 {s.text}
                               </p>
+                            )}
+                            {/* The group is sharing where it is (Shift 01747): follow it without the app. */}
+                            {selected.live && ride.live_sharing !== 'link' && (
+                              <p className="mt-1 text-[14px] font-medium">{t('live.from_email')}</p>
+                            )}
+                            {selected.live && ride.live_sharing === 'link' && (
+                              <a href={withLang(`/rides/${ride.code}/live?date=${selected.date}`, locale)}
+                                className="mt-2 inline-flex min-h-[44px] items-center gap-1.5 rounded-[10px] bg-(--ev-ink) px-4 py-2 text-[15px] font-semibold text-white">
+                                <Radio size={15} aria-hidden /> {t('live.see')}
+                              </a>
                             )}
                             {latest?.note && (
                               <p className={`${s.tone !== 'plain' ? 'mt-1 ' : ''}line-clamp-2 text-[14px] font-medium`}>&ldquo;{latest.note}&rdquo; <span className="opacity-80">· {ago(latest.created_at, Date.now(), locale)}</span></p>
