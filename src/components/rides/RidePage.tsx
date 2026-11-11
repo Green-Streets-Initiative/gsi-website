@@ -174,6 +174,23 @@ function StopBadge({ n }: { n: number }) {
 
 const JOBS: HelperJob[] = ['front', 'sweep', 'corner']
 
+/** What ride-guest-rsvp hands back after a Going, for the one-tap "Can you help?" (Shift 01745). */
+interface AfterHelp {
+  open: Record<HelperJob, number>
+  walk: boolean
+  pick: { m: string; o: string; k: string }
+}
+
+/** A crossing guard's stop paddle, as on the map: red once someone has the crossing. */
+function GuardSign({ guarded, size = 24 }: { guarded: boolean; size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 26 26" aria-hidden className="shrink-0">
+      <path d="M8.2 1h9.6L25 8.2v9.6L17.8 25H8.2L1 17.8V8.2z" fill={guarded ? '#C8102E' : '#fff'} stroke="#C8102E" strokeWidth="2" />
+      <path d="M10 18.5v-7.2a1 1 0 0 1 2 0V15V9.6a1 1 0 0 1 2 0V15v-4.4a1 1 0 0 1 2 0V15v-2.6a1 1 0 0 1 2 0v3.8c0 2.4-1.7 4.3-4.1 4.3h-.6c-1.3 0-2.4-.7-3-1.8L8.4 16a1 1 0 0 1 1.6-1.1z" fill={guarded ? '#fff' : '#C8102E'} />
+    </svg>
+  )
+}
+
 export default function RidePage({ ride, host = null, hostPerson = null, ascentFt = null, comfort = null, initialDate = null, perks = [], newInfra = [], coffee = null, photos = null, locale = 'en' }: {
   ride: PublicRide; host?: RideHost | null; ascentFt?: number | null
   /** The page's language (?lang= from the app, else the browser's). */
@@ -218,14 +235,16 @@ export default function RidePage({ ride, host = null, hostPerson = null, ascentF
   const [error, setError] = useState<string | null>(null)
   // `emailed` is the server's word on whether a confirmation went out (null
   // when it doesn't say), so the page never claims an email nobody sent.
-  const [done, setDone] = useState<{ status: RsvpStatus; first: string; emailed: boolean | null; every: string | null; chat: RideChat | null; chatWaiting: boolean; stop: RideStop | null; job: HelperJob | null; jobTaken: boolean } | null>(null)
+  const [done, setDone] = useState<{ status: RsvpStatus; first: string; emailed: boolean | null; every: string | null; chat: RideChat | null; chatWaiting: boolean; stop: RideStop | null; job: HelperJob | null; jobTaken: boolean; help: AfterHelp | null; spot: { label: string; time: string | null } | null } | null>(null)
+  // The one-tap "Can you help?" after Going (Shift 01745): saving, and a job taken first.
+  const [helpBusy, setHelpBusy] = useState<HelperJob | null>(null)
+  const [helpTaken, setHelpTaken] = useState(false)
   // "Count me in every Saturday" (Shift 01598): Going on every date of a
   // repeating ride, including dates that open later.
   const [every, setEvery] = useState(false)
   const [copied, setCopied] = useState(false)
-  // Where they'll join and the job they offer (Shift 01744), asked with Going.
+  // Where they'll join (Shift 01744), asked with Going or Maybe.
   const [stopPick, setStopPick] = useState('start')
-  const [job, setJob] = useState<HelperJob | null>(null)
 
   // The forecast for the chosen date, once it's within the weather service's week.
   const [forecast, setForecast] = useState<{ id: string; line: string } | null>(null)
@@ -253,8 +272,12 @@ export default function RidePage({ ride, host = null, hostPerson = null, ascentF
   const stops = useMemo(() => (selected?.stops ?? []).filter((s) => s.lat != null && s.lng != null), [selected])
   const hasStops = stops.length > 1
   const mapStops = useMemo(() => stops.slice(1).map((s) => ({ lat: s.lat!, lng: s.lng!, label: s.label })), [stops])
-  const help = selected?.help ?? null
-  const openJobs = help ? JOBS.filter((j) => (help.open[j] ?? 0) > 0) : []
+  // Busy crossings with a crossing guard, or needing one (Shift 01745): on the map and under it.
+  // The crossing this visitor just took reads as guarded straight away.
+  const [tookCrossing, setTookCrossing] = useState<string | null>(null)
+  const crossings = useMemo(() => (selected?.help?.crossings ?? []).filter((c) => c.lat != null && c.lng != null)
+    .map((c) => (c.label === tookCrossing ? { ...c, guarded: true } : c)), [selected, tookCrossing])
+  const mapGuards = useMemo(() => crossings.map((c) => ({ lat: c.lat, lng: c.lng, guarded: c.guarded, label: `${c.label}: ${c.guarded ? t('crossings.guarded') : t('crossings.needed')}` })), [crossings]) // eslint-disable-line react-hooks/exhaustive-deps
   // "Start · 10 AM" or "about 10:15 AM · 2.5 mi in".
   const stopWhen = (s: RideStop, i: number) => i === 0
     ? [t('stops.start'), s.time ? clock(`${s.time}:00`, locale) : null].filter(Boolean).join(' · ')
@@ -263,7 +286,7 @@ export default function RidePage({ ride, host = null, hostPerson = null, ascentF
   const rememberedStop = stops.find((s) => s.id === me.stops?.[ride.code]) ?? null
 
   // A new date resets the form to that date's own answer.
-  useEffect(() => { setDone(null); setError(null); setChoice(null); setEvery(false); setJob(null) }, [selectedId])
+  useEffect(() => { setDone(null); setError(null); setChoice(null); setEvery(false); setHelpTaken(false); setTookCrossing(null) }, [selectedId])
   useEffect(() => { setStopPick(rememberedStop?.id ?? 'start') }, [selectedId, rememberedStop?.id])
 
   const share = async () => {
@@ -307,9 +330,10 @@ export default function RidePage({ ride, host = null, hostPerson = null, ascentF
           // The Promote tab's short link they came in on, if any.
           via: new URLSearchParams(window.location.search).get('via') ?? undefined,
           every: choice === 'going' && every && !!everyText,
-          // Where they'll join, and a helper job they offer (Shift 01744).
+          // Where they'll join (Shift 01744).
           stop: hasStops && choice !== 'not_going' ? stopPick : undefined,
-          job: choice === 'going' && job && openJobs.includes(job) ? job : undefined,
+          // Came from the organizer's "Can you help?" post: ask them too (Shift 01745).
+          offer_help: new URLSearchParams(window.location.search).get('help') === '1' || undefined,
           // The confirmation email follows the page language (translation plan, batch 7).
           locale,
         }),
@@ -339,13 +363,45 @@ export default function RidePage({ ride, host = null, hostPerson = null, ascentF
         stop: pickedStop && pickedStop !== 'start' ? (stops.find((s) => s.id === pickedStop) ?? null) : null,
         job: data.job ?? null,
         jobTaken: data.job_taken === true,
+        // Asked only of people who've ridden before, go every date or lead (Shift 01745).
+        help: data.help?.pick ? data.help : null,
+        spot: null,
       })
+      setHelpTaken(false)
       setChoice(null)
       posthog.capture('ride_rsvp_submitted', { code: ride.code, status: choice, surface: 'web', every: choice === 'going' && every, stop: pickedStop && pickedStop !== 'start' ? 'along' : hasStops ? 'start' : null, job: data.job ?? null })
     } catch {
       setError(t('error'))
     } finally {
       setBusy(false)
+    }
+  }
+
+  // "Can you help?" after Going: one tap takes the job (Shift 01745).
+  async function takeJob(j: HelperJob) {
+    if (!done?.help || helpBusy) return
+    setHelpBusy(j)
+    try {
+      const res = await fetch(`${FUNCTIONS_BASE}/ride-guest-rsvp`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ action: 'help', pick: done.help.pick, job: j }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) { setError(t('error')); return }
+      setHelpTaken(data.job_taken === true)
+      setTookCrossing(data.job === 'corner' ? (data.spot?.label ?? null) : null)
+      setDone((d) => d && ({
+        ...d,
+        job: data.job ?? null,
+        spot: data.spot ?? null,
+        help: d.help && data.open ? { ...d.help, open: data.open } : d.help,
+      }))
+      posthog.capture('ride_helper_offered', { code: ride.code, job: j, taken: data.job_taken === true, surface: 'web' })
+    } catch {
+      setError(t('error'))
+    } finally {
+      setHelpBusy(null)
     }
   }
 
@@ -572,13 +628,48 @@ export default function RidePage({ ride, host = null, hostPerson = null, ascentF
                                   {done.every ? t('done.every_body') : done.status === 'maybe' ? t('done.maybe_body') : t('done.going_body')}
                                 </p>
                               )}
-                              {(done.stop || done.job || done.jobTaken) && done.status !== 'not_going' && (
+                              {(done.stop || done.job) && done.status !== 'not_going' && (
                                 <div className="mt-3 space-y-1 rounded-[10px] bg-(--ev-panel) px-3 py-2.5 text-[15px] text-(--ev-ink-85)">
                                   {done.stop && <p>{done.stop.time ? t('done.stop', { stop: done.stop.label, time: clock(`${done.stop.time}:00`, locale) }) : t('done.stop_notime', { stop: done.stop.label })}</p>}
-                                  {done.job && <p className="font-semibold text-(--ev-ink)">{t(`done.job.${done.job}` as RideKey)}</p>}
-                                  {done.jobTaken && <p>{t('done.job_taken')}</p>}
+                                  {done.job && (
+                                    <p className="flex items-start gap-2 font-semibold text-(--ev-ink)">
+                                      {done.job === 'corner' && <GuardSign guarded size={20} />}
+                                      <span>{t(`done.job.${done.job}` as RideKey)}</span>
+                                    </p>
+                                  )}
+                                  {done.job === 'corner' && done.spot && (
+                                    <p>{done.spot.time ? t('done.spot', { place: done.spot.label, time: clock(`${done.spot.time}:00`, locale) }) : t('done.spot_notime', { place: done.spot.label })}</p>
+                                  )}
                                 </div>
                               )}
+                              {/* One tap to help, for people who've ridden before, go every date or lead (Shift 01745). */}
+                              {done.status === 'going' && !done.job && done.help && (() => {
+                                const offered = JOBS.filter((j) => j !== 'front' && (done.help!.open[j] ?? 0) > 0)
+                                if (!offered.length) return helpTaken ? <p className="mt-3 text-[15px] text-(--ev-ink-80)">{t('done.job_taken')}</p> : null
+                                const next = crossings.find((c) => !c.guarded)
+                                return (
+                                  <div className="mt-3 rounded-[10px] border border-(--ev-line-strong) bg-white p-3">
+                                    <p className="text-[15px] font-bold text-(--ev-ink)">{t('help.ask')}</p>
+                                    <p className="text-[14px] text-(--ev-ink-75)">{helpTaken ? t('help.taken') : t('help.ask_sub')}</p>
+                                    <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                                      {offered.map((j) => (
+                                        <button key={j} type="button" onClick={() => takeJob(j)} disabled={helpBusy !== null}
+                                          className="flex min-h-[52px] items-center gap-3 rounded-[10px] border border-(--ev-line-strong) bg-white px-3 py-2 text-left hover:bg-(--ev-panel) disabled:opacity-60">
+                                          {j === 'corner' ? <GuardSign guarded={false} size={22} /> : <Users size={20} className="shrink-0 text-(--ev-ink)" aria-hidden />}
+                                          <span className="min-w-0 flex-1">
+                                            <span className="block text-[15px] font-semibold text-(--ev-ink)">{helpBusy === j ? t('saving') : t(`help.${j}` as RideKey)}</span>
+                                            <span className="block text-[14px] text-(--ev-ink-75)">
+                                              {j === 'sweep' ? t(walk ? 'help.sweep_sub.walk' : 'help.sweep_sub.ride')
+                                                : next ? (next.time ? t('help.corner_at', { place: next.label, time: clock(`${next.time}:00`, locale) }) : t('help.corner_at_notime', { place: next.label }))
+                                                : t('help.corner_sub')}
+                                            </span>
+                                          </span>
+                                        </button>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )
+                              })()}
                               {done.chat && done.status !== 'not_going' && (
                                 <a href={done.chat.url} target="_blank" rel="noopener noreferrer"
                                   onClick={() => posthog.capture('ride_chat_opened', { code: ride.code, surface: 'web' })}
@@ -650,45 +741,15 @@ export default function RidePage({ ride, host = null, hostPerson = null, ascentF
                                     <input name="email" type="email" required defaultValue={me.email} autoComplete="email" inputMode="email" placeholder={t('email_ph')} className="mt-1 w-full rounded-[10px] border border-(--ev-line-strong) bg-white px-3 py-2.5 text-[15px] text-(--ev-ink) placeholder:text-(--ev-ink-60)" />
                                   </label>
                                   {hasStops && choice !== 'not_going' && (
-                                    <fieldset>
-                                      <legend className="text-[15px] font-bold text-(--ev-ink)">{t('where_join')}</legend>
-                                      <p className="text-[14px] text-(--ev-ink-75)">{t('where_join_sub')}</p>
-                                      <div className="mt-2 space-y-2">
-                                        {stops.map((s, i) => {
-                                          const on = stopPick === s.id
-                                          return (
-                                            <label key={s.id} className={`flex min-h-[44px] cursor-pointer items-center gap-3 rounded-[10px] border px-3 py-2 ${on ? 'border-(--ev-accent-fill) bg-(--ev-accent-tint-15)' : 'border-(--ev-line-strong) bg-white'}`}>
-                                              <input type="radio" name="join_stop" value={s.id} checked={on} onChange={() => setStopPick(s.id)} className="h-4 w-4 shrink-0 accent-(--ev-accent-fill)" />
-                                              <StopBadge n={i} />
-                                              <span className="min-w-0 flex-1">
-                                                <span className="block text-[15px] font-semibold text-(--ev-ink)">{s.label}</span>
-                                                <span className="block text-[14px] text-(--ev-ink-75)">{stopWhen(s, i)}</span>
-                                              </span>
-                                            </label>
-                                          )
-                                        })}
-                                      </div>
-                                    </fieldset>
-                                  )}
-                                  {choice === 'going' && openJobs.length > 0 && (
-                                    <fieldset>
-                                      <legend className="text-[15px] font-bold text-(--ev-ink)">{t('help.ask')}</legend>
-                                      <p className="text-[14px] text-(--ev-ink-75)">{t('help.ask_sub')}</p>
-                                      <div className="mt-2 space-y-2">
-                                        {[...openJobs, null].map((j) => {
-                                          const on = job === j
-                                          return (
-                                            <label key={j ?? 'none'} className={`flex min-h-[44px] cursor-pointer items-center gap-3 rounded-[10px] border px-3 py-2 ${on ? 'border-(--ev-accent-fill) bg-(--ev-accent-tint-15)' : 'border-(--ev-line-strong) bg-white'}`}>
-                                              <input type="radio" name="helper_job" checked={on} onChange={() => setJob(j)} className="h-4 w-4 shrink-0 accent-(--ev-accent-fill)" />
-                                              <span className="min-w-0 flex-1">
-                                                <span className="block text-[15px] font-semibold text-(--ev-ink)">{j ? t(`help.${j}` as RideKey) : t('help.none')}</span>
-                                                {j && <span className="block text-[14px] text-(--ev-ink-75)">{j === 'sweep' ? t(walk ? 'help.sweep_sub.walk' : 'help.sweep_sub.ride') : t(`help.${j}_sub` as RideKey)}</span>}
-                                              </span>
-                                            </label>
-                                          )
-                                        })}
-                                      </div>
-                                    </fieldset>
+                                    <label className="block">
+                                      <span className="text-[14px] font-semibold text-(--ev-ink-80)">{t('where_join')}</span>
+                                      <select name="join_stop" value={stopPick} onChange={(e) => setStopPick(e.target.value)}
+                                        className="mt-1 min-h-[44px] w-full rounded-[10px] border border-(--ev-line-strong) bg-white px-3 py-2.5 text-[15px] text-(--ev-ink)">
+                                        {stops.map((s, i) => (
+                                          <option key={s.id} value={s.id}>{`${s.label} · ${stopWhen(s, i)}`}</option>
+                                        ))}
+                                      </select>
+                                    </label>
                                   )}
                                   {choice === 'going' && everyText && (
                                     <label className="flex min-h-[44px] cursor-pointer items-start gap-3 rounded-[10px] border border-(--ev-line-strong) bg-white px-3 py-2.5">
@@ -733,7 +794,7 @@ export default function RidePage({ ride, host = null, hostPerson = null, ascentF
             <div className="overflow-hidden rounded-2xl border border-(--ev-line-mid) bg-(--ev-card) shadow-(--ev-shadow)">
               <div className={route.length >= 2 ? 'h-[300px] sm:h-[360px]' : 'h-56 sm:h-64'}>
                 {route.length >= 2 ? (
-                  <RouteMap line={route} stops={mapStops} meetup={{ lat: place.meetup_lat!, lng: place.meetup_lng! }} pick={false}
+                  <RouteMap line={route} stops={mapStops} guards={mapGuards} meetup={{ lat: place.meetup_lat!, lng: place.meetup_lng! }} pick={false}
                     className="h-full w-full" label={t('route_map', { name: ride.name })} />
                 ) : (
                   <EventMap lat={place.meetup_lat!} lng={place.meetup_lng!} label={place.meetup_name ?? undefined} />
@@ -774,6 +835,26 @@ export default function RidePage({ ride, host = null, hostPerson = null, ascentF
                             <MapPin size={15} />
                           </a>
                         )}
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+              )}
+              {/* Crossing guards at the route's busy crossings, with the group's time at each (Shift 01745). */}
+              {crossings.length > 0 && (
+                <div className="border-t border-(--ev-line) p-4">
+                  <p className="text-[15px] font-semibold text-(--ev-ink)">{t('crossings.title')}</p>
+                  <p className="text-[14px] text-(--ev-ink-75)">{t('crossings.sub')}</p>
+                  <ol className="mt-2 space-y-2">
+                    {crossings.map((c) => (
+                      <li key={c.id} className="flex items-center gap-3">
+                        <GuardSign guarded={c.guarded} size={24} />
+                        <span className="min-w-0 flex-1">
+                          <span className="block text-[15px] font-semibold leading-snug text-(--ev-ink)">{c.label}</span>
+                          <span className="block text-[14px] text-(--ev-ink-75)">
+                            {[c.time ? t('stops.about', { time: clock(`${c.time}:00`, locale) }) : null, c.guarded ? t('crossings.guarded') : t('crossings.needed')].filter(Boolean).join(' · ')}
+                          </span>
+                        </span>
                       </li>
                     ))}
                   </ol>

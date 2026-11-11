@@ -14,21 +14,24 @@ import { Button, Select, cx } from './ui'
  * each stop. The organizer can give anyone going a job or take it off them.
  */
 
-const JOB_NAME: Record<HelperJob, string> = { front: 'Front', sweep: 'Sweep', corner: 'Corner' }
+const JOB_NAME: Record<HelperJob, string> = { front: 'Front', sweep: 'Sweep', corner: 'Crossing guard' }
 
-export function askText(open: Record<HelperJob, number>, dateWords: string, walk: boolean): string | null {
+export function askText(open: Record<HelperJob, number>, dateWords: string, walk: boolean, url?: string, crossings: string[] = []): string | null {
+  const at = crossings.length ? ` (${crossings.join('; ')})` : ''
   const wants = [
     open.front > 0 ? 'someone to lead from the front' : null,
     open.sweep > 0 ? `a sweep to ${walk ? 'walk' : 'ride'} at the back` : null,
-    open.corner === 1 ? 'someone to hold a corner at a busy crossing' : open.corner > 1 ? `${open.corner} people to hold corners at busy crossings` : null,
+    open.corner === 1 ? `a crossing guard at a busy crossing${at}` : open.corner > 1 ? `${open.corner} crossing guards at busy crossings${at}` : null,
   ].filter(Boolean) as string[]
   if (!wants.length) return null
   const list = wants.length === 1 ? wants[0] : `${wants.slice(0, -1).join(', ')} and ${wants[wants.length - 1]}`
-  return `Can you help ${dateWords}? We need ${list}. Say Going on the ride page and pick the job.`
+  return `Can you help ${dateWords}? We need ${list}. Say Going and pick the job${url ? `: ${url}` : ' on the ride page.'}`
 }
 
-export default function HelpersStops({ occurrenceId, dateWords, walk, canManage, onAsk }: {
+export default function HelpersStops({ occurrenceId, dateWords, walk, canManage, helpUrl, onAsk }: {
   occurrenceId: string
+  /** The ride page for this date, opening "Can you help?" for anyone who says Going. */
+  helpUrl?: string
   /** "on Saturday" */
   dateWords: string
   walk: boolean
@@ -66,7 +69,9 @@ export default function HelpersStops({ occurrenceId, dateWords, walk, canManage,
   const stops = data.stops.length > 1 ? data.stops : []
   if (!help && !stops.length) return null
 
-  const ask = help ? askText(help.open, dateWords, walk) : null
+  // Crossings still without a guard, in route order (Shift 01745).
+  const unguarded = (help?.crossings ?? []).filter((c) => !c.guarded)
+  const ask = help ? askText(help.open, dateWords, walk, helpUrl, unguarded.slice(0, help.open.corner).map((c) => c.label)) : null
   const helperIds = new Set(help?.helpers.map((h) => h.member_id) ?? [])
   const free = going.filter((g) => !helperIds.has(g.member_id))
 
@@ -78,14 +83,17 @@ export default function HelpersStops({ occurrenceId, dateWords, walk, canManage,
           <ul className="mt-2 space-y-1.5">
             {help.front_is_organizer && (
               <li className="flex items-center gap-2 text-[15px] text-(--ev-ink-85)">
-                <span className="w-[64px] shrink-0 text-[14px] font-semibold text-(--ev-ink-75)">Front</span>
+                <span className="w-[116px] shrink-0 text-[14px] font-semibold text-(--ev-ink-75)">Front</span>
                 <span className="font-semibold text-(--ev-ink)">{help.organizer_name ? `${help.organizer_name} (organizer)` : 'You'}</span>
               </li>
             )}
             {help.helpers.map((h) => (
               <li key={h.member_id} className="flex items-center gap-2 text-[15px]">
-                <span className="w-[64px] shrink-0 text-[14px] font-semibold text-(--ev-ink-75)">{JOB_NAME[h.job]}</span>
-                <span className="min-w-0 flex-1 truncate font-semibold text-(--ev-ink)">{h.name}{h.every_date ? <span className="font-normal text-(--ev-ink-75)"> · every date</span> : null}</span>
+                <span className="w-[116px] shrink-0 text-[14px] font-semibold text-(--ev-ink-75)">{JOB_NAME[h.job]}</span>
+                <span className="min-w-0 flex-1 font-semibold text-(--ev-ink)">
+                  <span className="block truncate">{h.name}{h.every_date ? <span className="font-normal text-(--ev-ink-75)"> · every date</span> : null}</span>
+                  {h.job === 'corner' && h.spot && <span className="block text-[14px] font-normal text-(--ev-ink-75)">{h.spot.label}{h.spot.time ? `, about ${clock(`${h.spot.time}:00`)}` : ''}</span>}
+                </span>
                 {canManage && (
                   <button type="button" disabled={busy} onClick={() => void assign(h.member_id, null)} aria-label={`Take ${JOB_NAME[h.job].toLowerCase()} off ${h.name} for this date`}
                     className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-(--ev-ink-75) hover:bg-(--ev-panel)">
@@ -96,8 +104,9 @@ export default function HelpersStops({ occurrenceId, dateWords, walk, canManage,
             ))}
             {(['front', 'sweep', 'corner'] as HelperJob[]).flatMap((j) => Array.from({ length: help.open[j] }, (_, i) => (
               <li key={`${j}-${i}`} className="flex flex-wrap items-center gap-2 text-[15px]">
-                <span className="w-[64px] shrink-0 text-[14px] font-semibold text-(--ev-ink-75)">{JOB_NAME[j]}</span>
+                <span className="w-[116px] shrink-0 text-[14px] font-semibold text-(--ev-ink-75)">{JOB_NAME[j]}</span>
                 <span className="rounded-full bg-[#FFF4D6] px-2.5 py-0.5 text-[13px] font-bold text-[#7A4B00]">Open</span>
+                {j === 'corner' && unguarded[i] && <span className="basis-full text-[14px] text-(--ev-ink-75) sm:order-last sm:pl-[124px]">{unguarded[i].label}</span>}
                 {canManage && free.length > 0 && (
                   <Select aria-label={`Give ${JOB_NAME[j].toLowerCase()} to someone going`} value="" disabled={busy}
                     onChange={(e) => { if (e.target.value) void assign(e.target.value, j) }} className="!min-h-[36px] !w-auto !py-1">

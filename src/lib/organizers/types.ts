@@ -154,7 +154,9 @@ export interface DateHelpersStops {
     filled: HelperJobs
     front_is_organizer: boolean
     organizer_name: string | null
-    helpers: { member_id: string; job: HelperJob; name: string; every_date: boolean; is_you: boolean }[]
+    helpers: { member_id: string; job: HelperJob; name: string; every_date: boolean; is_you: boolean; spot?: { label: string; time: string | null } | null }[]
+    /** The route's busy crossings in order, each with its guard once someone has it (Shift 01745). */
+    crossings?: { id: string; label: string; time: string | null; guarded: boolean; guard?: string }[]
   } | null
   helper_jobs: HelperJobs | null
   stops: { id: string; label: string; time: string | null; minutes: number; going: number; names: string[] }[]

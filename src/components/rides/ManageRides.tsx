@@ -41,6 +41,10 @@ interface NextPicks {
   my_stop: string | null
   open: Record<Job, number> | null
   my_job: Job | null
+  /** A crossing guard's crossing and the group's time there (Shift 01745). */
+  my_spot?: { label: string; time: string | null } | null
+  /** Asked to help: been on a ride before, every date, or a leader (Shift 01745). */
+  can_help?: boolean
 }
 interface Overview {
   first_name: string
@@ -57,7 +61,7 @@ interface WentResult {
   went: boolean
 }
 
-const JOB_WORDS: Record<Job, string> = { front: 'Lead', sweep: 'Sweep at the back', corner: 'Hold a corner' }
+const JOB_WORDS: Record<Job, string> = { front: 'Lead', sweep: 'Sweep at the back', corner: 'Crossing guard' }
 
 const ANSWERS: { value: RsvpStatus; label: string }[] = [
   { value: 'going', label: 'Going' },
@@ -106,7 +110,12 @@ export default function ManageRides() {
       if (!res.ok) { setError(body.error ?? 'Couldn’t save that. Try again.'); return false }
       if (body.forgotten) { setForgotten(true); return true }
       if (body.went_result) setWent(body.went_result)
-      if (body.chosen?.job_taken) setError('Someone took that job a moment ago. You’re on the ride either way.')
+      if (body.chosen?.job_taken) {
+        const instead = body.chosen.open_instead as Job | null
+        setError(instead
+          ? `Someone took that a moment ago. ${JOB_WORDS[instead]} is still open, if you’d like it.`
+          : 'Someone took that a moment ago. You’re on the ride either way.')
+      }
       if (body.rides) setData(body)
       return true
     } finally {
@@ -325,7 +334,8 @@ function NextChoices({ next, going, saving, onPick }: {
   saving: string | null
   onPick: (p: { stop?: string; job?: Job | 'none' }, key: string) => void
 }) {
-  const jobs = going && next.open ? (['front', 'sweep', 'corner'] as Job[]).filter((j) => next.open![j] > 0 || next.my_job === j) : []
+  const asked = next.can_help !== false || !!next.my_job
+  const jobs = going && asked && next.open ? (['front', 'sweep', 'corner'] as Job[]).filter((j) => next.open![j] > 0 || next.my_job === j) : []
   if (!next.stops.length && !jobs.length) return null
   const chip = (on: boolean) => `min-h-[40px] rounded-[10px] border px-3 py-1.5 text-left text-[14px] font-semibold transition-colors disabled:opacity-60 ${
     on ? 'border-(--ev-accent-fill) bg-(--ev-accent-fill) text-(--ev-on-accent-fill)' : 'border-(--ev-line-strong) text-(--ev-ink) hover:bg-(--ev-panel)'}`
@@ -363,6 +373,12 @@ function NextChoices({ next, going, saving, onPick }: {
               )
             })}
           </div>
+          {next.my_job === 'corner' && next.my_spot && (
+            <p className="mt-2 text-[15px] text-(--ev-ink-85)">
+              Your crossing is <span className="font-semibold text-(--ev-ink)">{next.my_spot.label}</span>
+              {next.my_spot.time ? `. The group gets there about ${clock(`${next.my_spot.time}:00`)}` : ''}. Wait there until everyone is through.
+            </p>
+          )}
         </div>
       )}
     </div>

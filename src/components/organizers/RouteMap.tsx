@@ -31,6 +31,8 @@ interface Props {
   onPieceClick?: (index: number) => void
   onSpotClick?: (n: number) => void
   stops: (LatLng & { label?: string })[]
+  /** Busy crossings where a crossing guard waits (Shift 01745): a stop paddle, solid once someone has it. */
+  guards?: (LatLng & { label: string; guarded: boolean })[]
   meetup: LatLng | null
   pick: boolean
   onPick?: (p: LatLng) => void
@@ -53,6 +55,19 @@ function spotEl(n: number, on: boolean): HTMLElement {
   return el
 }
 
+/** A crossing guard's stop paddle: red once someone has the crossing, outlined while it needs someone. */
+function guardEl(label: string, guarded: boolean): HTMLElement {
+  const el = document.createElement('div')
+  el.setAttribute('role', 'img')
+  el.setAttribute('aria-label', label)
+  el.title = label
+  const fill = guarded ? '#C8102E' : '#fff'
+  const hand = guarded ? '#fff' : '#C8102E'
+  el.innerHTML = `<svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true"><path d="M8.2 1h9.6L25 8.2v9.6L17.8 25H8.2L1 17.8V8.2z" fill="${fill}" stroke="${guarded ? '#fff' : '#C8102E'}" stroke-width="2"/><path d="M10 18.5v-7.2a1 1 0 0 1 2 0V15V9.6a1 1 0 0 1 2 0V15v-4.4a1 1 0 0 1 2 0V15v-2.6a1 1 0 0 1 2 0v3.8c0 2.4-1.7 4.3-4.1 4.3h-.6c-1.3 0-2.4-.7-3-1.8L8.4 16a1 1 0 0 1 1.6-1.1z" fill="${hand}"/></svg>`
+  Object.assign(el.style, { width: '26px', height: '26px', filter: 'drop-shadow(0 1px 3px rgba(0,0,0,.35))' })
+  return el
+}
+
 function pinEl(kind: 'meetup' | 'stop', n?: number): HTMLElement {
   const el = document.createElement('div')
   if (kind === 'meetup') {
@@ -71,7 +86,7 @@ function pinEl(kind: 'meetup' | 'stop', n?: number): HTMLElement {
 }
 
 export default function RouteMap({
-  line, lanes = null, pieces, spots, focus = null, onPieceClick, onSpotClick, stops, meetup, pick, onPick, fitKey = 0, className, label = 'Route map',
+  line, lanes = null, pieces, spots, focus = null, onPieceClick, onSpotClick, stops, guards, meetup, pick, onPick, fitKey = 0, className, label = 'Route map',
 }: Props) {
   const box = useRef<HTMLDivElement>(null)
   const mapRef = useRef<import('maplibre-gl').Map | null>(null)
@@ -160,6 +175,9 @@ export default function RouteMap({
       stops.forEach((s, i) => {
         markers.current.push(new ml.Marker({ element: pinEl('stop', i + 1) }).setLngLat([s.lng, s.lat]).addTo(map))
       })
+      for (const g of guards ?? []) {
+        markers.current.push(new ml.Marker({ element: guardEl(g.label, g.guarded) }).setLngLat([g.lng, g.lat]).addTo(map))
+      }
       if (meetup) {
         markers.current.push(new ml.Marker({ element: pinEl('meetup'), anchor: 'bottom' }).setLngLat([meetup.lng, meetup.lat]).addTo(map))
       }
@@ -174,7 +192,7 @@ export default function RouteMap({
       const t = setInterval(() => { if (mapRef.current) { clearInterval(t); draw() } }, 120)
       return () => clearInterval(t)
     }
-  }, [line, pieces, spots, focus, stops, meetup])
+  }, [line, pieces, spots, focus, stops, guards, meetup])
 
   // The bike-lane layer.
   useEffect(() => {

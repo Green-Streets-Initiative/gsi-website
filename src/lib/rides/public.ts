@@ -64,11 +64,25 @@ export interface RideStop {
 
 export type HelperJob = 'front' | 'sweep' | 'corner'
 
+/** A busy crossing on the route, from its crash flags, with the group's time there (Shift 01745). */
+export interface RideCrossing {
+  id: string
+  label: string
+  lat: number
+  lng: number
+  miles: number
+  time: string | null
+  /** A crossing guard has it. */
+  guarded: boolean
+}
+
 export interface RideHelp {
   wanted: Record<HelperJob, number>
   open: Record<HelperJob, number>
   filled: Record<HelperJob, number>
   front_is_organizer: boolean
+  /** The route's busy crossings, in route order; guards are given them first come, first served. */
+  crossings?: RideCrossing[]
 }
 
 export interface RideUpdate {

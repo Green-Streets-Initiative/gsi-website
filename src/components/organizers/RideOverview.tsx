@@ -242,6 +242,7 @@ export default function RideOverview() {
           {dayOn && dayOn.riders.length > 0 && <div className="mt-4"><RideDayRiders riders={dayOn.riders} /></div>}
           {day === 'no_meetup' && <div className="mt-3"><NoMeetupHint /></div>}
           <HelpersStops occurrenceId={nextDate.id} dateWords={rideTime ? 'today' : `on ${dateLabel(nextDate.date)}`} walk={r.activity === 'walk'} canManage={detail.can_manage}
+            helpUrl={`https://gogreenstreets.org/rides/${r.invite_code}?date=${nextDate.date}&help=1`}
             onAsk={(note) => { setAskNote(note); setPosting(true); setTimeout(() => document.getElementById('post-update')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50) }} />
           <div className="mt-4 flex flex-wrap gap-2">
             {detail.can_edit && (

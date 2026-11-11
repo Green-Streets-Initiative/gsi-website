@@ -20,6 +20,7 @@ import { useConsole } from './ConsoleContext'
 import EndShopCard from './EndShopCard'
 import GoingToEvent from './GoingToEvent'
 import JoinStops, { withJoinStops } from './JoinStops'
+import { routeCrossings, type RouteCrossing } from '@/lib/organizers/crossings'
 import OrgPicker from './OrgPicker'
 import RouteMap from './RouteMap'
 import RouteSection from './RouteSection'
@@ -309,7 +310,7 @@ function Preview({ f, route, hostName }: { f: Form; route: RouteDraft | null; ho
 
 const JOB_ROWS: { job: HelperJob; label: string; hint: (walk: boolean) => string; max: number }[] = [
   { job: 'sweep', label: 'Sweep', hint: (walk) => `${walk ? 'Walks' : 'Rides'} at the back with the last ${walk ? 'walker' : 'rider'}.`, max: 2 },
-  { job: 'corner', label: 'Corners', hint: () => 'Wait at a busy crossing until everyone is through.', max: 4 },
+  { job: 'corner', label: 'Crossing guards', hint: () => 'Each waits at a busy crossing until everyone is through.', max: 4 },
 ]
 
 /**
@@ -317,12 +318,18 @@ const JOB_ROWS: { job: HelperJob; label: string; hint: (walk: boolean) => string
  * each date. You lead from the front unless you hand it to someone on the
  * day. People see the open jobs after they say Going.
  */
-function HelpersField({ jobs, walk, noDrop, flagged, onChange }: {
-  jobs: HelperJobs | null; walk: boolean; noDrop: boolean; flagged: number; onChange: (j: HelperJobs | null) => void
+/** The jobs a ride starts with: a sweep for a no-drop ride or a walk, a crossing guard for each busy crossing. */
+export function startingJobs(walk: boolean, noDrop: boolean, crossings: number): HelperJobs {
+  return { front: 1, sweep: noDrop || walk ? 1 : 0, corner: walk ? 0 : Math.min(crossings, 4) }
+}
+
+function HelpersField({ jobs, walk, noDrop, crossings, onChange }: {
+  jobs: HelperJobs | null; walk: boolean; noDrop: boolean; crossings: RouteCrossing[]; onChange: (j: HelperJobs | null) => void
 }) {
   const on = !!jobs
-  const suggestCorners = walk ? 0 : Math.min(flagged, 2)
-  const start: HelperJobs = { front: 1, sweep: noDrop || walk ? 1 : 0, corner: suggestCorners }
+  const start = startingJobs(walk, noDrop, crossings.length)
+  const n = crossings.length
+  const named = crossings.slice(0, 3).map((c) => c.label).join('; ')
   return (
     <div className="rounded-[12px] border border-(--ev-line-strong) bg-white px-4 py-3">
       <label className="flex cursor-pointer items-start gap-3">
@@ -330,7 +337,7 @@ function HelpersField({ jobs, walk, noDrop, flagged, onChange }: {
         <span>
           <span className="block text-[15px] font-semibold text-(--ev-ink)">Ask people to help</span>
           <span className="block text-[14px] text-(--ev-ink-75)">
-            After someone says Going, they can offer to take a job. First to say yes gets it, and you can swap anyone on the day. You lead from the front.
+            People who say Going and have been on a ride before can take a job in one tap. First to say yes gets it, and you can swap anyone. Each crossing guard is given a crossing and a time. You lead from the front.
           </span>
         </span>
       </label>
@@ -341,7 +348,7 @@ function HelpersField({ jobs, walk, noDrop, flagged, onChange }: {
               <span className="min-w-0">
                 <span className="block text-[15px] font-semibold text-(--ev-ink)">{r.label}</span>
                 <span className="block text-[14px] text-(--ev-ink-75)">
-                  {r.hint(walk)}{r.job === 'corner' && flagged > 0 ? ` Your route has ${flagged} spot${flagged === 1 ? '' : 's'} to watch.` : ''}
+                  {r.hint(walk)}{r.job === 'corner' && n > 0 ? ` Your route has ${n} busy crossing${n === 1 ? '' : 's'}: ${named}${n > 3 ? '…' : '.'}` : ''}
                 </span>
               </span>
               <span className="flex items-center gap-1.5" role="group" aria-label={`How many ${r.label.toLowerCase()}`}>
@@ -372,6 +379,16 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
   const [tried, setTried] = useState(false)
   const [flyerBusy, setFlyerBusy] = useState(false)
   const [meetupFit, setMeetupFit] = useState(0)
+  // Busy crossings on the route (Shift 01745): crossing guards to ask for.
+  const crossings = useMemo(() => routeCrossings(f.route?.flags), [f.route?.flags])
+  // A new ride asks for helpers on its own once it says Nobody gets dropped or
+  // its route has busy crossings, until the organizer sets them (Keith 2026-11-11).
+  const helpersTouched = useRef(!!ride)
+  useEffect(() => {
+    if (helpersTouched.current) return
+    const want = f.no_drop || (!walk && crossings.length > 0) ? startingJobs(walk, f.no_drop, crossings.length) : null
+    setF((prev) => JSON.stringify(prev.helper_jobs) === JSON.stringify(want) ? prev : { ...prev, helper_jobs: want })
+  }, [f.no_drop, walk, crossings.length])
   // The event, game or concert this ride goes to (Go Together, Shift 01460
   // and 01691). Saved on its own after the ride, as in the app, so a link
   // that fails never loses the ride.
@@ -984,8 +1001,8 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
                 <span className="block text-[14px] text-(--ev-ink-75)">The group waits or regroups so slower people stay with it.</span>
               </span>
             </label>
-            <HelpersField jobs={f.helper_jobs} walk={walk} noDrop={f.no_drop} flagged={(f.route?.flags ?? []).length}
-              onChange={(j) => set('helper_jobs', j)} />
+            <HelpersField jobs={f.helper_jobs} walk={walk} noDrop={f.no_drop} crossings={crossings}
+              onChange={(j) => { helpersTouched.current = true; set('helper_jobs', j) }} />
             <Field label="Led in" hint={`Every language you lead in, so people can find ${noun}s in theirs.`}>
               <div className="flex flex-wrap gap-2">
                 {LANGUAGES.map((l) => {

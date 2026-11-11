@@ -371,12 +371,12 @@ export const TOOLS: Anthropic.Tool[] = [
   },
   {
     name: 'get_helpers_and_stops',
-    description: "One date's helpers and join stops (Shift 01744): who leads from the front (the organizer unless someone took it), the sweep at the back, people holding corners, which jobs are still open, and each join stop along the route with the group's time there and who joins at it. Use it when the organizer asks who is helping, what's still open, or where people are joining.",
+    description: "One date's helpers and join stops (Shift 01744): who leads from the front (the organizer unless someone took it), the sweep at the back, crossing guards with the crossing each one has, which jobs and crossings are still open, and each join stop along the route with the group's time there and who joins at it. Use it when the organizer asks who is helping, what's still open, or where people are joining.",
     input_schema: { type: 'object', properties: { series_id: uuid, occurrence_id: uuid }, required: ['series_id', 'occurrence_id'] },
   },
   {
     name: 'set_helper_jobs',
-    description: "Ask people to help on every date (Shift 01744), or stop asking: how many sweeps (0-3, ride at the back with the last person) and corners (0-6, wait at a busy crossing until everyone is through). The organizer leads from the front; front above 1 asks for more leaders. People going pick a job on the ride page or in the app; first yes gets it. jobs null stops asking. Card first.",
+    description: "Ask people to help on every date (Shift 01744), or stop asking: how many sweeps (0-3, ride at the back with the last person) and crossing guards ('corner', 0-6, each waits at one of the route's busy crossings until everyone is through; one per busy crossing is plenty). The organizer leads from the front; front above 1 asks for more leaders. People going pick a job on the ride page or in the app; first yes gets it. jobs null stops asking. Card first.",
     input_schema: {
       type: 'object',
       properties: {
@@ -388,7 +388,7 @@ export const TOOLS: Anthropic.Tool[] = [
   },
   {
     name: 'give_helper_job',
-    description: "Give someone going on a date a helper job (front, sweep or corner), or take it off them with job null (Shift 01744). Names as get_helpers_and_stops or get_whos_coming shows them. The organizer can give a job even when it's already taken or the ride isn't asking. Card first.",
+    description: "Give someone going on a date a helper job (front, sweep or corner, which is a crossing guard), or take it off them with job null (Shift 01744). Names as get_helpers_and_stops or get_whos_coming shows them. The organizer can give a job even when it's already taken or the ride isn't asking. Card first.",
     input_schema: {
       type: 'object',
       properties: {
@@ -1180,11 +1180,11 @@ export async function approvalCard(ctx: ToolCtx, name: string, input: Record<str
         const walk = d.ride.activity === 'walk'
         const j = input.jobs && typeof input.jobs === 'object' ? input.jobs as Record<string, number> : null
         const jobs = j ? { front: Math.min(Math.max(Math.round(j.front ?? 1), 1), 3), sweep: Math.min(Math.max(Math.round(j.sweep ?? 0), 0), 3), corner: walk ? 0 : Math.min(Math.max(Math.round(j.corner ?? 0), 0), 6) } : null
-        if (jobs && jobs.front === 1 && !jobs.sweep && !jobs.corner) return { result: fail('Ask for at least one sweep or corner, or leave helpers off.') }
+        if (jobs && jobs.front === 1 && !jobs.sweep && !jobs.corner) return { result: fail('Ask for at least one sweep or crossing guard, or leave helpers off.') }
         const words = jobs ? [
           jobs.front > 1 ? plural(jobs.front - 1, 'more leader', 'more leaders') : null,
           jobs.sweep ? plural(jobs.sweep, 'sweep', 'sweeps') : null,
-          jobs.corner ? plural(jobs.corner, 'corner', 'corners') : null,
+          jobs.corner ? plural(jobs.corner, 'crossing guard', 'crossing guards') : null,
         ].filter(Boolean).join(', ') : ''
         return {
           card: jobs ? {
@@ -1209,7 +1209,7 @@ export async function approvalCard(ctx: ToolCtx, name: string, input: Record<str
         if (match.length !== 1) return { result: fail(match.length ? `More than one person matches ${input.name}: ${match.map((r) => r.display_name).join(', ')}.` : `No one called ${input.name} is on that date.`) }
         const who = match[0]
         if (input.job && who.rsvp_status !== 'going' && who.role !== 'organizer') return { result: fail(`${who.display_name} hasn't said Going for ${dateLabel(o.date)}.`) }
-        const JOB: Record<string, string> = { front: 'lead from the front', sweep: 'sweep at the back', corner: 'hold a corner' }
+        const JOB: Record<string, string> = { front: 'lead from the front', sweep: 'sweep at the back', corner: 'be a crossing guard' }
         return {
           card: input.job ? {
             title: `${who.display_name} to ${JOB[String(input.job)]} on ${dateLabel(o.date)}?`,

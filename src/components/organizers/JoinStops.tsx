@@ -78,11 +78,14 @@ export default function JoinStops({ route, meetup, pace, activity, startTime, on
   const [query, setQuery] = useState('')
   const [warn, setWarn] = useState<string | null>(null)
   const [suggested, setSuggested] = useState<Suggestion[] | null>(null)
+  // Most rides meet at one place: this stays a link until the organizer wants
+  // stops (Keith 2026-11-11: stops "are not a fixture of every ride").
+  const [shown, setShown] = useState(joins.length > 0)
 
   // Suggestions for this line, read once per route.
   const lineKey = line.length >= 2 ? `${line.length}|${line[0].lat.toFixed(4)}|${line[line.length - 1].lng.toFixed(4)}` : ''
   useEffect(() => {
-    if (!lineKey) return
+    if (!lineKey || !shown) return
     let live = true
     setSuggested(null)
     // Every few points is plenty for "within a short walk of the route".
@@ -90,7 +93,7 @@ export default function JoinStops({ route, meetup, pace, activity, startTime, on
     suggestJoinStops(line.filter((_, i) => i % step === 0 || i === line.length - 1))
       .then((r) => { if (live) setSuggested(r.stops) }, () => { if (live) setSuggested([]) })
     return () => { live = false }
-  }, [lineKey]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [lineKey, shown]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // The stops in route order, each with the group's time there.
   const timed = useMemo(() => {
@@ -119,6 +122,15 @@ export default function JoinStops({ route, meetup, pace, activity, startTime, on
   const remove = (id: string | undefined) => save(joins.filter((j) => j.id !== id))
 
   const open = (suggested ?? []).filter((s) => !joins.some((j) => haversineM(j, s) < 120))
+
+  if (!shown) {
+    return (
+      <button type="button" onClick={() => setShown(true)}
+        className="inline-flex min-h-[44px] items-center gap-1.5 rounded-[10px] px-1 text-[15px] font-semibold text-(--ev-accent) hover:underline">
+        <Plus size={16} aria-hidden /> Let people join partway
+      </button>
+    )
+  }
 
   return (
     <div className="rounded-[12px] border border-(--ev-line-strong) bg-white px-4 py-4">
