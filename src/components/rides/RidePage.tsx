@@ -31,9 +31,11 @@ import {
   dayShort,
   everyLabel,
   scheduleText,
+  type HelperJob,
   type PublicRide,
   type RideChat,
   type RideDate,
+  type RideStop,
   type RsvpStatus,
 } from '@/lib/rides/public'
 import '@/components/events/events-tone.css'
@@ -59,6 +61,8 @@ interface Remembered {
   last_name: string
   email: string
   answers: Record<string, RsvpStatus>
+  /** Where they join each ride, by ride code (a stop id; Shift 01744). */
+  stops?: Record<string, string>
 }
 const STORE_KEY = 'shift-ride-guest'
 
@@ -154,6 +158,22 @@ function downloadGpx(ride: PublicRide, line: { lat: number; lng: number }[], dat
   a.remove()
 }
 
+/** The ride as someone joining at a stop sees it: their stop is their meeting point, at the group's time there. */
+function atStop(d: RideDate, stop: RideStop | null): RideDate {
+  if (!stop || stop.id === 'start' || stop.lat == null || stop.lng == null) return d
+  return { ...d, meetup_name: stop.label, meetup_address: null, meetup_lat: stop.lat, meetup_lng: stop.lng, start_time: stop.time ? `${stop.time}:00` : d.start_time }
+}
+
+/** A stop's number on the map (the start is the meeting pin), as a small badge beside its name. */
+function StopBadge({ n }: { n: number }) {
+  if (n === 0) {
+    return <span aria-hidden className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-[#191A2E] text-white"><MapPin size={13} /></span>
+  }
+  return <span aria-hidden className="grid h-6 w-6 shrink-0 place-items-center rounded-full border-2 border-white bg-[#2966E5] text-[12px] font-bold text-white shadow-[0_1px_4px_rgba(0,0,0,.3)]">{n}</span>
+}
+
+const JOBS: HelperJob[] = ['front', 'sweep', 'corner']
+
 export default function RidePage({ ride, host = null, hostPerson = null, ascentFt = null, comfort = null, initialDate = null, perks = [], newInfra = [], coffee = null, photos = null, locale = 'en' }: {
   ride: PublicRide; host?: RideHost | null; ascentFt?: number | null
   /** The page's language (?lang= from the app, else the browser's). */
@@ -198,11 +218,14 @@ export default function RidePage({ ride, host = null, hostPerson = null, ascentF
   const [error, setError] = useState<string | null>(null)
   // `emailed` is the server's word on whether a confirmation went out (null
   // when it doesn't say), so the page never claims an email nobody sent.
-  const [done, setDone] = useState<{ status: RsvpStatus; first: string; emailed: boolean | null; every: string | null; chat: RideChat | null; chatWaiting: boolean } | null>(null)
+  const [done, setDone] = useState<{ status: RsvpStatus; first: string; emailed: boolean | null; every: string | null; chat: RideChat | null; chatWaiting: boolean; stop: RideStop | null; job: HelperJob | null; jobTaken: boolean } | null>(null)
   // "Count me in every Saturday" (Shift 01598): Going on every date of a
   // repeating ride, including dates that open later.
   const [every, setEvery] = useState(false)
   const [copied, setCopied] = useState(false)
+  // Where they'll join and the job they offer (Shift 01744), asked with Going.
+  const [stopPick, setStopPick] = useState('start')
+  const [job, setJob] = useState<HelperJob | null>(null)
 
   // The forecast for the chosen date, once it's within the weather service's week.
   const [forecast, setForecast] = useState<{ id: string; line: string } | null>(null)
@@ -226,8 +249,22 @@ export default function RidePage({ ride, host = null, hostPerson = null, ascentF
   // A break ends on its own when its date comes: the banner goes with it.
   const paused = ride.status === 'paused' || (!!ride.break_until && ride.break_until > todayKey())
 
+  // The chosen date's join stops, in route order; the first is the start.
+  const stops = useMemo(() => (selected?.stops ?? []).filter((s) => s.lat != null && s.lng != null), [selected])
+  const hasStops = stops.length > 1
+  const mapStops = useMemo(() => stops.slice(1).map((s) => ({ lat: s.lat!, lng: s.lng!, label: s.label })), [stops])
+  const help = selected?.help ?? null
+  const openJobs = help ? JOBS.filter((j) => (help.open[j] ?? 0) > 0) : []
+  // "Start · 10 AM" or "about 10:15 AM · 2.5 mi in".
+  const stopWhen = (s: RideStop, i: number) => i === 0
+    ? [t('stops.start'), s.time ? clock(`${s.time}:00`, locale) : null].filter(Boolean).join(' · ')
+    : [s.time ? t('stops.about', { time: clock(`${s.time}:00`, locale) }) : null, s.miles != null ? t('stops.miles_in', { mi: s.miles }) : null].filter(Boolean).join(' · ')
+  // Where this browser said it joins this ride, if that stop is on this date.
+  const rememberedStop = stops.find((s) => s.id === me.stops?.[ride.code]) ?? null
+
   // A new date resets the form to that date's own answer.
-  useEffect(() => { setDone(null); setError(null); setChoice(null); setEvery(false) }, [selectedId])
+  useEffect(() => { setDone(null); setError(null); setChoice(null); setEvery(false); setJob(null) }, [selectedId])
+  useEffect(() => { setStopPick(rememberedStop?.id ?? 'start') }, [selectedId, rememberedStop?.id])
 
   const share = async () => {
     // The ride's own link: a promo link's ?via= stays with the first visitor.
@@ -270,6 +307,9 @@ export default function RidePage({ ride, host = null, hostPerson = null, ascentF
           // The Promote tab's short link they came in on, if any.
           via: new URLSearchParams(window.location.search).get('via') ?? undefined,
           every: choice === 'going' && every && !!everyText,
+          // Where they'll join, and a helper job they offer (Shift 01744).
+          stop: hasStops && choice !== 'not_going' ? stopPick : undefined,
+          job: choice === 'going' && job && openJobs.includes(job) ? job : undefined,
           // The confirmation email follows the page language (translation plan, batch 7).
           locale,
         }),
@@ -283,7 +323,8 @@ export default function RidePage({ ride, host = null, hostPerson = null, ascentF
       const answers = { ...me.answers, [selected.id]: choice }
       // Every date: the open dates they haven't answered read as Going here too.
       if (data.every_date) for (const d of open) if (!answers[d.id]) answers[d.id] = 'going'
-      const next: Remembered = { first_name, last_name, email, answers }
+      const pickedStop = hasStops && choice !== 'not_going' ? (data.stop ?? stopPick) : null
+      const next: Remembered = { first_name, last_name, email, answers, stops: { ...(me.stops ?? {}), ...(pickedStop ? { [ride.code]: pickedStop } : {}) } }
       writeRemembered(next)
       setMe(next)
       if (typeof data.going === 'number') {
@@ -295,9 +336,12 @@ export default function RidePage({ ride, host = null, hostPerson = null, ascentF
         chat: data.chat?.url ? data.chat : null,
         // The ride has a group chat and the organizer lets people in one by one (Shift 01679).
         chatWaiting: !data.chat?.url && data.chat_waiting === true,
+        stop: pickedStop && pickedStop !== 'start' ? (stops.find((s) => s.id === pickedStop) ?? null) : null,
+        job: data.job ?? null,
+        jobTaken: data.job_taken === true,
       })
       setChoice(null)
-      posthog.capture('ride_rsvp_submitted', { code: ride.code, status: choice, surface: 'web', every: choice === 'going' && every })
+      posthog.capture('ride_rsvp_submitted', { code: ride.code, status: choice, surface: 'web', every: choice === 'going' && every, stop: pickedStop && pickedStop !== 'start' ? 'along' : hasStops ? 'start' : null, job: data.job ?? null })
     } catch {
       setError(t('error'))
     } finally {
@@ -327,7 +371,9 @@ export default function RidePage({ ride, host = null, hostPerson = null, ascentF
   const miles = route.length >= 2 ? routeMiles(route) : null
   const climb = own ? (typeof own.route_elevation?.ascent_ft === 'number' ? Math.round(own.route_elevation.ascent_ft) : null) : ascentFt
   // The chosen date as a calendar entry (calendarEvent): offered before and after answering.
-  const calEv = selected ? calendarEvent(ride, selected, hostName, miles, climb, locale) : null
+  // From their own stop, at the group's time there, once they've picked one.
+  const myStop = done?.stop ?? (done ? null : rememberedStop)
+  const calEv = selected ? calendarEvent(ride, atStop(selected, myStop), hostName, miles, climb, locale) : null
   const routeLink = own ? own.route_google_maps_url : ride.route_google_maps_url
   const dateTitle = selected?.title ?? null
   const about = selected?.description || ride.description
@@ -526,6 +572,13 @@ export default function RidePage({ ride, host = null, hostPerson = null, ascentF
                                   {done.every ? t('done.every_body') : done.status === 'maybe' ? t('done.maybe_body') : t('done.going_body')}
                                 </p>
                               )}
+                              {(done.stop || done.job || done.jobTaken) && done.status !== 'not_going' && (
+                                <div className="mt-3 space-y-1 rounded-[10px] bg-(--ev-panel) px-3 py-2.5 text-[15px] text-(--ev-ink-85)">
+                                  {done.stop && <p>{done.stop.time ? t('done.stop', { stop: done.stop.label, time: clock(`${done.stop.time}:00`, locale) }) : t('done.stop_notime', { stop: done.stop.label })}</p>}
+                                  {done.job && <p className="font-semibold text-(--ev-ink)">{t(`done.job.${done.job}` as RideKey)}</p>}
+                                  {done.jobTaken && <p>{t('done.job_taken')}</p>}
+                                </div>
+                              )}
                               {done.chat && done.status !== 'not_going' && (
                                 <a href={done.chat.url} target="_blank" rel="noopener noreferrer"
                                   onClick={() => posthog.capture('ride_chat_opened', { code: ride.code, surface: 'web' })}
@@ -596,6 +649,47 @@ export default function RidePage({ ride, host = null, hostPerson = null, ascentF
                                     <span className="text-[14px] font-semibold text-(--ev-ink-80)">{t('email')}</span>
                                     <input name="email" type="email" required defaultValue={me.email} autoComplete="email" inputMode="email" placeholder={t('email_ph')} className="mt-1 w-full rounded-[10px] border border-(--ev-line-strong) bg-white px-3 py-2.5 text-[15px] text-(--ev-ink) placeholder:text-(--ev-ink-60)" />
                                   </label>
+                                  {hasStops && choice !== 'not_going' && (
+                                    <fieldset>
+                                      <legend className="text-[15px] font-bold text-(--ev-ink)">{t('where_join')}</legend>
+                                      <p className="text-[14px] text-(--ev-ink-75)">{t('where_join_sub')}</p>
+                                      <div className="mt-2 space-y-2">
+                                        {stops.map((s, i) => {
+                                          const on = stopPick === s.id
+                                          return (
+                                            <label key={s.id} className={`flex min-h-[44px] cursor-pointer items-center gap-3 rounded-[10px] border px-3 py-2 ${on ? 'border-(--ev-accent-fill) bg-(--ev-accent-tint-15)' : 'border-(--ev-line-strong) bg-white'}`}>
+                                              <input type="radio" name="join_stop" value={s.id} checked={on} onChange={() => setStopPick(s.id)} className="h-4 w-4 shrink-0 accent-(--ev-accent-fill)" />
+                                              <StopBadge n={i} />
+                                              <span className="min-w-0 flex-1">
+                                                <span className="block text-[15px] font-semibold text-(--ev-ink)">{s.label}</span>
+                                                <span className="block text-[14px] text-(--ev-ink-75)">{stopWhen(s, i)}</span>
+                                              </span>
+                                            </label>
+                                          )
+                                        })}
+                                      </div>
+                                    </fieldset>
+                                  )}
+                                  {choice === 'going' && openJobs.length > 0 && (
+                                    <fieldset>
+                                      <legend className="text-[15px] font-bold text-(--ev-ink)">{t('help.ask')}</legend>
+                                      <p className="text-[14px] text-(--ev-ink-75)">{t('help.ask_sub')}</p>
+                                      <div className="mt-2 space-y-2">
+                                        {[...openJobs, null].map((j) => {
+                                          const on = job === j
+                                          return (
+                                            <label key={j ?? 'none'} className={`flex min-h-[44px] cursor-pointer items-center gap-3 rounded-[10px] border px-3 py-2 ${on ? 'border-(--ev-accent-fill) bg-(--ev-accent-tint-15)' : 'border-(--ev-line-strong) bg-white'}`}>
+                                              <input type="radio" name="helper_job" checked={on} onChange={() => setJob(j)} className="h-4 w-4 shrink-0 accent-(--ev-accent-fill)" />
+                                              <span className="min-w-0 flex-1">
+                                                <span className="block text-[15px] font-semibold text-(--ev-ink)">{j ? t(`help.${j}` as RideKey) : t('help.none')}</span>
+                                                {j && <span className="block text-[14px] text-(--ev-ink-75)">{j === 'sweep' ? t(walk ? 'help.sweep_sub.walk' : 'help.sweep_sub.ride') : t(`help.${j}_sub` as RideKey)}</span>}
+                                              </span>
+                                            </label>
+                                          )
+                                        })}
+                                      </div>
+                                    </fieldset>
+                                  )}
                                   {choice === 'going' && everyText && (
                                     <label className="flex min-h-[44px] cursor-pointer items-start gap-3 rounded-[10px] border border-(--ev-line-strong) bg-white px-3 py-2.5">
                                       <input type="checkbox" checked={every} onChange={(e) => setEvery(e.target.checked)} className="mt-1 h-4 w-4 shrink-0 accent-(--ev-accent-fill)" />
@@ -639,7 +733,7 @@ export default function RidePage({ ride, host = null, hostPerson = null, ascentF
             <div className="overflow-hidden rounded-2xl border border-(--ev-line-mid) bg-(--ev-card) shadow-(--ev-shadow)">
               <div className={route.length >= 2 ? 'h-[300px] sm:h-[360px]' : 'h-56 sm:h-64'}>
                 {route.length >= 2 ? (
-                  <RouteMap line={route} stops={[]} meetup={{ lat: place.meetup_lat!, lng: place.meetup_lng! }} pick={false}
+                  <RouteMap line={route} stops={mapStops} meetup={{ lat: place.meetup_lat!, lng: place.meetup_lng! }} pick={false}
                     className="h-full w-full" label={t('route_map', { name: ride.name })} />
                 ) : (
                   <EventMap lat={place.meetup_lat!} lng={place.meetup_lng!} label={place.meetup_name ?? undefined} />
@@ -661,6 +755,30 @@ export default function RidePage({ ride, host = null, hostPerson = null, ascentF
                   </a>
                 </div>
               </div>
+              {/* Where people join along the way, with the group's time at each (Shift 01744). */}
+              {hasStops && (
+                <div className="border-t border-(--ev-line) p-4">
+                  <p className="text-[15px] font-semibold text-(--ev-ink)">{t('stops.title')}</p>
+                  <ol className="mt-2 space-y-2">
+                    {stops.map((s, i) => (
+                      <li key={s.id} className="flex items-center gap-3">
+                        <StopBadge n={i} />
+                        <span className="min-w-0 flex-1">
+                          <span className="block text-[15px] font-semibold leading-snug text-(--ev-ink)">{s.label}</span>
+                          <span className="block text-[14px] text-(--ev-ink-75)">{stopWhen(s, i)}</span>
+                        </span>
+                        {i > 0 && (
+                          <a href={`https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lng}`} target="_blank" rel="noopener noreferrer"
+                            aria-label={`${t('directions')}: ${s.label}`}
+                            className="grid h-9 w-9 shrink-0 place-items-center rounded-[10px] border border-(--ev-line-strong) bg-white text-(--ev-ink) hover:bg-(--ev-panel)">
+                            <MapPin size={15} />
+                          </a>
+                        )}
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+              )}
             </div>
           )}
 

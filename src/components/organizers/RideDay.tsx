@@ -112,7 +112,11 @@ export function RideDayRiders({ riders, dark }: { riders: RiderStatusRow[]; dark
                 dark ? 'bg-[#BAF14D]/15 text-[#BAF14D]' : 'bg-(--ev-accent-tint-15) text-(--ev-accent-90)')} aria-hidden>
                 {(r.display_name || '?').trim().charAt(0).toUpperCase()}
               </span>}
-          <span className={cx('min-w-0 flex-1 truncate text-[15px] font-semibold', dark ? 'text-white' : 'text-(--ev-ink)')}>{r.display_name}</span>
+          <span className={cx('min-w-0 flex-1 truncate text-[15px] font-semibold', dark ? 'text-white' : 'text-(--ev-ink)')}>
+            {r.display_name}
+            {/* Joining along the way: here/away is measured to their stop (Shift 01744). */}
+            {r.stop && <span className={cx('font-normal', dark ? 'text-white/75' : 'text-(--ev-ink-75)')}> · at {r.stop}</span>}
+          </span>
           <Chip row={r} dark={dark} />
         </li>
       ))}

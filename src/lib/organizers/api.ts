@@ -41,6 +41,8 @@ export interface RiderStatusRow {
   avatar_url: string | null
   status: 'here' | 'away' | 'unknown' | 'not_sharing' | null
   distance_mi: number | null
+  /** The stop they join at, when it isn't the start (Shift 01744); here/away is measured to it. */
+  stop?: string | null
 }
 
 export interface RideRiderStatus {
@@ -572,6 +574,22 @@ export interface ImportedRoute {
   distance_mi: number
   elevation: import('./types').RouteElevation | null
 }
+
+/** T stations and Bluebikes docks along a route, as places people could join it (Shift 01744). */
+export const suggestJoinStops = (line: { lat: number; lng: number }[]) =>
+  siteApi<{ stops: { lat: number; lng: number; label: string; kind: 't' | 'dock'; along_m: number }[] }>('/api/organizers/join-stops', { line })
+
+/** The helpers a ride asks for on each date; null stops asking (Shift 01744). */
+export const setHelperJobs = (seriesId: string, jobs: import('./types').HelperJobs | null) =>
+  rpc<import('./types').HelperJobs | null>('set_ride_helper_jobs', { p_series_id: seriesId, p_jobs: jobs })
+
+/** One date's helpers, with names, and how many join at each stop. */
+export const getDateHelpersStops = (occurrenceId: string) =>
+  rpc<import('./types').DateHelpersStops>('organizer_date_helpers_stops', { p_occurrence_id: occurrenceId })
+
+/** Give someone going a job on one date, or take it off them (job null). */
+export const setDateHelper = (occurrenceId: string, memberId: string, job: import('./types').HelperJob | null) =>
+  rpc<import('./types').DateHelpersStops>('organizer_set_ride_helper', { p_occurrence_id: occurrenceId, p_member_id: memberId, p_job: job })
 
 export const importRideWithGps = (url: string) =>
   siteApi<ImportedRoute>('/api/organizers/route-import', { url })

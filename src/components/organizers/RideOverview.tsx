@@ -10,6 +10,7 @@ import { UPDATE_KIND_LABEL, dateLabel, plural, todayKey } from '@/lib/organizers
 import type { DetailDate } from '@/lib/organizers/types'
 import { CancelDateDialog, ChangeDateDialog } from './DateDialogs'
 import { HeadcountDialog, HeadcountPrompt, dateToCount } from './Headcount'
+import HelpersStops from './HelpersStops'
 import PostUpdate from './PostUpdate'
 import { NoMeetupHint, RideDayRiders, useRideDay, useRideTime } from './RideDay'
 import { ridePageUrl, useRide } from './RideFrame'
@@ -122,6 +123,8 @@ export default function RideOverview() {
   const [tab, setTab] = useState<'dates' | 'updates' | 'past'>(() => (r.status === 'archived' ? 'past' : 'dates'))
   const [busy, setBusy] = useState(false)
   const [posting, setPosting] = useState(!!params.get('post'))
+  // "Ask for help" opens the update box with the ask written (Shift 01744).
+  const [askNote, setAskNote] = useState<string | null>(null)
   const [skipping, setSkipping] = useState(false)
   // Just back from a break: offer the "it's back" note, ready to send.
   const [backOffer, setBackOffer] = useState(false)
@@ -238,6 +241,8 @@ export default function RideOverview() {
           </div>
           {dayOn && dayOn.riders.length > 0 && <div className="mt-4"><RideDayRiders riders={dayOn.riders} /></div>}
           {day === 'no_meetup' && <div className="mt-3"><NoMeetupHint /></div>}
+          <HelpersStops occurrenceId={nextDate.id} dateWords={rideTime ? 'today' : `on ${dateLabel(nextDate.date)}`} walk={r.activity === 'walk'} canManage={detail.can_manage}
+            onAsk={(note) => { setAskNote(note); setPosting(true); setTimeout(() => document.getElementById('post-update')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50) }} />
           <div className="mt-4 flex flex-wrap gap-2">
             {detail.can_edit && (
               <Link href={`/organizers/rides/${r.id}/dates/${nextDate.id}`} className="inline-flex min-h-[44px] items-center gap-1.5 rounded-[10px] border border-(--ev-line-strong) bg-white px-4 text-[15px] font-semibold text-(--ev-ink) hover:bg-(--ev-panel)">
@@ -276,7 +281,8 @@ export default function RideOverview() {
       {!ended && !backOffer && (posting || (!nextDate && detail.members > 0)) && (
         <Card id="post-update">
           <SectionTitle hint="One message to everyone on the ride, by app or email.">Post an update</SectionTitle>
-          <PostUpdate seriesId={r.id} dates={detail.occurrences} onPosted={() => void reload()} autoFocus={posting} />
+          <PostUpdate key={askNote ?? 'plain'} seriesId={r.id} dates={detail.occurrences} onPosted={() => { setAskNote(null); void reload() }} autoFocus={posting}
+            {...(askNote ? { initialKind: 'note' as const, initialNote: askNote } : {})} />
         </Card>
       )}
 

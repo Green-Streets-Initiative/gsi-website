@@ -8,17 +8,18 @@ import { comfortableShare } from '@/components/commute/calm-route'
 import { scheduleText } from '@/lib/rides/public'
 import { routeMiles } from '@/lib/organizers/route-geo'
 import AddressAutocomplete from '@/components/AddressAutocomplete'
-import { errorText, getRideFundFor, getSeriesDestination, saveRide, saveRideDestination, setEndShop, setRepliesToOrganizer, uploadFlyer, type FeedTarget, type RideFundHere } from '@/lib/organizers/api'
+import { errorText, getRideFundFor, getSeriesDestination, saveRide, saveRideDestination, setEndShop, setHelperJobs, setRepliesToOrganizer, uploadFlyer, type FeedTarget, type RideFundHere } from '@/lib/organizers/api'
 import { takePrefill } from '@/lib/organizers/first-ride'
 import { decodePlan, draftOf, routePayload } from '@/lib/organizers/saved-route'
 import { DAY_LABELS, TAG_OPTIONS, WEEK_OPTIONS, dateLabel, paceOptionsFor, todayKey, travelMph, type Activity } from '@/lib/organizers/ride-words'
 import { biweeklyStarts, scheduleDates } from '@/lib/organizers/schedule'
-import type { Frequency, Pace, RideRow, RouteDraft } from '@/lib/organizers/types'
+import type { Frequency, HelperJob, HelperJobs, Pace, RideRow, RouteDraft } from '@/lib/organizers/types'
 import { LANGUAGES, isLanguage, ledInLine, type PartnerLanguage } from '@/lib/languages'
 import { ROUTE_IMPORT_KEY, openAssistant } from './AssistantPanel'
 import { useConsole } from './ConsoleContext'
 import EndShopCard from './EndShopCard'
 import GoingToEvent from './GoingToEvent'
+import JoinStops, { withJoinStops } from './JoinStops'
 import OrgPicker from './OrgPicker'
 import RouteMap from './RouteMap'
 import RouteSection from './RouteSection'
@@ -61,6 +62,8 @@ interface Form {
   organizer_url: string
   /** Where the ride ends, for the Ride Fund's $5; saved on its own (set_ride_end_shop). */
   end_location_id: string | null
+  /** Helpers asked for on each date (Shift 01744); null when not asking. Saved on its own. */
+  helper_jobs: HelperJobs | null
 }
 
 const hhmm = (t: string | null | undefined) => (t ? t.slice(0, 5) : '')
@@ -75,7 +78,7 @@ function blank(): Form {
     activity: 'bike', pace: '', no_drop: false, tags: [], languages: [],
     registration_url: '', contact_url: '', replies_to_organizer: false, live_sharing: 'members',
     visibility: 'public', event_organizer_id: '', organizer_name: '', organizer_url: '',
-    end_location_id: null,
+    end_location_id: null, helper_jobs: null,
   }
 }
 
@@ -99,6 +102,7 @@ function fromRow(r: RideRow): Form {
     event_organizer_id: r.event_organizer_id ?? '',
     organizer_name: r.organizer_name ?? '', organizer_url: r.organizer_url ?? '',
     end_location_id: r.end_location_id ?? null,
+    helper_jobs: r.helper_jobs ?? null,
   }
 }
 
@@ -300,6 +304,56 @@ function Preview({ f, route, hostName }: { f: Form; route: RouteDraft | null; ho
         {f.visibility === 'invite' ? 'Invite only: people need your link or code.' : 'Public: on the events calendar and in the Shift app.'}
       </p>
     </aside>
+  )
+}
+
+const JOB_ROWS: { job: HelperJob; label: string; hint: (walk: boolean) => string; max: number }[] = [
+  { job: 'sweep', label: 'Sweep', hint: (walk) => `${walk ? 'Walks' : 'Rides'} at the back with the last ${walk ? 'walker' : 'rider'}.`, max: 2 },
+  { job: 'corner', label: 'Corners', hint: () => 'Wait at a busy crossing until everyone is through.', max: 4 },
+]
+
+/**
+ * Helpers (Shift 01744): the jobs this ride asks people going to take on
+ * each date. You lead from the front unless you hand it to someone on the
+ * day. People see the open jobs after they say Going.
+ */
+function HelpersField({ jobs, walk, noDrop, flagged, onChange }: {
+  jobs: HelperJobs | null; walk: boolean; noDrop: boolean; flagged: number; onChange: (j: HelperJobs | null) => void
+}) {
+  const on = !!jobs
+  const suggestCorners = walk ? 0 : Math.min(flagged, 2)
+  const start: HelperJobs = { front: 1, sweep: noDrop || walk ? 1 : 0, corner: suggestCorners }
+  return (
+    <div className="rounded-[12px] border border-(--ev-line-strong) bg-white px-4 py-3">
+      <label className="flex cursor-pointer items-start gap-3">
+        <input type="checkbox" checked={on} onChange={(e) => onChange(e.target.checked ? (jobs ?? start) : null)} className="mt-1 h-5 w-5 accent-(--ev-accent-fill)" />
+        <span>
+          <span className="block text-[15px] font-semibold text-(--ev-ink)">Ask people to help</span>
+          <span className="block text-[14px] text-(--ev-ink-75)">
+            After someone says Going, they can offer to take a job. First to say yes gets it, and you can swap anyone on the day. You lead from the front.
+          </span>
+        </span>
+      </label>
+      {jobs && (
+        <div className="mt-3 grid gap-2 sm:pl-8">
+          {JOB_ROWS.filter((r) => !(walk && r.job === 'corner')).map((r) => (
+            <div key={r.job} className="flex flex-wrap items-center justify-between gap-2">
+              <span className="min-w-0">
+                <span className="block text-[15px] font-semibold text-(--ev-ink)">{r.label}</span>
+                <span className="block text-[14px] text-(--ev-ink-75)">
+                  {r.hint(walk)}{r.job === 'corner' && flagged > 0 ? ` Your route has ${flagged} spot${flagged === 1 ? '' : 's'} to watch.` : ''}
+                </span>
+              </span>
+              <span className="flex items-center gap-1.5" role="group" aria-label={`How many ${r.label.toLowerCase()}`}>
+                {Array.from({ length: r.max + 1 }, (_, n) => (
+                  <Toggle key={n} on={jobs[r.job] === n} onClick={() => onChange({ ...jobs, [r.job]: n })} className="!min-w-[40px] justify-center">{n}</Toggle>
+                ))}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -534,6 +588,15 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
         try { await setRepliesToOrganizer(res.id, f.replies_to_organizer) } catch (e) {
           if (ride) {
             setErr(errorText(e, "The ride saved, but the replies setting didn't. Try again."))
+            setSaving(false)
+            return
+          }
+        }
+      }
+      if (JSON.stringify(f.helper_jobs ?? null) !== JSON.stringify(ride?.helper_jobs ?? null)) {
+        try { await setHelperJobs(res.id, f.helper_jobs) } catch (e) {
+          if (ride) {
+            setErr(errorText(e, "The ride saved, but the helpers didn't. Try again."))
             setSaving(false)
             return
           }
@@ -847,12 +910,22 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
           {plannedMoved && (
             <div className="mb-3"><Notice tone="info">The assistant&rsquo;s route starts somewhere else, so the meeting point moved there. Change it under Meeting point if that&rsquo;s not right.</Notice></div>
           )}
-          <RouteSection route={f.route} onRoute={(r) => set('route', r)} meetup={meetup} pace={f.pace || null} activity={f.activity} initialPlan={planned} initialImport={imported}
+          <RouteSection route={f.route} onRoute={(r) => {
+            // Join stops stay put when the route is re-planned or swapped (Shift 01744).
+            setF((prev) => ({ ...prev, route: r ? withJoinStops(r, (prev.route?.pins ?? []).filter((p, i) => i > 0 && p.join), meetup) : null }))
+            setDirty(true)
+          }} meetup={meetup} pace={f.pace || null} activity={f.activity} initialPlan={planned} initialImport={imported}
             onMeetAtStart={(p) => {
               setF((prev) => ({ ...prev, meetup_lat: p.lat, meetup_lng: p.lng, meetup_address: '', meetup_name: prev.meetup_name ? '' : prev.meetup_name }))
               setDirty(true)
               setMeetupFit((k) => k + 1)
             }} />
+          {f.route && f.route.waypoints.length >= 2 && (
+            <div className="mt-4">
+              <JoinStops route={f.route} meetup={meetup} pace={f.pace || null} activity={f.activity} startTime={f.start_time}
+                onChange={(r) => set('route', r)} />
+            </div>
+          )}
           <div className="mt-4">
             <Field label="Link to the route elsewhere" htmlFor="route-link" optional hint="Strava, Komoot or Google Maps, shown as a link."
               error={!LINK_OK(f.route_google_maps_url) ? 'Links start with https://' : null}>
@@ -911,6 +984,8 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
                 <span className="block text-[14px] text-(--ev-ink-75)">The group waits or regroups so slower people stay with it.</span>
               </span>
             </label>
+            <HelpersField jobs={f.helper_jobs} walk={walk} noDrop={f.no_drop} flagged={(f.route?.flags ?? []).length}
+              onChange={(j) => set('helper_jobs', j)} />
             <Field label="Led in" hint={`Every language you lead in, so people can find ${noun}s in theirs.`}>
               <div className="flex flex-wrap gap-2">
                 {LANGUAGES.map((l) => {

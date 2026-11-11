@@ -92,7 +92,7 @@ export interface RideRow {
   meetup_lat: number | null
   meetup_lng: number | null
   route_waypoints: LatLng[]
-  route_pins: (LatLng & { label?: string })[] | null
+  route_pins: RoutePin[] | null
   route_flags: unknown[] | null
   route_google_maps_url: string | null
   days: number[]
@@ -136,6 +136,28 @@ export interface RideRow {
   stopped_note: string | null
   /** The shop the ride ends at, for the Ride Fund's coffee (Shift 01596). */
   end_location_id?: string | null
+  /** Helpers the ride asks for on each date (Shift 01744); null when it isn't asking. */
+  helper_jobs?: HelperJobs | null
+}
+
+export type HelperJob = 'front' | 'sweep' | 'corner'
+export type HelperJobs = Record<HelperJob, number>
+
+/** A route pin. Pins after the first (the meeting point) marked `join` are places people can join (Shift 01744). */
+export type RoutePin = LatLng & { label?: string; join?: boolean; id?: string; wait_min?: number }
+
+/** organizer_date_helpers_stops (Shift 01744): one date's helpers and who joins where. */
+export interface DateHelpersStops {
+  help: {
+    wanted: HelperJobs
+    open: HelperJobs
+    filled: HelperJobs
+    front_is_organizer: boolean
+    organizer_name: string | null
+    helpers: { member_id: string; job: HelperJob; name: string; every_date: boolean; is_you: boolean }[]
+  } | null
+  helper_jobs: HelperJobs | null
+  stops: { id: string; label: string; time: string | null; minutes: number; going: number; names: string[] }[]
 }
 
 export interface DetailDate {
@@ -176,7 +198,7 @@ export interface DetailDate {
 export interface DateRoute {
   route_waypoints: LatLng[]
   route_google_maps_url: string | null
-  route_pins: (LatLng & { label?: string })[] | null
+  route_pins: RoutePin[] | null
   route_flags: unknown[] | null
   route_miles: number | null
   route_elevation: RouteElevation | null
@@ -309,7 +331,7 @@ export interface RouteElevation {
 /** A route as the editor holds it: drawn with the planner, or imported. */
 export interface RouteDraft {
   waypoints: LatLng[]
-  pins: (LatLng & { label?: string })[]
+  pins: RoutePin[]
   flags: unknown[]
   comfortSegments: ComfortSegment[] | null
   comfortRating: string | null

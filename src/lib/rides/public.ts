@@ -42,6 +42,33 @@ export interface RideDate {
     route_miles: number | null
     route_elevation: { ascent_ft?: number } | null
   } | null
+  /** Where people can join along the way, in route order (Shift 01744). The first is the start; [] when the date has none. */
+  stops?: RideStop[]
+  /** Which helper jobs are still open (Shift 01744); null when the ride isn't asking for helpers. */
+  help?: RideHelp | null
+}
+
+/** A place to join the ride, with the group's time there (Shift _ride_join_stops). */
+export interface RideStop {
+  id: string
+  label: string
+  lat: number | null
+  lng: number | null
+  /** Minutes after the start. */
+  minutes: number
+  /** "HH:MM", or null when the ride has no start time. */
+  time: string | null
+  miles?: number
+  wait_min?: number
+}
+
+export type HelperJob = 'front' | 'sweep' | 'corner'
+
+export interface RideHelp {
+  wanted: Record<HelperJob, number>
+  open: Record<HelperJob, number>
+  filled: Record<HelperJob, number>
+  front_is_organizer: boolean
 }
 
 export interface RideUpdate {
@@ -91,6 +118,8 @@ export interface PublicRide {
   flyer_url: string | null
   registration_url: string | null
   live_sharing: string | null
+  /** The helpers the ride asks for (Shift 01744); null when it isn't asking. */
+  helper_jobs?: Record<HelperJob, number> | null
   occurrences: RideDate[]
   updates: RideUpdate[]
 }
