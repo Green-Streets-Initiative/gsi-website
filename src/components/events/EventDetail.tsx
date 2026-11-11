@@ -184,8 +184,12 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
   const dateText = dateRangeLongL(event, locale)
   // Deadline-style events (contests) are places to enter, not places to go —
   // no map, no directions.
+  // Statewide days (Walk/Ride Day) carry a nominal Boston Common pin so radius
+  // filters reach everyone; a map and directions to it would be nonsense. Same
+  // rule as the app's event screen (community-event.tsx `placeless`).
+  const placeless = !event.location_address && Number(event.target_radius_miles) >= 100
   const deadline = isDeadline(event.event_type)
-  const hasMap = !!(event.location_lat && event.location_lng) && !deadline
+  const hasMap = !!(event.location_lat && event.location_lng) && !deadline && !placeless
   const images = eventImages(event)
   const hasLeftColumn = !!(images.length > 0 || hasMap)
 
@@ -419,7 +423,7 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
                 </Link>
               )}
               {/* Directions stay under the map for a Shift ride, so RSVP leads here. */}
-              {(event.location_lat && event.location_lng) && !deadline && !(rideCode && !isPast) && (
+              {(event.location_lat && event.location_lng) && !deadline && !placeless && !(rideCode && !isPast) && (
                 <a
                   href={directionsUrl(event)}
                   target="_blank"
