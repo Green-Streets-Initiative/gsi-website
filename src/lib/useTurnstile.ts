@@ -12,13 +12,16 @@ import { useCallback, useEffect, useRef } from 'react'
  * the page, so pages don't pay for it. `token()` waits briefly for the answer
  * and then resets the widget, since each token works once.
  *
- * With no site key (NEXT_PUBLIC_TURNSTILE_SITE_KEY), nothing loads and the
- * token is empty; the dev server uses Cloudflare's always-pass test key.
+ * The site key is public (it sits in every page that shows the widget), so it
+ * lives here; the secret is only in Supabase (TURNSTILE_SECRET_KEY). Widget
+ * "GSI email sign-ups", Managed, gogreenstreets.org (Keith 2026-11-11). The dev
+ * server uses Cloudflare's always-pass test key, since localhost isn't on the
+ * widget's hostname list.
  */
 
 const SITE_KEY =
   process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ||
-  (process.env.NODE_ENV === 'development' ? '1x00000000000000000000AA' : '')
+  (process.env.NODE_ENV === 'development' ? '1x00000000000000000000AA' : '0x4AAAAAAF8wyV7oQDgPAADD')
 const SRC = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit'
 const WAIT_MS = 8000
 
