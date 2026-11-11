@@ -29,6 +29,18 @@ interface GuestRide {
   /** The ride has a group chat and the organizer hasn't let them in yet (Shift 01679). */
   chat_waiting?: boolean
   dates: GuestDate[]
+  /** Where they join and their helper job, for the first date they're coming to (Shift 01744). */
+  next?: NextPicks | null
+}
+type Job = 'front' | 'sweep' | 'corner'
+interface NextPicks {
+  occurrence_id: string
+  date: string
+  walk: boolean
+  stops: { id: string; label: string; time: string | null; miles: number | null }[]
+  my_stop: string | null
+  open: Record<Job, number> | null
+  my_job: Job | null
 }
 interface Overview {
   first_name: string
@@ -44,6 +56,8 @@ interface WentResult {
   date_title: string | null
   went: boolean
 }
+
+const JOB_WORDS: Record<Job, string> = { front: 'Lead', sweep: 'Sweep at the back', corner: 'Hold a corner' }
 
 const ANSWERS: { value: RsvpStatus; label: string }[] = [
   { value: 'going', label: 'Going' },
@@ -92,6 +106,7 @@ export default function ManageRides() {
       if (!res.ok) { setError(body.error ?? 'Couldn’t save that. Try again.'); return false }
       if (body.forgotten) { setForgotten(true); return true }
       if (body.went_result) setWent(body.went_result)
+      if (body.chosen?.job_taken) setError('Someone took that job a moment ago. You’re on the ride either way.')
       if (body.rides) setData(body)
       return true
     } finally {
@@ -265,6 +280,10 @@ export default function ManageRides() {
                         })}
                       </div>
                     )}
+                    {r.next?.occurrence_id === d.id && (
+                      <NextChoices next={r.next} going={d.rsvp === 'going'} saving={saving}
+                        onPick={(p, key) => act({ action: 'choose', occurrence_id: d.id, ...p }, key)} />
+                    )}
                   </li>
                 ))}
               </ul>
@@ -296,5 +315,56 @@ export default function ManageRides() {
         )}
       </div>
     </>,
+  )
+}
+
+/** "Where you join" and "Your job" for the first date they're coming to (Shift 01744). */
+function NextChoices({ next, going, saving, onPick }: {
+  next: NextPicks
+  going: boolean
+  saving: string | null
+  onPick: (p: { stop?: string; job?: Job | 'none' }, key: string) => void
+}) {
+  const jobs = going && next.open ? (['front', 'sweep', 'corner'] as Job[]).filter((j) => next.open![j] > 0 || next.my_job === j) : []
+  if (!next.stops.length && !jobs.length) return null
+  const chip = (on: boolean) => `min-h-[40px] rounded-[10px] border px-3 py-1.5 text-left text-[14px] font-semibold transition-colors disabled:opacity-60 ${
+    on ? 'border-(--ev-accent-fill) bg-(--ev-accent-fill) text-(--ev-on-accent-fill)' : 'border-(--ev-line-strong) text-(--ev-ink) hover:bg-(--ev-panel)'}`
+  return (
+    <div className="w-full space-y-3 rounded-xl bg-(--ev-panel) p-4">
+      {next.stops.length > 0 && (
+        <div>
+          <p className="text-[15px] font-semibold text-(--ev-ink)">Where you join</p>
+          <div className="mt-1.5 flex flex-wrap gap-1.5" role="radiogroup" aria-label="Where you join">
+            {next.stops.map((st, i) => {
+              const on = (next.my_stop ?? 'start') === st.id
+              return (
+                <button key={st.id} role="radio" aria-checked={on} className={chip(on)} disabled={saving === `stop-${st.id}`}
+                  onClick={() => !on && onPick({ stop: st.id }, `stop-${st.id}`)}>
+                  {st.label}
+                  {st.time && <span className="font-normal"> · {i === 0 ? '' : 'about '}{clock(`${st.time}:00`)}</span>}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
+      {jobs.length > 0 && (
+        <div>
+          <p className="text-[15px] font-semibold text-(--ev-ink)">Can you help?</p>
+          <div className="mt-1.5 flex flex-wrap gap-1.5" role="radiogroup" aria-label="Can you help?">
+            {[...jobs, null].map((j) => {
+              const on = j === next.my_job || (j === null && !next.my_job)
+              const key = `job-${j ?? 'none'}`
+              return (
+                <button key={key} role="radio" aria-checked={on} className={chip(on)} disabled={saving === key}
+                  onClick={() => !on && onPick({ job: j ?? 'none' }, key)}>
+                  {j ? JOB_WORDS[j] : 'Not this time'}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
+    </div>
   )
 }
