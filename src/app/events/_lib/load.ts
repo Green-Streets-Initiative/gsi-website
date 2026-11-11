@@ -57,7 +57,7 @@ const EVENT_FIELDS = `
 
 const LISTING_SELECT = EVENT_FIELDS
 // The extra flyer pages (Shift 01250) are only read here, on the event page.
-const DETAIL_SELECT = `timezone,\n      organizer_id,\n      route_links,\n      extra_image_urls,${EVENT_FIELDS}`
+const DETAIL_SELECT = `timezone,\n      organizer_id,\n      route_links,\n      extra_image_urls,\n      target_radius_miles,${EVENT_FIELDS}`
 
 type EventRow = Record<string, unknown> & {
   content_items: Record<string, unknown>
@@ -101,6 +101,7 @@ function toCommunityEvent(row: EventRow): CommunityEvent {
     registration_notes: (row.registration_notes as string | null) ?? null,
     image_url: row.image_url as string | null,
     extra_image_urls: (row.extra_image_urls as string[] | null) ?? [],
+    target_radius_miles: row.target_radius_miles == null ? null : Number(row.target_radius_miles),
     source_id: row.source_id as string | null,
     tags: (row.tags as string[] | null) ?? [],
     languages: (row.languages as string[] | null) ?? [],

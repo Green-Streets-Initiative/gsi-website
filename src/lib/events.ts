@@ -34,6 +34,8 @@ export interface CommunityEvent {
   image_url: string | null
   /** Extra flyer pages or an event map, shown after image_url in order (Shift 01250). Loaded on the event page only. */
   extra_image_urls?: string[]
+  /** How far away the listing reaches, in miles. 100+ with no address is a statewide day (Walk/Ride Day). Loaded on the event page only. */
+  target_radius_miles?: number | null
   source_id: string | null
   tags: string[]
   /** Language codes it is led in (Shift 01697; src/lib/languages.ts). Empty or missing = not said (English). */
