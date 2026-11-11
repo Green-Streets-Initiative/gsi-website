@@ -2,6 +2,7 @@
 
 import posthog from 'posthog-js'
 import { gaEvent } from '@/lib/ga'
+import { campaignToken, currentAttribution, withStoreAttribution } from '@/lib/store-attribution'
 import { trackAdConversion } from '@/lib/ad-pixels'
 import { HOME_CTA_EVENT, type Audience, type Placement } from '@/components/home/tracking'
 
@@ -27,6 +28,8 @@ export const STORE_CREDIT_LINES =
  * its README), used unmodified: Apple first, equal heights, a quarter of
  * the height of clear space around each. Replaces the hand-drawn lookalike
  * (brand rule: real marks only). Clicks are tracked like every store link.
+ * The store URLs carry the visitor's channel (see lib/store-attribution) so
+ * installs can be counted per channel in App Store Connect and Play Console.
  */
 export default function StoreBadges({
   iosUrl = IOS_DEFAULT,
@@ -50,8 +53,17 @@ export default function StoreBadges({
   credit?: boolean
   className?: string
 }) {
-  const track = (store: Store) => {
-    const base = { store, placement }
+  // Tagged at tap time: the channel comes from the visitor's URL and session,
+  // which the server render can't see. The browser follows the href as it
+  // stands after this handler runs.
+  const tapped = (store: Store, e: React.MouseEvent<HTMLAnchorElement>) => {
+    const attr = currentAttribution()
+    e.currentTarget.href = withStoreAttribution(store === 'ios' ? iosUrl : androidUrl, attr)
+    track(store, campaignToken(attr))
+  }
+
+  const track = (store: Store, ct: string) => {
+    const base = { store, placement, ct }
     gaEvent('shift_store_click', base)
     posthog.capture('shift_store_click', base)
     trackAdConversion('ShiftStoreClick', base)
@@ -72,7 +84,7 @@ export default function StoreBadges({
           href={iosUrl}
           target="_blank"
           rel="noopener noreferrer"
-          onClick={() => track('ios')}
+          onClick={(e) => tapped('ios', e)}
           className="inline-block leading-none"
           style={{ padding: pad, margin: -pad }}
         >
@@ -83,7 +95,7 @@ export default function StoreBadges({
           href={androidUrl}
           target="_blank"
           rel="noopener noreferrer"
-          onClick={() => track('android')}
+          onClick={(e) => tapped('android', e)}
           className="inline-block leading-none"
           style={{ padding: pad, margin: -pad }}
         >

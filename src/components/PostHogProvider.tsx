@@ -4,6 +4,7 @@ import posthog from 'posthog-js'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { Suspense, useEffect } from 'react'
 import { normalizePartnerSlug } from '@/lib/nearby/partner'
+import { rememberAttribution } from '@/lib/store-attribution'
 
 /**
  * Web analytics into the SAME PostHog project as the Shift app (436603), so
@@ -60,6 +61,10 @@ function PageviewTracker() {
     // partner was matching $current_url LIKE '%partner=%', which quietly lost
     // anyone who tapped through to a guide, /commute-advisor or /shift —
     // exactly the steps a partner most wants counted.
+    // Keep the landing page's utm tags for the visit, so a store tap on a
+    // later page still credits the channel that sent this visitor.
+    if (searchParams) rememberAttribution(new URLSearchParams(searchParams.toString()))
+
     const slug = normalizePartnerSlug(searchParams?.get('partner'))
     if (slug) {
       // Session-scoped: this visit's behaviour belongs to this partner.
