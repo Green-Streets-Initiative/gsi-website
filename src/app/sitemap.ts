@@ -78,10 +78,11 @@ const STATIC_PAGES: { path: string; changeFrequency: ChangeFreq; priority: numbe
 ]
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const now = new Date()
+  // lastModified appears only where we know when a page really changed
+  // (guides' review date). Stamping every page with "now" on each rebuild
+  // taught Google to ignore the field site-wide (Search Console, 2026-11-12).
   const staticEntries: MetadataRoute.Sitemap = STATIC_PAGES.map((p) => ({
     url: `${SITE_URL}${p.path}`,
-    lastModified: now,
     changeFrequency: p.changeFrequency,
     priority: p.priority,
   }))
@@ -92,7 +93,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const towns = await getQualifyingTowns()
     townEntries = towns.map((t) => ({
       url: `${SITE_URL}/shift/towns/${t.slug}`,
-      lastModified: now,
       changeFrequency: 'daily' as const,
       priority: 0.8,
     }))
@@ -108,7 +108,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const [roams, tours] = await Promise.all([getActiveRoams(), getTourTrails()])
     roamEntries = roams.filter((r) => !tours.has(r.id)).map((r) => ({
       url: `${SITE_URL}/shift/roams/${encodeURIComponent(r.id)}`,
-      lastModified: now,
       changeFrequency: 'monthly' as const,
       priority: 0.7,
     }))
@@ -122,11 +121,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const trails = await getTrails()
     if (trails.length > 0) {
       trailEntries = [
-        { url: `${SITE_URL}/trails`, lastModified: now, changeFrequency: 'weekly' as const, priority: 0.8 },
-        { url: `${SITE_URL}/trails/conditions`, lastModified: now, changeFrequency: 'daily' as const, priority: 0.6 },
+        { url: `${SITE_URL}/trails`, changeFrequency: 'weekly' as const, priority: 0.8 },
+        { url: `${SITE_URL}/trails/conditions`, changeFrequency: 'daily' as const, priority: 0.6 },
         ...trails.map((t) => ({
           url: `${SITE_URL}/trails/${t.id}`,
-          lastModified: now,
           changeFrequency: 'weekly' as const,
           priority: 0.8,
         })),
@@ -165,7 +163,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       return [
         {
           url: `${SITE_URL}${path}`,
-          lastModified: row.last_reviewed_at ? new Date(row.last_reviewed_at) : now,
+          ...(row.last_reviewed_at ? { lastModified: new Date(row.last_reviewed_at) } : {}),
           changeFrequency: 'monthly' as const,
           priority: 0.7,
           ...(languages ? { alternates: { languages } } : {}),
@@ -186,7 +184,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const schoolEntries: MetadataRoute.Sitemap = SCHOOLS.map((s) => ({
     url: `${SITE_URL}/shift-your-semester/${s.slug}`,
-    lastModified: now,
     changeFrequency: 'weekly' as const,
     priority: 0.7,
   }))
@@ -198,12 +195,26 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // clicks, 2.34% CTR in the week to 2026-09-18, against a 1.03% site average).
   // loadEventsListing() returns approved UPCOMING events only, so a page leaves
   // the sitemap the day after it happens without any expiry logic here.
+  //
+  // A repeating event lists only its next date. Every date of a weekly series
+  // was listed (187 of 370 event URLs on 2026-11-12, 22 for one workshop), and
+  // Google left 175 pages "Discovered, not indexed", guides among them, while
+  // it worked through near-identical dates. Later dates stay reachable from
+  // the next date's page and the host page.
   let eventEntries: MetadataRoute.Sitemap = []
   try {
-    const events = await loadEventsListing()
+    const seen = new Set<string>()
+    const events = (await loadEventsListing()).filter((e) => {
+      // Soonest first, so the first of a series is its next date. A Shift ride
+      // knows its series; otherwise the same title from the same host is one
+      // (the event page's own test for "this repeats").
+      const key = e.ride_series_id ?? `${e.title.trim().toLowerCase()}|${(e.organizer_name ?? '').trim().toLowerCase()}`
+      if (seen.has(key)) return false
+      seen.add(key)
+      return true
+    })
     eventEntries = events.map((e) => ({
       url: eventUrl(e, SITE_URL),
-      lastModified: now,
       changeFrequency: 'weekly' as const,
       priority: 0.6,
     }))
@@ -217,7 +228,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   try {
     hostEntries = (await listQualifiedHosts()).map((id) => ({
       url: `${SITE_URL}${hostPath(id)}`,
-      lastModified: now,
       changeFrequency: 'weekly' as const,
       priority: 0.6,
     }))
