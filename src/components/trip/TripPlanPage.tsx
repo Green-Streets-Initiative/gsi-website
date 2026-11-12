@@ -103,23 +103,15 @@ function TripPlanner({ locale }: { locale: NearbyLocale }) {
   useEffect(() => { setMounted(true) }, [])
   const isDesktop = mounted && wide
 
-  // A link names the destination (and maybe the way); read once on arrival
-  const linked = useMemo(() => {
-    if (typeof window === 'undefined') return null
-    const p = new URLSearchParams(window.location.search)
-    const dest = parseTripDest(p)
-    return {
-      to: dest ? { lat: dest.lat, lng: dest.lng, name: dest.name } : null,
-      way: readWay(p.get('way')) ?? dest?.mode,
-      leave: (p.get('leave') === 'am' ? 'am' : 'now') as Leave,
-    }
-  }, [])
-
   const [from, setFrom] = useState<Place | null>(null)
   const [fromText, setFromText] = useState('')
-  const [to, setTo] = useState<Place | null>(linked?.to ?? null)
-  const [toText, setToText] = useState(linked?.to?.name ?? '')
-  const [leave, setLeave] = useState<Leave>(linked?.leave ?? 'now')
+  const [to, setTo] = useState<Place | null>(null)
+  const [toText, setToText] = useState('')
+  const [leave, setLeave] = useState<Leave>('now')
+  // A link names the destination (and maybe the way and departure). Read
+  // once after the page loads, so the server's render and the browser's
+  // first render agree and the fields fill in at every width.
+  const [linkedTo, setLinkedTo] = useState<boolean | null>(null)
   const [locating, setLocating] = useState(false)
   const [geoError, setGeoError] = useState(false)
 
@@ -131,7 +123,18 @@ function TripPlanner({ locale }: { locale: NearbyLocale }) {
   // Phones: once a trip is planned the form folds to one line, so the answer
   // is on the first screen; "Change" opens it again
   const [editing, setEditing] = useState(true)
-  const preferWay = useRef<Way | undefined>(linked?.way)
+  const preferWay = useRef<Way | undefined>(undefined)
+  useEffect(() => {
+    const p = new URLSearchParams(window.location.search)
+    const dest = parseTripDest(p)
+    if (dest) {
+      setTo({ lat: dest.lat, lng: dest.lng, name: dest.name })
+      setToText(dest.name)
+    }
+    preferWay.current = readWay(p.get('way')) ?? dest?.mode
+    if (p.get('leave') === 'am') setLeave('am')
+    setLinkedTo(!!dest)
+  }, [])
   // The way they picked, kept when only the departure changes
   const pickedWay = useRef<{ toKey: string; way: Way } | null>(null)
   const [weekly, setWeekly] = useState(false)
@@ -329,7 +332,7 @@ function TripPlanner({ locale }: { locale: NearbyLocale }) {
                 variant="light"
                 placeholder={tt('trip.to_placeholder')}
                 includeAreas
-                autoFocus={!linked?.to}
+                autoFocus={linkedTo === false}
               />
             </div>
 
