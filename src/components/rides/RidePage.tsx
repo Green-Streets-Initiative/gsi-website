@@ -257,6 +257,12 @@ export default function RidePage({ ride, host = null, hostPerson = null, ascentF
   }, [selected])
 
   const myAnswer = selected ? me.answers[selected.id] : undefined
+  // shift.gogreenstreets.org/join/* opens the app when it's installed; ?d= is the date they picked.
+  // Set after load: the browser can pick a different first date than the server.
+  const [openInApp, setOpenInApp] = useState(`https://shift.gogreenstreets.org/join/${ride.code}`)
+  useEffect(() => {
+    setOpenInApp(`https://shift.gogreenstreets.org/join/${ride.code}${selected ? `?d=${selected.date}` : ''}`)
+  }, [ride.code, selected])
   const ended = ride.status === 'archived'
   const walk = ride.activity === 'walk'
   const noun = walk ? 'walk' : 'ride'
@@ -704,6 +710,16 @@ export default function RidePage({ ride, host = null, hostPerson = null, ascentF
                                   {t('change_answer')}
                                 </button>
                               </div>
+                              {/* What the app adds, at the moment they've said yes (rider review 2026-11-12). */}
+                              {done.status !== 'not_going' && (
+                                <div className="mt-4 rounded-[10px] bg-(--ev-panel) p-3">
+                                  <p className="text-[14px] text-(--ev-ink-80)">{t('done.app')}</p>
+                                  <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2">
+                                    <RideStoreBadges code={ride.code} date={selected.date} placement="ride_done" height={36} locale={locale} />
+                                    <a href={openInApp} className="text-[14px] font-semibold text-(--ev-accent) hover:underline">{t('open_in_app')}</a>
+                                  </div>
+                                </div>
+                              )}
                             </div>
                           ) : (
                             <>
@@ -1000,7 +1016,14 @@ export default function RidePage({ ride, host = null, hostPerson = null, ascentF
                 {t(nk('along_body'))}
               </p>
             </div>
-            <RideStoreBadges code={ride.code} className="shrink-0" placement="ride_page" height={40} locale={locale} />
+            <div className="shrink-0">
+              <RideStoreBadges code={ride.code} date={selected?.date} placement="ride_page" height={40} locale={locale} />
+              {/* Already have Shift: the universal link opens this ride in the app (rider review 2026-11-12). */}
+              <p className="mt-2 text-[14px] text-white/80">
+                <a href={openInApp} className="font-semibold text-white underline">{t('open_in_app')}</a>
+                <span className="mt-1 block">{t('ride_code', { code: ride.code })}</span>
+              </p>
+            </div>
           </div>
           </div>
         </div>
