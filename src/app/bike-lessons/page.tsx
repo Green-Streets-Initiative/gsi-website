@@ -22,16 +22,17 @@ import { bikeLessonsStrings } from '@/lib/site-strings/bike-lessons'
  * "adult bike lessons", not "learn to ride in traffic", so the page answers
  * that search and sorts people by where they're starting, in the app's own
  * three answers (bike-confidence.tsx): nervous in traffic, not sure I can
- * ride, would like company. It names the Bicycle Riding School (Susan said
- * yes) and no individual instructors.
+ * ride, would like company. The free lesson form shows the instructors who
+ * reach the visitor by first name (Shift 01750, matching 2026-11-12).
  *
  * Listings come live from get_bike_lessons (Shift 01218): upcoming classes
  * from the events calendar, easy-pace group rides, and bike_instructors, the
  * same rows the app and the bike guides show.
  *
- * The free 1:1 street lesson code comes by email from the form here (Shift
- * 01465 and the free-lessons function; Keith: no app needed first). Shift is
- * offered after the code is on its way.
+ * The free 1:1 street lesson: the form here asks one instructor at a time
+ * who reaches the visitor and usually teaches when they're free (Shift
+ * 01750 and the free-lessons function; Keith: no app needed first). Shift is
+ * offered after the request is in.
  *
  * Live 2026-10-28 (Keith: go) for the Ad Grants "learn to ride" test.
  *
