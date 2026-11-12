@@ -147,8 +147,22 @@ const nextConfig: NextConfig = {
         destination: '/programs/what-moves-us/boston-area-active-commuters',
         permanent: true,
       },
+      // The old Wix fair pages in other languages. Their addresses carry
+      // accented letters, which arrive percent-encoded, so the source must be
+      // written encoded: '/português-…' never matched and 404'd (Search
+      // Console, 2026-11-12).
       {
-        source: '/português-what-moves-everett-fair',
+        source: '/portugu%C3%AAs-what-moves-everett-fair',
+        destination: '/programs/what-moves-us/everett-community-fair',
+        permanent: true,
+      },
+      {
+        source: '/krey%C3%B3l-what-moves-everett-fair',
+        destination: '/programs/what-moves-us/everett-community-fair',
+        permanent: true,
+      },
+      {
+        source: '/espa%C3%B1ol-everett-event-volunteers',
         destination: '/programs/what-moves-us/everett-community-fair',
         permanent: true,
       },
@@ -182,6 +196,32 @@ const nextConfig: NextConfig = {
         destination: '/programs/what-moves-us/everett-schools',
         permanent: true,
       },
+      {
+        source: '/what-moves-us-program-information',
+        destination: '/programs/what-moves-us',
+        permanent: true,
+      },
+      // "What Moves Women Who E-Bike", a What Moves Us story page on Wix.
+      {
+        source: '/womene-bike',
+        destination: '/programs/what-moves-us',
+        permanent: true,
+      },
+      {
+        source: '/become-a-partner-or-sponsor',
+        destination: '/contact',
+        permanent: true,
+      },
+      {
+        source: '/contact-us',
+        destination: '/contact',
+        permanent: true,
+      },
+      {
+        source: '/shift/cities',
+        destination: '/shift/towns',
+        permanent: true,
+      },
 
       // Old blog/post pages — catch-all to programs
       {
@@ -191,6 +231,17 @@ const nextConfig: NextConfig = {
       },
       {
         source: '/post/:slug*',
+        destination: '/programs',
+        permanent: true,
+      },
+      // Wix blog category lists
+      {
+        source: '/category/categories/monthly-updates-and-newsletters',
+        destination: '/newsletter',
+        permanent: true,
+      },
+      {
+        source: '/category/:slug*',
         destination: '/programs',
         permanent: true,
       },
