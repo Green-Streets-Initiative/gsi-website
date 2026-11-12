@@ -264,15 +264,15 @@ function TripPlanner({ locale }: { locale: NearbyLocale }) {
     <div className="mx-auto max-w-[1180px] px-4 pb-20 pt-8 sm:px-6 lg:pt-12">
       <div className="lg:grid lg:grid-cols-[minmax(0,480px)_minmax(0,1fr)] lg:gap-8">
         <div>
+          {/* The language switch sits beside the title only, so the subtitle
+              gets the full width (it wrapped to four lines on phones) */}
           <div className="flex items-start justify-between gap-4">
-            <div>
-              <h1 className="font-display text-[clamp(1.9rem,4vw,2.5rem)] font-extrabold leading-[1.1] tracking-tight text-(--nb-ink)">
-                {tt('trip.title')}
-              </h1>
-              <p className="mt-2 text-[16px] leading-snug text-(--nb-ink-80)">{tt('trip.subtitle')}</p>
-            </div>
-            <NearbyLanguagePill className="shrink-0" />
+            <h1 className="font-display text-[clamp(1.9rem,4vw,2.5rem)] font-extrabold leading-[1.1] tracking-tight text-(--nb-ink)">
+              {tt('trip.title')}
+            </h1>
+            <NearbyLanguagePill className="mt-1 shrink-0" />
           </div>
+          <p className="mt-2 text-[16px] leading-snug text-(--nb-ink-80)">{tt('trip.subtitle')}</p>
 
           {/* From / To / when (folded to one line on phones once planned) */}
           {!isDesktop && !editing && row && from && to ? (
@@ -396,6 +396,7 @@ function TripPlanner({ locale }: { locale: NearbyLocale }) {
                 className="mt-2 px-3 text-[15px] font-semibold text-(--nb-accent) hover:opacity-80"
               >
                 {tt(weekly ? 'trip.weekly_hide' : 'trip.weekly_show')}
+                {weekly && <span className="font-normal text-(--nb-ink-80)"> · {tt('trip.weekly_basis')}</span>}
               </button>
 
               {!isDesktop && map && <div className="mt-4 overflow-hidden rounded-xl">{map}</div>}
@@ -494,7 +495,7 @@ function TripWays({ row, way, onPick, fmt, tt, weekly }: {
   ]
 
   return (
-    <ul className="mt-3 space-y-1.5">
+    <ul className="mt-3 space-y-1.5 first:mt-0">
       {items.filter(i => i.minutes !== null || i.key === 'transit').map(i => {
         if (weekly && week[i.key]) i = { ...i, sub: week[i.key] }
         const selectable = i.key !== 'drive' && i.minutes !== null

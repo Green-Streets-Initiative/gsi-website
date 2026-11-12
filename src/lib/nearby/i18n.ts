@@ -246,10 +246,10 @@ const en: Dict = {
 
   // ── perks (NearbyPerks: Bicycle Benefits members) ──
   'perks.nearby_title': 'Bike perks nearby',
-  'perks.nearby_sub': 'For riders with a Bicycle Benefits helmet sticker. Tap one to plan the ride there.',
+  'perks.nearby_sub': 'For people with a Bicycle Benefits helmet sticker. Tap one to plan the ride there.',
   'perks.trip_title': 'Bike perks on the way',
   'perks.trip_title_dest': 'Bike perks on this trip',
-  'perks.subtitle': 'For riders with a Bicycle Benefits helmet sticker.',
+  'perks.subtitle': 'For people with a Bicycle Benefits helmet sticker.',
   'perks.destination': 'Your destination',
   'perks.block_away': 'About a block away',
   'perks.planning': 'Planning the ride…',

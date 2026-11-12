@@ -26,7 +26,7 @@ export default function NearbyLanguagePill({ className = '' }: { className?: str
   }
 
   return (
-    <div className={`inline-flex items-center rounded-full bg-(--nb-panel-raised) p-0.5 text-[0.68rem] font-bold ${className}`}>
+    <div className={`inline-flex items-center rounded-full bg-(--nb-panel-raised) p-0.5 text-[13px] font-bold ${className}`}>
       {NEARBY_LOCALES.map(loc => {
         const active = loc === locale
         return (

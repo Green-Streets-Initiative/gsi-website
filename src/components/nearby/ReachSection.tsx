@@ -455,7 +455,7 @@ export function V2Trip({ row, mode, onMode, center, legInfo, highlightedStreetKe
       <div ref={belowRef} className="scroll-mt-2">
         {bike && comfort && comfort.segments.length > 0 && (
           <>
-            <h3 className="mt-6 text-[13px] font-bold uppercase tracking-wider text-(--nb-ink-70)">{tr('v2.trip_streets')}</h3>
+            <h3 className="mt-6 text-[0.95rem] font-bold text-(--nb-ink)">{tr('v2.trip_streets')}</h3>
             <BikeComfortBlock
               comfort={comfort}
               highlightedStreetKey={highlightedStreetKey}
@@ -468,7 +468,7 @@ export function V2Trip({ row, mode, onMode, center, legInfo, highlightedStreetKe
         {bike && <ReachBikeNotes row={row} alt={showingAlt} />}
         {!bike && (
           <>
-            <h3 className="mt-6 text-[13px] font-bold uppercase tracking-wider text-(--nb-ink-70)">{tr('v2.trip_steps')}</h3>
+            <h3 className="mt-6 text-[0.95rem] font-bold text-(--nb-ink)">{tr('v2.trip_steps')}</h3>
             <TransitLegs toned steps={row.steps} segments={row.transit_segments} />
             <ReachWalkNotes segments={row.transit_segments} />
             <p className="mt-2.5 text-[14px] leading-snug text-(--nb-ink-70)">{tr('reach.transit_leg_hint')}</p>
