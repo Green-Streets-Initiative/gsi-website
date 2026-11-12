@@ -7,6 +7,7 @@ import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
 import StoreButtons from '@/components/StoreButtons'
 import RoamMap from '@/components/roams/RoamMap'
+import RoamNotes from '@/components/notes/RoamNotes'
 import { parseVideoEmbed } from '@/components/roams/CreatorVideo'
 import RoamHeroMedia from '@/components/roams/RoamHeroMedia'
 import TrainsHome from '@/components/roams/TrainsHome'
@@ -502,6 +503,8 @@ export default async function RoamDetailPage({ params, searchParams }: PageProps
                       </p>
                     </div>
                   )}
+                  {/* Route notes on this Roam's line, while the switch is on (Shift 01763). */}
+                  <RoamNotes routeCoordinates={roam.route_coordinates} mode={roam.mode} locale={locale} />
                   {/* The app box follows the map, as it has since 2026-10-15 (exp-2026-09-7). */}
                   {appBox}
                 </div>

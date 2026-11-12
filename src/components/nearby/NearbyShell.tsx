@@ -41,7 +41,7 @@ import NearbyLanguagePill from './NearbyLanguagePill'
 import { useNearbyV2, wantsSignIn } from './useNearbyV2'
 import { NearbySignIn, V2Blocks, V2LayersButton, V2PlaceChips, type V2Layers } from './NearbyV2'
 import { useSpotPress } from '@/components/spot/useSpotPress'
-import { SpotCautionsList } from '@/components/spot/useSpotCautions'
+import { ReachBikeNotes, ReachWalkNotes } from '@/components/notes/ReachNotes'
 import type { ShuttleVehicleLive } from '@/lib/nearby/live-data'
 
 /**
@@ -847,7 +847,7 @@ function ReachDetail({ row, mode, center, onMode, legInfo, highlightedStreetKey,
         <>
           <TripFacts row={row} />
           <TransitLegs steps={row.steps} segments={row.transit_segments} />
-          <SpotCautionsList segments={row.transit_segments} />
+          <ReachWalkNotes segments={row.transit_segments} />
           <p className="mt-2 text-[0.72rem] leading-snug text-(--nb-ink-70)">
             {tr('shell.transit_legend')}
           </p>
@@ -865,6 +865,7 @@ function ReachDetail({ row, mode, center, onMode, legInfo, highlightedStreetKey,
             highlightedStreetKey={highlightedStreetKey}
             onHighlightStreet={onHighlightStreet}
           />
+          <ReachBikeNotes row={row} alt={bikeAlt} />
         </>
       )}
 

@@ -9,6 +9,7 @@ import { loadEventsListing } from '@/app/events/_lib/load'
 import { listQualifiedHosts, hostPath } from '@/lib/hosts'
 import { SITE_URL } from '@/lib/seo'
 import { eventUrl } from '@/lib/events-url'
+import { listNoteStreets, readNotesSwitch, streetPath } from '@/lib/route-notes'
 
 export const revalidate = 3600 // re-fetch dynamic guide list at most hourly
 
@@ -236,6 +237,22 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // DB unreachable — ship the rest.
   }
 
+  // Street pages (route notes, Shift 01763): one per street with bike notes,
+  // listed once the route_notes switch is on for everyone.
+  let streetEntries: MetadataRoute.Sitemap = []
+  try {
+    if (await readNotesSwitch()) {
+      streetEntries = (await listNoteStreets()).map((s) => ({
+        url: `${SITE_URL}${streetPath(s.town, s.street)}`,
+        ...(s.latest_at ? { lastModified: new Date(s.latest_at) } : {}),
+        changeFrequency: 'weekly' as const,
+        priority: 0.5,
+      }))
+    }
+  } catch {
+    // DB unreachable — ship the rest.
+  }
+
   return [
     ...staticEntries,
     ...townEntries,
@@ -245,5 +262,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...schoolEntries,
     ...eventEntries,
     ...hostEntries,
+    ...streetEntries,
   ]
 }

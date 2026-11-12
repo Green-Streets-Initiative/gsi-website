@@ -12,7 +12,7 @@ import BikeComfortBlock, { AvoidChanges, NEARBY_COMFORT_COLORS } from './BikeCom
 import type { ReachRow, ReachStep, ReachSegment, BikeComfortTier, BikeComfortData } from './types'
 import { useNearbyT, useNearbyLocale } from './NearbyI18n'
 import { TripPerks } from './NearbyPerks'
-import { SpotCautionsList } from '@/components/spot/useSpotCautions'
+import { ReachBikeNotes, ReachWalkNotes } from '@/components/notes/ReachNotes'
 import { TrainIcon, BusIcon, FerryIcon, ShuttleIcon } from '@/components/wayfinding/WayfindingIcons'
 
 /** Comfort-tier → i18n key, so a tapped bike leg's tier reads in the page
@@ -465,11 +465,12 @@ export function V2Trip({ row, mode, onMode, center, legInfo, highlightedStreetKe
             />
           </>
         )}
+        {bike && <ReachBikeNotes row={row} alt={showingAlt} />}
         {!bike && (
           <>
             <h3 className="mt-6 text-[13px] font-bold uppercase tracking-wider text-(--nb-ink-70)">{tr('v2.trip_steps')}</h3>
             <TransitLegs toned steps={row.steps} segments={row.transit_segments} />
-            <SpotCautionsList segments={row.transit_segments} />
+            <ReachWalkNotes segments={row.transit_segments} />
             <p className="mt-2.5 text-[14px] leading-snug text-(--nb-ink-70)">{tr('reach.transit_leg_hint')}</p>
           </>
         )}
@@ -788,7 +789,7 @@ export function ReachList({ center, rows, onRowTap, modeFilter, routeSelection, 
                       <>
                         <TripFacts row={row} />
                         <TransitLegs steps={row.steps} segments={row.transit_segments} />
-                        <SpotCautionsList segments={row.transit_segments} />
+                        <ReachWalkNotes segments={row.transit_segments} />
                         <p className="mt-2 text-[0.72rem] leading-snug text-(--nb-ink-70)">
                           {tr('reach.transit_leg_hint')}
                         </p>
@@ -805,6 +806,7 @@ export function ReachList({ center, rows, onRowTap, modeFilter, routeSelection, 
                           highlightedStreetKey={highlightedStreetKey}
                           onHighlightStreet={onHighlightStreet}
                         />
+                        <ReachBikeNotes row={row} alt={bikeAlt} />
                       </>
                     )}
                     {expanded.mode === 'bike' && <TripPerks row={row} />}

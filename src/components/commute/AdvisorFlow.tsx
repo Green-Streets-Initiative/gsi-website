@@ -24,6 +24,8 @@ import type { AskTrip } from '@/components/commute/AskAboutTrip'
 import { haversineMeters } from '@/lib/geo/measure'
 import { COMFORT_COLORS, comfortLabel, comfortPieces, fetchCalmRoute, formatStretchMiles, legPhotoSpec, type CalmRoute } from '@/components/commute/calm-route'
 import { ReportRouteLink, type RouteIssueStretch, type RouteIssueSurface } from '@/components/commute/ReportRouteSheet'
+import RouteNotes from '@/components/notes/RouteNotes'
+import { useNotesSwitch } from '@/components/notes/useNotesSwitch'
 import { contentModeFor, guidesByStage, guidesMoreLabel } from '@/components/commute/guide-topics'
 import { eventKindLine, eventModeForRow, eventWhenLine, eventWhereLine, walkRideDayWhen } from '@/components/commute/event-card'
 import {
@@ -246,6 +248,9 @@ export default function AdvisorFlow({
   const track = useCallback((event: string, props?: Record<string, unknown>) => {
     try { posthog.capture(event, { advisor_variant: variant, ...trackProps, ...props }) } catch { /* analytics never blocks */ }
   }, [variant, trackProps])
+  // Route notes (Shift 01763): while on, the bike row's "Report a problem
+  // with this route" becomes "From people who bike here" and "Add a note".
+  const notesOn = useNotesSwitch()
 
   /* ── Offices (employer) ── */
   const officeOptions = useMemo<AdvisorLocation[]>(() => {
@@ -757,6 +762,21 @@ export default function AdvisorFlow({
           sources = [...new Set(pieces.flatMap((p) => p.sources))]
         }
       }
+      // Route notes: the box takes the report link's place on the bike row.
+      if (surface === 'advisor_bike' && calm && notesOn) {
+        return (
+          <RouteNotes
+            key={`notes-${calm.calm.waypoints.length}`}
+            points={calm.calm.waypoints}
+            mode="bike"
+            surface="advisor_bike"
+            spot={stretch?.lat != null && stretch.lng != null ? { lat: stretch.lat, lng: stretch.lng } : null}
+            locale={locale}
+            track={track}
+            tone="light"
+          />
+        )
+      }
       const routeLabel = surface === 'advisor_transit' ? transitLabel : station ? `via ${station}` : null
       return (
         <ReportRouteLink
@@ -889,7 +909,7 @@ export default function AdvisorFlow({
     }
     return out
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [plan, home, office, office4Links, order, calm, calmLoading, legsLive, comboLegsLive, bikeParking, benefits, companyName, highlightedLeg, commuteMode, employerShuttles, shuttleLines, weatherAt, isDraft, variant, group?.slug, locale])
+  }, [plan, home, office, office4Links, order, calm, calmLoading, legsLive, comboLegsLive, bikeParking, benefits, companyName, highlightedLeg, commuteMode, employerShuttles, shuttleLines, weatherAt, isDraft, variant, group?.slug, locale, notesOn, track])
 
   /* ── The picked way in: the open row, else our pick ── */
   const pickedKey = expanded ?? plan?.recommended_mode ?? null
