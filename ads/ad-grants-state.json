@@ -1214,6 +1214,41 @@
       "month_end_math": "8.12% on 2,253 impr after 10 days; well above 5%.",
       "alerts": [],
       "emailed": false
+    },
+    {
+      "date": "2026-11-12",
+      "source": "scheduled quick check (ad-grants-pulse), ~10:10 ET, live account via authuser=walkrideday%40gmail.com (resolved to 5). This month = Nov 1-12.",
+      "mtd": {
+        "window": "2026-11-01..2026-11-12",
+        "impressions": 2865,
+        "clicks": 241,
+        "ctr_pct": 8.41,
+        "cost": 928.67,
+        "conversions": 21
+      },
+      "by_campaign": {
+        "How-to Guides": { "impressions": 1993, "clicks": 193, "ctr_pct": 9.75, "conversions": 20 },
+        "Venue Parking": { "impressions": 677, "clicks": 28, "ctr_pct": 4.2, "conversions": 1, "note": "Rewritten 11-11; judge 11-25 (14-day rule)." },
+        "Town Walking & Biking": { "impressions": 214, "clicks": 19, "ctr_pct": 9.41, "note": "Eligible (Learning) after the 11-11 Trails group; +61 impr / +12 clicks since 11-11 (MTD up from 4.58%). Judge 11-25." },
+        "Shift App — Massachusetts": { "impressions": 11, "clicks": 0 },
+        "GSI — Brand": { "impressions": 6, "clicks": 1 },
+        "Shift Your Semester — Students": { "impressions": 0, "clicks": 0 },
+        "New Routes — Movers": { "impressions": 0, "clicks": 0, "note": "Paused 11-04 as approved" }
+      },
+      "campaign_status": "How-to Guides, Venue Parking and Brand Eligible (Limited) Limited by search volume; Town Eligible (Learning); New Routes Paused (expected); others Eligible. Account budget $365.00/day.",
+      "banners": "Only the known 'Apply for healthcare certification' and 'Add Dynamic Image Assets' notices, the 'Prioritize your highest-value channels' tip and the broad-match recommendation card (none applied). Nothing serving-related.",
+      "ads": {
+        "total": 57,
+        "disapproved_seen": 0,
+        "limited_by_policy": 0,
+        "not_eligible": "4, all New Routes — Movers ads (campaign paused; expected)",
+        "status": "46 Eligible (24 Average, 17 Good, 3 Excellent, 2 Poor), 7 Paused (old Town/Venue ads paused 11-11)",
+        "poor": "2 active, both known with 0 impr (Walk More Win More, Walking School Bus Ideas); unchanged from the 11-11 weekly"
+      },
+      "search_terms": "Top ~30 by impressions read. All on target: How-to Guides / Paying for the T fare and transit lookups (boston public transportation 8/45, boston subway 3/17, the t boston 2/17, charliecard 5/16, mbta monthly pass 2/17, charlie card 1/17), 'green line closure' 0/25 (T closures; judge 11-18), Venue Parking (gillette stadium parking 1/31, north station garage 1/13, td garden parking 0/11, parking near fenway park 0/9, fenway parking 0/8), Town 'bradford rail trail' 0/23 (pre-Trails group). No negatives proposed.",
+      "month_end_math": "8.41% on 2,865 impr after 12 days; well above 5%. Venue Parking kill line (account MTD < 6.5%) not triggered.",
+      "alerts": [],
+      "emailed": false
     }
   ],
   "snapshots": [
