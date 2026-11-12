@@ -45,4 +45,4 @@ Os trens também podem atrasar, então confira os [T-Alerts](https://alerts.mbta
 
 ### Experimente primeiro
 
-Escolha um dia da semana que vem para fazer o seu trajeto de sempre de outro jeito: [estacione numa estação do T](https://www.gogreenstreets.org/pt-BR/guides/boston-traffic#station-parking) e siga de T, ou [planeje a viagem de trem](https://www.gogreenstreets.org/nearby?plan=1&lang=pt-BR). Marque o tempo de porta a porta e compare com um dia normal.
+Escolha um dia da semana que vem para fazer o seu trajeto de sempre de outro jeito: [estacione numa estação do T](https://www.gogreenstreets.org/pt-BR/guides/boston-traffic#station-parking) e siga de T, ou [planeje a viagem de trem](https://www.gogreenstreets.org/trip?lang=pt-BR). Marque o tempo de porta a porta e compare com um dia normal.

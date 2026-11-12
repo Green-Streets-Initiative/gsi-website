@@ -45,4 +45,4 @@ related: [mg_transit_time, mg_bike_time, mg_transit_planning]
 
 ### 先试试这个
 
-下周挑一天，换一种方式走你平常的路线：[把车停在 T 站](https://www.gogreenstreets.org/zh-Hans/guides/boston-traffic#station-parking)（T 是波士顿的地铁和公交系统），再坐车进城，或者[规划一条坐火车的路线](https://www.gogreenstreets.org/nearby?plan=1&lang=zh-Hans)。记下从家门口到目的地一共花了多久，再和平常的一天比一比。
+下周挑一天，换一种方式走你平常的路线：[把车停在 T 站](https://www.gogreenstreets.org/zh-Hans/guides/boston-traffic#station-parking)（T 是波士顿的地铁和公交系统），再坐车进城，或者[规划一条坐火车的路线](https://www.gogreenstreets.org/trip?lang=zh-Hans)。记下从家门口到目的地一共花了多久，再和平常的一天比一比。

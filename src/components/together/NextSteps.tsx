@@ -47,7 +47,7 @@ export default function NextSteps({ kind, ways, source, locale = 'en' }: { kind:
           <Tile Icon={Bike} title={t('next.rides')} sub={t('next.rides_sub')} href={withLang('/events?level=easy', locale)} onClick={() => track('together_easy_rides_opened', { kind, source })} />
         ) : null}
         {kind !== 'carpool' ? (
-          <Tile Icon={MapPinned} title={t('next.plan')} sub={t(PLAN_SUB[way])} href={withLang('/nearby?plan=1', locale)} onClick={() => track('together_plan_opened', { source })} />
+          <Tile Icon={MapPinned} title={t('next.plan')} sub={t(PLAN_SUB[way])} href={withLang('/trip', locale)} onClick={() => track('together_plan_opened', { source })} />
         ) : null}
         {/* Why invite: a friend who already makes the trip can be your match, or someone who'd like to try can be the guide's.
             Not for a carpool: anyone who already drives your way, you'd simply ask (Keith 2026-10-27). */}

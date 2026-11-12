@@ -466,8 +466,8 @@ export default function GuideView({
   const quickAnswer = L === 'en' ? quickAnswers[guideSlug] : undefined
   // The search heading is English wording; a translated page keeps its own title.
   const heading = (L === 'en' ? searchMeta[guideSlug]?.heading : undefined) ?? g.title
-  // The route planner, opened in the reader's language (/plan → Nearby).
-  const planHref = L === 'en' ? '/plan' : `/plan?lang=${L}`
+  // The route planner, opened in the reader's language (Plan a trip).
+  const planHref = L === 'en' ? '/trip' : `/trip?lang=${L}`
   const strip =
     L === 'es'
       ? appStripBySlugEs[guideSlug] ?? appStripDefaultEs

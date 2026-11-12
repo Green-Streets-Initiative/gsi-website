@@ -170,7 +170,7 @@ export default async function VenueParkingPage({ params, searchParams }: Props) 
 
   const [official, ...others] = v.garages
   const links = linksFor(v, t)
-  const planUrl = withLang(`/nearby?to=${v.lat},${v.lng}&toName=${encodeURIComponent(v.name)}`, locale)
+  const planUrl = withLang(`/trip?to=${v.lat},${v.lng}&toName=${encodeURIComponent(v.name)}`, locale)
   const pins = v.shuttles
     ? [
         { lat: v.lat, lng: v.lng, label: v.name, kind: 'venue' as const },

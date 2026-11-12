@@ -9,7 +9,7 @@ import { homeStrings } from '@/lib/site-strings/home'
 // day shown). Shift Your Semester takes sign-ups through Dec 15, 2026.
 type Row = 'you' | 'students' | 'employers' | 'schools' | 'towns' | 'business' | 'partners' | 'donors'
 const ALL_ROWS: { key: Row; href: string; audience: Audience; until?: string }[] = [
-  { key: 'you', href: '/nearby?plan=1', audience: 'individual' },
+  { key: 'you', href: '/trip', audience: 'individual' },
   { key: 'students', href: '/shift-your-semester', audience: 'individual', until: '2026-12-15' },
   { key: 'employers', href: '/shift/employers', audience: 'employer' },
   { key: 'schools', href: '/shift/schools', audience: 'school' },

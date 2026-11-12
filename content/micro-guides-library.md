@@ -1215,7 +1215,7 @@ The trains can run late too, so check [T-Alerts](https://alerts.mbta.com) before
 
 ### Try this first
 
-Pick one day next week to make your usual trip a different way: [park at a T station](https://www.gogreenstreets.org/guides/boston-traffic#station-parking) and ride in, or [plan it by train](https://www.gogreenstreets.org/nearby?plan=1). Time it door to door and compare it with a normal day.
+Pick one day next week to make your usual trip a different way: [park at a T station](https://www.gogreenstreets.org/guides/boston-traffic#station-parking) and ride in, or [plan it by train](https://www.gogreenstreets.org/trip). Time it door to door and compare it with a normal day.
 
 ---
 

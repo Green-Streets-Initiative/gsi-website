@@ -291,7 +291,7 @@ export function MatchCard({ m, locale, t, busy, myArrive, onAnswer, onWent, onRa
             </a>
             {!carpool && m.status === 'connected' ? (
               <Link
-                href={withLang('/nearby?plan=1', locale)}
+                href={withLang('/trip', locale)}
                 onClick={() => track('together_plan_opened', { source: 'match' })}
                 className="inline-flex min-h-[44px] items-center gap-2 rounded-[10px] border border-(--ev-line-strong) bg-white px-4 text-[15px] font-semibold"
               >

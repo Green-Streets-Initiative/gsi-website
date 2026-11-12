@@ -64,6 +64,15 @@ const en: Dict = {
   'trip.first_guide_pay': 'How to pay for the T',
   'trip.first_try_new': "A first trip this way can count in {employer}'s challenge",
   'trip.first_maybe': 'First time? Someone nearby can go with you',
+  'trip.why_title': 'Why plan here',
+  'trip.why_calm': 'Calmer bike routes',
+  'trip.why_calm_sub': 'We favor protected lanes and paths, and show how much.',
+  'trip.why_all': 'Every way at once',
+  'trip.why_all_sub': 'Walk, bike, transit and drive, with time and weekly cost.',
+  'trip.why_help': 'Help with a first try',
+  'trip.why_help_sub': 'Someone nearby to go with, a lesson or a group ride.',
+  'trip.why_maps': 'Then go with your maps app',
+  'trip.why_maps_sub': 'Get directions opens the route in Google Maps.',
 }
 
 const es: Dict = {
@@ -123,6 +132,15 @@ const es: Dict = {
   'trip.first_guide_pay': 'Cómo pagar el T',
   'trip.first_try_new': 'Un primer viaje así puede contar en el reto de {employer}',
   'trip.first_maybe': '¿Primera vez? Alguien cerca puede ir contigo',
+  'trip.why_title': 'Por qué planear aquí',
+  'trip.why_calm': 'Rutas en bici más tranquilas',
+  'trip.why_calm_sub': 'Preferimos carriles protegidos y senderos, y te mostramos cuánto.',
+  'trip.why_all': 'Todas las formas a la vez',
+  'trip.why_all_sub': 'A pie, en bici, en transporte público o en auto, con tiempo y costo semanal.',
+  'trip.why_help': 'Ayuda para tu primera vez',
+  'trip.why_help_sub': 'Alguien cerca que te acompañe, una clase o una salida en grupo.',
+  'trip.why_maps': 'Luego sigue con tu app de mapas',
+  'trip.why_maps_sub': 'Cómo llegar abre la ruta en Google Maps.',
 }
 
 const ptBR: Dict = {
@@ -182,6 +200,15 @@ const ptBR: Dict = {
   'trip.first_guide_pay': 'Como pagar o T',
   'trip.first_try_new': 'Uma primeira viagem assim pode contar no desafio da {employer}',
   'trip.first_maybe': 'Primeira vez? Alguém perto pode ir com você',
+  'trip.why_title': 'Por que planejar aqui',
+  'trip.why_calm': 'Rotas de bike mais tranquilas',
+  'trip.why_calm_sub': 'Preferimos ciclovias protegidas e trilhas, e mostramos quanto.',
+  'trip.why_all': 'Todas as formas de uma vez',
+  'trip.why_all_sub': 'A pé, de bike, de transporte público ou de carro, com tempo e custo semanal.',
+  'trip.why_help': 'Ajuda na primeira vez',
+  'trip.why_help_sub': 'Alguém por perto para ir junto, uma aula ou um passeio em grupo.',
+  'trip.why_maps': 'Depois siga com seu app de mapas',
+  'trip.why_maps_sub': 'Como chegar abre a rota no Google Maps.',
 }
 
 const zhHans: Dict = {
@@ -241,6 +268,15 @@ const zhHans: Dict = {
   'trip.first_guide_pay': '如何支付 T 的车费',
   'trip.first_try_new': '这样的第一次出行可以计入 {employer} 的挑战',
   'trip.first_maybe': '第一次？附近有人可以陪你去',
+  'trip.why_title': '为什么在这里规划',
+  'trip.why_calm': '更安静的骑行路线',
+  'trip.why_calm_sub': '优先选择有保护的自行车道和小径，并显示占比。',
+  'trip.why_all': '所有方式一目了然',
+  'trip.why_all_sub': '步行、骑车、公共交通和开车，附时间和每周花费。',
+  'trip.why_help': '第一次有人帮忙',
+  'trip.why_help_sub': '附近有人陪你走一趟，或者上一节课、参加一次集体骑行。',
+  'trip.why_maps': '然后用你的地图应用出发',
+  'trip.why_maps_sub': '点“获取路线”即可在 Google 地图中打开这条路线。',
 }
 
 const strings: Record<NearbyLocale, Dict> = { en, es, 'pt-BR': ptBR, 'zh-Hans': zhHans }

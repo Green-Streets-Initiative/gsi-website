@@ -47,7 +47,7 @@ export default async function BigEventPage({ params }: { params: Promise<{ id: s
   const more = venue ? (await loadBigEvents(supabase, venue.slug, 45)).filter((x) => x.id !== e.id).slice(0, 4) : []
   const past = new Date(e.starts_at).getTime() < Date.now() - 6 * 3600e3
   const planUrl = venue
-    ? `/nearby?to=${venue.lat},${venue.lng}&toName=${encodeURIComponent(venue.name)}`
+    ? `/trip?to=${venue.lat},${venue.lng}&toName=${encodeURIComponent(venue.name)}`
     : null
 
   return (

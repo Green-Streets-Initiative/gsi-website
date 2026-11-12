@@ -97,6 +97,7 @@ export async function GET() {
   L.push('## Start here')
   L.push(`- [Shift app](${SITE_URL}/shift): Free app that logs walking, biking, and transit trips and rewards active transportation with local perks and competitions.`)
   L.push(`- [Commute Advisor](${SITE_URL}/commute-advisor): See how many minutes a drive would take walking, biking, or on transit — and what each option costs per day and per year.`)
+  L.push(`- [Plan a trip](${SITE_URL}/trip): Compare walking, biking, transit and driving to any Greater Boston address side by side: times, the calmest bike route with its share of protected lanes, transit leaving now, weekly costs, and help for a first try. Get directions opens the route in Google Maps. Link a destination with ?to=<lat>,<lng>&toName=<name>.`)
   L.push(`- [What's near you](${SITE_URL}/nearby): A live snapshot of the T stops, buses, and Bluebikes docks near any Greater Boston address, with bike-lane comfort and nearby destinations.`)
   L.push(`- [Guides](${SITE_URL}/guides): Practical how-to guides for getting around by bike, on foot, and by transit in the Boston area.`)
   L.push(`- [Town pages](${SITE_URL}/shift/towns): Live community stats on how each town walks, bikes, and rides transit.`)

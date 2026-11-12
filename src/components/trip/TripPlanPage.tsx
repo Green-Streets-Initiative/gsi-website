@@ -23,6 +23,7 @@ import { decodePolyline } from '@/lib/geo/polyline'
 import type { PrintLine } from '@/lib/nearby/static-map'
 import { tripT } from '@/lib/trip/strings'
 import { transitFare, weeklyDrive, weeklyTransit, weeklyUsd } from '@/lib/trip/weekly'
+import TripWhy from './TripWhy'
 import FirstTry from './FirstTry'
 import { novelty, saveTripPlan, useMyWays } from './useMyWays'
 
@@ -430,6 +431,8 @@ function TripPlanner({ locale }: { locale: NearbyLocale }) {
               </div>
             </div>
           )}
+
+          {!row && status !== 'loading' && <TripWhy tt={tt} />}
 
           <p className="mt-6 text-[15px]">
             <Link href="/nearby" className="font-semibold text-(--nb-accent) hover:opacity-80">{tt('trip.near_you')} →</Link>

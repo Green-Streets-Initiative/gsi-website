@@ -829,7 +829,7 @@ export default function RidePage({ ride, host = null, hostPerson = null, ascentF
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {/* Nearby plans the trip there by bike, the T or Bluebikes, from where they are. */}
-                  <a href={withLang(`/nearby?to=${place.meetup_lat},${place.meetup_lng}&toName=${encodeURIComponent(place.meetup_name || ride.name)}&toMode=bike`, locale)}
+                  <a href={withLang(`/trip?to=${place.meetup_lat},${place.meetup_lng}&toName=${encodeURIComponent(place.meetup_name || ride.name)}&toMode=bike`, locale)}
                     className="inline-flex min-h-[44px] items-center gap-1.5 rounded-[10px] border border-(--ev-line-strong) bg-white px-4 py-2 text-[14px] font-semibold text-(--ev-ink) hover:bg-(--ev-panel)">
                     <Bike size={15} /> {t('get_there')}
                   </a>

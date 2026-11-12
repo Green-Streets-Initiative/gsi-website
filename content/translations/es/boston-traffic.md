@@ -45,4 +45,4 @@ Los trenes también pueden llegar tarde, así que revisa [T-Alerts](https://aler
 
 ### Prueba esto primero
 
-Elige un día de la semana que viene para hacer tu viaje de siempre de otra forma: [estaciona en una estación del T](https://www.gogreenstreets.org/es/guides/boston-traffic#station-parking) y sigue el viaje en el T, o [planéalo en tren](https://www.gogreenstreets.org/nearby?plan=1&lang=es). Mide el tiempo de puerta a puerta y compáralo con un día normal.
+Elige un día de la semana que viene para hacer tu viaje de siempre de otra forma: [estaciona en una estación del T](https://www.gogreenstreets.org/es/guides/boston-traffic#station-parking) y sigue el viaje en el T, o [planéalo en tren](https://www.gogreenstreets.org/trip?lang=es). Mide el tiempo de puerta a puerta y compáralo con un día normal.
