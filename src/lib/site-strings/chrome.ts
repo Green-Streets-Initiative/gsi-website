@@ -5,7 +5,7 @@ export const chromeStrings = defineStrings(
   {
     'nav.challenges': 'Challenges',
     'nav.events': 'Events',
-    'nav.plan': 'Plan a route',
+    'nav.plan': 'Plan a trip',
     'nav.trails': 'Trails',
     'nav.guides': 'Guides',
     'nav.towns': 'Towns',
@@ -75,7 +75,7 @@ export const chromeStrings = defineStrings(
     es: {
       'nav.challenges': 'Desafíos',
       'nav.events': 'Eventos',
-      'nav.plan': 'Planear una ruta',
+      'nav.plan': 'Planear un viaje',
       'nav.trails': 'Senderos',
       'nav.guides': 'Guías',
       'nav.towns': 'Ciudades',
@@ -144,7 +144,7 @@ export const chromeStrings = defineStrings(
     'pt-BR': {
       'nav.challenges': 'Desafios',
       'nav.events': 'Eventos',
-      'nav.plan': 'Planejar uma rota',
+      'nav.plan': 'Planejar uma viagem',
       'nav.trails': 'Trilhas',
       'nav.guides': 'Guias',
       'nav.towns': 'Cidades',
@@ -213,7 +213,7 @@ export const chromeStrings = defineStrings(
     'zh-Hans': {
       'nav.challenges': '挑战',
       'nav.events': '活动',
-      'nav.plan': '规划路线',
+      'nav.plan': '规划行程',
       'nav.trails': '步道',
       'nav.guides': '指南',
       'nav.towns': '城镇',

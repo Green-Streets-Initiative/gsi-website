@@ -9,6 +9,7 @@ import {
   haversineMiles,
   nextMonday830,
   queryWalkRoute,
+  queryDriveRoute,
   REACH_ROW_VERSION,
   type AvoidingRoute,
   type ReachRow,
@@ -190,6 +191,32 @@ const durableWalk = unstable_cache(
 
 export async function getWalk(from: { lat: number; lng: number }, to: { lat: number; lng: number }) {
   return durableWalk({ lat: round3(from.lat), lng: round3(from.lng) }, { lat: round3(to.lat), lng: round3(to.lng) }).catch(() => null)
+}
+
+/** The drive for the reference row, cached by the quarter hour it leaves in
+ *  (traffic changes; a day-long cache would freeze one rush hour). A failed
+ *  lookup throws inside the cache so it isn't kept, and reads as null. */
+const durableDrive = unstable_cache(
+  async (from: { lat: number; lng: number }, to: { lat: number; lng: number }, departAt: string) => {
+    const r = await queryDriveRoute(from, to, departAt)
+    if (!r) throw new Error('no drive')
+    return r
+  },
+  ['trip-drive-v1'],
+  { revalidate: 15 * 60 },
+)
+
+export async function getDrive(from: { lat: number; lng: number }, to: { lat: number; lng: number }, departAt?: string) {
+  return durableDrive(
+    { lat: round3(from.lat), lng: round3(from.lng) },
+    { lat: round3(to.lat), lng: round3(to.lng) },
+    quarterHour(departAt ?? new Date().toISOString()),
+  ).catch(() => null)
+}
+
+/** "Leave now" as the departure the trip is planned for: this quarter hour. */
+export function leavingNow(): string {
+  return quarterHour(new Date().toISOString())
 }
 
 /** The next quarter hour at or after this time, and never in the past

@@ -875,6 +875,8 @@ function ReachDetail({ row, mode, center, onMode, legInfo, highlightedStreetKey,
         href={directionsUrl(row.lat, row.lng, {
           mode: mode === 'bike' ? 'bicycling' : 'transit',
           origin: center,
+          // Maps rides the route we showed, not its own pick
+          route: mode === 'bike' ? (bikeAlt ? row.bike_alt?.polyline : row.bike_polyline) : null,
         })}
         target="_blank"
         rel="noopener noreferrer"

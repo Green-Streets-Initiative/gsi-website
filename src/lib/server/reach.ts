@@ -557,6 +557,47 @@ export async function queryWalkRoute(
 }
 
 /**
+ * The drive, as a reference row in the trip answer (Keith 2026-11-12: show
+ * it plainly; leaving it out reads as hiding something). Time with traffic at
+ * the moment they'd leave, never a route: we hand nobody driving directions.
+ */
+export async function queryDriveRoute(
+  origin: { lat: number; lng: number },
+  dest: { lat: number; lng: number },
+  departAt?: string,
+): Promise<{ minutes: number; miles: number } | null> {
+  if (!GOOGLE_ROUTES_KEY) return null
+  try {
+    const resp = await fetch('https://routes.googleapis.com/directions/v2:computeRoutes', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Goog-Api-Key': GOOGLE_ROUTES_KEY,
+        'X-Goog-FieldMask': 'routes.duration,routes.distanceMeters',
+      },
+      body: JSON.stringify({
+        origin: { location: { latLng: { latitude: origin.lat, longitude: origin.lng } } },
+        destination: { location: { latLng: { latitude: dest.lat, longitude: dest.lng } } },
+        travelMode: 'DRIVE',
+        routingPreference: 'TRAFFIC_AWARE',
+        ...(departAt && new Date(departAt).getTime() > Date.now() ? { departureTime: departAt } : {}),
+      }),
+      signal: AbortSignal.timeout(10000),
+    })
+    if (!resp.ok) return null
+    const data = await resp.json()
+    const r = (data.routes ?? [])[0] as { duration?: string; distanceMeters?: number } | undefined
+    if (!r?.duration) return null
+    return {
+      minutes: Math.max(1, Math.round(parseInt(r.duration.replace('s', '')) / 60)),
+      miles: Math.round(((r.distanceMeters ?? 0) / 1609.34) * 10) / 10,
+    }
+  } catch {
+    return null
+  }
+}
+
+/**
  * Manufacture a genuinely different, calmer alternate.
  *
  * Google's three alternates usually share a corridor — they differ by a block

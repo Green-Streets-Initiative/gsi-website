@@ -13,9 +13,9 @@ import { chromeStrings } from '@/lib/site-strings/chrome'
  * pages live in the dropdown.
  *
  * Streamlined 2026-10-06 (Keith): nine links became five plus two dropdowns.
- * "Plan a route" takes Nearby's slot — same page, named for what it does
- * (Nearby's live-departures tab is one click away inside, and "What's near
- * you" stays in the Shift app menu and the footer). About, Programs, Get
+ * "Plan a trip" takes Nearby's slot (renamed and given its own page,
+ * /trip, 2026-11-12; "What's near you" stays in the Shift app menu and the
+ * footer). About, Programs, Get
  * involved and Contact — together fewer visits than Guides — fold into one
  * "About" dropdown. Both dropdowns stay in the HTML when closed (hidden, not
  * unmounted) so crawlers still see every link from the nav, not only from the
@@ -41,10 +41,9 @@ type NavItem = [href: string, label: NavKey, wideOnly?: boolean]
 const TOP_ITEMS: NavItem[] = [
   ['/challenges', 'nav.challenges'],
   ['/events', 'nav.events'],
-  // The /plan short address 308s here; the nav links the destination
-  // directly so crawlers and people skip the hop. /nearby's canonical is
-  // param-free, so this URL never competes with it in search.
-  ['/nearby?plan=1', 'nav.plan'],
+  // Plan a trip (Keith 2026-11-12): its own page, From/To and every way
+  // there. The neighborhood snapshot stays under the Shift app menu.
+  ['/trip', 'nav.plan'],
   // Trail seekers are one of the strongest search audiences (personas.md);
   // /trails had no way in from the menu (site review 2026-11-04).
   // Top bar from xl up only: at lg it crowds the wordmark. Always in the menu.

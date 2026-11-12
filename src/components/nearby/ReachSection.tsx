@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, type ComponentProps } from 'react'
+import { useRef, type ComponentProps, type ReactNode } from 'react'
 import Link from 'next/link'
 import posthog from 'posthog-js'
 import ModeIcon from '@/components/commute/ModeIcon'
@@ -132,7 +132,7 @@ export function TripFacts({ row }: { row: ReachRow }) {
     bits.push(tr('reach.walking_total', { minutes: row.transit_walk_minutes }))
   }
   if (bits.length === 0) return null
-  return <div className="mt-2 text-[0.78rem] text-(--nb-ink-80)">{bits.join(' · ')}</div>
+  return <div className="mt-2 text-[14px] text-(--nb-ink-80)">{bits.join(' · ')}</div>
 }
 
 /** The route's real length — the sum of its comfort stretches. The list row's
@@ -144,7 +144,7 @@ function totalMiles(comfort: BikeComfortData | null | undefined): number | null 
 
 /** Share of a route that's a path or a separated lane — what "protected"
  *  means to a rider, and the number the choice below is stated in. */
-function protectedShare(comfort: BikeComfortData | null | undefined): number | null {
+export function protectedShare(comfort: BikeComfortData | null | undefined): number | null {
   const segs = comfort?.segments ?? []
   const total = segs.reduce((a, s) => a + s.distance_mi, 0)
   if (total <= 0) return null
@@ -271,7 +271,7 @@ export function bikeTripSummary(comfort: BikeComfortData, tr: Tr): string | null
  * Used by the desktop rail's open row (ReachList, title in the row) and the
  * mobile sheet's detail (NearbyShell, `showTitle`).
  */
-export function V2Trip({ row, mode, onMode, center, legInfo, highlightedStreetKey, onHighlightStreet, bikeAlt, onPickRoute, avoidFor, onPlanCommute, partnerSlug, showTitle = false, onExpand }: {
+export function V2Trip({ row, mode, onMode, center, legInfo, highlightedStreetKey, onHighlightStreet, bikeAlt, onPickRoute, avoidFor, onPlanCommute, partnerSlug, showTitle = false, onExpand, hideSwitch = false, actions }: {
   row: ReachRow
   mode: 'transit' | 'bike'
   onMode: (mode: 'transit' | 'bike') => void
@@ -287,6 +287,10 @@ export function V2Trip({ row, mode, onMode, center, legInfo, highlightedStreetKe
   showTitle?: boolean
   /** Mobile sheet at half height: raise it so the streets / steps show. */
   onExpand?: () => void
+  /** Plan a trip (/trip): the four ways sit above as rows, so no switch. */
+  hideSwitch?: boolean
+  /** Plan a trip: its own buttons in place of the maps hand-off. */
+  actions?: ReactNode
 }) {
   const tr = useNearbyT()
   const belowRef = useRef<HTMLDivElement>(null)
@@ -342,7 +346,7 @@ export function V2Trip({ row, mode, onMode, center, legInfo, highlightedStreetKe
       {showTitle && <div className="text-[1.1rem] font-bold leading-snug text-(--nb-ink)">{row.name}</div>}
 
       {/* The way: a switch when both can be drawn, otherwise just its time */}
-      {ways.length > 1 ? (
+      {hideSwitch ? null : ways.length > 1 ? (
         <div role="tablist" className={`${showTitle ? 'mt-3' : ''} flex gap-1 rounded-xl bg-(--nb-panel) p-1`}>
           {ways.map(m => (
             <button
@@ -424,7 +428,7 @@ export function V2Trip({ row, mode, onMode, center, legInfo, highlightedStreetKe
       ) : null}
 
       {/* The one thing to do: hand off to their maps app for the trip */}
-      <a
+      {actions ?? <a
         href={directionsUrl(row.lat, row.lng, { mode: bike ? 'bicycling' : 'transit', origin: center, route })}
         target="_blank"
         rel="noopener noreferrer"
@@ -432,7 +436,7 @@ export function V2Trip({ row, mode, onMode, center, legInfo, highlightedStreetKe
         className="mt-4 block rounded-xl bg-(--nb-accent-fill) px-4 py-3 text-center text-[15px] font-bold text-(--nb-on-accent-fill) transition-opacity hover:opacity-85"
       >
         {bike && route ? tr('v2.trip_follow_google') : tr('reach.open_in_maps')}
-      </a>
+      </a>}
 
       {/* Raising the sheet is optional: this opens it the rest of the way */}
       {onExpand && (
@@ -539,7 +543,7 @@ export function TransitLegs({ steps, segments, toned = false }: {
               >
                 {tr('reach.leg_walk_badge')}
               </span>
-              <span className="min-w-0 text-[0.78rem] leading-snug text-(--nb-ink-80)">
+              <span className="min-w-0 text-[14px] leading-snug text-(--nb-ink-80)">
                 {tr('reach.leg_walk', { minutes: item.walk })}
               </span>
             </li>
@@ -573,11 +577,11 @@ export function TransitLegs({ steps, segments, toned = false }: {
         </span>
         <span className="min-w-0">
           {s.boardStop && (
-            <span className="block text-[0.78rem] font-semibold text-(--nb-ink)">
+            <span className="block text-[14px] font-semibold text-(--nb-ink)">
               {tr('reach.leg_board', { stop: s.boardStop })}
             </span>
           )}
-          {ride && <span className="block text-[0.75rem] leading-snug text-(--nb-ink-80)">{ride}</span>}
+          {ride && <span className="block text-[14px] leading-snug text-(--nb-ink-80)">{ride}</span>}
         </span>
       </li>
     )
@@ -809,6 +813,8 @@ export function ReachList({ center, rows, onRowTap, modeFilter, routeSelection, 
                       href={directionsUrl(row.lat, row.lng, {
                         mode: expanded.mode === 'bike' ? 'bicycling' : 'transit',
                         origin: center,
+                        // Maps rides the route we showed, not its own pick
+                        route: expanded.mode === 'bike' ? (bikeAlt ? row.bike_alt?.polyline : row.bike_polyline) : null,
                       })}
                       target="_blank"
                       rel="noopener noreferrer"

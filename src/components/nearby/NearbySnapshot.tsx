@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useSearchParams } from 'next/navigation'
 import posthog from 'posthog-js'
+import Link from 'next/link'
 import AddressAutocomplete from '@/components/AddressAutocomplete'
 import { supabase } from '@/lib/supabase'
 import type { BluebikeStationLive, MBTAStopLive } from '@/lib/wayfinding/types'
@@ -662,7 +663,7 @@ export default function NearbySnapshot({ tone = 'dark' }: { tone?: NearbyTone } 
           <NearbyLanguagePill />
         </div>
         <div className="text-center">
-          <div className="mb-2 text-[0.72rem] font-bold uppercase tracking-[0.16em] text-(--nb-accent)">
+          <div className="mb-2 text-[13px] font-bold uppercase tracking-[0.14em] text-(--nb-accent)">
             {tr(newRoutes ? 'snap.eyebrow_newroutes' : 'snap.eyebrow')}
           </div>
           <h1 className="font-display text-[clamp(1.75rem,4vw,2.5rem)] font-extrabold leading-[1.12] tracking-tighter text-(--nb-ink)">
@@ -708,12 +709,12 @@ export default function NearbySnapshot({ tone = 'dark' }: { tone?: NearbyTone } 
           </button>
 
           {geoError && (
-            <p className="mt-3 text-[0.8125rem] leading-snug text-(--nb-ink-70)">{geoError}</p>
+            <p className="mt-3 text-[14px] leading-snug text-(--nb-ink-80)">{geoError}</p>
           )}
 
           <div className="my-5 flex items-center gap-3">
             <div className="h-px flex-1 bg-(--nb-panel-hover)" />
-            <span className="text-[0.75rem] font-semibold uppercase tracking-wider text-(--nb-ink-70)">{tr('snap.or')}</span>
+            <span className="text-[13px] font-semibold uppercase tracking-wider text-(--nb-ink-70)">{tr('snap.or')}</span>
             <div className="h-px flex-1 bg-(--nb-panel-hover)" />
           </div>
 
@@ -739,12 +740,17 @@ export default function NearbySnapshot({ tone = 'dark' }: { tone?: NearbyTone } 
             }}
             label={null}
             variant={tone === 'dark' ? 'dark' : 'light'}
-            placeholder={tr('snap.address_placeholder')}
+            placeholder={tr(newRoutes ? 'snap.address_placeholder_newroutes' : 'snap.address_placeholder')}
           />
-          <p className="mt-3 text-[0.75rem] leading-snug text-(--nb-ink-70)">
+          <p className="mt-3 text-[14px] leading-snug text-(--nb-ink-80)">
             {tr('snap.address_note')}
           </p>
         </div>
+
+        {/* A trip is its own page (Keith 2026-11-12) */}
+        <p className="mt-6 text-center text-[15px]">
+          <Link href="/trip" className="font-semibold text-(--nb-accent) hover:opacity-80">{tr('snap.plan_trip_link')} →</Link>
+        </p>
       </div>
       </NearbyI18nProvider>
     )

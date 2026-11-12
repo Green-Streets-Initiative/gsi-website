@@ -26,7 +26,16 @@ export default function StaticMapSvg({
   fitPoints,
   quiet = false,
   homeColor = '#2D6A4F',
+  endPoint,
+  minZoom = 13,
+  lineWidth = 3,
 }: {
+  /** Stroke of the main lines; a single trip route reads better wider. */
+  lineWidth?: number
+  /** Where a trip ends (Plan a trip): a ringed pin on top of the lines. */
+  endPoint?: { lat: number; lng: number }
+  /** Farthest out the frame may zoom; a long trip needs lower than 13. */
+  minZoom?: number
   /** Streets in near-gray, so the lines' own color is the only strong one
    *  (a ride flyer in the organizer's colors, like its share card). */
   quiet?: boolean
@@ -61,7 +70,7 @@ export default function StaticMapSvg({
     minLng: Math.max(bounds.minLng, center.lng - maxHalf.lng),
     maxLng: Math.min(bounds.maxLng, center.lng + maxHalf.lng),
   }
-  const vp = fitViewport(bounds, width, height, { padFactor: 0.86, minZoom: 13, maxZoom: 15 })
+  const vp = fitViewport(bounds, width, height, { padFactor: 0.86, minZoom, maxZoom: 15 })
 
   const maxTile = Math.pow(2, vp.zoom) - 1
   const tiles: { key: string; url: string; x: number; y: number }[] = []
@@ -141,12 +150,12 @@ export default function StaticMapSvg({
       {/* White casings first so every corridor reads on the light basemap */}
       {lines.map((l, i) => (
         <polyline key={`c${i}`} points={toPoints(l.coords)} fill="none"
-          stroke="#ffffff" strokeWidth={l.thin ? 3.5 : 6} strokeOpacity={l.thin ? 0.7 : 0.9}
+          stroke="#ffffff" strokeWidth={l.thin ? 3.5 : lineWidth + 3} strokeOpacity={l.thin ? 0.7 : 0.9}
           strokeLinejoin="round" strokeLinecap="round" />
       ))}
       {lines.map((l, i) => (
         <polyline key={`l${i}`} points={toPoints(l.coords)} fill="none"
-          stroke={l.color} strokeWidth={l.thin ? 1.75 : 3}
+          stroke={l.color} strokeWidth={l.thin ? 1.75 : lineWidth}
           strokeDasharray={l.dashed ? (l.thin ? '4 4' : '7 5') : undefined}
           strokeLinejoin="round" strokeLinecap="round" />
       ))}
@@ -182,6 +191,16 @@ export default function StaticMapSvg({
           </g>
         )
       })}
+
+      {endPoint && (() => {
+        const p = toPixel(vp, endPoint.lat, endPoint.lng)
+        return (
+          <g transform={`translate(${p.x.toFixed(1)} ${p.y.toFixed(1)})`}>
+            <circle r={HOME_R + 1} fill="#ffffff" stroke="#191A2E" strokeWidth={3.5} />
+            <circle r={3.5} fill="#191A2E" />
+          </g>
+        )
+      })()}
 
       {/* The campus (or meeting point) itself, on top of everything */}
       {home && <g transform={`translate(${homePx.x.toFixed(1)} ${homePx.y.toFixed(1)})`}>

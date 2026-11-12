@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import { Suspense } from 'react'
+import { redirect } from 'next/navigation'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
 import JsonLd from '@/components/JsonLd'
@@ -53,7 +54,25 @@ export const viewport: Viewport = {
 
 // The interactive child is a client component reading search params; the page
 // wrapper stays a server component (same pattern that fixed the demo page).
-export default function NearbyPage() {
+//
+// Trip links (?plan=1, and ?to= from events, rides, parking and Shift
+// Together) belong to Plan a trip now (Keith 2026-11-12); their params go
+// along, so a ride's meeting point arrives as the destination.
+export default async function NearbyPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}) {
+  const params = await searchParams
+  if (params.plan === '1' || typeof params.to === 'string') {
+    const q = new URLSearchParams()
+    for (const [k, v] of Object.entries(params)) {
+      if (k === 'plan' || v === undefined) continue
+      q.set(k, Array.isArray(v) ? v[0] : v)
+    }
+    const rest = q.toString()
+    redirect(rest ? `/trip?${rest}` : '/trip')
+  }
   return (
     <>
       <Nav variant="light" />
