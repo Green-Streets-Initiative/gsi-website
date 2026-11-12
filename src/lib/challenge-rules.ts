@@ -53,6 +53,16 @@ export function effectiveRules(r: CountingRules | null | undefined): Required<Co
   }
 }
 
+/**
+ * True when Try something new counts days with a new-way trip, not trips
+ * (Shift 01751, the Town Challenge's "a new way on 5 different days"). Kept
+ * out of CountingRules so the portal's rule defaults stay as they are; the
+ * database returns it in effective_counting_rules.
+ */
+export function newWayByDays(r: (CountingRules & { new_way_count?: string }) | null | undefined): boolean {
+  return r?.new_way_count === 'days'
+}
+
 export function isStandardRules(r: CountingRules | null | undefined): boolean {
   const e = effectiveRules(r)
   return (
@@ -124,8 +134,12 @@ export function midSentence(text: string | null | undefined): string {
 
 export function prizeSentence(i: ChallengeRulesInput): string {
   const trips = `${i.goal} ${i.goal === 1 ? 'trip' : 'trips'}`
-  const who =
-    i.metric === 'tried_new'
+  const byDays = i.metric === 'tried_new' && i.goal > 1 && newWayByDays(i.rules)
+  const who = byDays
+    ? i.spots === 1
+      ? `The first person to go a new way on ${i.goal} days gets`
+      : `The first ${i.spots} people to go a new way on ${i.goal} days each get`
+    : i.metric === 'tried_new'
       ? i.goal > 1
         ? i.spots === 1
           ? `The first person to make ${trips} a new way gets`
@@ -165,10 +179,13 @@ function num(n: number): string {
  * "Everyone with 8 or more active days", "Everyone with a Shift Rate of 50%
  * or more", "Everyone who takes part" when there is no minimum.
  */
-function entryPhrase(goal: number, metric: string | null | undefined): string {
+function entryPhrase(goal: number, metric: string | null | undefined, byDays = false): string {
   if (!(goal > 0)) return 'Everyone who takes part'
   switch (metric) {
     case 'tried_new':
+      if (byDays && goal > 1) {
+        return `Everyone who goes a new way on ${num(goal)} different days (any way of getting around they hadn't used in the 60 days before the challenge; driving alone doesn't count)`
+      }
       return goal === 1
         ? "Everyone who makes a trip a new way (a way of getting around they hadn't used in the 60 days before the challenge; driving alone doesn't count)"
         : `Everyone who makes ${num(goal)} trips a new way (in any mix of ways of getting around they hadn't used in the 60 days before the challenge; driving alone doesn't count)`
@@ -190,7 +207,7 @@ function entryPhrase(goal: number, metric: string | null | undefined): string {
 export function drawingSentence(i: ChallengeRulesInput, metric?: string | null): string {
   const n = i.spots
   const win = n === 1 ? `One winner, picked at random, gets ${rewardPhrase(i)}.` : `${n} winners, picked at random, each get ${rewardPhrase(i)}.`
-  return `${entryPhrase(i.goal, metric)} by ${etDate(i.endsAt)} is entered in a drawing. ${win}`
+  return `${entryPhrase(i.goal, metric, newWayByDays(i.rules))} by ${etDate(i.endsAt)} is entered in a drawing. ${win}`
 }
 
 /** Top of the leaderboard when the challenge ends. Web only, like drawingSentence. */

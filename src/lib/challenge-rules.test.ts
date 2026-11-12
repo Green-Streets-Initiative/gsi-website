@@ -181,3 +181,14 @@ describe('Try something new, repeat trips (Shift 01635)', () => {
     assert.match(drawingSentence({ ...tn, goal: 1 }, 'tried_new'), /^Everyone who makes a trip a new way \(a way of getting around/)
   })
 })
+
+describe('Try something new by days (Shift 01751, the Town Challenge)', () => {
+  const days = { ...base, metric: 'tried_new', spots: 50, goal: 5, employer: 'Somerville', rules: { new_way_count: 'days' } as never }
+  it('says days when the challenge counts days', () => {
+    assert.equal(prizeSentence(days), 'The first 50 people to go a new way on 5 days each get a $15 gift card from Somerville.')
+    assert.match(drawingSentence(days, 'tried_new'), /^Everyone who goes a new way on 5 different days \(any way/)
+  })
+  it('trips stay trips', () => {
+    assert.match(prizeSentence({ ...days, rules: null }), /^The first 50 people to make 5 trips a new way/)
+  })
+})
