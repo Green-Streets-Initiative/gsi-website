@@ -22,6 +22,9 @@ import { directionsUrl } from '@/lib/nearby/transit-ui'
 import { decodePolyline } from '@/lib/geo/polyline'
 import type { PrintLine } from '@/lib/nearby/static-map'
 import { tripT } from '@/lib/trip/strings'
+import { transitFare, weeklyDrive, weeklyTransit, weeklyUsd } from '@/lib/trip/weekly'
+import FirstTry from './FirstTry'
+import { novelty, saveTripPlan, useMyWays } from './useMyWays'
 
 /**
  * Plan a trip (Keith 2026-11-12, product review of Plan a route and Around
@@ -37,6 +40,11 @@ import { tripT } from '@/lib/trip/strings'
  *
  * Privacy: the start never goes in the page link; only the destination (a
  * public place) and the way do, so a link sent to a phone plans from there.
+ *
+ * The Next rows (Keith 2026-11-12): help for a first try only when the way is
+ * new for that person (FirstTry), "Do this often?" as a weekly cost on the
+ * same rows, and, for a signed-in Shift member, each plan saved (Shift 01758)
+ * so we can see whether a trip that way follows within 14 days.
  */
 
 type Way = 'walk' | 'bike' | 'transit'
@@ -87,7 +95,13 @@ export default function TripPlanPage() {
 
 function TripPlanner({ locale }: { locale: NearbyLocale }) {
   const tt = useCallback((k: string, v?: Record<string, string | number>) => tripT(locale, k, v), [locale])
-  const isDesktop = useIsDesktop()
+  // useIsDesktop guesses on the server and reads the window on the client's
+  // first render; both renders treat it as a phone until mounted, so a narrow
+  // window hydrates without a mismatch
+  const wide = useIsDesktop()
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => { setMounted(true) }, [])
+  const isDesktop = mounted && wide
 
   // A link names the destination (and maybe the way); read once on arrival
   const linked = useMemo(() => {
@@ -120,6 +134,10 @@ function TripPlanner({ locale }: { locale: NearbyLocale }) {
   const preferWay = useRef<Way | undefined>(linked?.way)
   // The way they picked, kept when only the departure changes
   const pickedWay = useRef<{ toKey: string; way: Way } | null>(null)
+  const [weekly, setWeekly] = useState(false)
+  const me = useMyWays()
+  // One id per plan, so a new way or Get directions updates the same row
+  const [planId, setPlanId] = useState<string | null>(null)
 
   const locate = useCallback((auto = false) => {
     if (!navigator.geolocation) { setGeoError(true); return }
@@ -167,6 +185,7 @@ function TripPlanner({ locale }: { locale: NearbyLocale }) {
         if (cancelled) return
         setRow(next)
         setBikeAlt(false)
+        setPlanId(typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : null)
         const toKey = `${to.lat},${to.lng}`
         const kept = pickedWay.current?.toKey === toKey ? pickedWay.current.way : undefined
         const w = bestWay(next, preferWay.current ?? kept)
@@ -207,6 +226,26 @@ function TripPlanner({ locale }: { locale: NearbyLocale }) {
     p.set('way', w)
     window.history.replaceState({}, '', `${window.location.pathname}?${p}`)
   }, [to])
+
+  // A signed-in member's plan is saved (and kept up to date with the way)
+  const savePlan = useCallback((directions = false) => {
+    if (!me.signedIn || !planId || !row || !way || !from || !to) return
+    saveTripPlan({
+      id: planId,
+      from,
+      to,
+      way,
+      newWay: me.ways ? !me.ways.includes(way) : null,
+      ways: {
+        walk: row.walk?.minutes ?? null,
+        bike: hasBikeRoute(row) ? row.bike_minutes : null,
+        transit: hasTransitRoute(row) ? row.transit_minutes : null,
+        drive: row.drive?.minutes ?? null,
+      },
+      directions,
+    })
+  }, [me.signedIn, me.ways, planId, row, way, from, to])
+  useEffect(() => { savePlan() }, [savePlan])
 
   const fmt = useCallback((minutes: number) => {
     if (minutes < 60) return tt('trip.min', { minutes })
@@ -345,13 +384,21 @@ function TripPlanner({ locale }: { locale: NearbyLocale }) {
                 </>
               )}
 
-              <TripWays row={row} way={way} onPick={pickWay} fmt={fmt} tt={tt} />
+              <TripWays row={row} way={way} onPick={pickWay} fmt={fmt} tt={tt} weekly={weekly} />
+              <button
+                type="button"
+                onClick={() => { setWeekly(w => !w); if (!weekly) posthog.capture('trip_weekly_cost_shown', { way }) }}
+                aria-pressed={weekly}
+                className="mt-2 px-3 text-[15px] font-semibold text-(--nb-accent) hover:opacity-80"
+              >
+                {tt(weekly ? 'trip.weekly_hide' : 'trip.weekly_show')}
+              </button>
 
               {!isDesktop && map && <div className="mt-4 overflow-hidden rounded-xl">{map}</div>}
 
               <div className="mt-4">
                 {way === 'walk' ? (
-                  <TripActions row={row} way={way} bikeAlt={false} from={from} tt={tt} />
+                  <TripActions row={row} way={way} bikeAlt={false} from={from} tt={tt} onDirections={() => savePlan(true)} />
                 ) : (
                   <V2Trip
                     row={row}
@@ -362,7 +409,19 @@ function TripPlanner({ locale }: { locale: NearbyLocale }) {
                     onPickRoute={alt => { setBikeAlt(alt); posthog.capture('trip_bike_route_picked', { faster: alt }) }}
                     avoidFor={() => undefined}
                     hideSwitch
-                    actions={<TripActions row={row} way={way} bikeAlt={bikeAlt} from={from} tt={tt} />}
+                    actions={
+                      <>
+                        <TripActions row={row} way={way} bikeAlt={bikeAlt} from={from} tt={tt} onDirections={() => savePlan(true)} />
+                        {/* Right under the main button: help for a first try */}
+                        <FirstTry
+                          way={way}
+                          novelty={novelty(me, way)}
+                          tryNew={me.tryNew}
+                          hasBus={row.steps.some(s => s.routeType === 3)}
+                          tt={tt}
+                        />
+                      </>
+                    }
                   />
                 )}
               </div>
@@ -386,13 +445,24 @@ function TripPlanner({ locale }: { locale: NearbyLocale }) {
 }
 
 /** Every way to make the trip, one row each. Drive is a reference row. */
-function TripWays({ row, way, onPick, fmt, tt }: {
+function TripWays({ row, way, onPick, fmt, tt, weekly }: {
   row: TripAnswer
   way: Way
   onPick: (w: Way) => void
   fmt: (minutes: number) => string
   tt: (k: string, v?: Record<string, string | number>) => string
+  /** "Do this often?": each row says what a week of it costs instead */
+  weekly: boolean
 }) {
+  const transitWeek = weeklyTransit(transitFare(row.steps))
+  const week: Record<Way | 'drive', string | null> = {
+    walk: tt('trip.weekly', { cost: '$0' }),
+    bike: tt('trip.weekly_bike'),
+    transit: hasTransitRoute(row)
+      ? tt(transitWeek.pass ? 'trip.weekly_pass' : transitWeek.from ? 'trip.weekly_from' : 'trip.weekly', { cost: weeklyUsd(transitWeek.cost) })
+      : null,
+    drive: row.drive ? tt('trip.weekly_drive', { cost: weeklyUsd(weeklyDrive(row.drive.miles)) }) : null,
+  }
   const share = protectedShare(row.bike_comfort)
   const transitSub = !hasTransitRoute(row) || row.transit_minutes === null
     ? tt('trip.sub_no_transit')
@@ -420,6 +490,7 @@ function TripWays({ row, way, onPick, fmt, tt }: {
   return (
     <ul className="mt-3 space-y-1.5">
       {items.filter(i => i.minutes !== null || i.key === 'transit').map(i => {
+        if (weekly && week[i.key]) i = { ...i, sub: week[i.key] }
         const selectable = i.key !== 'drive' && i.minutes !== null
         const selected = selectable && i.key === way
         const body = (
@@ -460,12 +531,13 @@ function TripWays({ row, way, onPick, fmt, tt }: {
 }
 
 /** Get directions (main), and on a computer, Send to my phone. */
-function TripActions({ row, way, bikeAlt, from, tt }: {
+function TripActions({ row, way, bikeAlt, from, tt, onDirections }: {
   row: TripAnswer
   way: Way
   bikeAlt: boolean
   from: Place
   tt: (k: string, v?: Record<string, string | number>) => string
+  onDirections: () => void
 }) {
   const [phoneOpen, setPhoneOpen] = useState(false)
   const [qr, setQr] = useState<string | null>(null)
@@ -496,7 +568,7 @@ function TripActions({ row, way, bikeAlt, from, tt }: {
         href={href}
         target="_blank"
         rel="noopener noreferrer"
-        onClick={() => posthog.capture('trip_directions_clicked', { way, calm_route: !!route && !bikeAlt })}
+        onClick={() => { posthog.capture('trip_directions_clicked', { way, calm_route: !!route && !bikeAlt }); onDirections() }}
         className="block rounded-xl bg-(--nb-accent-fill) px-4 py-3 text-center text-[16px] font-bold text-(--nb-on-accent-fill) transition-opacity hover:opacity-90"
       >
         {tt('trip.get_directions')}
