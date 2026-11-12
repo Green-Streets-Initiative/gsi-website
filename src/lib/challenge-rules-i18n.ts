@@ -18,6 +18,7 @@ import {
   eligibilitySentence,
   etDateRange,
   midSentence,
+  newWayByDays,
   orderSentence,
   prizeSentence,
   topSentence,
@@ -87,6 +88,9 @@ export function challengeRulesFor(locale: SiteLocale): ChallengeRules {
       const one = i.spots === 1
       const vars = { spots: i.spots, trips: trips(i.goal), prize: reward(i) }
       if (i.metric === 'tried_new') {
+        if (i.goal > 1 && newWayByDays(i.rules)) {
+          return t(one ? 'rl.new_days_one' : 'rl.new_days_other', { ...vars, n: num(i.goal) })
+        }
         if (i.goal > 1) return t(one ? 'rl.new_n_one' : 'rl.new_n_other', vars)
         return t(one ? 'rl.new_1_one' : 'rl.new_1_other', vars)
       }
@@ -99,7 +103,7 @@ export function challengeRulesFor(locale: SiteLocale): ChallengeRules {
       const who = !(g > 0)
         ? t('rl.draw_all', vars)
         : metric === 'tried_new'
-          ? t(g === 1 ? 'rl.draw_new_1' : 'rl.draw_new_n', vars)
+          ? t(g === 1 ? 'rl.draw_new_1' : newWayByDays(i.rules) ? 'rl.draw_new_days' : 'rl.draw_new_n', vars)
           : metric === 'active_days'
             ? t(g === 1 ? 'rl.draw_days_1' : 'rl.draw_days_n', vars)
             : metric === 'miles'

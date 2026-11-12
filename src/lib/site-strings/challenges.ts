@@ -1462,6 +1462,10 @@ export const workplaceStrings = defineStrings(
     'rl.new_n_other': 'The first {spots} people to make {trips} a new way each get {prize}.',
     'rl.new_1_one': 'The first person to make a trip a new way gets {prize}.',
     'rl.new_1_other': 'The first {spots} people to make a trip a new way each get {prize}.',
+    'rl.new_days_one': 'The first person to go a new way on {n} days gets {prize}.',
+    'rl.new_days_other': 'The first {spots} people to go a new way on {n} days each get {prize}.',
+    'rl.draw_new_days':
+      "Everyone who goes a new way on {n} different days (any way of getting around they hadn't used in the 60 days before the challenge; driving alone doesn't count) by {date} is entered in a drawing.",
     'rl.gift_card': 'a {amount} gift card from {employer}',
     'rl.prize_default': 'a prize from {employer}',
     'rl.draw_all': 'Everyone who takes part by {date} is entered in a drawing.',
@@ -1569,6 +1573,10 @@ export const workplaceStrings = defineStrings(
       'rl.new_n_other': 'Las primeras {spots} personas en hacer {trips} de una forma nueva reciben {prize} cada una.',
       'rl.new_1_one': 'La primera persona en hacer un viaje de una forma nueva recibe {prize}.',
       'rl.new_1_other': 'Las primeras {spots} personas en hacer un viaje de una forma nueva reciben {prize} cada una.',
+      'rl.new_days_one': 'La primera persona en viajar de una forma nueva en {n} días recibe {prize}.',
+      'rl.new_days_other': 'Las primeras {spots} personas en viajar de una forma nueva en {n} días reciben {prize} cada una.',
+      'rl.draw_new_days':
+        'Todas las personas que viajen de una forma nueva en {n} días distintos (cualquier forma de moverse que no hayan usado en los 60 días antes del desafío; manejar solo no cuenta) hasta el {date} entran en un sorteo.',
       'rl.gift_card': 'una tarjeta de regalo de {amount} de {employer}',
       'rl.prize_default': 'un premio de {employer}',
       'rl.draw_all': 'Todas las personas que participen hasta el {date} entran en un sorteo.',
@@ -1678,6 +1686,10 @@ export const workplaceStrings = defineStrings(
       'rl.new_n_other': 'As primeiras {spots} pessoas a fazer {trips} de um jeito novo ganham, cada uma, {prize}.',
       'rl.new_1_one': 'A primeira pessoa a fazer uma viagem de um jeito novo ganha {prize}.',
       'rl.new_1_other': 'As primeiras {spots} pessoas a fazer uma viagem de um jeito novo ganham, cada uma, {prize}.',
+      'rl.new_days_one': 'A primeira pessoa a viajar de um jeito novo em {n} dias ganha {prize}.',
+      'rl.new_days_other': 'As primeiras {spots} pessoas a viajar de um jeito novo em {n} dias ganham, cada uma, {prize}.',
+      'rl.draw_new_days':
+        'Todos que viajarem de um jeito novo em {n} dias diferentes (qualquer jeito de se deslocar que não usaram nos 60 dias antes do desafio; dirigir sozinho não vale) até {date} entram em um sorteio.',
       'rl.gift_card': 'um vale-presente de {amount} de {employer}',
       'rl.prize_default': 'um prêmio de {employer}',
       'rl.draw_all': 'Todos que participarem até {date} entram em um sorteio.',
@@ -1785,6 +1797,10 @@ export const workplaceStrings = defineStrings(
       'rl.new_n_other': '最先用新方式完成 {trips}的 {spots} 个人，每人都会获得{prize}。',
       'rl.new_1_one': '最先用新方式出行一次的 1 个人，会获得{prize}。',
       'rl.new_1_other': '最先用新方式出行一次的 {spots} 个人，每人都会获得{prize}。',
+      'rl.new_days_one': '最先在 {n} 天里用新方式出行的 1 个人，会获得{prize}。',
+      'rl.new_days_other': '最先在 {n} 天里用新方式出行的 {spots} 个人，每人都会获得{prize}。',
+      'rl.draw_new_days':
+        '{date}前在 {n} 个不同的日子里用新方式出行的每个人（新方式指挑战开始前 60 天里没用过的出行方式；独自开车不算）都会进入抽奖。',
       'rl.gift_card': '一张由 {employer} 提供的 {amount} 礼品卡',
       'rl.prize_default': '一份来自 {employer} 的奖品',
       'rl.draw_all': '{date}前参加的每个人都会进入抽奖。',
