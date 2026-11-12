@@ -12,6 +12,7 @@ import { eventPath } from '@/lib/events-url'
 import { BUTTON, CONTAINER, GSI_FONT, H3, SignHero } from '@/app/move-in/sign'
 import JumpBar from './JumpBar'
 import FreeLessonForm from './FreeLessonForm'
+import RideCards, { type RideCard } from './RideCards'
 import { siteLocale } from '@/lib/site-locale'
 import { SITE_LOCALE_TAG, translator, withLang, type SiteLocale } from '@/lib/site-i18n'
 import { bikeLessonsStrings } from '@/lib/site-strings/bike-lessons'
@@ -74,9 +75,14 @@ type Ev = {
   organizer_name: string | null
 }
 
-async function readLessons(): Promise<{ lessons: Ev[]; rides: Ev[]; instructors: Instructor[]; slugs: [string, string | null][] }> {
+/** What a ride card adds to the RPC's row: the picture, the meeting spot, the level (event_details, as the calendar reads it). */
+type RideExtra = Omit<RideCard, 'href' | keyof Ev>
+
+const RIDE_FIELDS = 'content_id, image_url, location_address, location_lat, location_lng, event_type, tags, pace, distance_text, no_drop, content_items!inner(body)'
+
+async function readLessons(): Promise<{ lessons: Ev[]; rides: Ev[]; instructors: Instructor[]; slugs: [string, string | null][]; extras: [string, RideExtra][] }> {
   // Slugs travel as pairs: the cache stores JSON, which has no Map.
-  const empty = { lessons: [], rides: [], instructors: [], slugs: [] as [string, string | null][] }
+  const empty = { lessons: [], rides: [], instructors: [], slugs: [] as [string, string | null][], extras: [] as [string, RideExtra][] }
   try {
     const supabase = createServerSupabaseClient()
     const { data, error } = await supabase.rpc('get_bike_lessons')
@@ -86,11 +92,31 @@ async function readLessons(): Promise<{ lessons: Ev[]; rides: Ev[]; instructors:
     const instructors = (data.instructors ?? []) as Instructor[]
     const ids = [...lessons, ...rides].map((e) => e.id)
     const slugs = new Map<string, string | null>()
+    const extras = new Map<string, RideExtra>()
     if (ids.length) {
-      const { data: rows } = await supabase.from('content_items').select('id, slug').in('id', ids)
+      const [{ data: rows }, { data: details }] = await Promise.all([
+        supabase.from('content_items').select('id, slug').in('id', ids),
+        rides.length
+          ? supabase.from('event_details').select(RIDE_FIELDS).in('content_id', rides.map((e) => e.id))
+          : Promise.resolve({ data: [] }),
+      ])
       for (const r of (rows ?? []) as { id: string; slug: string | null }[]) slugs.set(r.id, r.slug)
+      for (const d of (details ?? []) as unknown as (Record<string, unknown> & { content_id: string; content_items: { body: string | null } | null })[]) {
+        extras.set(d.content_id, {
+          image_url: (d.image_url as string | null) ?? null,
+          location_address: (d.location_address as string | null) ?? null,
+          location_lat: d.location_lat == null ? null : Number(d.location_lat),
+          location_lng: d.location_lng == null ? null : Number(d.location_lng),
+          event_type: (d.event_type as string | null) ?? 'group_ride',
+          tags: (d.tags as string[] | null) ?? [],
+          pace: (d.pace as string | null) ?? null,
+          distance_text: (d.distance_text as string | null) ?? null,
+          no_drop: (d.no_drop as boolean | null) ?? null,
+          body: d.content_items?.body ?? null,
+        })
+      }
     }
-    return { lessons, rides, instructors, slugs: [...slugs] }
+    return { lessons, rides, instructors, slugs: [...slugs], extras: [...extras] }
   } catch {
     return empty
   }
@@ -98,11 +124,11 @@ async function readLessons(): Promise<{ lessons: Ev[]; rides: Ev[]; instructors:
 
 // Reading the language renders the page per request; the listings still
 // refresh every ten minutes, as when the whole page was cached for 600s.
-const loadCached = unstable_cache(readLessons, ['bike-lessons-listings'], { revalidate: 600 })
+const loadCached = unstable_cache(readLessons, ['bike-lessons-listings-v2'], { revalidate: 600 })
 
 async function load() {
   const d = await loadCached()
-  return { ...d, slugs: new Map(d.slugs) }
+  return { ...d, slugs: new Map(d.slugs), extras: new Map(d.extras) }
 }
 
 /** "Sat, Nov 7, 10 AM" from the calendar's date and time. */
@@ -140,7 +166,14 @@ const ROW = 'block rounded-[12px] border border-navy/10 bg-white px-4 py-3 trans
 export default async function BikeLessonsPage({ searchParams }: { searchParams: SearchParams }) {
   const locale = await siteLocale((await searchParams).lang)
   const t = translator(bikeLessonsStrings, locale)
-  const { lessons, rides, instructors, slugs } = await load()
+  const { lessons, rides, instructors, slugs, extras } = await load()
+  const rideCards: RideCard[] = rides.slice(0, 6).map((e) => ({
+    event_type: 'group_ride', image_url: null, location_address: null, location_lat: null, location_lng: null,
+    tags: [], pace: null, distance_text: null, no_drop: null, body: null,
+    ...e,
+    ...extras.get(e.id),
+    href: withLang(eventPath({ id: e.id, slug: slugs.get(e.id) ?? null }), locale),
+  }))
   const school = instructors.find((x) => x.kind === 'school')
   const league = instructors.find((x) => x.id === 'league_instructors')
   const seasonal = instructors.filter((x) => x.kind === 'seasonal')
@@ -311,7 +344,7 @@ export default async function BikeLessonsPage({ searchParams }: { searchParams: 
           <p className={`${BODY} mt-4 max-w-[680px]`}>
             {t('lessons.rides_body')}
           </p>
-          {rides.length > 0 && <ul className="mt-6 grid gap-2 md:grid-cols-2">{rides.map(eventRow)}</ul>}
+          {rideCards.length > 0 && <RideCards rides={rideCards} locale={locale} />}
           <Link
             href={withLang('/events', locale)}
             className="mt-5 inline-block text-[1rem] font-bold text-forest underline underline-offset-4 hover:opacity-80"
