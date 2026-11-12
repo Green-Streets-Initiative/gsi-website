@@ -2,7 +2,10 @@ import 'server-only'
 import type Anthropic from '@anthropic-ai/sdk'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { findPlace, forecast } from '@/lib/organizer-assistant/tools'
-import { getTrip, getWalk, inServiceArea } from '@/lib/server/trip'
+import { getTrip, getWalk, getDrive, inServiceArea } from '@/lib/server/trip'
+import { nextMonday830 } from '@/lib/server/reach'
+import { hasBikeRoute, hasTransitRoute } from '@/lib/nearby/reach-ui'
+import { transitFare, weeklyDrive, weeklyTransit } from '@/lib/trip/weekly'
 import { haversineMiles } from '@/lib/nearby/share'
 import { decodePolyline, encodePolyline } from '@/lib/geo/polyline'
 import { eventModeOf } from '@/components/commute/event-card'
@@ -134,7 +137,9 @@ export type TripCard = {
   compare?: {
     miles: number | null
     recommended: string | null
-    ways: { way: string; minutes: number | null; minutes_up_to: number | null; monthly_cost: number }[]
+    /** monthly_cost for builds before 2026-11-12; newer ones show weekly_cost,
+     *  the trip card's own "a week" (Shift CompareCard). */
+    ways: { way: string; minutes: number | null; minutes_up_to: number | null; monthly_cost: number; weekly_cost?: number }[]
   }
 }
 
@@ -1003,6 +1008,15 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
         const vt = (carQ.data as { vehicle_type?: string } | null)?.vehicle_type
         const vehicle = vt === 'hybrid' || vt === 'ev' ? vt : null
         const parking = office && workplace && !workplace.benefits.free_parking ? Number(workplace.benefits.parking_cost_monthly) || 0 : 0
+        // The trip card's engine, alongside: walk, bike, transit and the drive
+        // for a weekday morning, the same rows "See the full trip" opens (one
+        // trip engine, Keith 2026-11-12: the card said 27 min and $55 a month,
+        // the trip card it opened said 25 min and $17 a week).
+        const engine = Promise.all([
+          getTrip(from, to, ((to.name ?? '').trim() || 'Destination').slice(0, 80)).catch(() => null),
+          getWalk(from, to),
+          getDrive(from, to, nextMonday830()),
+        ])
         const res = await fetch(`${FUNCTIONS}/commute-advisor-compare`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, Authorization: `Bearer ${ctx.token}` },
@@ -1042,6 +1056,30 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
         const shuttles = e.shuttle_options ?? []
         const rideable = shuttles.find((s) => s.qualifies) ?? shuttles.find((s) => s.eligible && s.timetable)
         const recommended = e.recommended_with_combos || e.recommended_mode || null
+        // Each plain way in the trip card's numbers: its minutes and a week of
+        // it (src/lib/trip/weekly.ts), less what their employer pays toward
+        // transit and plus what parking costs them at their office, as the
+        // Advisor priced it. The Advisor's own numbers when the engine has no
+        // route that way. Two-part trips and shuttles stay the Advisor's.
+        const [eTrip, eWalk, eDrive] = await engine.catch(() => [null, null, null] as const)
+        const weekOfMonth = (monthly: number) => (monthly * 12) / 52
+        const fromEngine = (mode: string): { minutes: number; weekly: number } | null => {
+          if (mode === 'walk') return eWalk ? { minutes: eWalk.minutes, weekly: 0 } : null
+          if (mode === 'bike') return eTrip && hasBikeRoute(eTrip) ? { minutes: eTrip.bike_minutes, weekly: 0 } : null
+          if (mode === 'transit') {
+            if (!eTrip || !hasTransitRoute(eTrip) || eTrip.transit_minutes == null) return null
+            const week = weeklyTransit(transitFare(eTrip.steps)).cost
+            return { minutes: eTrip.transit_minutes, weekly: Math.max(0, week - weekOfMonth(paid)) }
+          }
+          if (mode === 'drive') return eDrive ? { minutes: eDrive.minutes, weekly: weeklyDrive(eDrive.miles) + weekOfMonth(parking) } : null
+          return null
+        }
+        const plain = ways.map((m) => {
+          const eng = fromEngine(m.mode)
+          const weekly = eng ? eng.weekly : weekOfMonth(netCost(m))
+          return { m, minutes: eng ? eng.minutes : m.time_minutes, minutes_up_to: eng ? null : m.time_minutes_max ?? null, weekly }
+        })
+        const cents = (n: number) => Math.round(n * 100) / 100
         // The card: one row per way, two-part trips priced by the month the
         // way the app's commute screen does (cost_per_day × 20 workdays).
         const card: TripCard | undefined = ctx.screens?.has(CARD_WAYS) && ways.length >= 2 ? {
@@ -1050,12 +1088,14 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
           to: { name: ((to.name ?? '').trim() || 'Destination').slice(0, 80), lat: to.lat, lng: to.lng },
           bike_minutes: null, bike_miles: null, comfort: [], polyline: null, transit_minutes: null,
           compare: {
-            miles: e.distance_miles != null ? round1(e.distance_miles) : null,
+            // Each way has its own distance; one straight-line figure over
+            // them read as wrong next to the trip card's route miles.
+            miles: null,
             recommended,
             ways: [
-              ...ways.map((m) => ({ way: m.mode, minutes: m.time_minutes, minutes_up_to: m.time_minutes_max ?? null, monthly_cost: Math.round(netCost(m)) })),
-              ...twoPart.map((c) => ({ way: c.kind, minutes: c.minutes_total, minutes_up_to: null, monthly_cost: Math.round(c.cost_per_day * 20) })),
-              ...(rideable ? [{ way: 'shuttle', minutes: rideable.minutes_total, minutes_up_to: null, monthly_cost: Math.round(rideable.fare_per_trip * 40) }] : []),
+              ...plain.map((p) => ({ way: p.m.mode, minutes: p.minutes, minutes_up_to: p.minutes_up_to, monthly_cost: Math.round((p.weekly * 52) / 12), weekly_cost: cents(p.weekly) })),
+              ...twoPart.map((c) => ({ way: c.kind, minutes: c.minutes_total, minutes_up_to: null, monthly_cost: Math.round(c.cost_per_day * 20), weekly_cost: cents(c.cost_per_day * 5) })),
+              ...(rideable ? [{ way: 'shuttle', minutes: rideable.minutes_total, minutes_up_to: null, monthly_cost: Math.round(rideable.fare_per_trip * 40), weekly_cost: cents(rideable.fare_per_trip * 10) }] : []),
             ],
           },
         } : undefined
@@ -1070,11 +1110,11 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
           ...(!parking && !(office && workplace?.benefits.free_parking) && ways.some((m) => m.mode === 'drive')
             ? { drive_cost_leaves_out: "Parking where they're going: driving's monthly cost is gas and wear only. Say so in a few words whenever you set it against park and ride or transit, which include their parking and fares." } : {}),
           ...(vehicle ? { drive_priced_for: vehicle === 'ev' ? 'their electric car' : 'their hybrid' } : {}),
-          ...(card ? { card: 'A comparison card shows under your reply: each way with its minutes and monthly cost side by side, the recommended one marked, and buttons for directions and the full trip. Write at most two short sentences with no minutes or dollar amounts (the card shows them): which way you would suggest for them and the one thing that tips it.' } : {}),
+          ...(card ? { card: 'A comparison card shows under your reply: each way with its minutes and weekly cost side by side, the recommended one marked, and buttons for directions and the full trip. Write at most two short sentences with no minutes or dollar amounts (the card shows them): which way you would suggest for them and the one thing that tips it.' } : {}),
           miles: e.distance_miles != null ? round1(e.distance_miles) : null,
           recommended,
-          ways: (e.modes ?? []).filter((m) => m.viable).map((m) => ({
-            way: m.mode, minutes: m.time_minutes, minutes_up_to: m.time_minutes_max ?? null, monthly_cost: Math.round(netCost(m)), leave_by: m.leave_by ?? null, detail: m.detail,
+          ways: plain.map((p) => ({
+            way: p.m.mode, minutes: p.minutes, minutes_up_to: p.minutes_up_to, weekly_cost: cents(p.weekly), monthly_cost: Math.round((p.weekly * 52) / 12), leave_by: p.m.leave_by ?? null, detail: p.m.detail,
           })),
           // Monthly like the ways above, as the card does (a day's cost × 20
           // workdays): "$17.60 a day" next to "$128.73 a month" didn't compare.

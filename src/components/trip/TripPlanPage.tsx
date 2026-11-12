@@ -465,7 +465,7 @@ function TripWays({ row, way, onPick, fmt, tt, weekly }: {
     walk: tt('trip.weekly', { cost: '$0' }),
     bike: tt('trip.weekly_bike'),
     transit: hasTransitRoute(row)
-      ? tt(transitWeek.pass ? 'trip.weekly_pass' : transitWeek.from ? 'trip.weekly_from' : 'trip.weekly', { cost: weeklyUsd(transitWeek.cost) })
+      ? tt(transitWeek.monthPass ? 'trip.weekly_month_pass' : transitWeek.pass ? 'trip.weekly_pass' : transitWeek.from ? 'trip.weekly_from' : 'trip.weekly', { cost: weeklyUsd(transitWeek.cost) })
       : null,
     drive: row.drive ? tt('trip.weekly_drive', { cost: weeklyUsd(weeklyDrive(row.drive.miles)) }) : null,
   }
