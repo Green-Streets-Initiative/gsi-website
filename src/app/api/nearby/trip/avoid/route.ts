@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
+import { flagOnFor } from '@/lib/feature-flags'
 import { getTripAvoiding, inServiceArea } from '@/lib/server/trip'
 
 /**
@@ -89,18 +90,6 @@ async function gate(token: string | undefined): Promise<NextResponse | null> {
 
 /** Same rule as the app's isFlagOnForUser: a user row wins, then the flag's
  *  own switch and rollout (float FNV bucket, never Math.imul). */
-async function aroundYouV2On(userId: string): Promise<boolean> {
-  const db = createServerSupabaseClient()
-  const [flag, mine] = await Promise.all([
-    db.from('app_feature_flags').select('enabled, rollout_percent').eq('name', 'around_you_v2').maybeSingle(),
-    db.from('app_feature_flag_users').select('user_id').eq('flag_name', 'around_you_v2').eq('user_id', userId).maybeSingle(),
-  ])
-  if (!mine.error && mine.data) return true
-  const f = flag.data as { enabled: boolean; rollout_percent: number | null } | null
-  if (flag.error || !f?.enabled) return false
-  const pct = f.rollout_percent ?? 0
-  if (pct >= 100) return true
-  let h = 2166136261
-  for (let i = 0; i < userId.length; i++) { h ^= userId.charCodeAt(i); h = (h * 16777619) >>> 0 }
-  return pct > 0 && h % 100 < pct
+function aroundYouV2On(userId: string): Promise<boolean> {
+  return flagOnFor(createServerSupabaseClient(), 'around_you_v2', userId)
 }

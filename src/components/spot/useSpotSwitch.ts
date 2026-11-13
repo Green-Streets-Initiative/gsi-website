@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import { flagOnForEveryone } from '@/lib/feature-flags'
 
 /**
  * Whether "Report a spot" shows on this site: the `report_a_spot` switch in
@@ -18,21 +19,7 @@ const FLAG = 'report_a_spot'
 let flagPromise: Promise<boolean> | null = null
 
 function readFlag(): Promise<boolean> {
-  if (!flagPromise) {
-    flagPromise = (async () => {
-      try {
-        const { data, error } = await supabase
-          .from('app_feature_flags')
-          .select('enabled, rollout_percent')
-          .eq('name', FLAG)
-          .maybeSingle()
-        const f = data as { enabled: boolean; rollout_percent: number | null } | null
-        return !error && !!f?.enabled && (f.rollout_percent ?? 0) >= 100
-      } catch {
-        return false
-      }
-    })()
-  }
+  if (!flagPromise) flagPromise = flagOnForEveryone(supabase, FLAG)
   return flagPromise
 }
 

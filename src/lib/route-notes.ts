@@ -17,6 +17,7 @@
  * The /notes/<id> page works either way: OpenStreetMap notes link to it.
  */
 import { supabase } from '@/lib/supabase'
+import { flagOnForEveryone } from '@/lib/feature-flags'
 import { translator, type SiteLocale, type Vars } from '@/lib/site-i18n'
 import { notesStrings, type NotesKey } from '@/lib/site-strings/notes'
 
@@ -93,19 +94,7 @@ let switchPromise: Promise<boolean> | null = null
 /** Whether route notes show on this site: on for everyone, or off. Off on any error. One read per page load. */
 export function readNotesSwitch(): Promise<boolean> {
   if (!switchPromise) {
-    switchPromise = (async () => {
-      try {
-        const { data, error } = await supabase
-          .from('app_feature_flags')
-          .select('enabled, rollout_percent')
-          .eq('name', NOTES_FLAG)
-          .maybeSingle()
-        const f = data as { enabled: boolean; rollout_percent: number | null } | null
-        return !error && !!f?.enabled && (f.rollout_percent ?? 0) >= 100
-      } catch {
-        return false
-      }
-    })()
+    switchPromise = flagOnForEveryone(supabase, NOTES_FLAG)
     // A server render must not keep "off" for the life of the process.
     if (typeof window === 'undefined') {
       const p = switchPromise

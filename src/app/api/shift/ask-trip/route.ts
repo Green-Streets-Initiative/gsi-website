@@ -23,6 +23,7 @@ import { createHmac, timingSafeEqual } from 'node:crypto'
 import Anthropic from '@anthropic-ai/sdk'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
+import { flagState } from '@/lib/feature-flags'
 import { inServiceArea } from '@/lib/server/trip'
 import { PREVIEW_DAILY_CAP, PREVIEW_PERSON_CAP, VISITOR_DAILY_CAP, VISITOR_IP_DAILY_CAP, VISITOR_MONTHLY_CAP } from '@/lib/shift-assistant/caps'
 import { VISITOR_PROMPT, VISITOR_STEP, VISITOR_TOOLS, runVisitorTool, visitorContext, type VisitorLink, type VisitorTrip } from '@/lib/shift-assistant/visitor'
@@ -90,10 +91,8 @@ function tokenOk(token: unknown, visitor: string): boolean {
 }
 
 async function switchState(admin: SupabaseClient): Promise<{ on: boolean; rollout: number }> {
-  const { data } = await admin.from('app_feature_flags').select('enabled, rollout_percent').eq('name', FLAG).maybeSingle()
-  const f = data as { enabled: boolean; rollout_percent: number | null } | null
-  const rollout = Math.max(0, Math.min(100, Number(f?.rollout_percent ?? 0)))
-  return { on: !!f?.enabled && rollout > 0, rollout }
+  const f = await flagState(admin, FLAG)
+  return { on: f.enabled && f.rollout > 0, rollout: f.rollout }
 }
 
 async function logUsage(admin: SupabaseClient, feature: string, model: string, u: Anthropic.Usage | Anthropic.Beta.BetaUsage) {

@@ -1,6 +1,7 @@
 import posthog from 'posthog-js'
 import { siteTime, type SiteLocale } from '@/lib/site-i18n'
 import { supabase } from '@/lib/supabase'
+import { flagOnFor } from '@/lib/feature-flags'
 import type { PartnerLanguage } from './languages'
 
 /**
@@ -56,27 +57,9 @@ export function track(event: `together_${string}`, props?: Record<string, unknow
   try { posthog.capture(event, { surface: 'web', ...props }) } catch { /* analytics never blocks */ }
 }
 
-/** The app's rolloutBucket (Shift lib/feature-flags.ts): float FNV, never Math.imul. */
-function rolloutBucket(userId: string): number {
-  let h = 2166136261
-  for (let i = 0; i < userId.length; i++) {
-    h ^= userId.charCodeAt(i)
-    h = (h * 16777619) >>> 0
-  }
-  return h % 100
-}
-
 /** Whether Shift Together is on for this person (the commute_partners switch). False on any error. */
-export async function togetherOn(userId: string): Promise<boolean> {
-  const [flag, mine] = await Promise.all([
-    supabase.from('app_feature_flags').select('enabled, rollout_percent').eq('name', 'commute_partners').maybeSingle(),
-    supabase.from('app_feature_flag_users').select('user_id').eq('flag_name', 'commute_partners').eq('user_id', userId).maybeSingle(),
-  ])
-  if (!mine.error && mine.data) return true
-  const f = flag.data as { enabled: boolean; rollout_percent: number | null } | null
-  if (flag.error || !f?.enabled) return false
-  const pct = f.rollout_percent ?? 0
-  return pct >= 100 || (pct > 0 && rolloutBucket(userId) < pct)
+export function togetherOn(userId: string): Promise<boolean> {
+  return flagOnFor(supabase, 'commute_partners', userId)
 }
 
 export type PartnerRequest = {
