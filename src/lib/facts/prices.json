@@ -34,8 +34,8 @@
     "_incomeEligibleSource": "bluebikes.com/pricing, read 2026-10-16: $5 a month or $50 a year."
   },
   "driving": {
-    "gasPerGallonMa": 3.59,
-    "maintPerMile": 0.109,
+    "gasPerGallonMa": 4.10,
+    "maintPerMile": 0.117,
     "parkingDailyBoston": 18,
     "aaaAnnualOwnership": 12863,
     "aaaFixedAnnual": 7704,
