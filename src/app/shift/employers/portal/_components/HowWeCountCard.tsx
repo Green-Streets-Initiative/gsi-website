@@ -7,11 +7,7 @@ export type HowWeCountItem = { title: string; body: string }
 
 /** The EPA factors the database uses (Emission Factors Hub 2025, Table 10). */
 export const EPA_FACTOR_LINE =
-  "Emission factors from the EPA's 2025 Emission Factors Hub (Table 10), in kg of CO₂e per mile. Car driven alone: 0.297 for gas, 0.191 for a hybrid, 0.120 for an electric car, by the car each person told Shift they drive. Per rider: bus 0.066, subway and light rail 0.093, commuter rail and ferry 0.133."
-
-/** The method behind the plain kg figure, when the database sends only that one. */
-export const LEGACY_CO2_LINE =
-  'CO₂ avoided is every mile not driven × 0.404 kg, the fleet-average figure for a gasoline car.'
+  "Emission factors from the EPA's 2025 Emission Factors Hub (Table 10), in kg of CO₂e per mile. Car driven alone: 0.297 for gas, 0.191 for a hybrid, 0.120 for an electric car, by the car each person told Shift they drive. Per rider: bus 0.066, subway and light rail 0.093, commuter rail and ferry 0.133. A carpool counts as half a car, and a trip marked Other counts nothing. The Shift app, town pages and statewide totals use the same factors."
 
 /** Definitions in plain words, in the order the page shows its numbers. */
 export const HOW_WE_COUNT: HowWeCountItem[] = [
@@ -55,10 +51,9 @@ export const HOW_WE_COUNT: HowWeCountItem[] = [
 
 /**
  * How every number on the Impact page is counted, in plain words, with the
- * emission factors and their source; `legacy` describes the plain 0.404 kg
- * method when that is the figure on the page.
+ * emission factors and their source.
  */
-export default function HowWeCountCard({ legacy = false }: { legacy?: boolean }) {
+export default function HowWeCountCard() {
   return (
     <Card id="how-we-count">
       <CardHead title="How we count" sub="What each figure means and where the factors come from" />
@@ -72,7 +67,7 @@ export default function HowWeCountCard({ legacy = false }: { legacy?: boolean })
           ))}
         </dl>
         <p className="mt-5 border-t border-line pt-4 text-[14px] leading-[1.55] text-ink-tertiary">
-          {legacy ? LEGACY_CO2_LINE : EPA_FACTOR_LINE}
+          {EPA_FACTOR_LINE}
         </p>
       </CardBody>
     </Card>

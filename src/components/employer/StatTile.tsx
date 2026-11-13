@@ -9,12 +9,10 @@ import { SHIFT_RATE_DEF } from '@/lib/employer/definitions'
 export const STAT_HINTS = {
   activeTrips: 'Walks, bike and scooter rides, and bus, train or ferry trips recorded by Shift. Carpools count toward Shift Rate instead.',
   miles: 'Miles travelled on those trips',
-  /** The legacy kg figure (Home, the weekly email): every mile not driven × 0.404 kg. */
+  /** The CO₂e figure where the number stands alone (Home, the weekly email). */
   co2: 'Compared with driving alone the same distance',
   /** The on-screen CO₂e figure on Impact: kilograms, like every ESG framework. */
   co2Kg: 'Kilograms of CO₂e. ESG reports use metric units.',
-  /** The legacy kg figure when it appears on Impact, where the sentence already says "compared with driving alone". */
-  co2KgLegacy: 'Kilograms of CO₂, at the EPA average for a passenger car. ESG reports use metric units.',
   /** The tonnes figure on the printed report. */
   co2Tonnes:
     'Tonnes of CO₂-equivalent your team avoided compared with driving alone the same distance, using EPA 2025 emission factors and net of the bus or train they took instead',

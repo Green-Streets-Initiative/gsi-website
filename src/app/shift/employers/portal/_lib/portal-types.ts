@@ -127,7 +127,7 @@ export type DashboardData = {
   trips_this_period: number
   active_trips_this_period: number
   miles_shifted: number
-  /** Legacy figure: every non-drive mile × 0.404 kg. Kept for the digest and Home. */
+  /** The same EPA figure as co2_avoided_kg_v2 since Shift 01774 (the old flat 0.404 kg a mile is gone). */
   co2_avoided_kg: number
   mode_breakdown: Array<{ mode: string; trip_count: number; miles?: number }>
   shift_rate_trip_pct: number

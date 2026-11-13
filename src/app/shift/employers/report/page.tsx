@@ -17,7 +17,7 @@ import { trendValues } from '@/lib/impact-sparkline'
 import ShiftRateChart from '@/components/employer/ShiftRateChart'
 import { changeRows, changeTone, comparisonPeriods } from '@/app/shift/employers/portal/_components/ChangeStrip'
 import { peerRows, peerCountLine, PEER_COPY } from '@/app/shift/employers/portal/_components/PeerBenchmarkCard'
-import { HOW_WE_COUNT, EPA_FACTOR_LINE, LEGACY_CO2_LINE } from '@/app/shift/employers/portal/_components/HowWeCountCard'
+import { HOW_WE_COUNT, EPA_FACTOR_LINE } from '@/app/shift/employers/portal/_components/HowWeCountCard'
 import { prettyMode } from '@/app/shift/employers/portal/_lib/portal-utils'
 import type { DashboardData, PeerBenchmark } from '@/app/shift/employers/portal/_lib/portal-types'
 
@@ -183,12 +183,10 @@ export default async function EmployerReportPage({
 
   // In plain words (Keith 2026-10-01): what the figure is, then how it is
   // worked out. The factors and their source are under How we count.
-  const legacyCo2 = dashboard.co2_avoided_kg_v2 == null
-  const co2Kg = legacyCo2 ? dashboard.co2_avoided_kg : dashboard.co2_avoided_kg_v2!
-  const co2Lead = `${formatCo2(co2Kg)} of ${legacyCo2 ? 'CO₂' : 'CO₂e'} avoided.`
-  const co2Line = legacyCo2
-    ? 'What a gasoline car would have emitted driving the same miles.'
-    : "The emissions of driving alone over the same miles, minus the emissions of the way people actually went. Walking and biking count as zero; for a bus or train trip we subtract that vehicle's emissions per rider."
+  const co2Kg = dashboard.co2_avoided_kg_v2 ?? dashboard.co2_avoided_kg ?? 0
+  const co2Lead = `${formatCo2(co2Kg)} of CO₂e avoided.`
+  const co2Line =
+    "The emissions of driving alone over the same miles, minus the emissions of the way people actually went. Walking and biking count as zero; for a bus or train trip we subtract that vehicle's emissions per rider."
 
   const rows = prior ? changeRows(dashboard, prior) : null
   const periods = prior ? comparisonPeriods(dashboard, prior, win.key === 'custom' ? 'Your dates' : win.label, nowMs) : null
@@ -477,7 +475,7 @@ export default async function EmployerReportPage({
                 </div>
               ))}
             </dl>
-            <p className="mt-4 text-[12.5px] leading-[1.5] text-ink-soft">{legacyCo2 ? LEGACY_CO2_LINE : EPA_FACTOR_LINE}</p>
+            <p className="mt-4 text-[12.5px] leading-[1.5] text-ink-soft">{EPA_FACTOR_LINE}</p>
           </section>
 
           <footer className="mt-6 flex flex-wrap items-center justify-between gap-x-6 gap-y-1 border-t-2 border-navy pt-3 text-[13.5px]">

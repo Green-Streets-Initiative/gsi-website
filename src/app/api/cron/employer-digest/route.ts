@@ -46,8 +46,8 @@ type DashboardRow = {
   active_trips_this_period: number
   miles_shifted: number
   co2_avoided_kg: number
-  /** The portal's CO₂e figure (per-mode factors and the rider's car). The
-   * legacy co2_avoided_kg above is a flat 0.404 kg a mile, about 3x higher. */
+  /** The portal's CO₂e figure (per-mode factors and the rider's car).
+   * co2_avoided_kg above carries the same number since Shift 01774. */
   co2_avoided_kg_v2?: number
   /** Share of ground travel emissions shifted (Shift migration 01591): CO₂
    * avoided over CO₂ had every ground mile been driven alone. The same figure

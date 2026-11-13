@@ -334,22 +334,14 @@ export default function ImpactPage() {
   }, [dashboard, win.days])
 
   // The CO₂ line in plain words (Keith 2026-10-01): the figure, then what it
-  // is. kg below a tonne, t above (formatCo2). The EPA-factor figure when the
-  // database sends it, else the plain 0.404 kg figure. Never a smartphone
+  // is. kg below a tonne, t above (formatCo2). EPA factors per mode and car,
+  // the one method every CO₂ figure uses (Shift 01774). Never a smartphone
   // equivalent.
   const co2Line = useMemo(() => {
     if (!dashboard) return null
-    if (dashboard.co2_avoided_kg_v2 != null) {
-      return {
-        text: `${formatCo2(dashboard.co2_avoided_kg_v2)} of CO₂e avoided.`,
-        hint: STAT_HINTS.co2Kg,
-        legacy: false,
-      }
-    }
     return {
-      text: `${formatCo2(dashboard.co2_avoided_kg)} of CO₂ avoided.`,
-      hint: STAT_HINTS.co2KgLegacy,
-      legacy: true,
+      text: `${formatCo2(dashboard.co2_avoided_kg_v2 ?? dashboard.co2_avoided_kg ?? 0)} of CO₂e avoided.`,
+      hint: STAT_HINTS.co2Kg,
     }
   }, [dashboard])
 
@@ -718,7 +710,7 @@ export default function ImpactPage() {
       </div>
 
       <div {...tabPanelProps('impact', 'how')} hidden={tab !== 'how'} className="outline-none">
-        <HowWeCountCard legacy={co2Line?.legacy ?? true} />
+        <HowWeCountCard />
       </div>
     </div>
   )
