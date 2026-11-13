@@ -98,6 +98,9 @@ interface Props {
    *  drawn trip picks that point, named after the road under it when the
    *  basemap knows one. Lanes and corridors don't take the tap meanwhile. */
   onPickPoint?: (point: { lat: number; lng: number; name: string | null }) => void
+  /** Pan (never zoom) so this point shows clear of the sheet or card: the
+   *  place picked from Go through a place's search. */
+  panPoint?: { lat: number; lng: number } | null
   /** Fit viewport to user + this many nearest markers, once (default: all) */
   fitCount?: number
   /** Extra coordinates the one-time fit must include (e.g. corridor access
@@ -223,7 +226,7 @@ const TRAFFIC_STORAGE_KEY = 'nearby.traffic'
 export default function NearbyMap({
   center, markers, lines, paintedVisible = true, separatedVisible = true, trafficVisible = false,
   corridorLines, selectedCorridorId = null, highlightedStreetKey = null, onCorridorSelect,
-  onMarkerTap, onLaneTap, onReachLegTap, onSpotPress, onPickPoint,
+  onMarkerTap, onLaneTap, onReachLegTap, onSpotPress, onPickPoint, panPoint,
   fitCount, extraFitPoints, fitToLines = false, lineEmphasis = false,
   cooperative = true, controls, fitPadding, focusPoint, focusPadding, holdSelectionFit = false,
   heightClass = 'h-[320px] sm:h-[380px]',
@@ -376,6 +379,13 @@ export default function NearbyMap({
       })
 
       attachSpotPress(map, (p) => {
+        // Picking a place to go through: press and hold picks it too, as in the app
+        const pick = onPickPointRef.current
+        if (pick) {
+          suppressClickUntilRef.current = Date.now() + 700
+          pick({ ...p, name: nearestRoadName(map, p, null) })
+          return true
+        }
         const report = onSpotPressRef.current
         if (!report) return false
         suppressClickUntilRef.current = Date.now() + 700
@@ -657,6 +667,19 @@ export default function NearbyMap({
     })
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [focusPoint?.lat, focusPoint?.lng])
+
+  // Pan to a searched place (Go through a place): the same window as the
+  // point focus, at the zoom the reader chose, so the trip stays in view.
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !panPoint) return
+    const p = clampedPadding(map, focusPaddingRef.current ?? fitPaddingRef.current, 52)
+    const offset: [number, number] = typeof p === 'number'
+      ? [0, 0]
+      : [(p.left - p.right) / 2, (p.top - p.bottom) / 2]
+    map.easeTo({ center: [panPoint.lng, panPoint.lat], offset, duration: 500 })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [panPoint?.lat, panPoint?.lng])
 
   return <div ref={containerRef} className={`${heightClass} w-full`} />
 }

@@ -108,6 +108,8 @@ export function useGoThrough({ activeRowId, goThrough, onChanged }: {
     onMapPick,
     /** The spot being asked about, for the map pin. */
     pendingSpot: pending && pending.rowId === activeRowId ? { lat: pending.lat, lng: pending.lng } : null,
+    /** A place picked from the search, for the map to pan to. */
+    searchSpot: pending && pending.rowId === activeRowId && pending.via === 'search' ? { lat: pending.lat, lng: pending.lng } : null,
   }
 }
 
@@ -127,6 +129,8 @@ export default function GoThroughPlace({ open, onOpenChange, pending, note, onPi
   const tr = useNearbyT()
   const tone = useNearbyTone()
   const [query, setQuery] = useState('')
+  // Nothing matched what's typed: say so, and point at the map
+  const [noMatches, setNoMatches] = useState(false)
   const boxRef = useRef<HTMLDivElement>(null)
 
   // A spot picked on the map, or the answer, may land below the fold
@@ -135,7 +139,10 @@ export default function GoThroughPlace({ open, onOpenChange, pending, note, onPi
     if (showing) boxRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
   }, [showing])
   useEffect(() => {
-    if (!open) setQuery('')
+    if (!open) {
+      setQuery('')
+      setNoMatches(false)
+    }
   }, [open])
 
   const closeBtn = (onClick: () => void) => (
@@ -221,7 +228,11 @@ export default function GoThroughPlace({ open, onOpenChange, pending, note, onPi
         <div className="mt-2">
           <AddressAutocomplete
             value={query}
-            onChange={setQuery}
+            onChange={(q) => {
+              setQuery(q)
+              if (q.trim().length < 3) setNoMatches(false)
+            }}
+            onResults={(count) => setNoMatches(count === 0)}
             onPlaceSelected={(p) => onPick({ lat: p.lat, lng: p.lng, name: p.address.split(',')[0].trim() || p.address })}
             variant={tone === 'dark' ? 'dark' : 'light'}
             label={null}
@@ -229,6 +240,9 @@ export default function GoThroughPlace({ open, onOpenChange, pending, note, onPi
             includeAreas
           />
         </div>
+        {noMatches && (
+          <p className="mt-2 text-[14px] leading-snug text-(--nb-ink-80)" role="status">{tr('v2.through_search_none')}</p>
+        )}
         <p className="mt-3 flex items-center gap-2 text-[14px] leading-snug text-(--nb-ink-80)">
           <MapPin size={16} className="shrink-0" aria-hidden="true" />
           {tr('v2.through_or_tap')}

@@ -37,6 +37,9 @@ type Props = {
   /** Also suggest neighborhoods, squares and towns, not only addresses and
    *  businesses (trip planning, where "Davis Square" is a fine answer). */
   includeAreas?: boolean
+  /** How many suggestions came back for what's typed (3+ characters), so a
+   *  page can say when nothing matched. */
+  onResults?: (count: number) => void
 }
 
 export default function AddressAutocomplete({
@@ -51,6 +54,7 @@ export default function AddressAutocomplete({
   placeholder = 'Start typing an address…',
   autoFocus,
   includeAreas = false,
+  onResults,
 }: Props) {
   const [predictions, setPredictions] = useState<Prediction[]>([])
   const [open, setOpen] = useState(false)
@@ -72,6 +76,8 @@ export default function AddressAutocomplete({
   const listId = useId()
   const optionId = (i: number) => `${listId}-opt-${i}`
   const expanded = open && predictions.length > 0
+  const onResultsRef = useRef(onResults)
+  onResultsRef.current = onResults
 
   const isDark = variant === 'dark'
 
@@ -95,6 +101,7 @@ export default function AddressAutocomplete({
       const items: Prediction[] = data.predictions || []
 
       setPredictions(items)
+      onResultsRef.current?.(items.length)
       setActive(-1)
       // Only open while the person is still in this field: a response that
       // lands after they've tabbed on must not cover the next field.

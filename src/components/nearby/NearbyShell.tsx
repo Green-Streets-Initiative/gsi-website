@@ -482,6 +482,7 @@ export default function NearbyShell({
           onReachLegTap={handleLegTap}
           onSpotPress={spotPress.onSpotPress}
           onPickPoint={through.onMapPick}
+          panPoint={through.searchSpot}
           fitCount={7}
           extraFitPoints={accessPoints}
           cooperative={false}
