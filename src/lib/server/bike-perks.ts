@@ -10,17 +10,26 @@ import { perkKind, perksAlong, type BikePerk } from '@/lib/bike-perks'
  */
 export async function bikePerkPool(): Promise<BikePerk[]> {
   const places = await bikeFriendlyPlaces()
-  return places.flatMap((x) => x.source !== 'bicycle_benefits' || !x.perk ? [] : [{
-    name: x.name,
-    perk: x.perk,
-    kind: perkKind(x.category),
-    lat: x.lat,
-    lng: x.lng,
-    address: x.address ?? null,
-    url: webUrl(x.url),
-    stickers: !!x.stickers,
-    pump: !!x.pump,
-  }])
+  // The list carries some businesses twice, the offer worded two ways (Mass
+  // Ave Diner, 2026-11-13); a rider should see each place once
+  const seen = new Set<string>()
+  return places.flatMap((x) => {
+    if (x.source !== 'bicycle_benefits' || !x.perk) return []
+    const key = `${x.name.trim().toLowerCase()}|${x.lat.toFixed(4)}|${x.lng.toFixed(4)}`
+    if (seen.has(key)) return []
+    seen.add(key)
+    return [{
+      name: x.name,
+      perk: x.perk,
+      kind: perkKind(x.category),
+      lat: x.lat,
+      lng: x.lng,
+      address: x.address ?? null,
+      url: webUrl(x.url),
+      stickers: !!x.stickers,
+      pump: !!x.pump,
+    }]
+  })
 }
 
 /** The list's website field, sometimes written without https://. */
