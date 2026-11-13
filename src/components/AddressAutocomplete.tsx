@@ -2,6 +2,9 @@
 
 import { createContext, useContext, useState, useRef, useEffect, useCallback, useId, type KeyboardEvent } from 'react'
 
+/** Addresses, buildings, places and neighborhoods (Google allows five). */
+const PLACE_TYPES = ['street_address', 'premise', 'subpremise', 'establishment', 'neighborhood']
+
 /**
  * Where the map is, for every address box inside it: suggestions rank places
  * near this point first (parity gap-place-search). /nearby provides its
@@ -99,6 +102,7 @@ export default function AddressAutocomplete({
 
   const isDark = variant === 'dark'
 
+  const parsesAddress = !!onAddressParsed
   const fetchPredictions = useCallback(async (input: string) => {
     const req = ++requestRef.current
     if (input.length < 3) {
@@ -111,9 +115,12 @@ export default function AddressAutocomplete({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         // An empty type list asks for every kind of place (see the route).
+        // Otherwise addresses and places, plus neighborhoods ("Davis Square",
+        // "Kendall Square") unless this box fills in a mailing address: the
+        // squares came after their donut shops and police stations.
         body: JSON.stringify({
           input,
-          ...(includeAreas ? { types: [] } : {}),
+          ...(includeAreas ? { types: [] } : parsesAddress ? {} : { types: PLACE_TYPES }),
           ...(nearLat !== null && nearLng !== null ? { near: { lat: nearLat, lng: nearLng } } : {}),
         }),
       })
@@ -131,7 +138,7 @@ export default function AddressAutocomplete({
     } catch {
       if (req === requestRef.current) setPredictions([])
     }
-  }, [includeAreas, nearLat, nearLng])
+  }, [includeAreas, nearLat, nearLng, parsesAddress])
 
   function handleInput(val: string) {
     onChange(val)
