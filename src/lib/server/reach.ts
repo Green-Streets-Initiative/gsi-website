@@ -38,7 +38,7 @@ import { PRICES } from '@/lib/facts/prices'
  * while local testing (which deletes .next and varies coordinates) missed
  * both stale layers entirely. One constant, four call sites, no drift.
  */
-export const REACH_ROW_VERSION = 'v20' // v20: transit steps carry routeType + shuttle (the mode icon before each line chip)
+export const REACH_ROW_VERSION = 'v21' // v21: curated rows carry walk_minutes, a real walking route (the app's list matched the trip card)
 
 const GOOGLE_ROUTES_KEY = process.env.GOOGLE_ROUTES_API_KEY
 
@@ -190,7 +190,17 @@ export interface ReachRow {
     polyline: string
     comfort: BikeComfort | null
   } | null
+  /** Curated list only: minutes on Google's walking route, the same number
+   *  the trip card shows (it was a straight-line guess, ~22 min where the
+   *  card said 31). Null past LIST_WALK_MAX_MILES or when Google didn't
+   *  answer; absent on planned trips, which carry the full `walk` instead. */
+  walk_minutes?: number | null
 }
+
+/** The app's list shows a walk up to 40 minutes. A walking route is never
+ *  shorter than the straight line, and 40 minutes at 80 m/min is 2 miles of
+ *  straight line, so past that there's nothing to ask Google for. */
+const LIST_WALK_MAX_MILES = 2
 
 const cache = new Map<
   string,
@@ -1366,8 +1376,15 @@ async function computeReach(
     getCrashClusters(lat3, lng3, 6),
   ])
 
+  const origin = { lat: lat3, lng: lng3 }
   const rows: ReachRow[] = await Promise.all(
-    candidates.map(d => buildReachRow({ lat: lat3, lng: lng3 }, d, laneIndex, departureTime, crashes))
+    candidates.map(async d => {
+      const [row, walk] = await Promise.all([
+        buildReachRow(origin, d, laneIndex, departureTime, crashes),
+        d.distance_miles <= LIST_WALK_MAX_MILES ? queryWalkRoute(origin, d) : Promise.resolve(null),
+      ])
+      return { ...row, walk_minutes: walk?.minutes ?? null }
+    })
   )
 
   rows.sort((a, b) => (a.transit_minutes ?? 999) - (b.transit_minutes ?? 999))
