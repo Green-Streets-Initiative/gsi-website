@@ -13,7 +13,7 @@ export const bikeLessonsStrings = defineStrings(
   {
     'lessons.meta_title': 'Bike lessons for adults in Massachusetts | Green Streets Initiative',
     'lessons.meta_description':
-      'Bike lessons for adults, from your first ride to riding on busy streets. A free one-on-one street lesson near Somerville, learn-to-ride classes and easy group rides.',
+      'Bike lessons for adults, from your first ride to riding on busy streets. A free one-on-one street lesson in Boston and nearby towns, learn-to-ride classes and easy group rides.',
     'lessons.hero_title': 'Learn to bike in the city.',
     'lessons.hero_lede':
       'Lessons for adults, whether you’re getting on a bike for the first time or you can ride but busy streets make you nervous. Many are free.',
@@ -21,7 +21,7 @@ export const bikeLessonsStrings = defineStrings(
       'Green Streets Initiative is a Massachusetts nonprofit that has helped people walk, bike and take transit more since 2006.',
     'lessons.start_heading': 'Where are you starting?',
     'lessons.start_nervous': 'I can ride, but traffic makes me nervous',
-    'lessons.start_nervous_hint': 'A free 1:1 lesson on real streets, near Somerville.',
+    'lessons.start_nervous_hint': 'A free 1:1 lesson on real streets, in Boston and nearby towns.',
     'lessons.start_learn': 'I’m not sure I can ride',
     'lessons.start_learn_hint': 'Learn-to-ride classes for adults.',
     'lessons.start_company': 'I’d like company the first time',
@@ -122,7 +122,7 @@ export const bikeLessonsStrings = defineStrings(
     es: {
       'lessons.meta_title': 'Clases de bici para adultos en Massachusetts | Green Streets Initiative',
       'lessons.meta_description':
-        'Clases de bici para adultos, desde tu primer paseo hasta andar por calles con mucho tráfico. Una clase individual gratis en la calle cerca de Somerville, clases para aprender a andar y paseos en grupo tranquilos.',
+        'Clases de bici para adultos, desde tu primer paseo hasta andar por calles con mucho tráfico. Una clase individual gratis en las calles de Boston y pueblos cercanos, clases para aprender a andar y paseos en grupo tranquilos.',
       'lessons.hero_title': 'Aprende a andar en bici en la ciudad.',
       'lessons.hero_lede':
         'Clases para adultos, ya sea que te subas a una bici por primera vez o que sepas andar pero las calles con tráfico te pongan nervioso. Muchas son gratis.',
@@ -130,7 +130,7 @@ export const bikeLessonsStrings = defineStrings(
         'Green Streets Initiative es una organización sin fines de lucro de Massachusetts que desde 2006 ayuda a la gente a caminar, andar en bici y usar el transporte público más.',
       'lessons.start_heading': '¿Desde dónde empiezas?',
       'lessons.start_nervous': 'Sé andar en bici, pero el tráfico me pone nervioso',
-      'lessons.start_nervous_hint': 'Una clase individual gratis en calles reales, cerca de Somerville.',
+      'lessons.start_nervous_hint': 'Una clase individual gratis en calles reales, en Boston y pueblos cercanos.',
       'lessons.start_learn': 'No estoy seguro de saber andar en bici',
       'lessons.start_learn_hint': 'Clases para que los adultos aprendan a andar.',
       'lessons.start_company': 'Me gustaría ir acompañado la primera vez',
@@ -231,7 +231,7 @@ export const bikeLessonsStrings = defineStrings(
     'pt-BR': {
       'lessons.meta_title': 'Aulas de bike para adultos em Massachusetts | Green Streets Initiative',
       'lessons.meta_description':
-        'Aulas de bike para adultos, da primeira pedalada até andar em ruas movimentadas. Uma aula individual grátis na rua perto de Somerville, aulas para aprender a pedalar e passeios em grupo tranquilos.',
+        'Aulas de bike para adultos, da primeira pedalada até andar em ruas movimentadas. Uma aula individual grátis nas ruas de Boston e cidades vizinhas, aulas para aprender a pedalar e passeios em grupo tranquilos.',
       'lessons.hero_title': 'Aprenda a pedalar na cidade.',
       'lessons.hero_lede':
         'Aulas para adultos, seja para subir numa bike pela primeira vez ou para quem já sabe andar mas fica nervoso em ruas movimentadas. Muitas são grátis.',
@@ -239,7 +239,7 @@ export const bikeLessonsStrings = defineStrings(
         'A Green Streets Initiative é uma organização sem fins lucrativos de Massachusetts que, desde 2006, ajuda as pessoas a caminhar, pedalar e usar mais o transporte público.',
       'lessons.start_heading': 'Onde você está começando?',
       'lessons.start_nervous': 'Sei andar, mas o trânsito me deixa nervoso',
-      'lessons.start_nervous_hint': 'Uma aula individual grátis em ruas de verdade, perto de Somerville.',
+      'lessons.start_nervous_hint': 'Uma aula individual grátis em ruas de verdade, em Boston e cidades vizinhas.',
       'lessons.start_learn': 'Não tenho certeza se sei andar de bike',
       'lessons.start_learn_hint': 'Aulas para adultos aprenderem a pedalar.',
       'lessons.start_company': 'Quero companhia na primeira vez',
@@ -340,14 +340,14 @@ export const bikeLessonsStrings = defineStrings(
     'zh-Hans': {
       'lessons.meta_title': '马萨诸塞州成人自行车课 | Green Streets Initiative',
       'lessons.meta_description':
-        '面向成人的自行车课，从第一次骑车到在繁忙街道上骑行。Somerville 附近的免费一对一街道课程、学骑车课程和轻松的集体骑行。',
+        '面向成人的自行车课，从第一次骑车到在繁忙街道上骑行。波士顿及周边城镇的免费一对一街道课程、学骑车课程和轻松的集体骑行。',
       'lessons.hero_title': '在城市里学骑自行车。',
       'lessons.hero_lede': '面向成人的课程：无论你是第一次骑车，还是会骑但一上繁忙街道就紧张。很多课程是免费的。',
       'lessons.hero_after':
         'Green Streets Initiative 是马萨诸塞州的一家非营利组织，自 2006 年起帮助大家更多地步行、骑车和乘坐公共交通。',
       'lessons.start_heading': '你现在是什么情况？',
       'lessons.start_nervous': '我会骑，但车流让我紧张',
-      'lessons.start_nervous_hint': '在 Somerville 附近的真实街道上上一节免费一对一课程。',
+      'lessons.start_nervous_hint': '在波士顿及周边城镇的真实街道上上一节免费一对一课程。',
       'lessons.start_learn': '我不确定自己会不会骑',
       'lessons.start_learn_hint': '面向成人的学骑车课程。',
       'lessons.start_company': '第一次想有人陪我',

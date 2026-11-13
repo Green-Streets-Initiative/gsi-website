@@ -52,7 +52,7 @@ export const BIO_LINKS: BioLink[] = [
   {
     slug: 'lessons',
     label: 'Take a free 1:1 street bike lesson',
-    sublabel: 'With the Bicycle Riding School, for adults who live near Somerville. Green Streets is covering the cost.',
+    sublabel: 'With a local instructor, for adults in Boston and nearby towns. Green Streets is covering the cost.',
     url: 'https://www.gogreenstreets.org/bike-lessons?utm_source=social&utm_medium=instagram&utm_campaign=lessons-nov#street-lesson',
     until: '2026-11-30T23:59:00-05:00',
   },

@@ -9,7 +9,7 @@
  *   for a launch, or on for a test group (check the product ledger,
  *   Shift docs/programs/product/state.json, and the launch ledger).
  * - Lead with what people get, in plain words: the title is the thing a
- *   person can now do or have ("A free bike lesson near Somerville"), not the
+ *   person can now do or have ("A free bike lesson in Boston and nearby towns"), not the
  *   feature's name, and it names the concrete thing (the mode, place or
  *   action; Shift docs/programs/plain-words.md). One sentence under it
  *   (about 25 words at most). Never "earn"; lead with
@@ -106,8 +106,8 @@ export const SHIFT_UPDATES: ShiftUpdate[] = [
     id: 'free-bike-lesson',
     date: '2026-11-05',
     where: 'both',
-    title: 'Get a free bike lesson on real streets near Somerville',
-    body: 'An instructor from the Bicycle Riding School rides real streets with you for 90 minutes, and Green Streets covers the cost.',
+    title: 'Get a free bike lesson on real streets in Boston and nearby towns',
+    body: 'A local instructor rides real streets with you for 90 minutes, and Green Streets covers the cost.',
     link: { href: '/bike-lessons#street-lesson', label: 'Ask for a lesson' },
     // "Older woman with flowers protected bike lane boston" (a parking-protected
     // lane in Cambridge, per its description), Adam Coppola, CC0.
