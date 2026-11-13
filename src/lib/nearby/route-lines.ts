@@ -15,6 +15,8 @@ const BIKE_TIER_STYLE: Record<string, { color: string; dash: boolean }> = {
   path: { color: COMFORT_COLORS.path, dash: false },
   protected: { color: COMFORT_COLORS.protected, dash: false },
   bike_lane: { color: COMFORT_COLORS.bike_lane, dash: true },
+  // The ride planner's rating of an opened trip names quiet streets too
+  quiet_street: { color: COMFORT_COLORS.quiet_street, dash: false },
   shared_road: { color: COMFORT_COLORS.shared_road, dash: false },
 }
 

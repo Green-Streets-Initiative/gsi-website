@@ -13,6 +13,7 @@ import BikeComfortBlock from './BikeComfortBlock'
 import type { TripDest } from '@/lib/nearby/share'
 import type { SectionData, SectionStatus, CommunityData, GuideItem, ReachRow, BikeComfortData } from './types'
 import { useAvoidStreets } from './useAvoidStreets'
+import { useBikePlanner } from './useBikePlanner'
 import { throughSpotMarker, useGoThrough } from './GoThroughPlace'
 import NearbyMap, { TrafficToggle, TrafficLegend, useTrafficPreference, type FitPadding, type RouteLegTapInfo } from './NearbyMap'
 import { useReachOverlay } from './useReachOverlay'
@@ -236,8 +237,12 @@ export default function NearbyShell({
   // Save this trip keeps those changes, and a saved trip puts them back (01787)
   const savedChanges = useMemo(() => ({ changesFor: avoidChanges, stateFor: avoidState }), [avoidChanges, avoidState])
   const restoreSaved = useCallback((row: ReachRow, changes: TripRouteChanges) => { void restoreAvoid(row, row.bike_minutes, changes) }, [restoreAvoid])
+  // v2: the opened bike trip from the ride planner (its way, rating, hills)
+  const planner = useBikePlanner(center)
+  const { choose: chooseWay, rate: rateWay } = planner
   const reachRows = useMemo(
-    () => [...plannedRows, ...reach.data].map(applyAvoid), [plannedRows, reach.data, applyAvoid])
+    () => [...plannedRows, ...reach.data].map(chooseWay).map(applyAvoid).map(rateWay),
+    [plannedRows, reach.data, chooseWay, applyAvoid, rateWay])
 
   // Which of the two bike routes is being described. Cleared with the
   // selection — a choice made about one destination means nothing about the
@@ -324,6 +329,26 @@ export default function NearbyShell({
       return st.throughPending || st.pendingKey !== null
     })()),
   }), [avoidState, avoidStreet, undoAvoid, setHighlightedStreetKey, setBikeAlt, through.propsFor])
+
+  // v2: ask the ride planner as soon as a trip opens (it can take half a
+  // minute for a trip new to it), and rate a re-planned route the same way
+  const { ensure: ensurePlan, ensureRating, stateFor: planState, pick: pickWay } = planner
+  const openBike = selection?.type === 'reach' && selection.mode === 'bike'
+  useEffect(() => {
+    if (isV2 && reachRow) ensurePlan(reachRow)
+  }, [isV2, reachRow, ensurePlan])
+  useEffect(() => {
+    if (isV2 && reachRow && openBike) ensureRating(reachRow)
+  }, [isV2, reachRow, openBike, ensureRating])
+  const planFor = useCallback((row: ReachRow) => ({
+    state: planState(row.id),
+    onPick: (i: number) => {
+      pickWay(row.id, i)
+      // The lit street and the tapped stretch belonged to the other way
+      setHighlightedStreetKey(null)
+      setLegInfo(null)
+    },
+  }), [planState, pickWay])
 
   // Section-collapse state for the bike-side shelves, owned here so it
   // survives the sheet's snap changes and tab hops (the app hoists it into
@@ -566,6 +591,7 @@ export default function NearbyShell({
                   onPlanCommute={onPlanCommute}
                   partnerSlug={partnerSlug}
                   avoidFor={isV2 ? avoidFor : undefined}
+                  planFor={isV2 ? planFor : undefined}
                   onExpand={isV2 && snap !== 'full' ? () => setSnap('full') : undefined}
                 />
               ) : null
@@ -804,7 +830,7 @@ export default function NearbyShell({
 
 /* ── Destination route detail: the route is on the MAIN map above ── */
 
-function ReachDetail({ row, mode, center, onMode, legInfo, highlightedStreetKey, onHighlightStreet, bikeAlt, onPickRoute, onPlanCommute, partnerSlug, avoidFor, onExpand }: {
+function ReachDetail({ row, mode, center, onMode, legInfo, highlightedStreetKey, onHighlightStreet, bikeAlt, onPickRoute, onPlanCommute, partnerSlug, avoidFor, planFor, onExpand }: {
   row: ReachRow
   mode: 'transit' | 'bike'
   center: { lat: number; lng: number }
@@ -818,6 +844,8 @@ function ReachDetail({ row, mode, center, onMode, legInfo, highlightedStreetKey,
   partnerSlug?: string | null
   /** Around You v2: "Avoid this street" on a lit street. */
   avoidFor?: (row: ReachRow, comfort: BikeComfortData, minutes: number) => ComponentProps<typeof BikeComfortBlock>['avoid']
+  /** v2: the ride planner's answer for this trip (useBikePlanner). */
+  planFor?: (row: ReachRow) => ComponentProps<typeof V2Trip>['plan']
   /** v2, sheet below full: raise it to show the streets or steps. */
   onExpand?: () => void
 }) {
@@ -841,6 +869,7 @@ function ReachDetail({ row, mode, center, onMode, legInfo, highlightedStreetKey,
         onPlanCommute={onPlanCommute}
         partnerSlug={partnerSlug}
         onExpand={onExpand}
+        plan={planFor?.(row)}
       />
       <SaveTripButton row={row} mode={mode} />
       </>

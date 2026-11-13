@@ -1478,9 +1478,13 @@ const AVOID_EXTRA_MAX_RATIO = 2
  * so it doesn't read as the street just avoided.
  *
  * `through` is "go through a place" (Keith 2026-11-04, parity with the ride
- * planner): every route is asked to pass that point, `avoid` may then be
- * empty, and there's no detour search (Google takes the one via). `route`
- * is null when no route through it stays off the avoided streets.
+ * planner): every route is asked to pass that point, and `avoid` may then be
+ * empty. Google gives no alternates for a route with a via point, so when
+ * that one route rides an avoided street the ride is planned as two legs,
+ * start to the place and the place to the end, each with its alternates and
+ * each with the detour search (parity gap-through-avoid-detour), and the
+ * legs are joined. `route` is null when no ride through it stays off the
+ * avoided streets.
  */
 export async function buildAvoidingRoute(
   origin: { lat: number; lng: number },
@@ -1515,7 +1519,11 @@ export async function buildAvoidingRoute(
   let chosen = plain.length > 0 ? pick(plain) : null
   if (!chosen && through) {
     if (plain.length === 0) return null
-    return { route: null }
+    if (streets.length === 0) return { route: null }
+    const joined = await throughInTwoLegs(origin, through, dest, streets, ends, laneIndex)
+    if (joined === null) return null
+    chosen = joined.length > 0 ? pick(joined) : null
+    if (!chosen) return { route: null }
   }
   if (!chosen) {
     const vias = detourVias(streets[streets.length - 1] ?? [], laneIndex)
@@ -1544,6 +1552,57 @@ export async function buildAvoidingRoute(
     },
     ...(named.avoidedTowns ? { avoided_towns: named.avoidedTowns } : {}),
   }
+}
+
+/** The most ways one leg of a ride through a place keeps, quickest first:
+ *  two legs of three make nine joined rides to rank. */
+const LEG_KEEP = 3
+
+/**
+ * A ride through a place planned as two legs that each stay off the avoided
+ * streets: start to the place, then the place to the end. Each leg asks for
+ * Google's alternates; when none of them gets around, one more call via
+ * each side of the first avoided street that leg rides (the same detour
+ * search as a ride without a place). Every pairing of the legs' ways is
+ * joined into one ride. Null when Google didn't answer a leg; empty when a
+ * leg found no way around.
+ */
+async function throughInTwoLegs(
+  origin: { lat: number; lng: number },
+  through: { lat: number; lng: number },
+  dest: { lat: number; lng: number },
+  streets: [number, number][][][],
+  ends: [number, number][],
+  laneIndex: LaneVertex[],
+): Promise<{ minutes: number; encodedPolyline: string }[] | null> {
+  const leg = async (a: { lat: number; lng: number }, b: { lat: number; lng: number }) => {
+    const plain = await queryBikeRoutes(a, b)
+    if (plain.length === 0) return null
+    const clear = (routes: { minutes: number; encodedPolyline: string | null }[]) =>
+      routes.filter((r): r is { minutes: number; encodedPolyline: string } =>
+        !!r.encodedPolyline && avoidsAll(streets, decodePolyline(r.encodedPolyline), ends))
+    let ways = clear(plain)
+    if (ways.length === 0) {
+      // The street this leg can't get off, by its quickest way
+      const quickest = [...plain].filter(r => !!r.encodedPolyline).sort((x, y) => x.minutes - y.minutes)[0]
+      const line = quickest?.encodedPolyline ? decodePolyline(quickest.encodedPolyline) : []
+      const hit = streets.find(st => !avoidsAll([st], line, ends)) ?? streets[streets.length - 1]
+      const vias = detourVias(hit ?? [], laneIndex)
+      ways = clear((await Promise.all(vias.map(([lat, lng]) => queryBikeRoutes(a, b, { lat, lng })))).flat())
+    }
+    return ways.sort((x, y) => x.minutes - y.minutes).slice(0, LEG_KEEP)
+  }
+  const [first, second] = await Promise.all([leg(origin, through), leg(through, dest)])
+  if (first === null || second === null) return null
+  const joined: { minutes: number; encodedPolyline: string }[] = []
+  for (const x of first) {
+    const head = decodePolyline(x.encodedPolyline)
+    for (const y of second) {
+      const tail = decodePolyline(y.encodedPolyline)
+      joined.push({ minutes: x.minutes + y.minutes, encodedPolyline: encodePolyline([...head, ...tail.slice(1)]) })
+    }
+  }
+  return joined
 }
 
 /** "Cambridge Street, Boston" → "cambridge street": a name already carrying

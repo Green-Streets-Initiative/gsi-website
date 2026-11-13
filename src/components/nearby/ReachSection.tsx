@@ -10,7 +10,8 @@ import type { ModeFilter } from './useNearbyModel'
 import type { RouteLegTapInfo } from './NearbyMap'
 import BikeComfortBlock, { AvoidChanges, NEARBY_COMFORT_COLORS } from './BikeComfortBlock'
 import GoThroughPlace from './GoThroughPlace'
-import type { ReachRow, ReachStep, ReachSegment, BikeComfortTier, BikeComfortData } from './types'
+import type { ReachRow, ReachStep, ReachSegment, BikeComfortTier, BikeComfortData, BikeElevation, BikePlanOption } from './types'
+import type { BikePlanState } from './useBikePlanner'
 import { useNearbyT, useNearbyLocale } from './NearbyI18n'
 import { TripPerks } from './NearbyPerks'
 import { SaveTripButton } from './SavedTrips'
@@ -24,6 +25,7 @@ const LEG_TIER_KEY: Record<BikeComfortTier, string> = {
   path: 'bike.path',
   protected: 'bike.protected',
   bike_lane: 'bike.bike_lane',
+  quiet_street: 'bike.quiet_street',
   shared_road: 'bike.shared_road',
 }
 
@@ -225,14 +227,155 @@ export function RouteChoice({ row, alt, onPick }: {
 /* ── Around You v2: the simpler trip view (the app's SimpleTrip) ── */
 
 /** Comfort tiers in the order the strip's legend lists them. */
-const COMFORT_ORDER: BikeComfortTier[] = ['path', 'protected', 'bike_lane', 'shared_road']
+const COMFORT_ORDER: BikeComfortTier[] = ['path', 'protected', 'bike_lane', 'quiet_street', 'shared_road']
 
 /** A tier as it reads in a sentence ("mostly protected lanes"). */
 const TIER_PHRASE_KEY: Record<BikeComfortTier, string> = {
   path: 'v2.trip_tier_path',
   protected: 'v2.trip_tier_protected',
   bike_lane: 'v2.trip_tier_painted',
+  quiet_street: 'v2.trip_tier_quiet',
   shared_road: 'v2.trip_tier_shared',
+}
+
+/* ── The ride planner's answer for an opened trip (useBikePlanner) ── */
+
+/** Bars per hills chart, and the rise that fills it (the app's hillBars):
+ *  a flat ride looks flat. */
+const HILL_BARS = 36
+const HILL_SPAN_FT = 300
+
+/** Lime under a 4% grade, gold to 8%, orange above, as on the ride sheet. */
+const gradeColor = (g: number) => (g >= 8 ? '#FF8A3D' : g >= 4 ? '#F2C14E' : '#BAF14D')
+
+/** Shift lib/hills.ts hillsWord: one rule everywhere. */
+function hillsWordOf(e: BikeElevation, miles: number): 'flat' | 'gentle' | 'rolling' | 'hilly' | null {
+  if (!(miles > 0)) return null
+  const perMile = Math.max(e.ascent_ft, e.descent_ft) / miles
+  return perMile < 30 ? 'flat' : perMile < 80 ? (e.max_grade_pct < 4 ? 'gentle' : 'rolling') : 'hilly'
+}
+
+function hillBars(profile: [number, number][]): { h: number; grade: number }[] {
+  if (profile.length < 2) return []
+  const fts = profile.map(p => p[1])
+  const min = Math.min(...fts)
+  const span = Math.max(HILL_SPAN_FT, Math.max(...fts) - min)
+  const stride = Math.max(1, Math.ceil(profile.length / HILL_BARS))
+  const out: { h: number; grade: number }[] = []
+  for (let i = 0; i < profile.length; i += stride) {
+    const [mi, ft] = profile[i]
+    const prev = profile[Math.max(0, i - stride)]
+    const run = (mi - prev[0]) * 5280
+    out.push({ h: 0.12 + 0.88 * ((ft - min) / span), grade: run > 0 ? Math.abs(((ft - prev[1]) / run) * 100) : 0 })
+  }
+  return out
+}
+
+/** The ride's hills as the app's planner shows them: the word and the feet
+ *  climbed, then the climb drawn along the ride. */
+function TripHills({ elevation, miles }: { elevation: BikeElevation; miles: number }) {
+  const tr = useNearbyT()
+  const word = hillsWordOf(elevation, miles)
+  if (!word) return null
+  const bars = hillBars(elevation.profile)
+  return (
+    <div className="mt-3">
+      <p className="text-[14px] font-semibold text-(--nb-ink)">
+        {tr('v2.trip_hills_line', { word: tr(`v2.trip_hills_${word}`), ft: elevation.ascent_ft })}
+      </p>
+      {bars.length > 1 && (
+        <div className="mt-1.5 flex h-8 items-end gap-[2px]" aria-hidden="true">
+          {bars.map((b, i) => (
+            <span key={i} className="flex-1 rounded-t-[2px]" style={{ height: `${Math.round(b.h * 100)}%`, backgroundColor: gradeColor(b.grade) }} />
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+/** "Calmest" and "Fastest" among the planner's ways: the most on calm
+ *  streets (the quicker of equals), and the fewest minutes (the calmer of
+ *  equals), as the planner's way list badges them. */
+function calmestFastest(options: BikePlanOption[]): { calmest: number; fastest: number } {
+  let calmest = 0
+  let fastest = 0
+  options.forEach((o, i) => {
+    const c = options[calmest]
+    if (o.calm_pct > c.calm_pct || (o.calm_pct === c.calm_pct && o.minutes < c.minutes)) calmest = i
+    const f = options[fastest]
+    if (o.minutes < f.minutes || (o.minutes === f.minutes && o.calm_pct > f.calm_pct)) fastest = i
+  })
+  return { calmest, fastest }
+}
+
+/** Each way's name; two named alike take the longest street the other
+ *  doesn't ride, as the planner's way list does. */
+function wayNames(options: BikePlanOption[]): (string | null)[] {
+  const streets = options.map(o => new Map(o.comfort.streets.map(st => [st.label.split(',')[0].trim(), st.distance_mi])))
+  return options.map((o, i) => {
+    if (!o.via) return null
+    const via = o.via.split(',')[0].trim()
+    const twins = options.map((_, j) => j).filter(j => j !== i && options[j].via?.split(',')[0].trim() === via)
+    if (twins.length === 0) return via
+    const own = [...streets[i].entries()]
+      .filter(([name]) => name !== via && twins.every(j => !streets[j].has(name)))
+      .sort((a, b) => b[1] - a[1])[0]
+    return own ? `${via}, ${own[0]}` : via
+  })
+}
+
+/** The planner's ways to ride the trip, one row each: the name with its
+ *  badge, minutes and miles, the comfort strip and its share on calm streets.
+ *  Tapping a row shows that way. */
+function TripWays({ options, chosen, onPick }: { options: BikePlanOption[]; chosen: number; onPick: (i: number) => void }) {
+  const tr = useNearbyT()
+  const { calmest, fastest } = calmestFastest(options)
+  const names = wayNames(options)
+  return (
+    <div className="mt-4">
+      <h3 className="text-[15px] font-bold text-(--nb-ink)">{tr('v2.trip_pick_way')}</h3>
+      <div role="radiogroup" className="mt-2 overflow-hidden rounded-xl border border-(--nb-line-mid)">
+        {options.map((o, i) => {
+          const on = i === chosen
+          const badge = i === calmest && i === fastest ? 'v2.trip_way_both' : i === calmest ? 'v2.trip_way_calmest' : i === fastest ? 'v2.trip_way_fastest' : null
+          const total = o.comfort.segments.reduce((a, s) => a + s.distance_mi, 0)
+          return (
+            <button
+              key={o.polyline}
+              role="radio"
+              aria-checked={on}
+              onClick={() => { if (!on) onPick(i) }}
+              className={`block w-full px-3.5 py-2.5 text-left transition-colors ${i > 0 ? 'border-t border-(--nb-line-mid)' : ''} ${on ? 'bg-(--nb-panel)' : 'hover:bg-(--nb-panel)'}`}
+            >
+              <span className="flex items-start justify-between gap-3">
+                <span className="min-w-0">
+                  <span className="block text-[15px] font-bold leading-snug text-(--nb-ink)">
+                    {names[i] ? tr('v2.trip_way_via', { street: names[i] }) : tr('v2.trip_way_n', { n: i + 1 })}
+                  </span>
+                  {badge && <span className="mt-0.5 inline-block text-[13px] font-bold text-(--nb-accent)">{tr(badge)}</span>}
+                </span>
+                <span className="shrink-0 text-right">
+                  <span className="block text-[15px] font-bold tabular-nums text-(--nb-ink)">{tr('reach.minutes', { minutes: o.minutes })}</span>
+                  <span className="block text-[14px] tabular-nums text-(--nb-ink-80)">{tr('reach.mi', { miles: o.miles.toFixed(1) })}</span>
+                </span>
+              </span>
+              <span className="mt-2 flex items-center gap-3">
+                <span className="flex h-2 flex-1 gap-[2px] overflow-hidden rounded-full" aria-hidden="true">
+                  {total > 0 && o.comfort.segments.map((s, k) => (
+                    <span key={k} className="h-full" style={{ flexGrow: Math.max(0.04, s.distance_mi / total), flexBasis: 0, backgroundColor: NEARBY_COMFORT_COLORS[s.rating] }} />
+                  ))}
+                </span>
+                <span className="shrink-0 text-[14px] tabular-nums text-(--nb-ink-80)">
+                  {tr('v2.trip_way_calm', { pct: o.calm_pct })}{o.hills ? ` · ${tr(`v2.trip_hills_${o.hills}`)}` : ''}
+                </span>
+              </span>
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
 }
 
 type Tr = ReturnType<typeof useNearbyT>
@@ -275,7 +418,7 @@ export function bikeTripSummary(comfort: BikeComfortData, tr: Tr): string | null
  * Used by the desktop rail's open row (ReachList, title in the row) and the
  * mobile sheet's detail (NearbyShell, `showTitle`).
  */
-export function V2Trip({ row, mode, onMode, center, legInfo, highlightedStreetKey, onHighlightStreet, bikeAlt, onPickRoute, avoidFor, onPlanCommute, partnerSlug, showTitle = false, onExpand, hideSwitch = false, actions }: {
+export function V2Trip({ row, mode, onMode, center, legInfo, highlightedStreetKey, onHighlightStreet, bikeAlt, onPickRoute, avoidFor, onPlanCommute, partnerSlug, showTitle = false, onExpand, hideSwitch = false, actions, plan }: {
   row: ReachRow
   mode: 'transit' | 'bike'
   onMode: (mode: 'transit' | 'bike') => void
@@ -295,6 +438,9 @@ export function V2Trip({ row, mode, onMode, center, legInfo, highlightedStreetKe
   hideSwitch?: boolean
   /** Plan a trip: its own buttons in place of the maps hand-off. */
   actions?: ReactNode
+  /** The ride planner's answer for this trip (useBikePlanner): checking,
+   *  or its ways to pick from. */
+  plan?: { state: BikePlanState; onPick: (index: number) => void }
 }) {
   const tr = useNearbyT()
   const belowRef = useRef<HTMLDivElement>(null)
@@ -318,8 +464,11 @@ export function V2Trip({ row, mode, onMode, center, legInfo, highlightedStreetKe
     path: tr('bike.path'),
     protected: tr('bike.protected'),
     bike_lane: tr('bike.bike_lane'),
+    quiet_street: tr('bike.quiet_street'),
     shared_road: tr('bike.shared_road'),
   }
+  // The planner's ways (gap-around-you-one-route) take the faster-way line's place
+  const ways = plan && plan.state.options.length > 1 ? plan.state.options : null
 
   // The faster way, as one line (the two cards said the same thing twice).
   // With no other route, saying so keeps what the deck was for: the rider
@@ -327,7 +476,7 @@ export function V2Trip({ row, mode, onMode, center, legInfo, highlightedStreetKe
   const savedMin = row.bike_alt ? row.bike_minutes - row.bike_alt.minutes : 0
   const busier = !!row.bike_alt
     && (protectedShare(row.bike_alt.comfort) ?? 0) < (protectedShare(row.bike_comfort) ?? 0) - 0.05
-  const altLine = !bike || !comfort || changed ? null
+  const altLine = !bike || !comfort || changed || ways || plan?.state.checking ? null
     : !row.bike_alt ? { text: tr('v2.trip_also_fastest'), action: null }
     : showingAlt ? { text: tr('v2.trip_showing_faster'), action: tr('v2.trip_back_to_calmer') }
     : {
@@ -340,7 +489,7 @@ export function V2Trip({ row, mode, onMode, center, legInfo, highlightedStreetKe
   const wayLabel = (m: 'transit' | 'bike') => m === 'bike'
     ? tr('v2.trip_way_bike', { minutes: `${row.bike_is_estimate ? '~' : ''}${bikeMinutes}` })
     : tr('v2.trip_way_transit', { minutes: row.transit_minutes ?? '' })
-  const ways = (['bike', 'transit'] as const).filter(m => (m === 'bike' ? canBike : canTransit))
+  const switchWays = (['bike', 'transit'] as const).filter(m => (m === 'bike' ? canBike : canTransit))
 
   // Maps rides our line on a bike trip (via points), so say whose map it is
   const route = bike ? (showingAlt ? row.bike_alt?.polyline : row.bike_polyline) : null
@@ -350,9 +499,9 @@ export function V2Trip({ row, mode, onMode, center, legInfo, highlightedStreetKe
       {showTitle && <div className="text-[1.1rem] font-bold leading-snug text-(--nb-ink)">{row.name}</div>}
 
       {/* The way: a switch when both can be drawn, otherwise just its time */}
-      {hideSwitch ? null : ways.length > 1 ? (
+      {hideSwitch ? null : switchWays.length > 1 ? (
         <div role="tablist" className={`${showTitle ? 'mt-3' : ''} flex gap-1 rounded-xl bg-(--nb-panel) p-1`}>
-          {ways.map(m => (
+          {switchWays.map(m => (
             <button
               key={m}
               role="tab"
@@ -366,9 +515,9 @@ export function V2Trip({ row, mode, onMode, center, legInfo, highlightedStreetKe
             </button>
           ))}
         </div>
-      ) : ways.length === 1 ? (
+      ) : switchWays.length === 1 ? (
         <div className={`${showTitle ? 'mt-2' : ''} flex items-center gap-1.5 text-[15px] font-bold tabular-nums text-(--nb-ink)`}>
-          <ModeIcon mode={ways[0]} size={15} /> {wayLabel(ways[0])}
+          <ModeIcon mode={switchWays[0]} size={15} /> {wayLabel(switchWays[0])}
         </div>
       ) : null}
 
@@ -402,8 +551,13 @@ export function V2Trip({ row, mode, onMode, center, legInfo, highlightedStreetKe
               </ul>
             </>
           )}
+          {row.bike_elevation && <TripHills elevation={row.bike_elevation} miles={total} />}
+          {plan?.state.checking && !changed && (
+            <p className="mt-3 text-[14px] leading-snug text-(--nb-ink-80)" aria-live="polite">{tr('v2.trip_checking')}</p>
+          )}
           {/* Clears the desktop rail's sticky search and place chips (~260px) */}
           {changed && <div className="mt-3"><AvoidChanges avoid={avoid} scrollMargin="scroll-mt-4 lg:scroll-mt-[280px]" /></div>}
+          {ways && !changed && plan && <TripWays options={ways} chosen={plan.state.chosen} onPick={plan.onPick} />}
           {altLine && (altLine.action ? (
             <button
               onClick={() => onPickRoute(!showingAlt)}
@@ -611,7 +765,7 @@ export function TransitLegs({ steps, segments, toned = false }: {
  *  - `routeSelection`/`onRouteSelect` (desktop two-pane): rows expand in
  *    place, following the PAGE selection — the parent owns the state and
  *    fires the reach_route_viewed analytics. */
-export function ReachList({ center, rows, onRowTap, modeFilter, routeSelection, onRouteSelect, legInfo, highlightedStreetKey, onHighlightStreet, bikeAlt = false, onPickRoute = () => {}, onPlanCommute, partnerSlug, avoidFor }: {
+export function ReachList({ center, rows, onRowTap, modeFilter, routeSelection, onRouteSelect, legInfo, highlightedStreetKey, onHighlightStreet, bikeAlt = false, onPickRoute = () => {}, onPlanCommute, partnerSlug, avoidFor, planFor }: {
   center: { lat: number; lng: number }
   rows: ReachRow[]
   onRowTap?: (row: ReachRow) => void
@@ -633,6 +787,8 @@ export function ReachList({ center, rows, onRowTap, modeFilter, routeSelection, 
   /** Around You v2: "Avoid this street" on a lit street (useAvoidStreets).
    *  Gets the bike route on screen: its comfort and its minutes. */
   avoidFor?: (row: ReachRow, comfort: BikeComfortData, minutes: number) => ComponentProps<typeof BikeComfortBlock>['avoid']
+  /** Around You v2: the ride planner's answer for the open trip. */
+  planFor?: (row: ReachRow) => ComponentProps<typeof V2Trip>['plan']
 }) {
   const tr = useNearbyT()
   const expanded = routeSelection ?? null
@@ -760,6 +916,7 @@ export function ReachList({ center, rows, onRowTap, modeFilter, routeSelection, 
                       avoidFor={avoidFor}
                       onPlanCommute={onPlanCommute}
                       partnerSlug={partnerSlug}
+                      plan={planFor?.(row)}
                     />
                     <SaveTripButton row={row} mode={expanded.mode} />
                   </div>

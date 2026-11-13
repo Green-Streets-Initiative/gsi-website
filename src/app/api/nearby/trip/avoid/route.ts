@@ -18,8 +18,9 @@ import { getTripAvoiding, inServiceArea } from '@/lib/server/trip'
  * avoided streets.
  *
  * Only for people with Around You v2 on (around_you_v2, Shift 01581): each
- * call can cost up to three Google route lookups, so the switch is checked here,
- * not just in the page.
+ * call can cost up to three Google route lookups (seven when a place and an
+ * avoided street meet and the ride is planned in two legs), so the switch is
+ * checked here, not just in the page.
  */
 
 export const maxDuration = 30

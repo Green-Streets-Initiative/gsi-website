@@ -7,6 +7,7 @@ import type { TransitCorridor, BikeCorridor } from '@/lib/nearby/corridors'
 import type { TripDest } from '@/lib/nearby/share'
 import type { SectionData, SectionStatus, CommunityData, GuideItem, ReachRow, BikeComfortData } from './types'
 import { useAvoidStreets } from './useAvoidStreets'
+import { useBikePlanner } from './useBikePlanner'
 import { throughSpotMarker, useGoThrough } from './GoThroughPlace'
 import NearbyMap, { TrafficToggle, TrafficLegend, useTrafficPreference, type FitPadding, type RouteLegTapInfo } from './NearbyMap'
 import { useInitialFocus } from './useInitialFocus'
@@ -176,8 +177,12 @@ export default function NearbyDesktop({
   // Save this trip keeps those changes, and a saved trip puts them back (01787)
   const savedChanges = useMemo(() => ({ changesFor: avoidChanges, stateFor: avoidState }), [avoidChanges, avoidState])
   const restoreSaved = useCallback((row: ReachRow, changes: TripRouteChanges) => { void restoreAvoid(row, row.bike_minutes, changes) }, [restoreAvoid])
+  // v2: the opened bike trip from the ride planner (its way, rating, hills)
+  const planner = useBikePlanner(center)
+  const { choose: chooseWay, rate: rateWay } = planner
   const reachRows = useMemo(
-    () => [...plannedRows, ...reach.data].map(applyAvoid), [plannedRows, reach.data, applyAvoid])
+    () => [...plannedRows, ...reach.data].map(chooseWay).map(applyAvoid).map(rateWay),
+    [plannedRows, reach.data, chooseWay, applyAvoid, rateWay])
 
   // Which of the two bike routes is being described. Cleared with the
   // selection — a choice made about one destination means nothing about the
@@ -344,6 +349,28 @@ export default function NearbyDesktop({
       return st.throughPending || st.pendingKey !== null
     })()),
   }), [avoidState, avoidStreet, undoAvoid, setHighlightedStreetKey, setBikeAlt, through.propsFor])
+
+  // v2: ask the ride planner as soon as a trip opens (it can take half a
+  // minute for a trip new to it), and rate a re-planned route the same way
+  const { ensure: ensurePlan, ensureRating, stateFor: planState, pick: pickWay } = planner
+  const openRow = overlay.reachRow
+  const openSel = model.routeSelection ?? selection
+  const openBike = openSel?.type === 'reach' && openSel.mode === 'bike'
+  useEffect(() => {
+    if (isV2 && openRow) ensurePlan(openRow)
+  }, [isV2, openRow, ensurePlan])
+  useEffect(() => {
+    if (isV2 && openRow && openBike) ensureRating(openRow)
+  }, [isV2, openRow, openBike, ensureRating])
+  const planFor = useCallback((row: ReachRow) => ({
+    state: planState(row.id),
+    onPick: (i: number) => {
+      pickWay(row.id, i)
+      // The lit street and the tapped stretch belonged to the other way
+      setHighlightedStreetKey(null)
+      setLegInfo(null)
+    },
+  }), [planState, pickWay])
 
   // Section-collapse state for the bike-side shelves, owned here so it
   // survives the sheet's snap changes and tab hops (the app hoists it into
@@ -602,6 +629,7 @@ export default function NearbyDesktop({
                       onPlanCommute={onPlanCommute}
                       partnerSlug={partnerSlug}
                       avoidFor={avoidFor}
+                      planFor={planFor}
                     />
                   </div>
                 )}

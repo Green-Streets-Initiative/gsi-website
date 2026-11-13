@@ -25,6 +25,7 @@ export const NEARBY_COMFORT_COLORS: Record<BikeComfortTier, string> = {
   path: COMFORT_COLORS.path,
   protected: COMFORT_COLORS.protected,
   bike_lane: COMFORT_COLORS.bike_lane,
+  quiet_street: COMFORT_COLORS.quiet_street,
   shared_road: COMFORT_COLORS.shared_road,
 }
 
@@ -32,6 +33,7 @@ export const NEARBY_COMFORT_LABELS: Record<BikeComfortTier, string> = {
   path: 'Shared use path',
   protected: 'Protected lane',
   bike_lane: 'Painted lane',
+  quiet_street: 'Quiet street',
   shared_road: 'Shared road',
 }
 
@@ -138,6 +140,7 @@ export default function BikeComfortBlock({ comfort, highlightedStreetKey, onHigh
     path: tr('bike.path'),
     protected: tr('bike.protected'),
     bike_lane: tr('bike.bike_lane'),
+    quiet_street: tr('bike.quiet_street'),
     shared_road: tr('bike.shared_road'),
   }
   const av = avoid?.state
@@ -149,7 +152,7 @@ export default function BikeComfortBlock({ comfort, highlightedStreetKey, onHigh
       {!streetsOnly && <AvoidChanges avoid={avoid} />}
       {!streetsOnly && (
         <ComfortBar
-          rating={comfort.rating}
+          rating={comfort.rating === 'quiet_street' ? 'mixed' : comfort.rating}
           segments={comfort.segments.map(s => ({ label: '', rating: s.rating, distance_mi: s.distance_mi }))}
           colors={NEARBY_COMFORT_COLORS}
           labels={labels}

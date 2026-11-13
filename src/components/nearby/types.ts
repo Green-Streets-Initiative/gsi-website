@@ -67,8 +67,9 @@ export interface ReachSegment {
 /** Comfort tiers in ComfortBar vocabulary: 'protected' covers paths and
  *  separated lanes ('path' = shared use path with its own right-of-way,
  *  'protected' = separated on-street lane), 'bike_lane' is paint, 'shared_road' has no mapped
- *  bike infrastructure. */
-export type BikeComfortTier = 'path' | 'protected' | 'bike_lane' | 'shared_road'
+ *  bike infrastructure. 'quiet_street' (a calm residential street) comes only
+ *  from the ride planner's rating of an opened trip (useBikePlanner). */
+export type BikeComfortTier = 'path' | 'protected' | 'bike_lane' | 'quiet_street' | 'shared_road'
 
 export interface BikeComfortSegmentData {
   rating: BikeComfortTier
@@ -139,6 +140,34 @@ export interface ReachRow {
   bike_perks?: PerkStop[]
   /** Set when the trip was planned by tapping a perk: the destination is it. */
   perk_dest?: PerkStop
+  /** The bike route's hills, once the ride planner has rated the opened
+   *  trip (useBikePlanner); absent before and on the list rows. */
+  bike_elevation?: BikeElevation | null
+}
+
+/** A route's hills from the ride planner (plan-ride-route's elevation). */
+export interface BikeElevation {
+  ascent_ft: number
+  descent_ft: number
+  max_grade_pct: number
+  /** [miles from start, feet] */
+  profile: [number, number][]
+}
+
+/** One of the ride planner's ways to ride an opened trip
+ *  (/api/nearby/trip/bike, src/lib/server/planner-bike.ts). */
+export interface BikePlanOption {
+  minutes: number
+  miles: number
+  polyline: string
+  comfort: BikeComfortData
+  steps: ReachStep[]
+  elevation: BikeElevation | null
+  hills: 'flat' | 'gentle' | 'rolling' | 'hilly' | null
+  /** The street the way is mostly on. */
+  via: string | null
+  /** Share of the way on paths, lanes or quiet streets. */
+  calm_pct: number
 }
 
 export interface GuideItem {
