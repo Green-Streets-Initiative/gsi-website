@@ -55,7 +55,7 @@ export function useNearbyV2(): V2State {
           if (!cancelled) setState({ on: false, signedIn: false, checked: true })
           return
         }
-        const on = await flagOn(session.user.id)
+        const on = await aroundYouV2On(session.user.id)
         try { if (on) sessionStorage.setItem(CACHE_KEY, '1'); else sessionStorage.removeItem(CACHE_KEY) } catch { /* private mode */ }
         if (on) posthog.capture('nearby_v2_shown')
         if (!cancelled) setState({ on, signedIn: true, checked: true })
@@ -70,8 +70,9 @@ export function useNearbyV2(): V2State {
 }
 
 /** Same rule as the app's isFlagOnForUser: a user row wins, then the flag's
- *  own switch and rollout (float FNV bucket, never Math.imul). */
-async function flagOn(userId: string): Promise<boolean> {
+ *  own switch and rollout (float FNV bucket, never Math.imul). Also gates the
+ *  organizer console's avoid-a-street (lib/organizers/avoid-street). */
+export async function aroundYouV2On(userId: string): Promise<boolean> {
   const [flag, mine] = await Promise.all([
     supabase.from('app_feature_flags').select('enabled, rollout_percent').eq('name', FLAG).maybeSingle(),
     supabase.from('app_feature_flag_users').select('user_id').eq('flag_name', FLAG).eq('user_id', userId).maybeSingle(),

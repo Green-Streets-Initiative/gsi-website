@@ -13,8 +13,12 @@ import RouteChoices, { calmestWay, distinctWays } from './RouteChoices'
 import RouteReview, { readRoute } from './RouteReview'
 import { Button, Field, Input, Notice, cx } from './ui'
 import { track } from '@/lib/organizers/track'
+import { MAX_AVOIDS_PER_LEG, avoidKey, avoidStreetsOn, findAvoidingOption, legRides, streetOnly, streetPolylines, type Avoided } from '@/lib/organizers/avoid-street'
 
 type Mode = 'draw' | 'rwgps' | 'gpx'
+
+/** Everything Undo puts back after an avoid. */
+type AvoidSnapshot = { plan: PlannedRoute; chosen: number[]; avoided: Record<number, Avoided[]> }
 
 /** "Start to stop 1", "Stop 1 to stop 2", "Stop 3 to the end", "Stop 3 back to the start". */
 function legLabel(i: number, legs: number, pins: LatLng[]): string {
@@ -67,6 +71,18 @@ export default function RouteSection({ route, onRoute, meetup, pace, activity = 
   const routeGen = useRef(0)
   const importShownAt = useRef(-1)
   const boxRef = useRef<HTMLDivElement>(null)
+
+  // "Avoid this street" (the app planner's, behind around_you_v2): each leg
+  // keeps the streets it stays off, so the next avoid stays off them too.
+  const [avoidOn, setAvoidOn] = useState(false)
+  const [avoided, setAvoided] = useState<Record<number, Avoided[]>>({})
+  const [avoidBusy, setAvoidBusy] = useState<string | null>(null)
+  const [avoidNote, setAvoidNote] = useState<{ text: string; sub?: string; undo?: AvoidSnapshot } | null>(null)
+  useEffect(() => {
+    let live = true
+    void avoidStreetsOn().then((on) => { if (live) setAvoidOn(on) })
+    return () => { live = false }
+  }, [])
 
   // A route brought to the assistant, loaded and scored on arrival.
   const tookImport = useRef(false)
@@ -139,6 +155,8 @@ export default function RouteSection({ route, onRoute, meetup, pace, activity = 
       const pick = p.legs.map((l, i) => Math.min(over?.chosen[i] ?? calmestWay(l.options), l.options.length - 1))
       setPlan(p)
       setChosen(pick)
+      setAvoided({})
+      setAvoidNote(null)
       setFocus(null)
       onRoute(routeFromPlan(p, pick, use))
       setFitKey((k) => k + 1)
@@ -148,6 +166,81 @@ export default function RouteSection({ route, onRoute, meetup, pace, activity = 
     } finally {
       setBusy(false)
     }
+  }
+
+  /** The legs of the route on screen that ride this street. */
+  const legsOnStreet = (label: string) =>
+    plan ? plan.legs.map((l, i) => (legRides(l.options[chosen[i] ?? 0], label) ? i : -1)).filter((i) => i >= 0) : []
+
+  /** A leg already staying off its limit of streets can't take one more. */
+  const avoidFull = (label: string) => legsOnStreet(label).some((i) => (avoided[i]?.length ?? 0) >= MAX_AVOIDS_PER_LEG)
+
+  async function avoidStreet(label: string) {
+    if (!plan || avoidBusy) return
+    const street = streetOnly(label)
+    const legIdxs = legsOnStreet(label)
+    if (legIdxs.length === 0) return
+    if (avoidFull(label)) { setAvoidNote({ text: `You can avoid up to ${MAX_AVOIDS_PER_LEG} streets on this part of the route.` }); return }
+    const before: AvoidSnapshot = { plan, chosen, avoided }
+    const shownBefore = plan.legs.reduce((a, l, i) => a + (l.options[chosen[i] ?? 0]?.durationMinutes ?? 0), 0)
+    const gen = ++routeGen.current
+    setAvoidBusy(avoidKey(label))
+    setAvoidNote(null)
+    track('organizer_route_avoid_street', { legs: legIdxs.length })
+    const answers = await Promise.all(legIdxs.map(async (i) => {
+      const opt = plan.legs[i].options[chosen[i] ?? 0]
+      const polylines = streetPolylines(opt, label)
+      if (polylines.length === 0) return { i, status: 'none' as const }
+      // Never past the limit: the button turns off at it, so an earlier
+      // street is never quietly dropped to make room.
+      const list = [...(avoided[i] ?? []), { key: avoidKey(label), label, polylines }]
+      const r = await findAvoidingOption(pins[i], pins[i + 1], list, pace)
+      return r.status === 'ok' ? { i, status: 'ok' as const, option: r.option, list } : { i, status: r.status }
+    }))
+    setAvoidBusy(null)
+    if (gen !== routeGen.current) return
+    if (answers.some((a) => a.status === 'none')) {
+      track('organizer_route_avoid_street_none', {})
+      setAvoidNote({ text: `No good way around ${street}`, sub: "The ride starts or ends on this street, or there's no calmer street nearby. Your route hasn't changed." })
+      return
+    }
+    if (answers.some((a) => a.status === 'failed')) {
+      setAvoidNote({ text: `Couldn't find a way around ${street} just now. Try again in a moment.` })
+      return
+    }
+    const next: PlannedRoute = {
+      legs: plan.legs.map((leg, i) => {
+        const a = answers.find((x) => x.i === i)
+        if (!a || a.status !== 'ok') return leg
+        const options = [...leg.options]
+        options[chosen[i] ?? 0] = a.option
+        return { ...leg, options }
+      }),
+    }
+    const nextAvoided = { ...avoided }
+    for (const a of answers) if (a.status === 'ok') nextAvoided[a.i] = a.list
+    setPlan(next)
+    setAvoided(nextAvoided)
+    setFocus(null)
+    onRoute(routeFromPlan(next, chosen, pins))
+    const after = next.legs.reduce((a, l, i) => a + (l.options[chosen[i] ?? 0]?.durationMinutes ?? 0), 0)
+    const delta = Math.round(after - shownBefore)
+    setAvoidNote({
+      text: `New route that skips ${street}`,
+      sub: delta > 0 ? `${delta} min longer` : delta < 0 ? `${-delta} min quicker` : 'About the same time',
+      undo: before,
+    })
+  }
+
+  function undoAvoid(s: AvoidSnapshot) {
+    routeGen.current++
+    setPlan(s.plan)
+    setChosen(s.chosen)
+    setAvoided(s.avoided)
+    setAvoidNote(null)
+    setFocus(null)
+    onRoute(routeFromPlan(s.plan, s.chosen, pins))
+    track('organizer_route_avoid_undone', {})
   }
 
   function choose(leg: number, opt: number) {
@@ -247,6 +340,8 @@ export default function RouteSection({ route, onRoute, meetup, pace, activity = 
 
   function clearRoute() {
     routeGen.current++
+    setAvoided({})
+    setAvoidNote(null)
     original.current = null
     setScoring('idle')
     onRoute(null)
@@ -443,7 +538,23 @@ export default function RouteSection({ route, onRoute, meetup, pace, activity = 
           {scoring === 'failed' && route.source !== 'drawn' && (
             <p className="mt-2 text-[14px] text-(--ev-ink-75)">We couldn&rsquo;t score this route&rsquo;s streets just now. You can save it as it is.</p>
           )}
-          {reading && <RouteReview route={route} reading={reading} pace={pace} activity={activity} focus={focus} onFocus={setFocus} />}
+          {reading && (
+            <RouteReview
+              route={route}
+              reading={reading}
+              pace={pace}
+              activity={activity}
+              focus={focus}
+              onFocus={setFocus}
+              avoid={avoidOn && activity === 'bike' && route.source === 'drawn' && plan ? {
+                busyKey: avoidBusy,
+                full: avoidFull,
+                onAvoid: (label) => void avoidStreet(label),
+                note: avoidNote ? { text: avoidNote.text, sub: avoidNote.sub, onUndo: avoidNote.undo ? () => undoAvoid(avoidNote.undo!) : undefined } : null,
+                avoiding: [...new Set(Object.values(avoided).flat().map((a) => streetOnly(a.label)))],
+              } : undefined}
+            />
+          )}
         </div>
       )}
     </div>

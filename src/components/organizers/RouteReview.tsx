@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo, useState } from 'react'
 import posthog from 'posthog-js'
-import { AlertTriangle, Camera } from 'lucide-react'
+import { AlertTriangle, Ban, Camera, Undo2 } from 'lucide-react'
 import { PanelPhoto } from '@/components/nearby/DetailPanel'
 import { ReportRouteLink, type RouteIssueStretch } from '@/components/commute/ReportRouteSheet'
 import {
@@ -140,13 +140,29 @@ function minutes(n: number): string {
   return m ? `${h} hr ${m} min` : `${h} hr`
 }
 
-export default function RouteReview({ route, reading, pace, activity = 'bike', focus, onFocus }: {
+/**
+ * "Avoid this street" under a picked street (RouteSection, the app planner's
+ * way): asks for a route that stays off it, then says how it came out with Undo.
+ */
+export interface RouteAvoid {
+  /** The street key being found a way around right now. */
+  busyKey: string | null
+  /** This street's legs already stay off their limit of streets. */
+  full: (label: string) => boolean
+  onAvoid: (label: string) => void
+  note: { text: string; sub?: string; onUndo?: () => void } | null
+  /** Streets the route stays off now, by name. */
+  avoiding: string[]
+}
+
+export default function RouteReview({ route, reading, pace, activity = 'bike', focus, onFocus, avoid }: {
   route: RouteDraft
   reading: RouteReading
   pace: string | null
   activity?: Activity
   focus: MapFocus
   onFocus: (f: MapFocus) => void
+  avoid?: RouteAvoid
 }) {
   const [allStretches, setAllStretches] = useState(false)
   const { option, pieces, concerns } = reading
@@ -288,9 +304,26 @@ export default function RouteReview({ route, reading, pace, activity = 'bike', f
             {pieces.length > 0 && (
               <section>
                 <h4 className="mb-1.5 text-[15px] font-bold text-(--ev-ink)">Street by street</h4>
+                {avoid?.note && (
+                  <div className="mb-2 rounded-lg bg-(--ev-panel) px-3 py-2" role="status">
+                    <p className="text-[15px] font-semibold text-(--ev-ink)">{avoid.note.text}</p>
+                    {avoid.note.sub && <p className="text-[14px] text-(--ev-ink-80)">{avoid.note.sub}</p>}
+                    {avoid.note.onUndo && (
+                      <button type="button" onClick={avoid.note.onUndo}
+                        className="mt-1 inline-flex min-h-[36px] items-center gap-1.5 text-[14px] font-semibold text-(--ev-ink) underline">
+                        <Undo2 className="h-4 w-4" aria-hidden />Undo
+                      </button>
+                    )}
+                  </div>
+                )}
+                {avoid && avoid.avoiding.length > 0 && (
+                  <p className="mb-2 px-2.5 text-[14px] text-(--ev-ink-80)">Staying off {avoid.avoiding.join(', ')}</p>
+                )}
+                {avoid && !focus && <p className="mb-2 px-2.5 text-[14px] text-(--ev-ink-75)">Pick a street to plan a way around it.</p>}
                 <ol className="grid gap-0.5">
                   {list.map((p) => {
                     const on = shown?.kind === 'piece' && shown.index === p.index
+                    const picked = focus?.kind === 'piece' && focus.index === p.index
                     return (
                       <li key={p.index}>
                         <button type="button" onClick={() => onFocus({ kind: 'piece', index: p.index })} aria-pressed={on}
@@ -302,6 +335,19 @@ export default function RouteReview({ route, reading, pace, activity = 'bike', f
                             <span className="block text-[14px] leading-snug text-(--ev-ink-75)">{COMFORT_LABELS[p.rating] ?? p.rating} · {formatStretchMiles(p.miles)}</span>
                           </span>
                         </button>
+                        {avoid && picked && (
+                          <div className="pb-1.5 pl-[34px] pr-2.5">
+                            {avoid.full(p.label) ? (
+                              <p className="text-[14px] text-(--ev-ink-80)">You can avoid up to 4 streets on this part of the route.</p>
+                            ) : (
+                              <button type="button" onClick={() => avoid.onAvoid(p.label)} disabled={!!avoid.busyKey}
+                                className="inline-flex min-h-[36px] items-center gap-1.5 rounded-full border border-(--ev-line-strong) bg-white px-3 text-[14px] font-semibold text-(--ev-ink) hover:bg-(--ev-panel) disabled:opacity-60">
+                                <Ban className="h-4 w-4" aria-hidden />
+                                {avoid.busyKey ? `Finding a way around ${streetName(p.label)}…` : 'Avoid this street'}
+                              </button>
+                            )}
+                          </div>
+                        )}
                       </li>
                     )
                   })}
