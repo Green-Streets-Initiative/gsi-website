@@ -14,7 +14,8 @@ import { togetherStrings } from '@/lib/site-strings/together'
  * the sign-in shell. Each /together page resolves its language and renders
  * this, since a layout can't read ?lang= (translation plan, batch 5).
  * /logan passes variant 'logan' (its own sign-in words). /together?kind=guide
- * passes audience 'guide': the sign-in speaks to someone offering to go with a neighbor.
+ * passes audience 'guide': the sign-in speaks to someone offering to go with a neighbor;
+ * ?kind=newcomer passes 'newcomer' (what to know first, and a link for people who already ride).
  */
 export default function TogetherFrame({ locale, variant = 'together', audience, children }: { locale: SiteLocale; variant?: ShellVariant; audience?: ShellAudience; children: ReactNode }) {
   return (

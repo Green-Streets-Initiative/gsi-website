@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
-import { Car, Eye, Handshake, LogOut, MailCheck, MapPinned, Plane, ShieldCheck, Sprout, TrainFront, UsersRound, type LucideIcon } from 'lucide-react'
+import { Bike, Car, Eye, Handshake, LogOut, MailCheck, MapPinned, Plane, ShieldCheck, Sprout, TrainFront, UsersRound, type LucideIcon } from 'lucide-react'
 import { toneClass } from '@/components/events/EventsTone'
 import { Button, Card, Field, Input, Notice, Spinner, cx } from '@/components/organizers/ui'
 import HowItWorks from '@/components/together/HowItWorks'
@@ -27,8 +27,8 @@ type Phase = 'checking' | 'signed_out' | 'off' | 'ready' | 'error'
 
 /** 'logan': gogreenstreets.org/logan (Shift 01518), open to anyone signed in, with its own words. */
 export type ShellVariant = 'together' | 'logan'
-/** 'guide': /together?kind=guide, signed out, speaks to someone offering to go with a neighbor (Keith 2026-11-13). */
-export type ShellAudience = 'guide'
+/** /together?kind=guide or ?kind=newcomer, signed out: the page speaks to that person (Keith 2026-11-13, the MassBike post links both). */
+export type ShellAudience = 'guide' | 'newcomer'
 
 /** `locale`: the page's language (/together and /logan pass it). */
 type State = { phase: Phase; userId: string | null; email: string | null; notice: string | null; signOut: () => Promise<void>; variant: ShellVariant; audience?: ShellAudience; locale: SiteLocale; t: T<TogetherKey> }
@@ -39,6 +39,13 @@ const GUIDE_POINTS: { label: TogetherKey; Icon: LucideIcon }[] = [
   { label: 'guide.point_miles', Icon: MapPinned },
   { label: 'guide.point_preview', Icon: Eye },
   { label: 'guide.point_safe', Icon: ShieldCheck },
+]
+/** What someone who'd like company the first time wants to know: who, that they choose, and an easier start. */
+const NEWCOMER_POINTS: { label: TogetherKey; Icon: LucideIcon }[] = [
+  { label: 'newcomer.point_near', Icon: UsersRound },
+  { label: 'newcomer.point_preview', Icon: Eye },
+  { label: 'guide.point_safe', Icon: ShieldCheck },
+  { label: 'newcomer.point_practice', Icon: Bike },
 ]
 const WAYS_TO_GO: { label: TogetherKey; Icon: LucideIcon }[] = [
   { label: 'kind.newcomer', Icon: Sprout },
@@ -309,6 +316,7 @@ function SignIn() {
   const { notice, variant, audience, locale, t } = useTogether()
   const logan = variant === 'logan'
   const guide = !logan && audience === 'guide'
+  const newcomer = !logan && audience === 'newcomer'
   // Arrived from a match email: just the sign-in, in the email's words.
   const path = usePathname()
   const forMatch = !logan && path.startsWith('/together/matches')
@@ -417,8 +425,8 @@ function SignIn() {
         </div>
         {card}
         <div className="grid gap-3 md:col-start-1 md:row-start-2">
-        <ul className="grid gap-2" aria-label={t(guide ? 'guide.points_aria' : 'signin.ways_aria')}>
-          {(logan ? LOGAN_POINTS.map((p) => ({ label: tl(p.label), Icon: p.Icon })) : (guide ? GUIDE_POINTS : WAYS_TO_GO).map((w) => ({ label: t(w.label), Icon: w.Icon }))).map(({ label, Icon }) => (
+        <ul className="grid gap-2" aria-label={t(guide ? 'guide.points_aria' : newcomer ? 'newcomer.points_aria' : 'signin.ways_aria')}>
+          {(logan ? LOGAN_POINTS.map((p) => ({ label: tl(p.label), Icon: p.Icon })) : (guide ? GUIDE_POINTS : newcomer ? NEWCOMER_POINTS : WAYS_TO_GO).map((w) => ({ label: t(w.label), Icon: w.Icon }))).map(({ label, Icon }) => (
             <li key={label} className="flex items-center gap-3 text-[17px] font-semibold">
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-(--ev-panel) text-(--ev-accent)" aria-hidden>
                 <Icon className="h-5 w-5" />
@@ -431,6 +439,11 @@ function SignIn() {
           // A reader passing it on to a friend who'd like to start: the newcomer version of this page.
           <a href={withLang('/together?kind=newcomer', locale)} className="text-[16px] font-semibold text-(--ev-accent) underline underline-offset-2">
             {t('guide.newcomer_link')}
+          </a>
+        ) : newcomer ? (
+          // A reader who already rides: the guide version of this page.
+          <a href={withLang('/together?kind=guide', locale)} className="text-[16px] font-semibold text-(--ev-accent) underline underline-offset-2">
+            {t('newcomer.guide_link')}
           </a>
         ) : null}
         </div>
