@@ -3,8 +3,12 @@
  * supabase/functions/event-photos). The bucket is private and the tables have
  * no policies, so everything goes through the function: every call carries
  * web=1 and the page's preview key, and, once the person has confirmed their
- * email, their contributor token.
+ * email, their contributor token. On a calendar event's album, someone
+ * signed in to the organizer console also sends their sign-in, so the
+ * event's verified organizer can remove photos (Shift event-photos).
  */
+
+import { supabase } from '@/lib/supabase'
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -57,6 +61,8 @@ export interface AlbumResponse {
      * (or was removed). Photos stay empty; `count` still says how many.
      */
     locked?: 'code' | 'not_on_list' | null
+    /** The signed-in person runs this event: they may remove any photo. */
+    is_organizer?: boolean
   }
   photos: AlbumPhoto[]
   /** Before a date starts, or while its album is empty: the last date with photos. */
@@ -70,12 +76,23 @@ export interface Guest {
   email: string
 }
 
-function headers(token?: string | null): Record<string, string> {
+function headers(token?: string | null, signIn?: string | null): Record<string, string> {
   return {
     apikey: ANON,
-    Authorization: `Bearer ${ANON}`,
+    Authorization: `Bearer ${signIn || ANON}`,
     'Content-Type': 'application/json',
     ...(token ? { 'x-guest-token': token } : {}),
+  }
+}
+
+/** The organizer console's sign-in in this browser, if any (never on the server). */
+export async function consoleSignIn(): Promise<string | null> {
+  if (typeof window === 'undefined') return null
+  try {
+    const { data } = await supabase.auth.getSession()
+    return data.session?.access_token ?? null
+  } catch {
+    return null
   }
 }
 
@@ -83,7 +100,9 @@ function headers(token?: string | null): Record<string, string> {
 export async function fetchAlbum(ref: AlbumRef | string, preview: string, token?: string | null): Promise<AlbumResponse | null> {
   const r: AlbumRef = typeof ref === 'string' ? { event: ref } : ref
   const q = new URLSearchParams({ ...r, web: '1', preview })
-  const res = await fetch(`${FN}?${q}`, { headers: headers(token), cache: 'no-store' })
+  // Calendar events only: a Shift ride's organizers have the console's Photos tab.
+  const signIn = 'event' in r ? await consoleSignIn() : null
+  const res = await fetch(`${FN}?${q}`, { headers: headers(token, signIn), cache: 'no-store' })
   if (res.status === 404) return null
   if (!res.ok) throw new Error(`event-photos ${res.status}`)
   return (await res.json()) as AlbumResponse
@@ -98,10 +117,11 @@ export class ApiError extends Error {
 const FALLBACK = 'Something went wrong. Try again in a minute.'
 
 /** A POST to the function; a non-2xx answer throws its plain `message`. */
-export async function post<T>(body: Record<string, unknown>, token?: string | null): Promise<T> {
+export async function post<T>(body: Record<string, unknown>, token?: string | null, asOrganizer = false): Promise<T> {
   let res: Response
   try {
-    res = await fetch(FN, { method: 'POST', headers: headers(token), body: JSON.stringify(body) })
+    const signIn = asOrganizer ? await consoleSignIn() : null
+    res = await fetch(FN, { method: 'POST', headers: headers(token, signIn), body: JSON.stringify(body) })
   } catch {
     throw new ApiError('network', 'Check your connection and try again.', 0)
   }

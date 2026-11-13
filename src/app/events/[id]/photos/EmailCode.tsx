@@ -8,9 +8,12 @@ import { ApiError, post, writeGuest, type AlbumRef, type Guest } from './photo-a
  * code we send to it (the same code email used for signing in). A first-name
  * field shows only when the server doesn't already know the person's name.
  */
-export default function EmailCode({ albumRef, preview, intro, onVerified, onCancel }: {
+export default function EmailCode({ albumRef, preview, intro, purpose = 'add', onVerified, onCancel }: {
   albumRef: AlbumRef
   preview: string
+  /** Why they're confirming, so the code email says so: adding photos, seeing an invite-only ride's, or a take-down. */
+  purpose?: 'add' | 'view' | 'confirm'
+
   /** One line above the email field. */
   intro: string
   onVerified: (g: Guest) => void
@@ -30,7 +33,7 @@ export default function EmailCode({ albumRef, preview, intro, onVerified, onCanc
     setBusy(true)
     setError(null)
     try {
-      const r = await post<{ ok: boolean; needs_name?: boolean }>({ action: 'code', email: email.trim(), ...albumRef, preview })
+      const r = await post<{ ok: boolean; needs_name?: boolean }>({ action: 'code', email: email.trim(), ...albumRef, preview, purpose })
       setNeedsName(!!r.needs_name)
       setCode('')
       if (step === 'code') setResent(true)

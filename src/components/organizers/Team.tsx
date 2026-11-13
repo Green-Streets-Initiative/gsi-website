@@ -1,11 +1,14 @@
 'use client'
 
 import { useEffect, useState, type FormEvent } from 'react'
-import { UserPlus } from 'lucide-react'
-import { errorText, getMembers, inviteLeader, revokeLeaderInvite, setMemberRole } from '@/lib/organizers/api'
+import { ArrowLeftRight, Copy, UserPlus } from 'lucide-react'
+import {
+  answerHandoff, cancelHandoff, errorText, getHandoff, getMembers, inviteLeader, myUserId, requestHandoff,
+  revokeLeaderInvite, rideJoinUrl, rotateInviteCode, setMemberRole,
+} from '@/lib/organizers/api'
 import { ago } from '@/lib/rides/public'
 import { useRide } from './RideFrame'
-import { Badge, Button, Card, Field, Input, Notice, SectionTitle } from './ui'
+import { Badge, Button, Card, copyText, Dialog, Field, Input, Notice, SectionTitle, Select } from './ui'
 
 type Member = Awaited<ReturnType<typeof getMembers>>[number]
 
@@ -19,11 +22,26 @@ export default function Team() {
   const [msg, setMsg] = useState<{ tone: 'good' | 'off'; text: string } | null>(null)
   const [members, setMembers] = useState<Member[]>([])
   const [allRiders, setAllRiders] = useState(false)
+  /** Who the ride is waiting on to take it over (Shift 01288), and who's signed in. */
+  const [handoffTo, setHandoffTo] = useState<string | null>(null)
+  const [me, setMe] = useState<string | null>(null)
+  const [pick, setPick] = useState('')
+  const [asking, setAsking] = useState<Member | null>(null)
+  const [newLink, setNewLink] = useState(false)
+  const [copied, setCopied] = useState(false)
 
   useEffect(() => {
     if (!canRename) return
     getMembers(r.id).then(setMembers).catch(() => setMembers([]))
   }, [r.id, canRename, detail.leaders.length])
+
+  useEffect(() => {
+    let live = true
+    Promise.all([getHandoff(r.id), myUserId()])
+      .then(([to, uid]) => { if (live) { setHandoffTo(to); setMe(uid) } })
+      .catch(() => {})
+    return () => { live = false }
+  }, [r.id, detail.ride.organizer_user_id])
 
   async function invite(e: FormEvent) {
     e.preventDefault()
@@ -62,10 +80,51 @@ export default function Team() {
   }
 
   const riders = members.filter((m) => m.role === 'rider' && m.user_id)
+  // Anyone on the ride with a Shift account can be asked to take it over: leaders first.
+  const takers = members
+    .filter((m) => m.role !== 'organizer' && m.user_id && !m.is_you)
+    .sort((a, b) => (a.role === 'leader' ? 0 : 1) - (b.role === 'leader' ? 0 : 1) || a.display_name.localeCompare(b.display_name))
+  const waitingOn = handoffTo ? members.find((m) => m.user_id === handoffTo) ?? null : null
+  const askedMe = !!handoffTo && !!me && handoffTo === me
+  const ended = r.status === 'archived'
+
+  async function handoff(key: string, fn: () => Promise<unknown>, done: string) {
+    setBusy(key)
+    setMsg(null)
+    try {
+      await fn()
+      setMsg({ tone: 'good', text: done })
+      setHandoffTo(await getHandoff(r.id))
+      setAsking(null)
+      await reload()
+    } catch (err) {
+      setMsg({ tone: 'off', text: errorText(err) })
+    } finally {
+      setBusy(null)
+    }
+  }
 
   return (
     <div className="grid grid-cols-[minmax(0,1fr)] gap-5">
       {msg && <Notice tone={msg.tone} onClose={() => setMsg(null)}>{msg.text}</Notice>}
+
+      {askedMe && !ended && (
+        <Card>
+          <SectionTitle hint="You'd become the organizer. They stay on as a leader.">
+            {detail.organizer_person || 'The organizer'} asked you to run this ride
+          </SectionTitle>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="primary" busy={busy === 'accept'}
+              onClick={() => void handoff('accept', () => answerHandoff(r.id, true), "You're the organizer now. They stay on as a leader.")}>
+              Yes, I&apos;ll run it
+            </Button>
+            <Button busy={busy === 'decline'}
+              onClick={() => void handoff('decline', () => answerHandoff(r.id, false), "Done. We've let them know.")}>
+              No thanks
+            </Button>
+          </div>
+        </Card>
+      )}
 
       <Card>
         <SectionTitle hint="Leaders see who's coming and post updates.">
@@ -121,6 +180,34 @@ export default function Team() {
         </Card>
       )}
 
+      {manage && !ended && r.invite_code && (
+        <Card>
+          <SectionTitle hint="Once they join in the Shift app, make them a leader below.">
+            Or send the ride&apos;s link
+          </SectionTitle>
+          <p className="break-all text-[15px] text-(--ev-ink-85)">{rideJoinUrl(r.invite_code)}</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Button size="sm" onClick={async () => { setCopied(await copyText(rideJoinUrl(r.invite_code))); setTimeout(() => setCopied(false), 2500) }}>
+              <Copy className="h-4 w-4" aria-hidden />{copied ? 'Copied' : 'Copy the link'}
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => setNewLink(true)}>Make a new link</Button>
+          </div>
+        </Card>
+      )}
+
+      <Dialog open={newLink} onClose={() => setNewLink(false)} title="Make a new link?"
+        footer={<>
+          <Button onClick={() => setNewLink(false)}>Keep this one</Button>
+          <Button variant="danger" busy={busy === 'rotate'}
+            onClick={() => void act('rotate', async () => { await rotateInviteCode(r.id); setNewLink(false) }, 'New link ready. Share it from here or from Promote.')}>
+            Make new link
+          </Button>
+        </>}>
+        <p className="text-[15px] leading-snug text-(--ev-ink-85)">
+          The old link and code stop working right away, including on printed flyers. People already on the ride stay on it.
+        </p>
+      </Dialog>
+
       {canRename && riders.length > 0 && (
         <Card>
           <SectionTitle hint="People already on the ride with the Shift app.">Make someone on the ride a leader</SectionTitle>
@@ -142,6 +229,55 @@ export default function Team() {
           )}
         </Card>
       )}
+
+      {canRename && !ended && (waitingOn || handoffTo || takers.length > 0) && (
+        <Card>
+          <SectionTitle hint="They become the organizer once they say yes. Until then, you are. After, you stay on as a leader.">
+            Hand the ride to someone
+          </SectionTitle>
+          {handoffTo ? (
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="text-[15px] text-(--ev-ink-85)">
+                <span className="font-semibold text-(--ev-ink)">Waiting for {waitingOn?.display_name || 'them'} to say yes.</span>{' '}
+                You&apos;re still the organizer until they do. They answer in the Shift app.
+              </p>
+              <Button size="sm" variant="ghost" busy={busy === 'cancel-handoff'}
+                onClick={() => void handoff('cancel-handoff', () => cancelHandoff(r.id), 'Cancelled. You still run the ride.')}>
+                Cancel the hand-off
+              </Button>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+              <div className="flex-1">
+                <Field label="Someone on the ride" htmlFor="handoff-to">
+                  <Select id="handoff-to" value={pick} onChange={(e) => setPick(e.target.value)}>
+                    <option value="">Choose someone</option>
+                    {takers.map((m) => (
+                      <option key={m.member_id} value={m.user_id!}>{m.display_name}{m.role === 'leader' ? ' (leader)' : ''}</option>
+                    ))}
+                  </Select>
+                </Field>
+              </div>
+              <Button disabled={!pick} onClick={() => setAsking(takers.find((m) => m.user_id === pick) ?? null)}>
+                <ArrowLeftRight className="h-4 w-4" aria-hidden />Ask them
+              </Button>
+            </div>
+          )}
+        </Card>
+      )}
+
+      <Dialog open={!!asking} onClose={() => setAsking(null)} title={`Hand ${r.name} to ${asking?.display_name ?? ''}?`}
+        footer={<>
+          <Button onClick={() => setAsking(null)}>Never mind</Button>
+          <Button variant="primary" busy={busy === 'ask-handoff'}
+            onClick={() => asking && void handoff('ask-handoff', () => requestHandoff(r.id, asking.user_id!), `Asked ${asking.display_name}. You're still the organizer until they say yes.`)}>
+            Ask {asking?.display_name}
+          </Button>
+        </>}>
+        <p className="text-[15px] leading-snug text-(--ev-ink-85)">
+          {asking?.display_name} gets a notice in the Shift app and becomes the organizer when they say yes. You&apos;ll stay on as a leader.
+        </p>
+      </Dialog>
     </div>
   )
 }

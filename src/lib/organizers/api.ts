@@ -431,6 +431,51 @@ export const revokeLeaderInvite = (inviteId: string) =>
 export const setMemberRole = (seriesId: string, userId: string, role: 'leader' | 'rider') =>
   rpc<{ ok: boolean }>('set_ride_member_role', { p_series_id: seriesId, p_user_id: userId, p_role: role })
 
+// ── Handing the ride on, and the ride's join link (the app's ride-leaders screen) ──
+
+/** The signed-in person's account id, or null. */
+export async function myUserId(): Promise<string | null> {
+  const { data } = await supabase.auth.getSession()
+  return data.session?.user.id ?? null
+}
+
+/** Who the ride is waiting on to take it over, if anyone (Shift 01288; organizer_ride_detail leaves it out). */
+export async function getHandoff(seriesId: string): Promise<string | null> {
+  const { data } = await supabase.from('ride_series').select('handoff_to_user_id').eq('id', seriesId).maybeSingle()
+  return (data as { handoff_to_user_id: string | null } | null)?.handoff_to_user_id ?? null
+}
+
+/** The organizer names someone on the ride; it changes hands only when they say yes. They get the app's notice. */
+export async function requestHandoff(seriesId: string, userId: string) {
+  await rpc<{ ok: boolean }>('request_ride_handoff', { p_series_id: seriesId, p_user_id: userId })
+  track('organizer_handoff_requested', { ride_id: seriesId })
+  await shiftFunction('notify-ride-canceled', { series_id: seriesId, handoff: 'request' }).catch(() => {})
+}
+
+export const cancelHandoff = (seriesId: string) => rpc<{ ok: boolean }>('cancel_ride_handoff', { p_series_id: seriesId })
+
+/** The person asked to run the ride answers; the old organizer hears either way. */
+export async function answerHandoff(seriesId: string, accept: boolean) {
+  const r = await rpc<{ accepted: boolean; previous_organizer?: string }>('respond_ride_handoff', { p_series_id: seriesId, p_accept: accept })
+  track('organizer_handoff_answered', { ride_id: seriesId, accepted: accept })
+  await shiftFunction('notify-ride-canceled', {
+    series_id: seriesId,
+    handoff: accept ? 'accepted' : 'declined',
+    ...(accept && r?.previous_organizer ? { previous_organizer: r.previous_organizer } : {}),
+  }).catch(() => {})
+  return r
+}
+
+/** The link the app shares to join a ride: it opens the app, or the store. */
+export const rideJoinUrl = (code: string) => `https://shift.gogreenstreets.org/join/${code}`
+
+/** A new join link and code; the old ones stop working. People on the ride stay on it. */
+export async function rotateInviteCode(seriesId: string) {
+  const r = await rpc<{ invite_code: string }>('rotate_ride_invite_code', { p_series_id: seriesId })
+  track('organizer_invite_code_rotated', { ride_id: seriesId })
+  return r
+}
+
 // ── Organizations (the same writes as the app's ride form) ─────────────
 
 export interface OrgMatch { id: string; name: string; url: string | null }

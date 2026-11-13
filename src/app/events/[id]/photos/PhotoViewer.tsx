@@ -14,7 +14,7 @@ type Reason = 'in_photo' | 'remove' | 'report'
  * the person who posted it and the organizer; Report hides it too. Taking a
  * photo down needs a confirmed email, so a first-timer confirms right here.
  */
-export default function PhotoViewer({ photos, index, onIndex, onClose, guest, onGuest, onRemoved, albumRef, preview }: {
+export default function PhotoViewer({ photos, index, onIndex, onClose, guest, onGuest, onRemoved, albumRef, preview, organizer = false }: {
   photos: AlbumPhoto[]
   index: number
   onIndex: (i: number) => void
@@ -24,6 +24,8 @@ export default function PhotoViewer({ photos, index, onIndex, onClose, guest, on
   onRemoved: (id: string) => void
   albumRef: AlbumRef
   preview: string
+  /** Signed in as the event's organizer: Remove goes through on that sign-in, no email step. */
+  organizer?: boolean
 }) {
   const photo = photos[index]
   const [confirm, setConfirm] = useState<Reason | null>(null)
@@ -65,12 +67,12 @@ export default function PhotoViewer({ photos, index, onIndex, onClose, guest, on
   const noun = photo.kind === 'video' ? 'video' : 'photo'
   const when = photo.taken_at ?? photo.created_at ?? null
 
-  async function takeDown(reason: Reason, token: string) {
+  async function takeDown(reason: Reason, token: string | null) {
     setBusy(true)
     setError(null)
     try {
       // A Shift ride date's album carries its link code: that's what opens it on the web.
-      await post({ action: 'remove', web: true, preview, photo_id: photo.id, reason, ...('ride' in albumRef ? { ride: albumRef.ride } : {}) }, token)
+      await post({ action: 'remove', web: true, preview, photo_id: photo.id, reason, ...('ride' in albumRef ? { ride: albumRef.ride } : {}) }, token, organizer && reason === 'remove')
       setConfirm(null)
       onRemoved(photo.id)
     } catch (err) {
@@ -141,7 +143,7 @@ export default function PhotoViewer({ photos, index, onIndex, onClose, guest, on
       <div className="px-4 pb-[max(16px,env(safe-area-inset-bottom))] pt-3 sm:px-6">
         {confirm ? (
           <div className="events-tone events-tone-light mx-auto max-w-[480px] rounded-2xl bg-white p-5 text-(--ev-ink)">
-            {guest ? (
+            {guest || (organizer && confirm === 'remove') ? (
               <>
                 <p className="text-[17px] font-bold">{ask[confirm].title}</p>
                 <p className="mt-1 text-[15px] text-(--ev-ink-80)">{ask[confirm].body}</p>
@@ -150,7 +152,7 @@ export default function PhotoViewer({ photos, index, onIndex, onClose, guest, on
                   <button type="button" onClick={() => { setConfirm(null); setError(null) }} className="min-h-[46px] flex-1 rounded-[10px] border border-(--ev-line-strong) text-[15px] font-semibold text-(--ev-ink) hover:bg-(--ev-panel)">
                     Keep it
                   </button>
-                  <button type="button" disabled={busy} onClick={() => takeDown(confirm, guest.token)} className="min-h-[46px] flex-1 rounded-[10px] bg-(--ev-danger) text-[15px] font-bold text-white hover:opacity-90 disabled:opacity-60">
+                  <button type="button" disabled={busy} onClick={() => takeDown(confirm, guest?.token ?? null)} className="min-h-[46px] flex-1 rounded-[10px] bg-(--ev-danger) text-[15px] font-bold text-white hover:opacity-90 disabled:opacity-60">
                     {busy ? 'Taking it down…' : ask[confirm].yes}
                   </button>
                 </div>
@@ -162,7 +164,7 @@ export default function PhotoViewer({ photos, index, onIndex, onClose, guest, on
                 {error && <p role="alert" className="mt-2 text-[14px] font-semibold text-(--ev-danger)">{error}</p>}
                 <div className="mt-3">
                   <EmailCode
-                    albumRef={albumRef} preview={preview}
+                    albumRef={albumRef} preview={preview} purpose="confirm"
                     intro="First, confirm your email. We'll send you a 6-digit code."
                     onVerified={(g) => { onGuest(g); takeDown(confirm, g.token) }}
                     onCancel={() => { setConfirm(null); setError(null) }}

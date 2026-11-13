@@ -9,7 +9,7 @@ import EmailCode from './EmailCode'
 import PhotoViewer from './PhotoViewer'
 import { PrepError, isVideo, preparePhoto, prepareVideo, videoType } from './prepare-media'
 import {
-  ApiError, clockTime, countLine, dayLabel, duration, fetchAlbum, fileName, post, readGuest, shortDate, writeGuest,
+  ApiError, clockTime, consoleSignIn, countLine, dayLabel, duration, fetchAlbum, fileName, post, readGuest, shortDate, writeGuest,
   type AlbumRef, type AlbumResponse, type Guest,
 } from './photo-api'
 
@@ -92,6 +92,15 @@ export default function PhotoAlbum({ initial, preview, albumRef, back, autoAdd =
     // Once, on arrival.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [refresh])
+
+  // A calendar event's own organizer, signed in to the console in this
+  // browser: load again with that sign-in so Remove shows on every photo.
+  useEffect(() => {
+    if (!('event' in ref) || readGuest()) return
+    let live = true
+    consoleSignIn().then((t) => { if (live && t) void refresh(null) })
+    return () => { live = false }
+  }, [ref, refresh])
 
   // ---- Adding ----
   const fileRef = useRef<HTMLInputElement>(null)
@@ -332,7 +341,7 @@ export default function PhotoAlbum({ initial, preview, albumRef, back, autoAdd =
               {locked === 'code' && step === 'email' && !guest ? (
                 <div className="mt-4">
                   <EmailCode
-                    albumRef={ref} preview={preview}
+                    albumRef={ref} preview={preview} purpose="view"
                     intro="We'll send a 6-digit code to it."
                     onVerified={onVerified}
                     onCancel={() => setStep('idle')}
@@ -541,7 +550,7 @@ export default function PhotoAlbum({ initial, preview, albumRef, back, autoAdd =
         <PhotoViewer
           photos={photos} index={open} onIndex={setOpen} onClose={() => setOpen(null)}
           guest={guest} onGuest={setGuest} onRemoved={onRemoved}
-          albumRef={ref} preview={preview}
+          albumRef={ref} preview={preview} organizer={!!album.is_organizer}
         />
       )}
     </EventsToneProvider>
