@@ -10,12 +10,15 @@ import { dateLabel } from '@/lib/organizers/ride-words'
 import { decodePlan, draftOf, routePayload } from '@/lib/organizers/saved-route'
 import type { DetailDate, RideRow, RouteDraft } from '@/lib/organizers/types'
 import { ROUTE_IMPORT_KEY } from './AssistantPanel'
+import JoinStops, { withJoinStops } from './JoinStops'
 import RouteMap from './RouteMap'
 import RouteSection from './RouteSection'
 import { Button, Card, Field, Input, Notice, Select, SectionTitle, Textarea, Toggle, cx } from './ui'
 
 /**
  * Plan one date (Shift 01432): its own name, description, flyer and route.
+ * A date's own route takes join stops too (Shift 01744; _ride_join_stops
+ * reads the date's own pins), as Edit ride does (2026-11-13).
  * Most groups ride somewhere new each time; anything left empty uses the
  * ride's usual details.
  */
@@ -268,7 +271,15 @@ export default function DateEditor({ ride, date, dates, onSaved }: {
               {plannedElsewhere && (
                 <Notice tone="info">This route starts somewhere other than this date&rsquo;s meeting point. To move the meeting point, use Change on the ride page.</Notice>
               )}
-              <RouteSection key={routeKey} route={f.route} onRoute={(r) => set('route', r)} meetup={meetup} pace={ride.pace ?? null} activity={ride.activity === 'walk' ? 'walk' : 'bike'} initialPlan={planned} initialImport={imported} />
+              <RouteSection key={routeKey} route={f.route} onRoute={(r) => {
+                // Join stops stay put when the route is re-planned or swapped, as in Edit ride.
+                setF((p) => ({ ...p, route: r ? withJoinStops(r, (p.route?.pins ?? []).filter((x, i) => i > 0 && x.join), meetup) : null }))
+                setDirty(true)
+              }} meetup={meetup} pace={ride.pace ?? null} activity={ride.activity === 'walk' ? 'walk' : 'bike'} initialPlan={planned} initialImport={imported} />
+              {f.route && f.route.waypoints.length >= 2 && (
+                <JoinStops route={f.route} meetup={meetup} pace={ride.pace ?? null} activity={ride.activity === 'walk' ? 'walk' : 'bike'}
+                  startTime={date.start_time} onChange={(r) => set('route', r)} />
+              )}
               <Field label="Link to the route elsewhere" htmlFor="date-link" optional hint="Ride with GPS, Strava, Komoot or Google Maps, shown as a link."
                 error={!LINK_OK(f.link) ? 'Links start with https://' : null}>
                 <Input id="date-link" value={f.link} onChange={(e) => set('link', e.target.value)} placeholder="https://ridewithgps.com/routes/…" inputMode="url" />
