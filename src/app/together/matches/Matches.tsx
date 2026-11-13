@@ -134,7 +134,8 @@ export default function Matches({ locale }: { locale: SiteLocale }) {
 
   return (
     <div className="grid grid-cols-1 gap-6">
-      <Journey at={matches.length ? 3 : 2} locale={locale} />
+      {/* No sign-up yet: step 1, where the page's own button sends them */}
+      <Journey at={matches.length ? 3 : open ? 2 : 1} locale={locale} />
       <div>
         <h1 className="font-display text-[clamp(28px,4vw,38px)] font-extrabold">{t('matches.title')}</h1>
         {!matches.length || deciding ? (
