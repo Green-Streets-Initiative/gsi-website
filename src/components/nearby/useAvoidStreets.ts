@@ -25,6 +25,8 @@ type Entry = {
   route: { minutes: number; polyline: string; comfort: BikeComfortData | null; steps: ReachStep[] }
   /** The minutes of the route shown before the first avoid. */
   baseMinutes: number
+  /** The trip before this change, so Undo steps back one street, as in the app. */
+  prev: Entry | null
 }
 
 export type AvoidState = {
@@ -105,7 +107,7 @@ export function useAvoidStreets(center: { lat: number; lng: number }) {
         return false
       }
       const named = avoided.map((a, i) => (towns?.[i] ? { ...a, label: `${streetOnly(a.label)}, ${towns[i]}` } : a))
-      setEntries(e => ({ ...e, [row.id]: { avoided: named, route, baseMinutes: prev?.baseMinutes ?? shownMinutes } }))
+      setEntries(e => ({ ...e, [row.id]: { avoided: named, route, baseMinutes: prev?.baseMinutes ?? shownMinutes, prev: prev ?? null } }))
       return true
     } catch {
       setFailed({ rowId: row.id, key })
@@ -115,10 +117,15 @@ export function useAvoidStreets(center: { lat: number; lng: number }) {
     }
   }, [center, entries])
 
+  /** Undo the last street avoided (parity gap-undo-all; the planner and the
+   *  app undo one change at a time). */
   const undo = useCallback((rowId: string) => {
     setEntries(e => {
+      const cur = e[rowId]
+      if (!cur) return e
       const next = { ...e }
-      delete next[rowId]
+      if (cur.prev) next[rowId] = cur.prev
+      else delete next[rowId]
       return next
     })
     setNone(null)

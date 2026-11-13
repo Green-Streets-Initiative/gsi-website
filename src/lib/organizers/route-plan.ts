@@ -34,8 +34,9 @@ export function comfortBreakdown(segments: ComfortSegment[] | null | undefined):
   let left = 100 - pcts.reduce((a, b) => a + b, 0)
   const byRem = exact.map((v, i) => ({ i, rem: v - Math.floor(v) })).sort((a, b) => b.rem - a.rem)
   for (let k = 0; left > 0 && k < byRem.length; k++, left--) pcts[byRem[k].i] += 1
+  // Comfort order, never size order, as the app (lib/comfort.ts): comparing
+  // routes needs Protected in the same place every time (parity gap-organizer-route-copy).
   return ordered.map((r, i) => ({ rating: r, pct: pcts[i], miles: Math.round(miles[r] * 10) / 10 }))
-    .sort((a, b) => b.pct - a.pct)
 }
 
 /**
@@ -47,13 +48,8 @@ export function comfortBreakdown(segments: ComfortSegment[] | null | undefined):
 export function comfortRatingOf(segments: ComfortSegment[] | null | undefined): string | null {
   const buckets = comfortBreakdown(segments)
   if (!buckets.length) return null
-  const first = [...buckets].sort((a, b) => order(a.rating) - order(b.rating))[0]
+  const first = buckets[0]
   return first.pct >= 80 ? first.rating : 'mixed'
-}
-
-function order(rating: string): number {
-  const i = (COMFORT_ORDER as readonly string[]).indexOf(rating)
-  return i < 0 ? COMFORT_ORDER.length : i
 }
 
 function combineElevation(legs: (RouteElevation | null | undefined)[], legMiles: number[]): RouteElevation | null {
