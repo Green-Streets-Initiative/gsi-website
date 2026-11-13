@@ -550,6 +550,14 @@ export function headlineFor(result: HeadlineInput, motivation: Motivation | null
   const climate = formatCo2Share(s.emissions_share_pct, locale)
   const health = healthClause(result, subject, locale)
 
+  // Even on both against the same way in: one clause, "about the same time
+  // and cost as driving", in place of saying "as driving" twice.
+  const evenWith = fastest && fastest !== subject ? modeNoun(fastest, result.transit_legs, result.modes[fastest].combo, locale) : null
+  if (evenWith && (motivation == null || motivation === 'time' || motivation === 'money')
+    && time === t('cost.clause_same_time', { bench: evenWith }) && cost === t('cost.clause_same_cost', { bench: evenWith })) {
+    return t('cost.headline_one', { lead, a: t('cost.clause_same_both', { bench: evenWith }) })
+  }
+
   let clauses: string[]
   switch (motivation) {
     case 'money':

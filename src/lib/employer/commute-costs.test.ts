@@ -321,6 +321,10 @@ describe('withoutCar (No car, product item 17)', () => {
     const same = full('bike')
     assert.equal(withCalmRide(same, 0), same)
   })
+  it('says "the same time and cost as driving" once when both are even', () => {
+    const even = { ...full('bike'), modes: { drive: mode({ minutes: 13, leave_by: '08:44', cost_per_day: 0.8 }), bike: mode({ minutes: 14, leave_by: '08:46', cost_per_day: 0.32 }) } } as unknown as AdvisorResult
+    assert.equal(headlineFor(even, null), 'Leave by 8:46 AM on a bike, about the same time and cost as driving.')
+  })
   it('reads the saved choice', () => {
     assert.equal(asCarChoice('none'), 'none')
     assert.equal(asCarChoice('ev'), 'ev')
