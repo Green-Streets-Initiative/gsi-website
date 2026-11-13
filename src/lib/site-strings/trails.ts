@@ -224,6 +224,10 @@ export const trailStrings = defineStrings(
     'stretch.near': 'near {from}',
     'report.line': '{condition} {where}',
     'head.snow': '{snow}. No reports from riders yet',
+    // ── Paths on a route (lib/trails/conditionsAlong.ts) ──
+    'along.title': 'Paths on this route',
+    'along.at': '{text}, {time}',
+    'along.sentence': '{s}.',
   },
   {
     es: {
@@ -431,6 +435,9 @@ export const trailStrings = defineStrings(
       'stretch.near': 'cerca de {from}',
       'report.line': '{condition} {where}',
       'head.snow': '{snow}. Todavía no hay reportes de ciclistas',
+      'along.title': 'Senderos en esta ruta',
+      'along.at': '{text}, {time}',
+      'along.sentence': '{s}.',
     },
     'pt-BR': {
       'index.search_title': 'Ciclovias e trilhas em antigas linhas de trem em Boston e Massachusetts',
@@ -637,6 +644,9 @@ export const trailStrings = defineStrings(
       'stretch.near': 'perto de {from}',
       'report.line': '{condition} {where}',
       'head.snow': '{snow}. Ainda não há relatos de ciclistas',
+      'along.title': 'Caminhos nesta rota',
+      'along.at': '{text}, {time}',
+      'along.sentence': '{s}.',
     },
     'zh-Hans': {
       'index.search_title': '波士顿和马萨诸塞州的自行车道和铁路步道',
@@ -843,6 +853,9 @@ export const trailStrings = defineStrings(
       'stretch.near': '{from}附近',
       'report.line': '{where}{condition}',
       'head.snow': '{snow}。还没有骑行者的报告',
+      'along.title': '这条路线上的步道',
+      'along.at': '{text}，{time}',
+      'along.sentence': '{s}。',
     },
   },
 )

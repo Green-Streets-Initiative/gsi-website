@@ -43,6 +43,7 @@ import { useNearbyV2, wantsSignIn } from './useNearbyV2'
 import { NearbySignIn, V2Blocks, V2LayersButton, V2PlaceChips, type V2Layers } from './NearbyV2'
 import { useSpotPress } from '@/components/spot/useSpotPress'
 import { ReachBikeNotes, ReachWalkNotes } from '@/components/notes/ReachNotes'
+import { ReachBikePaths } from './ReachPaths'
 import type { ShuttleVehicleLive } from '@/lib/nearby/live-data'
 
 /**
@@ -889,6 +890,7 @@ function ReachDetail({ row, mode, center, onMode, legInfo, highlightedStreetKey,
             highlightedStreetKey={highlightedStreetKey}
             onHighlightStreet={onHighlightStreet}
           />
+          <ReachBikePaths row={row} alt={bikeAlt} />
           <ReachBikeNotes row={row} alt={bikeAlt} />
         </>
       )}

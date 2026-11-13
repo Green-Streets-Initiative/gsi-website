@@ -19,6 +19,7 @@ import { TrainIcon, BusIcon, FerryIcon, ShuttleIcon } from '@/components/wayfind
 import { dockStatsText } from './markers'
 import { ShuttleOperatorLines } from './ShuttleOperator'
 import { useNearbyLocale, useNearbyT } from './NearbyI18n'
+import { CorridorPaths } from './ReachPaths'
 import { bikeshareLogoUrl, borrowLogoUrl } from '@/lib/nearby/provider-logos'
 import {
   type Selection, type StationGroup, routeEndpoints, isShuttleStation,
@@ -311,6 +312,7 @@ export function DetailContent({ selection, stationByKey, corridorById, docks, bo
           {SOURCE_LABEL[c.source] && (
             <div className="mt-1 text-[0.72rem] text-(--nb-ink-70)">{tr('detail.data_source', { source: SOURCE_LABEL[c.source] })}</div>
           )}
+          <CorridorPaths corridor={c} />
           <PanelPhoto spec={corridorPhotoSpec(c)} alt={c.name} />
         </div>
       )

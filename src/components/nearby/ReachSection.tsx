@@ -14,6 +14,7 @@ import type { ReachRow, ReachStep, ReachSegment, BikeComfortTier, BikeComfortDat
 import { useNearbyT, useNearbyLocale } from './NearbyI18n'
 import { TripPerks } from './NearbyPerks'
 import { ReachBikeNotes, ReachWalkNotes } from '@/components/notes/ReachNotes'
+import { ReachBikePaths } from './ReachPaths'
 import { TrainIcon, BusIcon, FerryIcon, ShuttleIcon } from '@/components/wayfinding/WayfindingIcons'
 
 /** Comfort-tier → i18n key, so a tapped bike leg's tier reads in the page
@@ -470,6 +471,7 @@ export function V2Trip({ row, mode, onMode, center, legInfo, highlightedStreetKe
             />
           </>
         )}
+        {bike && <ReachBikePaths row={row} alt={showingAlt} />}
         {bike && <ReachBikeNotes row={row} alt={showingAlt} />}
         {!bike && (
           <>
@@ -811,6 +813,7 @@ export function ReachList({ center, rows, onRowTap, modeFilter, routeSelection, 
                           highlightedStreetKey={highlightedStreetKey}
                           onHighlightStreet={onHighlightStreet}
                         />
+                        <ReachBikePaths row={row} alt={bikeAlt} />
                         <ReachBikeNotes row={row} alt={bikeAlt} />
                       </>
                     )}

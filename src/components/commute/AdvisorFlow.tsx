@@ -25,6 +25,7 @@ import { haversineMeters } from '@/lib/geo/measure'
 import { COMFORT_COLORS, comfortLabel, comfortPieces, fetchCalmRoute, formatStretchMiles, legPhotoSpec, type CalmRoute } from '@/components/commute/calm-route'
 import { ReportRouteLink, type RouteIssueStretch, type RouteIssueSurface } from '@/components/commute/ReportRouteSheet'
 import RouteNotes from '@/components/notes/RouteNotes'
+import PathConditionsAlong from '@/components/trails/PathConditionsAlong'
 import { useNotesSwitch } from '@/components/notes/useNotesSwitch'
 import { contentModeFor, guidesByStage, guidesMoreLabel } from '@/components/commute/guide-topics'
 import { eventKindLine, eventModeForRow, eventWhenLine, eventWhereLine, walkRideDayWhen } from '@/components/commute/event-card'
@@ -845,7 +846,8 @@ export default function AdvisorFlow({
         weather: chipFor(w, mode, locale),
         stages: stagesFor(mode, plan, benefits, { calm, bikeParking, lineName, combo: m.combo ?? null, weather: w }, locale),
         ...stageGuidesFor(mode),
-        drawer: report ? <>{drawer}{report}</> : drawer,
+        // Path conditions: how the trails and protected lanes on the bike route are today (01784).
+        drawer: <>{drawer}{(mode === 'bike' || mode === 'ebike') && calm ? <PathConditionsAlong points={calm.calm.waypoints} locale={locale} tone="light" /> : null}{report}</>,
       })
     }
     // Shuttles: the employer's own, then the public operators with a stop at the office.
