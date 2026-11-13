@@ -33,7 +33,6 @@ export const bikeLessonsStrings = defineStrings(
     'lessons.fact_length': '90 minutes, one-on-one',
     'lessons.fact_who': 'For adults who can already ride',
     'lessons.fact_where': 'In Boston and nearby towns',
-    'lessons.fact_count': '10 lessons to start',
     'lessons.form_title': 'Ask for your free lesson',
     'lessons.form_area': 'For people in Boston, Somerville, Cambridge and nearby towns. Type your ZIP code to see who can teach you.',
     'lessons.form_after':
@@ -143,7 +142,6 @@ export const bikeLessonsStrings = defineStrings(
       'lessons.fact_length': '90 minutos, individual',
       'lessons.fact_who': 'Para adultos que ya saben andar en bici',
       'lessons.fact_where': 'En Boston y pueblos cercanos',
-      'lessons.fact_count': '10 clases para empezar',
       'lessons.form_title': 'Pide tu clase gratis',
       'lessons.form_area': 'Para personas en Boston, Somerville, Cambridge y pueblos cercanos. Escribe tu código postal para ver quién puede enseñarte.',
       'lessons.form_after':
@@ -253,7 +251,6 @@ export const bikeLessonsStrings = defineStrings(
       'lessons.fact_length': '90 minutos, individual',
       'lessons.fact_who': 'Para adultos que já sabem pedalar',
       'lessons.fact_where': 'Em Boston e cidades vizinhas',
-      'lessons.fact_count': '10 aulas para começar',
       'lessons.form_title': 'Peça sua aula grátis',
       'lessons.form_area': 'Para quem mora em Boston, Somerville, Cambridge e cidades vizinhas. Digite seu CEP para ver quem pode te ensinar.',
       'lessons.form_after':
@@ -362,7 +359,6 @@ export const bikeLessonsStrings = defineStrings(
       'lessons.fact_length': '90 分钟，一对一',
       'lessons.fact_who': '面向已经会骑车的成人',
       'lessons.fact_where': '波士顿及周边城镇',
-      'lessons.fact_count': '首批 10 节课',
       'lessons.form_title': '申请免费课程',
       'lessons.form_area': '面向住在波士顿、Somerville、Cambridge 及周边城镇的人。输入邮编，看看谁可以教你。',
       'lessons.form_after': '等待期间，我们的免费应用 Shift 可以帮你为最初几次骑行规划一条安静的路线。',

@@ -152,7 +152,7 @@ const STARTS: { href: string; label: K; hint: K }[] = [
   { href: '#group-rides', label: 'lessons.start_company', hint: 'lessons.start_company_hint' },
 ]
 
-const FACTS: K[] = ['lessons.fact_free', 'lessons.fact_length', 'lessons.fact_who', 'lessons.fact_where', 'lessons.fact_count']
+const FACTS: K[] = ['lessons.fact_free', 'lessons.fact_length', 'lessons.fact_who', 'lessons.fact_where']
 
 /** The two bike guides, in the reader's language (both are translated: /es, /pt-BR, /zh-Hans). */
 function guideHref(slug: string, locale: SiteLocale): string {
