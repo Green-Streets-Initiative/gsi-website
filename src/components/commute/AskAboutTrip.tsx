@@ -7,6 +7,7 @@ import { ArrowSquareOut, ArrowUp } from '@phosphor-icons/react'
 import StoreBadges from '@/components/StoreBadges'
 import { translator, withLang, type SiteLocale } from '@/lib/site-i18n'
 import { askTripStrings } from '@/lib/site-strings/ask-trip'
+import AskTripCard, { type AskCard } from '@/components/commute/AskTripCard'
 
 /*
  * "Ask about this trip" (Keith 2026-11-08): a visitor with no Shift account
@@ -24,7 +25,9 @@ import { askTripStrings } from '@/lib/site-strings/ask-trip'
  * Analytics (PostHog, website): ask_trip_exposure (once per page, both arms,
  * while the switch is on), ask_trip_asked, ask_trip_answered,
  * ask_trip_invite_shown, ask_trip_store_clicked, ask_trip_link_clicked,
- * ask_trip_limit (daily or monthly). Never the question's words.
+ * ask_trip_card_shown and ask_trip_card_directions (the route or comparison
+ * card under an answer), ask_trip_limit (daily or monthly). Never the
+ * question's words.
  */
 
 export type AskTrip = {
@@ -41,7 +44,7 @@ export type AskTrip = {
 }
 
 type AskLink = { kind: 'parking' | 'roam'; href: string; name: string }
-type Turn = { q: string; a: string; step: string | null; links: AskLink[]; invite: boolean; error: string | null; done: boolean }
+type Turn = { q: string; a: string; step: string | null; links: AskLink[]; cards: AskCard[]; invite: boolean; error: string | null; done: boolean }
 type Gate = { on: boolean; token?: string; left?: number; preview?: boolean; rollout?: number }
 
 const VID_KEY = 'ask-trip-vid'
@@ -151,7 +154,7 @@ export default function AskAboutTrip({ trip, locale = 'en', source = 'commute_ad
     setDraft('')
     const history = turns.filter((x) => x.done && !x.error && x.a).slice(-4).map((x) => ({ q: x.q, a: x.a }))
     const i = turns.length
-    setTurns((all) => [...all, { q, a: '', step: null, links: [], invite: false, error: null, done: false }])
+    setTurns((all) => [...all, { q, a: '', step: null, links: [], cards: [], invite: false, error: null, done: false }])
     capture('ask_trip_asked', { n: i + 1, from, suggestion: suggestion ?? null, source, locale, preview: !!gate.preview })
     const started = Date.now()
     let answer = ''
@@ -186,11 +189,16 @@ export default function AskAboutTrip({ trip, locale = 'en', source = 'commute_ad
           const line = buf.slice(0, nl).trim()
           buf = buf.slice(nl + 1)
           if (!line) continue
-          let e: { type: string; delta?: string; key?: string; links?: AskLink[]; code?: string; left?: number | null }
+          let e: { type: string; delta?: string; key?: string; links?: AskLink[]; cards?: AskCard[]; code?: string; left?: number | null }
           try { e = JSON.parse(line) } catch { continue }
           if (e.type === 'text' && e.delta) { answer += e.delta; const a = answer; patch(i, { a, step: null }) }
           else if (e.type === 'step' && e.key) patch(i, { step: e.key })
           else if (e.type === 'links' && e.links) patch(i, { links: e.links })
+          else if (e.type === 'cards' && Array.isArray(e.cards)) {
+            const cards = e.cards.slice(0, 2)
+            patch(i, { cards })
+            for (const c of cards) capture('ask_trip_card_shown', { kind: c.compare ? 'compare' : 'route', lead: c.compare ? null : c.lead ?? 'bike', source, locale, preview: !!gate.preview })
+          }
           else if (e.type === 'invite') { invite = true; patch(i, { invite: true }) }
           else if (e.type === 'error') patch(i, { error: e.code === 'refused' ? 'err_refused' : e.code === 'model_busy' ? 'err_busy' : 'err_failed' })
           else if (e.type === 'done' && typeof e.left === 'number') setLeft(e.left)
@@ -250,6 +258,14 @@ export default function AskAboutTrip({ trip, locale = 'en', source = 'commute_ad
             )}
             {x.error && <p className="text-[#8A2F1E]">{t(`ask.${x.error}` as AskKey)}</p>}
           </div>
+          {x.done && !x.error && x.cards.map((c, k) => (
+            <AskTripCard
+              key={k}
+              card={c}
+              locale={locale}
+              onDirections={(way) => capture('ask_trip_card_directions', { kind: c.compare ? 'compare' : 'route', way, source, locale, preview: !!gate?.preview })}
+            />
+          ))}
           {x.done && x.links.length > 0 && (
             <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1">
               {x.links.map((l) => (

@@ -7,7 +7,8 @@
 // POST { question, history?, trip?, locale?, vid, token, website?, preview? }
 //      streams newline-delimited JSON while it works:
 //      {type:'step', key} {type:'text', delta} {type:'invite'}
-//      {type:'links', links} {type:'error', code} {type:'done', left}
+//      {type:'cards', cards} {type:'links', links} {type:'error', code}
+//      {type:'done', left}
 //
 // Guards, cheapest first: the switch (app_feature_flags visitor_trip_assistant;
 // ?ask=1 previews it in its own small pool while it's off), the request's
@@ -27,7 +28,7 @@ import { flagState } from '@/lib/feature-flags'
 import { inServiceArea } from '@/lib/server/trip'
 import { PREVIEW_DAILY_CAP, PREVIEW_PERSON_CAP, VISITOR_DAILY_CAP, VISITOR_IP_DAILY_CAP, VISITOR_MONTHLY_CAP } from '@/lib/shift-assistant/caps'
 import { VISITOR_PROMPT, VISITOR_STEP, VISITOR_TOOLS, runVisitorTool, visitorContext, type VisitorLink, type VisitorTrip } from '@/lib/shift-assistant/visitor'
-import type { ToolCtx } from '@/lib/shift-assistant/tools'
+import type { ToolCtx, TripCard } from '@/lib/shift-assistant/tools'
 import { SITE_LOCALES, type SiteLocale } from '@/lib/site-i18n'
 
 export const runtime = 'nodejs'
@@ -208,7 +209,9 @@ export async function POST(request: Request) {
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   const ctx: ToolCtx = {
     user: createClient(url, anonKey, { auth: { persistSession: false, autoRefreshToken: false } }),
-    admin, token: anonKey, userId: '', email: 'website visitor', here: null, screens: new Set(), visitor: true,
+    // card_ways: check_trip and compare_ways send the route and comparison
+    // cards, drawn under the answer (components/commute/AskTripCard).
+    admin, token: anonKey, userId: '', email: 'website visitor', here: null, screens: new Set(['card_ways']), visitor: true,
   }
   const today = new Date().toLocaleString('en-US', { timeZone: 'America/New_York', weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })
 
@@ -238,6 +241,7 @@ export async function POST(request: Request) {
         }
       }
       const links: VisitorLink[] = []
+      const cards: TripCard[] = []
       const stepsShown = new Set<string>()
       try {
         const messages: Anthropic.Beta.BetaMessageParam[] = [
@@ -296,13 +300,15 @@ export async function POST(request: Request) {
           const results = await Promise.all(uses.map(async (u) => {
             const key = VISITOR_STEP[u.name]
             if (key && !stepsShown.has(key)) { stepsShown.add(key); emit({ type: 'step', key }) }
-            const { result, link } = await runVisitorTool(ctx, u.name, (u.input ?? {}) as Record<string, unknown>)
+            const { result, link, card } = await runVisitorTool(ctx, u.name, (u.input ?? {}) as Record<string, unknown>)
             if (link && links.length < 2 && !links.some((l) => l.href === link.href)) links.push(link)
+            if (card && cards.length < 2) cards.push(card)
             return { type: 'tool_result' as const, tool_use_id: u.id, content: JSON.stringify(result.content), ...(result.isError ? { is_error: true } : {}) }
           }))
           messages.push({ role: 'user', content: results })
         }
         if (held && !SAVE_TAG.startsWith(held)) emit({ type: 'text', delta: held })
+        if (cards.length) emit({ type: 'cards', cards })
         if (links.length) emit({ type: 'links', links })
         if (invite) emit({ type: 'invite' })
         const { data: left } = await admin.rpc('visitor_assistant_left', { p_visitor: visitor, p_daily: preview ? PREVIEW_PERSON_CAP : VISITOR_DAILY_CAP })

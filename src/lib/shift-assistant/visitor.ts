@@ -1,6 +1,6 @@
 import 'server-only'
 import type Anthropic from '@anthropic-ai/sdk'
-import { TOOLS, runTool, type ToolCtx, type ToolResult } from '@/lib/shift-assistant/tools'
+import { TOOLS, runTool, type ToolCtx, type ToolResult, type TripCard } from '@/lib/shift-assistant/tools'
 import { estimateCarCost, formatRange, type CarAgeBand, type VehicleType } from '@/lib/shift-assistant/car-cost'
 import type { SiteLocale } from '@/lib/site-i18n'
 
@@ -48,14 +48,22 @@ export const VISITOR_STEP: Record<string, string> = {
 /** A web link under the answer: the page names it in its own words by kind. */
 export type VisitorLink = { kind: 'parking' | 'roam'; href: string; name: string }
 
-/** Results keep only what this page can show: no app cards, screens or save buttons. */
-export async function runVisitorTool(ctx: ToolCtx, name: string, input: Record<string, unknown>): Promise<{ result: ToolResult; link: VisitorLink | null }> {
-  if (name === 'get_car_cost') return { result: carCost(input), link: null }
-  if (!NAMES.has(name)) return { result: { content: { error: 'That lookup is not available here. Answer from what you have.' }, isError: true }, link: null }
+/** Results keep only what this page can show: the route and comparison
+ *  cards (drawn by components/commute/AskTripCard, parity
+ *  gap-visitor-assistant-cards), no app screens or save buttons. */
+export async function runVisitorTool(ctx: ToolCtx, name: string, input: Record<string, unknown>): Promise<{ result: ToolResult; link: VisitorLink | null; card: TripCard | null }> {
+  if (name === 'get_car_cost') return { result: carCost(input), link: null, card: null }
+  if (!NAMES.has(name)) return { result: { content: { error: 'That lookup is not available here. Answer from what you have.' }, isError: true }, link: null, card: null }
   const r = await runTool(ctx, name, input)
-  const { card: _card, saving: _saving, ...content } = r.content
-  void _card
+  const { saving: _saving, ...content } = r.content
   void _saving
+  // check_trip and compare_ways both send their card as r.trip, with a note
+  // in content.card telling the model it shows. With no card the note would
+  // promise one that isn't there; this page's card has only the directions
+  // button.
+  const card = r.trip ?? null
+  if (!card) delete content.card
+  else if (typeof content.card === 'string') content.card = content.card.replace(/,? and buttons for directions and the full trip|, and buttons to open it in Google Maps or see the full trip/, ', and a button for directions in Google Maps')
   let link: VisitorLink | null = null
   const l = r.link
   if (l && 'href' in l) {
@@ -65,7 +73,7 @@ export async function runVisitorTool(ctx: ToolCtx, name: string, input: Record<s
       link = { kind: 'roam', href: l.href, name: String(content.name ?? '') }
     }
   }
-  return { result: { content, isError: r.isError }, link }
+  return { result: { content, isError: r.isError }, link, card }
 }
 
 function carCost(input: Record<string, unknown>): ToolResult {
@@ -119,7 +127,7 @@ export const VISITOR_PROMPT = `You answer questions on the Commute Advisor at go
 ## What you can do
 - Look things up and answer: the ways to get there with minutes and cost, a trip's walking, transit and bike route and how calm the streets are, live MBTA departures, service changes and elevators out, the weather, places, shuttles maps apps leave out (TMA and campus), station parking, bikes on the T, fare discounts, step-free stations and The RIDE, game-day parking, trails and Roams (Shift's self-guided routes), bikes to borrow or rent, and what a car costs.
 - You can't save anything, set a reminder, sign them up, remember them or see any account. Never say you saved, booked or signed them up for anything.
-- Tool results sometimes mention app screens, buttons, cards or open_link: none of those are on this page. Ignore them and say what you found in your reply.
+- When a tool result has a card note, that card shows under your reply on this page: follow the note and leave its numbers to the card. Other app screens, buttons or open_link a result mentions aren't on this page; ignore them and say what you found in your reply.
 
 ## The plan on their screen
 The context lists the trip they compared: Home (rounded to about 100 meters) to where they're going, when they want to arrive, and each way with its door-to-door minutes and cost per day, the recommended one first. Use it:
