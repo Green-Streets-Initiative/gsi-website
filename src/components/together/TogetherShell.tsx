@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
-import { Car, Handshake, LogOut, MailCheck, MapPinned, Plane, Sprout, TrainFront, UsersRound, type LucideIcon } from 'lucide-react'
+import { Car, Eye, Handshake, LogOut, MailCheck, MapPinned, Plane, ShieldCheck, Sprout, TrainFront, UsersRound, type LucideIcon } from 'lucide-react'
 import { toneClass } from '@/components/events/EventsTone'
 import { Button, Card, Field, Input, Notice, Spinner, cx } from '@/components/organizers/ui'
 import HowItWorks from '@/components/together/HowItWorks'
@@ -27,11 +27,19 @@ type Phase = 'checking' | 'signed_out' | 'off' | 'ready' | 'error'
 
 /** 'logan': gogreenstreets.org/logan (Shift 01518), open to anyone signed in, with its own words. */
 export type ShellVariant = 'together' | 'logan'
+/** 'guide': /together?kind=guide, signed out, speaks to someone offering to go with a neighbor (Keith 2026-11-13). */
+export type ShellAudience = 'guide'
 
 /** `locale`: the page's language (/together and /logan pass it). */
-type State = { phase: Phase; userId: string | null; email: string | null; notice: string | null; signOut: () => Promise<void>; variant: ShellVariant; locale: SiteLocale; t: T<TogetherKey> }
+type State = { phase: Phase; userId: string | null; email: string | null; notice: string | null; signOut: () => Promise<void>; variant: ShellVariant; audience?: ShellAudience; locale: SiteLocale; t: T<TogetherKey> }
 const Ctx = createContext<State | null>(null)
 
+/** What someone offering to go with a neighbor wants to know first: how far, who, and that it's safe (the MassBike post's points). */
+const GUIDE_POINTS: { label: TogetherKey; Icon: LucideIcon }[] = [
+  { label: 'guide.point_miles', Icon: MapPinned },
+  { label: 'guide.point_preview', Icon: Eye },
+  { label: 'guide.point_safe', Icon: ShieldCheck },
+]
 const WAYS_TO_GO: { label: TogetherKey; Icon: LucideIcon }[] = [
   { label: 'kind.newcomer', Icon: Sprout },
   { label: 'kind.guide', Icon: UsersRound },
@@ -44,7 +52,7 @@ export function useTogether(): State {
   return v
 }
 
-export default function TogetherShell({ children, variant = 'together', locale = 'en' }: { children: ReactNode; variant?: ShellVariant; locale?: SiteLocale }) {
+export default function TogetherShell({ children, variant = 'together', audience, locale = 'en' }: { children: ReactNode; variant?: ShellVariant; audience?: ShellAudience; locale?: SiteLocale }) {
   const t = translator(togetherStrings, locale)
   const [phase, setPhase] = useState<Phase>('checking')
   const [userId, setUserId] = useState<string | null>(null)
@@ -107,7 +115,7 @@ export default function TogetherShell({ children, variant = 'together', locale =
   }, [])
 
   return (
-    <Ctx.Provider value={{ phase, userId, email, notice, signOut, variant, locale, t }}>
+    <Ctx.Provider value={{ phase, userId, email, notice, signOut, variant, audience, locale, t }}>
       <div className={cx('min-h-[70dvh] bg-(--ev-bg) text-(--ev-ink)', toneClass('light'))}>
         <SubBar />
         <div className="mx-auto w-full max-w-[920px] px-4 pb-16 pt-6 sm:px-6 sm:pt-8">
@@ -298,8 +306,9 @@ export function takeKindParam(): KindParam | null {
 }
 
 function SignIn() {
-  const { notice, variant, locale, t } = useTogether()
+  const { notice, variant, audience, locale, t } = useTogether()
   const logan = variant === 'logan'
+  const guide = !logan && audience === 'guide'
   // Arrived from a match email: just the sign-in, in the email's words.
   const path = usePathname()
   const forMatch = !logan && path.startsWith('/together/matches')
@@ -354,7 +363,7 @@ function SignIn() {
         <form onSubmit={send} className="grid gap-4">
           {/* Shift Together says what's free and what happens next in place of a heading; Logan keeps its heading. */}
           {logan ? <h2 className="font-display text-[22px] font-extrabold">{t('signin.heading')}</h2> : null}
-          {logan || forMatch ? null : <p className="text-[17px] font-semibold leading-snug">{t('signin.form_lead')}</p>}
+          {logan || forMatch ? null : <p className="text-[17px] font-semibold leading-snug">{t(guide ? 'guide.form_lead' : 'signin.form_lead')}</p>}
           {notice ? <Notice tone="warn">{notice}</Notice> : null}
           <Field label={t('signin.email')} htmlFor="together-email" error={err ?? undefined}>
             <Input id="together-email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />
@@ -388,21 +397,28 @@ function SignIn() {
           The band stays short on phones so the email field is still on the first screen (390x844). */}
       <div className="grid grid-cols-1 gap-5 md:gap-8">
       {logan ? null : (
+        guide ? (
+          // The Charles River path by the Weeks Bridge: the calm kind of ride a guide offers (Gilman stays in step 3).
+          <PhotoBand photo={PHOTOS.river} alt={t('practice.photo_alt')} place={t('practice.photo_place')} creditLabel={t('photo.by', { who: PHOTOS.river.credit })}
+            className="h-[136px] sm:h-[220px] md:h-[280px]" priority />
+        ) : (
         <PhotoBand photo={PHOTOS.concord} alt={t('hero.alt')} place={t('hero.place')} creditLabel={t('photo.by', { who: PHOTOS.concord.credit })}
           className="h-[136px] sm:h-[220px] md:h-[280px]" priority />
+        )
       )}
       <div className="grid grid-cols-1 gap-6 md:grid-cols-[1.15fr_1fr] md:items-start md:gap-x-10">
         <div className="md:col-start-1 md:row-start-1">
           {/* No line above the heading on Shift Together (no eyebrows, enrich pass 2026-11-09); Logan keeps its own. */}
           {logan ? <p className="mb-2 text-[15px] font-semibold text-(--ev-accent)">{tl('logan.eyebrow')}</p> : null}
           <h1 className="font-display text-[clamp(30px,4.2vw,44px)] font-extrabold leading-[1.05] text-balance">
-            {logan ? tl('logan.signin_title') : t('signin.title')}
+            {logan ? tl('logan.signin_title') : t(guide ? 'guide.title' : 'signin.title')}
           </h1>
-          {logan ? null : <p className="mt-3 text-[clamp(18px,2vw,21px)] font-semibold leading-snug text-(--ev-ink-85)">{t('signin.lead')}</p>}
+          {logan ? null : <p className="mt-3 text-[clamp(18px,2vw,21px)] font-semibold leading-snug text-(--ev-ink-85)">{t(guide ? 'guide.lead' : 'signin.lead')}</p>}
         </div>
         {card}
-        <ul className="grid gap-2 md:col-start-1 md:row-start-2" aria-label={t('signin.ways_aria')}>
-          {(logan ? LOGAN_POINTS.map((p) => ({ label: tl(p.label), Icon: p.Icon })) : WAYS_TO_GO.map((w) => ({ label: t(w.label), Icon: w.Icon }))).map(({ label, Icon }) => (
+        <div className="grid gap-3 md:col-start-1 md:row-start-2">
+        <ul className="grid gap-2" aria-label={t(guide ? 'guide.points_aria' : 'signin.ways_aria')}>
+          {(logan ? LOGAN_POINTS.map((p) => ({ label: tl(p.label), Icon: p.Icon })) : (guide ? GUIDE_POINTS : WAYS_TO_GO).map((w) => ({ label: t(w.label), Icon: w.Icon }))).map(({ label, Icon }) => (
             <li key={label} className="flex items-center gap-3 text-[17px] font-semibold">
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-(--ev-panel) text-(--ev-accent)" aria-hidden>
                 <Icon className="h-5 w-5" />
@@ -411,6 +427,13 @@ function SignIn() {
             </li>
           ))}
         </ul>
+        {guide ? (
+          // A reader passing it on to a friend who'd like to start: the newcomer version of this page.
+          <a href={withLang('/together?kind=newcomer', locale)} className="text-[16px] font-semibold text-(--ev-accent) underline underline-offset-2">
+            {t('guide.newcomer_link')}
+          </a>
+        ) : null}
+        </div>
       </div>
       </div>
       <section aria-labelledby="together-how">
@@ -436,7 +459,7 @@ function SignIn() {
               </li>
             ))}
           </ol>
-        ) : <HowItWorks locale={locale} />}
+        ) : <HowItWorks locale={locale} side={guide ? 'guide' : 'newcomer'} />}
         {logan ? <p className="mt-4 text-[15px] leading-snug text-(--ev-ink-80)">{tl('logan.free')}</p> : null}
       </section>
     </div>

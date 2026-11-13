@@ -17,6 +17,8 @@ import { WAYS } from '@/lib/together'
  * (the real card with made-up data, marked Example), and where you'd meet
  * (a real map of Somerville with two made-up homes, and the real Gilman
  * Square stop in a credited photo). Rows alternate sides on wide screens.
+ * side 'guide' (/together?kind=guide): the same three steps as someone
+ * offering to go with a neighbor sees them (Keith 2026-11-13).
  */
 
 /** Made-up homes about 1.1 miles apart (residential blocks near Magoun Square and Prospect Hill); the stop is real (MBTA place-gilmn). */
@@ -30,17 +32,17 @@ function ExamplePill({ t }: { t: T<TogetherKey> }) {
   return <span className="absolute -top-3 left-4 z-10 rounded-full bg-(--ev-ink) px-3 py-1 text-[13px] font-bold text-white">{t('how.example')}</span>
 }
 
-/** Step 1's picture: the sign-up's own fields and chips, filled in with an example trip. */
-function TripSketch({ t }: { t: T<TogetherKey> }) {
-  const on = new Set(['bike', 'transit'])
+/** Step 1's picture: the sign-up's own fields and chips, filled in with an example trip (a guide's: home, ways, how far). */
+function TripSketch({ t, guide = false }: { t: T<TogetherKey>; guide?: boolean }) {
+  const on = new Set(guide ? ['bike'] : ['bike', 'transit'])
   return (
     <figure className="relative m-0">
       <ExamplePill t={t} />
       <div inert aria-hidden className="pointer-events-none grid select-none grid-cols-1 gap-4 rounded-2xl border border-(--ev-line) bg-white p-5 pt-6">
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div className={cx('grid grid-cols-1 gap-3', !guide && 'sm:grid-cols-2')}>
           {[
             { label: t('signup.from_home'), value: 'Highland Ave, Somerville', Icon: House },
-            { label: t('signup.to_work'), value: 'Kendall Square, Cambridge', Icon: Briefcase },
+            ...(guide ? [] : [{ label: t('signup.to_work'), value: 'Kendall Square, Cambridge', Icon: Briefcase }]),
           ].map(({ label, value, Icon }) => (
             <div key={label} className="grid grid-cols-1 gap-1">
               <span className="text-[14px] font-bold">{label}</span>
@@ -59,9 +61,10 @@ function TripSketch({ t }: { t: T<TogetherKey> }) {
         <div className="flex flex-wrap gap-2">
           <Chip on onClick={() => {}} tabIndex={-1}>{t('days.weekdays')}</Chip>
           <Chip on onClick={() => {}} tabIndex={-1}>{t(TIME_KEY.morning)}</Chip>
+          {guide ? <Chip on onClick={() => {}} tabIndex={-1}>{t('miles', { n: 3 })}</Chip> : null}
         </div>
       </div>
-      <figcaption className="sr-only">{t('how.trip_aria')}</figcaption>
+      <figcaption className="sr-only">{t(guide ? 'guide.trip_aria' : 'how.trip_aria')}</figcaption>
     </figure>
   )
 }
@@ -79,13 +82,14 @@ function Row({ n, title, hint, extra, picture, flip = false }: { n: number; titl
   )
 }
 
-export default function HowItWorks({ locale = 'en' }: { locale?: SiteLocale }) {
+export default function HowItWorks({ locale = 'en', side = 'newcomer' }: { locale?: SiteLocale; side?: 'newcomer' | 'guide' }) {
   const t = translator(togetherStrings, locale)
+  const guide = side === 'guide'
   return (
     <ol className="grid grid-cols-1 gap-10 md:gap-14" aria-label={t('step.aria')}>
-      <Row n={1} title={t('step.trip')} hint={t('step.trip_hint')} picture={<TripSketch t={t} />} />
-      <Row n={2} title={t('step.match')} hint={t('step.match_hint')} extra={t('signin.free')} flip
-        picture={<ExampleMatch side="newcomer" locale={locale} heading={false} />} />
+      <Row n={1} title={t(guide ? 'guide.step1' : 'step.trip')} hint={t(guide ? 'guide.step1_hint' : 'step.trip_hint')} picture={<TripSketch t={t} guide={guide} />} />
+      <Row n={2} title={t(guide ? 'guide.step2' : 'step.match')} hint={t(guide ? 'guide.step2_hint' : 'step.match_hint')} extra={t('signin.free')} flip
+        picture={<ExampleMatch side={side} locale={locale} heading={false} />} />
       <Row
         n={3}
         title={t('step.yes')}
