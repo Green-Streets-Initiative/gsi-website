@@ -48,10 +48,10 @@ Left out: "how to ride a bike" (140, mostly parents of young kids; would pull
 the click rate down).
 
 **Ad 1**
-- Headlines: Bike lessons for adults · Learn to bike in the city · Free 1:1 street lesson · Classes for every level · Many classes are free · Bikes provided at most classes · Nervous in traffic? Start here · Lessons near Somerville · Classes across Massachusetts · First ride to city streets · Find a class near you · Green Streets Initiative · A Massachusetts nonprofit · Book a lesson any time · Easy group rides for beginners
+- Headlines: Bike lessons for adults · Learn to bike in the city · Free 1:1 street lesson · Classes for every level · Many classes are free · Bikes provided at most classes · Nervous in traffic? Start here · Lessons in and near Boston · Classes across Massachusetts · First ride to city streets · Find a class near you · Green Streets Initiative · A Massachusetts nonprofit · Book a lesson any time · Easy group rides for beginners
 - Descriptions:
   - Adult bike lessons in Massachusetts, from your first ride to riding on busy streets.
-  - Can ride but nervous in traffic? Green Streets pays for a 1:1 lesson near Somerville.
+  - Can ride but nervous in traffic? Green Streets pays for a 1:1 lesson in or near Boston.
   - City classes, private lessons and easy group rides. Many are free, most provide the bike.
   - Not ready yet? Get an email when a class is posted near you this spring.
 
@@ -76,20 +76,22 @@ Several may show "Not eligible: low search volume" at first. That is expected
 and costs nothing.
 
 **Ad 1**
-- Headlines: Nervous biking in traffic? · Free 1:1 street lesson · Learn to bike in the city · Ride with an instructor · Practice turns and crossings · Ride at your own pace · 90 minutes, one-on-one · Green Streets pays · Near Davis Square, Somerville · Start bike commuting · Pick a calm bike route · Easy group rides near you · Classes across Massachusetts · Green Streets Initiative · Feel at home on city streets
+- Headlines: Nervous biking in traffic? · Free 1:1 street lesson · Learn to bike in the city · Ride with an instructor · Practice turns and crossings · Ride at your own pace · 90 minutes, one-on-one · Green Streets pays · In Boston and nearby towns · Start bike commuting · Pick a calm bike route · Easy group rides near you · Classes across Massachusetts · Green Streets Initiative · Feel at home on city streets
 - Descriptions:
   - An instructor rides with you on real streets, at your own pace. Green Streets pays.
-  - Free 1:1 street lessons for adults who can ride and live near Somerville. 10 to start.
+  - Free 1:1 street lessons for adults who can ride, in Boston and nearby towns.
   - Farther away? Find a certified instructor, a city class or an easy group ride near you.
   - Practice intersections, bike lanes and turns before your first trip to work by bike.
 
 **Ad 2**
-- Headlines: How to bike in traffic · City biking, step by step · Take a free street lesson · Ride with someone first · Easy group rides for beginners · Learn the bike lanes · Classes with street skills · 1:1 lessons near Somerville · Get comfortable on the street · Green Streets pays · Start with one short trip · Find a calm route · Green Streets Initiative · Lessons for adults · A Massachusetts nonprofit
+- Headlines: How to bike in traffic · City biking, step by step · Take a free street lesson · Ride with someone first · Easy group rides for beginners · Learn the bike lanes · Classes with street skills · 1:1 lessons in and near Boston · Get comfortable on the street · Green Streets pays · Start with one short trip · Find a calm route · Green Streets Initiative · Lessons for adults · A Massachusetts nonprofit
 - Descriptions:
-  - Ride real streets with an instructor, at your own pace. Free near Somerville.
+  - Ride real streets with an instructor, at your own pace. Free in and near Boston.
   - Easy-pace group rides open to beginners, and city classes that cover riding with traffic.
   - Pick the lesson that fits: a 1:1 street lesson, a class, or a group ride with company.
   - From Green Streets Initiative, a Massachusetts nonprofit helping people bike since 2006.
+
+Updated 2026-11-13 in the account: street-lesson lines now say Boston and nearby towns (instructors in Somerville and Dorchester; the 10-lesson cap is gone). The Somerville class lines in Bike lessons Ad 2 stay (Bicycle Riding School classes).
 
 All headlines are 30 characters or fewer and descriptions 90 or fewer (checked).
 
