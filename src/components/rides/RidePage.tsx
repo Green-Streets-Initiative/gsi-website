@@ -81,8 +81,9 @@ function writeRemembered(r: Remembered) {
   try { localStorage.setItem(STORE_KEY, JSON.stringify(r)) } catch { /* private mode */ }
 }
 
-function directionsUrl(d: Pick<RideDate, 'meetup_lat' | 'meetup_lng'>): string {
-  return `https://www.google.com/maps/dir/?api=1&destination=${d.meetup_lat},${d.meetup_lng}`
+/** Directions to the start by bike, or on foot for a walk, as the app does. */
+function directionsUrl(d: Pick<RideDate, 'meetup_lat' | 'meetup_lng'>, walk: boolean): string {
+  return `https://www.google.com/maps/dir/?api=1&destination=${d.meetup_lat},${d.meetup_lng}&travelmode=${walk ? 'walking' : 'bicycling'}`
 }
 
 /**
@@ -112,7 +113,7 @@ function calendarEvent(ride: PublicRide, d: RideDate, hostName: string | null, m
     ride.registration_url ? t('cal.signup', { url: ride.registration_url }) : null,
     [
       where ? t('cal.meet', { where }) : null,
-      d.meetup_lat != null && d.meetup_lng != null ? t('cal.directions', { url: directionsUrl(d) }) : null,
+      d.meetup_lat != null && d.meetup_lng != null ? t('cal.directions', { url: directionsUrl(d, walk) }) : null,
       factLine ? t(walk ? 'cal.the_walk' : 'cal.the_ride', { facts: factLine }) : null,
     ].filter(Boolean).join('\n'),
     about || null,
@@ -547,7 +548,7 @@ export default function RidePage({ ride, host = null, hostPerson = null, organiz
                   {place.meetup_address && <p className="mt-0.5 text-[14px] text-(--ev-ink-75)">{place.meetup_address}</p>}
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  <a href={directionsUrl(place)} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-[44px] items-center gap-1.5 rounded-[10px] border border-(--ev-line-strong) bg-white px-4 py-2 text-[14px] font-semibold text-(--ev-ink) hover:bg-(--ev-panel)">
+                  <a href={directionsUrl(place, walk)} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-[44px] items-center gap-1.5 rounded-[10px] border border-(--ev-line-strong) bg-white px-4 py-2 text-[14px] font-semibold text-(--ev-ink) hover:bg-(--ev-panel)">
                     <MapPin size={15} /> {t('directions')}
                   </a>
                 </div>

@@ -229,6 +229,9 @@ export default async function TrailPage({ params, searchParams }: PageProps) {
   const tourPhoto = tour?.hero_image_url && !/unsplash/i.test(`${tour.hero_image_attribution ?? ''} ${tour.hero_image_url}`) ? tour : null
   const photoUrl = t.hero_image_url ?? tourPhoto?.hero_image_url ?? null
   const otherRoams = roams.filter((r) => r !== tour && r.relation === 'uses')
+  // Directions to the trail by bike, or on foot for a walking roam, as the app's
+  // trail links do (parity gap-web-directions-drive).
+  const travelmode = tour?.mode === 'walk' ? 'walking' : 'bicycling'
   const connectRoams = roams.filter((r) => r.relation === 'connects')
   const utm = { source: 'web_trail', medium: 'trail_page', campaign: t.id }
   const iosUrl = withUtm(IOS_URL, utm) ?? IOS_URL
@@ -488,7 +491,7 @@ export default async function TrailPage({ params, searchParams }: PageProps) {
                 ) : null}
                 {first && (
                   <a
-                    href={`https://www.google.com/maps/dir/?api=1&destination=${first.lat},${first.lng}`}
+                    href={`https://www.google.com/maps/dir/?api=1&destination=${first.lat},${first.lng}&travelmode=${travelmode}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className={`inline-flex min-h-[48px] items-center justify-center gap-2 rounded-full px-6 text-[0.9375rem] font-semibold transition-colors ${tour ? 'bg-white text-navy ring-1 ring-navy/15 hover:bg-navy/[0.04]' : 'bg-navy text-white hover:bg-navy/90'}`}
@@ -552,7 +555,7 @@ export default async function TrailPage({ params, searchParams }: PageProps) {
                         </dl>
                       )}
                       <a
-                        href={`https://www.google.com/maps/dir/?api=1&destination=${p.lat},${p.lng}`}
+                        href={`https://www.google.com/maps/dir/?api=1&destination=${p.lat},${p.lng}&travelmode=${travelmode}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="mt-2 inline-flex min-h-[36px] items-center gap-1.5 text-[0.875rem] font-semibold text-forest underline-offset-4 hover:underline"

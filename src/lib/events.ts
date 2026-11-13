@@ -333,8 +333,10 @@ export function directionsMode(ev: Pick<CommunityEvent, 'event_type' | 'ride_ser
   return 'transit'
 }
 
-export function directionsUrl(ev: CommunityEvent): string {
-  const mode = `&travelmode=${directionsMode(ev)}`
+/** Directions in the way the event most likely suits, or in the mode asked
+ *  for (the map card's Walk, Bike and Transit, as in the app). */
+export function directionsUrl(ev: CommunityEvent, travelmode: 'bicycling' | 'walking' | 'transit' = directionsMode(ev)): string {
+  const mode = `&travelmode=${travelmode}`
   if (ev.location_lat && ev.location_lng) {
     return `https://www.google.com/maps/dir/?api=1&destination=${ev.location_lat},${ev.location_lng}${mode}`
   }

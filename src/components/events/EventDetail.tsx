@@ -6,7 +6,7 @@ import { eventPath, eventUrl } from '@/lib/events-url'
 import {
   MapPin, Calendar, Users,
   ChevronLeft, Bookmark, Share2, Globe, ExternalLink, Ticket,
-  Clock, Mail, ArrowRight, Route, Languages,
+  Clock, Mail, ArrowRight, Route, Languages, Footprints, Bike, Bus,
 } from 'lucide-react'
 import { eventLanguages, ownNames } from '@/lib/languages'
 import dynamic from 'next/dynamic'
@@ -159,6 +159,13 @@ interface EventDetailProps {
   locale?: SiteLocale
 }
 
+
+const DIRECTION_MODES = [
+  { mode: 'walking', key: 'detail.dir_walk', Icon: Footprints },
+  { mode: 'bicycling', key: 'detail.dir_bike', Icon: Bike },
+  { mode: 'transit', key: 'detail.dir_transit', Icon: Bus },
+] as const
+
 export default function EventDetail({ event, nextUp = null, isPast = false, tone = 'dark', hrefBase = '/events', sponsorLinks = {}, roamLinks = [], rideCode = null, hostHref = null, town = null, goTogether = NO_GO_TOGETHER, locale = 'en' }: EventDetailProps) {
   const t = eventsT(locale)
   const meta = getTypeMeta(event.event_type)
@@ -229,8 +236,8 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
     gaEvent('event_calendar_save', props)
     posthog.capture('event_calendar_save', props)
   }
-  const trackDirections = (surface: 'map_card' | 'details' | 'phone_bar') => {
-    const props = eventProps({ surface })
+  const trackDirections = (surface: 'map_card' | 'details' | 'phone_bar', mode?: string) => {
+    const props = eventProps(mode ? { surface, mode } : { surface })
     gaEvent('event_directions_click', props)
     posthog.capture('event_directions_click', props)
   }
@@ -304,16 +311,23 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
                     {address && (
                       <p className="mt-0.5 text-[13px] text-(--ev-ink-75)">{address}</p>
                     )}
-                    <a
-                      href={directionsUrl(event)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-(--ev-line-mid) px-4 py-2 text-[13px] font-medium text-(--ev-ink-75) transition-colors hover:bg-(--ev-panel)"
-                      onClick={() => trackDirections('map_card')}
-                    >
-                      <MapPin size={14} />
-                      {t('detail.directions')}
-                    </a>
+                    {/* Walk, bike or transit, as the app's event page offers. */}
+                    <p className="mt-3 text-[14px] font-semibold text-(--ev-ink-75)">{t('detail.directions')}</p>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {DIRECTION_MODES.map(({ mode, key, Icon }) => (
+                        <a
+                          key={mode}
+                          href={directionsUrl(event, mode)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg border border-(--ev-line-mid) px-4 text-[14px] font-medium text-(--ev-ink) transition-colors hover:bg-(--ev-panel)"
+                          onClick={() => trackDirections('map_card', mode)}
+                        >
+                          <Icon size={15} aria-hidden />
+                          {t(key)}
+                        </a>
+                      ))}
+                    </div>
                   </div>
                 </div>
               )}
