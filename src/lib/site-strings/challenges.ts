@@ -88,6 +88,12 @@ export const hubStrings = defineStrings(
     'archive.title': 'Past campaigns',
     'archive.lede': 'What each one added up to, with the full report.',
     'archive.read': 'Read the report',
+
+    'creative.entries_close': 'Entries close',
+    'creative.voting_closes': 'Voting closes',
+    'creative.prizes': 'Prizes',
+    'creative.cta_enter': 'Enter your video',
+    'creative.cta_vote': 'See the finalists and vote',
   },
   {
     es: {
@@ -149,6 +155,12 @@ export const hubStrings = defineStrings(
       'archive.title': 'Campañas anteriores',
       'archive.lede': 'Lo que logró cada una, con el informe completo.',
       'archive.read': 'Lee el informe',
+
+      'creative.entries_close': 'Participaciones hasta',
+      'creative.voting_closes': 'Votación hasta',
+      'creative.prizes': 'Premios',
+      'creative.cta_enter': 'Envía tu video',
+      'creative.cta_vote': 'Mira a los finalistas y vota',
     },
     'pt-BR': {
       'meta.title': 'Desafios e eventos — Green Streets Initiative',
@@ -209,6 +221,12 @@ export const hubStrings = defineStrings(
       'archive.title': 'Campanhas anteriores',
       'archive.lede': 'O resultado de cada uma, com o relatório completo.',
       'archive.read': 'Leia o relatório',
+
+      'creative.entries_close': 'Inscrições até',
+      'creative.voting_closes': 'Votação até',
+      'creative.prizes': 'Prêmios',
+      'creative.cta_enter': 'Envie seu vídeo',
+      'creative.cta_vote': 'Veja os finalistas e vote',
     },
     'zh-Hans': {
       'meta.title': '挑战和活动 — Green Streets Initiative',
@@ -263,6 +281,12 @@ export const hubStrings = defineStrings(
       'archive.title': '往期活动',
       'archive.lede': '每次活动的成果，附完整报告。',
       'archive.read': '阅读报告',
+
+      'creative.entries_close': '作品征集截止',
+      'creative.voting_closes': '投票截止',
+      'creative.prizes': '奖品',
+      'creative.cta_enter': '提交你的视频',
+      'creative.cta_vote': '查看入围作品并投票',
     },
   },
 )

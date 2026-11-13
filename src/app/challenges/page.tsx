@@ -5,6 +5,8 @@ import PageHero from '@/components/org/PageHero'
 import ChallengeRow from '@/components/challenges/ChallengeRow'
 import ChallengesEmpty from '@/components/challenges/ChallengesEmpty'
 import ArchiveSection from '@/components/challenges/ArchiveSection'
+import CreativeChallengeRow, { fetchLiveCreativeChallenge } from '@/components/challenges/CreativeChallengeRow'
+import type { ReactNode } from 'react'
 import TrackedLink from '@/components/TrackedLink'
 import { LANE, RouteSegment } from '@/components/home/RouteLine'
 import { getPromotables } from '@/lib/campaigns'
@@ -39,14 +41,17 @@ function Section({
   items,
   phase,
   locale,
+  lead,
 }: {
   title: string
   shape: 'straight' | 'wanderLeft' | 'wanderRight'
   items: Promotable[]
   phase: PromotablePhase
   locale: SiteLocale
+  /** A row drawn before the list (the live creative challenge in Happening now). */
+  lead?: ReactNode
 }) {
-  if (!items.length) return null
+  if (!items.length && !lead) return null
   return (
     <section className="relative overflow-x-clip bg-cream">
       <div className={`relative mx-auto grid max-w-[1120px] ${LANE} px-6 lg:px-8`}>
@@ -57,6 +62,7 @@ function Section({
             {title}
           </h2>
           <ul className="mt-6 border-t border-navy/15">
+            {lead}
             {items.map((p) => (
               // The section owns the phase, so heading and copy always agree.
               <ChallengeRow key={p.id} p={p} phase={phase} locale={locale} />
@@ -72,12 +78,12 @@ export default async function ChallengesPage({ searchParams }: { searchParams: S
   const locale = await siteLocale((await searchParams).lang)
   const t = translator(hubStrings, locale)
   const now = new Date()
-  const all = await getPromotables()
+  const [all, creative] = await Promise.all([getPromotables(), fetchLiveCreativeChallenge()])
   const b = bucket(all, now)
   const active = collapseSeries(b.active)
   const upcoming = collapseSeries(b.upcoming)
   const wrapped = collapseSeries(b.wrapped)
-  const isEmpty = !active.length && !upcoming.length && !wrapped.length
+  const isEmpty = !creative && !active.length && !upcoming.length && !wrapped.length
 
   const nextWalkRide =
     [...active, ...upcoming].find((p) => p.event?.seriesKey === 'walk-ride-day')?.startsAt ?? null
@@ -95,7 +101,9 @@ export default async function ChallengesPage({ searchParams }: { searchParams: S
           {isEmpty && <ChallengesEmpty nextWalkRideDay={nextWalkRide} locale={locale} />}
         </PageHero>
 
-        <Section title={t('section.now')} shape="straight" items={active} phase="active" locale={locale} />
+        <Section title={t('section.now')} shape="straight" items={active} phase="active" locale={locale}
+          lead={creative ? <CreativeChallengeRow c={creative} locale={locale} /> : undefined}
+        />
         <Section title={t('section.upcoming')} shape="wanderRight" items={upcoming} phase="upcoming" locale={locale} />
         <Section title={t('section.wrapped')} shape="wanderLeft" items={wrapped} phase="wrapped" locale={locale} />
         <ArchiveSection locale={locale} />
