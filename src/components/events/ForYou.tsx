@@ -1,8 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import { Calendar as CalendarIcon } from 'lucide-react'
+import { Calendar as CalendarIcon, LocateFixed } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { eventPath } from '@/lib/events-url'
 import { type CommunityEvent, getTypeMeta } from '@/lib/events'
@@ -54,27 +54,76 @@ export default function ForYou({ events }: { events: CommunityEvent[] }) {
   const { tone, hrefBase } = useEventsTone()
   const { locale, t } = useEventsI18n()
   const [picks, setPicks] = useState<{ event: CommunityEvent; reason: Reason | null }[]>([])
+  // A member with no home on file and no location shared: the feed has
+  // nowhere to measure from (43% of members, 2026-11-13), so offer one tap
+  // to share the browser's location, asked only when they tap
+  const [needsPlace, setNeedsPlace] = useState(false)
+  const [locating, setLocating] = useState(false)
+  const cancelled = useRef(false)
+
+  const load = useCallback(async (here: { lat: number; lng: number } | null) => {
+    const { data, error } = await supabase.rpc('get_home_event_feed', { p_lat: here?.lat ?? null, p_lng: here?.lng ?? null })
+    if (cancelled.current || error || !data) return
+    const feed = data as { events?: FeedRow[]; from?: string; origin?: unknown }
+    setNeedsPlace(!here && feed.origin == null)
+    const byId = new Map(events.map((e) => [e.id, e]))
+    const rows = (feed.events ?? [])
+      .map((r) => ({ event: byId.get(r.id), reason: r.reason }))
+      .filter((r): r is { event: CommunityEvent; reason: Reason | null } => !!r.event)
+      .slice(0, MAX)
+    setPicks(rows)
+    if (rows.length) trackEvents('events_for_you_shown', { count: rows.length, from: feed.from ?? null })
+  }, [events])
 
   useEffect(() => {
-    let cancelled = false
+    cancelled.current = false
     ;(async () => {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) return
-      const here = await grantedPosition()
-      const { data, error } = await supabase.rpc('get_home_event_feed', { p_lat: here?.lat ?? null, p_lng: here?.lng ?? null })
-      if (cancelled || error || !data) return
-      const byId = new Map(events.map((e) => [e.id, e]))
-      const rows = ((data as { events?: FeedRow[] }).events ?? [])
-        .map((r) => ({ event: byId.get(r.id), reason: r.reason }))
-        .filter((r): r is { event: CommunityEvent; reason: Reason | null } => !!r.event)
-        .slice(0, MAX)
-      setPicks(rows)
-      if (rows.length) trackEvents('events_for_you_shown', { count: rows.length, from: (data as { from?: string }).from ?? null })
+      await load(await grantedPosition())
     })().catch(() => {})
     return () => {
-      cancelled = true
+      cancelled.current = true
     }
-  }, [events])
+  }, [load])
+
+  const shareLocation = () => {
+    if (!navigator.geolocation) return
+    setLocating(true)
+    trackEvents('events_for_you_locate', {})
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        load({ lat: pos.coords.latitude, lng: pos.coords.longitude })
+          .catch(() => {})
+          .finally(() => setLocating(false))
+      },
+      // Said no: leave the calendar as it is
+      () => { setLocating(false); setNeedsPlace(false) },
+      { maximumAge: 10 * 60_000, timeout: 10000 },
+    )
+  }
+
+  if (needsPlace && !picks.length) {
+    return (
+      <section className="px-4 pb-5 sm:px-8 sm:pb-6 lg:pb-4" aria-labelledby="events-for-you">
+        <div className="mx-auto flex max-w-[1200px] flex-wrap items-center justify-between gap-3 rounded-2xl border border-(--ev-line) bg-(--ev-card) px-4 py-3">
+          <div className="min-w-0">
+            <h2 id="events-for-you" className="text-[15px] font-bold text-(--ev-ink)">{t('foryou.title')}</h2>
+            <p className="mt-0.5 text-[14px] text-(--ev-ink-75)">{t('foryou.locate_lede')}</p>
+          </div>
+          <button
+            type="button"
+            onClick={shareLocation}
+            disabled={locating}
+            className="inline-flex min-h-11 items-center gap-2 rounded-full bg-(--ev-ink) px-4 text-[14px] font-bold text-(--ev-bg) disabled:opacity-60"
+          >
+            <LocateFixed size={16} aria-hidden="true" />
+            {t('foryou.locate')}
+          </button>
+        </div>
+      </section>
+    )
+  }
 
   if (!picks.length) return null
   const tint = TINT[tone]
