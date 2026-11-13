@@ -4,6 +4,7 @@ import { useCallback, useState } from 'react'
 import posthog from 'posthog-js'
 import { supabase } from '@/lib/supabase'
 import type { BikeComfortData, ReachRow, ReachStep } from './types'
+import type { TripRouteChanges } from '@/lib/nearby/saved-trips'
 
 /**
  * "Avoid this street" and "Go through a place" (Around You v2, Keith
@@ -16,6 +17,10 @@ import type { BikeComfortData, ReachRow, ReachStep } from './types'
  * and Undo takes back the last change only, as the app and the ride planner
  * do. When the new route rides a same-named street in another town, the
  * server names both towns and the Avoiding line takes its town too.
+ *
+ * A saved trip keeps its changes (lib/saved-trips, 01787): changesFor reads
+ * them off a trip for "Save this trip", and restore plans the ride again with
+ * them in one call when the saved trip is opened.
  *
  * Twin of the Shift app's components/nearby/useAvoidStreets.ts.
  */
@@ -162,6 +167,36 @@ export function useAvoidStreets(center: { lat: number; lng: number }) {
     return result
   }, [entries, replan])
 
+  /** A saved trip's changes, planned again in one call (opening a saved
+   *  trip). Resolves true when the new route is in place. */
+  const restore = useCallback(
+    async (
+      row: ReachRow,
+      shownMinutes: number,
+      changes: TripRouteChanges,
+    ): Promise<boolean> => {
+      const avoided = changes.avoid
+        .slice(0, MAX_AVOID_STREETS)
+        .map((a) => ({ key: a.key, label: a.label, polylines: a.polylines.slice(0, MAX_AVOID_STRETCHES) }))
+        .filter((a) => a.polylines.length > 0)
+      if (avoided.length === 0 && !changes.through) return false
+      posthog.capture('nearby_saved_changes_restored', { destination: row.id, streets: avoided.length, through: !!changes.through })
+      const result = await replan(row, shownMinutes, avoided, changes.through, changes.through ? THROUGH_KEY : avoided[0].key)
+      return result === 'ok'
+    },
+    [replan],
+  )
+
+  /** What has been changed about a trip, as a saved trip keeps it; null = nothing. */
+  const changesFor = useCallback(
+    (rowId: string): TripRouteChanges | null => {
+      const e = entries[rowId]
+      if (!e || (e.avoided.length === 0 && !e.through)) return null
+      return { avoid: e.avoided.map((a) => ({ key: a.key, label: a.label, polylines: a.polylines })), through: e.through }
+    },
+    [entries],
+  )
+
   /** Take back the last change (parity gap-undo-all; the planner and the
    *  app undo one change at a time). */
   const undo = useCallback((rowId: string) => {
@@ -193,5 +228,5 @@ export function useAvoidStreets(center: { lat: number; lng: number }) {
     }
   }, [entries, pending, none, failed])
 
-  return { apply, avoid, goThrough, undo, stateFor }
+  return { apply, avoid, goThrough, undo, stateFor, restore, changesFor }
 }

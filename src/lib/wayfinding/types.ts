@@ -84,6 +84,14 @@ export interface MBTAStopLive {
   /** The time is from the printed timetable, not a live estimate (regional
    *  buses whose authority publishes no live times). */
   scheduled?: boolean
+  /** Shuttles: the next timetable departure when it is further out than the
+   *  times shown (ISO). Lower Mystic at noon runs again at 3 PM. */
+  next_at?: string | null
+  /** Shuttles: the days the timetable runs when only weekdays (31) or only
+   *  weekends (96), Mon=1 … Sun=64. */
+  service_days?: number | null
+  /** Shuttles: the route's stops in travel order ("where it goes"). */
+  route_stops?: { id: string; name: string }[]
 }
 
 export interface BikeParkingSpot {

@@ -66,7 +66,19 @@ export interface StationGroup {
   /** Beyond the normal search radius — the nearest option, shown because
    *  nothing closer exists (Boston College's nearest MBTA bus is 0.8 mi). */
   farther?: boolean
-  routes: { id: string; name: string; arrivals: { direction: string; nextMin: number | null; lateMin?: number | null; scheduled?: boolean }[] }[]
+  routes: {
+    id: string
+    name: string
+    arrivals: { direction: string; nextMin: number | null; lateMin?: number | null; scheduled?: boolean }[]
+    /** Shuttles: the next timetable departure past the times shown (ISO). */
+    nextAt?: string | null
+    /** Shuttles: 31 weekdays only, 96 weekends only. */
+    serviceDays?: number | null
+    /** Shuttles: the route's stops in travel order. */
+    stops?: { id: string; name: string }[]
+  }[]
+  /** Shuttles: the stop's own id, to find it in a route's stops. */
+  stopIds?: string[]
 }
 
 /** At most this many moving vehicles on the map at once. */
@@ -116,6 +128,12 @@ export function groupStops(rows: MBTAStopLive[], isRail: boolean, farther = fals
       route = { id: row.route_id, name: row.route_name, arrivals: [] }
       g.routes.push(route)
     }
+    if (row.route_stops) {
+      route.stops ??= row.route_stops
+      if (!g.stopIds?.includes(row.stop_id)) g.stopIds = [...(g.stopIds ?? []), row.stop_id]
+    }
+    if (row.next_at) route.nextAt ??= row.next_at
+    if (row.service_days) route.serviceDays ??= row.service_days
     const arrival = route.arrivals.find(a => a.direction === row.direction)
     if (!arrival) {
       route.arrivals.push({ direction: row.direction, nextMin: row.next_arrival_minutes, lateMin: row.late_minutes ?? null, scheduled: !!row.scheduled })

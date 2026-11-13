@@ -393,6 +393,7 @@ export default function RouteSection({ route, onRoute, meetup, pace, activity = 
                 label="Add a stop"
                 hideLabel
                 includeAreas
+                near={pins[pins.length - 1] ?? meetup}
                 placeholder="Add a stop: Diesel Cafe, Mystic River path…"
               />
               {stops.length > 0 && (

@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useSearchParams } from 'next/navigation'
 import posthog from 'posthog-js'
 import Link from 'next/link'
-import AddressAutocomplete from '@/components/AddressAutocomplete'
+import AddressAutocomplete, { PlaceSearchNear } from '@/components/AddressAutocomplete'
 import { supabase } from '@/lib/supabase'
 import type { BluebikeStationLive, MBTAStopLive } from '@/lib/wayfinding/types'
 import { fetchBikeShareDocks, fetchMBTAStops, fetchTrainStops, fetchShuttleStops, fetchShuttleLive, withShuttleLive, isRegionalStopId, type ShuttleLive } from '@/lib/nearby/live-data'
@@ -24,6 +24,7 @@ import {
 import type { SectionData, SectionStatus, BikeNetworkData, CommunityData, GuideItem, ReachRow } from './types'
 import { captureReachLoaded } from './ReachSection'
 import NearbyShell from './NearbyShell'
+import { TripOriginContext } from './SavedTrips'
 import NearbyDesktop from './NearbyDesktop'
 import PartnerCobrand from './PartnerCobrand'
 import NewRoutesOffer from './NewRoutesOffer'
@@ -834,7 +835,14 @@ export default function NearbySnapshot({ tone = 'dark' }: { tone?: NearbyTone } 
     <NearbyToneProvider tone={tone}>
       <NearbyI18nProvider locale={locale} setLocale={setChosenLocale}>
         <NearbyPromosProvider promos={promos}>
-          {isDesktop ? <NearbyDesktop {...surfaceProps} /> : <NearbyShell {...surfaceProps} />}
+          {/* Every address box on the page searches around this place, and
+              a saved trip starts here (or wherever they are, when the
+              browser found them) */}
+          <PlaceSearchNear.Provider value={location}>
+            <TripOriginContext.Provider value={{ lat: location.lat, lng: location.lng, name: displayLabel, here: location.source === 'geolocation' }}>
+              {isDesktop ? <NearbyDesktop {...surfaceProps} /> : <NearbyShell {...surfaceProps} />}
+            </TripOriginContext.Provider>
+          </PlaceSearchNear.Provider>
         </NearbyPromosProvider>
       </NearbyI18nProvider>
     </NearbyToneProvider>

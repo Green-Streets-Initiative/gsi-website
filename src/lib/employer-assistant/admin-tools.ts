@@ -8,6 +8,7 @@ import { NONPROFIT_RATE, PLAN_TERMS, PLANS, priceLabel } from '@/lib/employer/pl
 import { bikeShareSystemNear } from '@/lib/employer/bike-share'
 import { employerAdvisorUrl } from '@/lib/employer/office-links'
 import type { ApprovalCard, ToolCtx, ToolResult } from './tools'
+import { searchPlaces } from '@/lib/server/places'
 
 const money = (c: number) => (c % 100 === 0 ? `$${(c / 100).toLocaleString('en-US')}` : `$${(c / 100).toFixed(2)}`)
 const ROLE_WORDS: Record<string, string> = {
@@ -301,28 +302,12 @@ export const ADMIN_ACTIVITY: Record<string, string> = {
 
 // ── Lookups (scoped to the workplace) ──────────────────────────────────
 
-/** Google Places text search, biased to Greater Boston (as the portal's address picker). */
+/** The site's one place search (lib/server/places.ts), around Greater Boston
+ *  as the portal's address picker. */
 async function geocode(address: string): Promise<{ formatted: string; lat: number; lng: number } | null> {
-  const key = process.env.GOOGLE_PLACES_API_KEY || process.env.GOOGLE_ROUTES_API_KEY
-  if (!key) return null
-  try {
-    const res = await fetch('https://places.googleapis.com/v1/places:searchText', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Goog-Api-Key': key, 'X-Goog-FieldMask': 'places.formattedAddress,places.location' },
-      body: JSON.stringify({
-        textQuery: address,
-        maxResultCount: 1,
-        locationBias: { circle: { center: { latitude: 42.36, longitude: -71.06 }, radius: 50000 } },
-      }),
-    })
-    if (!res.ok) return null
-    const j = (await res.json()) as { places?: { formattedAddress?: string; location?: { latitude: number; longitude: number } }[] }
-    const p = j.places?.[0]
-    if (!p?.location || !p.formattedAddress) return null
-    return { formatted: p.formattedAddress, lat: p.location.latitude, lng: p.location.longitude }
-  } catch {
-    return null
-  }
+  const p = (await searchPlaces(address, { max: 1 }).catch(() => []))[0]
+  if (!p?.address) return null
+  return { formatted: p.address, lat: p.lat, lng: p.lng }
 }
 
 type Office = { id: string; name: string | null; address: string; lat: number; lng: number; radius_m: number; sort_order: number; typical_start_time?: string | null }

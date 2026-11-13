@@ -511,7 +511,7 @@ export async function runRidePlanTool(ctx: Ctx, name: string, input: Record<stri
     const vias: (LatLng & { label?: string })[] = []
     const missed: string[] = []
     for (const q of through) {
-      const found = (await findPlace(`${q} near ${places.meet.label}`).catch(() => null)) as { places?: { name?: string; lat: number; lng: number }[] } | null
+      const found = (await findPlace(`${q} near ${places.meet.label}`, places.meet).catch(() => null)) as { places?: { name?: string; lat: number; lng: number }[] } | null
       const p = found?.places?.[0]
       if (p && Number.isFinite(p.lat)) vias.push({ lat: p.lat, lng: p.lng, label: (p.name ?? q).slice(0, 60) })
       else missed.push(q)

@@ -41,6 +41,8 @@ import { useNearbyT } from './NearbyI18n'
 import NearbyLanguagePill from './NearbyLanguagePill'
 import { useNearbyV2, wantsSignIn } from './useNearbyV2'
 import { NearbySignIn, V2Blocks, V2LayersButton, V2PlaceChips, type V2Layers } from './NearbyV2'
+import { AvoidChangesContext, SaveTripButton, SavedTripChips } from './SavedTrips'
+import type { TripRouteChanges } from '@/lib/nearby/saved-trips'
 import { useSpotPress } from '@/components/spot/useSpotPress'
 import { ReachBikeNotes, ReachWalkNotes } from '@/components/notes/ReachNotes'
 import { ReachBikePaths } from './ReachPaths'
@@ -230,7 +232,10 @@ export default function NearbyShell({
   const [plannedRows, setPlannedRows] = useState<ReachRow[]>([])
   // Around You v2: a trip re-planned around a street swaps in its new route
   // here, so the map, the times and the detail all draw it.
-  const { apply: applyAvoid, avoid: avoidStreet, goThrough: goThroughPlace, undo: undoAvoid, stateFor: avoidState } = useAvoidStreets(center)
+  const { apply: applyAvoid, avoid: avoidStreet, goThrough: goThroughPlace, undo: undoAvoid, stateFor: avoidState, restore: restoreAvoid, changesFor: avoidChanges } = useAvoidStreets(center)
+  // Save this trip keeps those changes, and a saved trip puts them back (01787)
+  const savedChanges = useMemo(() => ({ changesFor: avoidChanges, stateFor: avoidState }), [avoidChanges, avoidState])
+  const restoreSaved = useCallback((row: ReachRow, changes: TripRouteChanges) => { void restoreAvoid(row, row.bike_minutes, changes) }, [restoreAvoid])
   const reachRows = useMemo(
     () => [...plannedRows, ...reach.data].map(applyAvoid), [plannedRows, reach.data, applyAvoid])
 
@@ -421,6 +426,7 @@ export default function NearbyShell({
         morePlacesOpen={morePlacesOpen}
         onMorePlaces={() => { setMorePlacesOpen(o => !o); setSnap('full') }}
       />
+      <SavedTripChips center={center} onPlanned={onPlanned} onRestore={restoreSaved} />
       {trafficOn && <TrafficLegend className="mt-2" />}
     </div>
   )
@@ -437,6 +443,7 @@ export default function NearbyShell({
   return (
     // Fixed to the viewport (below the fixed Nav) rather than sized with
     // dvh math — Safari's URL-bar dance and scroll quirks can't touch it
+    <AvoidChangesContext.Provider value={savedChanges}>
     <div className="fixed inset-x-0 bottom-0 top-[60px] z-30 flex flex-col overflow-hidden bg-(--nb-bg)">
       {/* Thin orientation strip — tells you what page you're on without
           spending real screen space */}
@@ -788,6 +795,7 @@ export default function NearbyShell({
       </div>
       {spotPress.sheet}
     </div>
+    </AvoidChangesContext.Provider>
   )
 }
 
@@ -814,6 +822,7 @@ function ReachDetail({ row, mode, center, onMode, legInfo, highlightedStreetKey,
   // Around You v2 (the only place avoidFor is passed): the trip as one answer
   if (avoidFor) {
     return (
+      <>
       <V2Trip
         showTitle
         row={row}
@@ -830,6 +839,8 @@ function ReachDetail({ row, mode, center, onMode, legInfo, highlightedStreetKey,
         partnerSlug={partnerSlug}
         onExpand={onExpand}
       />
+      <SaveTripButton row={row} mode={mode} />
+      </>
     )
   }
   const hasTransit = (row.transit_segments?.length ?? 0) > 0

@@ -15,7 +15,7 @@ import { repairStatusLine, type RepairTone } from '@/lib/nearby/repair-format'
 import { canonicalStreetKey } from '@/lib/nearby/street-names'
 import type { TransitCorridor, BikeCorridor } from '@/lib/nearby/corridors'
 import { TrainIcon, BusIcon, FerryIcon, ShuttleIcon } from '@/components/wayfinding/WayfindingIcons'
-import { ShuttleOperatorLines } from './ShuttleOperator'
+import { ShuttleOperatorLines, ShuttleNextAt, ShuttleRouteStops, scheduledWordKey } from './ShuttleOperator'
 import { dockStatsText } from './markers'
 import { PanelPhoto } from './DetailPanel'
 import type { SectionStatus } from './types'
@@ -146,11 +146,17 @@ function RouteSummaryLine({ r, corridorById, alerts }: {
         {ends && (
           <span className="min-w-0 flex-1 truncate text-[0.78rem] text-(--nb-ink-80)">{ends}</span>
         )}
-        {next !== null && (
+        {next !== null ? (
           <strong className="ml-auto shrink-0 text-[0.75rem] font-bold text-(--nb-accent)">
             {next === 0 ? tr('lists.now') : tr('lists.in_min', { min: next })}
             {late ? <span className="text-(--nb-warn)"> · {tr('lists.late_min', { min: late })}</span> : null}
+            {/* A timetable time says so, or it reads as a live one */}
+            {r.arrivals.find(a => a.nextMin === next)?.scheduled
+              ? <span className="text-[13px] font-normal text-(--nb-ink-80)"> · {tr(scheduledWordKey(r))}</span>
+              : null}
           </strong>
+        ) : (
+          <ShuttleNextAt route={r} />
         )}
       </span>
       {open && routeAlerts.length > 0 && <AlertDetailBlock alerts={routeAlerts} />}
@@ -207,14 +213,17 @@ function ExpandedRouteRow({ r, corridorById, highlightedCorridorId, onSelectRout
                 <strong className="shrink-0 text-[0.75rem] font-bold text-(--nb-accent)">
                   {a.nextMin === 0 ? tr('lists.now') : tr('lists.in_min', { min: a.nextMin })}
                   {a.lateMin ? <span className="text-(--nb-warn)"> · {tr('lists.late_min', { min: a.lateMin })}</span> : null}
-                  {a.scheduled ? <span className="text-[13px] font-normal text-(--nb-ink-80)"> · {tr('transit.scheduled')}</span> : null}
+                  {a.scheduled ? <span className="text-[13px] font-normal text-(--nb-ink-80)"> · {tr(scheduledWordKey(r))}</span> : null}
                 </strong>
               )}
             </span>
           ))}
         </span>
       ) : (
-        <span className="min-w-0 flex-1 truncate text-[0.8rem] text-(--nb-ink-80)">{routeEndpoints(corridor, r)}</span>
+        <>
+          <span className="min-w-0 flex-1 truncate text-[0.8rem] text-(--nb-ink-80)">{routeEndpoints(corridor, r)}</span>
+          <ShuttleNextAt route={r} />
+        </>
       )}
       {open && routeAlerts.length > 0 && <AlertDetailBlock alerts={routeAlerts} />}
     </div>
@@ -414,6 +423,7 @@ export function StationList({ stations, corridorById, highlightedCorridorId, sta
                       alerts={alerts}
                     />
                   ))}
+                  <ShuttleRouteStops station={st} className="px-1.5" />
                 </div>
               )}
             </div>

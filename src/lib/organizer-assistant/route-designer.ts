@@ -8,6 +8,7 @@ import type { PlannedLegOption, PlannedRoute } from '@/lib/organizers/api'
 import type { LatLng } from '@/lib/organizers/types'
 import { getBikeNetwork, haversineMeters, type BikeNetworkResponse } from '@/lib/server/bike-network'
 import { getBikeShareDocks } from '@/lib/server/bluebikes'
+import { searchPlaces } from '@/lib/server/places'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { bikeFriendlyPlaces, type BikeFriendlyPlace } from '@/lib/server/bike-friendly'
 import { NEW_FACILITY_MONTHS } from '@/lib/nearby/corridors'
@@ -101,23 +102,12 @@ const pathMiles = (pts: LatLng[]) => pts.slice(1).reduce((a, p, i) => a + miles(
  */
 const placeSearch = unstable_cache(
   async (query: string, lat3: number, lng3: number, radiusM: number): Promise<Pt[]> => {
-    const key = process.env.GOOGLE_PLACES_API_KEY || process.env.GOOGLE_ROUTES_API_KEY
-    if (!key) return []
-    const res = await fetch('https://places.googleapis.com/v1/places:searchText', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Goog-Api-Key': key, 'X-Goog-FieldMask': 'places.displayName,places.location,places.businessStatus' },
-      body: JSON.stringify({
-        textQuery: query,
-        maxResultCount: 5,
-        locationBias: { circle: { center: { latitude: lat3, longitude: lng3 }, radius: radiusM } },
-      }),
-      signal: AbortSignal.timeout(10_000),
-    })
-    if (!res.ok) throw new Error(`places ${res.status}`)
-    const json = await res.json() as { places?: { displayName?: { text?: string }; location?: { latitude: number; longitude: number }; businessStatus?: string }[] }
-    return (json.places ?? [])
-      .filter((p) => p.location && p.businessStatus !== 'CLOSED_PERMANENTLY')
-      .map((p) => ({ lat: p.location!.latitude, lng: p.location!.longitude, name: p.displayName?.text ?? query }))
+    // The site's one place search (lib/server/places.ts); it throws on a
+    // failure, so the cache never keeps one.
+    const found = await searchPlaces(query, { near: { lat: lat3, lng: lng3 }, radiusM, max: 5 })
+    return found
+      .filter((p) => p.businessStatus !== 'CLOSED_PERMANENTLY')
+      .map((p) => ({ lat: p.lat, lng: p.lng, name: p.name ?? query }))
   },
   ['designer-places-v1'],
   { revalidate: 24 * 60 * 60 },

@@ -13,6 +13,7 @@ import GoThroughPlace from './GoThroughPlace'
 import type { ReachRow, ReachStep, ReachSegment, BikeComfortTier, BikeComfortData } from './types'
 import { useNearbyT, useNearbyLocale } from './NearbyI18n'
 import { TripPerks } from './NearbyPerks'
+import { SaveTripButton } from './SavedTrips'
 import { ReachBikeNotes, ReachWalkNotes } from '@/components/notes/ReachNotes'
 import { ReachBikePaths } from './ReachPaths'
 import { TrainIcon, BusIcon, FerryIcon, ShuttleIcon } from '@/components/wayfinding/WayfindingIcons'
@@ -760,6 +761,7 @@ export function ReachList({ center, rows, onRowTap, modeFilter, routeSelection, 
                       onPlanCommute={onPlanCommute}
                       partnerSlug={partnerSlug}
                     />
+                    <SaveTripButton row={row} mode={expanded.mode} />
                   </div>
                 )}
                 {isOpen && expanded && !avoidFor && (

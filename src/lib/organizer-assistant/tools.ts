@@ -10,6 +10,7 @@ import { courseOf, type RouteCourse } from '@/lib/organizers/route-geo'
 import { fetchRideWithGps } from '@/lib/organizers/rwgps'
 import { forecastLine, rideForecast } from '@/lib/rides/forecast'
 import { newInfraNear, newInfraOnRoute } from '@/lib/server/new-infra'
+import { searchPlaces } from '@/lib/server/places'
 import { newInfraForAssistant } from '@/lib/new-infra'
 
 // The organizer assistant's tools (Keith 2026-10-22). Same shape as the
@@ -846,29 +847,13 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
 }
 
 /** `near` ranks places close to someone first (the Shift assistant passes the
- *  phone's location when the app shares it); otherwise Greater Boston. */
+ *  phone's location when the app shares it); otherwise Greater Boston. The
+ *  site's one place search (lib/server/places.ts), as the address box uses. */
 export async function findPlace(query: string, near?: { lat: number; lng: number } | null): Promise<Record<string, unknown>> {
-  const key = process.env.GOOGLE_PLACES_API_KEY || process.env.GOOGLE_ROUTES_API_KEY
-  if (!query.trim() || !key) return { places: [] }
-  const res = await fetch('https://places.googleapis.com/v1/places:searchText', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Goog-Api-Key': key,
-      'X-Goog-FieldMask': 'places.displayName,places.formattedAddress,places.location',
-    },
-    body: JSON.stringify({
-      textQuery: query.slice(0, 200),
-      maxResultCount: 4,
-      locationBias: { circle: { center: { latitude: near?.lat ?? 42.3736, longitude: near?.lng ?? -71.1097 }, radius: near ? 15000 : 40000 } },
-    }),
-    signal: AbortSignal.timeout(10_000),
-  })
-  const json = (await res.json().catch(() => ({}))) as { places?: { displayName?: { text?: string }; formattedAddress?: string; location?: { latitude: number; longitude: number } }[] }
+  if (!query.trim()) return { places: [] }
+  const found = await searchPlaces(query, { near: near ?? null, max: 4 }).catch(() => [])
   return {
-    places: (json.places ?? []).filter((p) => p.location).map((p) => ({
-      name: p.displayName?.text ?? null, address: p.formattedAddress ?? null, lat: p.location!.latitude, lng: p.location!.longitude,
-    })),
+    places: found.map((p) => ({ name: p.name, address: p.address, lat: p.lat, lng: p.lng })),
   }
 }
 

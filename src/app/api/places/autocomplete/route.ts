@@ -1,49 +1,22 @@
 import { NextRequest } from 'next/server'
+import { autocompletePlaces, validNear } from '@/lib/server/places'
 
-const API_KEY = process.env.GOOGLE_PLACES_API_KEY || process.env.GOOGLE_ROUTES_API_KEY!
-
+/**
+ * Address box suggestions. `near` ({ lat, lng }) is where the map is, so a
+ * search on a map of Worcester finds Worcester's Main Street first; without
+ * it, Greater Boston (src/lib/server/places.ts, the one search path).
+ */
 export async function POST(req: NextRequest) {
-  const { input, types } = (await req.json()) as { input?: string; types?: string[] }
+  const { input, types, near } = (await req.json().catch(() => ({}))) as { input?: string; types?: string[]; near?: unknown }
 
   if (!input || input.trim().length < 3) {
     return Response.json({ predictions: [] })
   }
 
-  const res = await fetch('https://places.googleapis.com/v1/places:autocomplete', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Goog-Api-Key': API_KEY,
-    },
-    body: JSON.stringify({
-      input,
-      includedRegionCodes: ['us'],
-      // types: [] = no type filter, so neighborhoods and towns come back too.
-      ...(Array.isArray(types) && types.length === 0
-        ? {}
-        : { includedPrimaryTypes: types ?? ['street_address', 'premise', 'subpremise', 'establishment'] }),
-      locationBias: {
-        circle: {
-          center: { latitude: 42.3736, longitude: -71.1097 },
-          radius: 30000,
-        },
-      },
-    }),
+  const predictions = await autocompletePlaces(input, {
+    types: Array.isArray(types) ? types.filter((t) => typeof t === 'string').slice(0, 5) : undefined,
+    near: validNear(near),
   })
-
-  if (!res.ok) {
-    console.error('Places autocomplete error:', res.status, await res.text().catch(() => ''))
-    return Response.json({ predictions: [] }, { status: 502 })
-  }
-
-  const data = await res.json()
-  const predictions = (data.suggestions || [])
-    .filter((s: { placePrediction?: unknown }) => s.placePrediction)
-    .slice(0, 5)
-    .map((s: { placePrediction: { placeId: string; text: { text: string } } }) => ({
-      placeId: s.placePrediction.placeId,
-      text: s.placePrediction.text.text,
-    }))
-
+  if (predictions === null) return Response.json({ predictions: [] }, { status: 502 })
   return Response.json({ predictions })
 }

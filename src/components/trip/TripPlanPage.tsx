@@ -333,6 +333,7 @@ function TripPlanner({ locale }: { locale: NearbyLocale }) {
                 variant="light"
                 placeholder={tt('trip.to_placeholder')}
                 includeAreas
+                near={from}
                 autoFocus={linkedTo === false}
               />
             </div>

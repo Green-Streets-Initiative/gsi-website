@@ -537,18 +537,36 @@ export interface ShuttleVehicleLive {
   lng: number
 }
 
+/** The next shuttle at one stop on one route. */
+export interface ShuttleTime {
+  /** Minutes to the next departure; null when the next one is further out
+   *  than the times the server sends (then `nextAt` says when). */
+  minutes: number | null
+  /** From the operator's printed timetable, not a live estimate. */
+  scheduled: boolean
+  /** Where this run goes from here, when the operator says. */
+  headsign: string | null
+  nextAt: string | null
+  /** Mon=1 … Sun=64, sent only for weekdays-only (31) or weekends-only (96). */
+  serviceDays: number | null
+}
+
 export interface ShuttleLive {
-  /** "stopId|routeId" → minutes to the next live arrival. */
-  minutes: Map<string, number>
+  /** "stopId|routeId" → the next departure, live where the operator's feed
+   *  can be read (Brandeis) and from its timetable everywhere else. */
+  times: Map<string, ShuttleTime>
+  /** "routeId" → the route's stops in travel order. */
+  routeStops: Map<string, { id: string; name: string }[]>
   vehicles: ShuttleVehicleLive[]
 }
 
-/** Live shuttle times and positions from the Shift app's `nearby-transit`
- *  edge function (`only: "shuttles"`), the one source both surfaces read.
- *  Only live times are kept: this page shows no timetables, so a printed
- *  time here would read as a live one. Never cached — it is the 30-second
- *  refresh's job. Null on any failure; the cards then show what they always
- *  did. */
+/** Shuttle times, route order and positions from the Shift app's
+ *  `nearby-transit` edge function (`only: "shuttles"`), the one source both
+ *  surfaces read (parity gap-shuttle-times-web, 2026-11-13: the timetable
+ *  and "where it goes" as in the app's Around You). A timetable time carries
+ *  `scheduled`, and every list says so beside it, so it never reads as a
+ *  live one. Never cached — it is the 30-second refresh's job. Null on any
+ *  failure; the cards then show what they always did. */
 export async function fetchShuttleLive(lat: number, lng: number): Promise<ShuttleLive | null> {
   const base = process.env.NEXT_PUBLIC_SUPABASE_URL
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -561,36 +579,75 @@ export async function fetchShuttleLive(lat: number, lng: number): Promise<Shuttl
     })
     if (!res.ok) return null
     const data = await res.json()
-    const minutes = new Map<string, number>()
-    for (const stop of Array.isArray(data?.stops) ? data.stops : []) {
-      for (const route of Array.isArray(stop?.routes) ? stop.routes : []) {
-        const first = (Array.isArray(route?.arrivals) ? route.arrivals : [])
-          .find((a: { is_realtime?: unknown; minutes_away?: unknown }) => a?.is_realtime === true && typeof a.minutes_away === 'number')
-        if (first) minutes.set(`${stop.id}|${route.route_id}`, first.minutes_away)
-      }
-    }
-    const vehicles: ShuttleVehicleLive[] = (Array.isArray(data?.shuttle_vehicles) ? data.shuttle_vehicles : [])
-      .filter((v: Record<string, unknown>) => typeof v?.id === 'string' && Number.isFinite(v.lat) && Number.isFinite(v.lng))
-      .map((v: Record<string, unknown>) => ({
-        id: v.id as string,
-        route_id: String(v.route_id ?? ''),
-        route_name: String(v.route_name ?? ''),
-        color: typeof v.color === 'string' && /^#[0-9a-f]{6}$/i.test(v.color) ? v.color : '#6366F1',
-        lat: v.lat as number,
-        lng: v.lng as number,
-      }))
-    return { minutes, vehicles }
+    return parseShuttleLive(data)
   } catch {
     return null
   }
 }
 
-/** Shuttle rows with their live minutes filled in (null stays null). */
+type RawArrival = { minutes_away?: unknown; is_realtime?: unknown; headsign?: unknown }
+
+/** The edge function's shuttle answer, checked field by field. */
+export function parseShuttleLive(data: unknown): ShuttleLive {
+  const d = (data ?? {}) as Record<string, unknown>
+  const times = new Map<string, ShuttleTime>()
+  for (const stop of Array.isArray(d.stops) ? d.stops : []) {
+    for (const route of Array.isArray(stop?.routes) ? stop.routes : []) {
+      // The server already puts a live estimate ahead of the timetable
+      const first = (Array.isArray(route?.arrivals) ? route.arrivals as RawArrival[] : [])
+        .find(a => typeof a?.minutes_away === 'number' && a.minutes_away >= 0)
+      const nextAt = typeof route?.next_scheduled === 'string' && !Number.isNaN(Date.parse(route.next_scheduled)) ? route.next_scheduled : null
+      if (!first && !nextAt) continue
+      const days = route?.service_days
+      times.set(`${stop.id}|${route.route_id}`, {
+        minutes: first ? (first.minutes_away as number) : null,
+        scheduled: first ? first.is_realtime !== true : true,
+        headsign: first && typeof first.headsign === 'string' && first.headsign.trim() ? first.headsign.trim() : null,
+        nextAt: first ? null : nextAt,
+        serviceDays: days === 31 || days === 96 ? days : null,
+      })
+    }
+  }
+  const routeStops = new Map<string, { id: string; name: string }[]>()
+  for (const r of Array.isArray(d.shuttle_routes) ? d.shuttle_routes : []) {
+    if (typeof r?.route_id !== 'string' || !Array.isArray(r.stops)) continue
+    const stops = (r.stops as Record<string, unknown>[])
+      .filter(x => typeof x?.id === 'string' && typeof x?.name === 'string')
+      .map(x => ({ id: x.id as string, name: x.name as string }))
+    if (stops.length > 1) routeStops.set(r.route_id, stops)
+  }
+  const vehicles: ShuttleVehicleLive[] = (Array.isArray(d.shuttle_vehicles) ? d.shuttle_vehicles : [])
+    .filter((v: Record<string, unknown>) => typeof v?.id === 'string' && Number.isFinite(v.lat) && Number.isFinite(v.lng))
+    .map((v: Record<string, unknown>) => ({
+      id: v.id as string,
+      route_id: String(v.route_id ?? ''),
+      route_name: String(v.route_name ?? ''),
+      color: typeof v.color === 'string' && /^#[0-9a-f]{6}$/i.test(v.color) ? v.color : '#6366F1',
+      lat: v.lat as number,
+      lng: v.lng as number,
+    }))
+  return { times, routeStops, vehicles }
+}
+
+/** Shuttle rows with their next time, where it goes and the route's stops
+ *  filled in. A row the server has nothing for stays as it was. */
 export function withShuttleLive(rows: MBTAStopLive[], live: ShuttleLive | null): MBTAStopLive[] {
-  if (!live || live.minutes.size === 0) return rows
+  if (!live || (live.times.size === 0 && live.routeStops.size === 0)) return rows
   return rows.map(r => {
-    const m = live.minutes.get(`${r.stop_id}|${r.route_id}`)
-    return m === undefined ? r : { ...r, next_arrival_minutes: m }
+    const t = live.times.get(`${r.stop_id}|${r.route_id}`)
+    const stops = live.routeStops.get(r.route_id)
+    if (!t && !stops) return r
+    return {
+      ...r,
+      ...(t ? {
+        next_arrival_minutes: t.minutes,
+        scheduled: t.minutes !== null && t.scheduled,
+        direction: t.headsign ?? r.direction,
+        next_at: t.nextAt,
+        service_days: t.serviceDays,
+      } : {}),
+      ...(stops ? { route_stops: stops } : {}),
+    }
   })
 }
 

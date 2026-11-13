@@ -1,6 +1,15 @@
 'use client'
 
-import { useState, useRef, useEffect, useCallback, useId, type KeyboardEvent } from 'react'
+import { createContext, useContext, useState, useRef, useEffect, useCallback, useId, type KeyboardEvent } from 'react'
+
+/**
+ * Where the map is, for every address box inside it: suggestions rank places
+ * near this point first (parity gap-place-search). /nearby provides its
+ * location, so the trip search, "Go through a place" and the location box
+ * all search around the map without each passing it. A box's own `near`
+ * prop wins; with neither, the server searches Greater Boston.
+ */
+export const PlaceSearchNear = createContext<{ lat: number; lng: number } | null>(null)
 
 type Prediction = {
   placeId: string
@@ -40,6 +49,9 @@ type Props = {
   /** How many suggestions came back for what's typed (3+ characters), so a
    *  page can say when nothing matched. */
   onResults?: (count: number) => void
+  /** Rank suggestions near this point (the map's position). Defaults to the
+   *  nearest PlaceSearchNear provider. */
+  near?: { lat: number; lng: number } | null
 }
 
 export default function AddressAutocomplete({
@@ -55,7 +67,13 @@ export default function AddressAutocomplete({
   autoFocus,
   includeAreas = false,
   onResults,
+  near: nearProp,
 }: Props) {
+  const nearCtx = useContext(PlaceSearchNear)
+  const near = nearProp ?? nearCtx
+  // Rounded so a map that moves a few metres doesn't make a new search
+  const nearLat = near ? Math.round(near.lat * 1000) / 1000 : null
+  const nearLng = near ? Math.round(near.lng * 1000) / 1000 : null
   const [predictions, setPredictions] = useState<Prediction[]>([])
   const [open, setOpen] = useState(false)
   // The suggestion the arrow keys are on; -1 = none. Focus stays in the
@@ -93,7 +111,11 @@ export default function AddressAutocomplete({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         // An empty type list asks for every kind of place (see the route).
-        body: JSON.stringify(includeAreas ? { input, types: [] } : { input }),
+        body: JSON.stringify({
+          input,
+          ...(includeAreas ? { types: [] } : {}),
+          ...(nearLat !== null && nearLng !== null ? { near: { lat: nearLat, lng: nearLng } } : {}),
+        }),
       })
 
       const data = await res.json()
@@ -109,7 +131,7 @@ export default function AddressAutocomplete({
     } catch {
       if (req === requestRef.current) setPredictions([])
     }
-  }, [includeAreas])
+  }, [includeAreas, nearLat, nearLng])
 
   function handleInput(val: string) {
     onChange(val)
