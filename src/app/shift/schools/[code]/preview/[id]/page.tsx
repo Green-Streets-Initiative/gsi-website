@@ -48,7 +48,7 @@ export default async function SchoolRoutesPreviewPage({
   const { data: rows } = await supabase
     .from('route_corridors')
     .select(
-      'id, name, waypoints, distance_miles, estimated_walk_minutes, estimated_bike_minutes, recommended_modes, mode_rationale, family_description, google_maps_url_walk, google_maps_url_bike, sort_order, priority_rank, volunteer_submitted_at',
+      'id, name, waypoints, distance_miles, estimated_walk_minutes, estimated_bike_minutes, recommended_modes, mode_rationale, family_description, google_maps_url_walk, google_maps_url_bike, sort_order, priority_rank, volunteer_submitted_at, comfort',
     )
     .in('id', pv.corridor_ids)
     .is('excluded_at', null)
@@ -72,6 +72,13 @@ export default async function SchoolRoutesPreviewPage({
       sort_order: r.sort_order ?? r.priority_rank,
       review_basis: pv.review_basis,
       volunteer_submitted_at: r.volunteer_submitted_at,
+      // Same slim pieces as published_route_cards (01776).
+      comfort_segments: Array.isArray(r.comfort?.comfort_segments)
+        ? r.comfort.comfort_segments.map((s: { rating: string; distance_mi: number }) => ({
+            rating: s.rating,
+            distance_mi: s.distance_mi,
+          }))
+        : null,
     }))
     .sort((a, b) => a.sort_order - b.sort_order)
 

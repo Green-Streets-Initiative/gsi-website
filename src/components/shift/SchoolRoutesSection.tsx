@@ -12,6 +12,7 @@ import {
   type PublishedRouteCard,
 } from '@/lib/shift/routeDisplay'
 import SchoolRoutesMap from './SchoolRoutesMap'
+import RouteComfortBar from './RouteComfortBar'
 import ReportSpotSheet from '@/components/spot/ReportSpotSheet'
 import { useSpotSwitch } from '@/components/spot/useSpotSwitch'
 
@@ -146,6 +147,8 @@ export default function SchoolRoutesSection({ schoolId, schoolName, preview }: P
                   <span>{route.estimated_bike_minutes} min bike</span>
                 )}
               </div>
+
+              <RouteComfortBar segments={route.comfort_segments} />
 
               {route.mode_rationale && (
                 <p className="text-sm text-[#4A4D68] mb-3">{route.mode_rationale}</p>

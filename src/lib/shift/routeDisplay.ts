@@ -22,6 +22,8 @@ export interface PublishedRouteCard {
   review_basis: string | null
   /** Set when a volunteer walked this route. */
   volunteer_submitted_at: string | null
+  /** The ride planner's street-by-street rating, rating + miles only (01776). */
+  comfort_segments?: { rating: string; distance_mi: number }[] | null
 }
 
 export const MODE_BADGE_STYLES: Record<string, { label: string; bg: string; text: string }> = {
