@@ -42,7 +42,7 @@ import {
   type ShuttleLine,
 } from '@/components/commute/plan-data'
 import { stagesFor } from '@/components/commute/trip-stages'
-import { CAR_MODES, WORKDAYS, asCarChoice, asVehicle, formatClock, headlineFor, isComboKey, modeName, modeOrderFor, withoutCar } from '@/lib/employer/commute-costs'
+import { CAR_MODES, WORKDAYS, asCarChoice, asVehicle, formatClock, headlineFor, isComboKey, modeName, modeOrderFor, withCalmRide, withoutCar } from '@/lib/employer/commute-costs'
 import { chipFor, flagsForMode, morningWeather, summaryFor, type MorningWeather, type WeatherHour } from '@/lib/commute/weather'
 import { employerNearbyUrl, locationAsOffice } from '@/lib/employer/office-links'
 import { eventPath } from '@/lib/events-url'
@@ -569,7 +569,12 @@ export default function AdvisorFlow({
   // With no car the rows that need one go and the headline is rebuilt
   // without them (withoutCar); the engine's answer is kept whole, so
   // switching back needs no new request.
-  const plan = useMemo(() => (result && noCar ? withoutCar(result) : result), [result, noCar])
+  // Once the calm route lands, the bike rows and the headline take its
+  // extra minutes, so they match the drawer and the route on the map.
+  const plan = useMemo(() => {
+    const base = result && noCar ? withoutCar(result) : result
+    return base && calm ? withCalmRide(base, calm.slowerBy) : base
+  }, [result, noCar, calm])
   // No car switched on with a car row open: open the new pick instead.
   useEffect(() => {
     if (plan && noCar && expanded && CAR_MODES.includes(expanded)) setExpanded(plan.recommended_mode)

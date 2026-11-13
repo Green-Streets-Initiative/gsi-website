@@ -122,6 +122,43 @@ export function withoutCar(result: AdvisorResult): AdvisorResult {
   return out
 }
 
+/**
+ * The plan with its bike rows on the calm route the drawer describes: the
+ * route's extra riding minutes go on the door-to-door time, the leave-by moves
+ * earlier by as much, and the headline is rebuilt from them. Before
+ * (2026-11-13), Union Square to Kendall read "10 min, leave by 8:50" in the row
+ * and headline while the drawer under it said "13 min of riding on quieter
+ * streets, 4 min more than the quickest way". An e-bike rides the same route,
+ * so it takes its share of the extra minutes.
+ */
+export function withCalmRide(result: AdvisorResult, extraMinutes: number): AdvisorResult {
+  if (!(extraMinutes > 0)) return result
+  const bikeMinutes = result.modes.bike?.minutes ?? null
+  const modes = { ...result.modes }
+  let changed = false
+  for (const key of ['bike', 'ebike']) {
+    const m = modes[key]
+    if (!m || m.minutes == null) continue
+    const extra = key === 'ebike' && bikeMinutes ? Math.round((extraMinutes * m.minutes) / bikeMinutes) : extraMinutes
+    if (extra <= 0) continue
+    modes[key] = { ...m, minutes: m.minutes + extra, leave_by: clockMinus(m.leave_by, extra) }
+    changed = true
+  }
+  if (!changed) return result
+  const out: AdvisorResult = { ...result, modes, headline: '', reasons: [] }
+  out.headline = headlineFor(out, result.motivation)
+  out.reasons = reasonLinesFor(out, out.recommended_mode)
+  return out
+}
+
+/** "08:50" less 4 minutes is "08:46". */
+function clockMinus(hhmm: string | null | undefined, minutes: number): string | null {
+  const m = hhmm ? /^(\d{1,2}):(\d{2})/.exec(hhmm) : null
+  if (!m) return hhmm ?? null
+  const total = (((Number(m[1]) * 60 + Number(m[2]) - minutes) % 1440) + 1440) % 1440
+  return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`
+}
+
 /** Parking and walking in on every drive; locking up on every bike ride (commute-constants). */
 export { BIKE_LOCK_MINUTES, PARK_WALK_MINUTES }
 

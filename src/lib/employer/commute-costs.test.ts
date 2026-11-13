@@ -22,6 +22,7 @@ import {
   modeName,
   modePhrase,
   withoutCar,
+  withCalmRide,
   asCarChoice,
 } from './commute-costs.ts'
 import type { AdvisorMode, AdvisorResult, TransitLeg } from '../types/commute.ts'
@@ -310,6 +311,15 @@ describe('withoutCar (No car, product item 17)', () => {
     assert.equal(withoutCar(full('bike')).recommended_mode, 'bike')
     const noDrive = withoutCar(full('bike'))
     assert.equal(withoutCar(noDrive), noDrive)
+  })
+  it('puts the calm route\'s extra minutes on the bike row and the headline (2026-11-13)', () => {
+    const r = withCalmRide(full('bike'), 4)
+    assert.equal(r.modes.bike.minutes, 35)
+    assert.equal(r.modes.bike.leave_by, '08:25')
+    assert.match(r.headline, /^Leave by 8:25 AM on a bike/)
+    assert.equal(r.modes.transit.minutes, 27)
+    const same = full('bike')
+    assert.equal(withCalmRide(same, 0), same)
   })
   it('reads the saved choice', () => {
     assert.equal(asCarChoice('none'), 'none')
