@@ -1381,12 +1381,18 @@ export default function AdvisorFlow({
               onSnapChange={(next, source) => { setSnap(next); track('advisor_sheet_snap', { snap: next, source }) }}
               header={(() => {
                 const pick = rows.find((r) => r.key === pickedKey) ?? rows[0]
+                // Open on the recommended pick, the headline right under it
+                // says the same thing: the title line shows only when the
+                // sheet is down or another way in is picked.
+                const repeatsHeadline = snap !== 'peek' && pick?.key === plan.recommended_mode
                 return (
                   <div className="px-4 pb-2.5">
                     <div className="text-[0.8125rem] font-bold uppercase tracking-[0.14em] text-[#2D6A4F]">{t('flow.your_plan')}</div>
-                    <div className="truncate text-[1.0625rem] font-extrabold leading-snug text-[#191A2E]">
-                      {pick ? (pick.leaveBy ? t('flow.sheet_pick_leave', { name: pick.name, time: pick.leaveBy }) : pick.name) : headline}
-                    </div>
+                    {!repeatsHeadline && (
+                      <div className="truncate text-[1.0625rem] font-extrabold leading-snug text-[#191A2E]">
+                        {pick ? (pick.leaveBy ? t('flow.sheet_pick_leave', { name: pick.name, time: pick.leaveBy }) : pick.name) : headline}
+                      </div>
+                    )}
                   </div>
                 )
               })()}
