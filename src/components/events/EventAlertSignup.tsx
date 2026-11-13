@@ -7,11 +7,12 @@ import type { SiteLocale } from '@/lib/site-i18n'
 import { tagLabel, typeLabel, rideLevelFilterLabel, placeLabel, type EventsT } from '@/lib/events-i18n'
 import type { useEventFilters } from './useEventFilters'
 import { useEventsI18n } from './EventsTone'
+import { languageLabel } from '@/lib/languages'
 
 /*
  * "Get these by email" (Shift product item 19, step 3: event alerts). Saves
  * the calendar's current filters (type or ride level, Good for, Rides for,
- * distance from the location the calendar is measuring from) as a weekly
+ * the languages it is led in, distance from the location the calendar is measuring from) as a weekly
  * email of what's coming up that matches. The person confirms by link first;
  * nothing is sent when nothing matches. Topic event_alerts, through the
  * shared EmailSignup box (one source per placement).
@@ -31,6 +32,8 @@ function summarize(f: Filters, locale: SiteLocale, t: EventsT): string {
   else parts.push(t('alert.all_events'))
   for (const tag of f.tags) parts.push(tagLabel(tag, locale))
   if (f.audience.length) parts.push(t('alert.for', { list: f.audience.map((a) => tagLabel(a, locale)).join(t('list.sep')) }))
+  // Each language in its own name, as the filter's chips and the email say it.
+  for (const c of f.langs) if (c !== 'en') parts.push(languageLabel(c))
   parts.push(f.distance === 'all' ? t('alert.statewide') : t('alert.within', { dist: f.distance, place: placeLabel(f.userLoc.label, locale) }))
   return parts.join(' · ')
 }
@@ -47,6 +50,7 @@ function payload(f: Filters) {
     level,
     tags: f.tags,
     audience: f.audience,
+    languages: f.langs.filter((c) => c !== 'en'),
   }
 }
 
@@ -65,7 +69,7 @@ export default function EventAlertSignup({ filters: f, source, className = '', i
       done={t('alert.done')}
       fine={t('alert.fine')}
       locale={locale}
-      track={{ type: f.typeFilter, dist: f.distance, tags: f.tags.length, audience: f.audience.length }}
+      track={{ type: f.typeFilter, dist: f.distance, tags: f.tags.length, audience: f.audience.length, languages: f.langs.length }}
       id={id}
       className={className}
     />

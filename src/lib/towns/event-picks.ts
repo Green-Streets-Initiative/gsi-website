@@ -1,6 +1,5 @@
 import 'server-only'
-import { fetchEventPool, type TownEvent } from '@/lib/towns/queries'
-import { rideStyle } from '@/lib/ride-style'
+import type { TownEvent } from '@/lib/towns/queries'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 
 /**
@@ -34,93 +33,14 @@ import { createServerSupabaseClient } from '@/lib/supabase-server'
  *     the 8 digest towns: 5 → 9 in-town picks of 24, no town worse off.
  *   - one pick per organizer before the backfill, so a weekly club's three
  *     differently-named rides don't take the whole list.
+ *
+ * Since 2026-11-13 the rule lives in the database, get_town_event_picks
+ * (Shift 01786), so the app's town screen picks by it too (parity gap
+ * gap-town-event-picks). It also measures "today" in Boston, leaves out
+ * cancelled or postponed dates and today's events once they're over.
  */
 
-const BUCKETS: Record<string, string> = {
-  group_ride: 'outing',
-  guided_ride: 'outing',
-  bike_bus: 'outing',
-  walking_tour: 'outing',
-  transit_buddy: 'outing',
-  class: 'try',
-  ebike_demo: 'try',
-  cargo_bike_demo: 'try',
-  bike_repair: 'try',
-  bike_rodeo: 'try',
-  open_streets: 'festival',
-  festival: 'festival',
-}
-
-const EXCLUDED_TYPES = new Set(['contest', 'challenge'])
-
-/** Anything this close outranks anything farther; score decides within each group. */
-const NEAR_MILES = 3
-
-type Rings = number[][][]
-
-/** Even-odd test over every ring, so islands and holes both come out right. Rings are [lng, lat]. */
-function inRings(lng: number, lat: number, rings: Rings): boolean {
-  let inside = false
-  for (const r of rings) {
-    for (let i = 0, j = r.length - 1; i < r.length; j = i++) {
-      const [xi, yi] = r[i]
-      const [xj, yj] = r[j]
-      if (yi > lat !== yj > lat && lng < ((xj - xi) * (lat - yi)) / (yj - yi) + xi) inside = !inside
-    }
-  }
-  return inside
-}
-
-/** The town's outline (Shift town_boundaries, Massachusetts only); null when unknown. */
-async function townRings(town: { name: string; state: string }): Promise<Rings | null> {
-  const { data } = await createServerSupabaseClient()
-    .from('town_boundaries')
-    .select('rings')
-    .eq('name', town.name)
-    .eq('state', town.state)
-    .limit(1)
-    .maybeSingle()
-  return Array.isArray(data?.rings) ? (data.rings as Rings) : null
-}
-
-function bucketOf(e: TownEvent): string {
-  return (e.event_type && BUCKETS[e.event_type]) || 'other'
-}
-
-function styleOf(e: TownEvent) {
-  return rideStyle({
-    title: e.title,
-    description: e.summary,
-    distanceText: e.distance_text,
-    tags: e.tags,
-    pace: e.pace,
-    eventType: e.event_type,
-  })
-}
-
-function isWelcoming(e: TownEvent): boolean {
-  return e.tags.includes('beginner_friendly') || e.tags.includes('family_friendly') || styleOf(e) === 'easy'
-}
-
-function score(e: TownEvent, todayStr: string): number {
-  // Distance: 0 miles → 8 points, 8 miles → 0.
-  const distanceScore = Math.max(0, 8 - e.distance_miles)
-  // Date: today → 6 points, 30 days out → 0.
-  const daysOut = Math.max(
-    0,
-    (new Date(`${e.event_date}T00:00:00`).getTime() - new Date(`${todayStr}T00:00:00`).getTime()) /
-      86400000,
-  )
-  const dateScore = Math.max(0, 6 - daysOut / 5)
-  let s = distanceScore + dateScore
-  if (isWelcoming(e)) s += 5
-  if (e.tags.includes('free')) s += 1
-  if (e.tags.includes('paid')) s -= 4
-  // Open Streets carry no tags, but they are the most open-door event there
-  // is; without this the one festival slot goes to whatever is tagged.
-  if (e.event_type === 'open_streets') s += 3
-  return s
-}
+type PickRow = Omit<TownEvent, 'occurrences'> & { occurrences: number | null; languages: string[] | null }
 
 export async function getEventPicks(
   centroid: { lat: number; lng: number } | null,
@@ -138,62 +58,24 @@ export async function getEventPicks(
   } = {},
 ): Promise<TownEvent[]> {
   if (!centroid) return []
-  const [pool, rings] = await Promise.all([
-    fetchEventPool(centroid),
-    opts.town ? townRings(opts.town).catch(() => null) : Promise.resolve(null),
-  ])
-  const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' })
-
-  const inTown = (e: TownEvent) => !!rings && inRings(e.lng, e.lat, rings)
-  const near = (e: TownEvent) => (inTown(e) ? 0 : e.distance_miles <= NEAR_MILES ? 1 : 2)
-  const byRank = (a: TownEvent, b: TownEvent) =>
-    near(a) - near(b) || score(b, todayStr) - score(a, todayStr)
-  const eligible = pool.filter((e) => !EXCLUDED_TYPES.has(e.event_type ?? ''))
-  const ranked = eligible.filter((e) => styleOf(e) !== 'rec').sort(byRank)
-  const recRides = eligible.filter((e) => styleOf(e) === 'rec').sort(byRank)
-
-  // 1. Inside the town line: the best of each kind, then up to one more of a
-  //    kind than the cap.
-  // 2. Everywhere (in town, then within NEAR_MILES, then farther): the best
-  //    of each kind (meetings, talks and uncategorized events don't get a
-  //    reserved slot), then up to a per-kind cap, so no kind takes most of
-  //    the list: one each at three slots, two at four, three at eight.
-  //    Meetings, talks and uncategorized events wait for pass 3: they're the
-  //    least open-door kind. Passes 1 and 2 take one event per organizer.
-  // 3. A thin week backfills with the next best regardless of kind (then Rec
-  //    rides, on town pages).
-  // Never a second Open Streets, in any pass.
-  const picked: TownEvent[] = []
-  const perKind = new Map<string, number>()
-  const cap = Math.max(1, Math.ceil(limit / 3))
-  const hasOpenStreets = () => picked.some((p) => p.event_type === 'open_streets')
-  const organizerPicked = (e: TownEvent) =>
-    !!e.organizer_name && picked.some((p) => p.organizer_name === e.organizer_name)
-  const fill = (
-    from: TownEvent[],
-    admit: (e: TownEvent, count: number) => boolean,
-    onePerOrganizer = false,
-  ) => {
-    for (const e of from) {
-      if (picked.length >= limit) return
-      if (picked.includes(e)) continue
-      if (e.event_type === 'open_streets' && hasOpenStreets()) continue
-      if (onePerOrganizer && organizerPicked(e)) continue
-      const bucket = bucketOf(e)
-      const count = perKind.get(bucket) ?? 0
-      if (!admit(e, count)) continue
-      perKind.set(bucket, count + 1)
-      picked.push(e)
-    }
+  const { data, error } = await createServerSupabaseClient().rpc('get_town_event_picks', {
+    p_lat: centroid.lat,
+    p_lng: centroid.lng,
+    p_limit: limit,
+    p_town: opts.town?.name ?? null,
+    p_state: opts.town?.state ?? 'MA',
+    p_rec_fill: !!opts.recRidesAsFill,
+  })
+  if (error) {
+    console.error('[event-picks] get_town_event_picks failed:', error.message)
+    return []
   }
-  const local = ranked.filter(inTown)
-  fill(local, (e, count) => bucketOf(e) !== 'other' && count === 0, true)
-  fill(local, (e, count) => bucketOf(e) !== 'other' && count < cap + 1, true)
-  fill(ranked, (e, count) => bucketOf(e) !== 'other' && count === 0, true)
-  fill(ranked, (e, count) => bucketOf(e) !== 'other' && count < cap, true)
-  fill(ranked, () => true)
-  if (opts.recRidesAsFill) fill(recRides, () => true)
-
-  // Present in date order: the list reads as "what's coming up".
-  return picked.sort((a, b) => a.event_date.localeCompare(b.event_date))
+  return ((data ?? []) as PickRow[]).map((r) => ({
+    ...r,
+    lat: Number(r.lat),
+    lng: Number(r.lng),
+    distance_miles: Number(r.distance_miles),
+    tags: r.tags ?? [],
+    occurrences: r.occurrences ?? 1,
+  }))
 }

@@ -23,6 +23,7 @@ import AppliedFilters from './AppliedFilters'
 import MiniMonth from './MiniMonth'
 import Agenda, { AGENDA_PAGE } from './Agenda'
 import EventAlertSignup from './EventAlertSignup'
+import ForYou from './ForYou'
 import { TypePills, LevelPills, LocationControl, DistancePills, WhenPills, TagToggles, AudienceToggles, hasAudienceChoices, LanguageToggles } from './FilterControls'
 import { useEventFilters } from './useEventFilters'
 import { useSavedEvents } from './useSavedEvents'
@@ -223,6 +224,9 @@ export default function EventsPage({ events, tone = 'dark', hrefBase = '/events'
           </Link>
         </div>
       </section>
+
+      {/* For you: a signed-in member's events, ranked as the app's Home ranks them */}
+      <ForYou events={events} />
 
       {/* Spotlight */}
       {spotlightEvents.length > 0 && (
