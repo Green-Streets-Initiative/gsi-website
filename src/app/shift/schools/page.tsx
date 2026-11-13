@@ -53,7 +53,7 @@ const schoolFaqItems = [
   {
     question: 'What does the school get?',
     answer:
-      'Weekly classroom, grade, and school leaderboards. Auto-generated impact reports for PTAs, newsletters, and school boards. Curriculum-aligned worksheets for K–2, 3–5, and 6–8. A weekly parent email with classroom results and leaderboard links. All materials provided by GSI at no cost.',
+      'Weekly classroom, grade, and school leaderboards. Auto-generated impact reports for PTAs, newsletters, and school boards. Curriculum-aligned worksheets for K–2, 3–5, and 6–8. A weekly parent email with classroom results, starting with the spring 2027 pilot. All materials provided by GSI at no cost.',
   },
   {
     question: 'Is there a cost for schools?',
@@ -63,7 +63,7 @@ const schoolFaqItems = [
   {
     question: 'How are parents involved?',
     answer:
-      'Parents receive a weekly email with their child\'s classroom results and a link to the leaderboard. Parents can also join the Shift app to track their own family\'s active trips alongside the school program.',
+      'Starting with the spring 2027 pilot, parents get a weekly email with their child\'s classroom results and a link to the standings. Parents can also join the Shift app to track their own family\'s active trips alongside the school program.',
   },
   {
     question: 'What grade levels does it cover?',
@@ -203,7 +203,7 @@ export default function ShiftSchoolsPage() {
                 {
                   day: 'Saturday',
                   title: 'Shift does the rest',
-                  body: 'Shift calculates results, generates leaderboards, and sends the parent email — all automatically.',
+                  body: 'Shift reads the photo and updates the classroom, grade, and school standings. A weekly email for families starts with the spring 2027 pilot.',
                 },
               ].map((step) => (
                 <div
@@ -284,12 +284,12 @@ export default function ShiftSchoolsPage() {
                   body: 'Age-appropriate materials for K–2, 3–5, and 6–8 that connect active transportation to health, math, and community studies.',
                 },
                 {
-                  title: 'Parent bridge',
-                  body: 'A weekly email connecting families to classroom results and the school leaderboard. Parents see what their kids are doing — and can join Shift themselves.',
+                  title: 'Families in the loop',
+                  body: 'Starting with the spring 2027 pilot, families get a weekly email with their classroom\'s results. Parents can also join Shift to log their own walks, rides, and bus trips.',
                 },
                 {
-                  title: 'Safe route planning',
-                  body: 'Volunteer-assessed walking and biking routes help families find the safest paths to school — with photo documentation and safety scores.',
+                  title: 'A route map for your school',
+                  body: 'Walking and biking routes to your school, drawn from crash data and street views. We go over the map with you before families see it.',
                 },
                 {
                   title: 'COPPA-clean by design',
@@ -330,7 +330,7 @@ export default function ShiftSchoolsPage() {
                   { label: 'Grade bands', value: 'K–8 (K–2, 3–5, 6–8)' },
                   { label: 'Competition cycle', value: 'Monthly' },
                   { label: 'Modes tracked', value: 'Walk, bike, bus, car' },
-                  { label: 'Pilot', value: 'Massachusetts schools, 2026' },
+                  { label: 'Pilot', value: 'Massachusetts schools, spring 2027' },
                 ].map((row) => (
                   <div key={row.label}>
                     <div className="mb-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-forest">
