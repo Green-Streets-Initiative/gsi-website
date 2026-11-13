@@ -652,3 +652,63 @@ export async function runApprovedRidePlan(ctx: Ctx, name: string, input: Record<
   return ok({ saved: true, sent: false, note: 'On the plan, not sent yet. The button opens the plan with this route and time; they check it and send it there. Say that in a sentence. Do not add another ride_plan button.' }, planLink(matchId, 'Check and send the plan'))
 }
 
+
+// ── The website's plan page ──────────────────────────────────────────────
+//
+// gogreenstreets.org/together/plan/<match> (parity
+// gap-together-web-carpool-scope): the guide plans the route on the page,
+// with no assistant in between. The same routing, spots and trips as
+// design_ride_plan_route; the page shows them, the guide picks and turns
+// spots on and off, and the page sends with set_ride_plan_route, as the app.
+
+/** Basic streetscape the app shows only with a guide's note (lib/ride-plan.ts BASIC_SPOT_KINDS). */
+const BASIC = new Set(['signal', 'stop', 'left_turn', 'walk_signal'])
+const WORRY_SPOTS: Record<string, string[]> = {
+  traffic: ['signal', 'door_zone', 'bus_stop', 'wrong_way'], left_turns: ['left_turn', 'bike_box'],
+  crossings: ['crossing', 'crossing_open', 'walk_signal'], locking: ['lock_up'], hills: ['steep', 'steps'],
+  dark: ['dark'], sidewalks: ['no_sidewalk'],
+}
+const SPOT_RISK = ['left_turn', 'crossing_open', 'crossing', 'wrong_way', 'no_sidewalk', 'bike_box', 'door_zone',
+  'tracks', 'walk_signal', 'dark', 'signal', 'steep', 'steps', 'stop', 'path', 'lock_up', 'bus_stop']
+/** The app's defaultSpotsOn on top of spotsFor: basics off, at most 6 shown, the learner's worries first. */
+function appSpotsOn(spots: Spot[], worries: string[]): Spot[] {
+  const off = spots.map((s) => (BASIC.has(s.kind) && !s.note ? { ...s, on: false } : s))
+  const worried = new Set(worries.flatMap((w) => WORRY_SPOTS[w] ?? []))
+  const rank = (s: Spot) => (worried.has(s.kind) ? 0 : 100) + (SPOT_RISK.indexOf(s.kind) < 0 ? SPOT_RISK.length : SPOT_RISK.indexOf(s.kind))
+  const keep = new Set(off.map((s, i) => ({ s, i })).filter(({ s }) => s.on && s.kind !== 'lock_up')
+    .sort((a, b) => rank(a.s) - rank(b.s) || a.i - b.i).slice(0, 6).map(({ s }) => s.id))
+  return off.map((s) => (s.on && s.kind !== 'lock_up' && !keep.has(s.id) ? { ...s, on: false } : s))
+}
+
+export type PageTrip = Trip & { key: string; route: ReturnType<typeof transitRoute>; spots: Spot[] }
+export type PageDesign =
+  | { ok: true; way: 'bike' | 'walk'; goal: Goal; route: Record<string, unknown>; spots: Spot[]; complete: boolean; miles: number; minutes: number }
+  | { ok: true; way: 'transit'; trips: PageTrip[] }
+  | { ok: false; reason: 'not_found' | 'not_guides_turn' | 'no_route' }
+
+export async function designRouteForPage(ctx: Ctx, matchId: string, opts: { goal?: unknown; departAt?: unknown }): Promise<PageDesign> {
+  const v = await readPlan(ctx, matchId)
+  if (typeof v === 'string') return { ok: false, reason: 'not_found' }
+  if (v.role !== 'guide' || v.plan?.status !== 'learner_shared') return { ok: false, reason: 'not_guides_turn' }
+  const places = placesOf(v)
+  if (!places) return { ok: false, reason: 'not_guides_turn' }
+  const way: Way = v.plan.way ?? 'bike'
+  if (way === 'transit') {
+    const departAt = typeof opts.departAt === 'string' && !Number.isNaN(Date.parse(opts.departAt)) ? new Date(opts.departAt).toISOString() : nextWeekdayEight()
+    const trips = await transitTrips(ctx.token, places.meet, places.end, departAt).catch(() => [] as Trip[])
+    if (!trips.length) return { ok: false, reason: 'no_route' }
+    const sorted = [...trips].sort((a, b) => a.changes * 1000 + a.minutes - (b.changes * 1000 + b.minutes)).slice(0, 3)
+    return { ok: true, way, trips: sorted.map((t) => ({ ...t, key: lineKey(t), route: transitRoute(t, places.meet, places.end), spots: transitSpots(t) })) }
+  }
+  const goal: Goal = GOALS.find((g) => g === opts.goal) ?? 'calmest'
+  const pins = [{ ...places.meet }, { ...places.end }]
+  let plan: PlannedRoute
+  try { plan = await planLegs(ctx.token, pins, way === 'walk' ? 'walk' : 'bike') } catch { return { ok: false, reason: 'no_route' } }
+  if (plan.legs.some((l) => !l.options.length)) return { ok: false, reason: 'no_route' }
+  const chosen = plan.legs.map((l) => pick(l.options, goal))
+  const draft = routeFromPlan(plan, chosen, pins)
+  const { spots, complete } = await spotsFor(ctx, draft, places.end, v.plan.worries ?? [], way)
+  const miles = r1(routeMiles(draft.waypoints))
+  const minutes = Math.round(plan.legs.reduce((a, l, i) => a + (l.options[chosen[i]]?.durationMinutes ?? 0), 0))
+  return { ok: true, way, goal, route: { ...draft, distanceMiles: miles, minutes }, spots: appSpotsOn(spots, v.plan.worries ?? []), complete, miles, minutes }
+}

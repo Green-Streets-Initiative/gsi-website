@@ -10,6 +10,8 @@ import { SITE_LOCALE_TAG, translator, withLang, type SiteLocale, type T } from '
 import { planStrings, type PlanKey } from '@/lib/site-strings/together-plan'
 import { togetherStrings } from '@/lib/site-strings/together'
 import { myMatches, track, type Match } from '@/lib/together'
+import { useTogether } from '@/components/together/TogetherShell'
+import { GuidePlan, LearnerShare } from './Steps'
 import {
   UUID, answerRideTime, appPlanLink, confirmRidePlan, getRidePlan, hasOpenProposal, planDirectionsUrl, plannedTimePassed, proposeRideTime,
   type Result, type RidePlan, type RidePlanView, type TripWay,
@@ -20,9 +22,9 @@ import {
  * on the web (parity gap-together-web-carpool-scope), where the plan notice
  * emails land. The app's ride-plan screen, read with its own RPC
  * (get_ride_plan): who you're going with, when and where you meet, the route,
- * and the one thing to do next. The newcomer says the time works; either of
- * them answers or asks for a new time. Sharing where to start and planning
- * the route stay in the app; those turns say so and offer the app or email.
+ * and the one thing to do next. The newcomer says where to start, the guide
+ * plans the route (Steps.tsx), the newcomer says the time works, and either
+ * of them answers or asks for a new time. The app stays a second way in.
  * Laid out like /together/matches. In the page's language; page.tsx resolves it.
  */
 
@@ -55,6 +57,7 @@ function failKey(r: Result): PlanKey {
 
 export default function Plan({ matchId, locale }: { matchId: string; locale: SiteLocale }) {
   const t = translator(planStrings, locale)
+  const { userId } = useTogether()
   const dismiss = translator(togetherStrings, locale)('dismiss')
   const [view, setView] = useState<RidePlanView | null | undefined>(undefined)
   const [match, setMatch] = useState<Match | null>(null)
@@ -141,7 +144,7 @@ export default function Plan({ matchId, locale }: { matchId: string; locale: Sit
     stage === 'share' ? t('plan.share_title', { name })
     : stage === 'wait_guide' ? t('plan.waiting_guide', { name })
     : stage === 'wait_learner' ? t('plan.waiting_learner', { name })
-    : stage === 'guide_turn' ? t('plan.guide_turn', { name })
+    : stage === 'guide_turn' ? t(way === 'bike' ? 'share.guide_title' : way === 'walk' ? 'share.guide_title_walk' : 'share.guide_title_transit', { name })
     : stage === 'after' ? t('plan.after_title')
     : stage === 'decide' ? t(TITLE_PLANNED[way], { name })
     : t(TITLE[way], { name })
@@ -164,11 +167,13 @@ export default function Plan({ matchId, locale }: { matchId: string; locale: Sit
       <Mail className="h-4 w-4" aria-hidden /> {t('plan.email', { name })}
     </a>
   ) : null
+  // A second way in: the same turn in the Shift app.
   const appLink = (
-    <a href={appPlanLink(matchId)} onClick={() => track('together_plan_app_tapped', { stage })} className={PRIMARY}>
+    <a href={appPlanLink(matchId)} onClick={() => track('together_plan_app_tapped', { stage })} className="inline-flex min-h-[44px] items-center gap-2 text-[15px] font-semibold text-(--ev-ink-80) underline underline-offset-2">
       <Smartphone className="h-4 w-4" aria-hidden /> {t('plan.open_app')}
     </a>
   )
+  const onFail = (r: Result) => setProblem(t(failKey(r)))
 
   return (
     <div className="grid grid-cols-1 gap-6">
@@ -214,16 +219,26 @@ export default function Plan({ matchId, locale }: { matchId: string; locale: Sit
         {showPlan && p ? <WhenWhere plan={p} at={shownAt} way={way} locale={locale} t={t} /> : null}
 
         {stage === 'share' ? (
-          <>
-            <p className="text-[16px] leading-relaxed text-(--ev-ink-85)">{t('plan.share_body', { name })}</p>
-            <div className="flex flex-wrap gap-3">{appLink}</div>
-            {email ? <p className="text-[15px] text-(--ev-ink-80)">{t('plan.share_or', { name })}</p> : null}
-          </>
-        ) : stage === 'guide_turn' ? (
-          <>
-            <p className="text-[16px] leading-relaxed text-(--ev-ink-85)">{t('plan.guide_turn_body', { name })}</p>
-            <div className="flex flex-wrap gap-3">{appLink}</div>
-          </>
+          <LearnerShare
+            view={view}
+            matchId={matchId}
+            userId={userId}
+            name={name}
+            t={t}
+            onProblem={onFail}
+            onShared={() => { setNotice(t('step.shared_done', { name })); void load() }}
+          />
+        ) : stage === 'guide_turn' && p && hasPlace ? (
+          <GuidePlan
+            plan={p}
+            match={match}
+            matchId={matchId}
+            name={name}
+            locale={locale}
+            t={t}
+            onProblem={onFail}
+            onSent={() => { setNotice(t('step.plan_sent', { name })); void load() }}
+          />
         ) : stage === 'wait_guide' ? (
           <p className="text-[16px] text-(--ev-ink-85)">{t('plan.waiting_guide_sub')}</p>
         ) : stage === 'wait_learner' ? (
@@ -270,7 +285,12 @@ export default function Plan({ matchId, locale }: { matchId: string; locale: Sit
           />
         ) : null}
 
-        {emailLink ? <div className="flex flex-wrap gap-3">{emailLink}</div> : null}
+        {emailLink || stage === 'share' || stage === 'guide_turn' ? (
+          <div className="flex flex-wrap items-center gap-3 border-t border-(--ev-line) pt-4">
+            {emailLink}
+            {stage === 'share' || stage === 'guide_turn' ? appLink : null}
+          </div>
+        ) : null}
       </Card>
 
       {showPlan && p ? <RouteCard plan={p} way={way} locale={locale} t={t} /> : null}

@@ -7,9 +7,10 @@ import { supabase } from '@/lib/supabase'
  * email. Every call is the app's own RPC, signed in as the person, so who
  * may see or change a plan is exactly the app's rule (ride_plan_role).
  *
- * The web reads the plan and does the one decision a notice asks for: say
- * the time works, answer a new time, or ask for one. Sharing where to start
- * and planning the route stay in the app, where the map pickers live.
+ * The web reads the plan and does what each turn asks: the newcomer says
+ * where to start (set_ride_plan_learner), the guide plans the route
+ * (set_ride_plan_route), the newcomer says the time works, and either of them
+ * answers or asks for a new time.
  */
 
 export type TripWay = 'bike' | 'walk' | 'transit'
@@ -25,22 +26,39 @@ export type TransitLeg = {
   textColor?: string | null
   vehicle?: 'subway' | 'tram' | 'bus' | 'rail' | 'ferry' | null
   headsign?: string | null
-  board?: { name: string; lat: number; lng: number } | null
-  alight?: { name: string; lat: number; lng: number } | null
+  board?: { name: string; lat: number; lng: number; door?: { name: string; lat: number; lng: number } | null } | null
+  alight?: { name: string; lat: number; lng: number; door?: { name: string; lat: number; lng: number } | null } | null
   stops?: number | null
+  stopBefore?: string | null
   departAt?: string | null
+}
+
+export type Spot = {
+  id: string; kind: string; lat: number; lng: number; streets: string[]; on: boolean
+  note?: string | null; title?: string | null; leg?: number; button?: boolean
+}
+
+export type TransitTrip = {
+  minutes: number; departAt: string | null; arriveAt: string | null; changes: number; walkMinutes: number
+  fare: string | null; legs: TransitLeg[]; waypoints: LatLng[]; mbta: boolean
 }
 
 export type RidePlan = {
   status: RidePlanStatus
   way: TripWay | null
+  skill: string | null
+  worries: string[]
+  spots: Spot[] | null
+  /** 01680: their own bike or the bike share (bike_system: bluebikes, valleybike...). */
+  bike?: 'own' | 'share' | null
+  bike_system?: string | null
   meet_lat: number | null; meet_lng: number | null; meet_label: string | null
   end_lat: number | null; end_lng: number | null; end_label: string | null
   route: {
     waypoints?: LatLng[]
     distanceMiles?: number
     minutes?: number
-    transit?: { minutes: number; changes: number; walkMinutes: number; fare: string | null; legs: TransitLeg[] }
+    transit?: TransitTrip
   } | null
   ride_at: string | null
   proposed_at: string | null
@@ -52,6 +70,9 @@ export type RidePlanView = {
   role: 'learner' | 'guide'
   learner_name: string
   guide_name: string
+  learner_modes: string[] | null
+  /** The ways both people put on their sign-ups. */
+  shared_modes?: string[] | null
   plan: RidePlan | null
 }
 
@@ -118,3 +139,102 @@ export function planDirectionsUrl(meet: LatLng, end: LatLng, way: TripWay, route
   }
   return `https://www.google.com/maps/dir/?${q.toString()}`
 }
+
+// ── The newcomer says where to start (the app's LearnerShare) ──
+
+export type Place = LatLng & { label: string }
+
+/** The answers and spots each way asks about (Shift lib/ride-plan.ts SKILLS, WORRIES). */
+export const SKILLS: Record<TripWay, readonly string[]> = {
+  bike: ['paths_only', 'streets_nervous', 'streets_ok'],
+  walk: ['walk_short', 'walk_not_far', 'walk_plenty'],
+  transit: ['transit_new', 'transit_not_this', 'transit_changes'],
+}
+export const WORRIES: Record<TripWay, readonly string[]> = {
+  bike: ['traffic', 'left_turns', 'crossings', 'route', 'locking', 'sweat', 'weather', 'carrying', 'hills'],
+  walk: ['crossings', 'route', 'time', 'dark', 'weather', 'shoes', 'hills', 'sidewalks'],
+  transit: ['fare', 'platform', 'get_off', 'transfer', 'bus_stop', 'arrivals', 'crowds', 'safety', 'access', 'cold_wait'],
+}
+export const MAX_NOTES = 3
+
+const wayOf = (mode: string): TripWay | null =>
+  mode === 'bike' || mode === 'micro' || mode === 'escooter' ? 'bike' : mode === 'walk' ? 'walk' : mode === 'transit' ? 'transit' : null
+
+/** The ways this pair can make the first trip, in the app's order (sharedWays). */
+export function sharedWays(view: RidePlanView): TripWay[] {
+  const from = view.shared_modes?.length ? view.shared_modes : view.learner_modes ?? []
+  const ways = new Set(from.map(wayOf).filter((w): w is TripWay => !!w))
+  return (['bike', 'walk', 'transit'] as const).filter((w) => ways.has(w))
+}
+
+export async function shareRidePlan(matchId: string, v: { way: TripWay; skill: string | null; worries: string[]; meet: Place; end: Place }): Promise<Result> {
+  const { data, error } = await supabase.rpc('set_ride_plan_learner', {
+    p_match_id: matchId, p_way: v.way, p_skill: v.skill, p_worries: v.worries,
+    p_meet_lat: v.meet.lat, p_meet_lng: v.meet.lng, p_meet_label: v.meet.label,
+    p_end_lat: v.end.lat, p_end_lng: v.end.lng, p_end_label: v.end.label,
+  })
+  return asResult(data, error)
+}
+
+export async function setRidePlanBike(matchId: string, bike: 'own' | 'share' | null, system: string | null): Promise<Result> {
+  const { data, error } = await supabase.rpc('set_ride_plan_bike', { p_match_id: matchId, p_bike: bike, p_system: system })
+  return asResult(data, error)
+}
+
+/** Whether a free bike-share Day Pass is left for this first ride (claim false only asks). */
+export async function bikePassLeft(matchId: string, system: string): Promise<boolean> {
+  const { data, error } = await supabase.rpc('ride_plan_bike_pass', { p_match_id: matchId, p_system: system, p_claim: false })
+  if (error || !data || typeof data !== 'object') return false
+  const d = data as Record<string, unknown>
+  return d.available === true || (typeof d.code === 'string' && !!d.code)
+}
+
+/**
+ * Where to anchor the pickers: the trip they asked for help with, else
+ * Home and Work (or School). Only the spots near them are ever shared.
+ */
+export async function planAnchors(userId: string, req: { origin_location_id: string | null; destination_location_id: string | null } | null): Promise<{ home: LatLng | null; work: LatLng | null }> {
+  const { data } = await supabase.from('saved_locations').select('id, label, lat, lng').eq('user_id', userId).limit(50)
+  const locs = (data ?? []) as { id: string; label: string; lat: number; lng: number }[]
+  const byId = (id: string | null | undefined) => (id ? locs.find((l) => l.id === id) : undefined)
+  const h = byId(req?.origin_location_id) ?? locs.find((l) => l.label === 'Home')
+  const w = byId(req?.destination_location_id) ?? locs.find((l) => l.label === 'Work') ?? locs.find((l) => l.label === 'School')
+  return { home: h ? { lat: h.lat, lng: h.lng } : null, work: w ? { lat: w.lat, lng: w.lng } : null }
+}
+
+// ── The guide plans the route (the app's GuidePlan) ──
+
+export type RouteDesign =
+  | { ok: true; way: 'bike' | 'walk'; goal: string; route: NonNullable<RidePlan['route']>; spots: Spot[]; complete: boolean; miles: number; minutes: number }
+  | { ok: true; way: 'transit'; trips: (TransitTrip & { key: string; route: NonNullable<RidePlan['route']>; spots: Spot[] })[] }
+  | { ok: false; reason: string }
+
+/** The route for a goal, or the transit trips (at departAt), from the website's route planner. */
+export async function designRoute(matchId: string, opts: { goal?: string; departAt?: Date } = {}): Promise<RouteDesign> {
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session) return { ok: false, reason: 'signed_out' }
+  try {
+    const res = await fetch('/api/together/plan-route', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+      body: JSON.stringify({ matchId, goal: opts.goal, departAt: opts.departAt?.toISOString() }),
+    })
+    return (await res.json()) as RouteDesign
+  } catch {
+    return { ok: false, reason: 'network' }
+  }
+}
+
+export async function saveRidePlanRoute(matchId: string, route: RidePlan['route'], spots: Spot[], rideAt: Date): Promise<Result> {
+  const { data, error } = await supabase.rpc('set_ride_plan_route', {
+    p_match_id: matchId, p_route: route, p_spots: spots, p_ride_at: rideAt.toISOString(),
+  })
+  return asResult(data, error)
+}
+
+/** Basic streetscape (lights, stop signs, left turns, walk signals) shows only with a note (isNotableSpot). */
+const BASIC = new Set(['signal', 'stop', 'left_turn', 'walk_signal'])
+export const isNotableSpot = (s: Pick<Spot, 'kind' | 'note'>) => !BASIC.has(s.kind) || !!s.note?.trim()
+
+/** A trip's lines, to find the same trip again at the time picked (lineKey). */
+export const lineKey = (t: TransitTrip) => t.legs.filter((l) => l.kind === 'transit').map((l) => `${l.short ?? l.line}>${l.headsign ?? ''}`).join('|')
