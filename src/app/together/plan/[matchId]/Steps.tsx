@@ -1,13 +1,16 @@
 'use client'
 
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import {
   ArrowLeftRight, Bike, Bus, Car, CheckCircle2, ChevronLeft, Clock, CornerUpLeft, DoorClosed, DoorOpen, Flag, Footprints,
   Lock, LockOpen, MapPin, Moon, Mountain, Octagon, Pencil, Repeat, Signpost, Ticket, TrafficCone, TrainFront, TrainTrack,
   Trees, TriangleAlert, type LucideIcon,
 } from 'lucide-react'
 import AddressAutocomplete from '@/components/AddressAutocomplete'
-import PinMap from '@/components/together/PinMap'
+import RouteMap from '@/components/organizers/RouteMap'
+import RideStreets from '@/components/rides/RideStreets'
+import { comfortPieces, type CalmOption, type CalmSegment } from '@/components/commute/calm-route'
+import { comfortColor } from '@/lib/comfort-colors'
 import { WAY_ICON } from '@/components/together/bits'
 import { Button, Field, Input, Notice, Spinner, cx } from '@/components/organizers/ui'
 import { SITE_LOCALE_TAG, type SiteLocale, type T } from '@/lib/site-i18n'
@@ -28,7 +31,9 @@ import {
  * same RPCs, and the website's own pieces for places and routes: the place
  * search (AddressAutocomplete), nearby stations and bike-share docks
  * (lib/nearby), the route planner and spots (the Shift assistant's
- * ride-plan tools, through /api/together/plan-route) and PinMap.
+ * ride-plan tools, through /api/together/plan-route), the route map in
+ * comfort colours (RouteMap, comfort-colors.ts) and the street-by-street
+ * photos (RideStreets).
  */
 
 const SECONDARY_LINK = 'min-h-[44px] text-left text-[15px] font-semibold text-(--ev-accent) underline underline-offset-2'
@@ -453,7 +458,7 @@ function usualLine(t: T<PlanKey>, name: string, days: PartnerDay[], times: Partn
   return null
 }
 
-type Route = NonNullable<RidePlan['route']> & { pins?: LatLng[] }
+type Route = NonNullable<RidePlan['route']>
 type Trip = TransitTrip & { key: string; route: Route; spots: Spot[] }
 const GOALS = ['calmest', 'flattest', 'shortest'] as const
 
@@ -496,6 +501,22 @@ export function GuidePlan({ plan, match, matchId, name, locale, t, onSent, onPro
   const [need, setNeed] = useState<PlanKey | null>(null)
   const [today] = useState(() => new Date())
   const [systemName, setSystemName] = useState<string | null>(null)
+  // A stop on the way (the app's route planner pins; Nearby's "Go through a place"): meet → stop → end.
+  const [through, setThrough] = useState<Place | null>(() => {
+    const pins = plan.route?.pins
+    const mid = pins && pins.length > 2 ? pins[1] : null
+    return mid ? { lat: mid.lat, lng: mid.lng, label: mid.label ?? t('step.map_spot') } : null
+  })
+  const [stopOpen, setStopOpen] = useState(false)
+  const [stopQuery, setStopQuery] = useState('')
+  // The street lit on the map and showing in the street-by-street photos.
+  const [street, setStreet] = useState<number | null>(null)
+  // Bike routes in comfort colours, street by street (the app's comfortOf: bike only, it's the bike's scale).
+  const calmOption = useMemo(() => (way === 'bike' && route?.waypoints && route.waypoints.length > 1 && route.comfortSegments?.length
+    ? ({ waypoints: route.waypoints, comfort_segments: route.comfortSegments as CalmSegment[], comfort_rating: route.comfortRating ?? 'mixed', summary: '' } as unknown as CalmOption)
+    : null), [way, route])
+  const rawPieces = useMemo(() => (calmOption ? comfortPieces(calmOption, locale) : []), [calmOption, locale])
+  const mapPieces = useMemo(() => (rawPieces.length ? rawPieces.map((p) => ({ coords: p.coords, color: comfortColor(p.rating, true), index: p.index })) : undefined), [rawPieces])
   useEffect(() => {
     if (way !== 'bike' || plan.bike !== 'share') return
     let alive = true
@@ -503,10 +524,11 @@ export function GuidePlan({ plan, match, matchId, name, locale, t, onSent, onPro
     return () => { alive = false }
   }, [way, plan.bike, plan.bike_system])
 
-  async function design(g: (typeof GOALS)[number]) {
+  async function design(g: (typeof GOALS)[number], via: Place | null = through) {
     setFinding(true)
     setNoRoute(false)
-    const r = await designRoute(matchId, { goal: g })
+    setStreet(null)
+    const r = await designRoute(matchId, { goal: g, through: via })
     setFinding(false)
     if (!r.ok) { setNoRoute(true); return }
     if (r.way === 'transit') {
@@ -527,6 +549,14 @@ export function GuidePlan({ plan, match, matchId, name, locale, t, onSent, onPro
     const h = window.setTimeout(() => void design(goal), 0)
     return () => window.clearTimeout(h)
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  function chooseStop(p: Place) {
+    setStopOpen(false)
+    setStopQuery('')
+    setThrough(p)
+    track('together_plan_stop_added', { way })
+    void design(goal, p)
+  }
 
   function pickTrip(trip: Trip) {
     setRoute(trip.route)
@@ -685,17 +715,55 @@ export function GuidePlan({ plan, match, matchId, name, locale, t, onSent, onPro
                 </Notice>
               ) : route ? (
                 <>
-                  <PinMap
-                    pins={[{ ...meet, kind: 'match', label: plan.meet_label ?? undefined }, { ...end, kind: 'home', label: plan.end_label ?? undefined }]}
-                    line={line}
-                    maxZoom={16}
-                    title={t('plan.map_title', { from: plan.meet_label ?? '', to: plan.end_label ?? '' })}
-                  />
+                  <div className="overflow-hidden rounded-xl border border-(--ev-line)">
+                    <div className="h-[260px] sm:h-[340px]">
+                      <RouteMap
+                        line={line ?? [meet, end]}
+                        pieces={mapPieces}
+                        focus={street != null ? { kind: 'piece', index: street } : null}
+                        onPieceClick={(i) => setStreet((cur) => (cur === i ? null : i))}
+                        stops={[...(through ? [through] : []), { ...end, label: plan.end_label ?? undefined }]}
+                        meetup={meet}
+                        pick={stopOpen}
+                        onPick={(p) => chooseStop({ ...p, label: t('step.map_spot') })}
+                        fitKey={`${line?.length ?? 0}-${through?.lat ?? ''}`}
+                        className="h-full w-full"
+                        label={t('plan.map_title', { from: plan.meet_label ?? '', to: plan.end_label ?? '' })}
+                      />
+                    </div>
+                    {calmOption && rawPieces.length ? (
+                      <div className="border-t border-(--ev-line)">
+                        <RideStreets option={calmOption} pieces={rawPieces} selected={street} onSelect={setStreet} locale={locale} />
+                      </div>
+                    ) : null}
+                  </div>
                   {route.distanceMiles ? (
                     <p className="text-[16px] font-semibold">{t('step.route_line', { miles: Math.round(route.distanceMiles * 10) / 10, minutes: Math.round(route.minutes ?? (route.distanceMiles / (way === 'walk' ? 3 : 10)) * 60) })}</p>
                   ) : null}
                 </>
               ) : null}
+            {through ? (
+              <p className="flex flex-wrap items-center gap-2 text-[15px]">
+                <MapPin className="h-4 w-4 shrink-0 text-(--ev-accent)" aria-hidden />
+                <span className="font-semibold">{t('step.stop_via', { place: through.label })}</span>
+                <button type="button" className={SECONDARY_LINK} disabled={finding} onClick={() => { setThrough(null); void design(goal, null) }}>{t('step.remove_stop')}</button>
+              </p>
+            ) : stopOpen ? (
+              <div className="grid grid-cols-1 gap-2 rounded-xl bg-(--ev-panel) p-4">
+                <AddressAutocomplete
+                  value={stopQuery}
+                  onChange={setStopQuery}
+                  label={t('step.stop_search')}
+                  placeholder={t('step.stop_search')}
+                  includeAreas
+                  onPlaceSelected={(p) => chooseStop({ lat: p.lat, lng: p.lng, label: (p.address.split(',')[0] || p.address).trim().slice(0, 60) })}
+                />
+                <p className="text-[14px] text-(--ev-ink-80)">{t('step.stop_tap')}</p>
+                <div><Button variant="ghost" onClick={() => setStopOpen(false)}>{t('plan.cancel')}</Button></div>
+              </div>
+            ) : route && !finding ? (
+              <button type="button" className={SECONDARY_LINK} onClick={() => setStopOpen(true)}>{t('step.add_stop')}</button>
+            ) : null}
           </>
         )}
       </Step>

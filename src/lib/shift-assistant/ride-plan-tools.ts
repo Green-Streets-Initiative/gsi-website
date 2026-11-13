@@ -686,7 +686,15 @@ export type PageDesign =
   | { ok: true; way: 'transit'; trips: PageTrip[] }
   | { ok: false; reason: 'not_found' | 'not_guides_turn' | 'no_route' }
 
-export async function designRouteForPage(ctx: Ctx, matchId: string, opts: { goal?: unknown; departAt?: unknown }): Promise<PageDesign> {
+/** A stop to go through on the way, within Massachusetts and around (decode's okPin). */
+function throughPoint(v: unknown): (LatLng & { label?: string }) | null {
+  const p = v as { lat?: unknown; lng?: unknown; label?: unknown } | null
+  const lat = Number(p?.lat), lng = Number(p?.lng)
+  if (!p || !Number.isFinite(lat) || !Number.isFinite(lng) || lat < 40 || lat > 44 || lng < -75 || lng > -69) return null
+  return { lat, lng, ...(typeof p.label === 'string' && p.label.trim() ? { label: p.label.trim().slice(0, 60) } : {}) }
+}
+
+export async function designRouteForPage(ctx: Ctx, matchId: string, opts: { goal?: unknown; departAt?: unknown; through?: unknown }): Promise<PageDesign> {
   const v = await readPlan(ctx, matchId)
   if (typeof v === 'string') return { ok: false, reason: 'not_found' }
   if (v.role !== 'guide' || v.plan?.status !== 'learner_shared') return { ok: false, reason: 'not_guides_turn' }
@@ -701,7 +709,9 @@ export async function designRouteForPage(ctx: Ctx, matchId: string, opts: { goal
     return { ok: true, way, trips: sorted.map((t) => ({ ...t, key: lineKey(t), route: transitRoute(t, places.meet, places.end), spots: transitSpots(t) })) }
   }
   const goal: Goal = GOALS.find((g) => g === opts.goal) ?? 'calmest'
-  const pins = [{ ...places.meet }, { ...places.end }]
+  // A stop on the way: the route goes meet → stop → end, as the app's route planner and Nearby's "Go through a place".
+  const via = throughPoint(opts.through)
+  const pins = [{ ...places.meet }, ...(via ? [via] : []), { ...places.end }]
   let plan: PlannedRoute
   try { plan = await planLegs(ctx.token, pins, way === 'walk' ? 'walk' : 'bike') } catch { return { ok: false, reason: 'no_route' } }
   if (plan.legs.some((l) => !l.options.length)) return { ok: false, reason: 'no_route' }

@@ -56,6 +56,9 @@ export type RidePlan = {
   end_lat: number | null; end_lng: number | null; end_label: string | null
   route: {
     waypoints?: LatLng[]
+    pins?: (LatLng & { label?: string })[]
+    comfortSegments?: { label: string; rating: string; distance_mi: number; startIdx?: number; endIdx?: number }[] | null
+    comfortRating?: string | null
     distanceMiles?: number
     minutes?: number
     transit?: TransitTrip
@@ -210,14 +213,14 @@ export type RouteDesign =
   | { ok: false; reason: string }
 
 /** The route for a goal, or the transit trips (at departAt), from the website's route planner. */
-export async function designRoute(matchId: string, opts: { goal?: string; departAt?: Date } = {}): Promise<RouteDesign> {
+export async function designRoute(matchId: string, opts: { goal?: string; departAt?: Date; through?: Place | null } = {}): Promise<RouteDesign> {
   const { data: { session } } = await supabase.auth.getSession()
   if (!session) return { ok: false, reason: 'signed_out' }
   try {
     const res = await fetch('/api/together/plan-route', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
-      body: JSON.stringify({ matchId, goal: opts.goal, departAt: opts.departAt?.toISOString() }),
+      body: JSON.stringify({ matchId, goal: opts.goal, departAt: opts.departAt?.toISOString(), through: opts.through ?? undefined }),
     })
     return (await res.json()) as RouteDesign
   } catch {
