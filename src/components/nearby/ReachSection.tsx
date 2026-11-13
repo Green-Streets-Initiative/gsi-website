@@ -9,6 +9,7 @@ import { directionsUrl } from '@/lib/nearby/transit-ui'
 import type { ModeFilter } from './useNearbyModel'
 import type { RouteLegTapInfo } from './NearbyMap'
 import BikeComfortBlock, { AvoidChanges, NEARBY_COMFORT_COLORS } from './BikeComfortBlock'
+import GoThroughPlace from './GoThroughPlace'
 import type { ReachRow, ReachStep, ReachSegment, BikeComfortTier, BikeComfortData } from './types'
 import { useNearbyT, useNearbyLocale } from './NearbyI18n'
 import { TripPerks } from './NearbyPerks'
@@ -265,8 +266,9 @@ export function bikeTripSummary(comfort: BikeComfortData, tr: Tr): string | null
  * app's SimpleTrip). A Bike | Transit switch, one sentence, the comfort strip
  * in travel order with a percent per kind, one line about the faster route,
  * the main button; the streets (bike) or each step (transit) sit below. The
- * two-card Calmest / Fastest deck is gone here. The app's Save and "Go a
- * different way" have no web counterpart yet, so they're left out.
+ * two-card Calmest / Fastest deck is gone here. "Go a different way" (go
+ * through a place, GoThroughPlace) sits under the main button, as in the
+ * app, where the page passes it; the app's Save has no web counterpart yet.
  *
  * Used by the desktop rail's open row (ReachList, title in the row) and the
  * mobile sheet's detail (NearbyShell, `showTitle`).
@@ -301,7 +303,7 @@ export function V2Trip({ row, mode, onMode, center, legInfo, highlightedStreetKe
   const comfort = bike ? ((showingAlt ? row.bike_alt?.comfort : row.bike_comfort) ?? row.bike_comfort ?? null) : null
   const bikeMinutes = showingAlt && row.bike_alt ? row.bike_alt.minutes : row.bike_minutes
   const avoid = comfort ? avoidFor(row, comfort, bikeMinutes) : undefined
-  const changed = !!avoid && avoid.state.avoiding.length > 0
+  const changed = !!avoid && (avoid.state.avoiding.length > 0 || !!avoid.state.through)
 
   const total = comfort ? comfort.segments.reduce((a, s) => a + s.distance_mi, 0) : 0
   const shares = comfort && total > 0
@@ -437,6 +439,9 @@ export function V2Trip({ row, mode, onMode, center, legInfo, highlightedStreetKe
       >
         {bike && route ? tr('v2.trip_follow_google') : tr('reach.open_in_maps')}
       </a>}
+
+      {/* Change the ride before following it: send it through a place */}
+      {bike && comfort && avoid?.goThrough && <GoThroughPlace {...avoid.goThrough} />}
 
       {/* Raising the sheet is optional: this opens it the rest of the way */}
       {onExpand && (

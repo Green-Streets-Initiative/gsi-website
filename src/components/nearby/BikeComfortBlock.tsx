@@ -10,6 +10,7 @@ import { OTHER_OWNER } from '@/lib/nearby/route-lines'
 import { COMFORT_COLORS } from '@/lib/comfort-colors'
 import type { BikeComfortData, BikeComfortTier } from './types'
 import type { AvoidState } from './useAvoidStreets'
+import type { GoThroughProps } from './GoThroughPlace'
 
 /**
  * Comfort picture for a reach row's bike route: the segmented comfort bar
@@ -64,6 +65,8 @@ type AvoidProp = {
   state: AvoidState
   onAvoid: (key: string, label: string) => void
   onUndo: () => void
+  /** "Go through a place" (GoThroughPlace), where the page offers it. */
+  goThrough?: GoThroughProps
 }
 
 /** What this ride was changed to do, in one line, with Undo (v2). The simpler
@@ -75,20 +78,26 @@ export function AvoidChanges({ avoid, scrollMargin = 'scroll-mt-4' }: {
   scrollMargin?: string
 }) {
   const tr = useNearbyT()
+  const av = avoid?.state
+  // The place it goes through, then the streets it stays off
+  const changes = av
+    ? [
+        av.through ? tr('v2.going_through', { place: av.through }) : null,
+        av.avoiding.length > 0 ? tr('v2.avoiding', { streets: av.avoiding.join(tr('v2.avoid_and')) }) : null,
+      ].filter(Boolean).join(' · ')
+    : ''
   // Avoid is pressed far down the list; the line saying what changed (and
   // Undo) is at the top, so bring it into view when it changes
-  const avoidingCount = avoid?.state.avoiding.length ?? 0
   const avoidingRef = useRef<HTMLDivElement>(null)
   useEffect(() => {
-    if (avoidingCount > 0) avoidingRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
-  }, [avoidingCount])
-  const av = avoid?.state
-  if (!av || av.avoiding.length === 0) return null
+    if (changes) avoidingRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+  }, [changes])
+  if (!av || !changes) return null
   const delta = av.deltaMin
   return (
     <div ref={avoidingRef} className={`${scrollMargin} flex items-center justify-between gap-2 rounded-lg bg-(--nb-panel) px-2.5 py-1.5 text-[0.875rem] text-(--nb-ink)`}>
       <span className="min-w-0">
-        {tr('v2.avoiding', { streets: av.avoiding.join(tr('v2.avoid_and')) })}
+        {changes}
         {delta !== null && (
           <span className="whitespace-nowrap text-(--nb-ink-70)">
             {' · '}
@@ -210,7 +219,7 @@ export default function BikeComfortBlock({ comfort, highlightedStreetKey, onHigh
                         <>
                           <button
                             onClick={() => avoid!.onAvoid(s.key!, s.label)}
-                            disabled={av.pendingKey !== null}
+                            disabled={av.pendingKey !== null || av.throughPending}
                             className="min-h-[44px] rounded-full border border-(--nb-line-mid) px-4 py-1 text-[0.875rem] font-semibold text-(--nb-ink-80) hover:border-(--nb-line-strong) hover:text-(--nb-ink) disabled:opacity-70"
                           >
                             {av.pendingKey === s.key

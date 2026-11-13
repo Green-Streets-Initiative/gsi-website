@@ -13,6 +13,7 @@ import BikeComfortBlock from './BikeComfortBlock'
 import type { TripDest } from '@/lib/nearby/share'
 import type { SectionData, SectionStatus, CommunityData, GuideItem, ReachRow, BikeComfortData } from './types'
 import { useAvoidStreets } from './useAvoidStreets'
+import { throughSpotMarker, useGoThrough } from './GoThroughPlace'
 import NearbyMap, { TrafficToggle, TrafficLegend, useTrafficPreference, type FitPadding, type RouteLegTapInfo } from './NearbyMap'
 import { useReachOverlay } from './useReachOverlay'
 import NearbySheet from './NearbySheet'
@@ -228,7 +229,7 @@ export default function NearbyShell({
   const [plannedRows, setPlannedRows] = useState<ReachRow[]>([])
   // Around You v2: a trip re-planned around a street swaps in its new route
   // here, so the map, the times and the detail all draw it.
-  const { apply: applyAvoid, avoid: avoidStreet, undo: undoAvoid, stateFor: avoidState } = useAvoidStreets(center)
+  const { apply: applyAvoid, avoid: avoidStreet, goThrough: goThroughPlace, undo: undoAvoid, stateFor: avoidState } = useAvoidStreets(center)
   const reachRows = useMemo(
     () => [...plannedRows, ...reach.data].map(applyAvoid), [plannedRows, reach.data, applyAvoid])
 
@@ -284,6 +285,23 @@ export default function NearbyShell({
   // the map share one answer; cleared whenever the selection moves.
   const [highlightedStreetKey, setHighlightedStreetKey] = useState<string | null>(null)
 
+  // Go through a place on the open bike trip (v2): its search, a map tap
+  // while it's open, the question, and the pin for the place
+  const throughRowId = selection?.type === 'reach' && selection.mode === 'bike' ? selection.id : null
+  const onThroughChanged = useCallback(() => {
+    // The lit street, the tapped stretch and the calm/quick choice belonged to the old route
+    setHighlightedStreetKey(null)
+    setBikeAlt(false)
+    setLegInfo(null)
+  }, [])
+  const through = useGoThrough({ activeRowId: throughRowId, goThrough: goThroughPlace, onChanged: onThroughChanged })
+  const throughSpot = through.pendingSpot ?? (throughRowId ? avoidState(throughRowId).throughAt : null)
+  const stageMarkers = useMemo(
+    () => (throughSpot ? [...mapMarkers, throughSpotMarker(throughSpot)] : mapMarkers),
+    // The spot's numbers, not its object, which is new every render
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [mapMarkers, throughSpot?.lat, throughSpot?.lng])
+
   const avoidFor = useCallback((row: ReachRow, comfort: BikeComfortData, minutes: number) => ({
     state: avoidState(row.id),
     onAvoid: (key: string, label: string) => {
@@ -295,7 +313,11 @@ export default function NearbyShell({
       })
     },
     onUndo: () => undoAvoid(row.id),
-  }), [avoidState, avoidStreet, undoAvoid, setHighlightedStreetKey, setBikeAlt])
+    goThrough: through.propsFor(row, minutes, (() => {
+      const st = avoidState(row.id)
+      return st.throughPending || st.pendingKey !== null
+    })()),
+  }), [avoidState, avoidStreet, undoAvoid, setHighlightedStreetKey, setBikeAlt, through.propsFor])
 
   // Section-collapse state for the bike-side shelves, owned here so it
   // survives the sheet's snap changes and tab hops (the app hoists it into
@@ -442,7 +464,7 @@ export default function NearbyShell({
       <div className="absolute inset-0 [&_.maplibregl-ctrl-bottom-right]:!bottom-[88px]">
         <NearbyMap
           center={center}
-          markers={mapMarkers}
+          markers={stageMarkers}
           lines={backgroundLines}
           paintedVisible={showBike && paintedOn}
           separatedVisible={showBike}
@@ -459,6 +481,7 @@ export default function NearbyShell({
           onLaneTap={(info) => selectReveal({ type: 'lane', info }, 'map')}
           onReachLegTap={handleLegTap}
           onSpotPress={spotPress.onSpotPress}
+          onPickPoint={through.onMapPick}
           fitCount={7}
           extraFitPoints={accessPoints}
           cooperative={false}

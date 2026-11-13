@@ -94,6 +94,10 @@ interface Props {
    *  reports this point. Off when absent (the switch is off, or the map is
    *  one that doesn't take reports). */
   onSpotPress?: (point: { lat: number; lng: number }) => void
+  /** Go through a place (Around You v2): while set, a tap anywhere off the
+   *  drawn trip picks that point, named after the road under it when the
+   *  basemap knows one. Lanes and corridors don't take the tap meanwhile. */
+  onPickPoint?: (point: { lat: number; lng: number; name: string | null }) => void
   /** Fit viewport to user + this many nearest markers, once (default: all) */
   fitCount?: number
   /** Extra coordinates the one-time fit must include (e.g. corridor access
@@ -219,7 +223,7 @@ const TRAFFIC_STORAGE_KEY = 'nearby.traffic'
 export default function NearbyMap({
   center, markers, lines, paintedVisible = true, separatedVisible = true, trafficVisible = false,
   corridorLines, selectedCorridorId = null, highlightedStreetKey = null, onCorridorSelect,
-  onMarkerTap, onLaneTap, onReachLegTap, onSpotPress,
+  onMarkerTap, onLaneTap, onReachLegTap, onSpotPress, onPickPoint,
   fitCount, extraFitPoints, fitToLines = false, lineEmphasis = false,
   cooperative = true, controls, fitPadding, focusPoint, focusPadding, holdSelectionFit = false,
   heightClass = 'h-[320px] sm:h-[380px]',
@@ -259,6 +263,8 @@ export default function NearbyMap({
   onReachLegTapRef.current = onReachLegTap
   const onSpotPressRef = useRef(onSpotPress)
   onSpotPressRef.current = onSpotPress
+  const onPickPointRef = useRef(onPickPoint)
+  onPickPointRef.current = onPickPoint
   // A held press ends in a click; that click mustn't also clear the selection
   const suppressClickUntilRef = useRef(0)
   const corridorLinesRef = useRef(corridorLines)
@@ -346,6 +352,21 @@ export default function NearbyMap({
       // layer's own handler — skip when the tap actually hit a line)
       map.on('click', (e) => {
         if (Date.now() < suppressClickUntilRef.current) return
+        // Picking a place to go through: any tap off the drawn trip is the
+        // pick (the trip's own line still says what that stretch is). This
+        // listener runs before the layers' own, so marking the event keeps
+        // lanes and corridors from also opening.
+        const pick = onPickPointRef.current
+        if (pick) {
+          const tripLayers = ['corridor-lines', 'corridor-lines-dashed', 'corridor-lines-hit'].filter(l => map.getLayer(l))
+          const onTrip = tripLayers.length > 0 && map.queryRenderedFeatures(e.point, { layers: tripLayers })
+            .some(f => String((f.properties as { corridorId?: string } | null)?.corridorId ?? '').startsWith('reach:'))
+          if (!onTrip) {
+            (e.originalEvent as MouseEvent & { __nearbyHandled?: boolean }).__nearbyHandled = true
+            pick({ lat: e.lngLat.lat, lng: e.lngLat.lng, name: nearestRoadName(map, e.lngLat, null) })
+            return
+          }
+        }
         const layers = ['corridor-lines', 'corridor-lines-dashed', 'corridor-lines-hit', 'bike-separated', 'bike-painted'].filter(l => map.getLayer(l))
         if (layers.length > 0) {
           const hits = map.queryRenderedFeatures(e.point, { layers })
@@ -456,6 +477,13 @@ export default function NearbyMap({
     }
     applyBikeBackground(map, lines, paintedVisible, separatedVisible)
   }, [lines, paintedVisible, separatedVisible])
+
+  // A crosshair says a click on the map now picks a place
+  const picking = !!onPickPoint
+  useEffect(() => {
+    const map = mapRef.current
+    if (map) map.getCanvas().style.cursor = picking ? 'crosshair' : ''
+  }, [picking, mapReadyTick])
 
   // Painted-lane visibility toggle
   useEffect(() => {
@@ -1037,6 +1065,8 @@ function applyBikeBackground(
   // under the map (popups clip and trap scroll on mobile)
   for (const layerId of ['bike-separated', 'bike-painted']) {
     map.on('click', layerId, (e) => {
+      // Taken as a pick (go through a place) by the map's own click listener
+      if ((e.originalEvent as MouseEvent & { __nearbyHandled?: boolean }).__nearbyHandled) return
       const feature = e.features?.[0]
       if (!feature) return
       // Named features belong to corridors — let corridor selection handle them
