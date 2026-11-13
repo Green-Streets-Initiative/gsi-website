@@ -4,19 +4,25 @@ import Link from 'next/link'
 import { useState } from 'react'
 import { Briefcase, CalendarDays, Car, Clock, GraduationCap, House, Languages, Mail, MapPin, Medal, MessageSquare, Route, Sprout } from 'lucide-react'
 import { Avatar, Chip, ChipRow, FitMeter, WAY_ICON } from '@/components/together/bits'
+import PickupCard from '@/components/together/PickupCard'
+import WalkMeetSpot from '@/components/together/WalkMeetSpot'
 import { Button, Card, Input, Textarea, cx } from '@/components/organizers/ui'
 import { siteDate, translator, withLang, type SiteLocale, type T } from '@/lib/site-i18n'
 import { planStrings } from '@/lib/site-strings/together-plan'
-import { LANGUAGE_KEY, SLOT_KEY, TIME_KEY, WAY_KEY, type TogetherKey } from '@/lib/site-strings/together'
+import { DAY_KEY, LANGUAGE_KEY, SLOT_KEY, TIME_KEY, WAY_KEY, type TogetherKey } from '@/lib/site-strings/together'
+import { togetherMoreStrings } from '@/lib/site-strings/together-more'
+import type { WalkSpot } from '@/lib/together-more'
 import {
-  TIMES, arriveGap, clock, experienceFit, isSlot, overallFit, phoneLabel, routeFit, setMatchPhone, timingDaysKnown, timingFit, track,
+  DAYS, TIMES, arriveGap, clock, experienceFit, isSlot, overallFit, phoneLabel, routeFit, setMatchPhone, timingDaysKnown, timingFit, track,
   type Match, type PartnerWay, type Rating, type ReportReason,
 } from '@/lib/together'
 
 /**
  * One Shift Together match as the person sees it (the app's partner-matches
  * card): a fit rating, the person's face, and timing, route and experience
- * meters before the yes; their email once both say yes. Used on
+ * meters before the yes; their email once both say yes. Walks say where and
+ * when you'd walk, then where you meet; a carpool shows who drives and the
+ * pickup (PickupCard); an ended match stays 30 days, there to report. Used on
  * /together/matches and, with made-up sample data marked "Example", in
  * "How it works" and the empty matches page (ExampleMatch).
  */
@@ -30,7 +36,8 @@ const REASONS: { id: ReportReason; label: TogetherKey }[] = [
 ]
 // Plain words, as in the match notice (01462; Keith 2026-10-27: "too euphemistic").
 const DO: Record<string, TogetherKey> = { bike: 'do.bike', walk: 'do.walk', transit: 'do.transit', micro: 'do.micro' }
-function shortLine(m: Match, t: T<TogetherKey>): string {
+function shortLine(m: Match, t: T<TogetherKey>, tm: (k: 'm.short_walk') => string): string {
+  if (m.kind === 'walk') return tm('m.short_walk')
   if (m.kind === 'practice') return m.my_kind === 'guide' ? t('matches.short_practice_guide') : t('matches.short_practice_learner')
   if (m.my_kind === 'carpool') return t('matches.short_carpool')
   const key = DO[m.other.shared_modes?.[0] ?? (m.my_kind === 'guide' ? m.other.modes[0] : '') ?? '']
@@ -90,12 +97,17 @@ function MyPhone({ m, name, t }: { m: Match; name: string; t: T<TogetherKey> }) 
   )
 }
 
-export function MatchCard({ m, locale, t, busy, myArrive, onAnswer, onWent, onRate, onEnd, onReport }: {
+export function MatchCard({ m, locale, t, busy, myArrive, userId = null, walkSpot = null, onWalkSpot, onAnswer, onWent, onRate, onEnd, onReport }: {
   m: Match
   locale: SiteLocale
   t: T<TogetherKey>
   busy: boolean
   myArrive: string | null
+  /** The signed-in person, for the walk meeting spot and the pickup (places near their own Home). */
+  userId?: string | null
+  /** A walk match's meeting spot, once one of them picked it (01612). */
+  walkSpot?: WalkSpot | null
+  onWalkSpot?: () => void
   onAnswer: (yes: boolean) => void
   onWent: () => void
   onRate: (rating: Rating, comment: string) => void
@@ -108,6 +120,9 @@ export function MatchCard({ m, locale, t, busy, myArrive, onAnswer, onWent, onRa
   const [reason, setReason] = useState<ReportReason | null>(null)
   const [details, setDetails] = useState('')
   const [confirmEnd, setConfirmEnd] = useState(false)
+  // "Stop sharing the drive" / "Find someone else": ends the match after a confirm, no report.
+  const [confirmMove, setConfirmMove] = useState(false)
+  const tm = translator(togetherMoreStrings, locale)
   // Read once when the card mounts: "Did you go together?" waits a day after connecting.
   const [now] = useState(() => Date.now())
 
@@ -117,7 +132,33 @@ export function MatchCard({ m, locale, t, busy, myArrive, onAnswer, onWent, onRa
   const askWent = m.status === 'connected' && !!m.connected_at && now - new Date(m.connected_at).getTime() > 24 * 3600_000
   const carpool = m.my_kind === 'carpool'
   const practice = m.kind === 'practice' ? m.practice ?? null : null
-  const eyebrow = m.status === 'went_together' ? t('matches.went') : connected ? t('matches.both_yes') : shortLine(m, t)
+  const ended = m.status === 'dropped'
+  const eyebrow = ended ? tm('m.short_ended') : m.status === 'went_together' ? t('matches.went') : connected ? t('matches.both_yes') : shortLine(m, t, tm)
+  // Walking together (01507): near home or on the way to the same place, and
+  // the days and times you both walk (an empty list means any).
+  const walk = m.kind === 'walk' ? m.walk ?? null : null
+  const mi = (n: number | null) => n == null ? '' : tm(n < 0.15 && n >= 0.05 ? 'm.miles_one' : 'm.miles_other', { count: n < 0.1 ? 0.1 : Math.round(n * 10) / 10 })
+  const walkWhere = !walk ? null
+    : walk.near_home ? tm('m.walk_near_home', { miles: mi(m.home_miles) })
+    : m.dest_miles != null && m.dest_miles < 0.05 ? tm('m.walk_same_place', { miles: mi(m.home_miles) })
+    : tm(walk.my_place === 'School' ? 'm.walk_near_school' : 'm.walk_near_work', { miles: mi(m.home_miles), dest: mi(m.dest_miles) })
+  const either = <X,>(mine: X[] | undefined, theirs: X[], both: X[]) => (!mine?.length ? theirs : !theirs.length ? mine : both)
+  const walkWhen = walk ? [
+    DAYS.filter((d) => either(m.other.my_days, m.other.days, m.other.shared_days).includes(d.id)).map((d) => t(DAY_KEY[d.id])).join(t('list.sep')),
+    TIMES.filter((x) => either(m.other.my_times, m.other.time_of_day, m.other.shared_times).includes(x.id)).map((x) => t(TIME_KEY[x.id])).join(t('list.sep')),
+  ].filter(Boolean).join(' · ') : ''
+  // Who drives, once you both said yes (Shift picked the driver, 01448).
+  const detourMin = carpool && m.detour_minutes != null ? Math.max(1, Math.round(m.detour_minutes)) : null
+  const driveLine = carpool && connected && m.i_drive != null
+    ? m.i_drive
+      ? detourMin != null ? tm(detourMin === 1 ? 'm.you_drive_detour_one' : 'm.you_drive_detour_other', { name, count: detourMin }) : tm('m.you_drive', { name })
+      : tm('m.they_drive', { name })
+    : null
+  // A connected pair that hasn't gone after a week: a way on, without a report.
+  const stale = m.status === 'connected' && !!m.connected_at && now - new Date(m.connected_at).getTime() > 7 * 24 * 3600_000
+  const moveOn = carpool && connected
+    ? { link: tm('m.stop_sharing'), confirm: tm('m.stop_sharing_confirm', { name }) }
+    : stale ? { link: tm('m.find_someone_else', { name }), confirm: tm('m.find_someone_else_confirm', { name }) } : null
   const overall = m.status === 'proposed' ? overallFit(m, myArrive) : null
   const since = m.other.member_since ? siteDate(locale, m.other.member_since, { month: 'short', year: 'numeric' }) : null
   const timing = timingFit(m, myArrive)
@@ -142,6 +183,39 @@ export function MatchCard({ m, locale, t, busy, myArrive, onAnswer, onWent, onRa
     : timing != null && timing > 1 && !timingDaysKnown(m) && m.other.shared_times.length
       ? TIMES.filter((x) => m.other.shared_times.includes(x.id)).map((x) => t(TIME_KEY[x.id])).join(t('list.sep'))
       : timing === 3 ? t('matches.same_days') : timing === 2 ? t('matches.some_days') : t('matches.different')
+
+  // Something wrong? End it (while connected) or tell us; an ended match keeps this for 30 days.
+  const reportBox = (
+    !wrongOpen ? (
+      <button type="button" onClick={() => setWrongOpen(true)} className="min-h-[44px] justify-self-start text-[15px] font-semibold text-(--ev-ink-80) underline">
+        {t('matches.wrong')}
+      </button>
+    ) : (
+      <div className="grid grid-cols-1 gap-3 rounded-xl border border-(--ev-line) p-4">
+        <p className="text-[16px] font-bold">{t('matches.wrong')}</p>
+        {m.status === 'connected' ? (
+          confirmEnd ? (
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="text-[15px]">{t('matches.end_confirm', { name })}</span>
+              <Button size="sm" busy={busy} onClick={onEnd}>{t('matches.end_yes')}</Button>
+            </div>
+          ) : (
+            <div><Button size="sm" onClick={() => setConfirmEnd(true)}>{t('matches.end')}</Button></div>
+          )
+        ) : null}
+        <p className="text-[15px] font-bold">{t('matches.report_q')}</p>
+        <div className="flex flex-wrap gap-2" role="radiogroup" aria-label={t('matches.report_aria')}>
+          {REASONS.map((r) => <Chip key={r.id} role="radio" aria-checked={reason === r.id} on={reason === r.id} onClick={() => setReason(r.id)}>{t(r.label)}</Chip>)}
+        </div>
+        <Textarea rows={2} maxLength={1000} value={details} onChange={(e) => setDetails(e.target.value)} placeholder={t('matches.report_placeholder')} aria-label={t('matches.report_aria')} />
+        <p className="text-[15px] text-(--ev-ink-80)">{t('matches.report_hint', { name })}</p>
+        <div className="flex flex-wrap gap-3">
+          <Button busy={busy} disabled={!reason} onClick={() => reason && onReport(reason, details)}>{t('matches.report_send')}</Button>
+          <Button variant="ghost" onClick={() => setWrongOpen(false)}>{t('cancel')}</Button>
+        </div>
+      </div>
+    )
+  )
 
   return (
     <Card as="li" className={cx('grid grid-cols-1 gap-5', connected && 'outline-2 outline-(--ev-accent)')}>
@@ -209,7 +283,28 @@ export function MatchCard({ m, locale, t, busy, myArrive, onAnswer, onWent, onRa
         </div>
       ) : null}
 
-      {!practice && (m.status === 'proposed' || (carpool && connected)) ? (
+      {walk ? (
+        <div className="grid grid-cols-1 gap-2 rounded-xl bg-(--ev-panel) px-4 py-3 text-[16px]">
+          <p className="flex items-center gap-2">
+            <MapPin className="h-[18px] w-[18px] shrink-0 text-(--ev-accent)" aria-hidden /> {walkWhere}
+          </p>
+          {walkWhen ? (
+            <p className="flex items-center gap-2">
+              <CalendarDays className="h-[18px] w-[18px] shrink-0 text-(--ev-accent)" aria-hidden /> {walkWhen}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
+
+      {/* Once paired: who drives, then the pickup (where, when, which days). */}
+      {carpool && connected && driveLine ? (
+        <p className="flex items-center gap-2 text-[16px] font-semibold">
+          <Car className="h-[18px] w-[18px] shrink-0 text-(--ev-accent)" aria-hidden /> {driveLine}
+        </p>
+      ) : null}
+      {carpool && connected ? <PickupCard matchId={m.id} name={name} userId={userId} locale={locale} /> : null}
+
+      {!practice && !walk && m.status === 'proposed' ? (
         <div className="grid grid-cols-1 gap-1 rounded-xl bg-(--ev-panel) px-4 py-3">
           {m.status === 'proposed' && timing != null ? (
             <FitMeter icon={<Clock className="h-[18px] w-[18px]" />} label={t('matches.timing')} level={timing} value={timingValue} />
@@ -242,7 +337,7 @@ export function MatchCard({ m, locale, t, busy, myArrive, onAnswer, onWent, onRa
               })}
             </ChipRow>
           ) : null}
-          {carpool ? (
+          {carpool && !connected ? (
             <ChipRow icon={<Car className="h-[18px] w-[18px]" />} label={t('matches.role')}>
               {m.other.carpool_role ? (
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1 text-[14px] font-semibold">
@@ -276,21 +371,24 @@ export function MatchCard({ m, locale, t, busy, myArrive, onAnswer, onWent, onRa
         <div className="grid grid-cols-1 gap-3">
           <p className="text-[16px] font-semibold">
             {m.status === 'went_together'
-              ? (carpool ? t('matches.next_went_carpool') : practice ? t('matches.next_went_practice') : t('matches.next_went'))
-              : (carpool ? t('matches.next_carpool', { name }) : practice ? t('matches.next_practice', { name }) : t('matches.next', { name }))}
+              ? (carpool ? t('matches.next_went_carpool') : practice ? t('matches.next_went_practice') : walk ? tm('m.went_next_walk') : t('matches.next_went'))
+              : (carpool
+                ? (m.i_drive == null ? t('matches.next_carpool', { name }) : m.i_drive ? tm('m.next_carpool_driver', { name }) : tm('m.next_carpool_rider', { name }))
+                : practice ? t('matches.next_practice', { name }) : walk ? tm('m.next_walk', { name }) : t('matches.next', { name }))}
           </p>
+          {m.kind === 'walk' ? <WalkMeetSpot matchId={m.id} name={name} spot={walkSpot} userId={userId} locale={locale} onSaved={() => onWalkSpot?.()} /> : null}
           <div className="flex flex-wrap gap-3">
             <a
-              href={`mailto:${m.other.email}?subject=${encodeURIComponent(carpool ? t('matches.subject_carpool') : practice ? t('matches.subject_practice') : t('matches.subject'))}`}
+              href={`mailto:${m.other.email}?subject=${encodeURIComponent(carpool ? t('matches.subject_carpool') : practice ? t('matches.subject_practice') : walk ? tm('m.subject_walk') : t('matches.subject'))}`}
               onClick={() => track('together_email_tapped', { kind: m.kind })}
               className={cx(
                 'inline-flex min-h-[44px] items-center gap-2 rounded-[10px] px-4 text-[15px] font-semibold',
-                m.status === 'went_together' ? 'border border-(--ev-line-strong) bg-white' : 'bg-(--ev-accent-fill) text-(--ev-on-accent-fill)',
+                m.status === 'went_together' || carpool ? 'border border-(--ev-line-strong) bg-white' : 'bg-(--ev-accent-fill) text-(--ev-on-accent-fill)',
               )}
             >
               <Mail className="h-4 w-4" aria-hidden /> {t('matches.email', { name })}
             </a>
-            {!carpool && m.status === 'connected' ? (
+            {!carpool && !walk && m.status === 'connected' ? (
               // A first trip match has its plan page (the app's ride plan); a practice ride plans with the trip planner.
               <Link
                 href={withLang(m.kind === 'guide' ? `/together/plan/${m.id}` : '/trip', locale)}
@@ -344,35 +442,29 @@ export function MatchCard({ m, locale, t, busy, myArrive, onAnswer, onWent, onRa
             <p className="text-[15px] font-semibold">{t('matches.went_done')}</p>
           ) : null}
 
-          {!wrongOpen ? (
-            <button type="button" onClick={() => setWrongOpen(true)} className="min-h-[44px] justify-self-start text-[15px] font-semibold text-(--ev-ink-80) underline">
-              {t('matches.wrong')}
-            </button>
-          ) : (
-            <div className="grid grid-cols-1 gap-3 rounded-xl border border-(--ev-line) p-4">
-              <p className="text-[16px] font-bold">{t('matches.wrong')}</p>
-              {m.status === 'connected' ? (
-                confirmEnd ? (
-                  <div className="flex flex-wrap items-center gap-3">
-                    <span className="text-[15px]">{t('matches.end_confirm', { name })}</span>
-                    <Button size="sm" busy={busy} onClick={onEnd}>{t('matches.end_yes')}</Button>
-                  </div>
-                ) : (
-                  <div><Button size="sm" onClick={() => setConfirmEnd(true)}>{t('matches.end')}</Button></div>
-                )
-              ) : null}
-              <p className="text-[15px] font-bold">{t('matches.report_q')}</p>
-              <div className="flex flex-wrap gap-2" role="radiogroup" aria-label={t('matches.report_aria')}>
-                {REASONS.map((r) => <Chip key={r.id} role="radio" aria-checked={reason === r.id} on={reason === r.id} onClick={() => setReason(r.id)}>{t(r.label)}</Chip>)}
+          {moveOn ? (
+            confirmMove ? (
+              <div className="grid grid-cols-1 gap-3 rounded-xl border border-(--ev-line) p-4">
+                <p className="text-[16px]">{moveOn.confirm}</p>
+                <div className="flex flex-wrap gap-3">
+                  <Button size="sm" busy={busy} onClick={onEnd}>{tm('m.move_on_yes')}</Button>
+                  <Button size="sm" variant="ghost" onClick={() => setConfirmMove(false)}>{t('cancel')}</Button>
+                </div>
               </div>
-              <Textarea rows={2} maxLength={1000} value={details} onChange={(e) => setDetails(e.target.value)} placeholder={t('matches.report_placeholder')} aria-label={t('matches.report_aria')} />
-              <p className="text-[15px] text-(--ev-ink-80)">{t('matches.report_hint', { name })}</p>
-              <div className="flex flex-wrap gap-3">
-                <Button busy={busy} disabled={!reason} onClick={() => reason && onReport(reason, details)}>{t('matches.report_send')}</Button>
-                <Button variant="ghost" onClick={() => setWrongOpen(false)}>{t('cancel')}</Button>
-              </div>
-            </div>
-          )}
+            ) : (
+              <button type="button" onClick={() => setConfirmMove(true)} className="min-h-[44px] justify-self-start text-[15px] font-semibold text-(--ev-ink-80) underline">
+                {moveOn.link}
+              </button>
+            )
+          ) : null}
+          {reportBox}
+        </div>
+      ) : null}
+
+      {ended ? (
+        <div className="grid grid-cols-1 gap-3">
+          <p className="text-[16px] font-semibold">{m.ended_by_me ? tm('m.ended_by_you') : tm('m.ended', { name })}</p>
+          {reportBox}
         </div>
       ) : null}
     </Card>

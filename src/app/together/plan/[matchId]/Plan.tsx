@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { ArrowLeft, CalendarDays, CheckCircle2, Flag, Hourglass, Mail, MapPin, Navigation, Smartphone } from 'lucide-react'
+import FindEachOther from '@/components/together/FindEachOther'
 import PinMap from '@/components/together/PinMap'
 import { Avatar } from '@/components/together/bits'
 import { Button, Card, Field, Input, Notice, Spinner, cx } from '@/components/organizers/ui'
@@ -293,6 +294,10 @@ export default function Plan({ matchId, locale }: { matchId: string; locale: Sit
         ) : null}
       </Card>
 
+      {/* On the day: share where you are with each other around the start (01627). Shows only that day. */}
+      {p && p.status === 'confirmed' && !pending ? (
+        <FindEachOther matchId={matchId} name={name} way={way === 'walk' || way === 'transit' ? way : 'bike'} locale={locale} />
+      ) : null}
       {showPlan && p ? <RouteCard plan={p} way={way} locale={locale} t={t} /> : null}
 
       <Link href={withLang('/together/matches', locale)} className="min-h-[44px] justify-self-start text-[15px] font-semibold text-(--ev-ink-80) underline">

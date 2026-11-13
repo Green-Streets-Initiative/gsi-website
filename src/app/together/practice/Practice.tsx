@@ -71,7 +71,7 @@ export default function Practice({ locale }: { locale: SiteLocale }) {
   const load = useCallback(async () => {
     if (!userId) return
     const [signUps, near, terms, saved] = await Promise.all([
-      mySignUps().catch(() => ({ trips: [] as PartnerRequest[], practice: null })),
+      mySignUps().catch(() => ({ trips: [] as PartnerRequest[], practice: null, walk: null })),
       practicePlaces().catch(() => ({ home: false, places: [] as PracticePlace[] })),
       hasAcceptedTerms(userId),
       myPlaces(userId).catch(() => []),

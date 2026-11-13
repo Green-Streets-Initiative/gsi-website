@@ -139,7 +139,7 @@ function SubBar() {
   const path = usePathname()
   if (phase !== 'ready' && phase !== 'off') return null
   const nav = [
-    { href: '/together', label: t('shell.your_signup'), active: path === '/together' || path.startsWith('/together/practice') },
+    { href: '/together', label: t('shell.your_signup'), active: path === '/together' || path.startsWith('/together/practice') || path.startsWith('/together/walk') },
     { href: '/together/matches', label: t('shell.your_matches'), active: path.startsWith('/together/matches') || path.startsWith('/together/plan') },
   ]
   return (

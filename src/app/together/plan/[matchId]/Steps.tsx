@@ -120,7 +120,7 @@ const SKILL_ICON: Record<string, LucideIcon> = {
   transit_new: TrainFront, transit_not_this: Bus, transit_changes: Repeat,
 }
 
-type Choice = Place & { walkMin?: number; icon?: 'dock' | 'station' }
+export type Choice = Place & { walkMin?: number; icon?: 'dock' | 'station' }
 const DOCK_METERS = 805 // half a mile, the app's DOCK_MILES
 const walkMin = (miles: number) => Math.max(1, Math.round((miles / 3) * 60))
 const same = (a: LatLng | null, b: LatLng) => !!a && Math.abs(a.lat - b.lat) < 1e-5 && Math.abs(a.lng - b.lng) < 1e-5
@@ -129,9 +129,10 @@ const same = (a: LatLng | null, b: LatLng) => !!a && Math.abs(a.lat - b.lat) < 1
  * A public spot near home or work, never the place itself (the app's
  * PlacePick): the nearest three stations as one-tap choices (rail first,
  * within 0.8 mi), or the bike-share docks on the bike share, and the
- * website's place search for any other public place.
+ * website's place search for any other public place. Also where a walk pair
+ * meets (WalkMeetSpot) and a carpool's pickup (PickupCard).
  */
-function PlacePick({ anchor, value, onPick, choices, t }: { anchor: LatLng | null; value: Place | null; onPick: (p: Place) => void; choices?: Choice[]; t: T<PlanKey> }) {
+export function PlacePick({ anchor, value, onPick, choices, t }: { anchor: LatLng | null; value: Place | null; onPick: (p: Place) => void; choices?: Choice[]; t: T<PlanKey> }) {
   const [found, setFound] = useState<Choice[] | null>(null)
   const [q, setQ] = useState('')
   useEffect(() => {

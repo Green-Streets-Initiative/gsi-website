@@ -1,8 +1,8 @@
 import posthog from 'posthog-js'
 import { siteTime, type SiteLocale } from '@/lib/site-i18n'
 import { supabase } from '@/lib/supabase'
-import { flagOnFor } from '@/lib/feature-flags'
 import type { PartnerLanguage } from './languages'
+import type { WalkRequest } from './together-more'
 
 /**
  * Shift Together on the web (Phase A, Keith 2026-10-27): the same account,
@@ -57,9 +57,27 @@ export function track(event: `together_${string}`, props?: Record<string, unknow
   try { posthog.capture(event, { surface: 'web', ...props }) } catch { /* analytics never blocks */ }
 }
 
+/** The app's rolloutBucket (Shift lib/feature-flags.ts): float FNV, never Math.imul. */
+function rolloutBucket(userId: string): number {
+  let h = 2166136261
+  for (let i = 0; i < userId.length; i++) {
+    h ^= userId.charCodeAt(i)
+    h = (h * 16777619) >>> 0
+  }
+  return h % 100
+}
+
 /** Whether Shift Together is on for this person (the commute_partners switch). False on any error. */
-export function togetherOn(userId: string): Promise<boolean> {
-  return flagOnFor(supabase, 'commute_partners', userId)
+export async function togetherOn(userId: string): Promise<boolean> {
+  const [flag, mine] = await Promise.all([
+    supabase.from('app_feature_flags').select('enabled, rollout_percent').eq('name', 'commute_partners').maybeSingle(),
+    supabase.from('app_feature_flag_users').select('user_id').eq('flag_name', 'commute_partners').eq('user_id', userId).maybeSingle(),
+  ])
+  if (!mine.error && mine.data) return true
+  const f = flag.data as { enabled: boolean; rollout_percent: number | null } | null
+  if (flag.error || !f?.enabled) return false
+  const pct = f.rollout_percent ?? 0
+  return pct >= 100 || (pct > 0 && rolloutBucket(userId) < pct)
 }
 
 export type PartnerRequest = {
@@ -113,14 +131,15 @@ export type PracticeRequest = {
   languages?: PartnerLanguage[]
 }
 
-/** Every sign-up in one call: the trip ones (the /together forms) and the practice ride, if any. */
-export async function mySignUps(): Promise<{ trips: PartnerRequest[]; practice: PracticeRequest | null }> {
+/** Every sign-up in one call: the trip ones (the /together forms), the practice ride and walking together, if any. */
+export async function mySignUps(): Promise<{ trips: PartnerRequest[]; practice: PracticeRequest | null; walk: WalkRequest | null }> {
   const { data, error } = await supabase.rpc('get_my_partner_requests')
   if (error) throw new Error(error.message)
   const rows = (data ?? []) as { kind: string }[]
   return {
-    trips: rows.filter((r) => r.kind !== 'practice') as PartnerRequest[],
+    trips: rows.filter((r) => r.kind !== 'practice' && r.kind !== 'walk') as PartnerRequest[],
     practice: (rows.find((r) => r.kind === 'practice') as PracticeRequest | undefined) ?? null,
+    walk: (rows.find((r) => r.kind === 'walk') as WalkRequest | undefined) ?? null,
   }
 }
 
@@ -250,18 +269,24 @@ export async function saveSignUp(s: SignUp): Promise<{ ok: true; matches: number
   return r?.ok ? { ok: true, matches: r.matches ?? 0 } : { ok: false, reason: r?.reason ?? 'failed' }
 }
 
-export async function stopSignUp(kind: PartnerKind | 'practice'): Promise<boolean> {
+export async function stopSignUp(kind: PartnerKind | 'practice' | 'walk'): Promise<boolean> {
   const { data, error } = await supabase.rpc('stop_partner_request', { p_kind: kind })
   return !error && !!(data as { ok?: boolean } | null)?.ok
 }
 
-/** A match as the person sees it (get_my_partner_matches; Shift lib/commute-partners.ts PartnerMatch). */
+/**
+ * A match as the person sees it (get_my_partner_matches; Shift
+ * lib/commute-partners.ts PartnerMatch). 'dropped' comes only from
+ * endedMatches (together-more.ts): ended in the last 30 days, there to report.
+ */
 export type Match = {
   id: string
-  kind: 'guide' | 'carpool' | 'practice'
-  status: 'proposed' | 'connected' | 'went_together'
-  /** 'practice': they asked for a practice ride (Shift 01503). */
-  my_kind: PartnerKind | 'practice'
+  kind: 'guide' | 'carpool' | 'practice' | 'walk'
+  status: 'proposed' | 'connected' | 'went_together' | 'dropped'
+  /** An ended match: whether this person ended it (01499). */
+  ended_by_me?: boolean | null
+  /** 'practice': they asked for a practice ride (Shift 01503); 'walk': walking together (01507). */
+  my_kind: PartnerKind | 'practice' | 'walk'
   my_answer: 'yes' | 'no' | null
   their_answer: 'yes' | 'waiting' | null
   my_rating: Rating | null
@@ -273,6 +298,8 @@ export type Match = {
   i_drive?: boolean | null
   /** A practice ride (Shift 01503): where it starts and the times you're both free. */
   practice?: { trail: string | null; point: string | null; near_home: boolean; slots: string[] } | null
+  /** Walking together (01507): near home, or to your saved place (its label). */
+  walk?: { near_home: boolean; my_place: string | null } | null
   created_at: string
   connected_at: string | null
   other: {
@@ -282,6 +309,7 @@ export type Match = {
     days: PartnerDay[]
     time_of_day: PartnerTime[]
     arrive_by: string | null
+    leave_at?: string | null
     carpool_role: CarpoolRole | null
     group_name: string | null
     trips_60d: number | null

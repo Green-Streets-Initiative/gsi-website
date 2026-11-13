@@ -3,7 +3,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
-import { Bike, Car, CheckCircle2, Sprout, UsersRound, type LucideIcon } from 'lucide-react'
+import { Bike, Car, CheckCircle2, Footprints, Sprout, UsersRound, type LucideIcon } from 'lucide-react'
 import AddressAutocomplete from '@/components/AddressAutocomplete'
 import NextSteps from '@/components/together/NextSteps'
 import { Chip, WAY_ICON } from '@/components/together/bits'
@@ -12,6 +12,8 @@ import { Journey, takeKindParam, useTogether } from '@/components/together/Toget
 import { Badge, Button, Card, Field, Input, Notice, Spinner, Textarea, cx } from '@/components/organizers/ui'
 import { gaEvent } from '@/lib/ga'
 import { translator, withLang, type SiteLocale, type T } from '@/lib/site-i18n'
+import { togetherMoreStrings } from '@/lib/site-strings/together-more'
+import type { WalkRequest } from '@/lib/together-more'
 import { DAY_KEY, ROLE_KEY, SLOT_KEY, TIME_KEY, WAY_KEY, slotWords, togetherStrings, waysWords, type TogetherKey } from '@/lib/site-strings/together'
 import {
   DAYS, LANGUAGES, SLOTS, TIMES, WAYS, acceptTerms, clock, hasAcceptedTerms, isSlot, isWay, myMatches, myPlaces, mySignUps,
@@ -121,6 +123,8 @@ export default function SignUp({ locale }: { locale: SiteLocale }) {
   const [maxMiles, setMaxMiles] = useState(GUIDE_MILES_DEFAULT)
   const [savedWork, setSavedWork] = useState<PlacePick | null>(null)
   const [practice, setPractice] = useState<PracticeRequest | null>(null)
+  // Walking together (01507) has its own page; listed here once signed up.
+  const [walk, setWalk] = useState<{ req: WalkRequest; where: 'home' | 'work' | 'school' } | null>(null)
   const [agreed, setAgreed] = useState(false)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
@@ -134,7 +138,7 @@ export default function SignUp({ locale }: { locale: SiteLocale }) {
   const load = useCallback(async () => {
     if (!userId) return
     const [signUps, places, terms, matches] = await Promise.all([
-      mySignUps().catch(() => ({ trips: [] as PartnerRequest[], practice: null })), myPlaces(userId), hasAcceptedTerms(userId),
+      mySignUps().catch(() => ({ trips: [] as PartnerRequest[], practice: null, walk: null })), myPlaces(userId), hasAcceptedTerms(userId),
       myMatches().catch(() => [] as Match[]),
     ])
     const reqs = signUps.trips
@@ -142,6 +146,9 @@ export default function SignUp({ locale }: { locale: SiteLocale }) {
     const prac = signUps.practice && signUps.practice.status !== 'closed' ? signUps.practice : null
     setRequests(active)
     setPractice(prac)
+    const wr = signUps.walk && signUps.walk.status !== 'closed' ? signUps.walk : null
+    const dest = wr?.destination_location_id ?? null
+    setWalk(wr ? { req: wr, where: !dest ? 'home' : places.some((p) => p.id === dest && p.label === 'Work') ? 'work' : 'school' } : null)
     setMatchState(
       matches.some((m) => m.status === 'proposed' && m.my_answer == null) ? 'waiting'
         : matches.some((m) => m.status === 'connected' || m.status === 'went_together') || active.some((r) => r.status === 'matched') || prac?.status === 'matched' ? 'connected'
@@ -299,7 +306,8 @@ export default function SignUp({ locale }: { locale: SiteLocale }) {
   }
 
   if (loading) return <Spinner label={t('signup.opening')} />
-  const showForm = editing || (requests.length === 0 && !practice)
+  const showForm = editing || (requests.length === 0 && !practice && !walk)
+  const tw = translator(togetherMoreStrings, locale)
   const copy = kind ? copyFor(kind, locale, t) : null
   const milesChoices = GUIDE_MILES.includes(maxMiles) ? GUIDE_MILES : [...GUIDE_MILES, maxMiles].sort((a, b) => a - b)
   // What to suggest while waiting: the newest sign-up's kind and ways.
@@ -381,6 +389,25 @@ export default function SignUp({ locale }: { locale: SiteLocale }) {
                 </div>
               </li>
             ) : null}
+            {walk ? (
+              <li className="grid grid-cols-1 gap-3 rounded-xl border border-(--ev-line) p-4">
+                <div className="flex flex-wrap items-center gap-3">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-(--ev-accent-fill) text-(--ev-on-accent-fill)" aria-hidden>
+                    <Footprints className="h-5 w-5" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[17px] font-bold">{tw('walk.screen')}</p>
+                    <p className="text-[15px] text-(--ev-ink-80)">
+                      {[tw(walk.where === 'home' ? 'walk.near_home_item' : walk.where === 'work' ? 'walk.to_work_item' : 'walk.to_school_item'), whenLabel(walk.req.days ?? [], walk.req.time_of_day ?? [], t)].filter(Boolean).join(' · ')}
+                    </p>
+                  </div>
+                  <Badge tone={walk.req.status === 'matched' ? 'good' : 'info'}>{walk.req.status === 'matched' ? t('status.matched') : t('status.looking')}</Badge>
+                </div>
+                <div>
+                  <Link href={withLang('/together/walk', locale)} className="inline-flex min-h-[36px] items-center rounded-[10px] border border-(--ev-line-strong) bg-white px-3 text-[14px] font-semibold hover:bg-(--ev-panel)">{t('change')}</Link>
+                </div>
+              </li>
+            ) : null}
           </ul>
           <div className="mt-5 flex flex-wrap gap-3">
             <Link
@@ -434,6 +461,16 @@ export default function SignUp({ locale }: { locale: SiteLocale }) {
                 </button>
               ))}
             </div>
+            {/* Walking together: its own short sign-up (the app's partner-walk screen). */}
+            {!walk ? (
+              <p className="flex flex-wrap items-center gap-x-2 text-[16px]">
+                <Footprints className="h-[18px] w-[18px] text-(--ev-accent)" aria-hidden />
+                {tw('walk.invite')}{' '}
+                <Link href={withLang('/together/walk', locale)} onClick={() => track('together_walk_link', { from: 'signup' })} className="font-semibold text-(--ev-accent) underline">
+                  {tw('walk.invite_link')}
+                </Link>
+              </p>
+            ) : null}
             <p className="text-[13px] leading-snug text-(--ev-ink-75)">
               {t('photos.by', { who: '' }).trim()}{' '}
               {PHOTO_CREDITS.map((c, i) => (

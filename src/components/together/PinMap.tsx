@@ -7,19 +7,22 @@ import { BICYCLE_PATH, RASTER_TILE_ATTRIBUTION, glyphPath, rasterTileUrl } from 
  * dots, a T stop with the T glyph, path entrances with a bike. No map
  * library, no JS. Used for "where you'd meet" in How it works (made-up
  * example homes), for the person's own home and paths on /together/practice,
- * and with `line` for a first trip plan's route on /together/plan.
+ * and with `line` for a first trip plan's route on /together/plan. A
+ * 'spot' pin marks where a walk pair or a carpool meets (the pickup card,
+ * Find each other).
  */
 export type Pin = {
   lat: number
   lng: number
-  kind: 'home' | 'match' | 'rail' | 'path'
+  /** 'spot': where two people meet or a pickup, a gold pin. */
+  kind: 'home' | 'match' | 'rail' | 'path' | 'spot'
   label?: string
   /** Line color for a T stop (the Green Line's green). */
   color?: string
 }
 
-const R = { home: 9, match: 9, rail: 12, path: 11 } as const
-const FILL = { home: '#191A2E', match: '#2D6A4F', path: '#2D6A4F' } as const
+const R = { home: 9, match: 9, rail: 12, path: 11, spot: 11 } as const
+const FILL = { home: '#191A2E', match: '#2D6A4F', path: '#2D6A4F', spot: '#C77D0A' } as const
 const FONT = 14
 
 export default function PinMap({ pins, line, width = 480, height = 300, title, caption, className, boxClassName = 'aspect-[8/5]', maxZoom = 15, quiet = true }: {
@@ -98,6 +101,7 @@ export default function PinMap({ pins, line, width = 480, height = 300, title, c
                 <>
                   <circle r={r + 6} fill={FILL[p.kind]} fillOpacity={0.16} />
                   <circle r={r} fill={FILL[p.kind]} stroke="#ffffff" strokeWidth={3} />
+                  {p.kind === 'spot' ? <circle r={3.5} fill="#ffffff" /> : null}
                 </>
               )}
               {p.label ? (
