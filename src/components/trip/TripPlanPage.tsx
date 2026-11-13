@@ -16,7 +16,7 @@ import { NEARBY_COMFORT_COLORS } from '@/components/nearby/BikeComfortBlock'
 import { useIsDesktop } from '@/components/nearby/useIsDesktop'
 import type { ReachRow } from '@/components/nearby/types'
 import { resolveNearbyLocale, type NearbyLocale } from '@/lib/nearby/i18n'
-import { parseTripDest } from '@/lib/nearby/share'
+import { parseSnapshotParams, parseTripDest } from '@/lib/nearby/share'
 import { defaultRouteMode, hasBikeRoute, hasTransitRoute } from '@/lib/nearby/reach-ui'
 import { directionsUrl } from '@/lib/nearby/transit-ui'
 import { decodePolyline } from '@/lib/geo/polyline'
@@ -125,8 +125,17 @@ function TripPlanner({ locale }: { locale: NearbyLocale }) {
   // is on the first screen; "Change" opens it again
   const [editing, setEditing] = useState(true)
   const preferWay = useRef<Way | undefined>(undefined)
+  // A link's own start (?lat=&lng=&label=, the way Around You and the
+  // Reddit replies write it) wins over "where I am now"
+  const linkedFrom = useRef(false)
   useEffect(() => {
     const p = new URLSearchParams(window.location.search)
+    const start = parseSnapshotParams(p)
+    if (start && start.label) {
+      linkedFrom.current = true
+      setFrom({ lat: start.lat, lng: start.lng, name: start.label })
+      setFromText(start.label)
+    }
     const dest = parseTripDest(p)
     if (dest) {
       setTo({ lat: dest.lat, lng: dest.lng, name: dest.name })
@@ -165,7 +174,7 @@ function TripPlanner({ locale }: { locale: NearbyLocale }) {
   useEffect(() => {
     let cancelled = false
     navigator.permissions?.query({ name: 'geolocation' as PermissionName })
-      .then(p => { if (!cancelled && p.state === 'granted') locate(true) })
+      .then(p => { if (!cancelled && !linkedFrom.current && p.state === 'granted') locate(true) })
       .catch(() => {})
     return () => { cancelled = true }
   }, [locate])
