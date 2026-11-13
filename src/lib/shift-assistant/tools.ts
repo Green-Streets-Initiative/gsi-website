@@ -35,6 +35,8 @@ import { newInfraForAssistant } from '@/lib/new-infra'
 import { getActiveRoams, getNextRoamEvent, getRoamDetail, getRoamKeepGoing, getRoamTrailInfo, getRoamsInSeason } from '@/lib/roams/queries'
 import { ACCESS_LINKS, accessibleNear, ebikeMath, myRides, rsvpRide, shiftRideDates } from '@/lib/shift-assistant/audit-data'
 import { RIDE_PLAN_ACTIVITY, RIDE_PLAN_NEEDS_APPROVAL, RIDE_PLAN_TOOLS, ridePlanCard, runApprovedRidePlan, runGoTogetherTool, runRidePlanTool, type RidePlanCard } from '@/lib/shift-assistant/ride-plan-tools'
+import { LOOKUP_ACTIVITY, LOOKUP_TOOLS, runLookupTool } from '@/lib/shift-assistant/lookup-tools'
+import { LOGAN_ACTIVITY, LOGAN_NEEDS_APPROVAL, LOGAN_TOOLS, loganCard, runApprovedLogan, runLoganTool } from '@/lib/shift-assistant/logan-tools'
 
 // The Shift assistant's tools, for everyone in the app (Keith 2026-10-24).
 // Most answer a question or offer a button to an app screen. A tool that
@@ -157,10 +159,11 @@ const PRACTICE_SLOTS = ['weekend_morning', 'weekend_afternoon', 'weekday_evening
 /** Screens added after the first release: offered only to builds that list them. */
 /** The Settings area's screens (Shift 2026-10-30): the index and one per row. */
 const SETTINGS_SCREENS = ['settings', 'tracking', 'language', 'car', 'privacy', 'assistant_settings', 'account', 'places', 'go_together', 'invite', 'help'] as const
-const NEWER_SCREENS = new Set(['trip', 'trip_history', 'my_rewards', 'notifications', 'vacation', 'partner_request', 'partner_matches', 'bike_confidence', 'roam', 'closure_plan', 'memories', 'partner_practice', ...SETTINGS_SCREENS])
+/** guide: the app's guide reader (Shift 2026-11-13), opened only by get_guide. */
+const NEWER_SCREENS = new Set(['trip', 'trip_history', 'my_rewards', 'notifications', 'vacation', 'partner_request', 'partner_matches', 'bike_confidence', 'roam', 'closure_plan', 'memories', 'partner_practice', 'guide', ...SETTINGS_SCREENS])
 const canOpen = (ctx: ToolCtx, screen: string) => !NEWER_SCREENS.has(screen) || !!ctx.screens?.has(screen)
 
-const SCREENS = ['commute', 'commute_setup', 'around_you', 'rides', 'event', 'ride', 'rewards', 'log_trip', 'ride_plan', 'trip', 'trip_history', 'my_rewards', 'notifications', 'vacation', 'partner_request', 'partner_matches', 'bike_confidence', 'roam', 'closure_plan', 'memories', 'partner_practice', ...SETTINGS_SCREENS] as const
+const SCREENS = ['commute', 'commute_setup', 'around_you', 'rides', 'event', 'ride', 'rewards', 'log_trip', 'ride_plan', 'trip', 'trip_history', 'my_rewards', 'notifications', 'vacation', 'partner_request', 'partner_matches', 'bike_confidence', 'roam', 'closure_plan', 'memories', 'partner_practice', 'guide', ...SETTINGS_SCREENS] as const
 type Screen = (typeof SCREENS)[number]
 
 const FUNCTIONS = `${(process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').replace(/\/$/, '')}/functions/v1`
@@ -267,10 +270,12 @@ export const ACTIVITY: Record<string, string> = {
   remember: 'Remembering that',
   rsvp_ride: 'Signing you up',
   ...RIDE_PLAN_ACTIVITY,
+  ...LOOKUP_ACTIVITY,
+  ...LOGAN_ACTIVITY,
 }
 
 /** Tools that save something: the turn pauses on a card until the person approves. */
-export const NEEDS_APPROVAL = new Set([...RIDE_PLAN_NEEDS_APPROVAL, 'save_place', 'change_settings', 'set_reminder', 'remember', 'rsvp_ride', 'join_shift_together', 'join_practice_ride'])
+export const NEEDS_APPROVAL = new Set([...RIDE_PLAN_NEEDS_APPROVAL, ...LOGAN_NEEDS_APPROVAL, 'save_place', 'change_settings', 'set_reminder', 'remember', 'rsvp_ride', 'join_shift_together', 'join_practice_ride'])
 
 /** tone danger: a red button, for turning the assistant itself off (the app draws both). */
 export type ApprovalCard = Omit<RidePlanCard, 'tone'> & { tone: 'primary' | 'danger'; confirmText?: string }
@@ -665,13 +670,15 @@ export const TOOLS: Anthropic.Tool[] = [
     },
   },
   ...RIDE_PLAN_TOOLS,
+  ...LOOKUP_TOOLS,
+  ...LOGAN_TOOLS,
   {
     name: 'open_screen',
     description: "A button to a screen of the Shift app, for things done there: commute (their saved commute), commute_setup (set home and work), around_you (the map of what's near them), rides (group rides and events), event or ride (one of them, by id; event also opens a challenge by its id from get_my_challenges), rewards (rewards they've won), log_trip (log a trip by hand), ride_plan (a Shift Together first ride plan, by its match_id), trip (one recorded trip, by its id from get_my_activity, where they can change how they traveled), trip_history (all their trips), my_rewards (rewards they've won), notifications (notification settings), vacation (pause tracking while away), partner_request (Shift Together sign-up: kind newcomer = find someone to bike or take the T with the first time, guide = go with someone the first time they bike or take the T, carpool = share the drive to work; mode bike, walk or transit, not for carpool), partner_matches (their Shift Together matches, where they also end a match or report a problem), partner_practice (the practice ride sign-up: an easy bike ride near home with a guide, off the commute), closure_plan (their plan for an MBTA closure, by its plan_id from get_my_closure_plan), memories (what you remember about them, where they can delete any of it). The Settings area: settings (the Settings screen itself), tracking (trip tracking: automatic or manual, location permission, Apple Health import), language (the app's language), car (which car they'd otherwise drive, for CO₂ estimates), privacy (their public profile), assistant_settings (the AI assistant switch, what it remembers, their conversations), account (their email, sign out, delete account), places (saved places: Home, Work, School), go_together (their Go together sign-ups and matches), invite (invite friends, their referral code), help (help and contact). An older app can't open the Settings screens; the tool says so, and then you say where it lives (\"Profile tab, then Settings\"). Also bike_confidence: \"How do you feel about biking there?\", which sends them to the first step that fits (go, a guide, a free road riding lesson near Somerville, or learn-to-ride classes).",
     input_schema: {
       type: 'object',
       properties: {
-        screen: { type: 'string', enum: [...SCREENS] },
+        screen: { type: 'string', enum: SCREENS.filter((s) => s !== 'guide') },
         id: nullable('string', 'For event (an id from find_rides_and_events, or a challenge id from get_my_challenges), ride, ride_plan (the match_id), trip (an id from get_my_activity), or closure_plan (its plan_id).'),
         kind: nullable('string', 'partner_request only: newcomer, guide or carpool.'),
         mode: nullable('string', 'partner_request only: bike, walk or transit.'),
@@ -964,6 +971,9 @@ function alertFacts(ds: Disruption[]) {
 
 export async function runTool(ctx: ToolCtx, name: string, input: Record<string, unknown>): Promise<ToolResult> {
   try {
+    // Repair, guides and pinned lines (lookup-tools); Logan trips (logan-tools).
+    const extra = (await runLookupTool(ctx, name, input)) ?? (ctx.visitor ? null : await runLoganTool(ctx, name, input))
+    if (extra) return extra as ToolResult
     switch (name) {
       case 'get_my_places': {
         const [places, commute] = await Promise.all([
@@ -1952,6 +1962,7 @@ export async function approvalCard(ctx: ToolCtx, name: string, input: Record<str
   if (RIDE_PLAN_NEEDS_APPROVAL.has(name)) return ridePlanCard(ctx, name, input)
   if (name === 'join_shift_together') return shiftTogetherCard(ctx, input)
   if (name === 'join_practice_ride') return practiceRideCard(ctx, input)
+  if (LOGAN_NEEDS_APPROVAL.has(name)) return loganCard(ctx, name, input)
   if (name === 'set_reminder') {
     const from = asPlace(input.from)
     const to = asPlace(input.to)
@@ -2453,6 +2464,7 @@ export async function runApproved(ctx: ToolCtx, name: string, input: Record<stri
     if (RIDE_PLAN_NEEDS_APPROVAL.has(name)) return await runApprovedRidePlan(ctx, name, input)
     if (name === 'join_shift_together') return await runApprovedShiftTogether(ctx, input)
     if (name === 'join_practice_ride') return await runApprovedPracticeRide(ctx, input)
+    if (LOGAN_NEEDS_APPROVAL.has(name)) return await runApprovedLogan(ctx, name, input)
     if (name === 'set_reminder') {
       if (!ctx.threadId) return fail("That reminder didn't save. Try again in a moment.")
       const { error } = await ctx.admin.from('member_assistant_plans').insert({ ...input, user_id: ctx.userId, thread_id: ctx.threadId })
