@@ -244,11 +244,13 @@ const FARE: Record<string, number> = {
  *  e-bike, what those trips cost now, and what an e-bike would. */
 export async function ebikeMath(ctx: Ctx) {
   const since = new Date(Date.now() - 30 * 864e5).toISOString()
-  const [tripsQ, userQ, workplace] = await Promise.all([
+  const [tripsQ, userQ, workplace, gasQ] = await Promise.all([
     ctx.user.from('trips').select('mode, distance_miles').eq('user_id', ctx.userId).gte('started_at', since)
       .in('mode', ['drive', 'transit_bus', 'transit_train']).lte('distance_miles', EBIKE_RANGE_MILES).gt('distance_miles', 0.5).limit(500),
     ctx.user.from('users').select('vehicle_type').eq('id', ctx.userId).single(),
     myWorkplace(ctx),
+    // This week's gas price in their home state (the app's car cost screen reads the same).
+    ctx.user.rpc('my_gas_price'),
   ])
   const trips = (tripsQ.data ?? []) as { mode: string; distance_miles: number }[]
   const vt = (userQ.data as { vehicle_type?: string } | null)?.vehicle_type
@@ -256,7 +258,8 @@ export async function ebikeMath(ctx: Ctx) {
   const drives = trips.filter((t) => t.mode === 'drive')
   const rides = trips.filter((t) => t.mode !== 'drive')
   const totalMiles = trips.reduce((a, t) => a + Number(t.distance_miles), 0)
-  const driveCost = drives.reduce((a, t) => a + Number(t.distance_miles) * runningCostPerMile(vehicle), 0)
+  const gasPrice = Number((gasQ.data as { price?: number | string } | null)?.price) || null
+  const driveCost = drives.reduce((a, t) => a + Number(t.distance_miles) * runningCostPerMile(vehicle, gasPrice), 0)
   const fares = rides.reduce((a, t) => a + (FARE[t.mode] ?? 0), 0)
   const minutes = trips.map((t) => (Number(t.distance_miles) / PRICES.effort.ebikeMph) * 60)
 

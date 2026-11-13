@@ -15,6 +15,7 @@
  *  - Emissions: EPA 2025 Emission Factors Hub (Table 10), the factors Shift
  *    already uses, over the one-way distance band each person gave.
  */
+import { CAR_KG_PER_MILE, TRANSIT_KG_PER_MILE } from '../commute-constants.ts'
 import {
   CAR_FOR_BUSINESS,
   DAY_MODE_BY_CODE,
@@ -482,12 +483,12 @@ export function bostonExport(survey: ExportSurvey, rows: ExportResponse[], evide
 
 // ── Emissions ─────────────────────────────────────────────────────────────
 
-/** EPA Emission Factors Hub 2025, Table 10, kg CO2e per vehicle-mile (car) or passenger-mile (transit). */
+/** EPA Emission Factors Hub 2025, Table 10, kg CO2e per vehicle-mile (car) or passenger-mile (transit): src/lib/commute-constants.ts. */
 export const EPA_KG_PER_MILE = {
-  car_gas: 0.297,
-  bus: 0.066,
-  subway: 0.093,
-  commuter_rail: 0.133,
+  car_gas: CAR_KG_PER_MILE.gas,
+  bus: TRANSIT_KG_PER_MILE.bus,
+  subway: TRANSIT_KG_PER_MILE.rail,
+  commuter_rail: TRANSIT_KG_PER_MILE.commuter_rail,
 } as const
 
 /** Transit factor from the routes a person checked; subway when none given. */

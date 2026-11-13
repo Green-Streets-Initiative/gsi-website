@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse, after } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
-import { PRICES } from '@/lib/facts/prices'
+import { gasPriceOr } from '@/lib/commute-constants'
 import { inServiceArea } from '@/lib/server/trip'
 import { haversineMiles } from '@/lib/nearby/share'
 import { employerNearbyUrl, locationAsOffice } from '@/lib/employer/office-links'
@@ -662,7 +662,8 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'recommendation_unavailable' }, { status: 502 })
     }
 
-    const gasPrice = edge.gas_price && edge.gas_price > 0 ? edge.gas_price : PRICES.driving.gasPerGallonMa
+    // The engine's live Boston price; the shared fallback (src/lib/commute-constants.ts) when it had none.
+    const gasPrice = gasPriceOr(edge.gas_price)
     const legs = mapLegs(edge.transit_legs)
     const modes = buildModes(edge, legs, vehicle, gasPrice, parkingPerDay)
     // Park-and-ride and bike-to-train rows when they earn one, and the

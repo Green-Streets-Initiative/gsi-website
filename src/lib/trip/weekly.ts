@@ -1,15 +1,16 @@
 import { PRICES } from '@/lib/facts/prices'
+import { driveCostPerMile } from '@/lib/commute-constants'
 
 /**
  * "Do this often?" on the trip card (Keith 2026-11-12, the Next row "one trip
  * card everywhere": the Commute Advisor's question becomes the same card with
- * a weekly cost). Five round trips a week, from prices.json, the same
- * per-mile driving cost the app's Commute Advisor uses (gas at 27.5 mpg plus
- * wear). The Shift app keeps a copy in lib/trip-weekly.ts; change both.
+ * a weekly cost). Five round trips a week: fares from prices.json, and the
+ * same per-mile driving cost the Commute Advisor uses (gas at 27.5 mpg plus
+ * wear, src/lib/commute-constants.ts). The Shift app keeps a copy in
+ * lib/trip-weekly.ts; change both.
  */
 
 export const TRIPS_PER_WEEK = 10
-const MPG = 27.5
 
 export type TransitFare = { perRide: number; from: boolean; kind: 'bus' | 'subway' | 'rail' }
 
@@ -39,10 +40,10 @@ export function weeklyTransit(fare: TransitFare): { cost: number; pass: boolean;
   return { cost, pass: cost === m.weekPass && cost < rides, monthPass: cost === month && cost < rides, from: false }
 }
 
-/** A week of driving it: gas and wear only; parking is said in words. */
-export function weeklyDrive(miles: number): number {
-  const perMile = PRICES.driving.gasPerGallonMa / MPG + PRICES.driving.maintPerMile
-  return miles * perMile * TRIPS_PER_WEEK
+/** A week of driving it: gas and wear for a gas car (this week's price when
+ *  given); parking is said in words. */
+export function weeklyDrive(miles: number, gasPrice?: number | null): number {
+  return miles * driveCostPerMile('gas', gasPrice) * TRIPS_PER_WEEK
 }
 
 /** "$24", "$7.50": whole dollars once it's past $10. */

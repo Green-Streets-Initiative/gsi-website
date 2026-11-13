@@ -20,31 +20,48 @@ import type { AdvisorCombo, AdvisorMode, AdvisorResult, CarChoice, Motivation, T
 // default 'en' keeps the API routes, the portal and the tests unchanged.
 import { siteDate, siteTime, translator, type SiteLocale } from '../site-i18n.ts'
 import { advisorStrings } from '../site-strings/advisor.ts'
+// The advisor's numbers (workdays, the park-and-walk minutes, driving costs,
+// emissions factors) are src/lib/commute-constants.ts, the twin of the Shift
+// app's lib/commute-constants.ts, which the advisor engine reads too
+// (parity gap-car-cost-constants and gap-advisor-constants, 2026-11-13).
+import {
+  BIKE_LOCK_MINUTES,
+  BIKE_UPKEEP_PER_MILE,
+  CAR_KG_PER_MILE,
+  driveCostPerMile,
+  EV_KWH_PER_MILE,
+  EV_WEAR_PER_MILE,
+  FLEET_AVG_MPG,
+  GAS_PRICE_FALLBACK,
+  HYBRID_MPG,
+  MA_RESIDENTIAL_KWH_PRICE,
+  PARK_WALK_MINUTES,
+  TRANSIT_KG_PER_MILE,
+  WEAR_PER_MILE,
+  WORKDAYS,
+} from '../commute-constants.ts'
 
 const tr = (locale: SiteLocale) => translator(advisorStrings, locale)
 
-/** Commuting days in a year; the same figure the employer dashboard uses. */
-export const WORKDAYS = 260
+export { WORKDAYS }
 
 /**
  * kg CO2 per mile, EPA GHG Emission Factors Hub 2025, Table 10. The drive
  * figures are per vehicle-mile by the car on the person's profile; the rest
- * are per passenger-mile. Identical to Shift migration 01038
- * `employer_trip_co2_avoided_kg`, so the advisor and the Impact page agree.
+ * are per passenger-mile. The same figures as Shift migration 01774
+ * (ground_car_kg_per_mile, leg_ground_co2_avoided_kg), so the advisor, the
+ * Impact page and riders' totals agree.
  */
 export const EPA_KG_PER_MILE = {
-  drive: { gas: 0.297, hybrid: 0.191, ev: 0.12 } as Record<Vehicle, number>,
-  bus: 0.066,
-  rail: 0.093,
-  commuter_rail: 0.133,
-  ferry: 0.133,
+  drive: CAR_KG_PER_MILE as Record<Vehicle, number>,
+  ...TRANSIT_KG_PER_MILE,
   walk: 0,
   bike: 0,
   ebike: 0,
   escooter: 0,
 } as const
 
-/* ── Driving cost, ported from Shift supabase/functions/mode-discovery-suggestions/suggest.ts ── */
+/* ── Driving cost: src/lib/commute-constants.ts, as the engine and the app price it ── */
 
 /**
  * Marginal cost of a mile driven, by the car on their profile
@@ -60,31 +77,9 @@ export const EPA_KG_PER_MILE = {
  *    9¢/mile for maintenance and tires (AAA Your Driving Costs 2025: EVs
  *    are the second-cheapest class to maintain, under the 11¢ average).
  */
-export const FLEET_AVG_MPG = 27.5
-export const HYBRID_MPG = 50
-export const AAA_VARIABLE_RATE = 0.117 // AAA Your Driving Costs 2026: maintenance, repairs and tires, 11.7¢ a mile
-export const EV_KWH_PER_MILE = 0.3
-export const MA_RESIDENTIAL_KWH_PRICE = 0.315
-export const EV_WEAR_PER_MILE = 0.09
-/** compare's fallback when the live price can't be read. The route passes
- *  PRICES.driving.gasPerGallonMa before this is ever reached. */
-export const GAS_PRICE_FALLBACK = 4.39
-
-/**
- * Bike upkeep per mile ridden (Keith, 2026-10-01: biking isn't free; he
- * spends $300–400 a year on his cargo e-bike). Tune-ups, tires, chains and
- * brake pads for a commuter bike run about $100–300 a year, roughly 10
- * cents a mile at typical commuting mileage. Charged per mile, so it's
- * spread over the trips they'd actually ride.
- */
-export const BIKE_UPKEEP_PER_MILE = 0.1
-
-export function driveCostPerMile(vehicle: string | null | undefined, gasPrice: number | null | undefined): number {
-  const gas = gasPrice != null && gasPrice > 0 ? gasPrice : GAS_PRICE_FALLBACK
-  if (vehicle === 'ev') return EV_KWH_PER_MILE * MA_RESIDENTIAL_KWH_PRICE + EV_WEAR_PER_MILE
-  if (vehicle === 'hybrid') return gas / HYBRID_MPG + AAA_VARIABLE_RATE
-  return gas / FLEET_AVG_MPG + AAA_VARIABLE_RATE
-}
+export { BIKE_UPKEEP_PER_MILE, driveCostPerMile, EV_KWH_PER_MILE, EV_WEAR_PER_MILE, FLEET_AVG_MPG, GAS_PRICE_FALLBACK, HYBRID_MPG, MA_RESIDENTIAL_KWH_PRICE }
+/** AAA Your Driving Costs 2026: maintenance, repairs and tires, 11.7¢ a mile (WEAR_PER_MILE). */
+export const AAA_VARIABLE_RATE = WEAR_PER_MILE
 
 /** The car the drive is priced for. 'none' (no car) and anything unknown price as gas: those rows are hidden, not repriced. */
 export function asVehicle(v: string | null | undefined): Vehicle {
@@ -127,10 +122,8 @@ export function withoutCar(result: AdvisorResult): AdvisorResult {
   return out
 }
 
-/** Google's drive time stops at the address: parking and walking in from the spot, on every drive. */
-export const PARK_WALK_MINUTES = 4
-/** Locking up (or docking a Bluebike), on every bike ride. */
-export const BIKE_LOCK_MINUTES = 1
+/** Parking and walking in on every drive; locking up on every bike ride (commute-constants). */
+export { BIKE_LOCK_MINUTES, PARK_WALK_MINUTES }
 
 /* ── Money ── */
 

@@ -109,7 +109,7 @@ const altFacts = (a: Alt, mode: string | null | undefined) => ({
  */
 export async function myDrives(ctx: Ctx) {
   const since30 = new Date(Date.now() - 30 * 864e5).toISOString()
-  const [sugQ, tripsQ, userQ, inputsQ] = await Promise.all([
+  const [sugQ, tripsQ, userQ, inputsQ, gasQ] = await Promise.all([
     ctx.admin.from('mode_discovery_suggestions')
       .select('suggestion_type, destination_name, details, dismissed_at, snoozed_until, shown_at')
       .eq('user_id', ctx.userId).not('details', 'is', null)
@@ -117,6 +117,8 @@ export async function myDrives(ctx: Ctx) {
     ctx.user.from('trips').select('distance_miles').eq('user_id', ctx.userId).eq('mode', 'drive').gte('started_at', since30).limit(500),
     ctx.user.from('users').select('vehicle_type').eq('id', ctx.userId).single(),
     ctx.user.from('user_car_cost_inputs').select('age_band, paid_off, insurance_month, home_parking_month, car_access').eq('user_id', ctx.userId).maybeSingle(),
+    // This week's gas price in their home state, as the app's car cost screen reads it.
+    ctx.user.rpc('my_gas_price'),
   ])
   type S = { suggestion_type: string; destination_name: string | null; details: Details; dismissed_at: string | null; snoozed_until: string | null }
   const seen = new Set<string>()
@@ -159,6 +161,7 @@ export async function myDrives(ctx: Ctx) {
       insuranceMonth: inputs?.insurance_month != null ? Number(inputs.insurance_month) : null,
       homeParkingMonth: inputs?.home_parking_month != null ? Number(inputs.home_parking_month) : null,
       workParkingMonth: null, carAccess: inputs?.car_access ?? null,
+      gasPrice: Number((gasQ.data as { price?: number | string } | null)?.price) || null,
     })
     return {
       kind: vehicle === 'ev' ? 'electric' : vehicle,

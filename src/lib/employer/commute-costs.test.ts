@@ -5,6 +5,7 @@ import {
   WORKDAYS,
   EPA_KG_PER_MILE,
   driveCostPerMile,
+  GAS_PRICE_FALLBACK,
   annualCost,
   dailyCost,
   emissionsSharePct,
@@ -75,7 +76,7 @@ describe('driveCostPerMile', () => {
     assert.ok(Math.abs(driveCostPerMile('ev', null) - (0.3 * 0.315 + 0.09)) < 1e-9)
   })
   it('treats unknown vehicles as gas and a missing price as the fallback', () => {
-    assert.equal(driveCostPerMile(undefined, null), driveCostPerMile('gas', 4.39))
+    assert.equal(driveCostPerMile(undefined, null), driveCostPerMile('gas', GAS_PRICE_FALLBACK))
     assert.equal(driveCostPerMile('none', 3), driveCostPerMile('gas', 3))
   })
 })
