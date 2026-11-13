@@ -155,8 +155,27 @@ export function rideFacts(ride: PublicRide, miles: number | null, ascentFt: numb
   return { stats, level, policies, audience }
 }
 
-export default function RideFacts({ ride, miles, ascentFt, comfort = null, className = 'mt-5', locale = 'en' }: {
+/** The route's height along the way as a small filled line, so "Rolling" is something to see. */
+function HillsChart({ profile, label }: { profile: [number, number][]; label: string }) {
+  const W = 160, H = 30
+  const maxX = profile[profile.length - 1][0] || 1
+  const ys = profile.map((p) => p[1])
+  const lo = Math.min(...ys), hi = Math.max(...ys)
+  // A flat route still reads as flat: at least 150 ft of range on the scale.
+  const span = Math.max(hi - lo, 150)
+  const pts = profile.map(([x, y]) => `${((x / maxX) * W).toFixed(1)},${(H - ((y - lo) / span) * (H - 2) - 1).toFixed(1)}`)
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="mt-2 h-[30px] w-full max-w-[200px]" role="img" aria-label={label}>
+      <polygon points={`0,${H} ${pts.join(' ')} ${W},${H}`} fill="#BAF14D" fillOpacity="0.55" />
+      <polyline points={pts.join(' ')} fill="none" stroke="#3E7B27" strokeWidth="1.5" vectorEffect="non-scaling-stroke" />
+    </svg>
+  )
+}
+
+export default function RideFacts({ ride, miles, ascentFt, profile = null, comfort = null, className = 'mt-5', locale = 'en' }: {
   ride: PublicRide; miles: number | null; ascentFt: number | null; className?: string
+  /** The route's height along the way, [miles in, feet]. */
+  profile?: [number, number][] | null
   locale?: SiteLocale
   /** The route's comfort pieces, when this date rides the ride's own route. */
   comfort?: CalmSegment[] | null
@@ -175,6 +194,7 @@ export default function RideFacts({ ride, miles, ascentFt, comfort = null, class
               <dt className="text-[14px] font-semibold text-(--ev-ink-75)">{s.label}</dt>
               <dd className="mt-0.5 font-display text-[20px] font-extrabold leading-tight text-(--ev-ink)">{s.value}</dd>
               {s.sub && <dd className="text-[14px] text-(--ev-ink-75)">{s.sub}</dd>}
+              {s.key === 'hills' && profile && profile.length >= 4 && <dd><HillsChart profile={profile} label={s.sub ?? s.value} /></dd>}
             </div>
           ))}
         </dl>
@@ -203,16 +223,12 @@ export default function RideFacts({ ride, miles, ascentFt, comfort = null, class
           )}
 
           {policies.length > 0 && (
-            <ul className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
+            <ul className="flex flex-wrap gap-2">
               {policies.map(({ Icon, title, line }) => (
-                <li key={title} className="flex items-start gap-3">
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-(--ev-accent-tint-15) text-(--ev-accent)">
-                    <Icon size={20} weight="regular" aria-hidden />
-                  </span>
-                  <span>
-                    <span className="block text-[15px] font-bold text-(--ev-ink)">{title}</span>
-                    <span className="block text-[14px] text-(--ev-ink-80)">{line}</span>
-                  </span>
+                <li key={title} className="rounded-[18px] bg-(--ev-accent-tint-15) px-3 py-2 text-[14px] font-semibold leading-snug text-(--ev-ink)">
+                  {/* One run of text, so a long chip wraps as a sentence, not as two columns. */}
+                  <Icon size={17} weight="regular" aria-hidden className="mr-1.5 inline-block align-[-3px] text-(--ev-accent)" />
+                  {title}<span className="font-normal text-(--ev-ink-80)"> · {line}</span>
                 </li>
               ))}
             </ul>

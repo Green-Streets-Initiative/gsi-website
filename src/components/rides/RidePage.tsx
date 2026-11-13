@@ -2,8 +2,8 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import posthog from 'posthog-js'
-import { Bike, Calendar, Check, CloudSun, Download, ExternalLink, Footprints, MapPin, Megaphone, MessageCircle, Radio, Route as RouteIcon, Share2, Users } from 'lucide-react'
-import type { CalmSegment } from '@/components/commute/calm-route'
+import { Bike, Calendar, Check, Cloud, CloudRain, CloudSnow, CloudSun, Sun, Download, ExternalLink, Footprints, MapPin, Megaphone, MessageCircle, Radio, Route as RouteIcon, Share2, Users } from 'lucide-react'
+import { comfortPieces, MAP_COMFORT_COLORS, type CalmOption, type CalmSegment } from '@/components/commute/calm-route'
 import EventMap from '@/components/events/EventMap'
 import RouteMap from '@/components/organizers/RouteMap'
 import { guardSignSvg } from '@/lib/rides/guard-sign'
@@ -17,10 +17,12 @@ import RidePerks from '@/components/rides/RidePerks'
 import RideCoffee, { type RideCoffeeInfo } from '@/components/rides/RideCoffee'
 import RideNewInfra from '@/components/rides/RideNewInfra'
 import RidePhotos from '@/components/rides/RidePhotos'
+import RideStreets from '@/components/rides/RideStreets'
 import type { AlbumResponse } from '@/app/events/[id]/photos/photo-api'
 import { hasNewInfra, newInfraKey, type NewInfraFor } from '@/lib/new-infra'
 import { perksAlong, type BikePerk } from '@/lib/bike-perks'
 import type { RideHost } from '@/lib/rides/host'
+import type { RideOrganizer } from '@/lib/rides/organizer'
 import { EventsToneProvider, toneClass } from '@/components/events/EventsTone'
 import {
   FUNCTIONS_BASE,
@@ -175,6 +177,21 @@ function StopBadge({ n }: { n: number }) {
 
 const JOBS: HelperJob[] = ['front', 'sweep', 'corner']
 
+/** Someone going on a date, as the page may show them: first name and photo. */
+export interface GoingFace { name: string; avatar: string | null }
+
+/** Up to five faces, overlapping: their photo, else their first initial on the brand navy. */
+function Faces({ faces }: { faces: GoingFace[] }) {
+  return (
+    <span className="flex shrink-0 -space-x-2" aria-hidden>
+      {faces.map((f, i) => f.avatar
+        // eslint-disable-next-line @next/next/no-img-element
+        ? <img key={i} src={f.avatar} alt="" className="h-8 w-8 rounded-full border-2 border-white object-cover" />
+        : <span key={i} className="grid h-8 w-8 place-items-center rounded-full border-2 border-white bg-[#191A2E] text-[13px] font-bold text-[#BAF14D]">{f.name.slice(0, 1).toUpperCase()}</span>)}
+    </span>
+  )
+}
+
 /** What ride-guest-rsvp hands back after a Going, for the one-tap "Can you help?" (Shift 01745). */
 interface AfterHelp {
   open: Record<HelperJob, number>
@@ -187,8 +204,12 @@ function GuardSign({ guarded, size = 24 }: { guarded: boolean; size?: number }) 
   return <span className="inline-flex shrink-0" aria-hidden dangerouslySetInnerHTML={{ __html: guardSignSvg(guarded, size) }} />
 }
 
-export default function RidePage({ ride, host = null, hostPerson = null, ascentFt = null, comfort = null, initialDate = null, perks = [], newInfra = [], coffee = null, photos = null, locale = 'en' }: {
+export default function RidePage({ ride, host = null, hostPerson = null, organizer = null, ascentFt = null, profile = null, comfort = null, initialDate = null, perks = [], newInfra = [], coffee = null, photos = null, faces = {}, locale = 'en' }: {
   ride: PublicRide; host?: RideHost | null; ascentFt?: number | null
+  /** The person who organizes it, when their profile is public and no verified group hosts it (Shift 01752). */
+  organizer?: RideOrganizer | null
+  /** The route's height along the way, [miles in, feet], for the Hills chart. */
+  profile?: [number, number][] | null
   /** The page's language (?lang= from the app, else the browser's). */
   locale?: SiteLocale
   /** The ride's own route, street by street, for the calm-streets bar. */
@@ -205,9 +226,14 @@ export default function RidePage({ ride, host = null, hostPerson = null, ascentF
   coffee?: RideCoffeeInfo | null
   /** The newest date's shared photos, when the server hands them over (the event_photos switch). */
   photos?: { album: AlbumResponse; href: string; albumRef: { ride: string; date: string }; preview: string } | null
+  /** Who's going on each date, by date id: Shift members with public profiles (get_ride_going_faces, Shift 01751). */
+  faces?: Record<string, GoingFace[]>
 }) {
   const t = translator(ridesStrings, locale)
-  const hostHref = host?.href ?? null
+  // The group's host page, else the organizer's own page on this ride (/rides/CODE/host).
+  const person = !host ? organizer : null
+  const hostHref = host?.href ?? (person ? withLang(`/rides/${ride.code}/host`, locale) : null)
+  const hostPhoto = host?.logo_url ?? person?.avatar_url ?? null
   // The organization only once verified (Shift 01563, rideExtras); a typed-in
   // name could be anyone's, so it isn't shown, as on the events calendar.
   // Without one, the organizer by their profile name, so the page always says who hosts it.
@@ -256,6 +282,18 @@ export default function RidePage({ ride, host = null, hostPerson = null, ascentF
     return () => { live = false }
   }, [selected])
 
+  // A small sky picture on each date chip within the forecast's week.
+  const [skies, setSkies] = useState<Record<string, { sky: 'sun' | 'part' | 'cloud' | 'rain' | 'snow'; temp_f: number | null }>>({})
+  useEffect(() => {
+    const first = ride.occurrences.find((d) => d.status === 'scheduled' && d.meetup_lat != null && d.meetup_lng != null && d.start_time)
+    const soon = ride.occurrences.filter((d) => d.status === 'scheduled' && (new Date(`${d.date}T12:00:00Z`).getTime() - Date.now()) / 864e5 <= 6.5).map((d) => d.date)
+    if (!first || soon.length === 0 || ride.occurrences.length < 2) return
+    let live = true
+    const q = new URLSearchParams({ lat: String(first.meetup_lat), lng: String(first.meetup_lng), dates: soon.join(','), start: first.start_time! })
+    fetch(`/api/rides/forecast?${q}`).then((r) => r.json()).then((d: { byDate?: typeof skies }) => { if (live && d.byDate) setSkies(d.byDate) }).catch(() => {})
+    return () => { live = false }
+  }, [ride.occurrences])
+
   const myAnswer = selected ? me.answers[selected.id] : undefined
   // shift.gogreenstreets.org/join/* opens the app when it's installed; ?d= is the date they picked.
   // Set after load: the browser can pick a different first date than the server.
@@ -279,7 +317,6 @@ export default function RidePage({ ride, host = null, hostPerson = null, ascentF
   const [tookCrossing, setTookCrossing] = useState<string | null>(null)
   const crossings = useMemo(() => (selected?.help?.crossings ?? []).filter((c) => c.lat != null && c.lng != null)
     .map((c) => (c.label === tookCrossing ? { ...c, guarded: true } : c)), [selected, tookCrossing])
-  const mapGuards = useMemo(() => crossings.map((c) => ({ lat: c.lat, lng: c.lng, guarded: c.guarded, label: `${c.label}: ${c.guarded ? t('crossings.guarded') : t('crossings.needed')}` })), [crossings]) // eslint-disable-line react-hooks/exhaustive-deps
   // "Start · 10 AM" or "about 10:15 AM · 2.5 mi in".
   const stopWhen = (s: RideStop, i: number) => i === 0
     ? [t('stops.start'), s.time ? clock(`${s.time}:00`, locale) : null].filter(Boolean).join(' · ')
@@ -454,17 +491,73 @@ export default function RidePage({ ride, host = null, hostPerson = null, ascentF
   const hostAny = !!hostName
   const aboutAny = !!about || !!flyer || !!ride.registration_url
   const TABS = ([
-    aboutAny ? { id: 'about', label: t(nk('tab.about')) } : null,
     { id: 'updates', label: t('tab.updates'), count: updatesCount },
     alongAny ? { id: 'along', label: route.length < 2 ? t('tab.near_start') : t(nk('tab.along')) } : null,
     hostAny ? { id: 'host', label: t('tab.host') } : null,
   ].filter(Boolean)) as { id: TabId; label: string; count?: number }[]
   // A fresh update (the last three days) opens first; otherwise what it's about.
   const freshUpdate = updates[0] && Date.now() - new Date(updates[0].created_at).getTime() < 3 * 864e5
-  const [tab, setTab] = useState<TabId>(freshUpdate || !aboutAny ? 'updates' : 'about')
+  const [tab, setTab] = useState<TabId>(freshUpdate || !alongAny ? 'updates' : 'along')
+  // The organizer's description, a few lines under the title, opened in place.
+  const [aboutOpen, setAboutOpen] = useState(false)
+  // On phones the RSVP card sits after what the ride is like: a bar at the
+  // bottom of the screen takes them there until it's in view or they've answered.
+  const [rsvpSeen, setRsvpSeen] = useState(true)
+  useEffect(() => {
+    const el = document.getElementById('going')
+    if (!el || typeof IntersectionObserver === 'undefined') return
+    const io = new IntersectionObserver(([e]) => setRsvpSeen(e.isIntersecting || e.boundingClientRect.top < 0), { threshold: 0.15 })
+    io.observe(el)
+    return () => io.disconnect()
+  }, [])
+  const aboutLong = (about?.length ?? 0) > 220 || (about?.split('\n').length ?? 0) > 3
   const shownTab = TABS.some((t) => t.id === tab) ? tab : TABS[0].id
   // The calm-streets bar is the ride's own route's; a date with its own route has none yet.
   const comfortHere = own ? null : comfort
+
+  // The route coloured by how calm each street is, in the comfort bar's colours (the app's ride map does the same).
+  const calmOption = useMemo(() => comfortHere && route.length >= 2
+    ? ({ waypoints: route, comfort_segments: comfortHere as CalmSegment[], comfort_rating: 'mixed', summary: '' } as unknown as CalmOption)
+    : null, [comfortHere, route])
+  const rawPieces = useMemo(() => (calmOption ? comfortPieces(calmOption, locale) : []), [calmOption, locale])
+  const pieces = useMemo(() => rawPieces.length
+    ? rawPieces.map((p) => ({ coords: p.coords, color: MAP_COMFORT_COLORS[p.rating] ?? MAP_COMFORT_COLORS.shared_road, index: p.index }))
+    : undefined, [rawPieces])
+  // The stretch someone tapped, on the map or in the street photos: lit on both.
+  const [street, setStreet] = useState<number | null>(null)
+  // The page leads with a picture: a photo from the last ride when there is one, else the map.
+  const heroPhoto = photos?.album.photos.find((p) => p.kind === 'photo' && p.status === 'ok' && p.url && (p.width ?? 1) >= (p.height ?? 1)) ?? null
+  const mapCard = hasMap && place ? (
+            <div className="overflow-hidden rounded-2xl border border-(--ev-line-mid) bg-(--ev-card) shadow-(--ev-shadow)">
+              <div className={route.length >= 2 ? 'h-[230px] sm:h-[360px]' : 'h-56 sm:h-64'}>
+                {route.length >= 2 ? (
+                  <RouteMap line={route} stops={mapStops} meetup={{ lat: place.meetup_lat!, lng: place.meetup_lng! }} pieces={pieces} pick={false}
+                    focus={street != null ? { kind: 'piece', index: street } : null} onPieceClick={(i) => setStreet((cur) => (cur === i ? null : i))}
+                    className="h-full w-full" label={t('route_map', { name: ride.name })} />
+                ) : (
+                  <EventMap lat={place.meetup_lat!} lng={place.meetup_lng!} label={place.meetup_name ?? undefined} />
+                )}
+              </div>
+              <div className="flex flex-wrap items-center justify-between gap-3 border-t border-(--ev-line) p-4">
+                <div className="min-w-0">
+                  <p className="text-[15px] font-semibold text-(--ev-ink)">{t('meet_at', { place: place.meetup_name || t('the_start') })}</p>
+                  {place.meetup_address && <p className="mt-0.5 text-[14px] text-(--ev-ink-75)">{place.meetup_address}</p>}
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <a href={directionsUrl(place)} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-[44px] items-center gap-1.5 rounded-[10px] border border-(--ev-line-strong) bg-white px-4 py-2 text-[14px] font-semibold text-(--ev-ink) hover:bg-(--ev-panel)">
+                    <MapPin size={15} /> {t('directions')}
+                  </a>
+                </div>
+              </div>
+              {/* Where people can join along the way (Shift 01744): numbered pins on the map; each, with its time, is in the RSVP form. */}
+              {hasStops && (
+                <p className="flex items-start gap-2 border-t border-(--ev-line) p-4 text-[15px] text-(--ev-ink-85)">
+                  <StopBadge n={1} />
+                  <span>{stops.length === 2 ? t('stops.line_one') : t('stops.line', { n: stops.length - 1 })}</span>
+                </p>
+              )}
+            </div>
+  ) : null
 
   return (
     <EventsToneProvider tone="light">
@@ -472,7 +565,7 @@ export default function RidePage({ ride, host = null, hostPerson = null, ascentF
       <div className="mx-auto max-w-[1100px]">
         {/* ---- Header: who hosts it, with a face, then the name and when/where ---- */}
         <div className="flex items-center gap-3">
-          <HostFace name={hostName} logo={host?.logo_url ?? null} walk={walk} />
+          <HostFace name={hostName} logo={hostPhoto} photo={!host?.logo_url && !!person?.avatar_url} walk={walk} />
           <p className="min-w-0 text-[15px] leading-snug text-(--ev-ink-80)">
             <span className="block font-semibold text-(--ev-accent)">{t(walk ? 'kind.walk' : 'kind.ride')}</span>
             {hostName && (
@@ -507,10 +600,65 @@ export default function RidePage({ ride, host = null, hostPerson = null, ascentF
         )}
 
         <div className="mt-6 grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[minmax(0,1fr)_400px] lg:gap-8">
-          {/* ---- RSVP card: right under the title on phones, so the date,
-               where to meet and Going / Maybe / Can't go are the first
-               screen; the right column on desktop ---- */}
-          <aside id="going" className="scroll-mt-24 lg:col-start-2 lg:row-start-1">
+          {/* ---- What it is and what it's like, before anything else (ride page review
+               2026-11-12): the organizer's words, then distance, time, pace and hills ---- */}
+          {/* ---- The picture first: last ride's photo, else the route ---- */}
+          <div className="lg:col-start-1 lg:row-start-1 empty:hidden">
+            {heroPhoto ? (
+              <a href={photos!.href} className="group relative block overflow-hidden rounded-2xl border border-(--ev-line-mid) shadow-(--ev-shadow)">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={heroPhoto.url!} alt={t('hero_photo_alt', { name: ride.name })} className="aspect-[16/9] w-full object-cover transition-transform group-hover:scale-[1.01]" />
+                <span className="absolute bottom-3 left-3 rounded-full bg-[#191A2E]/85 px-3 py-1.5 text-[14px] font-semibold text-white">
+                  {t('hero_photo', { date: dateShort(photos!.albumRef.date, locale), name: heroPhoto.poster_name })}
+                </span>
+              </a>
+            ) : mapCard}
+          </div>
+
+          {(aboutAny || miles != null || ride.pace) && (
+            <div className="grid grid-cols-[minmax(0,1fr)] content-start gap-4 lg:col-start-1 lg:row-start-2">
+              {(about || flyer) && (
+                <div className="flex gap-4">
+                  <div className="min-w-0 flex-1">
+                    {about && (
+                      <>
+                        <p className={`whitespace-pre-line text-[16px] leading-relaxed text-(--ev-ink-85) ${aboutLong && !aboutOpen ? 'line-clamp-3' : ''}`}>{about}</p>
+                        {aboutLong && (
+                          <button type="button" onClick={() => setAboutOpen((o) => !o)} aria-expanded={aboutOpen}
+                            className="mt-1 text-[15px] font-semibold text-(--ev-accent) hover:underline">{aboutOpen ? t('read_less') : t('read_more')}</button>
+                        )}
+                      </>
+                    )}
+                  </div>
+                  {flyer && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={flyer} alt={t('flyer_alt', { name: dateTitle ?? ride.name })} className="h-[120px] w-[96px] shrink-0 rounded-xl border border-(--ev-line) object-cover sm:h-[160px] sm:w-[128px]" />
+                  )}
+                </div>
+              )}
+              <RideFacts ride={ride} miles={miles} ascentFt={climb} profile={own ? null : profile} comfort={comfortHere} className="" locale={locale} />
+              {/* What the streets look like, right after "On calm streets" (polish 11-13: in the
+                  map card it pushed what the ride is like a screen and a half down on a phone). */}
+              {calmOption && rawPieces.length > 0 && (
+                <div className="overflow-hidden rounded-2xl border border-(--ev-line-mid) bg-(--ev-card) shadow-(--ev-shadow)">
+                  <RideStreets option={calmOption} pieces={rawPieces} selected={street} onSelect={setStreet} locale={locale} />
+                </div>
+              )}
+              {ride.registration_url && (
+                <a href={ride.registration_url} target="_blank" rel="noopener noreferrer"
+                  className="flex items-center gap-3 rounded-2xl border border-(--ev-line-mid) bg-white p-4 hover:bg-(--ev-panel-faint)">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-(--ev-accent-tint-15) text-(--ev-accent)"><ExternalLink size={18} aria-hidden /></span>
+                  <span className="min-w-0">
+                    <span className="block text-[15px] font-bold text-(--ev-ink)">{t('register_title')}</span>
+                    <span className="block text-[14px] text-(--ev-ink-80)">{t('register_body')}</span>
+                  </span>
+                </a>
+              )}
+            </div>
+          )}
+
+          {/* ---- RSVP card: right after what it's like on phones; the right column on desktop ---- */}
+          <aside id="going" className="scroll-mt-24 lg:col-start-2 lg:row-span-3 lg:row-start-1">
             <div className="rounded-2xl border border-(--ev-line-mid) bg-(--ev-card) p-5 shadow-(--ev-shadow) lg:sticky lg:top-24 lg:max-h-[calc(100dvh-7rem)] lg:overflow-y-auto lg:overscroll-contain">
               {ride.occurrences.length === 0 ? (
                 <div>
@@ -546,6 +694,14 @@ export default function RidePage({ ride, host = null, hostPerson = null, ascentF
                         >
                           <span className={`text-[13px] font-semibold ${active ? 'text-white/85' : 'text-(--ev-ink-75)'}`}>{dayShort(d.date, locale)}</span>
                           <span className="text-[15px] font-bold">{dateShort(d.date, locale)}</span>
+                          {skies[d.date] && d.status === 'scheduled' && (() => {
+                            const Sky = { sun: Sun, part: CloudSun, cloud: Cloud, rain: CloudRain, snow: CloudSnow }[skies[d.date].sky]
+                            return (
+                              <span className={`mt-0.5 inline-flex items-center gap-1 text-[13px] ${active ? 'text-white/85' : 'text-(--ev-ink-75)'}`}>
+                                <Sky size={14} aria-hidden />{skies[d.date].temp_f != null ? `${Math.round(skies[d.date].temp_f!)}°` : null}
+                              </span>
+                            )
+                          })()}
                           <span className={`mt-0.5 text-[13px] ${active ? 'text-white/85' : 'text-(--ev-ink-75)'}`}>
                             {d.status === 'canceled' ? t('chip.off') : answered === 'going' ? t('chip.in') : answered === 'maybe' ? t('chip.maybe') : (counts[d.id]?.going ?? 0) > 0 ? t('chip.going', { n: counts[d.id].going }) : clock(d.start_time, locale) || t('chip.open')}
                           </span>
@@ -602,26 +758,44 @@ export default function RidePage({ ride, host = null, hostPerson = null, ascentF
                         {forecast?.id === selected.id && (
                           <p className="flex gap-2"><CloudSun size={17} className="mt-0.5 shrink-0 text-(--ev-ink-60)" />{forecast.line}</p>
                         )}
-                        <p className="flex gap-2">
-                          <Users size={17} className="mt-0.5 shrink-0 text-(--ev-ink-60)" />
-                          {(counts[selected.id]?.going ?? 0) === 0 && (counts[selected.id]?.maybe ?? 0) === 0
-                            ? t('be_first')
-                            : (counts[selected.id]?.maybe ?? 0) > 0
-                              ? t('counts_maybe', { going: counts[selected.id]?.going ?? 0, maybe: counts[selected.id].maybe })
-                              : t('counts', { going: counts[selected.id]?.going ?? 0 })}
-                        </p>
+                        {(() => {
+                          // Who's going (Shift 01751): the faces of members with public profiles, then everyone in the count.
+                          const going = counts[selected.id]?.going ?? 0
+                          const maybe = counts[selected.id]?.maybe ?? 0
+                          const shown = (faces[selected.id] ?? []).slice(0, Math.max(0, going))
+                          if (going === 0 && maybe === 0) {
+                            return <p className="flex gap-2"><Users size={17} className="mt-0.5 shrink-0 text-(--ev-ink-60)" />{t('be_first')}</p>
+                          }
+                          if (shown.length === 0) {
+                            return <p className="flex gap-2"><Users size={17} className="mt-0.5 shrink-0 text-(--ev-ink-60)" />{maybe > 0 ? t('counts_maybe', { going, maybe }) : t('counts', { going })}</p>
+                          }
+                          const others = going - shown.length
+                          const names = others > 0
+                            ? shown.map((f) => f.name).join(locale === 'zh-Hans' ? '、' : ', ')
+                            : new Intl.ListFormat(locale, { type: 'conjunction' }).format(shown.map((f) => f.name))
+                          const line = others > 0 ? t('faces.more', { names, n: others }) : shown.length === 1 ? t('faces.one', { name: names }) : t('faces.some', { names })
+                          return (
+                            <p className="flex items-center gap-3 pt-1 font-semibold text-(--ev-ink)">
+                              <Faces faces={shown} />
+                              <span>{line}{maybe > 0 ? <span className="font-normal text-(--ev-ink-75)">{t('faces.maybe', { n: maybe })}</span> : null}</span>
+                            </p>
+                          )
+                        })()}
                         {/* Save it before answering too (Keith 2026-11-06); after answering, the buttons sit with the confirmation. */}
                         {calEv && selected.status === 'scheduled' && !ended && !done && (
                           <p className="flex flex-wrap items-center gap-x-2 gap-y-1">
                             <Download size={17} className="shrink-0 text-(--ev-ink-60)" />
                             <span>{t('add_cal')}</span>
-                            <a href={eventGcalUrl(calEv)} target="_blank" rel="noopener noreferrer"
-                              onClick={() => posthog.capture('ride_calendar_saved', { code: ride.code, app: 'google', answered: false })}
-                              className="font-semibold text-(--ev-accent) hover:underline">Google</a>
-                            <span aria-hidden className="text-(--ev-ink-60)">·</span>
-                            <button type="button"
-                              onClick={() => { posthog.capture('ride_calendar_saved', { code: ride.code, app: 'ics', answered: false }); downloadIcs(calEv, ride.name, selected.date) }}
-                              className="font-semibold text-(--ev-accent) hover:underline">{t('apple_outlook')}</button>
+                            {/* The two choices wrap together, never leaving a dot on its own line. */}
+                            <span className="inline-flex items-center gap-x-2 whitespace-nowrap">
+                              <a href={eventGcalUrl(calEv)} target="_blank" rel="noopener noreferrer"
+                                onClick={() => posthog.capture('ride_calendar_saved', { code: ride.code, app: 'google', answered: false })}
+                                className="font-semibold text-(--ev-accent) hover:underline">Google</a>
+                              <span aria-hidden className="text-(--ev-ink-60)">·</span>
+                              <button type="button"
+                                onClick={() => { posthog.capture('ride_calendar_saved', { code: ride.code, app: 'ics', answered: false }); downloadIcs(calEv, ride.name, selected.date) }}
+                                className="font-semibold text-(--ev-accent) hover:underline">{t('apple_outlook')}</button>
+                            </span>
                           </p>
                         )}
                       </div>
@@ -713,7 +887,7 @@ export default function RidePage({ ride, host = null, hostPerson = null, ascentF
                               {/* What the app adds, at the moment they've said yes (rider review 2026-11-12). */}
                               {done.status !== 'not_going' && (
                                 <div className="mt-4 rounded-[10px] bg-(--ev-panel) p-3">
-                                  <p className="text-[14px] text-(--ev-ink-80)">{t('done.app')}</p>
+                                  <p className="text-[15px] font-semibold text-(--ev-ink)">{t('done.app')}</p>
                                   <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2">
                                     <RideStoreBadges code={ride.code} date={selected.date} placement="ride_done" height={36} locale={locale} />
                                     <a href={openInApp} className="text-[14px] font-semibold text-(--ev-accent) hover:underline">{t('open_in_app')}</a>
@@ -810,83 +984,8 @@ export default function RidePage({ ride, host = null, hostPerson = null, ascentF
             </div>
           </aside>
 
-          <div className="grid grid-cols-[minmax(0,1fr)] content-start gap-6 lg:col-start-1 lg:row-start-1">
-          {/* ---- The route or meeting point: the page's picture ---- */}
-          {hasMap && place && (
-            <div className="overflow-hidden rounded-2xl border border-(--ev-line-mid) bg-(--ev-card) shadow-(--ev-shadow)">
-              <div className={route.length >= 2 ? 'h-[300px] sm:h-[360px]' : 'h-56 sm:h-64'}>
-                {route.length >= 2 ? (
-                  <RouteMap line={route} stops={mapStops} guards={mapGuards} meetup={{ lat: place.meetup_lat!, lng: place.meetup_lng! }} pick={false}
-                    className="h-full w-full" label={t('route_map', { name: ride.name })} />
-                ) : (
-                  <EventMap lat={place.meetup_lat!} lng={place.meetup_lng!} label={place.meetup_name ?? undefined} />
-                )}
-              </div>
-              <div className="flex flex-wrap items-center justify-between gap-3 border-t border-(--ev-line) p-4">
-                <div className="min-w-0">
-                  <p className="text-[15px] font-semibold text-(--ev-ink)">{t('meet_at', { place: place.meetup_name || t('the_start') })}</p>
-                  {place.meetup_address && <p className="mt-0.5 text-[14px] text-(--ev-ink-75)">{place.meetup_address}</p>}
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {/* Nearby plans the trip there by bike, the T or Bluebikes, from where they are. */}
-                  <a href={withLang(`/trip?to=${place.meetup_lat},${place.meetup_lng}&toName=${encodeURIComponent(place.meetup_name || ride.name)}&toMode=bike`, locale)}
-                    className="inline-flex min-h-[44px] items-center gap-1.5 rounded-[10px] border border-(--ev-line-strong) bg-white px-4 py-2 text-[14px] font-semibold text-(--ev-ink) hover:bg-(--ev-panel)">
-                    <Bike size={15} /> {t('get_there')}
-                  </a>
-                  <a href={directionsUrl(place)} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-[44px] items-center gap-1.5 rounded-[10px] border border-(--ev-line-strong) bg-white px-4 py-2 text-[14px] font-semibold text-(--ev-ink) hover:bg-(--ev-panel)">
-                    <MapPin size={15} /> {t('directions')}
-                  </a>
-                </div>
-              </div>
-              {/* Where people join along the way, with the group's time at each (Shift 01744). */}
-              {hasStops && (
-                <div className="border-t border-(--ev-line) p-4">
-                  <p className="text-[15px] font-semibold text-(--ev-ink)">{t('stops.title')}</p>
-                  <ol className="mt-2 space-y-2">
-                    {stops.map((s, i) => (
-                      <li key={s.id} className="flex items-center gap-3">
-                        <StopBadge n={i} />
-                        <span className="min-w-0 flex-1">
-                          <span className="block text-[15px] font-semibold leading-snug text-(--ev-ink)">{s.label}</span>
-                          <span className="block text-[14px] text-(--ev-ink-75)">{stopWhen(s, i)}</span>
-                        </span>
-                        {i > 0 && (
-                          <a href={`https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lng}`} target="_blank" rel="noopener noreferrer"
-                            aria-label={`${t('directions')}: ${s.label}`}
-                            className="grid h-9 w-9 shrink-0 place-items-center rounded-[10px] border border-(--ev-line-strong) bg-white text-(--ev-ink) hover:bg-(--ev-panel)">
-                            <MapPin size={15} />
-                          </a>
-                        )}
-                      </li>
-                    ))}
-                  </ol>
-                </div>
-              )}
-              {/* Crossing guards at the route's busy crossings, with the group's time at each (Shift 01745). */}
-              {crossings.length > 0 && (
-                <div className="border-t border-(--ev-line) p-4">
-                  <p className="text-[15px] font-semibold text-(--ev-ink)">{t('crossings.title')}</p>
-                  <p className="text-[14px] text-(--ev-ink-75)">{t('crossings.sub')}</p>
-                  <ol className="mt-2 space-y-2">
-                    {crossings.map((c) => (
-                      <li key={c.id} className="flex items-center gap-3">
-                        <GuardSign guarded={c.guarded} size={24} />
-                        <span className="min-w-0 flex-1">
-                          <span className="block text-[15px] font-semibold leading-snug text-(--ev-ink)">{c.label}</span>
-                          <span className="block text-[14px] text-(--ev-ink-75)">
-                            {[c.time ? t('stops.about', { time: clock(`${c.time}:00`, locale) }) : null, c.guarded ? t('crossings.guarded') : t('crossings.needed')].filter(Boolean).join(' · ')}
-                          </span>
-                        </span>
-                      </li>
-                    ))}
-                  </ol>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* What it's like (distance, pace, hills, calm streets, level, policies). */}
-          <RideFacts ride={ride} miles={miles} ascentFt={climb} comfort={comfortHere} className="" locale={locale} />
+          <div className="grid grid-cols-[minmax(0,1fr)] content-start gap-6 lg:col-start-1 lg:row-start-3">
+          {heroPhoto && mapCard}
 
           {/* What it looked like last time: that date's photos, and adding yours for a week after. */}
           {photos && <RidePhotos album={photos.album} href={photos.href} albumRef={photos.albumRef} preview={photos.preview} locale={locale} />}
@@ -912,28 +1011,6 @@ export default function RidePage({ ride, host = null, hostPerson = null, ascentF
             </div>
 
             <div role="tabpanel" id={`ride-panel-${shownTab}`} aria-labelledby={`ride-tab-${shownTab}`} className="pt-5">
-              {shownTab === 'about' && (
-                <div className="grid gap-5 sm:grid-cols-[minmax(0,1fr)_auto]">
-                  <div className="min-w-0 space-y-4">
-                    {about && <p className="whitespace-pre-line text-[16px] leading-relaxed text-(--ev-ink-85)">{about}</p>}
-                    {ride.registration_url && (
-                      <a href={ride.registration_url} target="_blank" rel="noopener noreferrer"
-                        className="flex items-center gap-3 rounded-2xl border border-(--ev-line-mid) bg-white p-4 hover:bg-(--ev-panel-faint)">
-                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-(--ev-accent-tint-15) text-(--ev-accent)"><ExternalLink size={18} aria-hidden /></span>
-                        <span className="min-w-0">
-                          <span className="block text-[15px] font-bold text-(--ev-ink)">{t('register_title')}</span>
-                          <span className="block text-[14px] text-(--ev-ink-80)">{t('register_body')}</span>
-                        </span>
-                      </a>
-                    )}
-                  </div>
-                  {flyer && (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={flyer} alt={t('flyer_alt', { name: dateTitle ?? ride.name })} className="max-h-[320px] w-full rounded-2xl border border-(--ev-line) object-cover sm:w-[240px]" />
-                  )}
-                </div>
-              )}
-
               {shownTab === 'updates' && (
                 updates.length === 0 ? (
                   <div className="flex items-start gap-3 rounded-2xl border border-(--ev-line) bg-(--ev-card) p-4">
@@ -944,7 +1021,7 @@ export default function RidePage({ ride, host = null, hostPerson = null, ascentF
                   <ol className="space-y-3">
                     {updates.map((u) => (
                       <li key={u.id} className="flex gap-3 rounded-2xl border border-(--ev-line) bg-(--ev-card) px-4 py-3">
-                        <HostFace name={hostName} logo={host?.logo_url ?? null} walk={walk} small />
+                        <HostFace name={hostName} logo={hostPhoto} photo={!host?.logo_url && !!person?.avatar_url} walk={walk} small />
                         <div className="min-w-0 flex-1">
                           <div className="flex items-baseline justify-between gap-3">
                             <p className="text-[15px] font-semibold text-(--ev-ink)">{u.title}</p>
@@ -987,12 +1064,13 @@ export default function RidePage({ ride, host = null, hostPerson = null, ascentF
               {shownTab === 'host' && hostName && (
                 <div className="rounded-2xl border border-(--ev-line) bg-(--ev-card) p-5">
                   <div className="flex items-center gap-4">
-                    <HostFace name={hostName} logo={host?.logo_url ?? null} walk={walk} large />
+                    <HostFace name={hostName} logo={hostPhoto} photo={!host?.logo_url && !!person?.avatar_url} walk={walk} large />
                     <div className="min-w-0">
                       <p className="font-display text-[22px] font-extrabold leading-tight text-(--ev-ink)">{hostName}</p>
                       <p className="mt-0.5 text-[15px] text-(--ev-ink-80)">{host ? t(nk('hosts')) : t(nk('organizes'))}</p>
                     </div>
                   </div>
+                  {person && <OrganizerStats org={person} walk={walk} locale={locale} className="mt-4" />}
                   {(host ? Object.keys(host.social_links).length > 0 || host.url : ride.organizer_url) && (
                     <div className="mt-4">
                       <p className="text-[15px] font-semibold text-(--ev-ink)">{t(nk('follow'))}</p>
@@ -1028,20 +1106,53 @@ export default function RidePage({ ride, host = null, hostPerson = null, ascentF
           </div>
         </div>
       </div>
+      {!rsvpSeen && selected?.status === 'scheduled' && !ended && !myAnswer && !done && (
+        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-(--ev-line-mid) bg-(--ev-card) px-4 pb-[max(12px,env(safe-area-inset-bottom))] pt-3 lg:hidden">
+          <a href="#going" className="flex min-h-[46px] w-full items-center justify-center rounded-[10px] bg-(--ev-accent-fill) text-[15px] font-bold text-(--ev-on-accent-fill)">
+            {t('ask.coming')} · {dateShort(selected.date, locale)}
+          </a>
+        </div>
+      )}
     </div>
     </EventsToneProvider>
   )
 }
 
-type TabId = 'about' | 'updates' | 'along' | 'host'
+type TabId = 'updates' | 'along' | 'host'
+
+/** "Organizing since March 2026 · 12 rides led · 40 people have come", then their own words. Shared with /rides/CODE/host. */
+export function OrganizerStats({ org, walk, locale, className = '' }: { org: RideOrganizer; walk: boolean; locale: SiteLocale; className?: string }) {
+  const t = translator(ridesStrings, locale)
+  const since = org.since ? new Date(org.since).toLocaleDateString(locale, { month: 'long', year: 'numeric', timeZone: 'America/New_York' }) : null
+  const facts = [
+    since ? t('org.since', { when: since }) : null,
+    org.led > 0 ? t(walk ? (org.led === 1 ? 'org.led_one.walk' : 'org.led.walk') : (org.led === 1 ? 'org.led_one.ride' : 'org.led.ride'), { n: org.led }) : null,
+    org.came > 0 ? t(org.came === 1 ? 'org.came_one' : 'org.came', { n: org.came }) : null,
+  ].filter(Boolean) as string[]
+  if (facts.length === 0 && !org.bio) return null
+  return (
+    <div className={className}>
+      {facts.length > 0 && (
+        <ul className="flex flex-wrap gap-2">
+          {facts.map((f) => <li key={f} className="rounded-full bg-(--ev-panel) px-3 py-1.5 text-[14px] font-semibold text-(--ev-ink-85)">{f}</li>)}
+        </ul>
+      )}
+      {org.bio && <p className="mt-3 whitespace-pre-line text-[15px] leading-relaxed text-(--ev-ink-85)">{org.bio}</p>}
+    </div>
+  )
+}
 
 /**
  * The host's face (Keith 2026-11-06: the page needs one): a verified
  * organization's logo, else the organizer's initials ("Keith A." is KA) on
  * the brand's navy, else a bike or walker for a private profile.
  */
-function HostFace({ name, logo, walk, small = false, large = false }: { name: string | null; logo: string | null; walk: boolean; small?: boolean; large?: boolean }) {
+function HostFace({ name, logo, photo = false, walk, small = false, large = false }: { name: string | null; logo: string | null; photo?: boolean; walk: boolean; small?: boolean; large?: boolean }) {
   const box = small ? 'h-9 w-9 text-[13px]' : large ? 'h-16 w-16 text-[22px]' : 'h-14 w-14 text-[19px]'
+  if (logo && photo) {
+    // eslint-disable-next-line @next/next/no-img-element
+    return <img src={logo} alt="" className={`${box} shrink-0 rounded-full border border-(--ev-line-mid) object-cover`} />
+  }
   if (logo) {
     return (
       // eslint-disable-next-line @next/next/no-img-element

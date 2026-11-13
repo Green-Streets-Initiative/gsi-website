@@ -2,7 +2,8 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
-import RidePage from '@/components/rides/RidePage'
+import RidePage, { type GoingFace } from '@/components/rides/RidePage'
+import { rideOrganizer } from '@/lib/rides/organizer'
 import { fetchAlbum } from '@/app/events/[id]/photos/photo-api'
 import AppOnlyRidePage from '@/components/rides/AppOnlyRidePage'
 import type { RideCoffeeInfo } from '@/components/rides/RideCoffee'
@@ -96,9 +97,11 @@ export default async function Page({ params, searchParams }: { params: Promise<{
   // And the newest date's shared photos (Shift ride photos): null while the
   // switch is off, unless the link carries that date's preview key.
   const preview = typeof sp.preview === 'string' ? sp.preview.slice(0, 64) : ''
-  const [extras, perks, newInfra, coffee, album] = ride.web
-    ? await Promise.all([rideExtras(ride.id).catch(() => null), bikePerksForPlaces(ridePlaces(ride)).catch(() => []), newInfraForPlaces(ridePlaces(ride)), rideCoffee(ride.code), fetchAlbum({ ride: ride.code, date: 'latest' }, preview).catch(() => null)])
-    : [null, [], [], null, null]
+  // And who's going on each date: first names and photos of Shift members with public profiles (Shift 01751).
+  // And the person who organizes it, when their profile is public (Shift 01752).
+  const [extras, perks, newInfra, coffee, album, faces, organizer] = ride.web
+    ? await Promise.all([rideExtras(ride.id).catch(() => null), bikePerksForPlaces(ridePlaces(ride)).catch(() => []), newInfraForPlaces(ridePlaces(ride)), rideCoffee(ride.code), fetchAlbum({ ride: ride.code, date: 'latest' }, preview).catch(() => null), goingFaces(ride.code), rideOrganizer(ride.code)])
+    : [null, [], [], null, null, {}, null]
   const photos = album && album.album.state !== 'none'
     ? { album, preview, albumRef: { ride: ride.code, date: album.event.date }, href: withLang(`/rides/${encodeURIComponent(ride.code)}/photos/${album.event.date}${preview ? `?preview=${encodeURIComponent(preview)}` : ''}`, locale) }
     : null
@@ -108,11 +111,21 @@ export default async function Page({ params, searchParams }: { params: Promise<{
       <HtmlLang locale={locale} />
       <Nav variant="light" locale={locale} />
       <main className="bg-cream" style={{ paddingTop: '60px' }}>
-        {ride.web ? <RidePage ride={{ ...ride, languages: extras?.languages ?? null }} host={extras?.host ?? null} hostPerson={hostLabel(extras)} ascentFt={extras?.ascentFt ?? null} comfort={extras?.comfortSegments ?? null} initialDate={initialDate} perks={perks} newInfra={newInfra} coffee={coffee} photos={photos} locale={locale} /> : <AppOnlyRidePage ride={ride} locale={locale} />}
+        {ride.web ? <RidePage ride={{ ...ride, languages: extras?.languages ?? null }} host={extras?.host ?? null} hostPerson={hostLabel(extras)} ascentFt={extras?.ascentFt ?? null} profile={extras?.profile ?? null} organizer={organizer} comfort={extras?.comfortSegments ?? null} initialDate={initialDate} perks={perks} newInfra={newInfra} coffee={coffee} photos={photos} faces={faces} locale={locale} /> : <AppOnlyRidePage ride={ride} locale={locale} />}
       </main>
       <Footer variant="light" locale={locale} />
     </>
   )
+}
+
+/** Who's going, by date id: never worth a failed page either. */
+async function goingFaces(code: string): Promise<Record<string, GoingFace[]>> {
+  try {
+    const { data, error } = await createServerSupabaseClient().rpc('get_ride_going_faces', { p_code: code })
+    return error || !data ? {} : (data as Record<string, GoingFace[]>)
+  } catch {
+    return {}
+  }
 }
 
 /** A missing coffee line is never worth a failed page. */

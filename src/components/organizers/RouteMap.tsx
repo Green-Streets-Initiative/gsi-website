@@ -161,12 +161,14 @@ export default function RouteMap({
         map.addSource('trail', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } })
         map.addLayer({ id: 'trail-line', type: 'line', source: 'trail', paint: { 'line-color': '#191A2E', 'line-width': 4, 'line-opacity': 0.8, 'line-dasharray': [1, 1.5] }, layout: { 'line-join': 'round', 'line-cap': 'round' } })
         map.addLayer({ id: 'route-focus', type: 'line', source: 'route', filter: ['==', ['get', 'index'], -999], paint: { 'line-color': '#191A2E', 'line-width': 11 }, layout: { 'line-join': 'round', 'line-cap': 'round' } }, 'route-line')
-        map.on('click', 'route-line', (e) => {
+        // A finger-wide, invisible band along the route: the 5 px line alone is hard to tap on a phone.
+        map.addLayer({ id: 'route-hit', type: 'line', source: 'route', paint: { 'line-color': '#000', 'line-width': 24, 'line-opacity': 0 }, layout: { 'line-join': 'round', 'line-cap': 'round' } })
+        map.on('click', 'route-hit', (e) => {
           const i = e.features?.[0]?.properties?.index
           if (!pickRef.current && typeof i === 'number' && onPieceRef.current) onPieceRef.current(i)
         })
-        map.on('mouseenter', 'route-line', () => { if (!pickRef.current && onPieceRef.current) map.getCanvas().style.cursor = 'pointer' })
-        map.on('mouseleave', 'route-line', () => { if (!pickRef.current) map.getCanvas().style.cursor = '' })
+        map.on('mouseenter', 'route-hit', () => { if (!pickRef.current && onPieceRef.current) map.getCanvas().style.cursor = 'pointer' })
+        map.on('mouseleave', 'route-hit', () => { if (!pickRef.current) map.getCanvas().style.cursor = '' })
         mapRef.current = map
         map.fire('organizer:ready')
         // A map created before its box has its final size (a lazy-loaded page) draws a corner only.

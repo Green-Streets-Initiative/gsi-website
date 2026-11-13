@@ -86,7 +86,7 @@ export function tidyName(s: string): string {
   return s.replace(/\b[A-Z]{3,}\b/g, (w) => w[0] + w.slice(1).toLowerCase())
 }
 
-interface StreetRow { label: string; miles: number; rating: string; index: number }
+interface StreetRow { label: string; miles: number; rating: string; index: number; /** Every map piece folded into this row. */ members: number[] }
 
 const STREET_WORDS: [RegExp, string][] = [
   [/\bstreet\b/g, 'st'], [/\bavenue\b/g, 'ave'], [/\broad\b/g, 'rd'], [/\bway\b/g, 'wy'],
@@ -113,21 +113,22 @@ export function streetName(label: string): string {
  * row (named for the comfort most of it has), and slivers under 0.15 mi fold
  * into the row before. The map keeps every piece; a row selects its longest.
  */
-function streetRows(pieces: ComfortPiece[]): StreetRow[] {
-  const rows: (StreetRow & { byRating: Record<string, number>; longest: number })[] = []
+export function streetRows(pieces: ComfortPiece[]): StreetRow[] {
+  const rows: (Omit<StreetRow, 'members'> & { members: number[]; byRating: Record<string, number>; longest: number })[] = []
   for (const p of pieces) {
     const last = rows[rows.length - 1]
     const same = last && streetKey(last.label) === streetKey(p.label)
     if (last && (same || p.distanceMi < 0.15)) {
       last.miles += p.distanceMi
+      last.members.push(p.index)
       last.byRating[p.rating] = (last.byRating[p.rating] ?? 0) + p.distanceMi
       if (p.distanceMi > last.longest) { last.longest = p.distanceMi; last.index = p.index }
       continue
     }
-    rows.push({ label: p.label, miles: p.distanceMi, rating: p.rating, index: p.index, byRating: { [p.rating]: p.distanceMi }, longest: p.distanceMi })
+    rows.push({ label: p.label, miles: p.distanceMi, rating: p.rating, index: p.index, members: [p.index], byRating: { [p.rating]: p.distanceMi }, longest: p.distanceMi })
   }
   return rows.map((r) => ({
-    label: r.label, miles: r.miles, index: r.index,
+    label: r.label, miles: r.miles, index: r.index, members: r.members,
     rating: Object.entries(r.byRating).sort((a, b) => b[1] - a[1])[0][0],
   }))
 }

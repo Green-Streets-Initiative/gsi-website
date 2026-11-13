@@ -9,6 +9,7 @@ import { UPDATE_KIND_LABEL, dateLabel, plural, todayKey } from '@/lib/organizers
 import type { DashboardRide, NextDate } from '@/lib/organizers/types'
 import { ASSISTANT_CHANGED_EVENT, openAssistant } from './AssistantPanel'
 import { useConsole } from './ConsoleContext'
+import PhotoNudge from './PhotoNudge'
 import { FeedbackDueCard, FeedbackLink } from './Feedback'
 import { NoMeetupHint, RideDayRiders, useRideDay, useRideTime } from './RideDay'
 import { Badge, Card, Empty, Notice, Spinner, Tabs, cx, tabPanel, type Tone } from './ui'
@@ -346,6 +347,9 @@ export default function Dashboard() {
       )}
 
       {!rides && !err && <Spinner label="Loading your rides" />}
+
+      {/* Initials beside "Hosted by" on every ride page until there's a photo (Keith 2026-11-12). */}
+      {rides && groups.mine.some((r) => r.my_role === 'organizer') && <PhotoNudge />}
 
       {groups.next && <NextUp r={groups.next.r} d={groups.next.d} />}
 

@@ -202,7 +202,7 @@ export default function PromoteView() {
       case 'ig':
         return lines(r.name, `${facts.when}${place ? ` · ${place}` : ''}`, about, extras && `${extras[0].toUpperCase()}${extras.slice(1)}.`, welcome, '', 'RSVP at the link in our bio, no app needed.')
       case 'fb':
-        return lines(`${r.name}: ${when}, meeting${at}.`, about, extras && `${extras[0].toUpperCase()}${extras.slice(1)}.`, welcome, '', `Say you're coming (no app needed): ${link}`)
+        return lines(`${r.name}: ${when}, meeting${at}.`, about, extras && `${extras[0].toUpperCase()}${extras.slice(1)}.`, welcome, '', `RSVP (no app needed): ${link}`)
       case 'wa':
         return `${r.name}${nextLine ? `, ${nextLine}` : ''}${at}. Coming? Tap to RSVP: ${link}`
       case 'strava':
@@ -214,7 +214,7 @@ export default function PromoteView() {
       case 'email':
         return lines(r.name, `${when}${at}`, about, welcome, `RSVP: ${link}`)
       case 'partiful':
-        return lines(extras && `${extras[0].toUpperCase()}${extras.slice(1)}.`, `Route and how comfortable each street is: ${link}`, 'Say you’re coming there too and you’ll get any ride-day changes by email.', liveOpen && `On ride day, see where the group is (no app needed): ${liveLink}`)
+        return lines(extras && `${extras[0].toUpperCase()}${extras.slice(1)}.`, `Route and how comfortable each street is: ${link}`, 'RSVP there too and you’ll get any ride-day changes by email.', liveOpen && `On ride day, see where the group is (no app needed): ${liveLink}`)
     }
   }
   const caption = edits[post] ?? captionFor(post)
