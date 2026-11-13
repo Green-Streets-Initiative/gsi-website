@@ -14,11 +14,12 @@ import { ridesStrings } from '@/lib/site-strings/rides'
  * Where the group is right now, without the app (Shift 01747): the link a
  * leader drops in the group chat, and the one in a guest's reminder and
  * "about 5 minutes from your stop" emails (?t= lets a guest see a ride shared
- * only with people on it). Never indexed.
+ * only with people on it). ?catch=1 (from "Running late?") looks for a place
+ * to meet the group straight away. Never indexed.
  */
 export const dynamic = 'force-dynamic'
 
-type Search = Promise<{ date?: string | string[]; t?: string | string[]; lang?: string | string[] }>
+type Search = Promise<{ date?: string | string[]; t?: string | string[]; lang?: string | string[]; catch?: string | string[] }>
 const dateParam = (v: string | string[] | undefined) => (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : null)
 const tokenParam = (v: string | string[] | undefined) => (typeof v === 'string' && /^[0-9a-f]{64}$/.test(v) ? v : null)
 
@@ -26,6 +27,13 @@ async function loadRide(code: string, date: string | null): Promise<RideLookup |
   if (!looksLikeRideCode(code)) return null
   const { data } = await createServerSupabaseClient().rpc('get_ride_public', date ? { p_code: code, p_date: date } : { p_code: code })
   return (data as RideLookup | null) ?? null
+}
+
+/** The route's streets in order, to name a place to meet the group (the ride's own route only). */
+async function loadPieces(rideId: string): Promise<{ label: string; distance_mi: number }[] | null> {
+  const { data } = await createServerSupabaseClient().from('ride_series').select('comfort_segments').eq('id', rideId).maybeSingle()
+  const segs = (data as { comfort_segments: unknown } | null)?.comfort_segments
+  return Array.isArray(segs) && segs.length ? (segs as { label: string; distance_mi: number }[]) : null
 }
 
 export async function generateMetadata({ params, searchParams }: { params: Promise<{ code: string }>; searchParams: Search }): Promise<Metadata> {
@@ -48,13 +56,14 @@ export default async function Page({ params, searchParams }: { params: Promise<{
   const date = (want ? ride.occurrences.find((d) => d.date === want) : null)
     ?? ride.occurrences.filter((d) => d.date >= today).sort((a, b) => a.date.localeCompare(b.date))[0]
     ?? null
+  const pieces = date && !date.own_route ? await loadPieces(ride.id).catch(() => null) : null
 
   return (
     <>
       <HtmlLang locale={locale} />
       <Nav variant="light" locale={locale} />
       <main className="bg-cream" style={{ paddingTop: '60px' }}>
-        <RideLive ride={ride} date={date} token={tokenParam(sp.t)} locale={locale} />
+        <RideLive ride={ride} date={date} token={tokenParam(sp.t)} pieces={pieces} autoCatch={sp.catch === '1'} locale={locale} />
       </main>
       <Footer variant="light" locale={locale} />
     </>

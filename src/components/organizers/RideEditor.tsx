@@ -19,7 +19,6 @@ import { ROUTE_IMPORT_KEY, openAssistant } from './AssistantPanel'
 import { useConsole } from './ConsoleContext'
 import EndShopCard from './EndShopCard'
 import GoingToEvent from './GoingToEvent'
-import JoinStops, { withJoinStops } from './JoinStops'
 import { routeCrossings, type RouteCrossing } from '@/lib/organizers/crossings'
 import OrgPicker from './OrgPicker'
 import RouteMap from './RouteMap'
@@ -927,22 +926,12 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
           {plannedMoved && (
             <div className="mb-3"><Notice tone="info">The assistant&rsquo;s route starts somewhere else, so the meeting point moved there. Change it under Meeting point if that&rsquo;s not right.</Notice></div>
           )}
-          <RouteSection route={f.route} onRoute={(r) => {
-            // Join stops stay put when the route is re-planned or swapped (Shift 01744).
-            setF((prev) => ({ ...prev, route: r ? withJoinStops(r, (prev.route?.pins ?? []).filter((p, i) => i > 0 && p.join), meetup) : null }))
-            setDirty(true)
-          }} meetup={meetup} pace={f.pace || null} activity={f.activity} initialPlan={planned} initialImport={imported}
+          <RouteSection route={f.route} onRoute={(r) => set('route', r)} meetup={meetup} pace={f.pace || null} activity={f.activity} initialPlan={planned} initialImport={imported}
             onMeetAtStart={(p) => {
               setF((prev) => ({ ...prev, meetup_lat: p.lat, meetup_lng: p.lng, meetup_address: '', meetup_name: prev.meetup_name ? '' : prev.meetup_name }))
               setDirty(true)
               setMeetupFit((k) => k + 1)
             }} />
-          {f.route && f.route.waypoints.length >= 2 && (
-            <div className="mt-4">
-              <JoinStops route={f.route} meetup={meetup} pace={f.pace || null} activity={f.activity} startTime={f.start_time}
-                onChange={(r) => set('route', r)} />
-            </div>
-          )}
           <div className="mt-4">
             <Field label="Link to the route elsewhere" htmlFor="route-link" optional hint="Strava, Komoot or Google Maps, shown as a link."
               error={!LINK_OK(f.route_google_maps_url) ? 'Links start with https://' : null}>

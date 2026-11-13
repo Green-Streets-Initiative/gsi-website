@@ -575,10 +575,6 @@ export interface ImportedRoute {
   elevation: import('./types').RouteElevation | null
 }
 
-/** T stations and Bluebikes docks along a route, as places people could join it (Shift 01744). */
-export const suggestJoinStops = (line: { lat: number; lng: number }[]) =>
-  siteApi<{ stops: { lat: number; lng: number; label: string; kind: 't' | 'dock'; along_m: number }[] }>('/api/organizers/join-stops', { line })
-
 /** The helpers a ride asks for on each date; null stops asking (Shift 01744). */
 export const setHelperJobs = (seriesId: string, jobs: import('./types').HelperJobs | null) =>
   rpc<import('./types').HelperJobs | null>('set_ride_helper_jobs', { p_series_id: seriesId, p_jobs: jobs })

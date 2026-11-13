@@ -37,6 +37,10 @@ interface Props {
   meetup: LatLng | null
   /** Where the group is right now (Shift 01747), with the path it took; `fresh` pulses the dot. */
   group?: { lat: number; lng: number; trail: LatLng[]; fresh: boolean; walk?: boolean; label: string } | null
+  /** A place to meet the group along the route (Catch the group, Keith 2026-11-13): a blue pin. */
+  meet?: (LatLng & { label: string }) | null
+  /** Where the person looking is, as a blue dot. */
+  me?: (LatLng & { label: string }) | null
   pick: boolean
   onPick?: (p: LatLng) => void
   /** Bumps when the caller wants the view refit to the content. */
@@ -92,6 +96,27 @@ function groupEl(label: string, fresh: boolean, walk: boolean): HTMLElement {
   return el
 }
 
+/** The meeting spot: a blue circle with a route mark, as in the app. */
+function meetEl(label: string): HTMLElement {
+  const el = document.createElement('div')
+  el.setAttribute('role', 'img')
+  el.setAttribute('aria-label', label)
+  el.title = label
+  el.innerHTML = '<span style="display:grid;place-items:center;width:34px;height:34px;border-radius:999px;background:#2966E5;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.35)">' +
+    '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="19" r="3"/><path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15"/><circle cx="18" cy="5" r="3"/></svg></span>'
+  return el
+}
+
+/** You are here. */
+function meEl(label: string): HTMLElement {
+  const el = document.createElement('div')
+  el.setAttribute('role', 'img')
+  el.setAttribute('aria-label', label)
+  el.title = label
+  Object.assign(el.style, { width: '18px', height: '18px', borderRadius: '999px', background: '#1A73E8', border: '3px solid #fff', boxShadow: '0 0 0 6px rgba(26,115,232,.2), 0 1px 4px rgba(0,0,0,.3)' })
+  return el
+}
+
 function pinEl(kind: 'meetup' | 'stop', n?: number): HTMLElement {
   const el = document.createElement('div')
   if (kind === 'meetup') {
@@ -110,7 +135,7 @@ function pinEl(kind: 'meetup' | 'stop', n?: number): HTMLElement {
 }
 
 export default function RouteMap({
-  line, lanes = null, pieces, spots, focus = null, onPieceClick, onSpotClick, stops, guards, meetup, group = null, pick, onPick, fitKey = 0, className, label = 'Route map',
+  line, lanes = null, pieces, spots, focus = null, onPieceClick, onSpotClick, stops, guards, meetup, group = null, meet = null, me = null, pick, onPick, fitKey = 0, className, label = 'Route map',
 }: Props) {
   const groupMarker = useRef<import('maplibre-gl').Marker | null>(null)
   const box = useRef<HTMLDivElement>(null)
@@ -218,6 +243,8 @@ export default function RouteMap({
       if (meetup) {
         markers.current.push(new ml.Marker({ element: pinEl('meetup'), anchor: 'bottom' }).setLngLat([meetup.lng, meetup.lat]).addTo(map))
       }
+      if (me) markers.current.push(new ml.Marker({ element: meEl(me.label) }).setLngLat([me.lng, me.lat]).addTo(map))
+      if (meet) markers.current.push(new ml.Marker({ element: meetEl(meet.label) }).setLngLat([meet.lng, meet.lat]).addTo(map))
       for (const sp of spots ?? []) {
         const el = spotEl(sp.n, focus?.kind === 'spot' && focus.n === sp.n)
         el.addEventListener('click', (ev) => { ev.stopPropagation(); onSpotRef.current?.(sp.n) })
@@ -229,7 +256,7 @@ export default function RouteMap({
       const t = setInterval(() => { if (mapRef.current) { clearInterval(t); draw() } }, 120)
       return () => clearInterval(t)
     }
-  }, [line, pieces, spots, focus, stops, guards, meetup])
+  }, [line, pieces, spots, focus, stops, guards, meetup, meet, me])
 
   // The group's dot and trail, moved in place on every update rather than redrawn.
   useEffect(() => {
@@ -292,7 +319,10 @@ export default function RouteMap({
       const map = mapRef.current
       const ml = libRef.current
       if (!map || !ml) return
-      const pts: LatLng[] = [...line, ...stops, ...(meetup ? [meetup] : [])]
+      // With a meeting spot, fit to it, the person and the group rather than the whole route.
+      const pts: LatLng[] = meet
+        ? [meet, ...(me ? [me] : []), ...(group ? [group] : [])]
+        : [...line, ...stops, ...(meetup ? [meetup] : [])]
       if (pts.length === 0) return
       if (pts.length === 1) { map.easeTo({ center: [pts[0].lng, pts[0].lat], zoom: 13.5 }); return }
       const b = new ml.LngLatBounds([pts[0].lng, pts[0].lat], [pts[0].lng, pts[0].lat])

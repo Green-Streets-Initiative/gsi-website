@@ -2,11 +2,12 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import dynamic from 'next/dynamic'
-import { ArrowLeft, Navigation } from 'lucide-react'
+import { ArrowLeft, Navigation, Route as RouteIcon } from 'lucide-react'
 import posthog from 'posthog-js'
 import { supabase } from '@/lib/supabase'
 import { clock, dateLong, type PublicRide, type RideDate } from '@/lib/rides/public'
 import { guardSignSvg } from '@/lib/rides/guard-sign'
+import { catchTheGroup, easternStart, type LatLng } from '@/lib/rides/catch-group'
 import { EventsToneProvider, toneClass } from '@/components/events/EventsTone'
 import '@/components/events/events-tone.css'
 import { translator, withLang, type SiteLocale } from '@/lib/site-i18n'
@@ -19,6 +20,8 @@ const RouteMap = dynamic(() => import('@/components/organizers/RouteMap'), { ssr
  * family, someone running late, someone joining partway. The leader's phone
  * shares the position (Shift's app); this page reads it every 15 seconds
  * through get_ride_live_web and says how far the group is from what's next.
+ * "Meet them along the way" (Keith 2026-11-13) finds a place on the route the
+ * person can reach before the group, from where they are and the ride's pace.
  */
 
 type LiveState = 'live' | 'stale' | 'waiting' | 'later' | 'finished' | 'silent' | 'off' | 'hidden' | 'canceled' | 'members_only' | 'no_date'
@@ -55,10 +58,17 @@ function along(route: { lat: number; lng: number }[], p: { lat: number; lng: num
   return best
 }
 
-export default function RideLive({ ride, date, token, locale = 'en' }: {
+/** "HH:MM" in Boston for an instant, for clock(). */
+const bostonHm = (ms: number) => new Date(ms).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'America/New_York' })
+
+export default function RideLive({ ride, date, token, pieces = null, autoCatch = false, locale = 'en' }: {
   ride: PublicRide
   date: RideDate | null
   token: string | null
+  /** The route's streets in order (the ride's comfort_segments), to name a meeting spot. */
+  pieces?: { label: string; distance_mi: number }[] | null
+  /** Opened from "Running late?": look for a meeting spot straight away. */
+  autoCatch?: boolean
   locale?: SiteLocale
 }) {
   const t = translator(ridesStrings, locale)
@@ -148,6 +158,60 @@ export default function RideLive({ ride, date, token, locale = 'en' }: {
     warn: 'bg-[#FFF4D6] text-[#7A4B00]',
     plain: 'bg-(--ev-panel) text-(--ev-ink)',
   }
+  // Meet them along the way: works from the plan before or without live sharing.
+  const [me, setMe] = useState<LatLng | null>(null)
+  const [catchBusy, setCatchBusy] = useState(false)
+  const [catchErr, setCatchErr] = useState(false)
+  const canCatch = route.length >= 2 && !!state && !['finished', 'canceled', 'members_only', 'no_date'].includes(state)
+  const tick30 = Math.floor(now / 30000)
+  const spot = useMemo(() => {
+    if (!me || !canCatch || !date) return null
+    return catchTheGroup({
+      route,
+      pieces: date.own_route ? null : pieces,
+      startLabel: date.meetup_name || ride.meetup_name,
+      corners: crossings.map((c) => ({ lat: c.lat!, lng: c.lng!, label: c.label })),
+      live: pos ? { ...pos, at: fetchedAt.current - (live?.age_seconds ?? 0) * 1000 } : null,
+      startsAt: easternStart(date.date, date.start_time),
+      paceMph: pace,
+      walk,
+      me,
+      now: Date.now(),
+    })
+  }, [me, canCatch, tick30, pos?.lat, pos?.lng, route, pieces, crossings, date, pace]) // eslint-disable-line react-hooks/exhaustive-deps
+  const findMe = () => {
+    if (!('geolocation' in navigator)) { setCatchErr(true); return }
+    setCatchBusy(true)
+    setCatchErr(false)
+    navigator.geolocation.getCurrentPosition(
+      (p) => {
+        setCatchBusy(false)
+        setMe({ lat: p.coords.latitude, lng: p.coords.longitude })
+        posthog.capture('ride_catch_group', { code: ride.code, surface: 'web', live: !!pos, auto: autoCatch })
+      },
+      () => { setCatchBusy(false); setCatchErr(true) },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 },
+    )
+  }
+  // On a phone the card sits under the map: bring it into view once found.
+  const spotCard = useRef<HTMLDivElement>(null)
+  const hasSpot = !!spot
+  useEffect(() => { if (hasSpot) spotCard.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }) }, [hasSpot, me])
+  const autoDone = useRef(false)
+  useEffect(() => {
+    if (!autoCatch || !canCatch || autoDone.current) return
+    autoDone.current = true
+    findMe()
+  }, [autoCatch, canCatch]) // eslint-disable-line react-hooks/exhaustive-deps
+  const meet = useMemo(() => spot ? { lat: spot.lat, lng: spot.lng, label: t('live.catch_pin') } : null, [spot?.lat, spot?.lng]) // eslint-disable-line react-hooks/exhaustive-deps
+  const meDot = useMemo(() => me ? { ...me, label: t('live.you') } : null, [me]) // eslint-disable-line react-hooks/exhaustive-deps
+  const spotTitle = spot
+    ? !spot.onStreet ? t('live.catch_title_place', { place: spot.label })
+      : spot.label ? t('live.catch_title_street', { street: spot.label })
+        : t('live.catch_title_route')
+    : ''
+  const spotDirections = spot ? `https://www.google.com/maps/dir/?api=1&destination=${spot.lat},${spot.lng}&travelmode=${walk ? 'walking' : 'bicycling'}` : null
+
   const ridePage = withLang(`/rides/${ride.code}${date ? `?date=${date.date}` : ''}`, locale)
   const directions = pos ? `https://www.google.com/maps/dir/?api=1&destination=${pos.lat},${pos.lng}&travelmode=${walk ? 'walking' : 'bicycling'}` : null
 
@@ -183,13 +247,26 @@ export default function RideLive({ ride, date, token, locale = 'en' }: {
           </div>
         ) : (route.length >= 2 || meetup) && (
           <div className="h-[56vh] min-h-[320px] sm:h-[480px]">
-            <RouteMap line={route} stops={mapStops} guards={mapGuards} meetup={meetup} group={group} pick={false}
-              className="h-full w-full" label={t('route_map', { name: ride.name })} />
+            <RouteMap line={route} stops={mapStops} guards={mapGuards} meetup={meetup} group={group} meet={meet} me={meDot} pick={false}
+              fitKey={meet ? `${meet.lat},${meet.lng}` : 0} className="h-full w-full" label={t('route_map', { name: ride.name })} />
           </div>
         )}
 
-        {(mine || next || directions) && (
+        {(mine || next || directions || canCatch) && (
           <div className="space-y-3 border-t border-(--ev-line) p-4">
+            {spot && (
+              <div ref={spotCard} className="flex scroll-mb-24 items-start gap-3" aria-live="polite">
+                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full border-2 border-white bg-[#2966E5] text-white shadow" aria-hidden><RouteIcon size={16} /></span>
+                <span className="min-w-0 flex-1">
+                  {!spot.catchable && <span className="block text-[15px] text-(--ev-ink-85)">{t('live.catch_end')}</span>}
+                  <span className="block text-[17px] font-bold leading-snug text-(--ev-ink)">{spotTitle}</span>
+                  <span className="block text-[15px] font-semibold text-(--ev-ink)">{t('live.catch_group_at', { time: clock(bostonHm(spot.groupAt), locale) })}</span>
+                  <span className="block text-[15px] text-(--ev-ink-85)">{t(walk ? 'live.catch_trip_walk' : 'live.catch_trip_bike', { mi: spot.travelMi, min: spot.travelMin })}</span>
+                  {spot.basis === 'plan' && <span className="mt-1 block text-[14px] text-(--ev-ink-75)">{t('live.catch_from_plan')}</span>}
+                </span>
+              </div>
+            )}
+            {catchErr && <p className="text-[15px] text-(--ev-ink-85)" role="alert">{t('live.catch_no_location')}</p>}
             {mine && (
               <div className="flex flex-col gap-0.5 sm:flex-row sm:items-baseline sm:justify-between sm:gap-3">
                 <span className="min-w-0">
@@ -211,13 +288,27 @@ export default function RideLive({ ride, date, token, locale = 'en' }: {
                 </span>
               </div>
             )}
-            {directions && (
-              <a href={directions} target="_blank" rel="noopener noreferrer"
-                onClick={() => posthog.capture('ride_live_web_directions', { code: ride.code })}
-                className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-[12px] bg-(--ev-ink) px-4 py-3 text-[16px] font-semibold text-white sm:w-auto">
-                <Navigation size={17} aria-hidden /> {t('live.directions')}
-              </a>
-            )}
+            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+              {spotDirections ? (
+                <a href={spotDirections} target="_blank" rel="noopener noreferrer"
+                  onClick={() => posthog.capture('ride_catch_group_directions', { code: ride.code, surface: 'web', basis: spot?.basis })}
+                  className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-[12px] bg-(--ev-ink) px-4 py-3 text-[16px] font-semibold text-white sm:w-auto">
+                  <Navigation size={17} aria-hidden /> {t('live.catch_directions')}
+                </a>
+              ) : directions && (
+                <a href={directions} target="_blank" rel="noopener noreferrer"
+                  onClick={() => posthog.capture('ride_live_web_directions', { code: ride.code })}
+                  className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-[12px] bg-(--ev-ink) px-4 py-3 text-[16px] font-semibold text-white sm:w-auto">
+                  <Navigation size={17} aria-hidden /> {t('live.directions')}
+                </a>
+              )}
+              {canCatch && !spot && (
+                <button type="button" onClick={findMe} disabled={catchBusy}
+                  className={`flex min-h-[48px] w-full items-center justify-center gap-2 rounded-[12px] px-4 py-3 text-[16px] font-semibold sm:w-auto ${directions ? 'border-2 border-(--ev-ink) text-(--ev-ink)' : 'bg-(--ev-ink) text-white'} disabled:opacity-70`}>
+                  <RouteIcon size={17} aria-hidden /> {catchBusy ? t('live.catch_looking') : t('live.catch_button')}
+                </button>
+              )}
+            </div>
           </div>
         )}
       </div>

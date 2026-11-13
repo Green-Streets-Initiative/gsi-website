@@ -755,6 +755,15 @@ export default function RidePage({ ride, host = null, hostPerson = null, organiz
                         {(selected.meetup_name || selected.meetup_address) && (
                           <p className="flex gap-2"><MapPin size={17} className="mt-0.5 shrink-0 text-(--ev-ink-60)" />{selected.meetup_name || selected.meetup_address}</p>
                         )}
+                        {/* Running late, or living along the route: a place to meet the group on the way (Keith 2026-11-13). */}
+                        {selected.date === todayKey() && selected.status === 'scheduled' && !ended && route.length >= 2 && (
+                          <p className="flex gap-2">
+                            <RouteIcon size={17} className="mt-0.5 shrink-0 text-(--ev-ink-60)" />
+                            <a href={withLang(`/rides/${ride.code}/live?date=${selected.date}&catch=1`, locale)}
+                              onClick={() => posthog.capture('ride_catch_group_open', { code: ride.code, surface: 'web' })}
+                              className="font-semibold text-(--ev-accent) hover:underline">{t('live.catch_running_late')}</a>
+                          </p>
+                        )}
                         {forecast?.id === selected.id && (
                           <p className="flex gap-2"><CloudSun size={17} className="mt-0.5 shrink-0 text-(--ev-ink-60)" />{forecast.line}</p>
                         )}
