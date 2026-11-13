@@ -546,7 +546,13 @@ export function headlineFor(result: HeadlineInput, motivation: Motivation | null
   // ("$3 a day cheaper and 5 minutes slower than the Red Line"); otherwise
   // the cost clause names its own benchmark.
   const timeNamesBenchmark = fastest === benchmark && fastest !== subject && !!time
-  const cost = costClause(result, subject, benchmark, !timeNamesBenchmark, locale)
+  let cost = costClause(result, subject, benchmark, !timeNamesBenchmark, locale)
+  // "5 minutes slower than driving and about the same cost", not "as
+  // driving" twice (the app's commute plan says it this way too).
+  const benchNoun = benchmark ? modeNoun(benchmark, result.transit_legs, result.modes[benchmark].combo, locale) : null
+  if (benchNoun && time.includes(benchNoun) && cost === t('cost.clause_same_cost', { bench: benchNoun })) {
+    cost = t('cost.clause_same_cost_plain')
+  }
   const climate = formatCo2Share(s.emissions_share_pct, locale)
   const health = healthClause(result, subject, locale)
 
@@ -554,7 +560,7 @@ export function headlineFor(result: HeadlineInput, motivation: Motivation | null
   // and cost as driving", in place of saying "as driving" twice.
   const evenWith = fastest && fastest !== subject ? modeNoun(fastest, result.transit_legs, result.modes[fastest].combo, locale) : null
   if (evenWith && (motivation == null || motivation === 'time' || motivation === 'money')
-    && time === t('cost.clause_same_time', { bench: evenWith }) && cost === t('cost.clause_same_cost', { bench: evenWith })) {
+    && time === t('cost.clause_same_time', { bench: evenWith }) && cost === t('cost.clause_same_cost_plain')) {
     return t('cost.headline_one', { lead, a: t('cost.clause_same_both', { bench: evenWith }) })
   }
 

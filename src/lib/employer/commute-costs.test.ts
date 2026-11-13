@@ -216,7 +216,7 @@ describe('headlineFor', () => {
   it('never contrasts against driving alone, and names the benchmark when the cost is about the same', () => {
     const free = sample({}, 0)
     const h = headlineFor(free, null)
-    assert.equal(h, 'Leave by 8:12 AM on the Red Line, 5 minutes slower than driving on a clear morning but faster in traffic and about the same cost as driving.')
+    assert.equal(h, 'Leave by 8:12 AM on the Red Line, 5 minutes slower than driving on a clear morning but faster in traffic and about the same cost.')
     for (const r of [sample(), free, { ...sample(), recommended_mode: 'drive' }]) {
       for (const m of [null, 'time', 'money', 'health', 'climate'] as const) {
         const s = headlineFor(r, m)
