@@ -383,14 +383,16 @@ type Tr = ReturnType<typeof useNearbyT>
 /** "2.7 mi, mostly paths on Somerville Community Path." (the app's
  *  bikeTripSummary): the kind of lane that covers most of the ride, and the
  *  longest street of that kind. Under half? Name the top two instead. */
-export function bikeTripSummary(comfort: BikeComfortData, tr: Tr): string | null {
+export function bikeTripSummary(comfort: BikeComfortData, tr: Tr, miles?: number): string | null {
   const total = comfort.segments.reduce((a, s) => a + s.distance_mi, 0)
   if (total <= 0) return null
   const byTier = new Map<BikeComfortTier, number>()
   for (const s of comfort.segments) byTier.set(s.rating, (byTier.get(s.rating) ?? 0) + s.distance_mi)
   const ranked = [...byTier.entries()].sort((a, b) => b[1] - a[1])
   const [top, topMi] = ranked[0]
-  const distance = tr('reach.mi', { miles: total.toFixed(1) })
+  // The planner's own distance when it planned the ride, so the summary and
+  // the way list agree (its rated stretches can leave out a few short bits)
+  const distance = tr('reach.mi', { miles: (miles ?? total).toFixed(1) })
   const tier = tr(TIER_PHRASE_KEY[top])
   if (topMi / total < 0.5 && ranked.length > 1) {
     return tr('v2.trip_mix', { distance, a: tier, b: tr(TIER_PHRASE_KEY[ranked[1][0]]) })
@@ -526,7 +528,7 @@ export function V2Trip({ row, mode, onMode, center, legInfo, highlightedStreetKe
       {bike && comfort ? (
         <>
           {(() => {
-            const summary = bikeTripSummary(comfort, tr)
+            const summary = bikeTripSummary(comfort, tr, plan && !changed ? plan.state.options[plan.state.chosen]?.miles : undefined)
             return summary ? <p className="mt-3 text-[16px] font-semibold leading-snug text-(--nb-ink)">{summary}</p> : null
           })()}
           {shares.length > 0 && (
