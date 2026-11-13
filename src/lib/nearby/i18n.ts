@@ -457,6 +457,7 @@ const en: Dict = {
   'v2.avoid_undo': 'Undo',
   'v2.avoid_none': 'No reasonable way around {street}.',
   'v2.avoid_failed': 'We couldn\'t re-plan just now. Try again.',
+  'v2.avoid_limit': 'You can avoid up to 4 streets on this trip.',
   // v2 trip view (the app's SimpleTrip, nearby.v2_trip_*)
   'v2.trip_way_bike': 'Bike · {minutes} min',
   'v2.trip_way_transit': 'Transit · {minutes} min',
@@ -870,6 +871,7 @@ const es: Dict = {
   "v2.avoid_undo": "Deshacer",
   "v2.avoid_none": "No hay una forma razonable de evitar {street}.",
   "v2.avoid_failed": "No pudimos recalcular la ruta. Inténtalo de nuevo.",
+  "v2.avoid_limit": "Puedes evitar hasta 4 calles en este viaje.",
   // v2 trip view (the app's SimpleTrip, nearby.v2_trip_*)
   "v2.trip_way_bike": "Bici · {minutes} min",
   "v2.trip_way_transit": "Transporte · {minutes} min",
@@ -1283,6 +1285,7 @@ const ptBR: Dict = {
   "v2.avoid_undo": "Desfazer",
   "v2.avoid_none": "Não há um caminho razoável que evite {street}.",
   "v2.avoid_failed": "Não conseguimos refazer a rota agora. Tente de novo.",
+  "v2.avoid_limit": "Você pode evitar até 4 ruas nesta viagem.",
   // v2 trip view (the app's SimpleTrip, nearby.v2_trip_*)
   "v2.trip_way_bike": "Bike · {minutes} min",
   "v2.trip_way_transit": "Transporte · {minutes} min",
@@ -1696,6 +1699,7 @@ const zhHans: Dict = {
   "v2.avoid_undo": "撤销",
   "v2.avoid_none": "没有合理的路线可以避开{street}。",
   "v2.avoid_failed": "暂时无法重新规划，请再试一次。",
+  "v2.avoid_limit": "这段行程最多可以避开 4 条街道。",
   // v2 trip view (the app's SimpleTrip, nearby.v2_trip_*)
   "v2.trip_way_bike": "骑行 · {minutes} 分钟",
   "v2.trip_way_transit": "公共交通 · {minutes} 分钟",

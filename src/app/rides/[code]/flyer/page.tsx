@@ -51,7 +51,7 @@ export default async function RideFlyerPage({ params }: { params: Promise<{ code
   const extras = await rideExtras(ride.id).catch(() => null)
   // The ride page's facts, set the same way: numbers label-over-value, then
   // the level and policies as one line of icon-and-words.
-  const facts = rideFacts({ ...ride, languages: extras?.languages ?? null }, miles, extras?.ascentFt ?? null)
+  const facts = rideFacts({ ...ride, languages: extras?.languages ?? null }, miles, extras?.ascentFt ?? null, 'en', extras?.hillShape ?? null)
   const stats = [
     ...facts.stats.filter((f) => f.label !== 'Riding time'),
     facts.level ? { label: 'Level', value: RIDE_STYLE_LABEL[facts.level] === 'Rec' ? 'Recreational' : RIDE_STYLE_LABEL[facts.level] } : null,

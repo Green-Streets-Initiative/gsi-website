@@ -12,7 +12,7 @@ import { routeMiles } from '@/lib/organizers/route-geo'
 import { todayKey } from '@/lib/organizers/ride-words'
 import RideStoreBadges from '@/components/rides/RideStoreBadges'
 import OrganizerChannels from '@/components/rides/OrganizerChannels'
-import RideFacts, { rideFacts } from '@/components/rides/RideFacts'
+import RideFacts, { rideFacts, type HillShape } from '@/components/rides/RideFacts'
 import RidePerks from '@/components/rides/RidePerks'
 import RideCoffee, { type RideCoffeeInfo } from '@/components/rides/RideCoffee'
 import RideNewInfra from '@/components/rides/RideNewInfra'
@@ -92,13 +92,13 @@ function directionsUrl(d: Pick<RideDate, 'meetup_lat' | 'meetup_lng'>): string {
  * is. The location field carries the meeting spot; the link goes back to this
  * date on the ride page.
  */
-function calendarEvent(ride: PublicRide, d: RideDate, hostName: string | null, miles: number | null, climb: number | null, locale: SiteLocale) {
+function calendarEvent(ride: PublicRide, d: RideDate, hostName: string | null, miles: number | null, climb: number | null, shape: HillShape | null, locale: SiteLocale) {
   const t = translator(ridesStrings, locale)
   const walk = ride.activity === 'walk'
   // Back to this date, in the language they read it in.
   const page = `${pageUrl(ride)}?date=${d.date}${locale === 'en' ? '' : `&lang=${locale}`}`
   const where = calendarLocation(d.meetup_name, d.meetup_address)
-  const facts = rideFacts(ride, miles, climb, locale)
+  const facts = rideFacts(ride, miles, climb, locale, shape)
   const factLine = [
     ...facts.stats.map((f) => (f.key === 'pace' && f.sub ? `${f.value} (${f.sub})` : f.value)),
     ...facts.policies.map((p) => p.title),
@@ -204,8 +204,10 @@ function GuardSign({ guarded, size = 24 }: { guarded: boolean; size?: number }) 
   return <span className="inline-flex shrink-0" aria-hidden dangerouslySetInnerHTML={{ __html: guardSignSvg(guarded, size) }} />
 }
 
-export default function RidePage({ ride, host = null, hostPerson = null, organizer = null, ascentFt = null, profile = null, comfort = null, initialDate = null, perks = [], newInfra = [], coffee = null, photos = null, faces = {}, locale = 'en' }: {
+export default function RidePage({ ride, host = null, hostPerson = null, organizer = null, ascentFt = null, hillShape = null, profile = null, comfort = null, initialDate = null, perks = [], newInfra = [], coffee = null, photos = null, faces = {}, locale = 'en' }: {
   ride: PublicRide; host?: RideHost | null; ascentFt?: number | null
+  /** Feet down and the steepest grade of the ride's own route, for the hills word. */
+  hillShape?: HillShape | null
   /** The person who organizes it, when their profile is public and no verified group hosts it (Shift 01752). */
   organizer?: RideOrganizer | null
   /** The route's height along the way, [miles in, feet], for the Hills chart. */
@@ -465,10 +467,11 @@ export default function RidePage({ ride, host = null, hostPerson = null, organiz
   const route = ((own ? own.route_waypoints : ride.route_waypoints) ?? []).filter((p) => Number.isFinite(p?.lat) && Number.isFinite(p?.lng))
   const miles = route.length >= 2 ? routeMiles(route) : null
   const climb = own ? (typeof own.route_elevation?.ascent_ft === 'number' ? Math.round(own.route_elevation.ascent_ft) : null) : ascentFt
+  const shape: HillShape | null = own ? { downFt: own.route_elevation?.descent_ft ?? null, steepestPct: own.route_elevation?.max_grade_pct ?? null } : hillShape
   // The chosen date as a calendar entry (calendarEvent): offered before and after answering.
   // From their own stop, at the group's time there, once they've picked one.
   const myStop = done?.stop ?? (done ? null : rememberedStop)
-  const calEv = selected ? calendarEvent(ride, atStop(selected, myStop), hostName, miles, climb, locale) : null
+  const calEv = selected ? calendarEvent(ride, atStop(selected, myStop), hostName, miles, climb, shape, locale) : null
   const routeLink = own ? own.route_google_maps_url : ride.route_google_maps_url
   const dateTitle = selected?.title ?? null
   const about = selected?.description || ride.description
@@ -636,7 +639,7 @@ export default function RidePage({ ride, host = null, hostPerson = null, organiz
                   )}
                 </div>
               )}
-              <RideFacts ride={ride} miles={miles} ascentFt={climb} profile={own ? null : profile} comfort={comfortHere} className="" locale={locale} />
+              <RideFacts ride={ride} miles={miles} ascentFt={climb} hillShape={shape} profile={own ? null : profile} comfort={comfortHere} className="" locale={locale} />
               {/* What the streets look like, right after "On calm streets" (polish 11-13: in the
                   map card it pushed what the ride is like a screen and a half down on a phone). */}
               {calmOption && rawPieces.length > 0 && (

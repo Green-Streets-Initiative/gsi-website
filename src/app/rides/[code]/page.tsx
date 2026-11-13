@@ -111,7 +111,7 @@ export default async function Page({ params, searchParams }: { params: Promise<{
       <HtmlLang locale={locale} />
       <Nav variant="light" locale={locale} />
       <main className="bg-cream" style={{ paddingTop: '60px' }}>
-        {ride.web ? <RidePage ride={{ ...ride, languages: extras?.languages ?? null }} host={extras?.host ?? null} hostPerson={hostLabel(extras)} ascentFt={extras?.ascentFt ?? null} profile={extras?.profile ?? null} organizer={organizer} comfort={extras?.comfortSegments ?? null} initialDate={initialDate} perks={perks} newInfra={newInfra} coffee={coffee} photos={photos} faces={faces} locale={locale} /> : <AppOnlyRidePage ride={ride} locale={locale} />}
+        {ride.web ? <RidePage ride={{ ...ride, languages: extras?.languages ?? null }} host={extras?.host ?? null} hostPerson={hostLabel(extras)} ascentFt={extras?.ascentFt ?? null} hillShape={extras?.hillShape ?? null} profile={extras?.profile ?? null} organizer={organizer} comfort={extras?.comfortSegments ?? null} initialDate={initialDate} perks={perks} newInfra={newInfra} coffee={coffee} photos={photos} faces={faces} locale={locale} /> : <AppOnlyRidePage ride={ride} locale={locale} />}
       </main>
       <Footer variant="light" locale={locale} />
     </>

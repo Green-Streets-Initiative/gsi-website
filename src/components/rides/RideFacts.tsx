@@ -67,15 +67,23 @@ function ComfortRow({ segments, walk, t }: { segments: CalmSegment[]; walk: bool
  *    no-drop, beginners, cost, sign-up;
  *  - who it's for (women, LGBTQ+, Spanish…) as its own line, since it answers
  *    a different question ("is this for me?") than pace does.
- * The hills words and thresholds are the app's (Shift lib/elevation.ts
- * hilliness), and "Nobody gets dropped" is the app's no-drop line.
+ * The hills words are the ones every surface uses (Shift lib/hills.ts
+ * hillsWord, the Roam pages and the assistants), and "Nobody gets dropped" is
+ * the app's no-drop line.
  */
 
-/** Shift lib/elevation.ts hilliness: feet of climbing per mile. */
-export function hills(ascentFt: number, miles: number): 'Mostly flat' | 'Rolling' | 'Hilly' {
-  if (!(miles > 0)) return 'Mostly flat'
-  const perMile = ascentFt / miles
-  return perMile < 30 ? 'Mostly flat' : perMile < 80 ? 'Rolling' : 'Hilly'
+/** The rest of a route's climbing, beyond the feet up (route_elevation). */
+export type HillShape = { downFt?: number | null; steepestPct?: number | null }
+
+/** Shift lib/hills.ts hillsWord: feet climbed per mile (the bigger of up and
+ *  down) under 30 is flat, under 80 a gentle grade when nothing is steeper
+ *  than 4% (else rolling), more is hilly. An unknown steepest grade is never
+ *  called gentle. */
+export function hills(ascentFt: number, miles: number, shape?: HillShape | null): 'flat' | 'gentle' | 'rolling' | 'hilly' {
+  if (!(miles > 0)) return 'flat'
+  const perMile = Math.max(ascentFt, shape?.downFt ?? 0) / miles
+  const steepest = shape?.steepestPct ?? null
+  return perMile < 30 ? 'flat' : perMile < 80 ? (steepest != null && steepest < 4 ? 'gentle' : 'rolling') : 'hilly'
 }
 
 function duration(min: number, t: RT): string {
@@ -85,7 +93,7 @@ function duration(min: number, t: RT): string {
   return m === 60 ? t('dur.hr', { h: h + 1 }) : m ? t('dur.hr_min', { h, m }) : t('dur.hr', { h })
 }
 
-const HILLS_KEY = { 'Mostly flat': 'hills.flat', Rolling: 'hills.rolling', Hilly: 'hills.hilly' } as const
+const HILLS_KEY = { flat: 'hills.flat', gentle: 'hills.gentle', rolling: 'hills.rolling', hilly: 'hills.hilly' } as const
 
 const AUDIENCE = ['women', 'lgbtq', 'seniors', 'students', 'spanish', 'bilingual', 'family_friendly']
 
@@ -107,7 +115,7 @@ function ledIn(langs: PartnerLanguage[], locale: SiteLocale, t: RT): string {
 }
 
 /** The facts themselves, for the ride page here and the printed flyer. */
-export function rideFacts(ride: PublicRide, miles: number | null, ascentFt: number | null, locale: SiteLocale = 'en'): RideFactModel {
+export function rideFacts(ride: PublicRide, miles: number | null, ascentFt: number | null, locale: SiteLocale = 'en', shape: HillShape | null = null): RideFactModel {
   const t = translator(ridesStrings, locale)
   const walk = ride.activity === 'walk'
   const pace = (walk ? WALK_PACE_OPTIONS : PACE_OPTIONS).find((p) => p.key === ride.pace) ?? null
@@ -128,7 +136,7 @@ export function rideFacts(ride: PublicRide, miles: number | null, ascentFt: numb
     miles ? { key: 'distance', label: t('stat.distance'), value: t('stat.mi', { n: locale === 'en' ? milesText : Number(milesText).toLocaleString(locale, { minimumFractionDigits: miles < 10 ? 1 : 0 }) }) } : null,
     // A ride's pace reads as its speed; a walk's as its word, with what it means.
     pace ? (walk ? { key: 'pace', label: t('stat.pace'), value: paceLabel, sub: paceWalk } : { key: 'pace', label: t('stat.pace'), value: pace.mph, sub: paceLabel }) : null,
-    ascentFt != null && miles ? { key: 'hills', label: t('stat.hills'), value: t(HILLS_KEY[hills(ascentFt, miles)]), sub: t('stat.climb', { ft: ascentFt.toLocaleString(numLocale) }) } : null,
+    ascentFt != null && miles ? { key: 'hills', label: t('stat.hills'), value: t(HILLS_KEY[hills(ascentFt, miles, shape)]), sub: t('stat.climb', { ft: ascentFt.toLocaleString(numLocale) }) } : null,
     ridingMin ? { key: 'time', label: t(walk ? 'stat.walk_time' : 'stat.ride_time'), value: t('stat.about', { d: duration(ridingMin, t) }), sub: t('stat.plus_stops') } : null,
   ].filter(Boolean) as RideFactModel['stats']
 
@@ -172,8 +180,10 @@ function HillsChart({ profile, label }: { profile: [number, number][]; label: st
   )
 }
 
-export default function RideFacts({ ride, miles, ascentFt, profile = null, comfort = null, className = 'mt-5', locale = 'en' }: {
+export default function RideFacts({ ride, miles, ascentFt, hillShape = null, profile = null, comfort = null, className = 'mt-5', locale = 'en' }: {
   ride: PublicRide; miles: number | null; ascentFt: number | null; className?: string
+  /** Feet down and the steepest grade, for the hills word. */
+  hillShape?: HillShape | null
   /** The route's height along the way, [miles in, feet]. */
   profile?: [number, number][] | null
   locale?: SiteLocale
@@ -181,7 +191,7 @@ export default function RideFacts({ ride, miles, ascentFt, profile = null, comfo
   comfort?: CalmSegment[] | null
 }) {
   const t = translator(ridesStrings, locale)
-  const { stats, level, policies, audience } = rideFacts(ride, miles, ascentFt, locale)
+  const { stats, level, policies, audience } = rideFacts(ride, miles, ascentFt, locale, hillShape)
   const calm = comfort && comfort.length > 0 ? comfort : null
   if (stats.length === 0 && !level && policies.length === 0 && audience.length === 0 && !calm) return null
 
