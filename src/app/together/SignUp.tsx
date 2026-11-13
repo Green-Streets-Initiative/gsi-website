@@ -10,6 +10,7 @@ import { Chip, WAY_ICON } from '@/components/together/bits'
 import { PHOTOS, type TogetherPhoto } from '@/components/together/photos'
 import { Journey, takeKindParam, useTogether } from '@/components/together/TogetherShell'
 import { Badge, Button, Card, Field, Input, Notice, Spinner, Textarea, cx } from '@/components/organizers/ui'
+import { gaEvent } from '@/lib/ga'
 import { translator, withLang, type SiteLocale, type T } from '@/lib/site-i18n'
 import { DAY_KEY, ROLE_KEY, SLOT_KEY, TIME_KEY, WAY_KEY, slotWords, togetherStrings, waysWords, type TogetherKey } from '@/lib/site-strings/together'
 import {
@@ -274,6 +275,8 @@ export default function SignUp({ locale }: { locale: SiteLocale }) {
         matches += x.matches
       }
       track('together_signup_saved', { kind, ways, languages, slots, max_miles: kind === 'guide' ? maxMiles : null, no_work: workOptional, matches, from_expo: fromExpo })
+      // The Ad Grant's result for the Shift Together campaign (Keith 2026-11-13): import it in Google Ads once GA4 lists it.
+      gaEvent('together_signup_saved', { kind })
       setSaved({ kind, ways: kind === 'carpool' ? [] : ways, matches })
       setEditing(false)
       setFromExpo(false)
