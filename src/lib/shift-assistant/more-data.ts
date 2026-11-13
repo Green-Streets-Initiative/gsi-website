@@ -198,7 +198,7 @@ export async function rewardsPartnersNear(ctx: Ctx, at: Point) {
     })),
     shops_note: 'Local shops in the Shift rewards catalog. When someone wins a reward (a challenge prize, a campaign, a drawing), they pick a gift card from the shops that reward offers, in My rewards. Which shops a reward offers shows when they pick.',
     partner_discounts: discounts,
-    discounts_note: 'Rewards Partner offers, unlocked by Shift level (more trips walking, biking or on transit, and a higher share of trips that aren't driving alone), however they get to the shop. They show the offer in the Rewards tab at the counter. Points are not money and do not buy these.',
+    discounts_note: 'Rewards Partner offers, unlocked by Shift level (more trips walking, biking or on transit, and a higher share of trips that aren’t driving alone), however they get to the shop. They show the offer in the Rewards tab at the counter. Points are not money and do not buy these.',
     ...(shops.length || discounts.length ? {} : { none: 'No Rewards Partner shops within about a mile and a half.' }),
   }
 }
