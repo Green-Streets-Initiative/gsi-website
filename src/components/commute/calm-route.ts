@@ -19,6 +19,7 @@
 
 import { translator, type SiteLocale } from '@/lib/site-i18n'
 import { advisorStrings } from '@/lib/site-strings/advisor'
+import { COMFORT_COLORS as SHARED_COMFORT_COLORS, COMFORT_COLORS_LIGHT } from '@/lib/comfort-colors'
 
 const tr = (locale: SiteLocale) => translator(advisorStrings, locale)
 
@@ -109,25 +110,12 @@ const SAME_SPOT_MILES = 0.04
 
 const COMFORT_ORDER = ['path', 'protected', 'bike_lane', 'quiet_street', 'shared_road'] as const
 
-/** Map and bar colours for the comfort tiers, the website's legend
- *  (src/lib/nearby/route-lines.ts) plus the app's quiet-street tier. */
-export const COMFORT_COLORS: Record<string, string> = {
-  path: '#BAF14D',
-  protected: '#2DD4BF',
-  bike_lane: '#7FB5FF',
-  quiet_street: '#C7F27A',
-  shared_road: '#B4BAD2',
-}
-
-/** The same tiers darker, so each reads on a light street map and a light
- *  page (the organizer console's route review, route choices, the ride page). */
-export const MAP_COMFORT_COLORS: Record<string, string> = {
-  path: '#2E8B57',
-  protected: '#0E9F8E',
-  bike_lane: '#2966E5',
-  quiet_street: '#7CB342',
-  shared_road: '#8C8FA3',
-}
+/** Map and bar colours for the comfort tiers: the shared set
+ *  (src/lib/comfort-colors.ts, the app's twin). MAP_ is the darker set for
+ *  light street maps and light pages (the organizer console's route review,
+ *  route choices, the ride page). */
+export const COMFORT_COLORS: Record<string, string> = SHARED_COMFORT_COLORS
+export const MAP_COMFORT_COLORS: Record<string, string> = COMFORT_COLORS_LIGHT
 
 export const COMFORT_LABELS: Record<string, string> = {
   path: 'Path',

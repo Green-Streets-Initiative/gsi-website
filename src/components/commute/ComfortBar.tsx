@@ -1,17 +1,12 @@
 'use client'
 
 import type { BikeComfort, BikeComfortSegment } from '@/lib/types/commute'
-
-const SEGMENT_COLORS: Record<string, string> = {
-  protected: '#BAF14D',
-  bike_lane: '#2966E5',
-  shared_road: '#FF8C35',
-}
+import { COMFORT_COLORS, COMFORT_COLORS_LIGHT } from '@/lib/comfort-colors'
 
 const SEGMENT_LABELS: Record<string, string> = {
   protected: 'Protected',
   bike_lane: 'Bike lane',
-  shared_road: 'Shared',
+  shared_road: 'Shared road',
 }
 
 // Roll up a flat segment list into per-rating mileage totals, shown as each
@@ -47,7 +42,8 @@ export default function ComfortBar({ rating, segments, theme = 'dark', colors, l
   colors?: Record<string, string>
   labels?: Record<string, string>
 }) {
-  const C = { ...SEGMENT_COLORS, ...colors }
+  // The shared comfort colours (src/lib/comfort-colors.ts), darker on a light page.
+  const C: Record<string, string> = { ...(theme === 'light' ? COMFORT_COLORS_LIGHT : COMFORT_COLORS), ...colors }
   const L = { ...SEGMENT_LABELS, ...labels }
   const hasSegments = !!segments && segments.length > 0
   const totalDistance = hasSegments

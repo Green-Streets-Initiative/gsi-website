@@ -7,6 +7,7 @@ import { useNearbyTone } from './NearbyTone'
 import { PanelPhoto } from './DetailPanel'
 import { decodePolyline, bearingDegrees } from '@/lib/geo/polyline'
 import { OTHER_OWNER } from '@/lib/nearby/route-lines'
+import { COMFORT_COLORS } from '@/lib/comfort-colors'
 import type { BikeComfortData, BikeComfortTier } from './types'
 import type { AvoidState } from './useAvoidStreets'
 
@@ -17,13 +18,13 @@ import type { AvoidState } from './useAvoidStreets'
  * for paint — so the bar, the drawn route, and the legend read as one system.
  */
 
+// The shared comfort colours (src/lib/comfort-colors.ts), so the bar, the
+// bullets and the drawn route agree with each other and with the app.
 export const NEARBY_COMFORT_COLORS: Record<BikeComfortTier, string> = {
-  path: '#BAF14D',
-  protected: '#2DD4BF',
-  bike_lane: '#7FB5FF',
-  // Kept in step with route-lines' BIKE_TIER_STYLE — the bar, the bullets and
-  // the drawn route have to be the same gray or the legend lies.
-  shared_road: '#B4BAD2',
+  path: COMFORT_COLORS.path,
+  protected: COMFORT_COLORS.protected,
+  bike_lane: COMFORT_COLORS.bike_lane,
+  shared_road: COMFORT_COLORS.shared_road,
 }
 
 export const NEARBY_COMFORT_LABELS: Record<BikeComfortTier, string> = {
