@@ -17,7 +17,7 @@ import { bearingDegrees } from '@/lib/geo/polyline'
 import { boardingByDirection, boardingIsShared, type TransitCorridor, type BikeCorridor, type FrequencyInfo } from '@/lib/nearby/corridors'
 import { TrainIcon, BusIcon, FerryIcon, ShuttleIcon } from '@/components/wayfinding/WayfindingIcons'
 import { dockStatsText } from './markers'
-import { ShuttleOperatorLines } from './ShuttleOperator'
+import { ShuttleOperatorLines, ShuttleNextAt, ShuttleRouteStops, scheduledWordKey } from './ShuttleOperator'
 import { useNearbyLocale, useNearbyT } from './NearbyI18n'
 import { CorridorPaths } from './ReachPaths'
 import { CorridorNotes } from '@/components/notes/ReachNotes'
@@ -261,19 +261,24 @@ export function DetailContent({ selection, stationByKey, corridorById, docks, bo
                           <strong className="shrink-0 text-[0.75rem] font-bold text-(--nb-accent)">
                             {a.nextMin === 0 ? tr('detail.now') : tr('detail.in_min', { minutes: a.nextMin })}
                             {a.lateMin ? <span className="text-(--nb-warn)"> · {tr('lists.late_min', { min: a.lateMin })}</span> : null}
-                            {a.scheduled ? <span className="text-[13px] font-normal text-(--nb-ink-80)"> · {tr('transit.scheduled')}</span> : null}
+                            {a.scheduled ? <span className="text-[13px] font-normal text-(--nb-ink-80)"> · {tr(scheduledWordKey(r))}</span> : null}
                           </strong>
                         )}
                       </span>
                     ))}
                   </span>
                 ) : (
-                  <span className="min-w-0 flex-1 truncate text-[0.78rem] text-(--nb-ink-80)">{routeEndpoints(corridor, r)}</span>
+                  <>
+                    <span className="min-w-0 flex-1 truncate text-[0.78rem] text-(--nb-ink-80)">{routeEndpoints(corridor, r)}</span>
+                    <ShuttleNextAt route={r} />
+                  </>
                 )}
               </button>
             )
           })}
         </div>
+        {/* A shuttle's stops in order: how to tell it goes your way */}
+        <ShuttleRouteStops station={st} className="mt-1 px-1.5" />
         <div className="mt-1 text-[0.72rem] text-(--nb-ink-70)">{tr('detail.tap_route_hint')}</div>
         <PanelPhoto
           spec={st.isRail
