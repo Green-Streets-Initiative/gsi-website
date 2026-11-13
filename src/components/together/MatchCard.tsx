@@ -5,7 +5,8 @@ import { useState } from 'react'
 import { Briefcase, CalendarDays, Car, Clock, GraduationCap, House, Languages, Mail, MapPin, Medal, MessageSquare, Route, Sprout } from 'lucide-react'
 import { Avatar, Chip, ChipRow, FitMeter, WAY_ICON } from '@/components/together/bits'
 import { Button, Card, Input, Textarea, cx } from '@/components/organizers/ui'
-import { siteDate, withLang, type SiteLocale, type T } from '@/lib/site-i18n'
+import { siteDate, translator, withLang, type SiteLocale, type T } from '@/lib/site-i18n'
+import { planStrings } from '@/lib/site-strings/together-plan'
 import { LANGUAGE_KEY, SLOT_KEY, TIME_KEY, WAY_KEY, type TogetherKey } from '@/lib/site-strings/together'
 import {
   TIMES, arriveGap, clock, experienceFit, isSlot, overallFit, phoneLabel, routeFit, setMatchPhone, timingDaysKnown, timingFit, track,
@@ -290,12 +291,13 @@ export function MatchCard({ m, locale, t, busy, myArrive, onAnswer, onWent, onRa
               <Mail className="h-4 w-4" aria-hidden /> {t('matches.email', { name })}
             </a>
             {!carpool && m.status === 'connected' ? (
+              // A first trip match has its plan page (the app's ride plan); a practice ride plans with the trip planner.
               <Link
-                href={withLang('/trip', locale)}
+                href={withLang(m.kind === 'guide' ? `/together/plan/${m.id}` : '/trip', locale)}
                 onClick={() => track('together_plan_opened', { source: 'match' })}
                 className="inline-flex min-h-[44px] items-center gap-2 rounded-[10px] border border-(--ev-line-strong) bg-white px-4 text-[15px] font-semibold"
               >
-                <Route className="h-4 w-4" aria-hidden /> {t('matches.plan')}
+                <Route className="h-4 w-4" aria-hidden /> {m.kind === 'guide' ? translator(planStrings, locale)('plan.see_plan') : t('matches.plan')}
               </Link>
             ) : null}
           </div>

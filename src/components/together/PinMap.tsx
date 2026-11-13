@@ -6,7 +6,8 @@ import { BICYCLE_PATH, RASTER_TILE_ATTRIBUTION, glyphPath, rasterTileUrl } from 
  * viewBox> (like nearby/StaticMapSvg) with a few pins: people's homes as
  * dots, a T stop with the T glyph, path entrances with a bike. No map
  * library, no JS. Used for "where you'd meet" in How it works (made-up
- * example homes) and for the person's own home and paths on /together/practice.
+ * example homes), for the person's own home and paths on /together/practice,
+ * and with `line` for a first trip plan's route on /together/plan.
  */
 export type Pin = {
   lat: number
@@ -21,8 +22,10 @@ const R = { home: 9, match: 9, rail: 12, path: 11 } as const
 const FILL = { home: '#191A2E', match: '#2D6A4F', path: '#2D6A4F' } as const
 const FONT = 14
 
-export default function PinMap({ pins, width = 480, height = 300, title, caption, className, boxClassName = 'aspect-[8/5]', maxZoom = 15, quiet = true }: {
+export default function PinMap({ pins, line, width = 480, height = 300, title, caption, className, boxClassName = 'aspect-[8/5]', maxZoom = 15, quiet = true }: {
   pins: Pin[]
+  /** A route drawn under the pins (the map fits it too). */
+  line?: { lat: number; lng: number }[]
   /** A line under the map, before the map credit. */
   caption?: string
   /** The map box's size (it fills the width). */
@@ -37,7 +40,9 @@ export default function PinMap({ pins, width = 480, height = 300, title, caption
   quiet?: boolean
 }) {
   if (!pins.length) return null
-  const bounds = pins.reduce(
+  // Every few points of a long route is plenty at this size.
+  const route = line && line.length > 1 ? line.filter((_, i) => i % Math.max(1, Math.ceil(line.length / 400)) === 0 || i === line.length - 1) : []
+  const bounds = [...pins, ...route].reduce(
     (b, p) => ({ minLat: Math.min(b.minLat, p.lat), maxLat: Math.max(b.maxLat, p.lat), minLng: Math.min(b.minLng, p.lng), maxLng: Math.max(b.maxLng, p.lng) }),
     { minLat: pins[0].lat, maxLat: pins[0].lat, minLng: pins[0].lng, maxLng: pins[0].lng },
   )
@@ -65,6 +70,12 @@ export default function PinMap({ pins, width = 480, height = 300, title, caption
         <g filter={quiet ? 'url(#together-quiet-tiles)' : undefined}>
           {tiles.map((t) => <image key={t.key} href={t.url} x={t.x} y={t.y} width={TILE} height={TILE} />)}
         </g>
+        {route.length ? (
+          <polyline
+            points={route.map((p) => { const { x, y } = toPixel(vp, p.lat, p.lng); return `${x.toFixed(1)},${y.toFixed(1)}` }).join(' ')}
+            fill="none" stroke="#2D6A4F" strokeWidth={5} strokeLinecap="round" strokeLinejoin="round"
+          />
+        ) : null}
         {pins.map((p, i) => {
           const { x, y } = toPixel(vp, p.lat, p.lng)
           const r = R[p.kind]

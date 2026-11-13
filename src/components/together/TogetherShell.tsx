@@ -140,7 +140,7 @@ function SubBar() {
   if (phase !== 'ready' && phase !== 'off') return null
   const nav = [
     { href: '/together', label: t('shell.your_signup'), active: path === '/together' || path.startsWith('/together/practice') },
-    { href: '/together/matches', label: t('shell.your_matches'), active: path.startsWith('/together/matches') },
+    { href: '/together/matches', label: t('shell.your_matches'), active: path.startsWith('/together/matches') || path.startsWith('/together/plan') },
   ]
   return (
     <div className="border-b border-(--ev-line) bg-(--ev-bar)">
@@ -317,9 +317,9 @@ function SignIn() {
   const logan = variant === 'logan'
   const guide = !logan && audience === 'guide'
   const newcomer = !logan && audience === 'newcomer'
-  // Arrived from a match email: just the sign-in, in the email's words.
+  // Arrived from a match or plan email: just the sign-in, in the email's words.
   const path = usePathname()
-  const forMatch = !logan && path.startsWith('/together/matches')
+  const forMatch = !logan && (path.startsWith('/together/matches') || path.startsWith('/together/plan'))
   const tl = translator(loganStrings, locale)
   const [email, setEmail] = useState('')
   const [sent, setSent] = useState<string | null>(null)
