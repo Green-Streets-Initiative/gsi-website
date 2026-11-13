@@ -108,6 +108,10 @@
     {
       "date": "2026-11-13",
       "what": "Claude, on Keith's 'Yes, fix them' (interactive chat). How-to Guides lesson ads still said the street lesson was near Somerville with 10 to start; /bike-lessons now offers it in Boston and nearby towns (instructors in Somerville and Dorchester), one per person, no cap. Edited in the UI, all saved with no policy issues: Bike lessons Ad 1 (headline 'Lessons near Somerville' -> 'Lessons in and near Boston'; description '... a 1:1 lesson near Somerville.' -> '... a 1:1 lesson in or near Boston.'); Riding in traffic Ad 1 ('Near Davis Square, Somerville' -> 'In Boston and nearby towns'; '... and live near Somerville. 10 to start.' -> 'Free 1:1 street lessons for adults who can ride, in Boston and nearby towns.'); Riding in traffic Ad 2 ('1:1 lessons near Somerville' -> '1:1 lessons in and near Boston'; 'Free near Somerville.' -> 'Free in and near Boston.'). Bike lessons Ad 2 unchanged: its Somerville lines describe the Bicycle Riding School classes, which are in Somerville. Edits reset those 3 ads to Pending review. Draft updated: ads/drafts/bike-lessons-ad-groups-2026-10-27.md."
+    },
+    {
+      "date": "2026-11-13",
+      "what": "Claude, on Keith's 'Let's do it' (interactive chat, Claude in Chrome). How-to Guides > Riding in traffic Ad 1: headline '90 minutes, one-on-one' -> 'One-on-one, on real streets' (27 chars). Why: lesson length is up to each instructor; 90 minutes is only Bicycle Riding School's format (site and emails changed the same day). Saved with no policy issues; ad strength Excellent; the edit form shows the new headline. The ad had 0 impressions this month before the edit."
     }
   ],
   "open_items": [

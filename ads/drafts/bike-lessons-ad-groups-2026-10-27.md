@@ -76,7 +76,7 @@ Several may show "Not eligible: low search volume" at first. That is expected
 and costs nothing.
 
 **Ad 1**
-- Headlines: Nervous biking in traffic? · Free 1:1 street lesson · Learn to bike in the city · Ride with an instructor · Practice turns and crossings · Ride at your own pace · 90 minutes, one-on-one · Green Streets pays · In Boston and nearby towns · Start bike commuting · Pick a calm bike route · Easy group rides near you · Classes across Massachusetts · Green Streets Initiative · Feel at home on city streets
+- Headlines: Nervous biking in traffic? · Free 1:1 street lesson · Learn to bike in the city · Ride with an instructor · Practice turns and crossings · Ride at your own pace · One-on-one, on real streets · Green Streets pays · In Boston and nearby towns · Start bike commuting · Pick a calm bike route · Easy group rides near you · Classes across Massachusetts · Green Streets Initiative · Feel at home on city streets
 - Descriptions:
   - An instructor rides with you on real streets, at your own pace. Green Streets pays.
   - Free 1:1 street lessons for adults who can ride, in Boston and nearby towns.
@@ -92,6 +92,8 @@ and costs nothing.
   - From Green Streets Initiative, a Massachusetts nonprofit helping people bike since 2006.
 
 Updated 2026-11-13 in the account: street-lesson lines now say Boston and nearby towns (instructors in Somerville and Dorchester; the 10-lesson cap is gone). The Somerville class lines in Bike lessons Ad 2 stay (Bicycle Riding School classes).
+
+Updated 2026-11-13: '90 minutes, one-on-one' became 'One-on-one, on real streets' (lesson length is up to each instructor).
 
 All headlines are 30 characters or fewer and descriptions 90 or fewer (checked).
 
