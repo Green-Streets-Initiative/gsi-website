@@ -198,7 +198,7 @@ export async function rewardsPartnersNear(ctx: Ctx, at: Point) {
     })),
     shops_note: 'Local shops in the Shift rewards catalog. When someone wins a reward (a challenge prize, a campaign, a drawing), they pick a gift card from the shops that reward offers, in My rewards. Which shops a reward offers shows when they pick.',
     partner_discounts: discounts,
-    discounts_note: 'Rewards Partner offers, unlocked by Shift level (more trips walking, biking or on transit), however they get to the shop. They show the offer in the Rewards tab at the counter. Points are not money and do not buy these.',
+    discounts_note: 'Rewards Partner offers, unlocked by Shift level (more trips walking, biking or on transit, and a higher share of trips that aren't driving alone), however they get to the shop. They show the offer in the Rewards tab at the counter. Points are not money and do not buy these.',
     ...(shops.length || discounts.length ? {} : { none: 'No Rewards Partner shops within about a mile and a half.' }),
   }
 }
@@ -274,7 +274,7 @@ export async function myProgress(ctx: Ctx) {
   const longBike = ((longBikeQ.data ?? [])[0] as { distance_miles: number; started_at: string } | undefined)
   const milesBy = (modes: string[]) => round1(trips.filter((t) => modes.includes(t.mode)).reduce((n, t) => n + (t.distance_miles ?? 0), 0))
 
-  // Level: lifetime active trips and the share of trips walking, biking or on transit over 60 days.
+  // Level: lifetime active trips (walk, bike, transit) and the 60-day Shift Rate, which counts carpools too (Keith 2026-10-09).
   type Tier = { id: number; display_name: string; trips_required: number; shift_rate_minimum: number }
   const tiers = (tiersQ.data ?? []) as Tier[]
   const mine = tierQ.data as { current_tier_id: number; lifetime_active_trips: number; current_60day_shift_rate: number | null } | null
@@ -301,7 +301,7 @@ export async function myProgress(ctx: Ctx) {
       next: next ? {
         name: next.display_name,
         trips_to_go: Math.max(0, next.trips_required - (mine?.lifetime_active_trips ?? 0)),
-        share_needed: `${Math.round(next.shift_rate_minimum * 100)}% of their trips over 60 days walking, biking or on transit`,
+        share_needed: `${Math.round(next.shift_rate_minimum * 100)}% of their trips over 60 days walking, biking, on transit or carpooling (their Shift Rate)`,
         their_share: rate != null && (mine?.lifetime_active_trips ?? 0) > 0 ? `${Math.round(rate * 100)}%` : null,
       } : null,
       unlocks: 'Higher levels unlock Rewards Partner offers.',
