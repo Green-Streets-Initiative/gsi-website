@@ -8,7 +8,7 @@
  */
 
 import type { AdvisorResult, BikeParkingSpot, MBTAStop, TransitLeg } from '@/lib/types/commute'
-import { fetchBikeParking, fetchPredictions, type ShuttleDeparture, type StopTopology } from '@/lib/nearby/live-data'
+import { fetchBikeParking, fetchNearbyTransit, type ShuttleDeparture, type StopTopology } from '@/lib/nearby/live-data'
 import { shuttleAgencyFor, type ShuttleAccess } from '@/lib/nearby/shuttle-agencies'
 import { decodePolyline } from '@/lib/geo/polyline'
 import { formatClock, shiftClock } from '@/lib/employer/commute-costs'
@@ -67,7 +67,7 @@ const LINE_COLORS: Record<string, string> = {
   silver: '#7C878E', cr: '#80276C', ferry: '#008EAA', bus: '#FFC72C',
 }
 
-/** MBTA route_type filter for the predictions call. */
+/** MBTA route_type family of a leg ('3' bus, '2' commuter rail, '4' ferry, '0,1' subway). */
 export function routeTypesFor(leg: TransitLeg): string {
   const t = (leg.route_type ?? '').toLowerCase()
   const id = (leg.route_id ?? '').toLowerCase()
@@ -200,20 +200,20 @@ export async function fetchLegLive(leg: TransitLeg, stops: MBTAStop[], signal?: 
   const to = stops.find((s) => norm(s.name) === norm(leg.arrival_stop_name)) ?? null
   const shapes = meta ? trimShapes(meta.polylines, from, to) : []
 
+  // Live times at the boarding stop, from the app's nearby-transit (the one
+  // source of departures on this site): the nearest stop there with this line.
   let nextMinutes: number[] = []
-  if (stopId) {
+  if (stopId && from) {
     try {
-      const preds = await fetchPredictions([stopId], routeTypesFor(leg))
-      const mine: { dir: number; minutes: number }[] = []
-      for (const [key, minutes] of preds) {
-        const parts = key.split('-')
-        const dir = Number(parts[parts.length - 1])
-        const route = parts.slice(1, -1).join('-')
-        if (route !== routeId) continue
-        mine.push({ dir, minutes })
-      }
+      const transit = await fetchNearbyTransit(from.lat, from.lng)
+      const stop = [...(transit?.stops ?? [])]
+        .sort((a, b) => a.distance_miles - b.distance_miles)
+        .find((s) => s.routes.some((r) => r.route_id === routeId && r.arrivals.length > 0))
+      const mine = (stop?.routes ?? [])
+        .filter((r) => r.route_id === routeId)
+        .flatMap((r) => r.arrivals.map((a) => ({ dir: a.direction_id, minutes: a.minutes_away })))
       const wanted = direction != null ? mine.filter((m) => m.dir === direction) : mine
-      nextMinutes = (wanted.length > 0 ? wanted : mine).map((m) => m.minutes).sort((a, b) => a - b).slice(0, 3)
+      nextMinutes = (wanted.length > 0 ? wanted : mine).map((m) => m.minutes).filter((m) => m >= 0).sort((a, b) => a - b).slice(0, 3)
     } catch { /* live countdowns are optional */ }
   }
 

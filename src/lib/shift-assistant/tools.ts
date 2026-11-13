@@ -467,7 +467,7 @@ export const TOOLS: Anthropic.Tool[] = [
   },
   {
     name: 'get_departures',
-    description: "Live MBTA departures from the stops near a place: subway, Commuter Rail and ferry within about a 10-minute walk and buses within about 5, the next three times each way, and whether a full-size bike can ride that train now. For another day or time, the timetable, with which Commuter Rail trains take bikes. Use for \"when's the next train\", \"how long for the 87\", \"should I leave now\", \"which trains tomorrow morning take bikes\", or before telling someone to catch something soon. Near their location unless you pass a place.",
+    description: "Live departures from the stops near a place: MBTA subway, Commuter Rail and ferry within about a 10-minute walk and MBTA buses within about 5, the next three times each way, and whether a full-size bike can ride that train now; plus regional buses (WRTA in Worcester, PVTA in Springfield and the other regional transit authorities) within about a 10-minute walk. For another day or time, the timetable, with which Commuter Rail trains take bikes. Use for \"when's the next train\", \"how long for the 87\", \"should I leave now\", \"which trains tomorrow morning take bikes\", or before telling someone to catch something soon. Near their location unless you pass a place.",
     input_schema: {
       type: 'object',
       properties: {
@@ -1521,7 +1521,7 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
         const date = typeof input.leave_date === 'string' && input.leave_date ? input.leave_date : null
         const time = typeof input.leave_time === 'string' && input.leave_time ? input.leave_time : null
         const iso = date || time ? bostonIso(date ?? todayKey(), time ?? '08:00') : null
-        return ok(await departuresNear(at, typeof input.line === 'string' && input.line ? input.line : null, iso ? new Date(iso) : null))
+        return ok(await departuresNear(at, typeof input.line === 'string' && input.line ? input.line : null, iso ? new Date(iso) : null, ctx.admin))
       }
       case 'find_park_and_ride': {
         const near = asPlace(input.near)

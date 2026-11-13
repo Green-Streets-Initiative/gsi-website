@@ -1,9 +1,10 @@
 /**
  * Client-side live-data fetchers for nearby active-transportation options:
- * Bluebikes docks (GBFS), MBTA stops/routes/predictions (api-v3.mbta.com,
- * keyless, ~20 req/min per visitor IP — the /nearby snapshot reads its
- * stop topology from our server instead, see TopologyOptions.server), and bike parking
- * (OpenStreetMap Overpass).
+ * Bluebikes docks (GBFS), MBTA stops/routes (api-v3.mbta.com, keyless,
+ * ~20 req/min per visitor IP — the /nearby snapshot reads its stop
+ * topology from our server instead, see TopologyOptions.server),
+ * departure times (the app's nearby-transit, see fetchNearbyTransit), and
+ * bike parking (OpenStreetMap Overpass).
  *
  * Extracted verbatim from src/components/wayfinding/EventMap.tsx and
  * parameterized by (lat, lng) so both the wayfinding pages and the
@@ -11,7 +12,7 @@
  * cache keys (`mbta-stops-v2-…`, `mbta-train-v2-…`) are preserved exactly.
  *
  * The MBTA flow is split into topology (stops + their routes, cached 30 min)
- * and predictions (live, refetched every 30 s) so refresh loops don't
+ * and departure times (live, refetched every 30 s) so refresh loops don't
  * re-query stop topology.
  */
 import type { BluebikeStationLive, MBTAStopLive, BikeParkingSpot } from '@/lib/wayfinding/types'
@@ -253,89 +254,124 @@ async function loadStopTopology(lat: number, lng: number, opts: TopologyOptions)
  *  minute old, only when it is already on that trip). */
 export interface ArrivalVehicle { id: string; lat: number; lng: number }
 
-/** /nearby only: how late each next departure is and which vehicle makes
- *  it, keyed like the minutes. The same rules as the app's nearby-transit
- *  (`lateMinutesFor`, `vehicleOnTrip` in shape.ts): late only for commuter
- *  rail and buses, 5+ minutes behind the timetable; a vehicle only on that
- *  very trip with a fix under 60 s old. KEEP IN SYNC until this page reads
- *  nearby-transit (parity gap 9). */
-export interface PredictionExtras {
-  late: Map<string, number>
-  vehicles: Map<string, ArrivalVehicle>
+/* ── Departures: the app's nearby-transit edge function ──
+ *
+ * Every departure time on this site comes from the Shift app's
+ * `nearby-transit`, the same call the app's Around You makes (parity gap
+ * departures-rta, 2026-11-13). It reads MBTA with our key, so a visitor is
+ * never rate-limited the way the old keyless browser calls were, and it
+ * carries the regional transit authorities' buses (WRTA, PVTA and the rest)
+ * that MBTA knows nothing about. Late minutes and vehicle positions follow
+ * its rules (shape.ts `lateMinutesFor`, `vehicleOnTrip`). */
+
+export interface TransitArrival {
+  minutes_away: number
+  direction_id: 0 | 1 | null
+  headsign: string | null
+  /** false = the printed timetable (regional buses with no live feed) */
+  is_realtime: boolean
+  late_minutes?: number
+  vehicle?: { id: string; lat: number; lng: number }
 }
-const LATE_SHOW_MIN = 5
-const VEHICLE_FRESH_MS = 60_000
+export interface TransitRoute {
+  route_id: string
+  route_name: string
+  short_name: string
+  route_type: number
+  arrivals: TransitArrival[]
+}
+export interface TransitStop {
+  id: string
+  name: string
+  lat: number
+  lng: number
+  distance_miles: number
+  /** "MBTA", a regional authority ("PVTA"), or a shuttle operator */
+  agency: string
+  routes: TransitRoute[]
+  beyond_radius?: boolean
+}
+export interface NearbyTransit {
+  stops: TransitStop[]
+}
 
-/** Live next-departure minutes keyed `${stopId}-${routeId}-${directionId}`. */
-export async function fetchPredictions(stopIds: string[], routeTypes: string, extras?: PredictionExtras): Promise<Map<string, number>> {
-  const predMap = new Map<string, number>()
-  if (stopIds.length === 0) return predMap
+/** Regional transit authority stops carry ids like `rta:pvta:5107`. */
+export function isRegionalStopId(stopId: string): boolean {
+  return stopId.startsWith('rta:')
+}
 
-  const predsRes = await fetch(
-    `https://api-v3.mbta.com/predictions?filter[stop]=${stopIds.join(',')}&filter[route_type]=${routeTypes}&sort=departure_time&page[limit]=100` +
-      (extras ? '&include=schedule,vehicle' : '')
-  )
-  const predsData = await predsRes.json()
+/** One answer per point for this long: the rail, bus and far-stop readers
+ *  of one page load (or one 30 s refresh) share a single call. */
+const TRANSIT_FRESH_MS = 20_000
+const transitCalls = new Map<string, { at: number; p: Promise<NearbyTransit | null> }>()
 
-  // Timetable times and vehicle fixes from `included` (extras only).
-  const schedTimes = new Map<string, string>()
-  const vehicleRows = new Map<string, { fix: ArrivalVehicle; tripId: string | null; at: number }>()
-  if (extras) {
-    for (const row of predsData.included || []) {
-      if (row?.type === 'schedule') {
-        const t = row.attributes?.departure_time ?? row.attributes?.arrival_time
-        if (typeof t === 'string') schedTimes.set(row.id, t)
-      } else if (row?.type === 'vehicle') {
-        const a = row.attributes ?? {}
-        if (Number.isFinite(a.latitude) && Number.isFinite(a.longitude) && typeof a.updated_at === 'string') {
-          vehicleRows.set(row.id, {
-            fix: { id: String(row.id), lat: a.latitude, lng: a.longitude },
-            tripId: row.relationships?.trip?.data?.id ?? null,
-            at: Date.parse(a.updated_at),
-          })
+/** Stops around a point with their next departures, from nearby-transit.
+ *  Null on any failure; callers then show stops without times. */
+export function fetchNearbyTransit(lat: number, lng: number): Promise<NearbyTransit | null> {
+  const key = `${lat.toFixed(4)},${lng.toFixed(4)}`
+  const hit = transitCalls.get(key)
+  if (hit && Date.now() - hit.at < TRANSIT_FRESH_MS) return hit.p
+  const p = loadNearbyTransit(lat, lng)
+  transitCalls.set(key, { at: Date.now(), p })
+  p.then(r => { if (!r && transitCalls.get(key)?.p === p) transitCalls.delete(key) })
+  return p
+}
+
+async function loadNearbyTransit(lat: number, lng: number): Promise<NearbyTransit | null> {
+  const base = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  if (!base || !anonKey) return null
+  try {
+    const res = await fetch(`${base}/functions/v1/nearby-transit`, {
+      method: 'POST',
+      headers: { apikey: anonKey, Authorization: `Bearer ${anonKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ lat, lng, stops_limit: 10 }),
+    })
+    if (!res.ok) return null
+    const data = await res.json()
+    return Array.isArray(data?.stops) ? { stops: data.stops as TransitStop[] } : null
+  } catch {
+    return null
+  }
+}
+
+interface LiveTime { minutes: number; late: number | null; vehicle: ArrivalVehicle | null; scheduled: boolean }
+
+/** Next departure per station × route × direction. Keyed by the lowercased
+ *  stop name, the way both nearby-transit and this page group platforms
+ *  into one station (and by id, for stops it did not group). */
+function liveTimes(data: NearbyTransit | null): Map<string, LiveTime> {
+  const out = new Map<string, LiveTime>()
+  for (const stop of data?.stops ?? []) {
+    for (const route of stop.routes ?? []) {
+      for (const a of route.arrivals ?? []) {
+        if (typeof a?.minutes_away !== 'number' || a.minutes_away < 0) continue
+        const v = a.vehicle
+        const t: LiveTime = {
+          minutes: a.minutes_away,
+          late: typeof a.late_minutes === 'number' ? a.late_minutes : null,
+          vehicle: v && Number.isFinite(v.lat) && Number.isFinite(v.lng) ? { id: String(v.id), lat: v.lat, lng: v.lng } : null,
+          scheduled: a.is_realtime === false,
+        }
+        for (const k of [`${stop.name.toLowerCase()}|${route.route_id}|${a.direction_id}`, `${stop.id}|${route.route_id}|${a.direction_id}`]) {
+          const prev = out.get(k)
+          if (!prev || t.minutes < prev.minutes) out.set(k, t)
         }
       }
     }
   }
-
-  for (const pred of predsData.data || []) {
-    const stopId = pred.relationships?.stop?.data?.id
-    const routeId = pred.relationships?.route?.data?.id
-    const dirId = pred.attributes?.direction_id
-    if (!stopId || !routeId || dirId === undefined) continue
-
-    const depTime = pred.attributes?.departure_time ?? pred.attributes?.arrival_time
-    if (!depTime) continue
-    const diff = (new Date(depTime).getTime() - Date.now()) / 60000
-    if (diff < 0) continue
-
-    const key = `${stopId}-${routeId}-${dirId}`
-    if (predMap.has(key)) continue
-    predMap.set(key, Math.round(diff))
-    if (extras) {
-      const isBusOrCommuterRail = routeTypes === '3' || routeId.startsWith('CR-')
-      const sched = schedTimes.get(pred.relationships?.schedule?.data?.id ?? '')
-      if (isBusOrCommuterRail && sched) {
-        const late = Math.round((Date.parse(depTime) - Date.parse(sched)) / 60000)
-        if (Number.isFinite(late) && late >= LATE_SHOW_MIN) extras.late.set(key, late)
-      }
-      const v = vehicleRows.get(pred.relationships?.vehicle?.data?.id ?? '')
-      const tripId = pred.relationships?.trip?.data?.id
-      if (v && tripId && v.tripId === tripId && Date.now() - v.at <= VEHICLE_FRESH_MS) extras.vehicles.set(key, v.fix)
-    }
-  }
-
-  return predMap
+  return out
 }
 
-/** One MBTAStopLive row per (stop × route × direction), sorted by distance. */
-export function mergePredictions(topology: StopTopology[], predMap: Map<string, number>, extras?: PredictionExtras): MBTAStopLive[] {
+/** One MBTAStopLive row per (stop × route × direction), sorted by distance.
+ *  `extras` adds lateness and the vehicle (the /nearby snapshot only). */
+function mergeLiveTimes(topology: StopTopology[], times: Map<string, LiveTime>, extras: boolean): MBTAStopLive[] {
   const stops: MBTAStopLive[] = []
   for (const s of topology) {
     if (s.routes.length === 0) continue
     for (const route of s.routes) {
       for (let dirIdx = 0; dirIdx < route.directions.length; dirIdx++) {
-        const predKey = `${s.id}-${route.id}-${dirIdx}`
+        const t = times.get(`${s.name.toLowerCase()}|${route.id}|${dirIdx}`) ?? times.get(`${s.id}|${route.id}|${dirIdx}`)
         stops.push({
           stop_id: s.id,
           name: s.name,
@@ -344,9 +380,9 @@ export function mergePredictions(topology: StopTopology[], predMap: Map<string, 
           route_id: route.id,
           route_name: route.name,
           direction: route.directions[dirIdx] ?? '',
-          next_arrival_minutes: predMap.get(predKey) ?? null,
+          next_arrival_minutes: t?.minutes ?? null,
           distance_meters: s.dist,
-          ...(extras ? { late_minutes: extras.late.get(predKey) ?? null, vehicle: extras.vehicles.get(predKey) ?? null } : {}),
+          ...(extras ? { late_minutes: t?.late ?? null, vehicle: t?.vehicle ?? null } : {}),
         })
       }
     }
@@ -354,24 +390,57 @@ export function mergePredictions(topology: StopTopology[], predMap: Map<string, 
   return stops.sort((a, b) => a.distance_meters - b.distance_meters)
 }
 
+/** Regional buses (WRTA, PVTA, MART and the rest) as bus rows: one per
+ *  route and direction, its next time live where the authority publishes
+ *  live times and from its timetable otherwise (`scheduled`). */
+export function regionalBusRows(data: NearbyTransit | null): MBTAStopLive[] {
+  const rows: MBTAStopLive[] = []
+  for (const stop of data?.stops ?? []) {
+    if (!isRegionalStopId(stop.id)) continue
+    for (const route of stop.routes ?? []) {
+      const next = (route.arrivals ?? []).find(a => typeof a?.minutes_away === 'number' && a.minutes_away >= 0)
+      if (!next) continue
+      rows.push({
+        stop_id: stop.id,
+        name: stop.name,
+        lat: stop.lat,
+        lng: stop.lng,
+        route_id: route.route_id,
+        route_name: route.short_name || route.route_name,
+        direction: next.headsign ?? '',
+        next_arrival_minutes: next.minutes_away,
+        distance_meters: stop.distance_miles * 1609.34,
+        scheduled: next.is_realtime === false,
+        late_minutes: null,
+        vehicle: null,
+      })
+    }
+  }
+  return rows
+}
+
 /** Composed bus fetch — defaults keep behavior and cache keys identical to
- *  the original wayfinding version; budget-sensitive pages pass overrides. */
+ *  the original wayfinding version; budget-sensitive pages pass overrides.
+ *  The /nearby snapshot (`server`) also gets regional buses, lateness and
+ *  vehicles. */
 export async function fetchMBTAStops(
   lat: number, lng: number,
   overrides?: { cachePrefix?: string; maxStops?: number; radiusDeg?: number; server?: boolean },
 ): Promise<MBTAStopLive[]> {
   try {
-    const topology = await fetchStopTopology(lat, lng, {
-      routeTypes: '3', radiusDeg: overrides?.radiusDeg ?? 0.01, nameStyle: 'short',
-      cachePrefix: overrides?.cachePrefix ?? 'mbta-stops-v2',
-      maxStops: overrides?.maxStops,
-      server: overrides?.server ? 'bus' : undefined,
-    })
-    if (topology.length === 0) return []
-    // The /nearby snapshot (server) also reads lateness and vehicles.
-    const extras: PredictionExtras | undefined = overrides?.server ? { late: new Map(), vehicles: new Map() } : undefined
-    const predMap = await fetchPredictions(topology.map(s => s.id), '3', extras)
-    return mergePredictions(topology, predMap, extras)
+    const [topology, transit] = await Promise.all([
+      fetchStopTopology(lat, lng, {
+        routeTypes: '3', radiusDeg: overrides?.radiusDeg ?? 0.01, nameStyle: 'short',
+        cachePrefix: overrides?.cachePrefix ?? 'mbta-stops-v2',
+        maxStops: overrides?.maxStops,
+        server: overrides?.server ? 'bus' : undefined,
+      }).catch(() => [] as StopTopology[]),
+      fetchNearbyTransit(lat, lng),
+    ])
+    const extras = !!overrides?.server
+    const mbta = mergeLiveTimes(topology, liveTimes(transit), extras)
+    if (!extras) return mbta
+    return [...mbta, ...regionalBusRows(transit)].sort((a, b) => a.distance_meters - b.distance_meters)
   } catch (err) {
     console.warn('[nearby] fetchMBTAStops failed:', err)
     return []
@@ -398,9 +467,7 @@ export async function fetchTrainStops(
       server: server ? 'rail' : undefined,
     })
     if (topology.length === 0) return []
-    const extras: PredictionExtras | undefined = server ? { late: new Map(), vehicles: new Map() } : undefined
-    const predMap = await fetchPredictions(topology.map(s => s.id), routeTypes, extras)
-    return mergePredictions(topology, predMap, extras)
+    return mergeLiveTimes(topology, liveTimes(await fetchNearbyTransit(lat, lng)), server)
   } catch (err) {
     console.warn('[nearby] fetchTrainStops failed:', err)
     return []

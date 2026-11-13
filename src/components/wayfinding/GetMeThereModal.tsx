@@ -6,6 +6,7 @@ import type { BikeComfort } from '@/lib/types/commute'
 import { t } from '@/lib/wayfinding/i18n'
 import { haversineMeters, formatDistance, walkTimeMinutes } from '@/lib/wayfinding/geo'
 import { trackEvent } from '@/lib/wayfinding/telemetry'
+import { fetchNearbyTransit } from '@/lib/nearby/live-data'
 import { PersonWalkIcon, BusIcon, BicycleIcon, TrainIcon } from './WayfindingIcons'
 import ComfortBar from '@/components/commute/ComfortBar'
 import AddressAutocomplete from '@/components/AddressAutocomplete'
@@ -164,7 +165,9 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
     if (!controller.signal.aborted) setLoadingRoutes(false)
   }, [destLat, destLng])
 
-  // Surgical MBTA prediction: query for the specific stop+route Google identified
+  // Next departure for the line Google picked, at the stop it boards from.
+  // Times come from the app's nearby-transit (MBTA and regional buses), the
+  // one source of departures on this site.
   const fetchMbtaPrediction = useCallback(async () => {
     if (!transitRoute?.transitSteps?.length) return
     const firstStep = transitRoute.transitSteps[0]
@@ -172,46 +175,33 @@ export default function GetMeThereModal({ event, locale, userPosition, bluebikes
 
     setLoadingMbtaPred(true)
     try {
-      const routeType = firstStep.vehicleType === 'BUS' ? '3' : '0,1'
-      // Find the MBTA stop near the departure stop Google identified
-      const stopsRes = await fetch(
-        `https://api-v3.mbta.com/stops?filter[latitude]=${firstStep.departureStopLat}&filter[longitude]=${firstStep.departureStopLng}&filter[radius]=0.003&filter[route_type]=${routeType}&page[limit]=5`
-      )
-      const stopsData = await stopsRes.json()
-      const stopIds = (stopsData.data || []).map((s: { id: string }) => s.id)
-      if (stopIds.length === 0) { setLoadingMbtaPred(false); return }
-
-      // Query predictions for those stops
-      const predsRes = await fetch(
-        `https://api-v3.mbta.com/predictions?filter[stop]=${stopIds.join(',')}&filter[route_type]=${routeType}&sort=departure_time&page[limit]=10`
-      )
-      const predsData = await predsRes.json()
-
+      const transit = await fetchNearbyTransit(firstStep.departureStopLat, firstStep.departureStopLng)
       const lineShort = firstStep.lineShortName.toLowerCase()
       const lineName = firstStep.lineName.toLowerCase()
-
-      for (const pred of predsData.data || []) {
-        const depTime = pred.attributes.departure_time
-        if (!depTime) continue
-        const diff = (new Date(depTime).getTime() - Date.now()) / 60000
-        if (diff < 0) continue
-        const routeId = pred.relationships?.route?.data?.id ?? ''
+      // Match by route ID or short name containing the line's name or vice versa
+      const matches = (routeId: string, shortName: string) => {
         const routeLower = routeId.toLowerCase()
-        // Match by route ID containing the line short name or vice versa
-        if (routeLower.includes(lineShort) || lineShort.includes(routeLower) ||
-            routeLower.includes(lineName) || lineName.includes(routeLower) ||
-            routeId.replace(/^0*/, '') === firstStep.lineShortName) {
-          setMbtaPred({
-            minutesAway: Math.round(diff),
-            routeId,
-            stopId: pred.relationships?.stop?.data?.id ?? '',
-          })
-          setLoadingMbtaPred(false)
-          return
+        const short = shortName.toLowerCase()
+        return routeLower.includes(lineShort) || lineShort.includes(routeLower) ||
+          routeLower.includes(lineName) || lineName.includes(routeLower) ||
+          (!!short && short === lineShort) ||
+          routeId.replace(/^0*/, '') === firstStep.lineShortName
+      }
+
+      let best: MbtaRealtimePred | null = null
+      // Stops at the boarding point (about 300 m, as the old stop search)
+      for (const stop of transit?.stops ?? []) {
+        if (stop.distance_miles > 0.2) continue
+        for (const route of stop.routes) {
+          if (!matches(route.route_id, route.short_name ?? '')) continue
+          const next = route.arrivals.find(a => a.minutes_away >= 0)
+          if (next && (!best || next.minutes_away < best.minutesAway)) {
+            best = { minutesAway: next.minutes_away, routeId: route.route_id, stopId: stop.id }
+          }
         }
       }
-      // No matching prediction found — might be off-hours
-      setMbtaPred(null)
+      // None found: might be off-hours
+      setMbtaPred(best)
     } catch {
       // fail silently
     } finally {

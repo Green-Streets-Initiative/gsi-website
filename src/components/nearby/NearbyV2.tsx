@@ -151,6 +151,9 @@ function BoardRowView({ row, alerted, onTap }: { row: BoardRow; alerted: boolean
             <span className="block text-[0.8125rem] text-(--nb-ink-70)">
               {row.nextMin === 0 ? '' : row.tight ? tr('v2.next_one') : tr('v2.min')}
             </span>
+            {row.scheduled && (
+              <span className="block text-[0.8125rem] text-(--nb-ink-80)">{tr('transit.scheduled')}</span>
+            )}
           </>
         )}
       </span>

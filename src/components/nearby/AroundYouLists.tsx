@@ -207,6 +207,7 @@ function ExpandedRouteRow({ r, corridorById, highlightedCorridorId, onSelectRout
                 <strong className="shrink-0 text-[0.75rem] font-bold text-(--nb-accent)">
                   {a.nextMin === 0 ? tr('lists.now') : tr('lists.in_min', { min: a.nextMin })}
                   {a.lateMin ? <span className="text-(--nb-warn)"> · {tr('lists.late_min', { min: a.lateMin })}</span> : null}
+                  {a.scheduled ? <span className="text-[13px] font-normal text-(--nb-ink-80)"> · {tr('transit.scheduled')}</span> : null}
                 </strong>
               )}
             </span>

@@ -464,13 +464,125 @@ async function routesNamed(line: string): Promise<ApiRoute[]> {
 const hhmm = (mins: number) => `${String(Math.floor(mins / 60)).padStart(2, '0')}:${String(mins % 60).padStart(2, '0')}`
 
 /**
+ * Departures near a place: the MBTA's (below) and the regional transit
+ * authorities' buses (WRTA, PVTA, MART and the rest), which the MBTA knows
+ * nothing about. Regional times for now come from the app's nearby-transit,
+ * the same call its Around You and this site's /nearby make; for a later day
+ * or time, from the same timetable tables through get_rta_departures_near.
+ */
+export async function departuresNear(at: Point, line: string | null, when: Date | null = null, admin?: SupabaseClient) {
+  const later = when && when.getTime() > Date.now() + 20 * 60000 ? when : null
+  const [mbta, regional] = await Promise.all([
+    mbtaDeparturesNear(at, line, when)
+      .catch((): Record<string, unknown> => ({ none: 'MBTA times are not answering right now.' })),
+    (later ? (admin ? regionalLater(admin, at, later) : Promise.resolve([])) : regionalNow(at))
+      .catch((): RegionalGroup[] => []),
+  ])
+  const want = line?.trim().toLowerCase() ?? ''
+  const mine = (want ? regional.filter((g) => g.short.toLowerCase() === want || g.longName.toLowerCase().includes(want)) : regional)
+    .sort((x, y) => x.meters - y.meters || x.minutes[0] - y.minutes[0])
+    .slice(0, 6)
+  if (!mine.length) return mbta
+  const rows = mine.map((g) => ({
+    stop: g.stop, walk_minutes: Math.max(1, Math.round(g.meters / 80)), line: g.line, toward: g.toward,
+    next: later ? g.when : g.minutes.map((m, i) => (m <= 0 ? 'now' : m < 30 ? `${m} min` : g.when[i])),
+    from_timetable: (!later && g.scheduled) || undefined,
+  }))
+  const m = mbta as Record<string, unknown> & { departures?: unknown[]; note?: string }
+  const regionalNote = later
+    ? 'Regional buses: the authority’s timetable.'
+    : 'Regional buses: live where the authority publishes live times; from_timetable means its printed timetable. Bike racks vary by authority.'
+  // No MBTA departures here, or the line asked for is a regional one whose
+  // MBTA namesake is miles away ("the 7" in Worcester): the regional answer alone.
+  if (!m.departures?.length || (want && m.nearest_stop_on_that_line)) {
+    return {
+      ...(later ? { from_the_timetable_for: `${dayEt(later.toISOString())}, ${clockEt(later.toISOString())}` } : { as_of: clockEt(new Date().toISOString()) }),
+      departures: rows,
+      note: regionalNote,
+    }
+  }
+  return { ...m, departures: [...m.departures, ...rows], note: `${m.note ?? ''} ${regionalNote}`.trim() }
+}
+
+type RegionalGroup = {
+  stop: string; meters: number; line: string; short: string; longName: string
+  toward: string; minutes: number[]; when: string[]; scheduled: boolean
+}
+
+/** Regional bus departures in the next 90 minutes within about a 10-minute
+ *  walk, from the app's nearby-transit. */
+async function regionalNow(at: Point): Promise<RegionalGroup[]> {
+  const base = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  if (!base || !anonKey) return []
+  const res = await fetch(`${base}/functions/v1/nearby-transit`, {
+    method: 'POST',
+    headers: { apikey: anonKey, Authorization: `Bearer ${anonKey}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ lat: at.lat, lng: at.lng, radius_miles: 0.5, stops_limit: 10 }),
+    cache: 'no-store',
+    signal: AbortSignal.timeout(10000),
+  })
+  if (!res.ok) return []
+  const data = await res.json()
+  type Arr = { minutes_away: number; headsign: string | null; is_realtime: boolean }
+  type Rt = { route_id: string; route_name: string; short_name: string; arrivals: Arr[] }
+  type St = { id: string; name: string; agency: string; distance_miles: number; routes: Rt[] }
+  const out: RegionalGroup[] = []
+  for (const st of (Array.isArray(data?.stops) ? data.stops : []) as St[]) {
+    if (!String(st.id).startsWith('rta:') || st.distance_miles > 0.5) continue
+    for (const r of st.routes ?? []) {
+      const arrivals = (r.arrivals ?? []).filter((a) => a.minutes_away >= 0 && a.minutes_away <= 90).slice(0, 3)
+      if (!arrivals.length) continue
+      const name = r.short_name || r.route_name
+      out.push({
+        stop: st.name, meters: st.distance_miles * 1609, line: `${st.agency} ${name}`, short: r.short_name ?? '', longName: r.route_name ?? '',
+        toward: arrivals[0].headsign ?? '', minutes: arrivals.map((a) => a.minutes_away),
+        when: arrivals.map((a) => clockEt(new Date(Date.now() + a.minutes_away * 60000).toISOString())),
+        scheduled: !arrivals[0].is_realtime,
+      })
+    }
+  }
+  return out
+}
+
+/** Regional bus timetable for a later day or time: the two hours after it. */
+async function regionalLater(admin: SupabaseClient, at: Point, later: Date): Promise<RegionalGroup[]> {
+  const { isoDay, mins } = bostonClock(later)
+  const { data, error } = await admin.rpc('get_rta_departures_near', {
+    p_lat: at.lat, p_lng: at.lng, p_radius_miles: 0.5,
+    p_service_date: later.toLocaleDateString('en-CA', { timeZone: ET }),
+    p_dow_bit: 1 << (isoDay - 1), p_after_secs: mins * 60,
+    p_stops_limit: 8, p_departures_per_stop: 12,
+  })
+  if (error || !Array.isArray(data)) return []
+  type Row = { agency_name: string; stop_id: string; stop_name: string; distance_miles: number; route_short_name: string | null; route_long_name: string | null; headsign: string | null; direction_id: number | null; departure_secs: number }
+  const groups = new Map<string, RegionalGroup>()
+  for (const row of data as Row[]) {
+    const minsAfter = Math.round(row.departure_secs / 60) - mins
+    if (minsAfter < 0 || minsAfter > 120) continue
+    const name = row.route_short_name || row.route_long_name || ''
+    const key = `${row.stop_id}|${name}|${row.direction_id ?? 'x'}`
+    const clock = new Date(Date.UTC(2000, 0, 1, Math.floor(row.departure_secs / 3600) % 24, Math.floor(row.departure_secs / 60) % 60))
+      .toLocaleTimeString('en-US', { timeZone: 'UTC', hour: 'numeric', minute: '2-digit' })
+    const g = groups.get(key) ?? {
+      stop: row.stop_name, meters: row.distance_miles * 1609, line: `${row.agency_name} ${name}`,
+      short: row.route_short_name ?? '', longName: row.route_long_name ?? '', toward: row.headsign ?? '',
+      minutes: [], when: [], scheduled: true,
+    }
+    if (g.when.length < 4 && !g.when.includes(clock)) { g.when.push(clock); g.minutes.push(minsAfter) }
+    groups.set(key, g)
+  }
+  return [...groups.values()]
+}
+
+/**
  * MBTA departures from the stops near a place: trains, Commuter Rail and
  * ferries within about a 10-minute walk, buses within about 5, the next
  * three times each way, and whether a full-size bike can come along. Live
  * for now; from the timetable for a later day or time (`when`). With a line,
  * its nearest stop, however far.
  */
-export async function departuresNear(at: Point, line: string | null, when: Date | null = null) {
+async function mbtaDeparturesNear(at: Point, line: string | null, when: Date | null = null): Promise<Record<string, unknown>> {
   const later = when && when.getTime() > Date.now() + 20 * 60000 ? when : null
   const start = later ?? new Date()
   const lineRoutes = line ? await routesNamed(line) : []

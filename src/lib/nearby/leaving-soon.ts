@@ -16,7 +16,7 @@ export interface BoardStation {
   name: string
   /** Meters from the person. */
   dist: number
-  routes: { id: string; name: string; arrivals: { direction: string; nextMin: number | null }[] }[]
+  routes: { id: string; name: string; arrivals: { direction: string; nextMin: number | null; scheduled?: boolean }[] }[]
 }
 
 export interface BoardRow {
@@ -31,6 +31,8 @@ export interface BoardRow {
   nextMin: number | null
   /** Leaves before you could walk there. */
   tight: boolean
+  /** The time is from the printed timetable (a regional bus with no live feed). */
+  scheduled?: boolean
 }
 
 export function walkMinutes(meters: number): number {
@@ -64,6 +66,7 @@ export function leavingSoon(stations: BoardStation[], limit = 5): BoardRow[] {
           walkMin,
           nextMin: a.nextMin,
           tight: a.nextMin !== null && a.nextMin < walkMin,
+          ...(a.scheduled && a.nextMin !== null ? { scheduled: true } : {}),
         }))
       // Only trains ending their run here: the line still exists, without a time
       if (candidates.length === 0 && route.arrivals.length > 0) {

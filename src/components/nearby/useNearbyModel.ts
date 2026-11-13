@@ -66,7 +66,7 @@ export interface StationGroup {
   /** Beyond the normal search radius — the nearest option, shown because
    *  nothing closer exists (Boston College's nearest MBTA bus is 0.8 mi). */
   farther?: boolean
-  routes: { id: string; name: string; arrivals: { direction: string; nextMin: number | null; lateMin?: number | null }[] }[]
+  routes: { id: string; name: string; arrivals: { direction: string; nextMin: number | null; lateMin?: number | null; scheduled?: boolean }[] }[]
 }
 
 /** At most this many moving vehicles on the map at once. */
@@ -118,10 +118,11 @@ export function groupStops(rows: MBTAStopLive[], isRail: boolean, farther = fals
     }
     const arrival = route.arrivals.find(a => a.direction === row.direction)
     if (!arrival) {
-      route.arrivals.push({ direction: row.direction, nextMin: row.next_arrival_minutes, lateMin: row.late_minutes ?? null })
+      route.arrivals.push({ direction: row.direction, nextMin: row.next_arrival_minutes, lateMin: row.late_minutes ?? null, scheduled: !!row.scheduled })
     } else if (row.next_arrival_minutes !== null && (arrival.nextMin === null || row.next_arrival_minutes < arrival.nextMin)) {
       arrival.nextMin = row.next_arrival_minutes
       arrival.lateMin = row.late_minutes ?? null
+      arrival.scheduled = !!row.scheduled
     }
   }
   return [...groups.values()].sort((a, b) => a.dist - b.dist)

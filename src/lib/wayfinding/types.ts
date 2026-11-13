@@ -81,6 +81,9 @@ export interface MBTAStopLive {
   late_minutes?: number | null
   /** /nearby only: the vehicle making the next departure, if tracked. */
   vehicle?: { id: string; lat: number; lng: number } | null
+  /** The time is from the printed timetable, not a live estimate (regional
+   *  buses whose authority publishes no live times). */
+  scheduled?: boolean
 }
 
 export interface BikeParkingSpot {

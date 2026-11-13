@@ -7,7 +7,7 @@ import Link from 'next/link'
 import AddressAutocomplete from '@/components/AddressAutocomplete'
 import { supabase } from '@/lib/supabase'
 import type { BluebikeStationLive, MBTAStopLive } from '@/lib/wayfinding/types'
-import { fetchBikeShareDocks, fetchMBTAStops, fetchTrainStops, fetchShuttleStops, fetchShuttleLive, withShuttleLive, type ShuttleLive } from '@/lib/nearby/live-data'
+import { fetchBikeShareDocks, fetchMBTAStops, fetchTrainStops, fetchShuttleStops, fetchShuttleLive, withShuttleLive, isRegionalStopId, type ShuttleLive } from '@/lib/nearby/live-data'
 import { fetchNearbyAlertsAndClosures, type SurfacedAlert, type NearbyPromo } from '@/lib/nearby/alerts'
 import { round3, parseSnapshotParams, parseTripDest, buildShareUrl, stickyParams, isOutsideArea } from '@/lib/nearby/share'
 import { buildAppHref, fetchNewRoutesOpen, isNewRoutesContext } from '@/lib/nearby/campaign'
@@ -36,6 +36,11 @@ import { NearbyToneProvider, type NearbyTone } from './NearbyTone'
 import { parseInitialFocus } from '@/lib/nearby/focus'
 
 const REFRESH_MS = 30_000
+
+/** MBTA route ids among the rows, for the MBTA alerts call (a regional
+ *  bus's route id means nothing to MBTA). */
+const mbtaRouteIds = (rows: MBTAStopLive[]) =>
+  rows.filter(r => !isRegionalStopId(r.stop_id)).map(r => r.route_id)
 
 /** Nearest rail station beyond the normal radius (one station, 0.05°). */
 const fetchRailFar = (lat: number, lng: number) =>
@@ -386,7 +391,7 @@ export default function NearbySnapshot({ tone = 'dark' }: { tone?: NearbyTone } 
     // Service alerts for the routes we're about to show (major effects only),
     // plus the stops whose closure is old enough to retire from the lists.
     Promise.all([railP, busP]).then(([[railRows, railFarRows], [busRows, busFarRows]]) =>
-      fetchNearbyAlertsAndClosures([...railRows, ...railFarRows, ...busRows, ...busFarRows].map(r => r.route_id)).then(
+      fetchNearbyAlertsAndClosures(mbtaRouteIds([...railRows, ...railFarRows, ...busRows, ...busFarRows])).then(
         ({ alerts, retiredStopIds }) => {
           if (loadSeqRef.current !== seq) return
           setAlerts(alerts)
@@ -501,14 +506,14 @@ export default function NearbySnapshot({ tone = 'dark' }: { tone?: NearbyTone } 
           fetchBikeShareDocks(lat, lng),
           fetchShuttleLive(lat, lng),
         ])
-        // Far topology is session-cached, so a refresh of the nearest
-        // option costs one /predictions call — same as a found stop would
+        // Far topology is session-cached, and its times come from the same
+        // nearby-transit answer as the rest of this refresh
         const [railFarRows, busFarRows] = await Promise.all([
           railRows.length === 0 ? fetchRailFar(lat, lng) : [],
           busRows.length === 0 ? fetchMBTAStops(lat, lng, SNAPSHOT_BUS_FAR_OPTS) : [],
         ])
         const { alerts, retiredStopIds } = await fetchNearbyAlertsAndClosures(
-          [...railRows, ...railFarRows, ...busRows, ...busFarRows].map(r => r.route_id),
+          mbtaRouteIds([...railRows, ...railFarRows, ...busRows, ...busFarRows]),
         )
         const live = (r: MBTAStopLive) => !retiredStopIds.has(r.stop_id)
         setRail({ status: 'ready', data: railRows.filter(live) })
@@ -607,7 +612,8 @@ export default function NearbySnapshot({ tone = 'dark' }: { tone?: NearbyTone } 
     const rows = [...rail.data, ...bus.data, ...shuttles.data]
     const row = rows.find(r => r.stop_id === stopId && r.route_id === routeId)
       ?? rows.find(r => r.route_id === routeId)
-    if (!row) return
+    // Regional buses have no MBTA line to draw
+    if (!row || isRegionalStopId(row.stop_id)) return
     onDemandRoutesRef.current.add(routeId)
     const seed = seedCorridorFromStop(routeId, row)
     const seq = loadSeqRef.current
