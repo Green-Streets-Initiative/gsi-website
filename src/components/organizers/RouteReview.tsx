@@ -238,7 +238,7 @@ export default function RouteReview({ route, reading, pace, activity = 'bike', f
 
       {pieces.length > 0 && <p className="text-[15px] font-semibold text-(--ev-ink)">{verdict.text}</p>}
       {(() => {
-        const risk = assessRouteRisk(route.comfortSegments, route.flags as { type?: string; description?: string }[], activity)
+        const risk = assessRouteRisk(route.comfortSegments, route.flags as { type?: string; description?: string; kind?: string }[], activity)
         if (risk.level !== 'high') return null
         const shared = risk.reasons.includes('mostly_shared')
         return (

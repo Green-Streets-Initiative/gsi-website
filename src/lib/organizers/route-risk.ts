@@ -4,7 +4,9 @@
  * with cars AND has a crash-cluster or high-speed concern. The database
  * applies the same rule (compute_ride_route_risk()) and holds a high-risk
  * public ride back from the calendar for GSI review; this copy lets the
- * editor say so before the organizer saves. Keep the two in step.
+ * editor say so before the organizer saves. All three key on each concern's
+ * `kind` (crash, speed, sidewalks), with the old headline words only for flags
+ * saved before kinds existed (Shift migration 01775). Keep them in step.
  */
 export const MOSTLY_SHARED_THRESHOLD = 0.6
 
@@ -17,7 +19,7 @@ export interface RouteRisk {
 
 export function assessRouteRisk(
   segments: { rating: string; distance_mi: number }[] | null | undefined,
-  flags: { type?: string; description?: string }[] | null | undefined,
+  flags: { type?: string; description?: string; kind?: string }[] | null | undefined,
   /** A walk also counts a stretch with no sidewalks (compute_ride_route_risk's walk rule). */
   activity: 'bike' | 'walk' = 'bike',
 ): RouteRisk {
@@ -30,15 +32,16 @@ export function assessRouteRisk(
   }
   const sharedShare = total > 0 ? shared / total : 0
   const concerns = (flags ?? []).filter((f) => f.type === 'concern')
-  const has = (re: RegExp) => concerns.some((f) => re.test(f.description ?? ''))
-  const crash = has(/crashes reported/i)
-  const speed = has(/high speed limit/i)
+  const has = (kind: string, re: RegExp) =>
+    concerns.some((f) => (f.kind != null ? f.kind === kind : re.test(f.description ?? '')))
+  const crash = has('crash', /crashes reported/i)
+  const speed = has('speed', /high speed limit/i)
   const reasons: RouteRisk['reasons'] = []
   if (total > 0 && sharedShare >= MOSTLY_SHARED_THRESHOLD && (crash || speed)) {
     reasons.push('mostly_shared')
     if (crash) reasons.push('crash_cluster')
     if (speed) reasons.push('high_speed')
   }
-  if (activity === 'walk' && has(/^no sidewalks/i)) reasons.push('no_sidewalks')
+  if (activity === 'walk' && has('sidewalks', /^no sidewalks/i)) reasons.push('no_sidewalks')
   return { level: reasons.length ? 'high' : 'ok', reasons, sharedShare }
 }
