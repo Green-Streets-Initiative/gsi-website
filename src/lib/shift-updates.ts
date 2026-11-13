@@ -107,7 +107,7 @@ export const SHIFT_UPDATES: ShiftUpdate[] = [
     date: '2026-11-05',
     where: 'both',
     title: 'Get a free bike lesson on real streets in Boston and nearby towns',
-    body: 'A local instructor rides real streets with you for 90 minutes, and Green Streets covers the cost.',
+    body: 'A local instructor rides real streets with you at your pace, and Green Streets covers the cost.',
     link: { href: '/bike-lessons#street-lesson', label: 'Ask for a lesson' },
     // "Older woman with flowers protected bike lane boston" (a parking-protected
     // lane in Cambridge, per its description), Adam Coppola, CC0.

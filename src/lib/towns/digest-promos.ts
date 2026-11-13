@@ -48,7 +48,7 @@ export const DIGEST_PROMOS: DigestPromo[] = [
     until: '2026-12-31',
     title: 'Free 1:1 street lessons in Boston and nearby towns',
     body:
-      'Can ride, but busy streets make you nervous? Green Streets is covering the cost of a 90-minute lesson on real streets with a local instructor. For adults who live in Boston and nearby towns. Rather wait for spring? Sign up for an email when classes start again.',
+      'Can ride, but busy streets make you nervous? Green Streets is covering the cost of a lesson on real streets with a local instructor. For adults who live in Boston and nearby towns. Rather wait for spring? Sign up for an email when classes start again.',
     label: 'See bike lessons',
     url: 'https://www.gogreenstreets.org/bike-lessons?utm_source=digest',
     until_full: 'free_lesson',

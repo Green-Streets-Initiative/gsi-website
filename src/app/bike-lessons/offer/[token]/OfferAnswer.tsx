@@ -152,7 +152,7 @@ export default function OfferAnswer({ token, from }: { token: string; from: 'yes
         Can you teach {l.first}?
       </h1>
       <p className="mt-2 text-[1rem] leading-relaxed text-navy">
-        90 minutes on real streets{l.place ? `, near ${l.place}` : ''}. Green Streets pays your usual rate.
+        A lesson on real streets{l.place ? `, near ${l.place}` : ''}, as long as you think it needs. Green Streets pays your usual rate.
       </p>
 
       <div className="mt-6">
