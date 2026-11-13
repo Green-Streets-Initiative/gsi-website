@@ -40,7 +40,7 @@ export interface RideDate {
     route_waypoints: { lat: number; lng: number }[] | null
     route_google_maps_url: string | null
     route_miles: number | null
-    route_elevation: { ascent_ft?: number } | null
+    route_elevation: { ascent_ft?: number; descent_ft?: number; max_grade_pct?: number } | null
   } | null
   /** Where people can join along the way, in route order (Shift 01744). The first is the start; [] when the date has none. */
   stops?: RideStop[]

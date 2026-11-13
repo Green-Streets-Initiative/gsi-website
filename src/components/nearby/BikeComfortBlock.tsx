@@ -203,6 +203,8 @@ export default function BikeComfortBlock({ comfort, highlightedStreetKey, onHigh
                     <div className="mb-3 mt-2 px-1">
                       {av.noneKey === s.key ? (
                         <p className="text-[0.875rem] text-(--nb-ink-80)">{tr('v2.avoid_none', { street: s.label })}</p>
+                      ) : av.full ? (
+                        <p className="text-[0.875rem] text-(--nb-ink-80)">{tr('v2.avoid_limit')}</p>
                       ) : (
                         <>
                           <button

@@ -16,6 +16,10 @@ import type { BikeComfortData, ReachRow, ReachStep } from './types'
  */
 
 type Avoided = { key: string; label: string; polylines: string[] }
+
+/** What /api/nearby/trip/avoid takes (MAX_STREETS, MAX_STRETCHES), as the ride planner caps it. */
+export const MAX_AVOID_STREETS = 4
+const MAX_AVOID_STRETCHES = 16
 type Entry = {
   avoided: Avoided[]
   route: { minutes: number; polyline: string; comfort: BikeComfortData | null; steps: ReachStep[] }
@@ -33,6 +37,8 @@ export type AvoidState = {
   /** The street there was no reasonable way around. */
   noneKey: string | null
   failedKey: string | null
+  /** As many streets avoided as the server takes: say so in place of the button. */
+  full: boolean
 }
 
 /** "Cambridge Street, Boston" → "Cambridge Street". */
@@ -64,9 +70,10 @@ export function useAvoidStreets(center: { lat: number; lng: number }) {
   /** `row` and `comfort` are what's on screen: the stretches to avoid are the
    *  ones that street row lights on the map. */
   const avoid = useCallback(async (row: ReachRow, comfort: BikeComfortData, shownMinutes: number, key: string, label: string): Promise<boolean> => {
-    const polylines = comfort.segments.filter(s => s.street_key === key).map(s => s.polyline)
+    const polylines = comfort.segments.filter(s => s.street_key === key).map(s => s.polyline).slice(0, MAX_AVOID_STRETCHES)
     if (polylines.length === 0) return false
     const prev = entries[row.id]
+    if ((prev?.avoided.length ?? 0) >= MAX_AVOID_STREETS) return false
     const avoided = [...(prev?.avoided ?? []), { key, label, polylines }]
     setPending({ rowId: row.id, key })
     setNone(null)
@@ -126,6 +133,7 @@ export function useAvoidStreets(center: { lat: number; lng: number }) {
       pendingKey: pending?.rowId === rowId ? pending.key : null,
       noneKey: none?.rowId === rowId ? none.key : null,
       failedKey: failed?.rowId === rowId ? failed.key : null,
+      full: (e?.avoided.length ?? 0) >= MAX_AVOID_STREETS,
     }
   }, [entries, pending, none, failed])
 

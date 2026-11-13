@@ -318,6 +318,8 @@ export function MatchCard({ m, locale, t, busy, myArrive, onAnswer, onWent, onRa
                 : t('matches.safety')}
             </p>
           ) : null}
+          {/* Insurance and gas, as the app's match card says (partners.matches.carpool_costs). */}
+          {carpool && connected ? <p className="text-[15px] text-(--ev-ink-80)">{t('matches.carpool_costs')}</p> : null}
 
           {askWent ? (
             <div className="grid grid-cols-1 gap-3 rounded-xl border border-(--ev-line) p-4">

@@ -255,7 +255,9 @@ export async function saveSignUp(s: SignUp): Promise<{ ok: true; matches: number
     p_arrive_by: s.arriveBy,
     p_leave_at: s.kind === 'carpool' ? s.leaveAt : null,
     p_note: s.note,
-    p_carpool_scope: s.kind === 'carpool' ? 'nearby' : null,
+    // null keeps the scope they chose in the app (coworkers only, or anyone
+    // nearby); the server starts a new carpool at 'nearby' (parity gap-together-web-carpool-scope).
+    p_carpool_scope: null,
   }
   let { data, error } = await supabase.rpc('set_partner_request', { ...older, p_languages: s.languages })
   // Before 01476 the database has no p_languages: save without it rather than fail.
