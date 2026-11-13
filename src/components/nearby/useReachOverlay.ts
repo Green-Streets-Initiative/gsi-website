@@ -7,6 +7,8 @@ import type { NearbyMarker } from './NearbyMap'
 import type { Selection } from './useNearbyModel'
 import type { ReachRow } from './types'
 import { spotCautionMarkerHtml, useSpotCautions, walkLegs } from '@/components/spot/useSpotCautions'
+import { useNearbyLocale } from './NearbyI18n'
+import { t as nearbyT } from '@/lib/nearby/i18n'
 
 /**
  * Reach routes draw on the page's MAIN map (no nested mini-maps): when the
@@ -68,12 +70,13 @@ export function useReachOverlay({ selection, reachRows, corridorLines, markers, 
     [reachRow, selection],
   )
   const cautions = useSpotCautions(walks)
+  const locale = useNearbyLocale()
 
   const overlayMarkers = useMemo<NearbyMarker[]>(() => {
     if (!reachRow) return markers
     const out = [...markers, { id: `reachdest-${reachRow.id}`, lat: reachRow.lat, lng: reachRow.lng, html: destinationPinHtml(reachRow.name), zIndex: 5 }]
     for (const c of cautions) {
-      out.push({ id: `spotcaution-${c.kind}-${c.lat.toFixed(5)},${c.lng.toFixed(5)}`, lat: c.lat, lng: c.lng, html: spotCautionMarkerHtml(c.kind), zIndex: 4 })
+      out.push({ id: `spotcaution-${c.kind}-${c.lat.toFixed(5)},${c.lng.toFixed(5)}`, lat: c.lat, lng: c.lng, html: spotCautionMarkerHtml(c.kind, nearbyT(locale, `spot.kind_${c.kind}`)), zIndex: 4 })
     }
     // Skipped when the page already shows it (a short trip inside the
     // start's dock radius) — the model keeps that copy.
@@ -99,7 +102,7 @@ export function useReachOverlay({ selection, reachRows, corridorLines, markers, 
       })
     }
     return out
-  }, [markers, reachRow, destDock, dockSelectedId, openDocksLabel, cautions])
+  }, [markers, reachRow, destDock, dockSelectedId, openDocksLabel, cautions, locale])
 
   const highlight = selection?.type === 'reach' ? `reach:${selection.id}` : highlightedCorridorId
 

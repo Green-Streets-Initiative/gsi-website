@@ -3,7 +3,9 @@
  * and the sheet's words. Shared with the app: the wording comes from the
  * Report a spot contract (Shift plan docs/programs/product/
  * safe-routes-walkers-2026-11-06/plan.html §3), so both surfaces say the same
- * thing. English only, like the route report sheet it borrows from.
+ * thing. The labels here are English: the words copied for a town's own
+ * form, and pages outside Nearby. The sheet itself reads Nearby's languages
+ * (src/lib/nearby/i18n.ts spot.*, from the app's spot_report.* keys).
  */
 
 export type SpotSurface = 'web_map' | 'school_routes'
@@ -97,6 +99,25 @@ export interface SpotDestination {
   name: string | null
   url: string | null
   action_label: string | null
+  /** Version 2 (Shift 01673): the choices Shift files with this town for the
+   *  person asking. Empty for a visitor; filled in for a signed-in member. */
+  file_kinds?: string[]
+}
+
+/** Shift filed it with the town (or added it to an open report there). */
+export interface SpotFiled {
+  town: string
+  combined: boolean
+}
+
+/** Whether Shift files this choice in the destination's town (the app's
+ *  lib/spot-report.ts filesHere, same rule). */
+export function filesHere(dest: SpotDestination | null, kind: SpotKind, detail: string | null): boolean {
+  const key = detail ? `${kind}:${detail}` : kind
+  if (!dest || NOT_FOR_TOWN.has(key)) return false
+  const kinds = dest.file_kinds ?? []
+  if (detail) return kinds.includes(key) || kinds.includes(kind)
+  return kinds.includes(kind)
 }
 
 export function mapsLink(lat: number, lng: number): string {

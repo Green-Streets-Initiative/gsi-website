@@ -44,6 +44,9 @@ export interface NoteSheetProps {
   surface: NoteSurface
   /** The route, in the order it's ridden. */
   line?: LatLng[] | null
+  /** The line's order isn't the way it's ridden (a bike route's mapped
+   *  pieces): drawn and snapped to, but the note holds both ways. */
+  unordered?: boolean
   /** Where the pin starts; else the middle of the line. */
   spot?: LatLng | null
   /** Called after a note is saved (the box reloads). */
@@ -138,7 +141,7 @@ async function streetAt(p: Spot): Promise<string | null> {
 
 /* ── The sheet ───────────────────────────────────────────────────────── */
 
-export default function NoteSheet({ onClose, surface, line, spot, onAdded, locale = 'en', track = defaultTrack }: NoteSheetProps) {
+export default function NoteSheet({ onClose, surface, line, unordered = false, spot, onAdded, locale = 'en', track = defaultTrack }: NoteSheetProps) {
   const t = notesT(locale)
   const dialogRef = useRef<HTMLDialogElement>(null)
   const takeRef = useRef<HTMLInputElement>(null)
@@ -166,7 +169,7 @@ export default function NoteSheet({ onClose, surface, line, spot, onAdded, local
 
   const titleId = `note-sheet-${surface}`
   const onLine = usable.length >= 2 ? nearestOnLine(usable, center) : null
-  const heading = onLine && onLine.metres <= ON_LINE_M ? onLine.heading : null
+  const heading = !unordered && onLine && onLine.metres <= ON_LINE_M ? onLine.heading : null
   const both = bothWays || heading == null
   const at = onLine && onLine.metres <= ON_LINE_M ? onLine.at : center
 

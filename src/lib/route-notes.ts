@@ -49,8 +49,8 @@ export const WALK_KINDS = [
 
 export const NOTE_MAX = 280
 
-/** Surfaces the website may add notes from (report-route-issue's SURFACES). */
-export type NoteSurface = 'advisor_bike' | 'nearby_reach' | 'nearby_corridor' | 'web_street'
+/** Surfaces the website may add notes from (report-route-issue's SURFACES; web_roam since Shift 01789). */
+export type NoteSurface = 'advisor_bike' | 'nearby_reach' | 'nearby_corridor' | 'web_street' | 'web_roam'
 
 export type NotesMode = 'bike' | 'walk'
 
@@ -177,6 +177,28 @@ export async function fetchNotesAlong(lines: LatLng[][], mode: NotesMode): Promi
     .flat()
     .filter((g) => (seen.has(g.id) ? false : (seen.add(g.id), true)))
     .sort((a, b) => b.latest_at.localeCompare(a.latest_at))
+}
+
+/**
+ * The notes along a line made of pieces in no particular order (Nearby's
+ * bike-route detail draws a route from its mapped pieces): get_line_notes
+ * (Shift 01789), either direction, since the pieces carry none. Up to 500
+ * points in all, shared by length.
+ */
+export async function fetchLineNotes(lines: LatLng[][], mode: NotesMode): Promise<NoteGroup[]> {
+  const usable = lines.filter((l) => l.length >= 2)
+  if (usable.length === 0) return []
+  const total = usable.reduce((a, l) => a + l.length, 0)
+  const p_lines = usable
+    .map((l) => thinLine(l, Math.max(2, Math.floor((480 * l.length) / Math.max(total, 1)))))
+    .map((l) => l.map((p) => ({ lat: Number(p.lat.toFixed(6)), lng: Number(p.lng.toFixed(6)) })))
+  try {
+    const { data, error } = await supabase.rpc('get_line_notes', { p_lines, p_mode: mode })
+    if (error || !Array.isArray(data)) return []
+    return data.map(asGroup).filter((g): g is NoteGroup => !!g).map((g) => ({ ...g, mode }))
+  } catch {
+    return []
+  }
 }
 
 export async function fetchNoteDetail(id: string): Promise<NoteGroup | null> {

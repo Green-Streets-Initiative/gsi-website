@@ -26,6 +26,7 @@ import { COMFORT_COLORS, comfortLabel, comfortPieces, fetchCalmRoute, formatStre
 import { ReportRouteLink, type RouteIssueStretch, type RouteIssueSurface } from '@/components/commute/ReportRouteSheet'
 import RouteNotes from '@/components/notes/RouteNotes'
 import PathConditionsAlong from '@/components/trails/PathConditionsAlong'
+import { SpotCautionsList } from '@/components/spot/useSpotCautions'
 import { useNotesSwitch } from '@/components/notes/useNotesSwitch'
 import { contentModeFor, guidesByStage, guidesMoreLabel } from '@/components/commute/guide-topics'
 import { eventKindLine, eventModeForRow, eventWhenLine, eventWhereLine, walkRideDayWhen } from '@/components/commute/event-card'
@@ -847,7 +848,8 @@ export default function AdvisorFlow({
         stages: stagesFor(mode, plan, benefits, { calm, bikeParking, lineName, combo: m.combo ?? null, weather: w }, locale),
         ...stageGuidesFor(mode),
         // Path conditions: how the trails and protected lanes on the bike route are today (01784).
-        drawer: <>{drawer}{(mode === 'bike' || mode === 'ebike') && calm ? <PathConditionsAlong points={calm.calm.waypoints} locale={locale} tone="light" /> : null}{report}</>,
+        // Report a spot: open reports along the walking route, as the app's walk preview and Nearby's walk legs show them.
+        drawer: <>{drawer}{(mode === 'bike' || mode === 'ebike') && calm ? <PathConditionsAlong points={calm.calm.waypoints} locale={locale} tone="light" /> : null}{mode === 'walk' && m.polyline ? <div className="nearby-tone-light"><SpotCautionsList segments={[{ mode: 'walk', polyline: m.polyline }]} /></div> : null}{report}</>,
       })
     }
     // Shuttles: the employer's own, then the public operators with a stop at the office.

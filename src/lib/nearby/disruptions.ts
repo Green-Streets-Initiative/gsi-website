@@ -7,9 +7,7 @@
  * within the look-ahead window. Fetched keyless from the browser, like Nearby.
  */
 
-import { ALERT_FRESH_DAYS } from './alerts'
-
-const MAJOR_EFFECTS = new Set(['SHUTTLE', 'SUSPENSION', 'STATION_CLOSURE'])
+import { ALERT_FRESH_DAYS, MAJOR_EFFECTS } from './alerts'
 const GLYPH_STRIP = /[\u{E000}-\u{F8FF}\u{FFFD}]/gu
 const DAY = 86_400_000
 

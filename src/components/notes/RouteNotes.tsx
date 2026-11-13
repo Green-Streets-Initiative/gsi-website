@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { CaretRight, PencilSimpleLine, ThumbsUp, WarningCircle } from '@phosphor-icons/react'
 import type { SiteLocale } from '@/lib/site-i18n'
 import {
-  fetchNotesAlong, noteKindLabel, notesPlural, notesT, noteWhere, shortDate,
+  fetchLineNotes, fetchNotesAlong, noteKindLabel, notesPlural, notesT, noteWhere, shortDate,
   type LatLng, type NoteGroup, type NoteSurface, type NotesMode,
 } from '@/lib/route-notes'
 import NoteSheet from './NoteSheet'
@@ -39,6 +39,7 @@ function finite(p: LatLng | null | undefined): p is LatLng {
 export default function RouteNotes({
   points,
   legs,
+  unordered = false,
   mode,
   surface,
   canAdd: canAddProp,
@@ -52,6 +53,9 @@ export default function RouteNotes({
   points?: LatLng[] | null
   /** Or several separate lines (a transit trip's walks), each asked about on its own. */
   legs?: LatLng[][] | null
+  /** The legs are one route's pieces in no particular order (Nearby's bike
+   *  route): notes either way, and a note added here holds both ways. */
+  unordered?: boolean
   mode: NotesMode
   /** Which surface, for the server (adding) and for analytics. */
   surface: NoteSurface | 'nearby_walk' | 'web_roam'
@@ -80,12 +84,12 @@ export default function RouteNotes({
   const key = lines
     .map((l) => `${l.length}:${l[0].lat.toFixed(5)},${l[0].lng.toFixed(5)}:${l[l.length - 1].lat.toFixed(5)},${l[l.length - 1].lng.toFixed(5)}`)
     .join('|')
-  const fetchKey = `${mode}|${key}|${reload}`
+  const fetchKey = `${mode}|${unordered ? 'u' : 'o'}|${key}|${reload}`
 
   useEffect(() => {
     if (!on || !key) return
     let live = true
-    void fetchNotesAlong(lines, mode).then((groups) => {
+    void (unordered ? fetchLineNotes(lines, mode) : fetchNotesAlong(lines, mode)).then((groups) => {
       if (!live) return
       setResult({ key: fetchKey, groups })
       if (groups.length > 0) track('notes_box_shown', { surface, mode, notes: groups.length, lowering: groups.filter((g) => g.lowers).length })
@@ -97,7 +101,7 @@ export default function RouteNotes({
 
   if (!on) return null
   const groups = result.key === fetchKey ? result.groups : []
-  const addSurface = surface === 'nearby_walk' || surface === 'web_roam' ? null : surface
+  const addSurface = surface === 'nearby_walk' ? null : surface
   const canAdd = (canAddProp ?? true) && mode === 'bike' && !!addSurface
   if (groups.length === 0 && !canAdd) return null
 
@@ -163,7 +167,8 @@ export default function RouteNotes({
         <NoteSheet
           onClose={() => setAdding(false)}
           surface={addSurface}
-          line={lines[0] ?? null}
+          line={unordered ? lines.reduce<LatLng[] | null>((a, l) => (!a || l.length > a.length ? l : a), null) : lines[0] ?? null}
+          unordered={unordered}
           spot={spot ?? null}
           onAdded={() => setReload((n) => n + 1)}
           locale={locale}

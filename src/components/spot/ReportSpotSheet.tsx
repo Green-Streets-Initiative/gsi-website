@@ -10,9 +10,10 @@ import { resolvePlaceLabel } from '@/lib/nearby/neighborhood'
 import { supabase } from '@/lib/supabase'
 import PhotoLightbox from '@/components/walk-audit/PhotoLightbox'
 import { toJpeg } from '@/lib/photo/to-jpeg'
+import { useNearbyT } from '@/components/nearby/NearbyI18n'
 import {
-  NOTE_MAX, NOT_FOR_TOWN, OWNER_NAMES, SPOT_DETAILS, SPOT_KINDS, SPOT_LABELS, copiedText, isSpotKind,
-  type SpotChoice, type SpotDestination, type SpotHeld, type SpotSurface,
+  NOTE_MAX, NOT_FOR_TOWN, SPOT_DETAILS, SPOT_KINDS, copiedText, filesHere, isSpotKind,
+  type SpotChoice, type SpotDestination, type SpotFiled, type SpotHeld, type SpotSurface,
 } from './spotCopy'
 
 /*
@@ -21,14 +22,19 @@ import {
  * SPOT_DETAILS), the spot under a fixed pin, the wheelchair line, an
  * optional note and photo, then a line that says where it goes next,
  * and Send. Saved through /api/spot/report (Shift's report-route-issue).
- * Shift never submits to the town: when the town has a report page on
- * file, the thanks opens it in a new tab with the words already copied.
+ * For a visitor, Shift never submits to the town: when the town has a
+ * report page on file, the thanks opens it in a new tab with the words
+ * already copied. A member signed in on this site (the Nearby sign-in)
+ * is filed for the way the app files (version 2): where the town takes
+ * this kind from Shift (report_spot_destination's file_kinds, which the
+ * signed-in call fills in), Shift sends it, and the thanks says so.
  *
  * Borrows the route report sheet's look and behaviour
  * (components/commute/ReportRouteSheet.tsx): a bottom sheet on a phone, a
  * centred dialog on desktop, every way out handled by the dialog's close.
- * Copy: the Report a spot contract (shared with the app). English only, as
- * the route report sheet is.
+ * Copy: the Report a spot contract (shared with the app), in Nearby's
+ * languages (src/lib/nearby/i18n.ts spot.*). Outside Nearby it reads English.
+ * The words copied for the town's own form stay in English (spotCopy.ts).
  */
 
 type Spot = { lat: number; lng: number }
@@ -46,7 +52,7 @@ export interface ReportSpotSheetProps {
 
 type SendState = 'idle' | 'sending' | 'sent' | 'error' | 'too_many'
 type Photo = { status: 'none' } | { status: 'working' } | { status: 'failed' } | { status: 'ready'; blob: Blob; url: string }
-type Answer = { id: string | null; destination: SpotDestination | null; held: SpotHeld | null }
+type Answer = { id: string | null; destination: SpotDestination | null; held: SpotHeld | null; filed: SpotFiled | null }
 
 /** The label passed in names the starting spot; past this, the pin is somewhere else. */
 const LABEL_RADIUS_M = 75
@@ -165,7 +171,18 @@ async function fetchRoad(p: Spot): Promise<Road | null> {
 
 /* ── The sheet ───────────────────────────────────────────────────────── */
 
+/** A signed-in member's access token (the Nearby sign-in), or null for a visitor. */
+async function memberToken(): Promise<string | null> {
+  try {
+    const { data } = await supabase.auth.getSession()
+    return data.session?.access_token ?? null
+  } catch {
+    return null
+  }
+}
+
 export default function ReportSpotSheet({ surface, open, onClose, spot, label }: ReportSpotSheetProps) {
+  const tr = useNearbyT()
   const dialogRef = useRef<HTMLDialogElement>(null)
   const takeRef = useRef<HTMLInputElement>(null)
   const chooseRef = useRef<HTMLInputElement>(null)
@@ -255,6 +272,8 @@ export default function ReportSpotSheet({ surface, open, onClose, spot, label }:
           name: typeof r.name === 'string' ? r.name : null,
           url: typeof r.url === 'string' ? r.url : null,
           action_label: typeof r.action_label === 'string' ? r.action_label : null,
+          // Filled in only for a signed-in member, as in the app.
+          file_kinds: Array.isArray(r.file_kinds) ? r.file_kinds.filter((k): k is string => typeof k === 'string') : [],
         }
       }
     } catch { /* no town: the sheet still saves */ }
@@ -323,7 +342,12 @@ export default function ReportSpotSheet({ surface, open, onClose, spot, label }:
     }))
     if (photo.status === 'ready') form.append('photo', photo.blob, 'spot.jpg')
     try {
-      const res = await fetch('/api/spot/report', { method: 'POST', body: form })
+      const token = await memberToken()
+      const res = await fetch('/api/spot/report', {
+        method: 'POST',
+        body: form,
+        ...(token ? { headers: { Authorization: `Bearer ${token}` } } : {}),
+      })
       const data = await res.json().catch(() => null) as Record<string, unknown> | null
       if (res.ok && data?.ok) {
         const d = data.destination as SpotDestination | null | undefined
@@ -331,10 +355,13 @@ export default function ReportSpotSheet({ surface, open, onClose, spot, label }:
         const held: SpotHeld | null = h && (h.owner === 'massdot' || h.owner === 'dcr' || h.owner === 'state')
           ? { owner: h.owner, street: typeof h.street === 'string' ? h.street : null }
           : null
+        const f = data.filed as { town?: unknown; combined?: unknown } | null | undefined
+        const filed: SpotFiled | null = f && typeof f.town === 'string' ? { town: f.town, combined: f.combined === true } : null
         setAnswer({
           id: typeof data.id === 'string' ? data.id : null,
           destination: d && typeof d.town === 'string' ? d : null,
           held,
+          filed,
         })
         setState('sent')
         // Never the note: what was picked, and what came with it.
@@ -348,6 +375,7 @@ export default function ReportSpotSheet({ surface, open, onClose, spot, label }:
           has_note: !!note.trim(),
           has_town: !!d?.town,
           has_town_page: !!safeUrl(d?.url),
+          filed: filed ? (filed.combined ? 'combined' : 'filed') : 'no',
           seconds_on_screen: Math.round((Date.now() - openedAt.current) / 1000),
         })
         return
@@ -365,18 +393,20 @@ export default function ReportSpotSheet({ surface, open, onClose, spot, label }:
   const kindDetails = choice && isSpotKind(choice) ? SPOT_DETAILS[choice] : undefined
   const needsDetail = !!kindDetails && !detail
   const notForTown = !!choice && NOT_FOR_TOWN.has(`${choice}:${detail ?? ''}`)
-  const townUrl = answer?.held || notForTown ? null : safeUrl(answer?.destination?.url)
+  const townUrl = answer?.held || answer?.filed || notForTown ? null : safeUrl(answer?.destination?.url)
   const town = answer?.destination?.town ?? null
   const handoffText = choice && isSpotKind(choice) ? copiedText(choice, detail, place, note, pin.lat, pin.lng, access) : ''
   const openTownPage = () => {
     void copyToClipboard(handoffText).then((ok) => setCopyFailed(!ok))
     if (answer?.id) {
-      void fetch('/api/spot/report', {
+      const id = answer.id
+      // The member's token too, so the hand-off matches the report's sender.
+      void memberToken().then((token) => fetch('/api/spot/report', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ handoff: answer.id }),
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify({ handoff: id }),
         keepalive: true,
-      }).catch(() => {})
+      })).catch(() => {})
     }
     posthog.capture('spot_handoff_opened', { surface })
   }
@@ -389,18 +419,23 @@ export default function ReportSpotSheet({ surface, open, onClose, spot, label }:
   // the phone's own lookup), unless the pin is still on the place we opened with.
   const placeShown = road?.street && dest && place !== label ? `${road.street}, ${dest.town}` : place
 
+  // Shift files it with the town for this member (version 2, as in the app).
+  const willFile = !!choice && isSpotKind(choice) && !notForTown && !stateRoad && filesHere(dest, choice, detail)
+
   // The line above Send: what happens next.
   const nextLine = choice === 'map_wrong'
-    ? 'This comes to Green Streets, and we’ll fix the map.'
+    ? tr('spot.next_map')
     : notForTown
-      ? 'We’ll save it and show it to people walking here.'
+      ? tr('spot.next_no_town')
     : stateRoad
-      ? `${road?.street ?? 'This street'} is a state road, so ${dest?.town ?? 'the town'} can’t fix this. We’ll save it and show it to people walking here.`
+      ? tr('spot.next_held', { street: road?.street ?? tr('spot.this_street'), town: dest?.town ?? tr('spot.the_town') })
+    : willFile && dest
+      ? tr('spot.next_file', { town: dest.town })
     : dest && safeUrl(dest.url)
-      ? `Next: send it to ${dest.town}. We’ll open their report page with your words copied.`
+      ? tr('spot.next_town', { town: dest.town })
       : dest
-        ? `We’ll save it and show it to people walking here. We don’t have ${dest.town}’s report page yet.`
-        : 'We’ll save it and show it to people walking here.'
+        ? tr('spot.next_no_page', { town: dest.town })
+        : tr('spot.next_no_town')
 
   const chip = (on: boolean) =>
     `min-h-[44px] cursor-pointer rounded-full border px-3.5 text-left text-[0.9375rem] font-semibold leading-tight transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2D6A4F] ${
@@ -429,17 +464,17 @@ export default function ReportSpotSheet({ surface, open, onClose, spot, label }:
         <div className="flex max-h-[92vh] flex-col">
           <div className="flex items-start justify-between gap-3 border-b border-[rgba(25,26,46,0.08)] px-5 pb-3 pt-4">
             <div className="min-w-0">
-              <h2 id={titleId} className="text-[1.0625rem] font-extrabold leading-snug">Report a spot</h2>
+              <h2 id={titleId} className="text-[1.0625rem] font-extrabold leading-snug">{tr('spot.title')}</h2>
               {state !== 'sent' && (
                 <p className="mt-0.5 text-[0.9375rem] leading-snug text-[#4A4D68]">
-                  Something in the way when you walk? Tell us where, and we&apos;ll help you send it to the town.
+                  {tr('spot.sub')}
                 </p>
               )}
             </div>
             <button
               type="button"
               onClick={() => close('close')}
-              aria-label="Close"
+              aria-label={tr('spot.close')}
               className="flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-full border border-[rgba(25,26,46,0.15)] text-[#4A4D68] transition-colors hover:bg-[#F4F8EE] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2D6A4F]"
             >
               <X size={18} weight="bold" aria-hidden />
@@ -449,20 +484,30 @@ export default function ReportSpotSheet({ surface, open, onClose, spot, label }:
           {state === 'sent' ? (
             <div className="px-5 pb-2 pt-6" role="status">
               {choice === 'map_wrong' ? (
-                <p className="text-[1.0625rem] font-bold">Thanks. We&apos;ll fix the map.</p>
+                <p className="text-[1.0625rem] font-bold">{tr('spot.thanks_map')}</p>
               ) : answer?.held ? (
                 <>
-                  <p className="text-[1.0625rem] font-bold">Thanks.</p>
+                  <p className="text-[1.0625rem] font-bold">{tr('spot.thanks_title')}</p>
                   <p className="mt-1 text-[0.9375rem] text-[#4A4D68]">
-                    {answer.held.street ?? 'This street'} is run by {OWNER_NAMES[answer.held.owner]}, so {town ?? 'the town'} can&apos;t fix it.
-                    We saved your report, and people walking here will see it.
+                    {tr('spot.held_body', {
+                      street: answer.held.street ?? tr('spot.this_street'),
+                      owner: tr(`spot.owner_${answer.held.owner}`),
+                      town: town ?? tr('spot.the_town'),
+                    })}
+                  </p>
+                </>
+              ) : answer?.filed ? (
+                <>
+                  <p className="text-[1.0625rem] font-bold">{tr('spot.filed_title', { town: answer.filed.town })}</p>
+                  <p className="mt-1 text-[0.9375rem] text-[#4A4D68]">
+                    {tr(answer.filed.combined ? 'spot.filed_combined_body' : 'spot.filed_body_web', { town: answer.filed.town })}
                   </p>
                 </>
               ) : townUrl && town ? (
                 <>
-                  <p className="text-[1.0625rem] font-bold">Saved. Now tell {town}.</p>
+                  <p className="text-[1.0625rem] font-bold">{tr('spot.thanks_town_title', { town })}</p>
                   <p className="mt-1 text-[0.9375rem] text-[#4A4D68]">
-                    People walking here will see it on their route. {town} can fix it once they hear about it.
+                    {tr('spot.thanks_town_body', { town })}
                   </p>
                   <a
                     href={townUrl}
@@ -471,10 +516,10 @@ export default function ReportSpotSheet({ surface, open, onClose, spot, label }:
                     onClick={openTownPage}
                     className={`${primary} mt-5 flex items-center justify-center px-4 text-center`}
                   >
-                    Open {town}&apos;s report page
+                    {tr('spot.open_town', { town })}
                   </a>
                   <p className="mt-2 text-center text-[0.875rem] text-[#4A4D68]">
-                    Your words and the spot are copied. Paste them in.
+                    {tr('spot.copied_done')}
                   </p>
                   {copyFailed && (
                     <textarea
@@ -482,13 +527,13 @@ export default function ReportSpotSheet({ surface, open, onClose, spot, label }:
                       value={handoffText}
                       rows={3}
                       onFocus={(e) => e.currentTarget.select()}
-                      aria-label="Your words and the spot"
+                      aria-label={tr('spot.copied_label')}
                       className="mt-2 block w-full resize-none rounded-[10px] border-[1.5px] border-[rgba(25,26,46,0.15)] bg-white px-3 py-2.5 text-[0.9375rem] text-[#191A2E]"
                     />
                   )}
                 </>
               ) : (
-                <p className="text-[1.0625rem] font-bold">Thanks. People walking here will see it on their route.</p>
+                <p className="text-[1.0625rem] font-bold">{tr('spot.thanks_saved')}</p>
               )}
               <div className="pt-4" style={{ paddingBottom: 'max(14px, env(safe-area-inset-bottom))' }}>
                 <button
@@ -496,7 +541,7 @@ export default function ReportSpotSheet({ surface, open, onClose, spot, label }:
                   onClick={() => close('done')}
                   className="min-h-[48px] w-full cursor-pointer rounded-full border border-[rgba(25,26,46,0.18)] bg-white text-[1rem] font-bold text-[#191A2E] transition-colors hover:border-[#2D6A4F] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2D6A4F]"
                 >
-                  Done
+                  {tr('spot.done')}
                 </button>
               </div>
             </div>
@@ -510,22 +555,22 @@ export default function ReportSpotSheet({ surface, open, onClose, spot, label }:
                   onChange={(e) => { void pickPhoto(e.target.files?.[0]); e.target.value = '' }} />
                 {/* What's wrong: one tap */}
                 <fieldset className="m-0 border-0 p-0">
-                  <legend className="mb-2 text-[0.9375rem] font-bold">What&apos;s wrong?</legend>
+                  <legend className="mb-2 text-[0.9375rem] font-bold">{tr('spot.whats_wrong')}</legend>
                   <div role="radiogroup" aria-labelledby={`${titleId}-what`}>
-                  <span id={`${titleId}-what`} className="sr-only">What&apos;s wrong?</span>
+                  <span id={`${titleId}-what`} className="sr-only">{tr('spot.whats_wrong')}</span>
                   {choice && isSpotKind(choice) ? (
                     // Picked: the choice stays in view with a way back, and the
                     // second tap sits right under it, so the map stays close.
                     <div className="flex min-h-[48px] items-center gap-2 rounded-2xl bg-[#2D6A4F] pl-4 pr-1 text-white">
                       <Check size={18} weight="bold" aria-hidden />
-                      <span className="flex-1 text-[0.9375rem] font-semibold">{SPOT_LABELS[choice]}</span>
+                      <span className="flex-1 text-[0.9375rem] font-semibold">{tr(`spot.kind_${choice}`)}</span>
                       <button
                         type="button"
                         onClick={() => { setChoice(null); setDetail(null) }}
-                        aria-label="Pick a different problem"
+                        aria-label={tr('spot.change_label')}
                         className="min-h-[44px] cursor-pointer rounded-full px-3 text-[0.9375rem] font-semibold underline underline-offset-[3px] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
                       >
-                        Change
+                        {tr('spot.change')}
                       </button>
                     </div>
                   ) : (
@@ -535,7 +580,7 @@ export default function ReportSpotSheet({ surface, open, onClose, spot, label }:
                     {SPOT_KINDS.map((k) => (
                       <button key={k} type="button" role="radio" aria-checked={false} onClick={() => { setChoice(k); setDetail(null) }}
                         className={`${chip(false)} min-h-[48px] !rounded-xl py-2 ${k === 'spot_other' ? 'col-span-2' : ''}`}>
-                        {SPOT_LABELS[k]}
+                        {tr(`spot.kind_${k}`)}
                       </button>
                     ))}
                   </div>
@@ -543,11 +588,11 @@ export default function ReportSpotSheet({ surface, open, onClose, spot, label }:
                   {/* The second tap, where it decides who fixes it */}
                   {kindDetails && (
                     <div className="mt-3">
-                      <p id={`${titleId}-which`} className="mb-2 text-[0.9375rem] font-bold">Which one?</p>
+                      <p id={`${titleId}-which`} className="mb-2 text-[0.9375rem] font-bold">{tr('spot.which_one')}</p>
                       <div role="radiogroup" aria-labelledby={`${titleId}-which`} className="flex flex-wrap gap-2">
                         {kindDetails.map((d) => (
                           <button key={d.key} type="button" role="radio" aria-checked={detail === d.key} onClick={() => setDetail(d.key)} className={chip(detail === d.key)}>
-                            {d.label}
+                            {tr(`spot.detail_${choice}_${d.key}`)}
                           </button>
                         ))}
                       </div>
@@ -563,17 +608,17 @@ export default function ReportSpotSheet({ surface, open, onClose, spot, label }:
                       choice === 'map_wrong' ? 'text-[#2D6A4F] decoration-[#2D6A4F]' : 'text-[#4A4D68] decoration-[rgba(74,77,104,0.45)] hover:text-[#191A2E]'
                     }`}
                   >
-                    {choice === 'map_wrong' ? '✓ ' : ''}This map is wrong
+                    {choice === 'map_wrong' ? '✓ ' : ''}{tr('spot.kind_map_wrong')}
                   </button>
                   )}
                   </div>
                 </fieldset>
 
                 {/* Where */}
-                <p className="mt-4 text-[0.9375rem] font-bold">Where is it?</p>
-                <p className="text-[0.875rem] text-[#4A4D68]">Move the map so the pin is on the spot.</p>
+                <p className="mt-4 text-[0.9375rem] font-bold">{tr('spot.where')}</p>
+                <p className="text-[0.875rem] text-[#4A4D68]">{tr('spot.where_hint')}</p>
                 <SpotPinMap start={spot} onSettle={settle} />
-                {placeShown && <p className="mt-1.5 text-[0.9375rem] text-[#191A2E]">Near {placeShown}</p>}
+                {placeShown && <p className="mt-1.5 text-[0.9375rem] text-[#191A2E]">{tr('spot.near', { place: placeShown })}</p>}
 
                 {choice && choice !== 'map_wrong' && (
                   <label className="mt-5 flex min-h-[44px] cursor-pointer items-center gap-3 text-[0.9375rem] text-[#191A2E]">
@@ -583,13 +628,13 @@ export default function ReportSpotSheet({ surface, open, onClose, spot, label }:
                       onChange={(e) => setAccess(e.target.checked)}
                       className="h-5 w-5 shrink-0 cursor-pointer accent-[#2D6A4F]"
                     />
-                    It makes it hard for wheelchairs or strollers
+                    {tr('spot.access_barrier')}
                   </label>
                 )}
 
                 {/* Note (optional) */}
                 <label className="mt-5 block text-[0.9375rem] font-bold" htmlFor={`${titleId}-note`}>
-                  Anything to add? <span className="font-normal text-[#4A4D68]">(optional)</span>
+                  {tr('spot.note_label')} <span className="font-normal text-[#4A4D68]">{tr('spot.optional')}</span>
                 </label>
                 <textarea
                   id={`${titleId}-note`}
@@ -597,46 +642,48 @@ export default function ReportSpotSheet({ surface, open, onClose, spot, label }:
                   onChange={(e) => setNote(e.target.value.slice(0, NOTE_MAX))}
                   maxLength={NOTE_MAX}
                   rows={3}
-                  placeholder={choice === 'spot_other' ? 'What’s in the way?' : undefined}
+                  placeholder={choice === 'spot_other' ? tr('spot.note_placeholder_other') : undefined}
                   aria-describedby={`${titleId}-count`}
                   className="mt-1.5 block w-full resize-none rounded-[10px] border-[1.5px] border-[rgba(25,26,46,0.15)] bg-white px-3 py-2.5 text-[1rem] text-[#191A2E] outline-none placeholder:text-[#6B6E85] focus:border-[#2D6A4F]"
                 />
                 <p id={`${titleId}-count`} className="mt-1 text-right text-[0.875rem] tabular-nums text-[#4A4D68]">
-                  {NOTE_MAX - note.length} left
+                  {tr('spot.left', { n: NOTE_MAX - note.length })}
                 </p>
 
                 {/* Photo (optional): last, since towns get the words and the spot */}
                 <div className="mt-4">
                   {photo.status === 'ready' ? (
                     <div className="flex items-center gap-3">
-                      <button type="button" onClick={() => setLightbox(true)} aria-label="See the photo" className="shrink-0 cursor-pointer rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2D6A4F]">
+                      <button type="button" onClick={() => setLightbox(true)} aria-label={tr('spot.photo_see')} className="shrink-0 cursor-pointer rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2D6A4F]">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src={photo.url} alt="" className="h-16 w-20 rounded-lg object-cover" />
                       </button>
-                      <p className="min-w-0 flex-1 text-[0.9375rem] font-semibold">Photo added</p>
+                      <p className="min-w-0 flex-1 text-[0.9375rem] font-semibold">{tr('spot.photo_added')}</p>
                       <button type="button" onClick={() => setPhoto({ status: 'none' })}
                         className="min-h-[44px] cursor-pointer px-2 text-[0.9375rem] font-semibold text-[#4A4D68] underline underline-offset-[3px] hover:text-[#191A2E]">
-                        Remove
+                        {tr('spot.photo_remove')}
                       </button>
                     </div>
                   ) : photo.status === 'working' ? (
-                    <p className="text-[0.9375rem] text-[#4A4D68]" role="status">Adding the photo…</p>
+                    <p className="text-[0.9375rem] text-[#4A4D68]" role="status">{tr('spot.photo_working')}</p>
                   ) : (
                     <div>
                       <div className="flex flex-wrap gap-2">
                         {/* A computer has no camera to choose: only the files. */}
                         {canTakePhoto && (
                           <button type="button" onClick={() => takeRef.current?.click()} className={quietButton}>
-                            <Camera size={18} aria-hidden /> Take a photo
+                            <Camera size={18} aria-hidden /> {tr('spot.photo_take')}
                           </button>
                         )}
                         <button type="button" onClick={() => chooseRef.current?.click()} className={quietButton}>
-                          <ImageIcon size={18} aria-hidden /> Choose a photo
+                          <ImageIcon size={18} aria-hidden /> {tr('spot.photo_choose')}
                         </button>
                       </div>
-                      <p className="mt-1.5 text-[0.875rem] text-[#4A4D68]">A photo helps show what’s wrong. Try to keep people’s faces out.</p>
+                      <p className="mt-1.5 text-[0.875rem] text-[#4A4D68]">
+                        {willFile && dest ? tr('spot.photo_hint_filed', { town: dest.town }) : tr('spot.photo_hint')}
+                      </p>
                       {photo.status === 'failed' && (
-                        <p role="alert" className="mt-1 text-[0.9375rem] text-[#9B2C2C]">That photo didn&apos;t work. Try another.</p>
+                        <p role="alert" className="mt-1 text-[0.9375rem] text-[#9B2C2C]">{tr('spot.photo_failed')}</p>
                       )}
                     </div>
                   )}
@@ -646,9 +693,7 @@ export default function ReportSpotSheet({ surface, open, onClose, spot, label }:
               <div className="border-t border-[rgba(25,26,46,0.08)] px-5 pt-3" style={{ paddingBottom: 'max(14px, env(safe-area-inset-bottom))' }}>
                 {state === 'error' || state === 'too_many' ? (
                   <p role="alert" className="mb-2 text-[0.9375rem] text-[#9B2C2C]">
-                    {state === 'too_many'
-                      ? "That's a lot of reports from here in one hour. Please try again later."
-                      : "Couldn't send. Try again."}
+                    {state === 'too_many' ? tr('spot.too_many') : tr('spot.failed')}
                   </p>
                 ) : (
                   <p className="mb-2 text-[0.9375rem] leading-snug text-[#4A4D68]">{nextLine}</p>
@@ -659,14 +704,14 @@ export default function ReportSpotSheet({ surface, open, onClose, spot, label }:
                   disabled={!choice || needsDetail || state === 'sending' || photo.status === 'working'}
                   className={primary}
                 >
-                  {state === 'sending' ? 'Sending…' : !choice ? 'Pick what’s wrong first' : needsDetail ? 'Pick one above' : 'Send'}
+                  {state === 'sending' ? tr('spot.sending') : !choice ? tr('spot.send_pick_first') : needsDetail ? tr('spot.send_pick_detail') : tr('spot.send')}
                 </button>
               </div>
             </>
           )}
 
           {lightbox && photo.status === 'ready' && (
-            <PhotoLightbox src={photo.url} alt="Your photo" onClose={() => setLightbox(false)} />
+            <PhotoLightbox src={photo.url} alt={tr('spot.photo_alt')} onClose={() => setLightbox(false)} />
           )}
         </div>
       )}

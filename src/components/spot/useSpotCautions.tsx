@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { decodePolyline } from '@/lib/geo/polyline'
-import { SPOT_LABELS, isSpotKind, reportedAgo, type SpotKind } from './spotCopy'
+import { useNearbyT } from '@/components/nearby/NearbyI18n'
+import { SPOT_LABELS, isSpotKind, type SpotKind } from './spotCopy'
 import { useSpotSwitch } from './useSpotSwitch'
 
 /**
@@ -101,12 +102,23 @@ export function useSpotCautions(legs: Pt[][] | null): SpotCaution[] {
   return on && result.key === key ? result.cautions : NONE
 }
 
+/** "Sidewalk blocked, reported 2 days ago", by calendar day, in the page's language. */
+function cautionLine(tr: ReturnType<typeof useNearbyT>, c: SpotCaution, now = new Date()): string {
+  const problem = tr(`spot.kind_${c.kind}`)
+  const then = new Date(c.reported_at)
+  const day = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
+  const days = Number.isNaN(then.getTime()) ? 0 : Math.max(0, Math.round((day(now) - day(then)) / 86_400_000))
+  if (days === 0) return tr('spot.caution_today', { problem })
+  if (days === 1) return tr('spot.caution_yesterday', { problem })
+  return tr('spot.caution_days', { problem, count: days })
+}
+
 /** One empty list, so "nothing" never looks like a change to a memo downstream. */
 const NONE: SpotCaution[] = []
 
-/** A small amber warning dot for the map (NearbyMap DOM-marker HTML). */
-export function spotCautionMarkerHtml(kind: SpotKind): string {
-  const title = SPOT_LABELS[kind].replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`)
+/** A small amber warning dot for the map (NearbyMap DOM-marker HTML), titled in the page's language. */
+export function spotCautionMarkerHtml(kind: SpotKind, label: string = SPOT_LABELS[kind]): string {
+  const title = label.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`)
   return `<div title="${title}" style="width:18px;height:18px;border-radius:50%;background:#E0A63C;border:2px solid #191A2E;display:flex;align-items:center;justify-content:center;color:#191A2E;font:800 11px/1 -apple-system,sans-serif;box-shadow:0 1px 4px rgba(0,0,0,0.4)">!</div>`
 }
 
@@ -116,18 +128,24 @@ export function spotCautionMarkerHtml(kind: SpotKind): string {
  * there is nothing to say. Reads the Nearby page's own colour tokens, so it
  * holds up on its light and dark tones.
  */
-export function SpotCautionsList({ segments }: { segments: { mode: string; polyline: string }[] | null | undefined }) {
-  const legs = useMemo(() => walkLegs(segments), [segments])
-  const cautions = useSpotCautions(legs)
+export function SpotCautionsList({ segments, legs: givenLegs, className = 'mt-3' }: {
+  segments?: { mode: string; polyline: string }[] | null
+  /** Or the walk's own lines (the commute advisor's walking route). */
+  legs?: Pt[][] | null
+  className?: string
+}) {
+  const tr = useNearbyT()
+  const fromSegments = useMemo(() => walkLegs(segments), [segments])
+  const cautions = useSpotCautions(givenLegs ?? fromSegments)
   if (cautions.length === 0) return null
   return (
-    <div className="mt-3 rounded-lg border border-(--nb-line-mid) bg-(--nb-panel) px-3 py-2">
-      <p className="text-[0.875rem] font-bold text-(--nb-ink)">Reported on this walk</p>
+    <div className={`${className} rounded-lg border border-(--nb-line-mid) bg-(--nb-panel) px-3 py-2`}>
+      <p className="text-[0.875rem] font-bold text-(--nb-ink)">{tr('spot.cautions_title')}</p>
       <ul className="mt-1 space-y-1">
         {cautions.map((c) => (
           <li key={`${c.kind}-${c.lat}-${c.lng}`} className="flex items-start gap-2 text-[0.875rem] leading-snug text-(--nb-ink-80)">
             <span aria-hidden className="mt-[0.4em] h-2 w-2 shrink-0 rounded-full bg-[#E0A63C]" />
-            <span>{SPOT_LABELS[c.kind]}, {reportedAgo(c.reported_at)}</span>
+            <span>{cautionLine(tr, c)}</span>
           </li>
         ))}
       </ul>

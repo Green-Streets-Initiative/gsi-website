@@ -22,7 +22,14 @@ import { stripJpegMetadata } from '@/lib/photo/strip-jpeg'
  *    street under the pin, so the sheet can say a state road's problem
  *    won't go to the town. Nothing is saved.
  *
- * Shift never submits anything to the town.
+ * A visitor's report is never submitted to the town. A member signed in
+ * on this site (the Nearby sign-in) sends their access token as the
+ * bearer; it is checked here and passed on in place of the server key, so
+ * report-route-issue treats them as it treats the app: their photo goes in
+ * their own folder of spot-photos, and where the town takes this kind from
+ * Shift (version 2, spot_filing_towns, every town off until it authorizes),
+ * Shift files it and answers { filed: { town, combined } }. A token that
+ * doesn't check out is ignored: the report goes in as a visitor's.
  */
 
 /** The report's own fields: a little text and a place, like the route report. */
@@ -39,7 +46,21 @@ function clientIp(req: NextRequest): string {
   return (req.headers.get('x-real-ip') ?? req.headers.get('x-forwarded-for') ?? '').split(',')[0].trim()
 }
 
-async function forward(req: NextRequest, body: Record<string, unknown>): Promise<{ status: number; data: Record<string, unknown> }> {
+/** A signed-in member: their token and id, once Supabase Auth says the token is good. */
+type Member = { token: string; userId: string }
+
+async function memberFrom(req: NextRequest): Promise<Member | null> {
+  const token = (req.headers.get('authorization') ?? '').replace(/^Bearer\s+/i, '').trim()
+  if (!token || token.split('.').length !== 3) return null
+  try {
+    const { data, error } = await createServerSupabaseClient().auth.getUser(token)
+    return !error && data?.user?.id ? { token, userId: data.user.id } : null
+  } catch {
+    return null
+  }
+}
+
+async function forward(req: NextRequest, body: Record<string, unknown>, member: Member | null = null): Promise<{ status: number; data: Record<string, unknown> }> {
   const base = process.env.NEXT_PUBLIC_SUPABASE_URL
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY!
   const ip = clientIp(req)
@@ -47,9 +68,14 @@ async function forward(req: NextRequest, body: Record<string, unknown>): Promise
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
-      'x-advisor-key': key,
-      ...(ip ? { 'x-advisor-client-ip': ip } : {}),
+      // A member goes as themselves, the way the app does; a visitor through this server.
+      ...(member
+        ? { 'Authorization': `Bearer ${member.token}` }
+        : {
+          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
+          'x-advisor-key': key,
+          ...(ip ? { 'x-advisor-client-ip': ip } : {}),
+        }),
     },
     body: JSON.stringify(body),
     signal: AbortSignal.timeout(10000),
@@ -97,7 +123,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'bad_handoff' }, { status: 400 })
     }
     try {
-      const { status, data } = await forward(req, { handoff: body.handoff })
+      const { status, data } = await forward(req, { handoff: body.handoff }, await memberFrom(req))
       return status >= 200 && status < 300 ? NextResponse.json({ ok: true }) : failure(status, data)
     } catch (err) {
       console.error('spot/report: handoff unreachable', err)
@@ -143,9 +169,11 @@ export async function POST(req: NextRequest) {
   }
 
   const db = createServerSupabaseClient()
+  const member = await memberFrom(req)
   let photoPath: string | null = null
   if (photo) {
-    photoPath = `web/${crypto.randomUUID()}.jpg`
+    // A member's photo goes in their own folder, as the app's does (the function checks it).
+    photoPath = `${member ? member.userId : 'web'}/${crypto.randomUUID()}.jpg`
     const { error } = await db.storage.from(BUCKET).upload(photoPath, photo, { contentType: 'image/jpeg', upsert: false })
     if (error) {
       console.error('spot/report: photo upload failed', error.message)
@@ -170,13 +198,14 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const { status, data } = await forward(req, body)
+    const { status, data } = await forward(req, body, member)
     if (status >= 200 && status < 300 && data.ok) {
       return NextResponse.json({
         ok: true,
         ...(data.id !== undefined ? { id: data.id } : {}),
         ...(data.destination !== undefined ? { destination: data.destination } : {}),
         ...(data.held ? { held: data.held } : {}),
+        ...(data.filed ? { filed: data.filed } : {}),
       })
     }
     // Not saved: the photo has nothing to belong to.

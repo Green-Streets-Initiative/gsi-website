@@ -9,8 +9,10 @@
  */
 
 /** Only these three effects surface — stop-level closures and detours read
- *  as noise (app rule). */
-const MAJOR_EFFECTS = new Set(['SHUTTLE', 'SUSPENSION', 'STATION_CLOSURE'])
+ *  as noise (app rule). The one copy on this site: guides
+ *  (src/lib/nearby/disruptions.ts) import it from here. The app and edge
+ *  functions share Shift's lib/mbta-alert-effects.ts, the same set. */
+export const MAJOR_EFFECTS: ReadonlySet<string> = new Set(['SHUTTLE', 'SUSPENSION', 'STATION_CLOSURE'])
 
 /** MBTA headers occasionally carry private-use glyphs that render as tofu. */
 const GLYPH_STRIP = /[\u{E000}-\u{F8FF}\u{FFFD}]/gu

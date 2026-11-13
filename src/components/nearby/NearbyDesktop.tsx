@@ -35,8 +35,6 @@ import { useNearbyT } from './NearbyI18n'
 import NearbyLanguagePill from './NearbyLanguagePill'
 import { useNearbyV2, wantsSignIn } from './useNearbyV2'
 import { NearbySignIn, V2Blocks, V2LayersButton, V2PlaceChips, type V2Layers } from './NearbyV2'
-import { AvoidChangesContext, SavedTripChips } from './SavedTrips'
-import type { TripRouteChanges } from '@/lib/nearby/saved-trips'
 import { useSpotPress } from '@/components/spot/useSpotPress'
 import type { ShuttleVehicleLive } from '@/lib/nearby/live-data'
 
@@ -172,10 +170,7 @@ export default function NearbyDesktop({
   const [plannedRows, setPlannedRows] = useState<ReachRow[]>([])
   // Around You v2: a trip re-planned around a street swaps in its new route
   // here, so the map, the times and the rows all draw it.
-  const { apply: applyAvoid, avoid: avoidStreet, goThrough: goThroughPlace, undo: undoAvoid, stateFor: avoidState, restore: restoreAvoid, changesFor: avoidChanges } = useAvoidStreets(center)
-  // Save this trip keeps those changes, and a saved trip puts them back (01787)
-  const savedChanges = useMemo(() => ({ changesFor: avoidChanges, stateFor: avoidState }), [avoidChanges, avoidState])
-  const restoreSaved = useCallback((row: ReachRow, changes: TripRouteChanges) => { void restoreAvoid(row, row.bike_minutes, changes) }, [restoreAvoid])
+  const { apply: applyAvoid, avoid: avoidStreet, goThrough: goThroughPlace, undo: undoAvoid, stateFor: avoidState } = useAvoidStreets(center)
   const reachRows = useMemo(
     () => [...plannedRows, ...reach.data].map(applyAvoid), [plannedRows, reach.data, applyAvoid])
 
@@ -185,7 +180,7 @@ export default function NearbyDesktop({
   const [bikeAlt, setBikeAlt] = useState(false)
 
   // Report a spot: right-click on the map (behind the report_a_spot switch)
-  const spotPress = useSpotPress()
+  const spotPress = useSpotPress('web_map', center)
   const openDocksLabel = useCallback((count: number) => tr('detail.open_docks', { count }), [tr])
   const overlay = useReachOverlay({
     selection: model.routeSelection ?? selection, reachRows, corridorLines, markers, highlightedCorridorId, bikeAlt,
@@ -402,7 +397,6 @@ export default function NearbyDesktop({
   const routeNames = new Map(stations.flatMap(st => st.routes.map(r => [r.id, r.name] as const)))
 
   return (
-    <AvoidChangesContext.Provider value={savedChanges}>
     <div className="pb-20">
       {/* Compact header — the h1 stays for SEO/a11y; actions live in the bar.
           Neighborhood is the headline; the town rides beneath it, so the
@@ -518,6 +512,9 @@ export default function NearbyDesktop({
                 heightClass="h-full"
               />
 
+              {/* Report a spot, where people can see it (press and hold and right-click still work) */}
+              {spotPress.button && <div className="absolute bottom-3 left-3 z-10">{spotPress.button}</div>}
+
               {/* Left of the map's own recenter and zoom buttons */}
               {isV2 && (
                 <div className="absolute right-[52px] top-2.5 z-10">
@@ -575,7 +572,6 @@ export default function NearbyDesktop({
                   morePlacesOpen={morePlacesOpen}
                   onMorePlaces={() => setMorePlacesOpen(o => !o)}
                 />
-                <SavedTripChips center={center} onPlanned={onPlanned} onRestore={restoreSaved} />
                 {trafficOn && <TrafficLegend className="mt-2" />}
               </div>
             )}
@@ -808,6 +804,5 @@ export default function NearbyDesktop({
       </div>
       {spotPress.sheet}
     </div>
-    </AvoidChangesContext.Provider>
   )
 }

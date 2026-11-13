@@ -23,7 +23,7 @@ const MAX_PHOTO_BYTES = 1_572_864
 const MAX_BODY_BYTES = MAX_PHOTO_BYTES + MAX_NOTE_BYTES + 4096
 
 /** Where the website lets people add notes (report-route-issue's SURFACES). */
-const SURFACES = new Set(['advisor_bike', 'nearby_reach', 'nearby_corridor', 'web_street'])
+const SURFACES = new Set(['advisor_bike', 'nearby_reach', 'nearby_corridor', 'web_street', 'web_roam'])
 const BUCKET = 'spot-photos'
 
 export async function POST(req: NextRequest) {
