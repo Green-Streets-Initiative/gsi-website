@@ -14,7 +14,7 @@
  * Street, Boston" are one street).
  */
 import { supabase } from '@/lib/supabase'
-import { aroundYouV2On } from '@/components/nearby/useNearbyV2'
+import { flagOnFor } from '@/lib/feature-flags'
 import { canonicalStreetKey } from '@/lib/nearby/street-names'
 import { decodePolyline, encodePolyline } from '@/lib/geo/polyline'
 import { accessToken, scoreRoute, type PlannedLegOption } from './api'
@@ -37,7 +37,7 @@ export const avoidKey = (label: string) => canonicalStreetKey(streetOnly(label))
 export async function avoidStreetsOn(): Promise<boolean> {
   try {
     const { data: { session } } = await supabase.auth.getSession()
-    return session ? await aroundYouV2On(session.user.id) : false
+    return session ? await flagOnFor(supabase, 'around_you_v2', session.user.id) : false
   } catch {
     return false
   }
