@@ -2,6 +2,7 @@ import 'server-only'
 
 import { createHash } from 'node:crypto'
 import { decodePolyline, encodePolyline } from '@/lib/geo/polyline'
+import { orderWays } from '@/lib/nearby/bike-ways'
 import { canonicalStreetKey } from '@/lib/nearby/street-names'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 
@@ -317,19 +318,6 @@ function toOption(o: RawOption): PlannerBikeOption | null {
   }
 }
 
-/**
- * The planner's order, except that a way another way beats on both time and
- * calm streets goes after the ones nothing beats. The planner's score leans
- * hard toward paths: Central Square to Davis opened on a 39-minute, 5.7-mile
- * ride over the hills on the Community Path, while the way listed under it
- * was 18 minutes, 3.1 miles and calmer (2026-11-13). The trip opens on the
- * first way, so it should never be one the list itself marks as worse.
- */
-export function beatenLast<T extends { minutes: number; calm_pct: number }>(options: T[]): T[] {
-  const beaten = (o: T) => options.some(x => x !== o && x.minutes <= o.minutes && x.calm_pct >= o.calm_pct && (x.minutes < o.minutes || x.calm_pct > o.calm_pct))
-  return [...options.filter(o => !beaten(o)), ...options.filter(beaten)]
-}
-
 /* ── Calling the planner ── */
 
 async function callPlanner(body: unknown, deadlineMs: number): Promise<Record<string, unknown> | null> {
@@ -405,7 +393,7 @@ export async function plannerBikeOptions(
       remember(planCache, key, result, 10 * 60 * 1000)
       return result
     }
-    const options = beatenLast((legs[0].options ?? []).map(toOption).filter((o): o is PlannerBikeOption => !!o))
+    const options = orderWays((legs[0].options ?? []).map(toOption).filter((o): o is PlannerBikeOption => !!o))
     if (options.length === 0) return null
     const result = { options, degraded: false }
     remember(planCache, key, result, PLAN_TTL_MS)
