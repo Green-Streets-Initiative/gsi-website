@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ReachRow } from './types'
 import type { Selection } from './useNearbyModel'
 import { defaultRouteMode } from '@/lib/nearby/reach-ui'
@@ -73,7 +73,7 @@ export function useInitialFocus(
       case 'reach': {
         const row = reachRows.find(r => r.id === focus.id)
         if (row) {
-          next = { type: 'reach', id: row.id, mode: defaultRouteMode(row) }
+          next = { type: 'reach', id: row.id, mode: focus.mode ?? defaultRouteMode(row) }
           showDestinations()
         }
         break
@@ -83,4 +83,46 @@ export function useInitialFocus(
     applied.current = { at: applied.current?.at ?? Date.now(), count: (applied.current?.count ?? 0) + 1 }
     select(next, 'deeplink')
   }, [focus, corridorById, stationByKey, docks, reachRows, select, isSectionOpen, toggleSection, showDestinations, selection])
+}
+
+/** What is open on the page: the selection and the trips the visitor typed. */
+export type OpenOnPage = { center: { lat: number; lng: number }; selection: Selection; planned: ReachRow[] }
+export type OpenHandoff = { report: (open: OpenOnPage) => void; take: () => OpenOnPage | null }
+
+function focusOf(s: Selection): InitialFocus | null {
+  switch (s?.type) {
+    case 'station': return { type: 'station', key: s.key }
+    case 'corridor': return { type: 'corridor', id: s.id }
+    case 'dock': return { type: 'dock', id: s.id }
+    case 'reach': return { type: 'reach', id: s.id, mode: s.mode }
+    default: return null
+  }
+}
+
+/**
+ * The page swaps its desktop and phone layouts at 1024px, and each keeps its
+ * own state, so narrowing the window closed the open trip and dropped the
+ * trips the visitor had typed (2026-11-13). The layout in use reports what
+ * is open; the next one starts from it, at the same place only. Returns the
+ * typed trips to start with and the focus to open.
+ */
+export function useOpenHandoff(
+  handoff: OpenHandoff | undefined,
+  center: { lat: number; lng: number },
+): { planned: ReachRow[]; focus: InitialFocus | null } {
+  const [carried] = useState(() => {
+    const c = handoff?.take() ?? null
+    return c && c.center.lat === center.lat && c.center.lng === center.lng ? c : null
+  })
+  return useMemo(() => ({ planned: carried?.planned ?? [], focus: carried ? focusOf(carried.selection) : null }), [carried])
+}
+
+/** Tell the page what this layout has open. */
+export function useReportOpen(
+  handoff: OpenHandoff | undefined,
+  center: { lat: number; lng: number },
+  selection: Selection,
+  planned: ReachRow[],
+) {
+  useEffect(() => { handoff?.report({ center, selection, planned }) }, [handoff, center, selection, planned])
 }

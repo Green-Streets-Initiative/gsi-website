@@ -14,7 +14,9 @@ export type InitialFocus =
   | { type: 'station'; key: string }
   | { type: 'corridor'; id: string }
   | { type: 'dock'; id: string }
-  | { type: 'reach'; id: string }
+  /** `mode` only when handed over in-page (the open trip's mode, see
+   *  useOpenHandoff); a link opens the best mode. */
+  | { type: 'reach'; id: string; mode?: 'transit' | 'bike' }
 
 export function parseInitialFocus(raw: string | null): InitialFocus | null {
   if (!raw) return null

@@ -10,7 +10,7 @@ import { useAvoidStreets } from './useAvoidStreets'
 import { useBikePlanner } from './useBikePlanner'
 import { throughSpotMarker, useGoThrough } from './GoThroughPlace'
 import NearbyMap, { TrafficToggle, TrafficLegend, useTrafficPreference, type FitPadding, type RouteLegTapInfo } from './NearbyMap'
-import { useInitialFocus } from './useInitialFocus'
+import { useInitialFocus, useOpenHandoff, useReportOpen, type OpenHandoff } from './useInitialFocus'
 import type { InitialFocus } from '@/lib/nearby/focus'
 import {
   useNearbyModel, MODE_FILTER_DEFAULT, PAINTED_DEFAULT,
@@ -61,6 +61,8 @@ interface Props {
   /** ?to=&toName= — plan this trip on arrival (see parseTripDest) */
   planTo?: TripDest | null
   center: { lat: number; lng: number }
+  /** Carries the open trip across the desktop/phone layout swap. */
+  handoff?: OpenHandoff
   displayLabel: string
   /** Town, shown beneath the neighborhood headline (null when no neighborhood) */
   subLabel: string | null
@@ -123,7 +125,7 @@ const RAIL_TAB_LABEL_KEYS: Record<RailTab, string> = {
 }
 
 export default function NearbyDesktop({
-  initialFocus, planFirst = false, planTo = null, center, displayLabel, subLabel, outside, copied, onCopyLink, onChangeLocation, onPrint,
+  initialFocus, handoff, planFirst = false, planTo = null, center, displayLabel, subLabel, outside, copied, onCopyLink, onChangeLocation, onPrint,
   onPlanCommute, partnerLine, partner, partnerSlug, appHref, newRoutes,
   transitCorridors, bikeCorridors, popularBikeStreetKeys, rail, bus, railFar, busFar, shuttles, shuttleVehicles, docks,
   backgroundLines, transitStatus, reach, community, guides, alerts, onRetry,
@@ -170,7 +172,8 @@ export default function NearbyDesktop({
   // A trip the visitor planned themselves. It joins the destination rows so
   // it renders, draws and selects exactly like a curated one — the planner
   // needed no new detail UI because a planned trip IS a reach row.
-  const [plannedRows, setPlannedRows] = useState<ReachRow[]>([])
+  const carried = useOpenHandoff(handoff, center)
+  const [plannedRows, setPlannedRows] = useState<ReachRow[]>(carried.planned)
   // Around You v2: a trip re-planned around a street swaps in its new route
   // here, so the map, the times and the rows all draw it.
   const { apply: applyAvoid, avoid: avoidStreet, goThrough: goThroughPlace, undo: undoAvoid, stateFor: avoidState, restore: restoreAvoid, changesFor: avoidChanges } = useAvoidStreets(center)
@@ -401,8 +404,9 @@ export default function NearbyDesktop({
     })
   }, [defaultOpenShelf])
 
-  useInitialFocus(initialFocus, {
-    corridorById, stationByKey: model.stationByKey, docks, reachRows: reach.data,
+  useReportOpen(handoff, center, selection, plannedRows)
+  useInitialFocus(carried.focus ?? initialFocus, {
+    corridorById, stationByKey: model.stationByKey, docks, reachRows,
     select: selectShowing, isSectionOpen, toggleSection, selection,
     showDestinations: useCallback(() => setRailTab('destinations'), []),
   })

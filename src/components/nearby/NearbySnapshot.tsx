@@ -29,6 +29,7 @@ import NearbyDesktop from './NearbyDesktop'
 import PartnerCobrand from './PartnerCobrand'
 import NewRoutesOffer from './NewRoutesOffer'
 import { useIsDesktop } from './useIsDesktop'
+import type { OpenHandoff, OpenOnPage } from './useInitialFocus'
 import { t, resolveNearbyLocale, type NearbyLocale } from '@/lib/nearby/i18n'
 import { NearbyI18nProvider } from './NearbyI18n'
 import { NearbyPromosProvider } from './NearbyPromos'
@@ -84,6 +85,10 @@ export default function NearbySnapshot({ tone = 'dark' }: { tone?: NearbyTone } 
   )
   const planFirst = planParam || !!planTo
   const isDesktop = useIsDesktop()
+  // What the layout in use has open, for the other layout if the window
+  // crosses 1024px (useOpenHandoff).
+  const openNow = useRef<OpenOnPage | null>(null)
+  const handoff = useMemo<OpenHandoff>(() => ({ report: (o) => { openNow.current = o }, take: () => openNow.current }), [])
 
   // Locale from ?lang= (wins) or the browser; provided to the whole tree below.
   // Browser language resolves after mount to avoid a hydration mismatch (server
@@ -257,9 +262,11 @@ export default function NearbySnapshot({ tone = 'dark' }: { tone?: NearbyTone } 
       const resolved = await resolvePlaceLabel(location.lat, location.lng, location.city || cityRef.current || null)
       if (cancelled) return
       const label = combinePlaceLabel(resolved)
+      // Outside the state update: an updater runs during render, and Next's
+      // router can't take a URL change from there.
+      if (label) window.history.replaceState(null, '', buildShareUrl(location.lat, location.lng, label, stickyParams(window.location.search)))
       setLocation(prev => {
         if (!prev) return prev
-        if (label) window.history.replaceState(null, '', buildShareUrl(prev.lat, prev.lng, label, stickyParams(window.location.search)))
         return {
           ...prev,
           neighborhood: resolved.neighborhood,
@@ -795,6 +802,7 @@ export default function NearbySnapshot({ tone = 'dark' }: { tone?: NearbyTone } 
 
   const surfaceProps = {
     initialFocus,
+    handoff,
     planFirst,
     planTo,
     center: location,
