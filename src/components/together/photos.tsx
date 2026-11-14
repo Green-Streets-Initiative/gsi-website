@@ -5,7 +5,8 @@ import { cx } from '@/components/organizers/ui'
 /**
  * The real, credited photos on the Shift Together pages (enrich pass, Keith
  * 2026-11-09: "Fix the pictures"). All from Wikimedia Commons, checked by
- * looking; files in public/images/together, resized for the web.
+ * looking; files in public/images/together, resized for the web (river and gilman
+ * at 1920 wide: they fill a 920-wide band, sharp on high-density screens).
  *
  * - concord: "Bicyclists boarding MBTA train in Concord" (2023-10-14),
  *   https://commons.wikimedia.org/wiki/File:Bicyclists_boarding_MBTA_train_in_Concord.jpg
@@ -29,12 +30,12 @@ export const PHOTOS = {
     url: 'https://commons.wikimedia.org/wiki/File:Bicyclists_boarding_MBTA_train_in_Concord.jpg',
   },
   gilman: {
-    src: '/images/together/gilman-square-from-the-path.jpg', width: 1000, height: 667,
+    src: '/images/together/gilman-square-from-the-path.jpg', width: 1920, height: 1280,
     credit: '4300streetcar / Wikimedia Commons, CC BY 4.0',
     url: 'https://commons.wikimedia.org/wiki/File:MBTA_Gilman_Square_station_Community_Path_entrance_July_2025.jpg',
   },
   river: {
-    src: '/images/together/charles-river-path.jpg', width: 1200, height: 800,
+    src: '/images/together/charles-river-path.jpg', width: 1920, height: 1280,
     credit: '4300streetcar / Wikimedia Commons, CC BY 4.0',
     url: 'https://commons.wikimedia.org/wiki/File:Charles_River_Bike_Path_near_John_Weeks_Bridge_2.jpg',
   },
