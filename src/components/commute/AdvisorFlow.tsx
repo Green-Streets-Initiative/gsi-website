@@ -20,6 +20,7 @@ import LoadingMessages from '@/components/commute/LoadingMessages'
 import CommutePlanPrint from '@/components/commute/CommutePlanPrint'
 import TagAlong from '@/components/commute/TagAlong'
 import StoreBadges from '@/components/StoreBadges'
+import { setHandoffPlan } from '@/lib/app-handoff'
 import type { AskTrip } from '@/components/commute/AskAboutTrip'
 import { haversineMeters } from '@/lib/geo/measure'
 import { COMFORT_COLORS, comfortLabel, comfortPieces, fetchCalmRoute, formatStretchMiles, legPhotoSpec, type CalmRoute } from '@/components/commute/calm-route'
@@ -496,6 +497,14 @@ export default function AdvisorFlow({
   /* ── After the plan: departures, the calm route, shuttles, bike parking ── */
   const home = homePlaceData
   const office = workPlaceData
+  // While a plan is on screen, a store badge tap hands its two ends to the
+  // app, so setup opens on these options instead of asking for the
+  // addresses again (lib/app-handoff).
+  useEffect(() => {
+    setHandoffPlan(result && home && office ? { from: { lat: home.lat, lng: home.lng }, to: { lat: office.lat, lng: office.lng } } : null)
+    return () => setHandoffPlan(null)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [result, home?.lat, home?.lng, office?.lat, office?.lng])
   // The free 1:1 street lesson (launch confidence-path, 2026-11-03): offered
   // in the bike plan when Home is within the program's 5 miles of the
   // Bicycle Riding School (Shift free_lesson_programs.brs_road).

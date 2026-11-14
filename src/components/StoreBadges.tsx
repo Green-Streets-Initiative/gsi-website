@@ -3,6 +3,7 @@
 import posthog from 'posthog-js'
 import { gaEvent } from '@/lib/ga'
 import { campaignToken, currentAttribution, withStoreAttribution } from '@/lib/store-attribution'
+import { copyHandoffTag } from '@/lib/app-handoff'
 import { trackAdConversion } from '@/lib/ad-pixels'
 import { HOME_CTA_EVENT, type Audience, type Placement } from '@/components/home/tracking'
 
@@ -59,6 +60,9 @@ export default function StoreBadges({
   const tapped = (store: Store, e: React.MouseEvent<HTMLAnchorElement>) => {
     const attr = currentAttribution()
     e.currentTarget.href = withStoreAttribution(store === 'ios' ? iosUrl : androidUrl, attr)
+    // Copy which page this is, so the app's setup can open on it (a trail, a
+    // plan) and the new account records where it came from. See lib/app-handoff.
+    copyHandoffTag(attr)
     track(store, campaignToken(attr))
   }
 
