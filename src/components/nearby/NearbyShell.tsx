@@ -474,12 +474,9 @@ export default function NearbyShell({
     // dvh math — Safari's URL-bar dance and scroll quirks can't touch it
     <AvoidChangesContext.Provider value={savedChanges}>
     <div className="fixed inset-x-0 bottom-0 top-[60px] z-30 flex flex-col overflow-hidden bg-(--nb-bg)">
-      {/* Thin orientation strip — tells you what page you're on without
-          spending real screen space */}
-      <div className="flex h-8 shrink-0 items-center justify-between border-b border-(--nb-line) px-4">
-        <span className="truncate text-[0.62rem] font-bold uppercase tracking-[0.16em] text-(--nb-accent)">
-          {tr('shell.eyebrow_snapshot')}
-        </span>
+      {/* Thin strip for the language pill; the place bar below says where
+          you are. */}
+      <div className="flex h-8 shrink-0 items-center justify-end border-b border-(--nb-line) px-4">
         <NearbyLanguagePill className="shrink-0" />
       </div>
       {/* Partner co-brand row — only exists on partner deep links; the stage

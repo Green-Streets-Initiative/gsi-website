@@ -677,11 +677,10 @@ export default function NearbySnapshot({ tone = 'dark' }: { tone?: NearbyTone } 
           <NearbyLanguagePill />
         </div>
         <div className="text-center">
-          <div className="mb-2 text-[13px] font-bold uppercase tracking-[0.14em] text-(--nb-accent)">
-            {tr(newRoutes ? 'snap.eyebrow_newroutes' : 'snap.eyebrow')}
-          </div>
+          {/* One headline in one color: no kicker above it, no accent word
+              (design system, AI-tell scan). */}
           <h1 className="font-display text-[clamp(1.75rem,4vw,2.5rem)] font-extrabold leading-[1.12] tracking-tighter text-(--nb-ink)">
-            {tr('snap.headline_lead')}<em className="not-italic text-(--nb-accent)">{tr('snap.headline_em')}</em>{tr('snap.headline_tail')}
+            {tr('snap.headline_lead')}{tr('snap.headline_em')}{tr('snap.headline_tail')}
           </h1>
           <p className="mx-auto mt-3 max-w-[46ch] text-[1rem] leading-relaxed text-(--nb-ink-70)">
             {tr(newRoutes ? 'snap.subtitle_newroutes' : 'snap.subtitle')}

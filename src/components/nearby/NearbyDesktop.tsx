@@ -436,15 +436,11 @@ export default function NearbyDesktop({
     <AvoidChangesContext.Provider value={savedChanges}>
     <div className="pb-20">
       {/* Compact header — the h1 stays for SEO/a11y; actions live in the bar.
-          Neighborhood is the headline; the town rides beneath it, so the
-          "Your neighborhood snapshot" eyebrow finally reads true. */}
+          Neighborhood is the headline; the town rides beneath it. */}
       <div className="mx-auto max-w-[1200px] px-6 pb-4 pt-6 lg:px-8">
         <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-2">
           <div className="min-w-0">
-            <div className="text-[0.72rem] font-bold uppercase tracking-[0.16em] text-(--nb-accent)">
-              {tr('desktop.eyebrow_snapshot')}
-            </div>
-            <h1 className="mt-1 truncate font-display text-[1.35rem] font-extrabold tracking-tight text-(--nb-ink)">
+            <h1 className="truncate font-display text-[1.35rem] font-extrabold tracking-tight text-(--nb-ink)">
               {displayLabel}
             </h1>
             {subLabel && (
