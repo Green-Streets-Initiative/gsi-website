@@ -48,6 +48,20 @@ export function placeBias(near?: Near | null, radiusM?: number) {
 
 export type PlacePrediction = { placeId: string; text: string }
 
+const NEW_ENGLAND = new Set(['MA', 'NH', 'RI', 'CT', 'VT', 'ME'])
+
+/**
+ * False for a suggestion that names a state outside New England. The bias
+ * circle only ranks: "Union Square" led with Manhattan and "Main Street"
+ * with Flushing, NY (2026-11-14). A hard box loses the nearest-first order
+ * (an address typed in Somerville came back from Braintree first), so keep
+ * the bias and drop the far states. Text with no state code stays.
+ */
+export function nearEnoughState(text: string): boolean {
+  const m = /,\s*([A-Z]{2})(?:\s+\d{5})?,\s*USA$/.exec(text)
+  return !m || NEW_ENGLAND.has(m[1])
+}
+
 /**
  * Suggestions as someone types. `types` undefined = addresses and
  * businesses; [] = every kind of place, neighborhoods and towns too.
@@ -78,7 +92,7 @@ export async function autocompletePlaces(
   }
   const data = (await res.json()) as { suggestions?: { placePrediction?: { placeId: string; text: { text: string } } }[] }
   return (data.suggestions ?? [])
-    .filter((s) => s.placePrediction)
+    .filter((s) => s.placePrediction && nearEnoughState(s.placePrediction.text.text))
     .slice(0, 5)
     .map((s) => ({ placeId: s.placePrediction!.placeId, text: s.placePrediction!.text.text }))
 }
