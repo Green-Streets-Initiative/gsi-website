@@ -120,8 +120,8 @@ export default function EmployerCommuteAdvisor({ group, isDemo, initialLocationI
             </div>
             <h1 className="mb-1.5 text-[clamp(1.5rem,3vw,2.25rem)] font-extrabold leading-[1.15] tracking-tighter text-[#191A2E]">
               {locale === 'en' ? (
-                <>Find your <em className="not-italic text-[#2D6A4F]">best commute</em></>
-              ) : withNodes(t('page.hero_title'), { em: <em className="not-italic text-[#2D6A4F]">{t('page.hero_title_em')}</em> })}
+                <>Find your best commute</>
+              ) : withNodes(t('page.hero_title'), { em: <>{t('page.hero_title_em')}</> })}
             </h1>
             <p className="text-[0.9375rem] text-[#5A5C6E]">{locale === 'en' ? <>Commute Advisor for {group.name} staff</> : t('emp.staff', { company: group.name })}</p>
           </div>

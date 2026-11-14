@@ -83,7 +83,7 @@ export default function PublicAdvisorPage({ locale = 'en' }: { locale?: SiteLoca
         ) : (
           <div className="mx-auto max-w-[640px] px-6 pb-5 pt-7 text-center lg:px-8 lg:pt-9">
             <h1 className="mb-2.5 font-serif text-[clamp(2.25rem,5vw,3.5rem)] font-normal leading-[1.02] tracking-[-0.01em] text-navy">
-              {titleBefore}<em className="not-italic text-forest">{t('page.hero_title_em')}</em>{titleAfter}
+              {titleBefore}{t('page.hero_title_em')}{titleAfter}
             </h1>
             <p className="text-[17px] leading-relaxed text-ink-soft">
               {t('page.hero_body')}
