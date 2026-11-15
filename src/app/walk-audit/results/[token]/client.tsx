@@ -6,6 +6,8 @@ import { moduleById } from '@/components/walk-audit/moduleModel'
 import VolunteerRouteMap from '@/components/volunteer-route/VolunteerRouteMap'
 import PhotoLightbox from '@/components/walk-audit/PhotoLightbox'
 import { downloadCsv } from '@/lib/csv'
+import StopResults, { summarizeStops } from '@/components/walk-audit/StopResults'
+import { cleanStops, STOP_QUESTIONS, stopQuestionSentence, type AuditStop } from '@/components/walk-audit/stopModel'
 
 interface BlockDef {
   i: number
@@ -54,6 +56,7 @@ interface ResultsData {
     participant_token: string
     enabled_modules: string[]
     blocks: BlockDef[] | null
+    stops?: AuditStop[] | null
     hazard_context: {
       crash_clusters?: { lat: number; lng: number; crashCount?: number }[]
       summary?: { cluster_count: number; total_crashes: number }
@@ -122,7 +125,23 @@ export default function WalkAuditResultsClient({ data }: { data: ResultsData }) 
   const problems = observations.filter((o) => o.valence === 'problem')
   const goods = observations.filter((o) => o.valence === 'good')
   const wrapUps = submissions.filter((s) => s.module === 'wrap_up')
-  const extraSubs = submissions.filter((s) => s.module !== 'wrap_up')
+  const extraSubs = submissions.filter(
+    (s) => !['wrap_up', 'stop_check', 'stop_discussion'].includes(s.module),
+  )
+  const stops = useMemo(() => cleanStops(audit.stops), [audit.stops])
+  const stopSummaries = useMemo(() => summarizeStops(stops, submissions), [stops, submissions])
+  const stopCheckCount = stopSummaries.reduce((sum, st) => sum + st.people, 0)
+  const stopsWithAnswers = stopSummaries.filter((st) => st.people > 0 || st.discussions.length > 0)
+  const worstAtStops = useMemo(() => {
+    let worst: { key: string; stopName: string; no: number; total: number } | null = null
+    for (const st of stopSummaries) {
+      const top = st.tallies.find((t) => t.no > 0)
+      if (top && (!worst || top.no / top.total > worst.no / worst.total || (top.no / top.total === worst.no / worst.total && top.no > worst.no))) {
+        worst = { key: top.key, stopName: st.stop.name, no: top.no, total: top.total }
+      }
+    }
+    return worst
+  }, [stopSummaries])
 
   const walkerCount = useMemo(() => {
     const names = new Set<string>()
@@ -134,8 +153,12 @@ export default function WalkAuditResultsClient({ data }: { data: ResultsData }) 
     for (const s of wrapUps) {
       if (s.observer_name) names.add(s.observer_name)
     }
-    return Math.max(names.size + (anonymous > 0 ? 1 : 0), wrapUps.length, 1)
-  }, [observations, wrapUps])
+    for (const s of submissions) {
+      if (s.module === 'stop_check' && s.observer_name) names.add(s.observer_name)
+    }
+    const mostAtOneStop = Math.max(0, ...stopSummaries.map((st) => st.people))
+    return Math.max(names.size + (anonymous > 0 ? 1 : 0), wrapUps.length, mostAtOneStop, 1)
+  }, [observations, wrapUps, submissions, stopSummaries])
 
   const topCategory = useMemo(() => {
     const counts: Record<string, number> = {}
@@ -289,7 +312,7 @@ export default function WalkAuditResultsClient({ data }: { data: ResultsData }) 
       <div className="mx-auto max-w-[800px] space-y-5 px-4 py-6">
         {/* The story */}
         <div className="rounded-xl bg-white p-5 shadow-sm">
-          {observations.length === 0 && wrapUps.length === 0 ? (
+          {observations.length === 0 && wrapUps.length === 0 && stopsWithAnswers.length === 0 ? (
             <p className="text-sm text-[#374151]">
               No findings yet. Share the walking link — as people flag spots, this page becomes the
               story of what they found.
@@ -308,6 +331,19 @@ export default function WalkAuditResultsClient({ data }: { data: ResultsData }) 
                 )}
                 .
               </p>
+              {stopCheckCount > 0 && (
+                <p className="mt-2 text-sm text-[#374151]">
+                  The group answered yes-or-no questions at{' '}
+                  <strong>{n(stopsWithAnswers.length, 'stop')}</strong>
+                  {worstAtStops && (
+                    <>
+                      . The clearest one: at <strong>{worstAtStops.stopName}</strong>,{' '}
+                      {worstAtStops.no} of {worstAtStops.total} answered no to &ldquo;{stopQuestionSentence(worstAtStops.key)}.&rdquo;
+                    </>
+                  )}
+                  {!worstAtStops && '.'}
+                </p>
+              )}
               {roughestBlock && (
                 <p className="mt-2 text-sm text-[#374151]">
                   The roughest stretch: <strong>{roughestBlock.name ?? `Block ${roughestBlock.index + 1}`}</strong>{' '}
@@ -334,6 +370,17 @@ export default function WalkAuditResultsClient({ data }: { data: ResultsData }) 
                 </p>
               )}
             </>
+          )}
+          {stopsWithAnswers.length > 0 && (
+            <nav className="mt-4 flex flex-wrap gap-2 text-sm font-semibold">
+              <a href="#stops" className="rounded-full border border-gray-300 px-3 py-1.5 text-[#191A2E] hover:border-[#2966E5]">Stop by stop</a>
+              {problems.length > 0 && (
+                <a href="#problems" className="rounded-full border border-gray-300 px-3 py-1.5 text-[#191A2E] hover:border-[#2966E5]">{n(problems.length, 'problem')} flagged</a>
+              )}
+              {goods.length > 0 && (
+                <a href="#working" className="rounded-full border border-gray-300 px-3 py-1.5 text-[#191A2E] hover:border-[#2966E5]">{goods.length} working well</a>
+              )}
+            </nav>
           )}
           <div className="mt-4 flex flex-wrap gap-2">
             <button
@@ -386,10 +433,14 @@ export default function WalkAuditResultsClient({ data }: { data: ResultsData }) 
             center={locationCenter}
             pins={mapPins}
             heightClass="h-80"
+            stops={stops.map((st) => ({ lat: st.lat, lng: st.lng, name: st.name }))}
           />
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-2 py-1.5 text-[11px] text-[#6B7280]">
             <span className="inline-flex items-center gap-1"><span className="h-2.5 w-2.5 rounded-full bg-[#BAF14D] border border-[#3D5407]/30"></span> works well</span>
             <span className="inline-flex items-center gap-1"><span className="h-2.5 w-2.5 rounded-full bg-[#D97706]"></span> problem</span>
+            {stops.length > 0 && (
+              <span className="inline-flex items-center gap-1"><span className="h-2.5 w-2.5 rounded-[3px] bg-[#191A2E]"></span> stop</span>
+            )}
             {(audit.hazard_context?.crash_clusters?.length ?? 0) > 0 && (
               <span className="inline-flex items-center gap-1"><span className="h-2.5 w-2.5 rounded-full bg-[#DC2626]"></span> reported crashes (MassDOT)</span>
             )}
@@ -397,9 +448,33 @@ export default function WalkAuditResultsClient({ data }: { data: ResultsData }) 
           </div>
         </div>
 
+        {/* Stop by stop */}
+        {stopsWithAnswers.length > 0 && (
+          <StopResults
+            summaries={stopSummaries}
+            onDownload={() => {
+              const header = ['stop', 'who', 'when', 'question', 'answer', 'note']
+              const rows: unknown[][] = []
+              for (const s of submissions) {
+                if (s.module === 'stop_check') {
+                  const checks = (s.answers?.checks ?? {}) as Record<string, string>
+                  const notes = (s.answers?.notes ?? {}) as Record<string, string>
+                  for (const q of STOP_QUESTIONS) {
+                    if (!checks[q.key]) continue
+                    rows.push([s.answers?.stop_name ?? '', s.observer_name ?? '', s.submitted_at, stopQuestionSentence(q.key), checks[q.key], notes[q.key] ?? ''])
+                  }
+                } else if (s.module === 'stop_discussion') {
+                  rows.push([s.answers?.stop_name ?? '', s.observer_name ?? '', s.submitted_at, 'Group discussion', '', s.answers?.notes ?? ''])
+                }
+              }
+              downloadCsv(`walk-audit-stops-${audit.title.replace(/[^a-zA-Z0-9]/g, '_')}.csv`, [header, ...rows])
+            }}
+          />
+        )}
+
         {/* Problems */}
         {problems.length > 0 && (
-          <div className="rounded-xl bg-white p-5 shadow-sm">
+          <div id="problems" className="scroll-mt-4 rounded-xl bg-white p-5 shadow-sm">
             <h2 className="mb-1 flex items-center gap-2 text-base font-bold text-[#191A2E]">
               <Warning size={18} weight="fill" className="text-[#D97706]" /> {n(problems.length, 'problem')} flagged
             </h2>
@@ -412,7 +487,7 @@ export default function WalkAuditResultsClient({ data }: { data: ResultsData }) 
 
         {/* What works */}
         {goods.length > 0 && (
-          <div className="rounded-xl bg-white p-5 shadow-sm">
+          <div id="working" className="scroll-mt-4 rounded-xl bg-white p-5 shadow-sm">
             <h2 className="mb-1 flex items-center gap-2 text-base font-bold text-[#191A2E]">
               <ThumbsUp size={18} weight="fill" className="text-[#52B788]" /> {n(goods.length, 'spot')} working well
             </h2>
@@ -477,7 +552,7 @@ export default function WalkAuditResultsClient({ data }: { data: ResultsData }) 
           </div>
         )}
 
-        {observations.length === 0 && wrapUps.length === 0 && (
+        {observations.length === 0 && wrapUps.length === 0 && stopsWithAnswers.length === 0 && (
           <p className="flex items-center justify-center gap-1.5 pt-4 text-center text-xs text-[#6B7280]">
             <Flag size={13} weight="fill" className="text-[#D97706]" /> Waiting for the first flag…
           </p>

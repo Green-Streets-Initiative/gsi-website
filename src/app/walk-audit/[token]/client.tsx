@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import {
   ArrowLeft, ArrowRight, Binoculars, CheckCircle, Clock, Eye, Flag,
-  HandHeart, MapPin, Microphone, PersonSimpleWalk, X,
+  HandHeart, MapPin, Microphone, PersonSimpleWalk, Signpost, X,
 } from '@phosphor-icons/react'
 import { ROLLUP_OPTIONS, moduleById } from '@/components/walk-audit/moduleModel'
 import ModuleForm, { type Answers } from '@/components/walk-audit/ModuleForm'
@@ -15,6 +15,14 @@ import BlockStrip from '@/components/walk-audit/BlockStrip'
 import { useDictation } from '@/components/walk-audit/useDictation'
 import type { WalkAuditMeta, BlockDef, BlockCheck } from './page'
 import { haversineMeters, buildClientBlocks } from '@/components/walk-audit/blocks'
+import StopCheck, { stopDraftKey } from '@/components/walk-audit/StopCheck'
+import {
+  auditMinutes, cleanStops, minutesLabel, STOP_CHECK_MINUTES, STOP_TALK_MINUTES,
+  type StopActivity,
+} from '@/components/walk-audit/stopModel'
+
+// How close a walker has to be before the page offers the stop's questions.
+const STOP_RADIUS_METERS = 45
 
 const PURPOSE_LABELS: Record<string, string> = {
   engage: 'Community walk audit',
@@ -42,7 +50,7 @@ interface Props {
 }
 
 export default function WalkAuditClient({ token, audit }: Props) {
-  type View = 'briefing' | 'walk' | 'capture' | 'wrapup' | 'module' | 'done'
+  type View = 'briefing' | 'walk' | 'capture' | 'wrapup' | 'module' | 'done' | 'stop'
   const [view, setView] = useState<View>('briefing')
   const [briefCard, setBriefCard] = useState(0)
   const [observer, setObserver] = useState('')
@@ -52,6 +60,17 @@ export default function WalkAuditClient({ token, audit }: Props) {
   const [blockChecks, setBlockChecks] = useState<BlockCheck[]>(audit.block_checks ?? [])
   const [visitedBlocks, setVisitedBlocks] = useState<Set<number>>(new Set())
   const [wrapDone, setWrapDone] = useState(false)
+
+  // Planned stops
+  const stops = useMemo(() => cleanStops(audit.stops), [audit.stops])
+  const hasStops = stops.length > 0
+  const [stopActivity, setStopActivity] = useState<StopActivity[]>(audit.stop_activity ?? [])
+  const [doneStops, setDoneStops] = useState<Set<string>>(new Set())
+  const [activeStop, setActiveStop] = useState<number | null>(null)
+  const [nearStop, setNearStop] = useState<number | null>(null)
+  const promptedStops = useRef<Set<string>>(new Set())
+  // Where 'Flag this spot' returns to (the map, or the stop it was opened from).
+  const [captureReturn, setCaptureReturn] = useState<'walk' | 'stop'>('walk')
 
   // Block check-in prompt
   const [checkInBlock, setCheckInBlock] = useState<number | null>(null)
@@ -97,7 +116,7 @@ export default function WalkAuditClient({ token, audit }: Props) {
     return m / 1609.34
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [audit.area])
-  const estMinutes = Math.max(15, Math.round(routeMiles * 60))
+  const estMinutes = auditMinutes(routeMiles, stops.length)
 
   const enabledExtras = (audit.enabled_modules ?? [])
     .map((id) => moduleById(id))
@@ -138,16 +157,33 @@ export default function WalkAuditClient({ token, audit }: Props) {
       const raw = localStorage.getItem(`shift-walk-audit-blocks:${token}`)
       if (raw) setVisitedBlocks(new Set(JSON.parse(raw) as number[]))
       if (localStorage.getItem(`shift-walk-audit-wrapped:${token}`)) setWrapDone(true)
+      const done = new Set<string>()
+      for (const st of stops) {
+        const draft = localStorage.getItem(stopDraftKey(token, st.id))
+        if (draft && (JSON.parse(draft) as { checked?: boolean }).checked) done.add(st.id)
+      }
+      setDoneStops(done)
     } catch { /* ignore */ }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // ── GPS: mark blocks visited while walking, prompt check-in ──
   useEffect(() => {
-    if (view !== 'walk' || blocks.length === 0 || !('geolocation' in navigator)) return
+    if (view !== 'walk' || (blocks.length === 0 && !hasStops) || !('geolocation' in navigator)) return
     watchIdRef.current = navigator.geolocation.watchPosition(
       (pos) => {
         const here = { lat: pos.coords.latitude, lng: pos.coords.longitude }
+        if (hasStops) {
+          // An event with planned stops pauses only at the stops.
+          const at = stops.findIndex(
+            (st) => !promptedStops.current.has(st.id) && haversineMeters(here, st) < STOP_RADIUS_METERS,
+          )
+          if (at >= 0) {
+            promptedStops.current.add(stops[at].id)
+            setNearStop(at)
+          }
+          return
+        }
         setVisitedBlocks((prev) => {
           let changed = false
           const next = new Set(prev)
@@ -177,7 +213,7 @@ export default function WalkAuditClient({ token, audit }: Props) {
     return () => {
       if (watchIdRef.current !== null) navigator.geolocation.clearWatch(watchIdRef.current)
     }
-  }, [view, blocks, token])
+  }, [view, blocks, token, hasStops, stops])
 
   // ── Shared map: refresh observations + block checks while walking ──
   useEffect(() => {
@@ -186,6 +222,7 @@ export default function WalkAuditClient({ token, audit }: Props) {
       const { data } = await supabase.rpc('get_walk_audit', { p_token: token })
       if (data?.observations) setObservations(data.observations as AuditObservation[])
       if (data?.block_checks) setBlockChecks(data.block_checks as BlockCheck[])
+      if (data?.stop_activity) setStopActivity(data.stop_activity as StopActivity[])
     }, 45000)
     return () => clearInterval(interval)
   }, [view, token])
@@ -195,6 +232,13 @@ export default function WalkAuditClient({ token, audit }: Props) {
       localStorage.setItem(`shift-walk-audit-briefed:${token}`, '1')
     } catch { /* ignore */ }
     setView('walk')
+  }
+
+  function openStop(index: number) {
+    setNearStop(null)
+    setActiveStop(index)
+    setView('stop')
+    window.scrollTo({ top: 0 })
   }
 
   function saveObserver(name: string) {
@@ -313,7 +357,9 @@ export default function WalkAuditClient({ token, audit }: Props) {
           <p className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-[#EBF0FD] px-3 py-1.5 text-sm font-semibold text-[#2966E5]">
             <Clock size={15} weight="bold" />
             {routeMiles > 0
-              ? `About ${routeMiles.toFixed(1)} miles — plan around ${estMinutes} minutes`
+              ? hasStops
+                ? `${routeMiles.toFixed(1)} miles and ${stops.length} stop${stops.length === 1 ? '' : 's'}: plan about ${minutesLabel(estMinutes)}`
+                : `About ${routeMiles.toFixed(1)} miles — plan around ${estMinutes} minutes`
               : 'One spot — plan 20–30 minutes of watching'}
           </p>
           <p className="mt-2 text-xs text-[#6B7280]">
@@ -322,6 +368,33 @@ export default function WalkAuditClient({ token, audit }: Props) {
         </>
       ),
     },
+    ...(hasStops
+      ? [{
+          icon: <Signpost size={30} weight="regular" className="text-[#2966E5]" />,
+          title: `You'll pause at ${stops.length} stop${stops.length === 1 ? '' : 's'}`,
+          body: (
+            <>
+              <VolunteerRouteMap
+                routeCoordinates={routeCoordinates}
+                heightClass="h-40"
+                stops={stops.map((st) => ({ lat: st.lat, lng: st.lng, name: st.name }))}
+              />
+              <ol className="mt-3 space-y-1.5">
+                {stops.map((st, i) => (
+                  <li key={st.id} className="flex items-center gap-2.5 rounded-lg bg-[#F4F8EE] p-2">
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#191A2E] text-xs font-extrabold text-white">{i + 1}</span>
+                    <span className="text-[15px] font-semibold text-[#191A2E]">{st.name}</span>
+                  </li>
+                ))}
+              </ol>
+              <p className="mt-3 text-[15px] text-[#374151]">
+                At each one you answer yes-or-no questions on your phone for about {STOP_CHECK_MINUTES} minutes,
+                then the group talks it over for about {STOP_TALK_MINUTES}.
+              </p>
+            </>
+          ),
+        }]
+      : []),
     {
       icon: <Eye size={30} weight="regular" className="text-[#2966E5]" />,
       title: 'Four things to notice',
@@ -445,18 +518,68 @@ export default function WalkAuditClient({ token, audit }: Props) {
                 center={locationCenter}
                 pins={observationPins}
                 heightClass="h-64"
+                stops={stops.map((st) => ({ lat: st.lat, lng: st.lng, name: st.name, done: doneStops.has(st.id) }))}
+                onStopClick={openStop}
               />
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-2 py-1.5 text-[11px] text-[#6B7280]">
                 <span className="inline-flex items-center gap-1"><span className="h-2.5 w-2.5 rounded-full bg-[#BAF14D] border border-[#3D5407]/30"></span> works well</span>
                 <span className="inline-flex items-center gap-1"><span className="h-2.5 w-2.5 rounded-full bg-[#D97706]"></span> problem</span>
+                {hasStops && (
+                  <span className="inline-flex items-center gap-1"><span className="h-2.5 w-2.5 rounded-[3px] bg-[#191A2E]"></span> stop</span>
+                )}
                 {hazardPins.length > 0 && (
                   <span className="inline-flex items-center gap-1"><span className="h-2.5 w-2.5 rounded-full bg-[#DC2626]"></span> reported crashes</span>
                 )}
               </div>
             </div>
 
+            {/* Planned stops */}
+            {hasStops && (
+              <div className="mt-3 overflow-hidden rounded-xl bg-white shadow-sm">
+                <div className="flex items-center justify-between px-4 pt-4 text-sm">
+                  <span className="font-semibold text-[#191A2E]">
+                    {doneStops.size} of {stops.length} stop{stops.length === 1 ? '' : 's'} done
+                  </span>
+                  <span className="text-[13px] text-[#4B5563]">about {minutesLabel(estMinutes)} in all</span>
+                </div>
+                <div className="mt-2 divide-y divide-gray-100">
+                  {stops.map((st, i) => {
+                    const done = doneStops.has(st.id)
+                    const answered = stopActivity.filter((a) => a.stop_id === st.id && a.kind === 'stop_check').length
+                    const isNext = !done && stops.findIndex((x) => !doneStops.has(x.id)) === i
+                    return (
+                      <button
+                        key={st.id}
+                        onClick={() => openStop(i)}
+                        className="flex w-full items-center gap-3 px-4 py-3 text-left"
+                      >
+                        <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-sm font-extrabold text-white ${done ? 'bg-[#52B788]' : 'bg-[#191A2E]'}`}>
+                          {i + 1}
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-[15px] font-semibold text-[#191A2E]">{st.name}</span>
+                          {answered > 0 && (
+                            <span className="block text-[13px] text-[#4B5563]">
+                              {answered} {answered === 1 ? 'person has' : 'people have'} answered
+                            </span>
+                          )}
+                        </span>
+                        {done ? (
+                          <CheckCircle size={20} weight="fill" className="shrink-0 text-[#52B788]" />
+                        ) : isNext ? (
+                          <span className="shrink-0 rounded-full bg-[#2966E5] px-3.5 py-2 text-sm font-bold text-white">Start</span>
+                        ) : (
+                          <ArrowRight size={16} weight="bold" className="shrink-0 text-[#6B7280]" />
+                        )}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+
             {/* Block strip */}
-            {blocks.length > 0 && (
+            {!hasStops && blocks.length > 0 && (
               <div className="mt-3 rounded-xl bg-white p-4 shadow-sm">
                 <div className="flex items-center justify-between text-sm">
                   <span className="font-semibold text-[#191A2E]">
@@ -677,6 +800,36 @@ export default function WalkAuditClient({ token, audit }: Props) {
           </>
         )}
 
+        {/* ── A planned stop ── */}
+        {view === 'stop' && activeStop !== null && stops[activeStop] && (
+          <StopCheck
+            key={stops[activeStop].id}
+            token={token}
+            stop={stops[activeStop]}
+            index={activeStop}
+            total={stops.length}
+            observer={observer}
+            activity={stopActivity.filter((a) => a.stop_id === stops[activeStop].id)}
+            nextStop={stops[activeStop + 1] ?? null}
+            onChecked={(id) => {
+              setDoneStops((prev) => new Set(prev).add(id))
+              setStopActivity((prev) => [...prev, { stop_id: id, kind: 'stop_check', observer_name: observer.trim() || null }])
+            }}
+            onNotesSaved={(id) =>
+              setStopActivity((prev) => [...prev, { stop_id: id, kind: 'stop_discussion', observer_name: observer.trim() || null }])
+            }
+            onBack={() => setView('walk')}
+            onFlag={() => {
+              setCaptureReturn('stop')
+              setView('capture')
+            }}
+            onNext={() => {
+              setView('walk')
+              window.scrollTo({ top: 0 })
+            }}
+          />
+        )}
+
         {/* ── Done ── */}
         {view === 'done' && (
           <div className="pt-10 text-center">
@@ -698,9 +851,12 @@ export default function WalkAuditClient({ token, audit }: Props) {
       </div>
 
       {/* Flag-a-spot button */}
-      {view !== 'briefing' && view !== 'capture' && (
+      {view !== 'briefing' && view !== 'capture' && view !== 'stop' && (
         <button
-          onClick={() => setView('capture')}
+          onClick={() => {
+            setCaptureReturn('walk')
+            setView('capture')
+          }}
           className="fixed bottom-6 left-1/2 z-20 inline-flex -translate-x-1/2 items-center gap-2 rounded-full bg-[#D97706] px-6 py-3.5 text-base font-bold text-white shadow-xl"
         >
           <Flag size={18} weight="fill" /> Flag this spot
@@ -715,12 +871,40 @@ export default function WalkAuditClient({ token, audit }: Props) {
           routeCoordinates={routeCoordinates}
           fallbackCenter={locationCenter ?? routePoints[0] ?? null}
           onSaved={(obs) => setObservations((prev) => [...prev, obs])}
-          onClose={() => setView('walk')}
+          onClose={() => setView(captureReturn === 'stop' && activeStop !== null ? 'stop' : 'walk')}
         />
       )}
 
+      {/* "You're at a stop" card */}
+      {nearStop !== null && stops[nearStop] && view === 'walk' && !doneStops.has(stops[nearStop].id) && (
+        <div className="fixed bottom-24 left-1/2 z-10 w-[340px] max-w-[calc(100vw-32px)] -translate-x-1/2 rounded-2xl bg-white p-4 shadow-xl">
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex min-w-0 items-center gap-2.5">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#191A2E] text-sm font-extrabold text-white">{nearStop + 1}</span>
+              <div className="min-w-0">
+                <p className="text-[13px] text-[#4B5563]">You&apos;re at stop {nearStop + 1}</p>
+                <p className="truncate text-[15px] font-semibold text-[#191A2E]">{stops[nearStop].name}</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setNearStop(null)}
+              aria-label="Dismiss"
+              className="rounded-md p-1 text-[#6B7280] hover:text-[#191A2E]"
+            >
+              <X size={14} weight="bold" />
+            </button>
+          </div>
+          <button
+            onClick={() => openStop(nearStop)}
+            className="mt-3 w-full rounded-xl bg-[#2966E5] py-3 text-sm font-bold text-white"
+          >
+            Start the questions
+          </button>
+        </div>
+      )}
+
       {/* Block check-in card */}
-      {checkInBlock !== null && checkInBlockDef && view === 'walk' && (
+      {!hasStops && checkInBlock !== null && checkInBlockDef && view === 'walk' && (
         <div className="fixed bottom-24 left-1/2 z-10 w-[340px] -translate-x-1/2 rounded-2xl bg-white p-4 shadow-xl">
           <div className="mb-2 flex items-center justify-between">
             <p className="text-sm font-semibold text-[#191A2E]">
@@ -768,7 +952,7 @@ export default function WalkAuditClient({ token, audit }: Props) {
       )}
 
       {/* Hint for first-time flaggers */}
-      {view === 'walk' && observations.length === 0 && checkInBlock === null && (
+      {view === 'walk' && observations.length === 0 && checkInBlock === null && nearStop === null && (
         <p className="fixed bottom-20 left-1/2 z-10 w-64 -translate-x-1/2 text-center text-[11px] text-[#6B7280]">
           <MapPin size={12} weight="fill" className="inline text-[#D97706]" /> See something — good or bad? Flag it and it appears on everyone&apos;s map.
         </p>

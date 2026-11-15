@@ -18,6 +18,9 @@ interface Props {
   heightClass?: string
   /** Popup label for the route's end marker (default 'End'). */
   endLabel?: string
+  /** Planned stops along the route: numbered navy squares, green once done. */
+  stops?: { lat: number; lng: number; name: string; done?: boolean }[]
+  onStopClick?: (index: number) => void
 }
 
 // The volunteer's map of the route they're walking. Same presentation
@@ -30,6 +33,8 @@ export default function VolunteerRouteMap({
   center,
   heightClass = 'h-56',
   endLabel = 'End',
+  stops,
+  onStopClick,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<maplibregl.Map | null>(null)
@@ -38,6 +43,9 @@ export default function VolunteerRouteMap({
   const [mapReady, setMapReady] = useState(false)
   const onMapClickRef = useRef(onMapClick)
   onMapClickRef.current = onMapClick
+  const stopMarkersRef = useRef<maplibregl.Marker[]>([])
+  const onStopClickRef = useRef(onStopClick)
+  onStopClickRef.current = onStopClick
 
   const hasRoute = routeCoordinates.length >= 2
 
@@ -166,6 +174,37 @@ export default function VolunteerRouteMap({
       return marker
     })
   }, [pins, mapReady])
+
+  // Planned-stop markers: square so they read apart from the round flags.
+  useEffect(() => {
+    const map = mapRef.current
+    const maplibregl = maplibreRef.current
+    if (!map || !maplibregl) return
+    for (const m of stopMarkersRef.current) m.remove()
+    stopMarkersRef.current = (stops ?? []).map((stop, i) => {
+      const el = document.createElement('button')
+      el.type = 'button'
+      el.setAttribute('aria-label', `Stop ${i + 1}: ${stop.name}`)
+      el.style.cssText =
+        `width:30px;height:30px;border-radius:8px;background:${stop.done ? '#52B788' : '#191A2E'};border:2px solid #fff;display:flex;align-items:center;justify-content:center;font:800 13px system-ui;color:#fff;box-shadow:0 1px 5px rgba(0,0,0,0.55);cursor:pointer;padding:0`
+      el.textContent = String(i + 1)
+      const marker = new maplibregl.Marker({ element: el }).setLngLat([stop.lng, stop.lat])
+      if (onStopClickRef.current) {
+        el.addEventListener('click', (e) => {
+          e.stopPropagation()
+          onStopClickRef.current?.(i)
+        })
+      } else {
+        marker.setPopup(
+          new maplibregl.Popup({ offset: 18, closeButton: false }).setHTML(
+            `<div style="font-size:13px;font-weight:600;color:#191A2E;padding:2px 4px">Stop ${i + 1}: ${escapeHtml(stop.name)}</div>`,
+          ),
+        )
+      }
+      marker.addTo(map)
+      return marker
+    })
+  }, [stops, mapReady])
 
   if (!hasRoute && !center) return null
   return <div ref={containerRef} className={`${heightClass} w-full rounded-xl overflow-hidden`} />
