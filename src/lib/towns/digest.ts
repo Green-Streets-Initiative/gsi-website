@@ -19,6 +19,7 @@ import type {
   TownResource,
   TownSummary,
 } from '@/lib/towns/queries'
+import { eventNoun, featuredPlan, timeRange, type ActionLine } from '@/lib/towns/digest-actions'
 import { openedLink, openedMeta, openedPlace, openedTitle, type OpenedItem } from '@/lib/new-infra'
 
 /**
@@ -65,6 +66,8 @@ export interface TownDigestContent {
   htmlAppAuto: string
   /** infrastructure_hearings ids included — the send-log idempotency set. */
   itemIds: string[]
+  /** What the top card changed or left out of a record (digest-actions.ts), for the send log. */
+  copyNotes: string[]
   /** infraKey() of each new stretch included — so a town hears about each one once. */
   infraKeys: string[]
   /** Featured project's location, when it has one — drives per-recipient proximity lines. */
@@ -122,6 +125,13 @@ export function headlineFor(item: TownCivicEvent, townNames: string[]): string {
     const pipe = t.lastIndexOf('| ')
     if (pipe >= 0) t = t.slice(pipe + 2)
     t = t.replace(/\s*\((virtual|in[- ]person|hybrid)\)\s*$/i, '').trim()
+    // The pipeline tags a title with its town and sometimes the project's
+    // limits: "… Project (Winchester St to Central St): … (outside CVS)
+    // (Somerville)" ran four lines as a headline (2026-11-15). The town is
+    // on the email already; the rest goes when the title is long.
+    const towns = townNames.map((n) => n.toLowerCase())
+    t = t.replace(/\s*\(([^()]*)\)\s*$/, (m, inner: string) => (towns.includes(inner.trim().toLowerCase()) ? '' : m)).trim()
+    if (t.length > 70) t = t.replace(/\s*\([^()]*\)/g, '').replace(/\s+:/g, ':').trim()
   }
   // Lead with the community name ("Reid Overpass") when the headline doesn't
   // already carry it — official agency titles are unrecognizable to the
@@ -147,19 +157,7 @@ function whenPhrase(isoDate: string, todayIso: string): string {
  * themselves do not." Default is the most neutral term.
  */
 export function meetingNoun(item: TownCivicEvent): string {
-  const text = `${item.title} ${item.description ?? ''}`.toLowerCase()
-  if (/\bhearing\b/.test(text)) return 'public hearing'
-  if (/open house/.test(text)) return 'open house'
-  if (/listening session/.test(text)) return 'listening session'
-  if (/\bworkshop\b/.test(text)) return 'workshop'
-  if (/information session/.test(text)) return 'information session'
-  if (/\bwebinar\b/.test(text)) return 'webinar'
-  if (/\bvolunteer\b/.test(text)) return 'volunteer opportunity'
-  return 'public meeting'
-}
-
-function weekdayName(isoDate: string): string {
-  return new Date(isoDate + 'T12:00:00Z').toLocaleDateString('en-US', { weekday: 'long', timeZone: 'UTC' })
+  return eventNoun(item)
 }
 
 /** "Tue, Jul 15" for community events (date-only, no TZ round-trip). */
@@ -173,20 +171,14 @@ export function infraKey(o: OpenedItem): string {
   return `${o.source}:${o.name ?? ''}:${o.opened}:${o.lat.toFixed(3)},${o.lng.toFixed(3)}`
 }
 
-function hostLabel(url: string | null): string | null {
-  if (!url) return null
-  try {
-    return new URL(url).hostname.replace(/^www\./, '')
-  } catch {
-    return null
-  }
-}
-
 export function buildTownDigest(opts: {
   town: TownSummary
   qualifyingCount: number
   /** Published, upcoming, NOT previously sent to this town. */
   civic: TownCivicEvent[]
+  /** Every published item for the town, sent or not: where the top card finds
+   *  a survey open for the same project. Defaults to `civic`. */
+  related?: TownCivicEvent[]
   resources: TownResource[]
   events: TownEvent[]
   partners: TownPartner[]
@@ -202,7 +194,7 @@ export function buildTownDigest(opts: {
   /** Promo keys whose offer has run out (closedPromos in digest-promos.ts). */
   closedPromos?: string[]
 }): TownDigestContent | null {
-  const { town, qualifyingCount, civic, resources, events, partners, newInfra = [], priorSendCount, now = Date.now(), horizonDays = 30, closedPromos = [] } = opts
+  const { town, qualifyingCount, civic, related = opts.civic, resources, events, partners, newInfra = [], priorSendCount, now = Date.now(), horizonDays = 30, closedPromos = [] } = opts
   const townName = town.town_name
   const slug = town.slug
 
@@ -218,11 +210,7 @@ export function buildTownDigest(opts: {
   // they fill an "also" slot when something else is the reason to send.
   const featured = candidates.find((c) => c.civic && c.civic.digest_can_trigger !== false)
   if (!featured?.civic) return null
-  const also = candidates.filter((c) => c !== featured).slice(0, 2)
   const item = featured.civic
-  const itemIds = [item.id, ...also.map((a) => a.civic?.id).filter((id): id is string => !!id)]
-
-  const noun = meetingNoun(item)
   // Undated recruitment items (committee applications) get "apply" copy, not
   // meeting/feedback copy. Dated ones (e.g. an info session) keep meeting copy.
   const recruit = isRecruitment(item) && !item.hearing_date
@@ -231,7 +219,18 @@ export function buildTownDigest(opts: {
   const townNames = [...(item.affected_towns ?? []), item.municipality, townName]
   const headline = headlineFor(item, townNames)
   const todayIso = new Date(now).toLocaleDateString('en-CA', { timeZone: TOWN_TZ })
-  const time = wallTime(item.hearing_time)
+  const time = timeRange(item.hearing_time, item.hearing_end_time)
+
+  // What the card tells people to do, and whether it gets a button
+  // (digest-actions.ts). A survey it offers isn't repeated as an "also" row.
+  const plan = featuredPlan({ item, related, todayIso, townNames, volunteer, recruit, petition })
+  const noun = plan.noun
+  const also = candidates.filter((c) => c !== featured && c.civic?.id !== plan.alsoOnline?.id).slice(0, 2)
+  const itemIds = [
+    item.id,
+    ...(plan.alsoOnline ? [plan.alsoOnline.id] : []),
+    ...also.map((a) => a.civic?.id).filter((id): id is string => !!id),
+  ]
 
   // Chip: "Mon, Jul 14 · 7:00 PM ET · virtual public meeting"
   const typeWord = item.hearing_type === 'virtual' ? 'virtual ' : item.hearing_type === 'hybrid' ? 'hybrid ' : ''
@@ -263,41 +262,14 @@ export function buildTownDigest(opts: {
   // reads AI-authored). The eyebrow + card chip carry the "you can act" part.
   const h1 = headline
 
-  // "How to weigh in" — one line per real channel. Hybrid meetings list both.
-  const weighIn: string[] = []
-  if (item.virtual_link) {
-    weighIn.push(
-      volunteer
-        ? `<a href="${linkFor('featured_register')(item.virtual_link)}" style="color:#191A2E;">${escapeHtml(item.action_label ?? 'Sign up online')}</a> — the application takes a few minutes`
-        : recruit
-        ? `<a href="${linkFor('featured_register')(item.virtual_link)}" style="color:#191A2E;">Apply online</a> — the application takes a few minutes`
-        : petition
-        ? `<a href="${linkFor('featured_register')(item.virtual_link)}" style="color:#191A2E;">${escapeHtml(item.action_label ?? 'Sign the petition')}</a> — it takes a minute`
-        : `<a href="${linkFor('featured_register')(item.virtual_link)}" style="color:#191A2E;">Join the ${item.hearing_type === 'virtual' ? 'virtual ' : ''}${noun} online</a> — registration takes a minute`,
-    )
+  // "How to weigh in" — one line per real channel, from the plan.
+  const lineHtml = (l: ActionLine): string => {
+    const a = l.link
+      ? `<a href="${l.link.mailto ? `mailto:${escapeHtml(l.link.href)}` : linkFor(l.link.tag)(l.link.href)}" style="color:#191A2E;">${escapeHtml(l.link.text)}</a>`
+      : ''
+    return `${escapeHtml(l.before ?? '')}${a}${escapeHtml(l.after ?? '')}`
   }
-  if (item.hearing_date && item.hearing_type !== 'virtual' && !volunteer) {
-    const where = item.hearing_location_name ? ` at ${escapeHtml(item.hearing_location_name)}` : ''
-    weighIn.push(`${item.virtual_link ? 'Or show' : 'Show'} up in person${where}${time ? ` — ${weekdayName(item.hearing_date)} at ${time}` : ''}`)
-  }
-  if (item.access_notes) {
-    weighIn.push(escapeHtml(item.access_notes))
-  }
-  if (item.comment_deadline) {
-    weighIn.push(
-      volunteer && item.comment_email
-        ? `Email <a href="mailto:${escapeHtml(item.comment_email)}" style="color:#191A2E;">${escapeHtml(item.comment_email)}</a> to sign up`
-        : item.comment_email
-          ? `Can’t make it? Email comments to <a href="mailto:${escapeHtml(item.comment_email)}" style="color:#191A2E;">${escapeHtml(item.comment_email)}</a> by ${dateOnlyChip(item.comment_deadline)}`
-          : `Written comments are accepted through ${dateOnlyChip(item.comment_deadline)}`,
-    )
-  }
-  const noticeHost = hostLabel(item.source_url)
-  if (item.source_url) {
-    weighIn.push(
-      `<a href="${linkFor('featured_notice')(item.source_url)}" style="color:#191A2E;">${petition ? 'Read the organizers’ case' : 'Read the full notice'}${noticeHost ? ` on ${escapeHtml(noticeHost)}` : ''}</a>`,
-    )
-  }
+  const weighIn = plan.lines.map(lineHtml)
 
   // "What's being decided" — the pipeline's neutral, source-verified
   // background (the alternatives on the table, what input can still change,
@@ -352,15 +324,12 @@ export function buildTownDigest(opts: {
     ? `<p style="margin:12px 0 0;font-size:13px;line-height:1.5;color:#5A5C6E;">What local groups are saying: ${communityLinks.map((l) => `<a href="${linkFor('community_link')(l.url)}" style="color:#2966E5;font-weight:700;">${escapeHtml(l.label)}</a>`).join(' &nbsp;&middot;&nbsp; ')}</p>`
     : ''
 
-  const ctaHref = item.virtual_link
-    ? linkFor('featured_cta')(item.virtual_link)
-    : item.source_url
-      ? linkFor('featured_cta')(item.source_url)
-      : townUrl('featured_cta', '#involved')
-  const ctaLabel = item.action_label ??
-    (item.virtual_link
-      ? recruit ? 'Apply online' : `Register for the ${noun}`
-      : item.comment_deadline ? 'Submit a comment' : 'See the details')
+  // The button only when tapping it does the thing (digest-actions.ts).
+  const ctaBlock = plan.button
+    ? `<table cellpadding="0" cellspacing="0" style="margin:14px 0 0;"><tr><td style="background:#191A2E;border-radius:999px;">
+          <a href="${linkFor('featured_cta')(plan.button.href)}" style="display:inline-block;padding:11px 26px;font-size:14px;font-weight:700;color:#ffffff;text-decoration:none;font-family:${FONT_BODY};">${escapeHtml(plan.button.label)} &rarr;</a>
+        </td></tr></table>`
+    : ''
 
   // Community events — fun, not duty.
   const eventPicks = events.slice(0, 3)
@@ -551,9 +520,7 @@ export function buildTownDigest(opts: {
         ${decidedBlock}
         ${weighIn.length ? `<p style="margin:0 0 4px;font-size:12px;font-weight:700;letter-spacing:0.08em;color:#8a6612;font-family:${FONT_DISPLAY};">${volunteer ? 'HOW TO GET INVOLVED' : 'HOW TO WEIGH IN'}</p>
         ${weighIn.map((w) => `<p style="margin:0 0 3px;font-size:14px;line-height:1.5;color:#3A3C4E;">&bull;&nbsp; ${w}</p>`).join('\n')}` : ''}
-        <table cellpadding="0" cellspacing="0" style="margin:14px 0 0;"><tr><td style="background:#191A2E;border-radius:999px;">
-          <a href="${ctaHref}" style="display:inline-block;padding:11px 26px;font-size:14px;font-weight:700;color:#ffffff;text-decoration:none;font-family:${FONT_BODY};">${escapeHtml(ctaLabel)} &rarr;</a>
-        </td></tr></table>${utilityLine}${communityLine}
+        ${ctaBlock}${utilityLine}${communityLine}
       </td></tr></table>
     </td>
   </tr>
@@ -593,6 +560,7 @@ export function buildTownDigest(opts: {
     html: renderFor('town_page'),
     htmlAppAuto: renderFor('app_auto'),
     itemIds,
+    copyNotes: plan.notes,
     infraKeys: infraTold.map(infraKey),
     featuredLat: item.lat,
     featuredLng: item.lng,

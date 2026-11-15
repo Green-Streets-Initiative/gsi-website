@@ -1,5 +1,8 @@
 import 'server-only'
 import type { TownCivicEvent } from '@/lib/towns/queries'
+import { isFormPage, nameWords, recordProblem, usableLink } from '@/lib/towns/digest-actions'
+
+export { FORM_HOST } from '@/lib/towns/digest-actions'
 
 /**
  * Checks a town digest makes before it goes out (Keith 2026-11-02). Plain
@@ -14,6 +17,11 @@ import type { TownCivicEvent } from '@/lib/towns/queries'
  *    listed the Nov 4 Broadway/Magoun open house, so Somerville got it as
  *    news on Oct 26 and again on Nov 2.
  *
+ *  - the record itself makes sense to send: an online-only meeting has a way
+ *    to join (digest-actions.ts recordProblem). What the top card says about
+ *    an item (what to call it, whether "online" is true of it, whether it
+ *    gets a button) is decided in digest-actions.ts and tested there.
+ *
  * An item that fails is left out of today's email and stays eligible, so a
  * link that was only briefly down goes out the next day.
  */
@@ -22,23 +30,6 @@ import type { TownCivicEvent } from '@/lib/towns/queries'
  *  with CLOSED_FORM in Shift supabase/functions/_shared/civic-staging.ts. */
 export const CLOSED_FORM =
   /\b(survey|form|questionnaire|registration) (is|has) (now )?(closed|ended)\b|no longer accepting (responses|submissions|registrations)|is not (currently )?accepting (responses|submissions)|this (form|survey) is (currently )?(closed|unavailable|disabled)|survey has (ended|expired)|registration (for this (event|meeting) )?(is|has) closed/i
-
-/** Form services, where a page saying "closed" is about the form itself. A
- *  project page can say "our concept design survey is now closed" about an
- *  earlier round while the link is current (somervillema.gov/broadwaymagoun,
- *  2026-11-02), so other pages are never read for it. Keep in step with
- *  FORM_HOST in Shift supabase/functions/_shared/civic-staging.ts. */
-export const FORM_HOST =
-  /(^|\.)(jotform\.com|surveymonkey\.com|forms\.gle|forms\.office\.com|forms\.cloud\.microsoft|typeform\.com|alchemer\.com|surveygizmo\.com|qualtrics\.com|formstack\.com|cognitoforms\.com|wufoo\.com|smartsheet\.com|survey123\.arcgis\.com|polco\.us|zoho\.com)$/i
-
-function isFormPage(url: string): boolean {
-  try {
-    const u = new URL(url)
-    return FORM_HOST.test(u.hostname) || (u.hostname === 'docs.google.com' && u.pathname.startsWith('/forms'))
-  } catch {
-    return false
-  }
-}
 
 const UA ='Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36'
 
@@ -83,25 +74,16 @@ export async function linkProblem(url: string, opts: { readForClosed: boolean })
 
 /** The first problem with an item's links, or null. */
 export async function itemProblem(item: TownCivicEvent): Promise<string | null> {
+  const record = recordProblem(item)
+  if (record) return record
   const checks: Promise<string | null>[] = []
-  if (item.virtual_link) checks.push(linkProblem(item.virtual_link, { readForClosed: true }))
-  if (item.source_url && item.source_url !== item.virtual_link) {
+  // Only links the email will carry: one about another day is left out of it.
+  const link = usableLink(item)
+  if (link) checks.push(linkProblem(link, { readForClosed: true }))
+  if (item.source_url && item.source_url !== link) {
     checks.push(linkProblem(item.source_url, { readForClosed: false }))
   }
   return (await Promise.all(checks)).find((p) => p) ?? null
-}
-
-const GENERIC = new Set([
-  'project', 'projects', 'open', 'house', 'meeting', 'public', 'hearing', 'virtual', 'community',
-  'design', 'designs', 'updated', 'update', 'reconstruction', 'redesign', 'improvement', 'improvements',
-  'street', 'square', 'avenue', 'road', 'safety', 'plan', 'session', 'workshop', 'online', 'person',
-  'city', 'town', 'with', 'from', 'about', 'into', 'your',
-])
-
-function nameWords(item: TownCivicEvent, townNames: string[]): Set<string> {
-  const towns = new Set(townNames.map((t) => t.toLowerCase()))
-  const text = `${item.community_name ?? ''} ${item.digest_headline ?? ''} ${item.title}`.toLowerCase()
-  return new Set(text.split(/[^a-z]+/).filter((w) => w.length >= 4 && !GENERIC.has(w) && !towns.has(w)))
 }
 
 /**

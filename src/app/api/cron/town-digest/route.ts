@@ -218,6 +218,7 @@ export async function GET(req: Request) {
         // as sent). Soonest-first selection naturally features the ~3-days-out
         // reminder unless something even sooner is brand new — also correct.
         civic: (isReminder ? [...reminders, ...civic] : civic).filter((c) => !failed.has(c.id)),
+        related: allCivic.filter((c) => !failed.has(c.id)),
         resources,
         events,
         partners,
@@ -361,7 +362,7 @@ export async function GET(req: Request) {
         })
       }
 
-      results.push({ town: slug, sent, errors, subject: content.subject, item_ids: content.itemIds, infra_keys: content.infraKeys, kind: isReminder ? 'reminder' : 'announcement', dry_run: dryRun, ...(dropped.length ? { dropped } : {}) })
+      results.push({ town: slug, sent, errors, subject: content.subject, item_ids: content.itemIds, infra_keys: content.infraKeys, kind: isReminder ? 'reminder' : 'announcement', dry_run: dryRun, ...(dropped.length ? { dropped } : {}), ...(content.copyNotes.length ? { copy_notes: content.copyNotes } : {}) })
     } catch (err) {
       results.push({ town: slug, error: String(err) })
     }
@@ -379,7 +380,7 @@ export async function GET(req: Request) {
       p_sent: sentCount,
       p_errors: errorCount,
       // Items the pre-send check left out, so the cron health page shows them.
-      p_message: results.flatMap((r) => (r.dropped as string[] | undefined) ?? []).join(' | ').slice(0, 500) || null,
+      p_message: results.flatMap((r) => [...((r.dropped as string[] | undefined) ?? []), ...((r.copy_notes as string[] | undefined) ?? [])]).join(' | ').slice(0, 500) || null,
     }).then(({ error }) => {
       if (error) console.error('town-digest heartbeat failed:', error.message)
     })

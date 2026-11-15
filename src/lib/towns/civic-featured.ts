@@ -1,6 +1,7 @@
 import type { TownCivicEvent, TownResource } from '@/lib/towns/queries'
 import { siteDate, siteTime, translator, type SiteLocale } from '@/lib/site-i18n'
 import { townsStrings } from '@/lib/site-strings/towns'
+import { usableLink } from '@/lib/towns/digest-actions'
 
 /**
  * Shared "what's happening now" selection for a town — used by BOTH the
@@ -139,14 +140,15 @@ export function buildFeaturedCandidates(
         : ce.title
       // Nowhere to link is not a dead button: an item with only a contact
       // address sends people to that address (the Somerville count, 09-15).
-      const url = ce.virtual_link ?? ce.source_url
+      // A link about another day than the meeting is skipped (digest-actions.ts).
+      const url = usableLink(ce) ?? ce.source_url
       const email = ce.comment_email?.trim() || null
       const href = url ? linkFor(url) : email ? `mailto:${email}` : '#'
       // A generic "See details" from the pipeline yields to the email label.
       const generic = !ce.action_label || /^see details$/i.test(ce.action_label.trim())
       const label = !url && email && generic
         ? tr(isVolunteerDrive(ce) ? 'civic.email_volunteer' : 'civic.email_comment')
-        : ce.action_label ?? tr(ce.virtual_link ? 'civic.register' : 'civic.see_details')
+        : ce.action_label ?? tr(usableLink(ce) ? 'civic.register' : 'civic.see_details')
       return {
         key: `civic-${ce.id}`,
         chip,
