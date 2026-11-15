@@ -129,6 +129,19 @@ bed.
 One line per verdict or hard-won observation, newest first. Next hypotheses
 come from here.
 
+- 2026-11-15 (observed): a quarter of impressions come from outside the US
+  (Brazil: 1,092 on one Portuguese guide, 0 clicks). US impressions were level
+  (8,005 → 7,982) in a week the site total read as a record. Read reach on US
+  impressions (`us_site_totals` in the weekly files).
+- 2026-11-15 (observed): pages that got a hand "request indexing" in Search
+  Console were found within a week (venue parking, 695 impressions); pages
+  launched with the sitemap and IndexNow alone had 0 after a week (Logan
+  parking, the four events-by-kind pages). Request indexing on every launch.
+- 2026-11-15 (observed): a table read with no filter stops at 1,000 rows
+  without an error. The sitemap lost 81 of 84 translated guides that way when
+  Roam translations grew the table. Filter every read of a shared table, and
+  check the sitemap against llms.txt (health-check does now).
+
 - 2026-11-08 (verdict, cargo e-bike cost guide, lost): six weeks, ≤4
   impressions a week. A general price guide on a wedge topic finds nobody;
   what ranks for us is local and specific (an event, a route, a Boston fare).

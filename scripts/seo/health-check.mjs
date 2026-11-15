@@ -110,6 +110,13 @@ try {
       .filter(([cls, n]) => n >= 3 && !body.includes(`${SITE}/${cls}`))
       .map(([cls, n]) => ({ class: '/' + cls, sitemapUrls: n }))
     result.surfaces.llmsCoverageGaps = missing
+    // The reverse gap (2026-11-15): the translated guides were in llms.txt but
+    // 81 of 84 had dropped out of the sitemap, because sitemap.ts read the
+    // translations table with no filter and the table passed the API's
+    // 1,000-row default. llms.txt filters by guide id, so it is the reference.
+    result.surfaces.sitemapLocaleGaps = ['es', 'pt-BR', 'zh-Hans']
+      .map((loc) => ({ locale: loc, llmsLinks: body.split(`${SITE}/${loc}/guides/`).length - 1, sitemapUrls: sm.classes[loc] || 0 }))
+      .filter((g) => g.llmsLinks >= 3 && g.sitemapUrls < g.llmsLinks / 2)
   }
 } catch { /* non-fatal */ }
 
@@ -128,6 +135,10 @@ if (JSON_OUT) {
   if (s.llmsCoverageGaps?.length) {
     console.log('\n  !! PAGE CLASSES IN SITEMAP BUT NOT IN LLMS.TXT:')
     for (const g of s.llmsCoverageGaps) console.log(`     ${g.class}  (${g.sitemapUrls} urls)`)
+  }
+  if (s.sitemapLocaleGaps?.length) {
+    console.log('\n  !! TRANSLATED GUIDES IN LLMS.TXT BUT MISSING FROM THE SITEMAP:')
+    for (const g of s.sitemapLocaleGaps) console.log(`     /${g.locale}  llms.txt ${g.llmsLinks} guides, sitemap ${g.sitemapUrls} urls`)
   }
   console.log('\nKey pages:')
   for (const [p, r] of Object.entries(result.pages)) {

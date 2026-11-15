@@ -161,6 +161,19 @@ async function weeklySnapshot(client, siteUrl, clusters, endLag) {
   // continuity with the clusters and with the backfilled history.
   const siteCur = await query(client, siteUrl, { ...cur, dimensions: [], rowLimit: 1 })
   const sitePrior = await query(client, siteUrl, { ...prior, dimensions: [], rowLimit: 1 })
+  // 2026-11-15: where the searches come from. The translated guides and the
+  // drive-time guide rank for generic questions asked worldwide ("baldeação"
+  // is a Brazilian search), so the site total overstates the audience we can
+  // serve. `by_country` is the split and `us_site_totals` the site total for
+  // searches made in the United States.
+  const usOnly = { dimensionFilterGroups: [{ filters: [{ dimension: 'country', operator: 'equals', expression: 'usa' }] }] }
+  const byCountry = await query(client, siteUrl, { ...cur, dimensions: ['country'], rowLimit: 25 })
+  const usSite = await query(client, siteUrl, { ...cur, ...usOnly, dimensions: [], rowLimit: 1 })
+  const usSitePrior = await query(client, siteUrl, { ...prior, ...usOnly, dimensions: [], rowLimit: 1 })
+  // No page-by-country table: on 2026-11-15 both a country filter on the page
+  // table and a page+country split came back thresholded (Gillette parking
+  // 79 US impressions against 753 in the full table), so only the site-level
+  // split is kept.
   const { clusterOut, unmatched } = bucket(qCur, clusters)
   const priorBucket = bucket(qPrior, clusters).clusterOut
   const priorById = new Map(priorBucket.map((c) => [c.id, c]))
@@ -179,6 +192,12 @@ async function weeklySnapshot(client, siteUrl, clusters, endLag) {
     priorTotals: totals(qPrior),
     clusters: clusterOut,
     unmatched_top_queries: unmatched.slice(0, 30),
+    by_country: byCountry
+      .map((r) => ({ country: r.keys?.[0], clicks: r.clicks, impressions: r.impressions, position: +r.position.toFixed(1) }))
+      .sort((a, b) => b.impressions - a.impressions)
+      .slice(0, 15),
+    us_site_totals: totals(usSite),
+    prior_us_site_totals: totals(usSitePrior),
     // The API call above already fetches 500 page rows; persisting only the top
     // 40 threw the rest away. At 2026-09-18 volumes those 40 rows covered 85% of
     // site impressions and cut off at 22 impressions/page, so a page could leave
@@ -207,6 +226,31 @@ async function main() {
     const rows = await query(client, siteUrl, { ...window(3, 7), dimensions: ['query'], rowLimit: 5 })
     console.log(`OK: authenticated for ${siteUrl}. Sample rows returned: ${rows.length}.`)
     if (rows.length === 0) console.log('(0 rows can mean a brand-new property or a very quiet week — not necessarily an error.)')
+    return
+  }
+
+  // 2026-11-15: the searches behind one page, for writing a title from
+  // evidence. `--mode page-queries --page guides/boston-parking-costs`
+  // (path without the leading slash) prints the page's top queries and its
+  // country split for the last 28 days. Prints only; writes no file.
+  if (mode === 'page-queries') {
+    const page = arg('page', '')
+    if (!page) die('page-queries needs --page <path without the leading slash>')
+    const url = `https://www.gogreenstreets.org/${page.replace(/^\/+/, '')}`
+    const onPage = { dimensionFilterGroups: [{ filters: [{ dimension: 'page', operator: 'equals', expression: url }] }] }
+    const win = window(2, 28)
+    const tot = await query(client, siteUrl, { ...win, ...onPage, dimensions: [], rowLimit: 1 })
+    const qs = await query(client, siteUrl, { ...win, ...onPage, dimensions: ['query'], rowLimit: 40 })
+    const cs = (await query(client, siteUrl, { ...win, ...onPage, dimensions: ['country'], rowLimit: 100 }))
+      .sort((a, b) => b.impressions - a.impressions)
+      .slice(0, 6)
+    const t = tot[0]
+    console.log(`${url}  ${win.startDate} -> ${win.endDate}`)
+    console.log(t ? `  total: ${t.impressions} impr, ${t.clicks} clicks, pos ${t.position.toFixed(1)}` : '  total: no rows (not shown in search in this window)')
+    console.log(`  countries: ${cs.map((r) => `${r.keys[0]} ${r.impressions}/${r.clicks}`).join(', ') || '—'}`)
+    for (const r of qs.sort((a, b) => b.impressions - a.impressions)) {
+      console.log(`  ${String(r.impressions).padStart(5)} impr ${String(r.clicks).padStart(3)} clk  pos ${r.position.toFixed(1).padStart(5)}  ${r.keys[0]}`)
+    }
     return
   }
 

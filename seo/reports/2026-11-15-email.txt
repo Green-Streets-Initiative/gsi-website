@@ -1,0 +1,56 @@
+Search clicks fell for a third week (146, 117, now 100) as the event season winds down, and I found a fault: 81 of the 84 translated guides have dropped off the list of pages we give Google. Fixing that is item 1 of four plays below.
+
+SCOREBOARD (each vs the 4-week average)
+- North star: 16 app-intent sessions in the week of Nov 2 (avg 21, down 25%). This week so far: 6 in 6 days. The Meta ads now promote the events calendar and bike lessons, which this number doesn't count (item 3).
+- Search (Nov 7 to 13): 100 clicks (avg 118, down 15%), 10,675 impressions (avg 8,432, up 27%). Click rate 0.94%.
+- New this week, searches made in the US only: 7,982 impressions and 93 clicks, level with last week (8,005 and 104). A quarter of our impressions come from other countries. Brazil alone is 1,092, all on one Portuguese guide, with no clicks.
+- Visits by channel (week of Nov 2): search 151, Ad Grants 152, other paid 497, AI assistants 0. Share that went toward the app: 2.0%, 2.6%, 1.8%.
+- Ad Grants Nov 1-11 (snapshot from Nov 11): 8.01% click rate (the floor is 5%), 20 conversions.
+- Searches that weren't for GSI by name: 692 impressions (last week 711). The 4-week average is up 87% on October's weeks, but the last two weeks are level.
+
+PLAYS, RANKED
+1. Put the translated guides back on the list we give Google. Recommendation: ship today.
+   Why: the Spanish, Portuguese and Chinese guides bring 28% of our impressions (3,004 this week). The sitemap, the list of pages Google reads, showed 84 of them last Sunday and shows 3 now. The cause is confirmed: the code that builds the list reads a table of translations that grew past 1,000 rows when the Roam translations were added, and it only gets the first 1,000. The pages themselves still work. The fix is one small change to how that list is built.
+   Cost of waiting: Google hasn't dropped the pages yet. Each week off the list makes that more likely, and it muddies the test of the new Boston titles.
+2. Ask Google to index the Logan parking page and the four new event pages (group rides, walking groups, bike repair, this weekend). Recommendation: ship.
+   Why: a week after launch all five have zero impressions. The three venue parking pages, where we asked Google by hand, got 695 impressions in their first week. "Logan airport parking" is about 33,100 Massachusetts searches a month. It takes a couple of minutes in Search Console and needs the browser.
+   Cost of waiting: both tests end Dec 20 and are spending their weeks unseen.
+3. Count a lesson request and an events email sign-up on the scoreboard. Recommendation: ship.
+   Why: the two biggest paid campaigns right now (calendar and lessons, 580 visits this week) read as zero because the scoreboard only counts steps toward the app, trip planning and event clicks. The bike lessons page has had 352 paid visits and shows no outcomes at all. The north star itself stays as it is.
+   Cost of waiting: we can't tell whether those ads work from this report.
+4. One lasting page for each repeating ride (Boston Cafe Bikers, Bike to the Sea, Critical Mass). Recommendation: ship, as the calendar plan you approved lays out.
+   Why: event pages are 12% of impressions and 43% of clicks, and a weekly ride's page disappears each week, so its ranking starts over. New event pages got clicked 7.7% of the time this week.
+   Cost of waiting: winter is when the weekly rides are most of the calendar.
+To ship all four: open Claude Code and say "ship SEO items 1-4" (or "ship SEO item N" / "decline SEO item N").
+
+EXPERIMENT BOARD (12 running, no verdicts due this week)
+- Guides end on "Plan your trip" (Dec 20): Ad Grants visitors who took a next step rose from 2.8% to 6.6%. Leaning toward a win.
+- Boston winter biking guide (Dec 14): 76 impressions, 1 click, position 3.9 (was 5.3). Leaning toward a win.
+- Venue parking pages (Dec 30): 1,315 impressions and 7 clicks, almost double last week. Gillette 753, TD Garden 399, Fenway 163, all near the bottom of page one. People find them by lot and garage names ("lot 45 gillette stadium").
+- Boston in the translated guides' titles (Dec 20): first week 0.50% click rate (was 0.55%). Chinese 1.4%, Spanish 0.4%, Portuguese 0 (Brazil). Item 1 gets in the way of this read.
+- Parking-costs title (Dec 20): 484 impressions, 0 clicks. One week in.
+- Drive-time guide description (Dec 13): 1,109 impressions, 2 clicks. No lift after two weeks. Google's results page answers the question itself.
+- "How to pay for the T" title (Nov 23): the English page still gets almost no impressions. I expect to call it lost next week.
+- Brandeis Thanksgiving answer (Dec 6): 198 impressions, 0 clicks. Behind its goal of 3 clicks a week.
+- Event pages link to the town page (Dec 13): 9 more next-step clicks on 66 more visits, no new app clicks.
+- Logan parking, events by kind (Dec 20): not in Google yet (item 2).
+- Shift Together titles (Dec 21): first week live, 8 impressions.
+
+CONSIDERED, NOT PROPOSED
+- A short answer for each named lot and garage on the venue pages: same pages as the running test. Wait for Dec 30.
+- A new title for the English drive-time guide: same page as the running test. Wait for Dec 13.
+- The December Green Line closure in the T backup-plans guide's title: the MBTA hasn't announced dates. I'll bring it the week it does.
+- BU Cycle Kitchen hours in the BU page's title: 239 impressions a month at position 5 and no clicks. People want BU's own page. Small.
+- A public events feed for AI assistants: small.
+- Listing Open Streets days the day cities announce them: nothing to list until 2027 dates come out.
+- Changing the Portuguese bus-transfers guide to shed Brazil searches: they cost nothing.
+- New titles for the what-to-wear and keeping-a-car guides: their searches are mostly unrelated or hidden by Google.
+- Judging "flat" on US impressions: for the December deep-dive, once there are four weeks of the US number.
+
+HEALTH
+Sitemap 453 pages, down from 631. Most of the drop is intended (one date per repeating event, from Nov 12). The rest is item 1. llms.txt now has 13 sections, with the three translated-guide sections. Key pages are fine and IndexNow accepted all 453. GSI didn't appear in any of the 6 live searches I checked. I added three tools this run: a US-only read of Search Console, a lookup of the searches behind any one page, and a check that warns if translated guides go missing from the sitemap again.
+Full report: https://github.com/Green-Streets-Initiative/gsi-website/blob/main/seo/reports/2026-11-15.md
+
+Skipped: building item 1. An unattended run can't create the work copy it needs. The exact change is saved for the "ship SEO item 1" session.
+Skipped: live page lookups with inspect.mjs. All three calls were refused in this run. I used the health check and the data files instead.
+Skipped: the AI answer sample. It runs monthly and needs a browser.
