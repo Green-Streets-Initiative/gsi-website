@@ -5,10 +5,9 @@ import { getActiveRoams } from '@/lib/roams/queries'
 import { getTrails } from '@/lib/trails/queries'
 import { getTourTrails } from '@/lib/trails/tours'
 import { SCHOOLS } from '@/lib/semester/schools'
-import { loadEventsListing } from '@/app/events/_lib/load'
+import { loadEventsForSearch } from '@/app/events/_lib/load'
 import { listQualifiedHosts, hostPath } from '@/lib/hosts'
 import { SITE_URL } from '@/lib/seo'
-import { eventUrl } from '@/lib/events-url'
 import { listNoteStreets, readNotesSwitch, streetPath } from '@/lib/route-notes'
 
 export const revalidate = 3600 // re-fetch dynamic guide list at most hourly
@@ -139,16 +138,24 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   let guideEntries: MetadataRoute.Sitemap = []
   try {
     const supabase = createServerSupabaseClient()
-    const [{ data }, { data: translations }] = await Promise.all([
-      supabase
-        .from('content_items')
-        .select('id, slug, last_reviewed_at')
-        .eq('content_type', 'micro_guide')
-        .eq('status', 'approved')
-        .contains('surfaces', ['guide_library'])
-        .not('slug', 'is', null),
-      supabase.from('content_item_translations').select('content_item_id, locale, updated_at'),
-    ])
+    const { data } = await supabase
+      .from('content_items')
+      .select('id, slug, last_reviewed_at')
+      .eq('content_type', 'micro_guide')
+      .eq('status', 'approved')
+      .contains('surfaces', ['guide_library'])
+      .not('slug', 'is', null)
+    // Only these guides' translations (as llms.txt reads them). The whole
+    // table passed the API's 1,000-row cap once Roam translations were
+    // added, and 81 of 84 translated guides fell out of the sitemap
+    // (2026-11-15).
+    const guideIds = (data ?? []).map((row) => row.id)
+    const { data: translations } = guideIds.length
+      ? await supabase
+          .from('content_item_translations')
+          .select('content_item_id, locale, updated_at')
+          .in('content_item_id', guideIds)
+      : { data: [] }
 
     // Each guide and its translations list one another, so search engines
     // show a reader the version in their language (seo/answer-pages.md §10).
@@ -203,22 +210,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Google left 175 pages "Discovered, not indexed", guides among them, while
   // it worked through near-identical dates. Later dates stay reachable from
   // the next date's page and the host page.
+  // A series with enough dates is listed at its lasting page
+  // (/events/series/..., calendar plan bet 4), which always shows the next
+  // date; the dated pages name it as their canonical.
   let eventEntries: MetadataRoute.Sitemap = []
   try {
-    const seen = new Set<string>()
-    const events = (await loadEventsListing()).filter((e) => {
-      // Soonest first, so the first of a series is its next date. A Shift ride
-      // knows its series; otherwise the same title from the same host is one
-      // (the event page's own test for "this repeats").
-      const key = e.ride_series_id ?? `${e.title.trim().toLowerCase()}|${(e.organizer_name ?? '').trim().toLowerCase()}`
-      if (seen.has(key)) return false
-      seen.add(key)
-      return true
-    })
-    eventEntries = events.map((e) => ({
-      url: eventUrl(e, SITE_URL),
+    eventEntries = (await loadEventsForSearch()).map((e) => ({
+      url: e.url,
       changeFrequency: 'weekly' as const,
-      priority: 0.6,
+      priority: e.series ? 0.7 : 0.6,
     }))
   } catch {
     // DB unreachable — ship the rest.

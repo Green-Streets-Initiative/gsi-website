@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { eventPath, eventUrl } from '@/lib/events-url'
 import {
   MapPin, Calendar, Users,
-  ChevronLeft, Bookmark, Share2, Globe, ExternalLink, Ticket,
+  ChevronLeft, ChevronRight, Bookmark, Share2, Globe, ExternalLink, Ticket,
   Clock, Mail, ArrowRight, Route, Languages, Footprints, Bike, Bus,
 } from 'lucide-react'
 import { eventLanguages, ownNames } from '@/lib/languages'
@@ -26,7 +26,7 @@ import {
 import { withLang, type SiteLocale } from '@/lib/site-i18n'
 import {
   eventsT, typeLabel, tagLabel, rideLevelLabel, rideLevelBlurb, paceLabel,
-  timeL, dateLongL, dateRangeLongL, calendarNotesL, ledInLineL,
+  timeL, dateLongL, dateMediumL, dateRangeLongL, calendarNotesL, ledInLineL,
 } from '@/lib/events-i18n'
 import EventImageCarousel from './EventImageCarousel'
 import { FeedsToLine, GoTogetherSection } from './GoTogether'
@@ -155,6 +155,11 @@ interface EventDetailProps {
   town?: { name: string; href: string } | null
   /** Groups going to this event, and where this one goes (Go Together, Shift 01460). */
   goTogether?: GoTogetherData
+  /**
+   * A repeating event's other dates still ahead, and its lasting page
+   * (/events/series/...). `href` is left out on the series page itself.
+   */
+  series?: { href?: string; dates: Pick<CommunityEvent, 'id' | 'slug' | 'event_date'>[] } | null
   /** The page's language (translation plan, batch 5). English when left out. */
   locale?: SiteLocale
 }
@@ -166,7 +171,7 @@ const DIRECTION_MODES = [
   { mode: 'transit', key: 'detail.dir_transit', Icon: Bus },
 ] as const
 
-export default function EventDetail({ event, nextUp = null, isPast = false, tone = 'dark', hrefBase = '/events', sponsorLinks = {}, roamLinks = [], rideCode = null, hostHref = null, town = null, goTogether = NO_GO_TOGETHER, locale = 'en' }: EventDetailProps) {
+export default function EventDetail({ event, nextUp = null, isPast = false, tone = 'dark', hrefBase = '/events', sponsorLinks = {}, roamLinks = [], rideCode = null, hostHref = null, town = null, goTogether = NO_GO_TOGETHER, series = null, locale = 'en' }: EventDetailProps) {
   const t = eventsT(locale)
   const meta = getTypeMeta(event.event_type)
   const Icon = EVENT_TYPE_ICONS[meta.icon] ?? Calendar
@@ -520,6 +525,38 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
                   ),
                 )}
               </div>
+            )}
+
+            {/* A repeating event's other dates, each a tap away. */}
+            {series && (series.dates.length > 0 || series.href) && (
+              <section aria-labelledby="more-dates-title" className="mb-8">
+                <h2 id="more-dates-title" className="font-display text-[20px] font-extrabold text-(--ev-ink)">{t('series.more_dates')}</h2>
+                <ul className="mt-3 flex flex-wrap gap-2">
+                  {series.dates.map((d) => (
+                    <li key={d.id}>
+                      <Link
+                        href={withLang(eventPath(d, hrefBase), locale)}
+                        onClick={() => posthog.capture('event_series_date_click', { event_id: event.id, to_event_id: d.id })}
+                        className="inline-flex min-h-[44px] items-center rounded-[10px] border border-(--ev-line-strong) px-4 text-[15px] font-semibold text-(--ev-ink-80) transition-colors hover:bg-(--ev-panel)"
+                      >
+                        {dateMediumL(parseEventDate(d.event_date), locale)}
+                      </Link>
+                    </li>
+                  ))}
+                  {series.href && (
+                    <li>
+                      <Link
+                        href={withLang(series.href, locale)}
+                        onClick={() => posthog.capture('event_series_page_click', { event_id: event.id })}
+                        className="inline-flex min-h-[44px] items-center gap-1 rounded-[10px] px-3 text-[15px] font-bold text-(--ev-accent) hover:underline"
+                      >
+                        {t('series.all_dates')}
+                        <ChevronRight size={16} aria-hidden />
+                      </Link>
+                    </li>
+                  )}
+                </ul>
+              </section>
             )}
 
             {/* Roams this ride or walk shares part of its route with. The

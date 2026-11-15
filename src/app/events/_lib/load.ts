@@ -3,12 +3,13 @@ import 'server-only'
 import type { Metadata } from 'next'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import type { CommunityEvent, NextUp } from '@/lib/events'
-import { findNextUp, todayEt } from '@/lib/events-next'
+import { findNextUp, isPastEvent, todayEt } from '@/lib/events-next'
 import { buildEventTitle, buildEventDescription } from '@/lib/events-seo'
 import type { SiteLocale } from '@/lib/site-i18n'
 import { eventsT } from '@/lib/events-i18n'
 import { SITE_URL } from '@/lib/seo'
 import { eventUrl } from '@/lib/events-url'
+import { isDateOfSeries, isSeriesSlugPart, seriesHostSlug, seriesNameSlug, seriesPath, seriesQualifies } from '@/lib/events-series'
 
 /**
  * Data for the events calendar and the event detail page, shared by the
@@ -269,6 +270,108 @@ export async function countUpcomingEvents(): Promise<number | null> {
   }
 }
 
+/** A repeating event: its lasting address and its dates (lib/events-series.ts). */
+export interface EventSeries {
+  /** /events/series/<host>/<name> */
+  path: string
+  /** Dates still ahead, soonest first. */
+  upcoming: CommunityEvent[]
+  /** The most recent date that has passed, when there is one. */
+  latestPast: CommunityEvent | null
+}
+
+/**
+ * The series at /events/series/<host>/<name>, or null when those dates don't
+ * add up to one (fewer than three in all and fewer than two ahead). One read:
+ * the newest 150 approved dates whose slug is the name plus a date.
+ */
+export async function loadSeries(host: string, name: string): Promise<EventSeries | null> {
+  if (!isSeriesSlugPart(host) || !isSeriesSlugPart(name)) return null
+  const { data } = await createServerSupabaseClient()
+    .from('event_details')
+    .select(LISTING_SELECT)
+    .eq('content_items.status', 'approved')
+    .eq('content_items.content_type', 'community_event')
+    // "_" is one character in LIKE: the name, then -YYYY-MM-DD, then a "-2" for a same-day twin.
+    .like('content_items.slug', `${name}-____-__-__%`)
+    .order('event_date', { ascending: false })
+    .limit(150)
+  const dates = ((data ?? []) as unknown as EventRow[])
+    .map(toCommunityEvent)
+    .filter((e) => isDateOfSeries(e.slug, name) && seriesHostSlug(e.organizer_name) === host)
+  const upcoming = dates.filter((e) => !isPastEvent(e.event_date, e.event_end_date)).sort(bySoonest)
+  if (!seriesQualifies(dates.length, upcoming.length)) return null
+  return {
+    path: `/events/series/${host}/${name}`,
+    upcoming,
+    // Newest first, so the first past date is the latest one.
+    latestPast: dates.find((e) => isPastEvent(e.event_date, e.event_end_date)) ?? null,
+  }
+}
+
+/** The series this event is a date of, or null for a one-off. */
+export async function loadSeriesFor(event: Pick<CommunityEvent, 'slug' | 'organizer_name'>): Promise<EventSeries | null> {
+  const name = seriesNameSlug(event.slug)
+  return name ? loadSeries(seriesHostSlug(event.organizer_name), name) : null
+}
+
+/**
+ * Upcoming events as search engines and answer engines should list them
+ * (sitemap.xml, llms.txt): a repeating event once, at its series page when it
+ * has one, else at its next date; one-offs at their own page. Soonest first.
+ */
+export async function loadEventsForSearch(): Promise<{ event: CommunityEvent; url: string; series: boolean }[]> {
+  const supabase = createServerSupabaseClient()
+  const today = todayEt()
+  const yearAgo = new Date(Date.now() - 365 * 86_400_000).toISOString().slice(0, 10)
+  // Past dates per series over the last year, slugs only. Read in pages: the
+  // API returns 1,000 rows at most and a year of events is close to that.
+  const pastCounts = async () => {
+    const counts = new Map<string, number>()
+    for (let from = 0; from < 5000; from += 1000) {
+      const { data } = await supabase
+        .from('event_details')
+        .select('organizer_name, content_items!inner(slug, status, content_type)')
+        .eq('content_items.status', 'approved')
+        .eq('content_items.content_type', 'community_event')
+        .lt('event_date', today)
+        .gte('event_date', yearAgo)
+        .order('content_id', { ascending: true })
+        .range(from, from + 999)
+      const rows = (data ?? []) as unknown as { organizer_name: string | null; content_items: { slug: string | null } | { slug: string | null }[] }[]
+      for (const r of rows) {
+        const ci = Array.isArray(r.content_items) ? r.content_items[0] : r.content_items
+        const path = seriesPath({ slug: ci?.slug, organizer_name: r.organizer_name })
+        if (path) counts.set(path, (counts.get(path) ?? 0) + 1)
+      }
+      if (rows.length < 1000) break
+    }
+    return counts
+  }
+  const [events, past] = await Promise.all([loadEventsListing(), pastCounts()])
+
+  const ahead = new Map<string, number>()
+  for (const e of events) {
+    const path = seriesPath(e)
+    if (path) ahead.set(path, (ahead.get(path) ?? 0) + 1)
+  }
+  const seen = new Set<string>()
+  const out: { event: CommunityEvent; url: string; series: boolean }[] = []
+  for (const e of events) {
+    // Soonest first, so the first of a series is its next date. A Shift ride
+    // knows its series; otherwise the same title from the same host is one.
+    const key = e.ride_series_id ?? `${e.title.trim().toLowerCase()}|${(e.organizer_name ?? '').trim().toLowerCase()}`
+    const path = seriesPath(e)
+    if (seen.has(key) || (path && seen.has(path))) continue
+    seen.add(key)
+    if (path) seen.add(path)
+    const upcoming = path ? ahead.get(path) ?? 0 : 0
+    const series = !!path && seriesQualifies(upcoming + (past.get(path) ?? 0), upcoming)
+    out.push({ event: e, url: series ? `${SITE_URL}${path}` : eventUrl(e, SITE_URL), series })
+  }
+  return out
+}
+
 export interface LoadedEvent {
   event: CommunityEvent
   nextUp: NextUp | null
@@ -277,6 +380,8 @@ export interface LoadedEvent {
   sponsorLinks: Record<string, string>
   /** The host's registry row (event_organizers.id); links to the host page. */
   organizerId: string | null
+  /** The lasting series page this date belongs to; set by the pages that look it up. */
+  seriesPath?: string | null
 }
 
 /** "WalkBike Worcester" / "walkbike-worcester" / "WalkBikeWorcester.Org" all collapse to one key. */
@@ -366,7 +471,7 @@ export async function loadEvent(key: string): Promise<LoadedEvent | null> {
 }
 
 /** Title, description, canonical, and Open Graph for a detail page; the staged copy reuses it. */
-export function buildEventPageMetadata(loaded: LoadedEvent | null, locale: SiteLocale = 'en'): Metadata {
+export function buildEventPageMetadata(loaded: LoadedEvent | null, locale: SiteLocale = 'en', { seriesPage = false }: { seriesPage?: boolean } = {}): Metadata {
   if (!loaded) return { title: locale === 'en' ? 'Event not found' : eventsT(locale)('meta.not_found') }
 
   const { event, nextUp } = loaded
@@ -376,12 +481,16 @@ export function buildEventPageMetadata(loaded: LoadedEvent | null, locale: SiteL
 
   const title = buildEventTitle(event, recurring, locale)
   const description = buildEventDescription(event, recurring, locale)
-  const url = eventUrl(event, SITE_URL)
+  const ownUrl = eventUrl(event, SITE_URL)
+  // A date of a repeating event names its series page as the one to index, so
+  // search rank builds on one address instead of starting over each week.
+  const canonical = loaded.seriesPath ? `${SITE_URL}${loaded.seriesPath}` : ownUrl
+  const url = seriesPage ? canonical : ownUrl
 
   return {
     title,
     description,
-    alternates: { canonical: url },
+    alternates: { canonical },
     openGraph: {
       title,
       description,

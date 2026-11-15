@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import posthog from 'posthog-js'
 import { gaEvent } from '@/lib/ga'
 import { translator, type SiteLocale } from '@/lib/site-i18n'
 import { bikeLessonsStrings } from '@/lib/site-strings/bike-lessons'
@@ -163,6 +164,12 @@ export default function FreeLessonForm({
         // Only a request sent to an instructor is a result for the ads; the rest are tracked apart.
         if (state === 'sent') gaEvent('free_lesson_code_requested')
         else gaEvent('free_lesson_code_unavailable', { state })
+        // PostHog too, so the weekly search and ads scoreboard counts a lesson request (SEO hyp-20).
+        try {
+          posthog.capture(state === 'sent' ? 'free_lesson_code_requested' : 'free_lesson_code_unavailable', { state })
+        } catch {
+          /* analytics must never break the form */
+        }
         return
       }
       if (res.ok && state === 'no_fit') return fail(t('lessons.err_teacher'))

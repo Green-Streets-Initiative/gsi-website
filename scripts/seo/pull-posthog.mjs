@@ -257,13 +257,21 @@ const OUTCOME_TRACKING_START = '2026-09-14'
 // venue_trip_planned ("Plan your trip" on a /parking page, exp-2026-11-3)
 // likewise matches nothing until those pages ship.
 // guide_plan_click ("Plan your trip" on a guide, exp-2026-11-8) from 2026-11-08.
-const ACTIVATION_EVENTS = `'advisor_results_shown', 'snapshot_viewed', 'event_outbound_click', 'event_town_click', 'venue_trip_planned', 'guide_plan_click'`
+// free_lesson_code_requested (a lesson request sent to an instructor on
+// /bike-lessons) and an events email sign-up, from 2026-11-15 (hyp-20): the two
+// biggest paid campaigns aim at these, and both read as zero without them.
+// The lesson request only reached Google Analytics before that day, so it
+// matches nothing earlier. The north star (app intent) is unchanged.
+const ACTIVATION_EVENTS = `'advisor_results_shown', 'snapshot_viewed', 'event_outbound_click', 'event_town_click', 'venue_trip_planned', 'guide_plan_click', 'free_lesson_code_requested'`
+// email_signup fires for every list (town digest, newsletter...); only the
+// events list (topic event_alerts: the calendar, kind pages, event pages) counts.
+const ACTIVATED = `(event IN (${ACTIVATION_EVENTS}) OR (event = 'email_signup' AND toString(properties.topic) = 'event_alerts'))`
 const APP_INTENT_EVENTS = `'shift_store_click', 'snapshot_app_cta_clicked', 'advisor_app_cta_clicked'`
 // The session queries only need pageviews (referrer + click ids live on them)
 // and the outcome events. Scanning every web event (autocapture, web vitals,
 // etc.) over 12 weeks hit PostHog's max execution time on every attempt
 // 2026-11-08; filtering to these is the same result for a fraction of the scan.
-const SESSION_EVENTS = `'$pageview', ${ACTIVATION_EVENTS}, ${APP_INTENT_EVENTS}`
+const SESSION_EVENTS = `'$pageview', 'email_signup', ${ACTIVATION_EVENTS}, ${APP_INTENT_EVENTS}`
 
 const channelSessionsQuery = `
   SELECT week_start, channel, count() AS sessions,
@@ -281,7 +289,7 @@ const channelSessionsQuery = `
         countIf(event = '$pageview' AND ${domainMatch('properties.$referring_domain', ORGANIC_DOMAINS)}) > 0, 'organic_search',
         countIf(event = '$pageview' AND ${domainMatch('properties.$referring_domain', ANSWER_ENGINE_DOMAINS)}) > 0, 'answer_engine',
         'other') AS channel,
-      countIf(event IN (${ACTIVATION_EVENTS})) > 0 AS activated,
+      countIf(${ACTIVATED}) > 0 AS activated,
       countIf(event IN (${APP_INTENT_EVENTS})) > 0 AS app_intent
     FROM events
     WHERE timestamp >= toStartOfWeek(now(), 1) - INTERVAL ${WEEKS} WEEK
@@ -340,7 +348,7 @@ const landingOutcomesQuery = `
         countIf(event = '$pageview' AND ${domainMatch('properties.$referring_domain', ORGANIC_DOMAINS)}) > 0, 'organic_search',
         countIf(event = '$pageview' AND ${domainMatch('properties.$referring_domain', ANSWER_ENGINE_DOMAINS)}) > 0, 'answer_engine',
         'other') AS channel,
-      countIf(event IN (${ACTIVATION_EVENTS})) > 0 AS activated,
+      countIf(${ACTIVATED}) > 0 AS activated,
       countIf(event IN (${APP_INTENT_EVENTS})) > 0 AS app_intent
     FROM events
     WHERE timestamp >= greatest(toStartOfWeek(now(), 1) - INTERVAL 8 WEEK, toDateTime('${OUTCOME_TRACKING_START}'))
@@ -427,7 +435,7 @@ async function main() {
     channels_definition:
       'Per session, first match wins: paid_search (gclid/wbraid/gbraid or utm_medium cpc|ppc|paid), ' +
       'organic_search (search-engine referrer), answer_engine (answer-engine referrer). Web events only. ' +
-      `activated = ${ACTIVATION_EVENTS}; app_intent = ${APP_INTENT_EVENTS}. Weeks keyed by the session's first event. ` +
+      `activated = ${ACTIVATION_EVENTS}, or email_signup with topic event_alerts; app_intent = ${APP_INTENT_EVENTS}. Weeks keyed by the session's first event. ` +
       'NOTE organic_search here EXCLUDES paid; the older `weeks` series above does not, and diverges once Ad Grants traffic grows.',
     channels_by_week: byWeek,
     channels_last_complete_week: byWeek[complete[0]?.week_start] ?? null,

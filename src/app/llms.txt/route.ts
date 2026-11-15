@@ -4,9 +4,8 @@ import { getActiveRoams } from '@/lib/roams/queries'
 import { getTrails, type TrailSummary } from '@/lib/trails/queries'
 import { getTourTrails } from '@/lib/trails/tours'
 import { SCHOOLS } from '@/lib/semester/schools'
-import { loadEventsListing } from '@/app/events/_lib/load'
+import { loadEventsForSearch } from '@/app/events/_lib/load'
 import { SITE_URL } from '@/lib/seo'
-import { eventUrl } from '@/lib/events-url'
 import { VENUES } from '@/lib/venues'
 
 // Served at /llms.txt. Generated (not a static file) so the guide and town
@@ -65,9 +64,10 @@ export async function GET() {
   // Roams are the same page class the sitemap lists, from the same source. They
   // were missing here until 2026-09-14, while being the site's best-converting
   // pages — 852 impressions and 57% of its clicks in the week to 2026-09-11.
-  let events: Awaited<ReturnType<typeof loadEventsListing>> = []
+  // A repeating event once, at its lasting series page (as the sitemap lists it).
+  let events: Awaited<ReturnType<typeof loadEventsForSearch>> = []
   try {
-    events = await loadEventsListing()
+    events = await loadEventsForSearch()
   } catch {
     // DB unreachable — the rest of the file still renders.
   }
@@ -216,11 +216,11 @@ export async function GET() {
   // events only, soonest first, so the section empties itself as they pass.
   if (events.length > 0) {
     L.push('## What is on')
-    for (const e of events.slice(0, 60)) {
-      const when = [e.event_date, e.event_time].filter(Boolean).join(' ')
+    for (const { event: e, url, series } of events.slice(0, 60)) {
+      const when = [series ? `next ${e.event_date}` : e.event_date, e.event_time].filter(Boolean).join(' ')
       const detail = [when, e.location_name].filter(Boolean).join(' — ')
       L.push(
-        `- [${e.title}](${eventUrl(e, SITE_URL)})${detail ? `: ${detail}` : ''}`,
+        `- [${e.title}](${url})${detail ? `: ${detail}` : ''}`,
       )
     }
     L.push('')
