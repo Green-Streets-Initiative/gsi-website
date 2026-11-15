@@ -1,20 +1,28 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import {
-  ArrowLeft, ArrowRight, ChatsCircle, CheckCircle, Flag, Microphone, NotePencil, UsersThree,
+  ArrowClockwise, ArrowLeft, ArrowRight, Camera, ChatsCircle, CheckCircle, Microphone, NotePencil,
+  UsersThree, X,
 } from '@phosphor-icons/react'
 import { useDictation } from '@/components/walk-audit/useDictation'
 import {
-  STOP_SECTIONS, STOP_QUESTIONS, STOP_CHECK_MINUTES, STOP_TALK_MINUTES,
+  STOP_SECTIONS, STOP_QUESTIONS, STOP_CHECK_MINUTES, STOP_TALK_MINUTES, stopQuestionSentence,
   type AuditStop, type StopActivity, type StopAnswer,
   type StopCheckAnswers, type StopDiscussionAnswers,
 } from '@/components/walk-audit/stopModel'
 
+interface DraftPhoto {
+  status: 'uploading' | 'done' | 'failed'
+  url?: string
+  path?: string
+}
+
 interface Draft {
   checks: Record<string, StopAnswer>
   notes: Record<string, string>
+  photos: Record<string, DraftPhoto>
   skipped: string[]
   checked: boolean
   discussion: string
@@ -22,7 +30,7 @@ interface Draft {
 }
 
 const EMPTY_DRAFT: Draft = {
-  checks: {}, notes: {}, skipped: [], checked: false, discussion: '', discussionSaved: false,
+  checks: {}, notes: {}, photos: {}, skipped: [], checked: false, discussion: '', discussionSaved: false,
 }
 
 const TALK_PROMPTS = [
@@ -33,6 +41,7 @@ const TALK_PROMPTS = [
 
 interface Props {
   token: string
+  auditId: string
   stop: AuditStop
   index: number
   total: number
@@ -44,7 +53,7 @@ interface Props {
   onNotesSaved: (stopId: string) => void
   onBack: () => void
   onNext: () => void
-  /** Opens "Flag this spot" (photo + note) and comes back to this stop. */
+  /** Opens "Photo of this spot" (photo + note) and comes back to this stop. */
   onFlag: () => void
 }
 
@@ -67,7 +76,7 @@ export function stopDraftKey(token: string, stopId: string) {
 }
 
 export default function StopCheck({
-  token, stop, index, total, observer, activity, nextStop, onChecked, onNotesSaved, onBack, onNext, onFlag,
+  token, auditId, stop, index, total, observer, activity, nextStop, onChecked, onNotesSaved, onBack, onNext, onFlag,
 }: Props) {
   const [draft, setDraft] = useState<Draft>(EMPTY_DRAFT)
   const [loaded, setLoaded] = useState(false)
@@ -76,6 +85,11 @@ export default function StopCheck({
   const [talkFirst, setTalkFirst] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // One hidden camera input serves every question; these remember which one.
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const photoKeyRef = useRef<string | null>(null)
+  const photoFiles = useRef<Record<string, File>>({})
+  const [previews, setPreviews] = useState<Record<string, string>>({})
 
   const dictation = useDictation((transcript) => {
     update((prev) => ({ discussion: prev.discussion ? `${prev.discussion} ${transcript}` : transcript }))
@@ -87,6 +101,10 @@ export default function StopCheck({
       const raw = localStorage.getItem(stopDraftKey(token, stop.id))
       if (raw) {
         const saved = { ...EMPTY_DRAFT, ...(JSON.parse(raw) as Partial<Draft>) }
+        // A photo that was mid-upload when the page closed has to be retaken.
+        saved.photos = Object.fromEntries(
+          Object.entries(saved.photos ?? {}).filter(([, ph]) => ph.status === 'done'),
+        )
         setDraft(saved)
         if (saved.discussion && !saved.discussionSaved) setTakingNotes(true)
       }
@@ -114,6 +132,32 @@ export default function StopCheck({
     })
   }
 
+  async function uploadPhoto(key: string, file: File) {
+    photoFiles.current[key] = file
+    setPreviews((prev) => ({ ...prev, [key]: URL.createObjectURL(file) }))
+    update((prev) => ({ photos: { ...prev.photos, [key]: { status: 'uploading' } } }))
+    const cleanName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
+    const path = `${auditId}/stops/${stop.id}-${key}-${Date.now()}-${cleanName}`
+    const { error: upErr } = await supabase.storage
+      .from('walk-audit-photos')
+      .upload(path, file, { contentType: file.type })
+    if (upErr) {
+      update((prev) => ({ photos: { ...prev.photos, [key]: { status: 'failed' } } }))
+      return
+    }
+    const { data } = supabase.storage.from('walk-audit-photos').getPublicUrl(path)
+    update((prev) => ({ photos: { ...prev.photos, [key]: { status: 'done', path, url: data.publicUrl } } }))
+  }
+
+  function removePhoto(key: string) {
+    delete photoFiles.current[key]
+    update((prev) => {
+      const photos = { ...prev.photos }
+      delete photos[key]
+      return { photos }
+    })
+  }
+
   function toggleSkip(sectionId: string) {
     update((prev) => ({
       skipped: prev.skipped.includes(sectionId)
@@ -136,11 +180,16 @@ export default function StopCheck({
   ]
 
   async function saveCheck() {
+    if (Object.values(draft.photos).some((ph) => ph.status === 'uploading')) {
+      setError('A photo is still uploading. Give it a moment, then save.')
+      return
+    }
     setSaving(true)
     setError(null)
     try {
       const checks: Record<string, StopAnswer> = {}
       const notes: Record<string, string> = {}
+      const photos: Record<string, { url: string; path?: string }> = {}
       for (const q of STOP_QUESTIONS) {
         if (draft.skipped.includes(q.section)) continue
         const a = draft.checks[q.key]
@@ -148,6 +197,8 @@ export default function StopCheck({
         checks[q.key] = a
         const note = draft.notes[q.key]?.trim()
         if (a === 'no' && note) notes[q.key] = note
+        const ph = draft.photos[q.key]
+        if (a === 'no' && ph?.status === 'done' && ph.url) photos[q.key] = { url: ph.url, path: ph.path }
       }
       const answers: StopCheckAnswers = {
         stop_id: stop.id,
@@ -155,6 +206,7 @@ export default function StopCheck({
         walker_key: walkerKey() || undefined,
         checks,
         notes,
+        photos,
         skipped_sections: draft.skipped,
       }
       const { data: accepted, error: rpcError } = await supabase.rpc('submit_walk_audit', {
@@ -163,7 +215,13 @@ export default function StopCheck({
         p_observer: observer,
         p_answers: answers,
         p_pins: [],
-        p_photos: [],
+        p_photos: Object.entries(photos).map(([key, ph]) => ({
+          url: ph.url,
+          path: ph.path,
+          caption: [`${stop.name}: no to "${stopQuestionSentence(key)}"`, notes[key]].filter(Boolean).join('. '),
+          lat: stop.lat,
+          lng: stop.lng,
+        })),
       })
       if (rpcError) throw rpcError
       if (!accepted) {
@@ -386,8 +444,21 @@ export default function StopCheck({
         onClick={onFlag}
         className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-[#D97706] px-4 py-2 text-sm font-bold text-[#B45309]"
       >
-        <Flag size={15} weight="fill" /> Flag something with a photo
+        <Camera size={16} weight="fill" /> Photo of this spot
       </button>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        className="hidden"
+        onChange={(e) => {
+          const f = e.target.files?.[0]
+          const key = photoKeyRef.current
+          if (f && key) void uploadPhoto(key, f)
+          e.target.value = ''
+        }}
+      />
 
       {/* Jump bar: where you are in the questions, and how far along */}
       <div className="sticky top-0 z-10 -mx-4 mt-3 flex gap-1.5 overflow-x-auto bg-[#F4F8EE]/95 px-4 py-2 backdrop-blur [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
@@ -466,14 +537,71 @@ export default function StopCheck({
                           </button>
                         </div>
                       </div>
-                      {a === 'no' && (
-                        <input
-                          value={draft.notes[q.key] ?? ''}
-                          onChange={(e) => update((prev) => ({ notes: { ...prev.notes, [q.key]: e.target.value } }))}
-                          placeholder="What did you see? (optional)"
-                          className="mt-2 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:border-[#2966E5] focus:outline-none"
-                        />
-                      )}
+                      {a === 'no' && (() => {
+                        const ph = draft.photos[q.key]
+                        const src = ph?.url ?? previews[q.key]
+                        const openCamera = () => {
+                          photoKeyRef.current = q.key
+                          fileInputRef.current?.click()
+                        }
+                        return (
+                          <div className="mt-2 flex items-stretch gap-2">
+                            {!ph ? (
+                              <button
+                                type="button"
+                                onClick={openCamera}
+                                className="flex h-11 shrink-0 items-center gap-1.5 rounded-lg border border-[#2966E5] bg-white px-3 text-sm font-bold text-[#2966E5]"
+                              >
+                                <Camera size={18} weight="fill" /> Photo
+                              </button>
+                            ) : ph.status === 'failed' ? (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const file = photoFiles.current[q.key]
+                                  if (file) void uploadPhoto(q.key, file)
+                                  else openCamera()
+                                }}
+                                className="flex h-11 shrink-0 items-center gap-1.5 rounded-lg bg-red-50 px-3 text-sm font-bold text-red-700"
+                              >
+                                <ArrowClockwise size={16} weight="bold" /> Retry
+                              </button>
+                            ) : (
+                              <span className="relative h-11 w-14 shrink-0">
+                                <button
+                                  type="button"
+                                  onClick={openCamera}
+                                  aria-label="Retake the photo"
+                                  className="block h-11 w-14 overflow-hidden rounded-lg bg-gray-100"
+                                >
+                                  {src && (
+                                    // eslint-disable-next-line @next/next/no-img-element
+                                    <img
+                                      src={src}
+                                      alt=""
+                                      className={`h-full w-full object-cover ${ph.status === 'uploading' ? 'animate-pulse opacity-50' : ''}`}
+                                    />
+                                  )}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => removePhoto(q.key)}
+                                  aria-label="Remove the photo"
+                                  className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-[#191A2E] text-white"
+                                >
+                                  <X size={11} weight="bold" />
+                                </button>
+                              </span>
+                            )}
+                            <input
+                              value={draft.notes[q.key] ?? ''}
+                              onChange={(e) => update((prev) => ({ notes: { ...prev.notes, [q.key]: e.target.value } }))}
+                              placeholder="What did you see? (optional)"
+                              className="h-11 min-w-0 flex-1 rounded-lg border border-gray-200 bg-white px-3 text-sm focus:border-[#2966E5] focus:outline-none"
+                            />
+                          </div>
+                        )
+                      })()}
                     </div>
                   )
                 })}

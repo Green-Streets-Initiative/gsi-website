@@ -155,7 +155,7 @@ export default function ObservationCapture({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="font-bold text-[#191A2E]">Flag this spot</h2>
+          <h2 className="font-bold text-[#191A2E]">Photo of this spot</h2>
           <button onClick={onClose} aria-label="Close" className="rounded-lg p-1.5 text-[#6B7280] hover:text-[#191A2E]">
             <X size={18} weight="bold" />
           </button>

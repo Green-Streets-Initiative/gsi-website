@@ -19,7 +19,8 @@ export interface StopTally {
   yes: number
   no: number
   total: number
-  notes: { text: string; who: string | null }[]
+  /** What walkers added to a "no": a note, a photo, or both. Photos first. */
+  notes: { text: string; who: string | null; photoUrl: string | null }[]
 }
 
 export interface StopSummary {
@@ -80,6 +81,7 @@ export function summarizeStops(stops: AuditStop[], submissions: SubmissionLike[]
     summary.people++
     const checks = (s.answers?.checks ?? {}) as Record<string, string>
     const notes = (s.answers?.notes ?? {}) as Record<string, string>
+    const photos = (s.answers?.photos ?? {}) as Record<string, { url?: string }>
     const perStop = counts.get(summary.stop.id) ?? new Map<string, StopTally>()
     counts.set(summary.stop.id, perStop)
     for (const [key, value] of Object.entries(checks)) {
@@ -87,13 +89,18 @@ export function summarizeStops(stops: AuditStop[], submissions: SubmissionLike[]
       const tally = perStop.get(key) ?? { key, yes: 0, no: 0, total: 0, notes: [] }
       tally[value]++
       tally.total++
-      if (value === 'no' && notes[key]?.trim()) tally.notes.push({ text: notes[key].trim(), who: s.observer_name })
+      const text = notes[key]?.trim() ?? ''
+      const photoUrl = photos[key]?.url ?? null
+      if (value === 'no' && (text || photoUrl)) tally.notes.push({ text, who: s.observer_name, photoUrl })
       perStop.set(key, tally)
     }
   }
 
   const order = new Map(STOP_QUESTIONS.map((q, i) => [q.key, i]))
   for (const summary of byId.values()) {
+    for (const tally of counts.get(summary.stop.id)?.values() ?? []) {
+      tally.notes.sort((a, b) => Number(!!b.photoUrl) - Number(!!a.photoUrl))
+    }
     summary.tallies = [...(counts.get(summary.stop.id)?.values() ?? [])].sort(
       (a, b) =>
         b.no / b.total - a.no / a.total ||
@@ -107,7 +114,7 @@ export function summarizeStops(stops: AuditStop[], submissions: SubmissionLike[]
 const SHOWN_AT_FIRST = 5
 const YES_SHOWN_AT_FIRST = 5
 
-function StopCard({ summary }: { summary: StopSummary }) {
+function StopCard({ summary, onPhoto }: { summary: StopSummary; onPhoto: (url: string) => void }) {
   const [showAll, setShowAll] = useState(false)
   const [showAllYes, setShowAllYes] = useState(false)
   const problems = summary.tallies.filter((t) => t.no > 0)
@@ -149,11 +156,19 @@ function StopCard({ summary }: { summary: StopSummary }) {
                 >
                   <div className="h-full bg-[#D97706]" style={{ width: `${noPct}%` }} />
                 </div>
-                {t.notes.slice(0, 3).map((note, i) => (
-                  <p key={i} className="mt-1.5 border-l-2 border-[#D97706]/50 pl-2.5 text-sm text-[#374151]">
-                    {note.text}
-                    {note.who && <span className="text-[#6B7280]"> ({note.who})</span>}
-                  </p>
+                {t.notes.slice(0, 4).map((note, i) => (
+                  <div key={i} className="mt-2 flex items-start gap-2.5 border-l-2 border-[#D97706]/50 pl-2.5">
+                    {note.photoUrl && (
+                      <button onClick={() => onPhoto(note.photoUrl!)} className="shrink-0" aria-label="Open the photo">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={note.photoUrl} alt="" className="h-20 w-24 cursor-pointer rounded-lg object-cover" />
+                      </button>
+                    )}
+                    <p className="min-w-0 text-sm text-[#374151]">
+                      {note.text}
+                      {note.who && <span className="text-[#6B7280]">{note.text ? ` (${note.who})` : `Photo by ${note.who}`}</span>}
+                    </p>
+                  </div>
                 ))}
               </li>
             )
@@ -201,9 +216,10 @@ function StopCard({ summary }: { summary: StopSummary }) {
   )
 }
 
-export default function StopResults({ summaries, onDownload }: {
+export default function StopResults({ summaries, onDownload, onPhoto }: {
   summaries: StopSummary[]
   onDownload: () => void
+  onPhoto: (url: string) => void
 }) {
   const withAnswers = summaries.filter((s) => s.people > 0 || s.discussions.length > 0)
   if (withAnswers.length === 0) return null
@@ -217,7 +233,7 @@ export default function StopResults({ summaries, onDownload }: {
         </div>
       </div>
       <div className="space-y-5">
-        {withAnswers.map((s) => <StopCard key={s.stop.id} summary={s} />)}
+        {withAnswers.map((s) => <StopCard key={s.stop.id} summary={s} onPhoto={onPhoto} />)}
       </div>
       <button
         onClick={onDownload}

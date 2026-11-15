@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { CopySimple, DownloadSimple, Flag, ThumbsUp, Warning } from '@phosphor-icons/react'
+import { Camera, CopySimple, DownloadSimple, ThumbsUp, Warning } from '@phosphor-icons/react'
 import { moduleById } from '@/components/walk-audit/moduleModel'
 import VolunteerRouteMap from '@/components/volunteer-route/VolunteerRouteMap'
 import PhotoLightbox from '@/components/walk-audit/PhotoLightbox'
@@ -314,7 +314,7 @@ export default function WalkAuditResultsClient({ data }: { data: ResultsData }) 
         <div className="rounded-xl bg-white p-5 shadow-sm">
           {observations.length === 0 && wrapUps.length === 0 && stopsWithAnswers.length === 0 ? (
             <p className="text-sm text-[#374151]">
-              No findings yet. Share the walking link — as people flag spots, this page becomes the
+              No findings yet. Share the walking link. As people photograph spots, this page becomes the
               story of what they found.
             </p>
           ) : (
@@ -452,19 +452,21 @@ export default function WalkAuditResultsClient({ data }: { data: ResultsData }) 
         {stopsWithAnswers.length > 0 && (
           <StopResults
             summaries={stopSummaries}
+            onPhoto={setLightboxSrc}
             onDownload={() => {
-              const header = ['stop', 'who', 'when', 'question', 'answer', 'note']
+              const header = ['stop', 'who', 'when', 'question', 'answer', 'note', 'photo']
               const rows: unknown[][] = []
               for (const s of submissions) {
                 if (s.module === 'stop_check') {
                   const checks = (s.answers?.checks ?? {}) as Record<string, string>
                   const notes = (s.answers?.notes ?? {}) as Record<string, string>
+                  const photos = (s.answers?.photos ?? {}) as Record<string, { url?: string }>
                   for (const q of STOP_QUESTIONS) {
                     if (!checks[q.key]) continue
-                    rows.push([s.answers?.stop_name ?? '', s.observer_name ?? '', s.submitted_at, stopQuestionSentence(q.key), checks[q.key], notes[q.key] ?? ''])
+                    rows.push([s.answers?.stop_name ?? '', s.observer_name ?? '', s.submitted_at, stopQuestionSentence(q.key), checks[q.key], notes[q.key] ?? '', photos[q.key]?.url ?? ''])
                   }
                 } else if (s.module === 'stop_discussion') {
-                  rows.push([s.answers?.stop_name ?? '', s.observer_name ?? '', s.submitted_at, 'Group discussion', '', s.answers?.notes ?? ''])
+                  rows.push([s.answers?.stop_name ?? '', s.observer_name ?? '', s.submitted_at, 'Group discussion', '', s.answers?.notes ?? '', ''])
                 }
               }
               downloadCsv(`walk-audit-stops-${audit.title.replace(/[^a-zA-Z0-9]/g, '_')}.csv`, [header, ...rows])
@@ -554,7 +556,7 @@ export default function WalkAuditResultsClient({ data }: { data: ResultsData }) 
 
         {observations.length === 0 && wrapUps.length === 0 && stopsWithAnswers.length === 0 && (
           <p className="flex items-center justify-center gap-1.5 pt-4 text-center text-xs text-[#6B7280]">
-            <Flag size={13} weight="fill" className="text-[#D97706]" /> Waiting for the first flag…
+            <Camera size={14} weight="fill" className="text-[#D97706]" /> Waiting for the first photo…
           </p>
         )}
       </div>

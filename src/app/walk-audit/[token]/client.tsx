@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import {
-  ArrowLeft, ArrowRight, Binoculars, CheckCircle, Clock, Eye, Flag,
+  ArrowLeft, ArrowRight, Binoculars, Camera, CheckCircle, Clock, Eye,
   HandHeart, MapPin, Microphone, PersonSimpleWalk, Signpost, X,
 } from '@phosphor-icons/react'
 import { ROLLUP_OPTIONS, moduleById } from '@/components/walk-audit/moduleModel'
@@ -69,7 +69,7 @@ export default function WalkAuditClient({ token, audit }: Props) {
   const [activeStop, setActiveStop] = useState<number | null>(null)
   const [nearStop, setNearStop] = useState<number | null>(null)
   const promptedStops = useRef<Set<string>>(new Set())
-  // Where 'Flag this spot' returns to (the map, or the stop it was opened from).
+  // Where 'Photo of this spot' returns to (the map, or the stop it was opened from).
   const [captureReturn, setCaptureReturn] = useState<'walk' | 'stop'>('walk')
 
   // Block check-in prompt
@@ -416,16 +416,16 @@ export default function WalkAuditClient({ token, audit }: Props) {
       ),
     },
     {
-      icon: <Flag size={30} weight="fill" className="text-[#D97706]" />,
-      title: 'When something catches your eye, flag it',
+      icon: <Camera size={30} weight="fill" className="text-[#D97706]" />,
+      title: 'When something catches your eye, take a photo',
       body: (
         <>
           <p className="text-sm text-[#374151]">
-            Tap <span className="mx-0.5 inline-flex items-center gap-1 rounded-full bg-[#D97706] px-2.5 py-0.5 text-xs font-bold text-white"><Flag size={11} weight="fill" /> Flag this spot</span>,
-            snap a photo, and say whether it <strong>works well</strong> or it&apos;s a <strong>problem</strong>. That&apos;s it — everything else is optional.
+            Tap <span className="mx-0.5 inline-flex items-center gap-1 rounded-full bg-[#D97706] px-2.5 py-0.5 text-xs font-bold text-white"><Camera size={12} weight="fill" /> Photo of this spot</span>{' '}
+            and say whether it <strong>works well</strong> or it&apos;s a <strong>problem</strong>. That&apos;s it — everything else is optional.
           </p>
           <p className="mt-2 text-sm text-[#374151]">
-            Good things count! &quot;This crossing works&quot; is evidence too. Five to ten flags makes a
+            Good things count! &quot;This crossing works&quot; is evidence too. Five to ten photos make a
             great walk.
           </p>
           <div className="mt-3">
@@ -633,7 +633,7 @@ export default function WalkAuditClient({ token, audit }: Props) {
                     {wrapDone ? 'Wrap-up submitted — thank you!' : 'Done walking? Wrap up'}
                   </span>
                   <span className={`block text-xs ${wrapDone ? 'text-[#6B7280]' : 'text-white/75'}`}>
-                    {wrapDone ? 'You can still flag more spots.' : 'Four quick verdicts and a top fix — about 2 minutes.'}
+                    {wrapDone ? 'You can still add photos.' : 'Four quick verdicts and a top fix — about 2 minutes.'}
                   </span>
                 </span>
                 {wrapDone ? (
@@ -688,7 +688,7 @@ export default function WalkAuditClient({ token, audit }: Props) {
               <ArrowLeft size={14} weight="bold" /> Back to the walk
             </button>
             <h2 className="text-lg font-bold text-[#191A2E]">Your overall take</h2>
-            <p className="mb-4 mt-1 text-xs text-[#6B7280]">About two minutes. Your flags are already saved — this is the big picture.</p>
+            <p className="mb-4 mt-1 text-xs text-[#6B7280]">About two minutes. Your photos are already saved — this is the big picture.</p>
 
             {LENSES.map((l) => (
               <RadioGroup
@@ -805,6 +805,7 @@ export default function WalkAuditClient({ token, audit }: Props) {
           <StopCheck
             key={stops[activeStop].id}
             token={token}
+            auditId={audit.id}
             stop={stops[activeStop]}
             index={activeStop}
             total={stops.length}
@@ -857,9 +858,9 @@ export default function WalkAuditClient({ token, audit }: Props) {
             setCaptureReturn('walk')
             setView('capture')
           }}
-          className="fixed bottom-6 left-1/2 z-20 inline-flex -translate-x-1/2 items-center gap-2 rounded-full bg-[#D97706] px-6 py-3.5 text-base font-bold text-white shadow-xl"
+          className="fixed bottom-6 left-1/2 z-20 inline-flex -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-full bg-[#D97706] px-6 py-3.5 text-base font-bold text-white shadow-xl"
         >
-          <Flag size={18} weight="fill" /> Flag this spot
+          <Camera size={20} weight="fill" /> Photo of this spot
         </button>
       )}
 
@@ -946,7 +947,7 @@ export default function WalkAuditClient({ token, audit }: Props) {
             }}
             className="mt-2 w-full rounded-lg border border-gray-200 py-2 text-xs font-semibold text-[#D97706]"
           >
-            <Flag size={12} weight="fill" className="mr-1 inline" /> Flag something here instead
+            <Camera size={13} weight="fill" className="mr-1 inline" /> Take a photo here instead
           </button>
         </div>
       )}
@@ -954,7 +955,7 @@ export default function WalkAuditClient({ token, audit }: Props) {
       {/* Hint for first-time flaggers */}
       {view === 'walk' && observations.length === 0 && checkInBlock === null && nearStop === null && (
         <p className="fixed bottom-20 left-1/2 z-10 w-64 -translate-x-1/2 text-center text-[11px] text-[#6B7280]">
-          <MapPin size={12} weight="fill" className="inline text-[#D97706]" /> See something — good or bad? Flag it and it appears on everyone&apos;s map.
+          <MapPin size={12} weight="fill" className="inline text-[#D97706]" /> See something, good or bad? Take a photo and it appears on everyone&apos;s map.
         </p>
       )}
     </main>

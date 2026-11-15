@@ -125,6 +125,8 @@ export interface StopCheckAnswers {
   walker_key?: string
   checks: Record<string, StopAnswer>
   notes: Record<string, string>
+  /** A photo a walker took for a "no" answer, by question key. */
+  photos?: Record<string, { url: string; path?: string }>
   skipped_sections: string[]
 }
 
