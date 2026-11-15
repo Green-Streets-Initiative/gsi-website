@@ -15,6 +15,11 @@ on:
   schedule:
     - cron: '30 9 * * *' # daily, 5:30am Eastern
   workflow_dispatch:
+    inputs:
+      accept:
+        description: 'Apply this run even if it moves the totals past the safety limit (only after looking at what changed)'
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -54,7 +59,8 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: |
           python scripts/osm-ledger/ledger.py ma.osm.pbf "${{ steps.extract.outputs.ts }}" \
-            --car-free-extra=new-hampshire.osm.pbf,rhode-island.osm.pbf,connecticut.osm.pbf,new-york.osm.pbf,vermont.osm.pbf
+            --car-free-extra=new-hampshire.osm.pbf,rhode-island.osm.pbf,connecticut.osm.pbf,new-york.osm.pbf,vermont.osm.pbf \
+            ${{ inputs.accept == true && '--accept-swing' || '' }}
       # MassDOT's lanes and paths opened in the last two years, for the "new
       # this season" layer (Shift 01577). Its own step: it needs no extract,
       # and runs even when the ledger above fails.

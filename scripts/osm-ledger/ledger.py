@@ -13,10 +13,11 @@ ledger in Supabase, and record
     alone would cry wolf daily.
 Events start pending, are confirmed after holding 3 daily snapshots, and are
 marked reverted if they undo within 14 days (vandalism, mistakes). A run that
-moves the statewide totals by more than 2% is quarantined, not applied.
+moves the way count by more than 2%, or a class's miles by more than 2% and
+25 miles, is quarantined, not applied (--accept-swing applies it anyway).
 
 Usage:
-  python ledger.py <extract.osm.pbf> <data_timestamp> [--dry-run]
+  python ledger.py <extract.osm.pbf> <data_timestamp> [--dry-run] [--accept-swing]
 Env: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY (not needed with --dry-run).
 
 One classifier for the whole ledger, the union of the website's
@@ -514,6 +515,9 @@ def sync_car_free(db, car_free, started):
 
 # ── The run ─────────────────────────────────────────────────────────────
 
+SWING_MIN_MILES = 25
+
+
 def miles_by_class(ways):
     m = defaultdict(float)
     for w in ways:
@@ -606,15 +610,27 @@ def run(ctx):
         return
 
     # Sanity: a bad extract or a filter bug shows up as a big swing.
+    # A class counts as swung only when it moves more than 2% AND more than
+    # 25 miles: painted lanes are ~520 mi statewide, so 2% alone is ~10 mi,
+    # and one mapper tracing two towns' lanes from the state's aerial photos
+    # (10.7 mi, 2026-11-11) stopped the ledger for four days. A quarantined
+    # run leaves the ledger as it was, so every later day meets the same
+    # change and it never heals by itself. --accept-swing (the workflow's
+    # "accept" box) applies a run that a person has looked at.
     old_miles = miles_by_class(old.values())
     def swing(a, b):
         return abs(a - b) / max(b, 1)
-    big = swing(len(new), len(old)) > 0.02 or any(
-        swing(new_miles.get(c, 0), old_miles.get(c, 0)) > 0.02 for c in ("path", "protected", "painted"))
+    def miles_swing(c):
+        a, b = new_miles.get(c, 0), old_miles.get(c, 0)
+        return swing(a, b) > 0.02 and abs(a - b) > SWING_MIN_MILES
+    big = swing(len(new), len(old)) > 0.02 or any(miles_swing(c) for c in ("path", "protected", "painted"))
+    if big and "--accept-swing" in sys.argv:
+        print(f"swing accepted by hand: ways {len(old)}→{len(new)}; miles {old_miles}→{new_miles}")
+        big = False
     if big:
         note = f"ways {len(old)}→{len(new)}; miles {old_miles}→{new_miles}"
         snapshot("quarantined", note)
-        alert(db, "OSM ledger: today's extract moved the totals by more than 2%, not applied", note)
+        alert(db, "OSM ledger: today's extract moved the totals by more than 2% and 25 miles, not applied", note)
         heartbeat(db, started, "error", 0, f"quarantined: {note}")
         print("quarantined:", note)
         return
