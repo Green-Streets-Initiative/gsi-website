@@ -380,7 +380,10 @@ export interface LoadedEvent {
   sponsorLinks: Record<string, string>
   /** The host's registry row (event_organizers.id); links to the host page. */
   organizerId: string | null
-  /** The lasting series page this date belongs to; set by the pages that look it up. */
+  /**
+   * The lasting page this date points search engines to: its series page, or
+   * for a past one-off ride or walk its host's page. Set by the pages that look it up.
+   */
   seriesPath?: string | null
 }
 
@@ -482,8 +485,9 @@ export function buildEventPageMetadata(loaded: LoadedEvent | null, locale: SiteL
   const title = buildEventTitle(event, recurring, locale)
   const description = buildEventDescription(event, recurring, locale)
   const ownUrl = eventUrl(event, SITE_URL)
-  // A date of a repeating event names its series page as the one to index, so
-  // search rank builds on one address instead of starting over each week.
+  // A date of a repeating event names its series page as the one to index (a
+  // past one-off ride, its host's page), so search rank builds on one address
+  // instead of starting over each week.
   const canonical = loaded.seriesPath ? `${SITE_URL}${loaded.seriesPath}` : ownUrl
   const url = seriesPage ? canonical : ownUrl
 

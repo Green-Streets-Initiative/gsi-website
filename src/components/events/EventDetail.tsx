@@ -86,7 +86,7 @@ function ScheduleBanner({ event }: { event: CommunityEvent }) {
   )
 }
 
-function NextUpBanner({ nextUp }: { nextUp: NextUp | null }) {
+function NextUpBanner({ nextUp, host = null }: { nextUp: NextUp | null; host?: { href: string; name: string } | null }) {
   const { hrefBase } = useEventsTone()
   const { locale, t } = useEventsI18n()
   const nextDate = nextUp ? dateLongL(parseEventDate(nextUp.event_date), locale) : null
@@ -128,6 +128,17 @@ function NextUpBanner({ nextUp }: { nextUp: NextUp | null }) {
             <ArrowRight size={14} className="shrink-0" />
           </Link>
         </>
+      )}
+      {/* The host's page, where everything they have coming up is listed. */}
+      {host && (
+        <Link
+          href={host.href}
+          onClick={() => posthog.capture('event_host_page_click', { from: 'past_banner' })}
+          className="mt-3 flex min-h-[44px] items-center gap-1.5 border-t border-(--ev-accent-line-30) pt-3 text-[15px] font-semibold text-(--ev-accent) transition-opacity hover:opacity-80"
+        >
+          {t('next.host_all', { host: host.name })}
+          <ArrowRight size={16} className="shrink-0" />
+        </Link>
       )}
     </div>
   )
@@ -298,7 +309,7 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
         </Link>
 
         <ScheduleBanner event={event} />
-        {isPast && <NextUpBanner nextUp={nextUp} />}
+        {isPast && <NextUpBanner nextUp={nextUp} host={hostHref && event.organizer_name ? { href: hostHref, name: event.organizer_name } : null} />}
 
         <div className={`grid gap-6 sm:gap-10 ${hasLeftColumn ? 'lg:grid-cols-2' : ''}`}>
           {/* ---- LEFT COLUMN ---- */}

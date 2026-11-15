@@ -1,4 +1,5 @@
 import 'server-only'
+import { cache } from 'react'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { loadOrganizerEvents } from '@/app/events/_lib/load'
 import type { CommunityEvent } from '@/lib/events'
@@ -38,6 +39,16 @@ export interface HostPage {
   pastYearCount: number
 }
 
+/** What a host's events are, in a few words, for titles: "group rides", "walks", "rides and walks", "events". */
+export function hostRuns(events: Pick<CommunityEvent, 'event_type'>[]): string {
+  const rides = events.filter((e) => e.event_type === 'group_ride' || e.event_type === 'guided_ride').length
+  const walks = events.filter((e) => e.event_type === 'walking_tour').length
+  if (events.length === 0 || rides + walks < events.length / 2) return 'events'
+  if (walks === 0) return 'group rides'
+  if (rides === 0) return 'walks'
+  return 'rides and walks'
+}
+
 export function hostPath(id: string): string {
   return `/events/organizers/${encodeURIComponent(id)}`
 }
@@ -75,13 +86,13 @@ async function hasShiftRide(organizerId: string): Promise<boolean> {
 }
 
 /** Does this host run often enough for a page? Cheap: a few counts. */
-export async function hostQualifies(organizerId: string): Promise<boolean> {
+export const hostQualifies = cache(async (organizerId: string): Promise<boolean> => {
   const today = new Date().toISOString().slice(0, 10)
   const upcoming = await countEvents(organizerId, today)
   if (upcoming >= MIN_UPCOMING) return true
   if (await hasShiftRide(organizerId)) return true
   return (await countEvents(organizerId, yearAgo(), today)) >= MIN_PAST_YEAR
-}
+})
 
 /**
  * A host's page, or null when there's no such host or it doesn't qualify.

@@ -11,8 +11,12 @@ import { isPastEvent } from '@/lib/events-next'
 import { buildEventJsonLd } from '@/lib/events-seo'
 import { loadEvent, loadSeriesFor, buildEventPageMetadata } from '../_lib/load'
 import { loadEventExtras } from '../_lib/event-extras'
+import { hostPath, hostQualifies } from '@/lib/hosts'
 
 export const dynamic = 'force-dynamic'
+
+/** The kinds of event a group runs week after week. */
+const HOSTED_KINDS = new Set(['group_ride', 'guided_ride', 'walking_tour'])
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>
 
@@ -21,7 +25,16 @@ const load = cache(async (id: string) => {
   const loaded = await loadEvent(id)
   if (!loaded) return null
   const series = await loadSeriesFor(loaded.event).catch(() => null)
-  return { loaded: { ...loaded, seriesPath: series?.path ?? null }, series }
+  // A ride or walk that has passed and isn't a date of a series points search
+  // engines to its host's page, the lasting one: a group like Boston Cafe
+  // Bikers names every ride differently, so searches for the group found a
+  // different, finished ride each week (hyp-15). Upcoming dates keep their own.
+  const { event, organizerId } = loaded
+  const hostPage = !series && organizerId && HOSTED_KINDS.has(event.event_type)
+    && isPastEvent(event.event_date, event.event_end_date) && await hostQualifies(organizerId).catch(() => false)
+    ? hostPath(organizerId)
+    : null
+  return { loaded: { ...loaded, seriesPath: series?.path ?? hostPage }, series }
 })
 
 export async function generateMetadata({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: SearchParams }) {

@@ -7,7 +7,7 @@ import HostFollowCard from '@/components/hosts/HostFollowCard'
 import FixListingLink from '@/components/hosts/FixListingLink'
 import '@/components/events/events-tone.css'
 import OrganizerChannels from '@/components/rides/OrganizerChannels'
-import { loadHostPage, hostPath } from '@/lib/hosts'
+import { loadHostPage, hostPath, hostRuns } from '@/lib/hosts'
 import { eventHref, eventPath } from '@/lib/events-url'
 import { formatTime, getTagMeta, getTypeMeta, parseEventDate } from '@/lib/events'
 import { SITE_URL } from '@/lib/seo'
@@ -24,11 +24,21 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { slug } = await params
   const page = await loadHostPage(decodeURIComponent(slug))
   if (!page) return { title: 'Host not found', robots: { index: false } }
-  const { host, upcoming } = page
-  const description = host.description?.slice(0, 160)
-    || `${upcoming.length > 0 ? `${upcoming.length} upcoming` : 'Recent'} group rides and walks with ${host.name}. Add them to your calendar or join one.`
+  const { host, upcoming, recent } = page
+  // People search a group's name to find its next ride, so the title says
+  // what the group runs and the description leads with the next date
+  // (hyp-15: "boston cafe bikers" found a different dated page each week).
+  const live = upcoming.filter((ev) => ev.schedule_status !== 'cancelled')
+  const runs = hostRuns(live.length > 0 ? live : recent)
+  const next = live[0]
+  const nextLine = next ? `Next: ${monthDay(next.event_date).wk}, ${monthDay(next.event_date).md}, ${next.title}. ` : ''
+  const about = host.description
+    || `${live.length > 0 ? `${live.length} upcoming` : 'Recent'} ${runs} with ${host.name}. Add them to your calendar or join one.`
+  const full = `${nextLine}${about}`
+  const description = full.length > 160 ? `${full.slice(0, 159).trimEnd()}…` : full
+  const title = `${host.name}: upcoming ${runs} and schedule`
   return {
-    title: `${host.name}: group rides and walks`,
+    title,
     description,
     alternates: { canonical: hostPath(host.id) },
     openGraph: { title: `${host.name} on the walk and bike calendar`, description, url: hostPath(host.id) },
