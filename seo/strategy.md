@@ -157,6 +157,11 @@ come from here.
   event or a route reach the app 0–0.6% of the time, while 11% of event
   visitors click Register. People who search for a thing to do want to do it.
   Point them at the next useful step (the town page), not the app stores.
+- 2026-11-16 (note, PLG L-24 live): ride, walk and bike repair event pages now
+  carry "Get every group ride in <town> in your calendar" under the Register
+  row (gsi-website 2d28515d). It runs alongside exp-2026-11-1 (reads Dec 13).
+  It sits in a different spot and has its own counts (`event_feed_subscribe`,
+  `utm_source=calendar`), so read exp-2026-11-1 on its own metric as planned.
 - 2026-11-01 (verdict, Roam distance titles, lost): the title alone didn't
   move CTR. The page rebuild (app-shaped first screen, hills) did: cohort CTR
   0.88% → 1.56%. On Roams, what's on the page beats what's in the title.
