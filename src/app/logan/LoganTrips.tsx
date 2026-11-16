@@ -880,7 +880,7 @@ function Looking() {
           type="button"
           className={cx('font-semibold underline', copied ? 'text-(--ev-ink)' : 'text-(--ev-accent)')}
           onClick={() => {
-            void navigator.clipboard?.writeText('https://www.gogreenstreets.org/logan').then(() => setCopied(true)).catch(() => {})
+            void navigator.clipboard?.writeText('https://www.gogreenstreets.org/logan?from=share').then(() => setCopied(true)).catch(() => {})
             track('together_logan_link_copied')
           }}
         >
