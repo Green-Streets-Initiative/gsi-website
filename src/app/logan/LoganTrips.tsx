@@ -7,6 +7,7 @@ import { Avatar, Chip } from '@/components/together/bits'
 import { useTogether } from '@/components/together/TogetherShell'
 import { Button, Card, Field, Input, Notice, Spinner, cx } from '@/components/organizers/ui'
 import { acceptTerms, myPlaces, track } from '@/lib/together'
+import { supabase } from '@/lib/supabase'
 import { SITE_LOCALE_TAG, translator, type SiteLocale, type T } from '@/lib/site-i18n'
 import { loganStrings, type LoganKey } from '@/lib/site-strings/logan'
 import {
@@ -167,6 +168,16 @@ function TripForm({ userId, trips, only, termsDone, onCancel, onSaved }: {
   const [agreed, setAgreed] = useState(false)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
+  // People who signed in on the website have no first name yet, and their
+  // match would read "Someone" (Keith's test 2026-11-16): ask once.
+  const [needName, setNeedName] = useState(false)
+  const [name, setName] = useState('')
+  useEffect(() => {
+    let live = true
+    supabase.from('users').select('first_name').eq('id', userId).maybeSingle()
+      .then(({ data }) => { if (live && !(data as { first_name: string | null } | null)?.first_name?.trim()) setNeedName(true) })
+    return () => { live = false }
+  }, [userId])
 
   // Home, if they saved one in Shift, so most people skip this question.
   useEffect(() => {
@@ -191,9 +202,15 @@ function TripForm({ userId, trips, only, termsDone, onCancel, onSaved }: {
     if (outR && 'error' in outR) return setErr(outR.error === 'bad_flight' ? t('logan.flight_bad') : t('logan.err_leave'))
     if (backR && 'error' in backR) return setErr(backR.error === 'bad_flight' ? t('logan.flight_bad') : t('logan.err_land'))
     if (place.lat == null || place.lng == null) return setErr(t('logan.err_place'))
+    if (needName && !name.trim()) return setErr(t('logan.err_name'))
     if (!termsDone && !agreed) return setErr(t('logan.err_terms'))
     setBusy(true)
     try {
+      if (needName) {
+        const { error } = await supabase.from('users').update({ first_name: name.trim().slice(0, 40) }).eq('id', userId)
+        if (error) throw error
+        setNeedName(false)
+      }
       if (!termsDone) await acceptTerms()
       let matches = 0
       for (const [kind, f] of [
@@ -266,6 +283,12 @@ function TripForm({ userId, trips, only, termsDone, onCancel, onSaved }: {
           <Stepper label={t('logan.party')} fewer={t('logan.party_fewer')} more={t('logan.party_more')} value={party} min={1} max={6} onChange={setParty} />
           {way !== 'transit' ? <Stepper label={t('logan.bags')} fewer={t('logan.bags_fewer')} more={t('logan.bags_more')} value={bags} min={0} max={8} onChange={setBags} /> : null}
         </div>
+
+        {needName ? (
+          <Field label={t('logan.name_q')} hint={t('logan.name_hint')} htmlFor="logan-first-name">
+            <Input id="logan-first-name" value={name} onChange={(e) => setName(e.target.value)} autoComplete="given-name" maxLength={40} />
+          </Field>
+        ) : null}
 
         {!termsDone && (
           <label className="flex items-start gap-3 rounded-xl bg-(--ev-panel) p-4 text-[15px] leading-snug">
