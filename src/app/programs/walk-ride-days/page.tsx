@@ -2,16 +2,15 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
-import PageHero from '@/components/org/PageHero'
 import StoreButtons from '@/components/StoreButtons'
-import { LANE, RouteSegment } from '@/components/home/RouteLine'
-import { ArrowLink, PILL, Section, SectionHeading } from '@/components/org/Section'
+import { BUTTON, H3, SignHero, SignTop, Stats, StepSign, StreetHeading, StreetLink, StreetSection } from '@/components/street/Street'
 import { weekdayDateET, shortDateET } from '@/lib/campaigns/format'
 import { ANDROID_URL, IOS_URL, IS_LIVE } from '@/app/shift-your-semester/_lib/load'
-import { loadWalkRideDays, type WalkRideDayData } from './_lib/load'
+import { loadPrizeShops, loadWalkRideDays, type WalkRideDayData } from './_lib/load'
+import PrizeShops from './PrizeShops'
 
 /*
- * Walk/Ride Day, on the site's cream system — the flagship program page as
+ * Walk/Ride Day, in the street-sign look (2026-09-28): the flagship program page as
  * a sibling of the challenge and semester pages rather than a generic
  * program brochure. Lives at /programs/walk-ride-days. What it says is what the app and the
  * rules page say: the next date, that month's drawing, how a trip enters
@@ -27,8 +26,8 @@ export const metadata: Metadata = {
 }
 
 const STEPS: { title: string; body: string }[] = [
-  { title: 'Get Shift', body: 'Free on iOS and Android. Make an account once, and Shift counts your trips on its own.' },
-  { title: 'Make a trip on the day', body: 'Walk to the store, bike to work, take the bus to class. One trip is enough; more trips are more chances.' },
+  { title: 'Get Shift', body: 'Free on iOS and Android. Sign up once and it quietly recognizes your walks, rides, and transit trips from then on.' },
+  { title: 'Make a trip that day', body: 'Walk to the store, bike to work, take the bus to class. One trip is enough; more trips are more chances.' },
   { title: 'You’re in the drawing', body: 'Each trip that day enters you automatically. Winners are drawn the next morning and claim their gift card in the app.' },
 ]
 
@@ -45,33 +44,27 @@ function dollars(n: number): string {
 function Ledger({ d }: { d: WalkRideDayData }) {
   const rows: { value: string; label: string }[] = [
     d.next
-      ? { value: shortDateET(d.next.startsAt), label: d.next.active ? 'today — Walk/Ride Day' : 'next Walk/Ride Day' }
+      ? { value: shortDateET(d.next.startsAt), label: d.next.active ? 'Today is Walk/Ride Day' : 'Next Walk/Ride Day' }
       : { value: 'Last Friday', label: 'of every month' },
     d.prizes
-      ? { value: d.prizes.each ? `${d.prizes.count} × ${dollars(d.prizes.each)}` : `${dollars(d.prizes.total)}`, label: d.prizes.each ? 'gift cards in the drawing' : 'in gift cards, in the drawing' }
-      : { value: 'Gift cards', label: 'drawn the next morning' },
-    { value: '2006', label: 'the first Walk/Ride Day' },
-    { value: 'Free', label: 'nothing to sign up for' },
+      ? { value: d.prizes.each ? `${d.prizes.count} × ${dollars(d.prizes.each)}` : `${dollars(d.prizes.total)}`, label: d.prizes.each ? 'Gift cards in the drawing' : 'In gift cards, in the drawing' }
+      : { value: 'Gift cards', label: 'Drawn the next morning' },
+    { value: '2006', label: 'The first Walk/Ride Day' },
+    { value: 'Free', label: 'Nothing to sign up for' },
   ]
   return (
-    <section className="relative overflow-x-clip bg-cream">
-      <div className={`relative mx-auto grid max-w-[1120px] ${LANE} px-6 lg:px-8`}>
-        <RouteSegment shape="straight" />
-        <div className="hidden md:block" />
-        <div className="border-y border-navy/15 py-7">
-          <dl className="grid grid-cols-2 gap-x-10 gap-y-5 md:grid-cols-4">
-            {rows.map((r) => (
-              <div key={r.label}>
-                <dd className="font-serif text-[2rem] leading-none tracking-[-0.01em] text-navy md:text-[2.5rem]">{r.value}</dd>
-                <dt className="mt-1 text-[13px] leading-snug text-ink-soft">{r.label}</dt>
-              </div>
-            ))}
-          </dl>
-          <p className="mt-4 text-[12px] text-ink-soft">
-            Open to anyone 18 or older in Massachusetts with the Shift app. Up to three trips a day count toward the drawing.{' '}
-            <Link href="/events/walk-ride-day/rules" className="font-semibold text-forest underline-offset-4 hover:underline">Official rules</Link>
-          </p>
-        </div>
+    <section className="bg-cream">
+      <div className="mx-auto w-full max-w-[1120px] px-6 lg:px-8">
+        <Stats
+          cols={4}
+          items={rows}
+          note={
+            <>
+              Open to anyone 18 or older in Massachusetts with the Shift app. Up to three trips a day count toward the drawing.{' '}
+              <Link href="/events/walk-ride-day/rules" className="font-bold text-forest underline-offset-4 hover:underline">Official rules</Link>
+            </>
+          }
+        />
       </div>
     </section>
   )
@@ -79,85 +72,88 @@ function Ledger({ d }: { d: WalkRideDayData }) {
 
 export default async function WalkRideDayPage() {
   const d = await loadWalkRideDays()
+  const shops = await loadPrizeShops(d.prizes)
   const nextLabel = d.next ? weekdayDateET(d.next.startsAt) : null
 
   return (
-    <>
-      <Nav variant="light" />
+    <div className="street">
+      <Nav variant="light" street />
       <main className="bg-cream">
-        <PageHero
-          eyebrow="Walk/Ride Day · since 2006"
-          title={
-            <>
-              One Friday a month, Massachusetts <em className="text-green-deep">moves together.</em>
-            </>
+        <SignHero
+          top={
+            d.next ? (
+              <SignTop strong={d.next.active ? 'Today' : nextLabel}>Walk/Ride Day</SignTop>
+            ) : (
+              <SignTop strong="The last Friday of every month">Walk/Ride Day</SignTop>
+            )
           }
+          title="One Friday a month, Massachusetts moves together."
           lede={
-            <>
+            <p>
               Walk, bike, or ride the T on Walk/Ride Day. If you have the Shift app, every trip you take that day enters you in the month’s gift card drawing. Nothing to sign up for, and it’s free.
+            </p>
+          }
+          after={
+            <>
+              {d.moved && <p className="mt-5 text-[16px] text-navy">Moved off the last Friday for the holiday.</p>}
+              {IS_LIVE && <StoreButtons iosUrl={IOS_URL} androidUrl={ANDROID_URL} tone="light" className="mt-6 [&>a]:max-[420px]:basis-full" />}
             </>
           }
-        >
-          {nextLabel && (
-            <p className="mt-6 text-[1.0625rem] text-navy">
-              <span className="font-semibold">{d.next?.active ? 'Today is Walk/Ride Day.' : `The next one is ${nextLabel}.`}</span>
-              {d.moved && <span className="text-ink-soft"> Moved off the last Friday for the holiday.</span>}
-            </p>
-          )}
-          {IS_LIVE && <StoreButtons iosUrl={IOS_URL} androidUrl={ANDROID_URL} tone="light" className="mt-6 [&>a]:max-[420px]:basis-full" />}
-        </PageHero>
+        />
 
         <Ledger d={d} />
 
-        <Section shape="wanderRight" id="how" className="scroll-mt-28">
-          <SectionHeading title="How it works" lede="Three steps, and Shift handles the last one." />
+        {shops && <PrizeShops data={shops} />}
+
+        <StreetSection id="how" className="scroll-mt-28">
+          <StreetHeading title="How it works" lede="Three steps, and the last one happens on its own." />
           <ol className="grid gap-8 md:grid-cols-3 md:gap-10">
             {STEPS.map((s, i) => (
               <li key={s.title} className="flex gap-4">
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-forest/50 font-serif text-[1.1rem] text-forest">{i + 1}</span>
+                <StepSign n={i + 1} />
                 <div>
-                  <h3 className="font-serif text-[1.375rem] leading-tight text-navy">{s.title}</h3>
+                  <h3 className={H3}>{s.title}</h3>
                   <p className="mt-2 text-[1.0625rem] leading-[1.65] text-ink-soft">{s.body}</p>
                 </div>
               </li>
             ))}
           </ol>
-          <p className="mt-8 max-w-[640px] text-[15px] leading-relaxed text-ink-soft">
+          <p className="mt-8 max-w-[640px] text-[16px] leading-relaxed text-ink-soft">
             Walks, bike rides, buses, trains, and ferries all count, and carpools do too. The app detects them; there is nothing to log. Standings for the day live in the app’s Community tab.
           </p>
-        </Section>
+        </StreetSection>
 
-        <Section shape="wanderLeft" tone="white" width="read" id="dates" className="scroll-mt-28">
-          <SectionHeading title="The next few" lede="Usually the last Friday of the month. When that lands on a holiday weekend, it moves a week earlier." />
-          <ul className="border-t border-navy/15">
+        <StreetSection tone="white" width="read" id="dates" className="scroll-mt-28">
+          <StreetHeading title="The next few" lede="Usually the last Friday of the month. When that lands on a holiday weekend, it moves a week earlier." />
+          <ul className="border-t-2 border-navy/[0.14]">
             {[d.next, ...d.later].filter((x): x is NonNullable<typeof x> => !!x).map((day, i) => (
-              <li key={day.startsAt} className="flex items-baseline justify-between gap-4 border-b border-navy/15 py-4">
-                <span className={`text-[1.0625rem] ${i === 0 ? 'font-semibold text-navy' : 'text-navy'}`}>{weekdayDateET(day.startsAt)}</span>
-                <span className="shrink-0 text-[13px] text-ink-soft">{i === 0 ? (day.active ? 'today' : 'next') : 'prizes announced closer to the day'}</span>
+              <li key={day.startsAt} className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b-2 border-navy/[0.14] py-4">
+                <span className={`text-[1.125rem] ${i === 0 ? 'font-bold text-navy' : 'text-navy'}`}>{weekdayDateET(day.startsAt)}</span>
+                <span className="text-[15px] text-ink-soft">{i === 0 ? (day.active ? 'today' : 'next') : 'prizes announced closer to the day'}</span>
               </li>
             ))}
           </ul>
           <div className="mt-5 flex flex-wrap gap-x-8 gap-y-2">
-            <ArrowLink href="/challenges">Everything running now</ArrowLink>
-            <ArrowLink href="/events">Events that Friday</ArrowLink>
+            <StreetLink href="/challenges">Everything running now</StreetLink>
+            <StreetLink href="/events">Events that Friday</StreetLink>
           </div>
-        </Section>
+        </StreetSection>
 
-        <Section shape="wanderRight" id="bring" className="scroll-mt-28">
-          <SectionHeading title="Bring your people" lede="Walk/Ride Day started as a workplace thing in 2006. It still works best in groups." />
+        <StreetSection id="bring" className="scroll-mt-28">
+          <StreetHeading title="Bring your people" lede="Walk/Ride Day started as a workplace thing in 2006. It still works best in groups." />
           <div className="grid gap-8 md:grid-cols-3 md:gap-10">
             {BRING.map((b) => (
               <div key={b.title}>
-                <h3 className="font-serif text-[1.375rem] leading-tight text-navy">{b.title}</h3>
+                <h3 className={H3}>{b.title}</h3>
                 <p className="mt-2 text-[1.0625rem] leading-[1.65] text-ink-soft">{b.body}</p>
-                <ArrowLink href={b.href}>{b.label}</ArrowLink>
+                <StreetLink href={b.href}>{b.label}</StreetLink>
               </div>
             ))}
           </div>
-        </Section>
+        </StreetSection>
 
-        <Section shape="terminal" tone="white" width="read" closing id="join">
-          <h2 className="font-serif text-[clamp(1.75rem,3.5vw,2.5rem)] leading-[1.1] text-navy">
+        <StreetSection tone="white" width="read" closing id="join">
+          <h2 className="font-headline text-[clamp(1.75rem,3.4vw,2.5rem)] font-extrabold leading-[1.1] tracking-[-0.01em] text-navy">
             {nextLabel ? <>See you {nextLabel}.</> : <>See you on the last Friday.</>}
           </h2>
           <p className="mt-4 max-w-[560px] text-[1.0625rem] leading-[1.65] text-ink-soft">
@@ -166,14 +162,14 @@ export default async function WalkRideDayPage() {
           {IS_LIVE ? (
             <StoreButtons iosUrl={IOS_URL} androidUrl={ANDROID_URL} tone="light" className="mt-8 [&>a]:max-[420px]:basis-full" />
           ) : (
-            <Link href="/shift" className={`${PILL} mt-8`}>Get the Shift app &rarr;</Link>
+            <Link href="/shift" className={`${BUTTON} mt-8`}>Get the Shift app &rarr;</Link>
           )}
-          <p className="mt-6 text-[13px] text-ink-soft">
-            Questions, or want Walk/Ride Day at your workplace? <Link href="/contact?inquiry=general" className="font-semibold text-forest underline-offset-4 hover:underline">Get in touch</Link>.
+          <p className="mt-6 text-[15px] text-ink-soft">
+            Questions, or want Walk/Ride Day at your workplace? <Link href="/contact?inquiry=general" className="font-bold text-forest underline-offset-4 hover:underline">Get in touch</Link>.
           </p>
-        </Section>
+        </StreetSection>
       </main>
-      <Footer variant="light" />
-    </>
+      <Footer variant="light" street />
+    </div>
   )
 }

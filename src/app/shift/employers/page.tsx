@@ -25,7 +25,7 @@ const CHALLENGE_STEPS = [
   },
   {
     title: 'Your team makes a trip',
-    body: 'On the day, walking, biking, transit and carpool trips all count. Each trip enters that person in the gift card drawings, up to three a day.',
+    body: 'On Walk/Ride Day, walking, biking, transit and carpool trips all count. Each trip enters that person in the gift card drawings, up to three a day.',
   },
   {
     title: 'You see the results',

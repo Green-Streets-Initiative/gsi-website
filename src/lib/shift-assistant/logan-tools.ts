@@ -79,7 +79,7 @@ export const LOGAN_TOOLS: Anthropic.Tool[] = [
   },
   {
     name: 'join_logan_trip',
-    description: "Sign the person up to go to Logan, or home from it, with someone who lives near them and is at the airport when they are, as gogreenstreets.org/logan does. Shift works out where and when they meet (a T station near both going out, Logan coming home), suggests someone, and both say yes before either sees the other's email; on the day it watches the flight and moves the meeting if it's late. One sign-up per direction; signing up again changes it. Ask only for the date and the flight number (it fills in the time, terminal and whether it's international); only when they have no number or it can't be found, the time instead (and for coming home, the terminal). Leave the place empty for their Home. The way defaults to either, the group to 1 and the big bags to 1; ask only when they said something that changes them. The card shows the agreement they accept, and they approve it there.",
+    description: "Sign the person up to go to Logan, or home from it, with someone who lives near them and is at the airport when they are, as gogreenstreets.org/logan does. Shift works out where and when they meet (a T station near both going out, Logan coming home), suggests someone, and both say yes before either sees the other's email; it keeps an eye on the flight and moves the meeting if it's late. One sign-up per direction; signing up again changes it. Ask only for the date and the flight number (it fills in the time, terminal and whether it's international); only when they have no number or it can't be found, the time instead (and for coming home, the terminal). Leave the place empty for their Home. The way defaults to either, the group to 1 and the big bags to 1; ask only when they said something that changes them. The card shows the agreement they accept, and they approve it there.",
     input_schema: {
       type: 'object',
       properties: {
@@ -301,7 +301,7 @@ export async function loganCard(ctx: Ctx, name: string, input: Record<string, un
         WAY_WORDS[way],
         `${party === 1 ? '1 person' : `${party} people`}${way === 'transit' ? '' : `, ${bags === 1 ? '1 big bag' : `${bags} big bags`}`}`,
         "Shift finds someone near you at Logan when you are and works out where and when to meet. You both say yes before either of you sees the other's email",
-        ...(flight ? ['On the day, Shift watches the flight and moves the meeting if it runs late'] : []),
+        ...(flight ? ['Shift keeps an eye on the flight and moves the meeting if it runs late'] : []),
         ...(accepted ? [] : [`By signing up you agree: ${TERMS}`]),
       ],
       cta: existing ? 'Save' : 'Sign me up', tone: 'primary',

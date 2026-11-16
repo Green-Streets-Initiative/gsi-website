@@ -45,7 +45,7 @@ const en = {
   how_lede: 'Three steps, and Shift handles the last one.',
   s1_title: 'Get Shift',
   s1_body: 'Free on iOS and Android. Make an account once, and Shift counts your trips on its own.',
-  s2_title: 'Make a trip on the day',
+  s2_title: 'Make a trip that day',
   s2_body: 'Walk to the store, bike to work, take the bus to class. One trip is enough; more trips are more chances.',
   s3_title: 'You’re in the drawing',
   s3_body: 'Each trip that day enters you automatically. Winners are drawn the next morning and claim their gift card in the app.',

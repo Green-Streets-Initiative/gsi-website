@@ -81,7 +81,7 @@ export const programsStrings = defineStrings(
     'programs.wrd_moved': ' Moved off the last Friday for the holiday.',
     'programs.wrd_step_1_title': 'Get Shift',
     'programs.wrd_step_1_body': 'Free on iOS and Android. Make an account once, and Shift counts your trips on its own.',
-    'programs.wrd_step_2_title': 'Make a trip on the day',
+    'programs.wrd_step_2_title': 'Make a trip that day',
     'programs.wrd_step_2_body':
       'Walk to the store, bike to work, take the bus to class. One trip is enough; more trips are more chances.',
     'programs.wrd_step_3_title': 'You’re in the drawing',
