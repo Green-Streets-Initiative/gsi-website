@@ -35,7 +35,7 @@ const TERMS = "I'm 18 or older. Green Streets introduces people but doesn't chec
 
 const KIND_WORDS = { airport_out: 'Going to Logan', airport_back: 'Coming home from Logan' } as const
 /** The page's own words for each way (site-strings/logan logan.way_*). */
-const WAY_WORDS = { transit: 'The T or Logan Express', split: 'Share a taxi or ride app', either: 'The T, Logan Express, or a shared taxi or ride app' } as const
+const WAY_WORDS = { transit: 'The T or Logan Express', split: 'Share a taxi or ride app', either: 'A shared taxi or ride app when one car fits you both, otherwise the T or Logan Express' } as const
 type Kind = keyof typeof KIND_WORDS
 type Way = keyof typeof WAY_WORDS
 
@@ -89,7 +89,7 @@ export const LOGAN_TOOLS: Anthropic.Tool[] = [
         time: nullable('string', 'HH:MM, 24-hour, Boston time, when it leaves or lands. Only when there is no flight number or it was not found.'),
         terminal: nullable('string', 'A, B, C or E: only for coming home without a flight number.'),
         international: { type: ['boolean', 'null'], description: 'Only without a flight number: true for an international flight.' },
-        way: nullable('string', 'transit (the T or Logan Express, each pays their own fare), split (one taxi or ride-app car, splitting the fare), or either. Empty means either, which matches the most people.'),
+        way: nullable('string', 'split (one taxi or ride-app car, splitting the fare), transit (the T or Logan Express, each pays their own fare), or either. Empty means either, which matches the most people and plans a shared ride when one car fits both.'),
         party: { type: ['number', 'null'], description: 'People in their group, 1 to 6. Empty means 1.' },
         bags: { type: ['number', 'null'], description: 'Big bags, 0 to 8, for a shared car. Empty means 1.' },
         place: { type: ['object', 'null'], properties: { name: { type: 'string' }, lat: { type: 'number' }, lng: { type: 'number' } }, description: 'Where they leave from or go home to, from find_place, when it is not their Home. Their match sees only the town.' },

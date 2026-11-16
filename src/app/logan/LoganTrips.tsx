@@ -32,8 +32,8 @@ const noPlace: Place = { address: '', lat: null, lng: null }
 
 const WAYS_LOGAN: { id: TripWay; label: LoganKey }[] = [
   { id: 'either', label: 'logan.way_either' },
-  { id: 'transit', label: 'logan.way_transit' },
   { id: 'split', label: 'logan.way_split' },
+  { id: 'transit', label: 'logan.way_transit' },
 ]
 const TERMINALS: Terminal[] = ['A', 'B', 'C', 'E']
 

@@ -278,8 +278,8 @@ function Gate({ children }: { children: ReactNode }) {
 }
 
 const LOGAN_POINTS: { label: LoganKey; Icon: LucideIcon }[] = [
-  { label: 'logan.point_transit', Icon: TrainFront },
   { label: 'logan.point_split', Icon: Car },
+  { label: 'logan.point_transit', Icon: TrainFront },
   { label: 'logan.point_both', Icon: Plane },
 ]
 
@@ -287,7 +287,7 @@ const LOGAN_POINTS: { label: LoganKey; Icon: LucideIcon }[] = [
 const LOGAN_STEPS: { title: LoganKey; hint: LoganKey; img: string; alt: LoganKey; chips: LoganKey[] }[] = [
   { title: 'logan.step1_title', hint: 'logan.step1_hint', img: '/images/logan/step-1.svg', alt: 'logan.step1_alt', chips: [] },
   { title: 'logan.step2_title', hint: 'logan.step2_hint', img: '/images/logan/step-2.svg', alt: 'logan.step2_alt', chips: [] },
-  { title: 'logan.step3_title', hint: 'logan.step3_hint', img: '/images/logan/step-3.svg', alt: 'logan.step3_alt', chips: ['logan.chip_split', 'logan.chip_silver', 'logan.chip_one_car'] },
+  { title: 'logan.step3_title', hint: 'logan.step3_hint', img: '/images/logan/step-3.svg', alt: 'logan.step3_alt', chips: ['logan.chip_split', 'logan.chip_one_car', 'logan.chip_silver'] },
 ]
 
 const KIND_STORE = 'together_kind'
