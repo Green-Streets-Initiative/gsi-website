@@ -1,6 +1,7 @@
 import 'server-only'
 import { withUtm } from '@/lib/utm'
 import { eventUrl } from '@/lib/events-url'
+import { dateRangeShort, isMultiDay } from '@/lib/event-days'
 import { promoFor } from '@/lib/towns/digest-promos'
 import {
   buildFeaturedCandidates,
@@ -162,6 +163,8 @@ export function meetingNoun(item: TownCivicEvent): string {
 
 /** "Tue, Jul 15" for community events (date-only, no TZ round-trip). */
 function eventDateLabel(e: TownEvent): string {
+  // A multi-day event reads as its range: "Dec 1 to 31".
+  if (isMultiDay(e)) return dateRangeShort(e)
   if (e.recurring_weekday) return `${e.recurring_weekday}s`
   return dateOnlyChip(e.event_date)
 }

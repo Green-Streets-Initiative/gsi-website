@@ -37,7 +37,9 @@ import { createServerSupabaseClient } from '@/lib/supabase-server'
  * Since 2026-11-13 the rule lives in the database, get_town_event_picks
  * (Shift 01786), so the app's town screen picks by it too (parity gap
  * gap-town-event-picks). It also measures "today" in Boston, leaves out
- * cancelled or postponed dates and today's events once they're over.
+ * cancelled or postponed dates and today's events once they're over. A
+ * multi-day event stays in until its last day and comes with event_end_date
+ * (Shift 01795), so each surface shows it as a range.
  */
 
 type PickRow = Omit<TownEvent, 'occurrences'> & { occurrences: number | null; languages: string[] | null }

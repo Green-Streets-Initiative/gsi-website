@@ -112,6 +112,8 @@ export interface TownEvent {
   slug: string | null
   title: string
   event_date: string
+  /** Last day of a multi-day event (get_town_event_picks, Shift 01795); absent or null for one day. */
+  event_end_date?: string | null
   event_time: string | null
   event_end_time: string | null
   summary: string | null

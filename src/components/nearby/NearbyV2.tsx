@@ -11,6 +11,7 @@ import { formatDistance } from '@/lib/wayfinding/geo'
 import { lineColor, lineTextColor } from '@/lib/nearby/transit-ui'
 import { eventPath } from '@/lib/events-url'
 import { getTypeMeta, parseEventDate, formatDistance as formatMiles } from '@/lib/events'
+import { eventLastDay, isMultiDay } from '@/lib/event-days'
 import { supabase } from '@/lib/supabase'
 import {
   alertHasMore, alertSummary, eventThisWeek, leavingSoon, lineCount, nearestComfortableRoute,
@@ -287,7 +288,9 @@ export function V2Blocks({
             <span className="min-w-0 flex-1">
               <span className="block text-[0.9375rem] font-semibold leading-snug text-(--nb-ink)">{event.title}</span>
               <span className="block text-[0.8125rem] text-(--nb-ink-70)">
-                {parseEventDate(event.event_date).toLocaleDateString(locale, { weekday: 'long', month: 'short', day: 'numeric' })}
+                {isMultiDay(event)
+                  ? [event.event_date, eventLastDay(event)].map((d) => parseEventDate(d).toLocaleDateString(locale, { month: 'short', day: 'numeric' })).join(' – ')
+                  : parseEventDate(event.event_date).toLocaleDateString(locale, { weekday: 'long', month: 'short', day: 'numeric' })}
                 {' · '}{tr('explore.distance_away', { distance: formatMiles(event.distance_miles) })}
               </span>
             </span>

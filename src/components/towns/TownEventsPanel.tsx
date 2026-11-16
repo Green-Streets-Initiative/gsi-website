@@ -4,6 +4,8 @@ import { Calendar } from 'lucide-react'
 import { formatDistance, getTagMeta, getTypeMeta, parseEventDate, TYPE_FILTER_ORDER } from '@/lib/events'
 import { EVENT_TYPE_ICONS } from '@/components/events/event-type-icons'
 import type { TownEvent } from '@/lib/towns/queries'
+import { isMultiDay } from '@/lib/event-days'
+import { dateRangeShortL } from '@/lib/events-i18n'
 import { siteDate, translator, withLang, type SiteLocale } from '@/lib/site-i18n'
 import { townsStrings } from '@/lib/site-strings/towns'
 
@@ -20,6 +22,8 @@ import { townsStrings } from '@/lib/site-strings/towns'
 type TK = keyof (typeof townsStrings)['en']
 
 function eventDateLabel(e: TownEvent, locale: SiteLocale): string {
+  // A multi-day event reads as its range: "Dec 1 to 31".
+  if (isMultiDay(e)) return dateRangeShortL({ event_date: e.event_date, event_end_date: e.event_end_date ?? null }, locale)
   const d = parseEventDate(e.event_date)
   return siteDate(locale, d, { weekday: 'short', month: 'short', day: 'numeric' })
 }
@@ -64,13 +68,13 @@ export default function TownEventsPanel({ events, townName, tone = 'dark', local
   const tagLabel = (tag: string, fallback: string) => (en || !(`tag.${tag}` in townsStrings.en) ? fallback : tr(`tag.${tag}` as TK))
   // "Saturdays · next Sat, Nov 8": the server names the weekday in English.
   const recurring = (e: TownEvent) => {
-    if (!e.recurring_weekday) return ''
+    if (!e.recurring_weekday || isMultiDay(e)) return ''
     const day = WEEKDAYS.indexOf(e.recurring_weekday)
     if (en || day < 0) return `${e.recurring_weekday}s · next `
     return `${tr(`ev.weekly_${day}` as TK)} · `
   }
   const when = (e: TownEvent) =>
-    !en && e.recurring_weekday && WEEKDAYS.includes(e.recurring_weekday)
+    !en && e.recurring_weekday && !isMultiDay(e) && WEEKDAYS.includes(e.recurring_weekday)
       ? tr('ev.next', { when: eventDateLabel(e, locale) })
       : eventDateLabel(e, locale)
 

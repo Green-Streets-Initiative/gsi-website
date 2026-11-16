@@ -6,6 +6,7 @@ import posthog from 'posthog-js'
 import { CalendarBlank } from '@phosphor-icons/react'
 import RoamCard from '@/components/roams/RoamCard'
 import { getTypeMeta, parseEventDate, formatDistance } from '@/lib/events'
+import { dateRangeShort, isMultiDay } from '@/lib/event-days'
 import { EVENT_TYPE_ICONS } from '@/components/events/event-type-icons'
 import type { SectionData, CommunityData } from './types'
 import { SkeletonRows } from './SectionShell'
@@ -55,7 +56,7 @@ export function ExploreBody({ community, compact }: {
                     </span>
                     <p className="text-[0.9rem] font-semibold leading-snug text-(--nb-ink)">{e.title}</p>
                     <p className="mt-0.5 text-[0.8rem] text-(--nb-ink-70)">
-                      {parseEventDate(e.event_date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+                      {isMultiDay(e) ? dateRangeShort(e) : parseEventDate(e.event_date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
                       {e.location_name ? ` · ${e.location_name}` : ''} · {tr('explore.distance_away', { distance: formatDistance(e.distance_miles) })}
                     </p>
                   </span>

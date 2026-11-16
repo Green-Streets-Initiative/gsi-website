@@ -21,6 +21,8 @@ export interface NearbyEvent {
   slug?: string | null
   title: string
   event_date: string
+  /** Last day of a multi-day event; absent or null for one day. */
+  event_end_date?: string | null
   event_time: string | null
   location_name: string | null
   summary: string | null

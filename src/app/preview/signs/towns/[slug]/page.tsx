@@ -66,6 +66,8 @@ function shortDate(iso: string): string {
 
 function eventMeta(e: TownEvent): string {
   const parts: string[] = []
+  // A multi-day event: the tile shows its first day, the line its last.
+  if (e.event_end_date && e.event_end_date > e.event_date) parts.push(`to ${shortDate(e.event_end_date)}`)
   if (e.event_time) parts.push(formatTime(e.event_time))
   if (e.location_name) parts.push(e.location_name)
   const style = rideStyle({ eventType: e.event_type, title: e.title, description: e.summary, tags: e.tags, pace: e.pace, distanceText: e.distance_text })
