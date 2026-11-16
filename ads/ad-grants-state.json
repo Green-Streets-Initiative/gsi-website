@@ -1300,6 +1300,41 @@
       "month_end_math": "8.57% on 3,187 impr after 13 days; well above 5%. Venue Parking kill line (account MTD < 6.5%) not triggered.",
       "alerts": [],
       "emailed": false
+    },
+    {
+      "date": "2026-11-16",
+      "source": "scheduled quick check (ad-grants-pulse), ~10:10 ET, live account (authuser=9 redirected to authuser=5, walkrideday). This month = Nov 1-16.",
+      "mtd": {
+        "window": "2026-11-01..2026-11-16",
+        "impressions": 4106,
+        "clicks": 355,
+        "ctr_pct": 8.65,
+        "cost": 1522.76,
+        "conversions": 42
+      },
+      "by_campaign": {
+        "How-to Guides": { "impressions": 2778, "clicks": 266, "ctr_pct": 9.67, "conversions": 37 },
+        "Venue Parking": { "impressions": 978, "clicks": 40, "ctr_pct": 4.11, "conversions": 2, "note": "Rewritten 11-11; judge 11-25 (14-day rule)." },
+        "Town Walking & Biking": { "impressions": 350, "clicks": 47, "ctr_pct": 13.39, "conversions": 0, "note": "Now 'Limited by search volume'. Trails group serving (bruce freeman rail trail 4/16). Judge 11-25." },
+        "Shift App — Massachusetts": { "impressions": 22, "clicks": 0 },
+        "GSI — Brand": { "impressions": 8, "clicks": 2, "conversions": 3 },
+        "Shift Your Semester — Students": { "impressions": 0, "clicks": 0 },
+        "Shift Together - Start Biking": { "impressions": 0, "clicks": 0, "note": "Launched 11-13 (3 days), Eligible (Learning). Under the 5-day zero-impression rule; alert if still 0 on 11-18 or later." },
+        "New Routes — Movers": { "impressions": 0, "clicks": 0, "note": "Paused 11-04 as approved" }
+      },
+      "campaign_status": "How-to Guides, Town, Venue Parking and Brand Eligible (Limited) Limited by search volume; Shift Together Eligible (Learning); New Routes Paused (expected); others Eligible. Account budget $415.00/day.",
+      "banners": "Only the 'Add broad match keywords' recommendation card (not applied). Nothing serving-related.",
+      "ads": {
+        "total": 61,
+        "disapproved_seen": 0,
+        "limited_by_policy": 0,
+        "not_eligible": "4, all New Routes — Movers ads (campaign paused; expected)",
+        "poor": "2 active, both known with 0 impr (Walk More Win More, Walking School Bus Ideas); 3 paused Venue Ad 1s also Poor. Unchanged."
+      },
+      "search_terms": "Top ~25 by impressions read. All on target: How-to Guides / Paying for the T (boston public transportation 10/59 1 conv, charlie card 2/30, boston transit 2/27, mbta monthly pass 4/27, boston metro 3/22, the t boston 2/22, boston subway 3/21, charliecard 5/18, mbta passes 1/20), 'green line closure' 0/29 (T closures; judge 11-18), Venue Parking (north station garage 3/38, gillette stadium parking 1/33, td garden parking 0/17, fenway park parking 2/16), Town 'bradford rail trail' 0/23 (pre-Trails), Trails 'bruce freeman rail trail' 4/16. No negatives proposed.",
+      "month_end_math": "8.65% on 4,106 impr after 16 days; well above 5%. Venue Parking kill line (account MTD < 6.5%) not triggered.",
+      "alerts": [],
+      "emailed": false
     }
   ],
   "snapshots": [
