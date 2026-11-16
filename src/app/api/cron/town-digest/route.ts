@@ -1,4 +1,4 @@
-import { Resend } from 'resend'
+import { Resend, type CreateBatchEmailOptions, type CreateBatchResponse } from 'resend'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { buildTownDigest, MANAGE_PLACEHOLDER, PROXIMITY_PLACEHOLDER, UNSUB_PLACEHOLDER } from '@/lib/towns/digest'
 import {
@@ -23,7 +23,7 @@ export const maxDuration = 120
  * Town digest sender (E19). Event-driven: a town gets an email when a newly
  * published civic item affects it, assembled from the same query layer as
  * the public town page. Guardrails:
- *  - max 2 sends per town per rolling 30 days;
+ *  - max 3 sends per town per rolling 30 days (MAX_SENDS_PER_30D);
  *  - an item never emails the same town twice (town_digest_sends.item_ids);
  *  - towns with zero active subscribers are skipped;
  *  - ?dry_run=1&town=<slug> renders one town, emails ONLY the admin, writes
@@ -78,6 +78,52 @@ function haversineMiles(lat1: number, lng1: number, lat2: number, lng2: number):
     Math.sin(toRad(lat2 - lat1) / 2) ** 2 +
     Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(toRad(lng2 - lng1) / 2) ** 2
   return 2 * R * Math.asin(Math.sqrt(a))
+}
+
+/** Resend's batch endpoint takes at most 100 emails per request. */
+const BATCH_SIZE = 100
+
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms))
+
+/** Worth another try: Resend was busy or briefly down, not a bad message. */
+const RETRYABLE = new Set(['rate_limit_exceeded', 'application_error', 'internal_server_error'])
+
+/**
+ * Sends one batch. Permissive validation, so one bad address fails only its
+ * own email, not the other 99. The idempotency key (real sends only) makes a
+ * retry after a lost response, or a second cron call the same day, return
+ * the first result instead of mailing people twice. Messages never carry an
+ * address.
+ */
+async function sendBatch(
+  resend: Resend,
+  chunk: CreateBatchEmailOptions[],
+  idempotencyKey: string | undefined,
+): Promise<{ sent: number; failed: number; messages: string[] }> {
+  let lastError = ''
+  for (let attempt = 0; attempt < 3; attempt++) {
+    if (attempt > 0) await sleep(1000 * 2 ** (attempt - 1))
+    let res: CreateBatchResponse<{ batchValidation: 'permissive' }>
+    try {
+      res = await resend.batch.send(chunk, { batchValidation: 'permissive', idempotencyKey })
+    } catch (err) {
+      // A network failure: the same key makes the retry safe.
+      lastError = String(err)
+      continue
+    }
+    if (res.error) {
+      lastError = `${res.error.name}: ${res.error.message}`
+      if (RETRYABLE.has(res.error.name)) continue
+      break
+    }
+    const failed = res.data.errors ?? []
+    return {
+      sent: res.data.data.length,
+      failed: failed.length,
+      messages: failed.map((e) => `email ${e.index + 1} of ${chunk.length}: ${e.message}`),
+    }
+  }
+  return { sent: 0, failed: chunk.length, messages: [`whole batch of ${chunk.length}: ${lastError}`] }
 }
 
 function proximityLine(miles: number | null): string {
@@ -305,8 +351,7 @@ export async function GET(req: Request) {
       if (sigErr) throw new Error(`email_link_sigs: ${sigErr.message}`)
       const sigs = new Map(((sigRows ?? []) as { id: string; stop_sig: string; manage_sig: string }[]).map((x) => [x.id, x]))
 
-      let sent = 0
-      let errors = 0
+      const messages: CreateBatchEmailOptions[] = []
       for (const r of recipients) {
         const sig = sigs.get(r.id)
         if (!sig?.stop_sig || !sig.manage_sig) throw new Error('missing link signature')
@@ -328,26 +373,41 @@ export async function GET(req: Request) {
           html = html.replace(`%%PROXALSO:${itemId}%%`, tag)
         }
         if (dryRun && !previewHtml) previewHtml = html
-        try {
-          const res = await resend.emails.send({
-            from: FROM,
-            to: r.email,
-            replyTo: REPLY_TO,
-            subject: dryRun
-              ? `[Preview — ${slug}${previewFallback ? ' — nothing due today; showing recent items' : ''}] ${content.subject}`
-              : content.subject,
-            html,
-            headers: {
-              'List-Unsubscribe': `<${unsubUrl}>`,
-              'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
-            },
-          })
-          if (res.error) throw new Error(res.error.message)
-          sent++
-        } catch (err) {
-          errors++
-          console.error(`town-digest send failed (${slug}):`, err)
-        }
+        messages.push({
+          from: FROM,
+          to: r.email,
+          replyTo: REPLY_TO,
+          subject: dryRun
+            ? `[Preview — ${slug}${previewFallback ? ' — nothing due today; showing recent items' : ''}] ${content.subject}`
+            : content.subject,
+          html,
+          headers: {
+            'List-Unsubscribe': `<${unsubUrl}>`,
+            'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+          },
+        })
+      }
+
+      // One request per batch of up to 100, never one per person: sending
+      // one at a time ran past Resend's per-second request limit, and from
+      // late October every town with 10+ readers lost about half of each
+      // email to it (Boston 55 of 103, 2026-11-16).
+      let sent = 0
+      let errors = 0
+      for (let i = 0; i < messages.length; i += BATCH_SIZE) {
+        const chunk = messages.slice(i, i + BATCH_SIZE)
+        const key = dryRun ? undefined : `town-digest/${slug}/${todayEt}/${isReminder ? 'reminder' : 'announcement'}/${i / BATCH_SIZE}`
+        const result = await sendBatch(resend, chunk, key)
+        sent += result.sent
+        errors += result.failed
+        for (const msg of result.messages) console.error(`town-digest send failed (${slug}): ${msg}`)
+      }
+
+      // Nothing went out: leave the items unsent so tomorrow's run tries again,
+      // rather than logging them as sent to nobody.
+      if (sent === 0 && errors > 0) {
+        results.push({ town: slug, error: `every email failed (${errors}); nothing logged, retries next run` })
+        continue
       }
 
       if (!dryRun) {
