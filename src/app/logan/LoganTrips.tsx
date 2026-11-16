@@ -774,7 +774,7 @@ function Plan({ trip, m, onChange }: { trip: LoganTrip; m: LoganMatch; onChange:
           <p className="mt-2 text-[15px] leading-snug text-(--ev-ink-85)">{t('logan.split_note')}</p>
         ) : null}
         <p className="mt-2 text-[15px] leading-snug text-(--ev-ink-85)">
-          {t('logan.wait_note', { name })}
+          {t(trip.kind === 'airport_back' ? 'logan.wait_note_back' : 'logan.wait_note', { name })}
         </p>
         {watch ? <p className="mt-2 text-[15px] leading-snug text-(--ev-ink-85)">{watch}</p> : null}
       </div>
