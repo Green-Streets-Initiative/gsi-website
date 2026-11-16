@@ -8,9 +8,9 @@ import { ridesStrings } from '@/lib/site-strings/rides'
 /** A Shift referral code: 8 hex characters. */
 // The picked date rides along as "@YYYY-MM-DD" so the app can mark them Going
 // on it (rider review 2026-11-12). App builds up to Update 31 reject any
-// suffix they don't know, so this stays off until the update that reads it
-// is live; then flip it to true.
-const HANDOFF_DATE = false
+// suffix they don't know, so this stayed off until Update 32, which reads
+// it, went live (2026-11-15).
+const HANDOFF_DATE = true
 
 const REF_RE = /^[0-9A-F]{8}$/
 
