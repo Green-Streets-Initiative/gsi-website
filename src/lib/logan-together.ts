@@ -8,7 +8,7 @@
  * the date. The pages revalidate hourly, so the lines appear within the hour
  * of midnight ET on that day. Set it back to null to take them down.
  */
-export const LOGAN_TOGETHER_OPENS: string | null = null
+export const LOGAN_TOGETHER_OPENS: string | null = '2026-11-16' // Keith 2026-11-16: "Yes, you can open Logan"
 
 /** The last day the holiday lines show (the week after New Year's). */
 export const LOGAN_TOGETHER_LINES_END = '2027-01-04'
