@@ -85,6 +85,13 @@ export const BIO_LINKS: BioLink[] = [
     until: '2026-11-30T23:59:00-05:00',
   },
   {
+    slug: 'logan',
+    label: 'Flying for Thanksgiving? Go to Logan with someone flying when you are',
+    sublabel: 'Add your flight. We find someone at the airport within 45 minutes of you and a T station or Logan Express lot near you both.',
+    url: 'https://www.gogreenstreets.org/logan?from=social',
+    until: '2026-11-26T23:59:00-05:00',
+  },
+  {
     slug: 'arbwalk',
     label: 'Saturday nature walk in the Arnold Arboretum',
     sublabel: 'Sat 10 AM, Forest Hills Gate on the Arborway. Nature Walking Group, about 2 hours, free',
