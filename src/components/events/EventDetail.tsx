@@ -32,6 +32,7 @@ import EventImageCarousel from './EventImageCarousel'
 import { FeedsToLine, GoTogetherSection } from './GoTogether'
 import { NO_GO_TOGETHER, isWalkGroup, type GoTogetherData } from '@/lib/go-together'
 import { EventPageAlertSignup } from './EventAlertSignup'
+import EventFeedSubscribe from './EventFeedSubscribe'
 import { parseEventBody } from '@/lib/event-body'
 import { typeInk, tagInk, rideStyleInk, TINT } from '@/lib/events-tone'
 import { EventsToneProvider, toneClass, useEventsTone, useEventsI18n, type EventsTone } from './EventsTone'
@@ -717,6 +718,11 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
                 </a>
               ))}
             </div>
+
+            {/* Every event of this kind in this town, in the visitor's own
+                calendar (PLG L-24): what search visitors came for, kept coming
+                each week with no account. Rides, walks and bike repair only. */}
+            <EventFeedSubscribe event={event} className="mt-6" />
 
             {/* The weekly email, set to this event's kind and town (calendar
                 growth plan bet 1): someone who came for one ride is the person
