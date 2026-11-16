@@ -13,6 +13,16 @@
  *   node scripts/venues/facts.mjs add-train <date> <event> <times> <onSale>
  *   node scripts/venues/facts.mjs drop-past-trains
  *   node scripts/venues/facts.mjs add-venue <venue> <file.json>  a new venue's block (with its base in src/lib/venues.ts)
+ *   node scripts/venues/facts.mjs check-pdf <venue> <outdir> PDF sources too large for WebFetch (see below)
+ *   node scripts/venues/facts.mjs pin-pdf <venue>            after reading a changed PDF and updating the page
+ *
+ * A source with a `pdf` block (White Stadium's signed transportation agreement,
+ * 14 MB on Google Drive) is checked by fingerprint, not by reading it: check-pdf
+ * downloads it, compares its SHA-256 with the copy last read (`pdf.sha256`), and
+ * checks the page in `pdf.linkedFrom` still links it. SAME means the signed
+ * document is byte for byte the one already confirmed. CHANGED writes its text
+ * (pdftotext) to <outdir> so the lines can be read there; once they are checked
+ * and the page updated, pin-pdf records the new fingerprint.
  *
  * A venue with no fan parking (White Stadium) uses `prices` for its three
  * answer tiles and adds `notice` (where the team plays now, with its source)
@@ -27,6 +37,7 @@ import { fileURLToPath } from 'node:url'
 const FILE = fileURLToPath(new URL('../../src/lib/venue-facts.json', import.meta.url))
 const STALE_DAYS = 45
 const ISO = /^\d{4}-\d{2}-\d{2}$/
+const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36'
 
 const today = () => new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' })
 const die = (msg) => {
@@ -49,6 +60,7 @@ function check(facts) {
     }
     if (!Array.isArray(v.verify) || v.verify.length === 0) die(`${where('verify')} needs at least one source`)
     for (const s of v.verify) if (!/^https:\/\//.test(s.url ?? '') || !Array.isArray(s.confirm) || !s.confirm.length) die(`${where('verify')}: every source needs an https url and lines to confirm`)
+    for (const s of v.verify) if (s.pdf && (!/^[0-9a-f]{64}$/.test(s.pdf.sha256 ?? '') || !ISO.test(s.pdf.pinned ?? '') || (s.pdf.linkedFrom && !/^https:\/\//.test(s.pdf.linkedFrom)))) die(`${where('verify')}: a pdf block needs sha256, pinned (YYYY-MM-DD) and an https linkedFrom if any`)
     if (v.notice && (!v.notice.text || !/^https:\/\//.test(v.notice.source?.url ?? '') || !v.notice.source?.label)) die(`${where('notice')} needs text and a source with a label and url`)
     if (v.pending && (!Array.isArray(v.pending) || v.pending.some((p) => typeof p !== 'string' || !p))) die(`${where('pending')} must be a list of texts`)
   }
@@ -68,7 +80,7 @@ if (cmd === 'show' || !cmd) {
     const v = facts[slug]
     console.log(`\n${slug} (confirmed ${v.checked})`)
     for (const s of v.verify) {
-      console.log(`  ${s.url}`)
+      console.log(`  ${s.url}${s.pdf ? `  [large PDF: check with check-pdf ${slug}, not WebFetch]` : ''}`)
       for (const c of s.confirm) console.log(`    - ${c}`)
       if (s.season) console.log(`    season: ${s.season}`)
     }
@@ -116,6 +128,58 @@ if (cmd === 'show' || !cmd) {
   facts[slug] = JSON.parse(readFileSync(file, 'utf8'))
   save(facts)
   console.log(`added ${slug} (confirmed ${facts[slug].checked})`)
+} else if (cmd === 'check-pdf' || cmd === 'pin-pdf') {
+  const [slug, outdir] = args
+  if (!slug || (cmd === 'check-pdf' && !outdir)) die(`usage: ${cmd} <venue>${cmd === 'check-pdf' ? ' <outdir>' : ''}`)
+  const sources = venueOf(facts, slug).verify.filter((s) => s.pdf)
+  if (!sources.length) die(`${slug} has no pdf sources`)
+  for (const s of sources) {
+    const { bytes, sha256 } = await downloadPdf(s.url)
+    if (cmd === 'pin-pdf') {
+      console.log(`${s.url}: pinned ${sha256} (was ${s.pdf.sha256})`)
+      s.pdf.sha256 = sha256
+      s.pdf.pinned = today()
+      continue
+    }
+    const linked = s.pdf.linkedFrom ? await linksTo(s.pdf.linkedFrom, s.url) : true
+    if (!linked) console.log(`NOT LINKED: ${s.pdf.linkedFrom} no longer links ${s.url}. Look there for a new or amended version; don't confirm ${slug} this week.`)
+    if (sha256 === s.pdf.sha256) {
+      console.log(`SAME: ${s.url} is byte for byte the copy read on ${s.pdf.pinned}.${linked ? ' Its lines are confirmed.' : ''}`)
+      continue
+    }
+    const { mkdirSync } = await import('node:fs')
+    const { execFileSync } = await import('node:child_process')
+    const { join } = await import('node:path')
+    mkdirSync(outdir, { recursive: true })
+    const base = join(outdir, `${slug}-${sources.indexOf(s) + 1}`)
+    writeFileSync(`${base}.pdf`, bytes)
+    try {
+      execFileSync('pdftotext', ['-layout', `${base}.pdf`, `${base}.txt`])
+      console.log(`CHANGED: ${s.url} differs from the copy read on ${s.pdf.pinned}. Its text is in ${base}.txt: read it (Read tool, search for each line) and check every line to confirm. When the page is right, run pin-pdf ${slug}.`)
+    } catch {
+      console.log(`CHANGED: ${s.url} differs from the copy read on ${s.pdf.pinned}, and pdftotext couldn't turn it into text (the PDF is at ${base}.pdf). Don't confirm ${slug} this week; put it in the email.`)
+    }
+  }
+  if (cmd === 'pin-pdf') save(facts)
 } else {
   die(`unknown command "${cmd}"`)
+}
+
+// Google Drive "view" links serve a web page; the uc?export=download form serves the file.
+async function downloadPdf(url) {
+  const id = url.match(/drive\.google\.com\/file\/d\/([\w-]+)/)?.[1]
+  const res = await fetch(id ? `https://drive.google.com/uc?export=download&id=${id}` : url, { headers: { 'User-Agent': UA }, redirect: 'follow' })
+  if (!res.ok) die(`${url}: download failed (${res.status})`)
+  const bytes = Buffer.from(await res.arrayBuffer())
+  if (bytes.subarray(0, 5).toString() !== '%PDF-') die(`${url}: got a web page, not the PDF (the file may have been moved or made private)`)
+  const { createHash } = await import('node:crypto')
+  return { bytes, sha256: createHash('sha256').update(bytes).digest('hex') }
+}
+
+async function linksTo(page, url) {
+  const res = await fetch(page, { headers: { 'User-Agent': UA }, redirect: 'follow' })
+  if (!res.ok) die(`${page}: couldn't read it (${res.status})`)
+  const html = await res.text()
+  const id = url.match(/drive\.google\.com\/file\/d\/([\w-]+)/)?.[1]
+  return html.includes(id ?? url)
 }
