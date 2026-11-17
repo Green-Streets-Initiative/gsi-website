@@ -29,11 +29,16 @@ request 1.4% · employer challenge → sign-up 0.5% (69% bounce, 8 s median).
    credited Commons photo of the place, then a map. No stand-ins.
 4. Looks like a Claude site: italic serif accents, spaced-caps labels, dotted
    rails, three stat tiles, phone mock-up heroes; four looks mixed.
-5. Listing data: Butternut ride ×3 on Sat 11-21, Cafe Bikers Sunday ×3–4,
-   Fresh Pond ×2, DotBike ×2, Truant Thursday slug dated 11-12 on the 19th,
-   a potluck at a home address with unit number, "Mary's house", Boston
-   Children's family day typed as group ride, full addresses in location_name
-   breaking the town field.
+5. Listing data (corrected 2026-11-17, counted with status = 'approved'):
+   two live listings show a private home ("Mary's house", Cambridge); Lizzie
+   Learns to Ride listed twice on 11-21; Truant Thursday slug still dated
+   11-12 after the move to the 19th; 75 of 284 live listings put a street
+   address in location_name. Hidden duplicates and drafts (the potluck with a
+   unit number among them) are readable through the anon key. The first
+   version counted archived rows: Butternut, Cafe Bikers Sunday, Fresh Pond
+   and DotBike each show once on the site, and the Boston Children's family
+   day was never public. The events-data session is fixing these. Lesson:
+   count listings from the rendered page or with status = 'approved'.
 6. Four trip tools split (/trip, /nearby, /commute-advisor, /visiting);
    /visiting orphaned and noindex.
 7. /bike-lessons and /together missing from nav, footer and home.

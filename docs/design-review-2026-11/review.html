@@ -160,8 +160,8 @@ pre.mermaid{background:var(--bg);overflow-x:auto}
 <div class="fix"><b>Fix:</b> use the host's photo, then a credited Commons photo of the place (as in the mock-ups), then a drawn map. With none, show the place name and map. Never a stand-in photo.</div><div class="tags"><span>visual-to-text</span><span>design language</span></div></div></li>
 <li><div><h3>It looks like a Claude site</h3>Italic serif accent words ("to get around."), spaced-caps labels on nearly every page, dotted rails, rows of three stat tiles, phone mock-up heroes. Four looks mixed: cream serif, street-sign panels on lessons, parking and links, Shift navy and lime blocks, a blue Shift button on employers.
 <div class="fix"><b>Fix:</b> one direction for the whole site, and retire the serif, the spaced caps and the phone-mock-up hero everywhere.</div><div class="tags"><span>design language</span></div></div></li>
-<li><div><h3>The event listings show messy data, including private addresses</h3>This Saturday's Butternut ride is listed three times under three names. Sunday's Cafe Bikers ride shows three or four times, Fresh Pond and DotBike twice. A potluck lists a home address with a unit number; a walk meets at "Mary's house". A family day at Boston Children's Hospital is filed as a group ride.
-<div class="fix"><b>Fix:</b> merge listings with the same host, date and time; hide home addresses and show the neighborhood until people sign up; check event types.</div><div class="tags"><span>clarity</span><span>ease</span></div></div></li>
+<li><div><h3>The event listings show messy data, including private addresses</h3>Two live listings show a private home address ("Mary's house", Cambridge). Saturday's "Lizzie Learns to Ride" reading is listed twice. The Truant Thursday ride moved to the 19th but its link still says the 12th. 75 of 284 listings put a street address where the place name goes. Hidden copies and drafts, a home address with a unit number among them, can still be read through the site's public data connection. (Corrected: my first count included hidden rows; the site shows Butternut, Cafe Bikers, Fresh Pond and DotBike once each.)
+<div class="fix"><b>Fix:</b> show the neighborhood, not a home address, until people sign up; merge listings with the same host, date and time; keep the place name and the street address in separate fields; close hidden rows to the public. The events-data session is doing these now.</div><div class="tags"><span>clarity</span><span>ease</span></div></div></li>
 <li><div><h3>Four "how do I get there" tools, split up</h3>/trip, /nearby, /commute-advisor and /visiting each answer part of it. Nav splits them between the top bar and the Shift app menu. /visiting is linked from nowhere and hidden from search.
 <div class="fix"><b>Fix:</b> one "Get there" door, with the four as tabs or starting questions.</div><div class="tags"><span>paths</span><span>ease</span></div></div></li>
 <li><div><h3>Our best first-try pages are hidden</h3>/bike-lessons and /together are the strongest pages for someone trying something new, and neither is in the nav, the footer or the home page.
@@ -252,7 +252,7 @@ flowchart LR
 
 <div class="wide">
 <h2 class="col" style="margin-top:56px">Three directions</h2>
-<div class="col"><p>Same two pages in each: home, and the event page (the event-goer's page and our biggest Google door). Same real ride: Boston Cafe Bikers' <b>Better Not Miss Butternut</b>, Saturday 10 AM from Union Square. Same fonts and colors, so you're judging the idea, not a palette. Photos are real and credited.</p>
+<div class="col"><p>Same two pages in each: home, and the event page (the event-goer's page and our biggest Google door). Same real ride: Boston Cafe Bikers' Saturday 10 AM ride from Union Square to Butternut Bakehouse (the mock-ups use the host's own title for it, <b>Better Not Miss Butternut</b>). Same fonts and colors, so you're judging the idea, not a palette. Photos are real and credited.</p>
 <div class="toggle" role="group" aria-label="Mock-up size"><button type="button" id="tg-phone" aria-pressed="true">Phone</button><button type="button" id="tg-desk" aria-pressed="false">Desktop</button></div></div>
 
 <div class="dirs">
@@ -318,7 +318,7 @@ flowchart LR
 <h2>Fixes that don't wait for a direction</h2>
 <p>Copy, data and tracking. Say yes and I'll do them in their own change.</p>
 <ol class="find">
-<li><div><b>Merge duplicate events and hide home addresses.</b> Butternut ×3, Cafe Bikers Sunday ×3, Fresh Pond ×2, DotBike ×2, the potluck's unit number, "Mary's house".</div></li>
+<li><div><b>Hide home addresses and merge duplicate events.</b> "Mary's house" on two listings, Lizzie Learns to Ride twice, the old date in Truant Thursday's link. The events-data session already has these in hand.</div></li>
 <li><div><b>Named PostHog events</b> for employer sign-up, contact, newsletter, lesson alerts and donations, plus a bot and staff filter, so the redesign has a baseline.</div></li>
 <li><div><b>Employers page:</b> remove the price, make "Book a call" the button. <b>Schools:</b> drop the "No apps, no accounts, no data" opener. <b>Rewards partners and Get involved:</b> stop selling discount listings.</div></li>
 <li><div><b>Wording:</b> remove em-dashes on the ten worst pages, "calm way to ride", "Discover", "unlock", the auto-tracking pitches; make Walk/Ride Day's day the same on both pages.</div></li>
