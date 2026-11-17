@@ -39,6 +39,8 @@
   --ev-accent: #BAF14D;
   --ev-accent-90: rgba(186, 241, 77, 0.9);
   --ev-accent-fill: #BAF14D;
+  /* The event page's main button (Direction A, 2026-11-17). */
+  --ev-primary: #2D6A4F;
   --ev-on-accent-fill: #191A2E;
   --ev-on-accent-fill-soft: rgba(25, 26, 46, 0.8);
   --ev-accent-tint-7: rgba(186, 241, 77, 0.07);
@@ -90,6 +92,7 @@
   --ev-accent: #2D6A4F;
   --ev-accent-90: #1B4332;
   --ev-accent-fill: #191A2E;
+  --ev-primary: #2D6A4F;
   --ev-on-accent-fill: #ffffff;
   --ev-on-accent-fill-soft: rgba(255, 255, 255, 0.8);
   --ev-accent-tint-7: rgba(45, 106, 79, 0.08);

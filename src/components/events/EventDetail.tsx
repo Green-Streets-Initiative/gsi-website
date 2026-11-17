@@ -1,12 +1,12 @@
 'use client'
 
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import Link from 'next/link'
 import { eventPath, eventUrl } from '@/lib/events-url'
 import {
   MapPin, Calendar, Users,
-  ChevronLeft, ChevronRight, Bookmark, Share2, Globe, ExternalLink, Ticket,
-  Clock, Mail, ArrowRight, Route, Languages, Footprints, Bike, Bus,
+  ChevronLeft, ChevronRight, Share2, Globe, ExternalLink, Ticket,
+  ArrowRight, Route, Languages, Footprints, Bike, Bus,
 } from 'lucide-react'
 import { eventLanguages, ownNames } from '@/lib/languages'
 import dynamic from 'next/dynamic'
@@ -15,10 +15,10 @@ import FixListingLink from '@/components/hosts/FixListingLink'
 import { gaEvent } from '@/lib/ga'
 import StoreButtons from '@/components/StoreButtons'
 import { withUtm as appUtm } from '@/lib/utm'
-import { EVENT_TYPE_ICONS } from './event-type-icons'
+import { DateTile, PlaceSign, GettingThere, MoreNearHere } from './EventPageParts'
 import {
   type CommunityEvent, type NextUp,
-  getTypeMeta, getTagMeta, isDeadline, parseEventDate,
+  getTagMeta, isDeadline, parseEventDate,
   buildIcs, gcalUrl, directionsUrl,
   eventRideStyle, isNoDrop, isRideEvent,
   eventImages,
@@ -34,7 +34,7 @@ import { NO_GO_TOGETHER, isWalkGroup, type GoTogetherData } from '@/lib/go-toget
 import { EventPageAlertSignup } from './EventAlertSignup'
 import EventFeedSubscribe from './EventFeedSubscribe'
 import { parseEventBody } from '@/lib/event-body'
-import { typeInk, tagInk, rideStyleInk, TINT } from '@/lib/events-tone'
+import { tagInk, rideStyleInk } from '@/lib/events-tone'
 import { EventsToneProvider, toneClass, useEventsTone, useEventsI18n, type EventsTone } from './EventsTone'
 import './events-tone.css'
 
@@ -81,8 +81,8 @@ function ScheduleBanner({ event }: { event: CommunityEvent }) {
 
   return (
     <div className="mb-6 rounded-2xl border border-(--ev-accent-line-30) bg-(--ev-accent-tint-7) p-4 sm:mb-8 sm:p-5">
-      <p className="font-display text-[19px] font-extrabold leading-tight text-(--ev-ink) sm:text-[22px]">{headline}</p>
-      {note && <p className="mt-1 text-[13px] text-(--ev-ink-75)">{t('detail.organizer_said', { note })}</p>}
+      <p className="font-(family-name:--font-headline) text-[19px] font-extrabold leading-tight text-(--ev-ink) sm:text-[22px]">{headline}</p>
+      {note && <p className="mt-1 text-[15px] text-(--ev-ink-75)">{t('detail.organizer_said', { note })}</p>}
     </div>
   )
 }
@@ -97,7 +97,7 @@ function NextUpBanner({ nextUp, host = null }: { nextUp: NextUp | null; host?: {
 
   return (
     <div className="mb-6 rounded-2xl border border-(--ev-accent-line-30) bg-(--ev-accent-tint-7) p-4 sm:mb-8 sm:p-5">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-(--ev-accent)">
+      <p className="text-[15px] font-bold text-(--ev-accent)">
         {t('next.passed')}
       </p>
 
@@ -105,12 +105,12 @@ function NextUpBanner({ nextUp, host = null }: { nextUp: NextUp | null; host?: {
         <>
           <Link
             href={withLang(eventPath(nextUp, hrefBase), locale)}
-            className="mt-1.5 inline-flex items-center gap-1.5 font-display text-[19px] font-extrabold leading-tight text-(--ev-ink) transition-opacity hover:opacity-80 sm:text-[22px]"
+            className="mt-1.5 inline-flex items-center gap-1.5 font-(family-name:--font-headline) text-[19px] font-extrabold leading-tight text-(--ev-ink) transition-opacity hover:opacity-80 sm:text-[22px]"
           >
             {t(nextUp.kind === 'series' ? 'next.one' : 'next.event', { when: label })}
             <ArrowRight size={18} className="shrink-0" />
           </Link>
-          <p className="mt-1 text-[13px] text-(--ev-ink-75)">
+          <p className="mt-1 text-[15px] text-(--ev-ink-75)">
             {nextUp.kind === 'series'
               ? <>{nextUp.location_name ? t('next.again_at', { place: nextUp.location_name }) : t('next.again')}</>
               : <>{nextUp.title}{nextUp.location_name ? ` · ${nextUp.location_name}` : ''}</>}
@@ -118,12 +118,12 @@ function NextUpBanner({ nextUp, host = null }: { nextUp: NextUp | null; host?: {
         </>
       ) : (
         <>
-          <p className="mt-1.5 font-display text-[19px] font-extrabold leading-tight text-(--ev-ink) sm:text-[22px]">
+          <p className="mt-1.5 font-(family-name:--font-headline) text-[19px] font-extrabold leading-tight text-(--ev-ink) sm:text-[22px]">
             {t('next.none')}
           </p>
           <Link
             href={withLang(hrefBase, locale)}
-            className="mt-1 inline-flex items-center gap-1.5 text-[13px] font-semibold text-(--ev-accent) transition-opacity hover:opacity-80"
+            className="mt-1 inline-flex items-center gap-1.5 text-[15px] font-semibold text-(--ev-accent) transition-opacity hover:opacity-80"
           >
             {t('next.see_week')}
             <ArrowRight size={14} className="shrink-0" />
@@ -174,6 +174,10 @@ interface EventDetailProps {
   series?: { href?: string; dates: Pick<CommunityEvent, 'id' | 'slug' | 'event_date'>[] } | null
   /** The page's language (translation plan, batch 5). English when left out. */
   locale?: SiteLocale
+  /** It happens today (Boston time): live departures and free bikes show. */
+  isToday?: boolean
+  /** Other events close by on the same few days ("More near here"). */
+  moreNear?: CommunityEvent[]
 }
 
 
@@ -183,12 +187,8 @@ const DIRECTION_MODES = [
   { mode: 'transit', key: 'detail.dir_transit', Icon: Bus },
 ] as const
 
-export default function EventDetail({ event, nextUp = null, isPast = false, tone = 'dark', hrefBase = '/events', sponsorLinks = {}, roamLinks = [], rideCode = null, hostHref = null, town = null, goTogether = NO_GO_TOGETHER, series = null, locale = 'en' }: EventDetailProps) {
+export default function EventDetail({ event, nextUp = null, isPast = false, tone = 'dark', hrefBase = '/events', sponsorLinks = {}, roamLinks = [], rideCode = null, hostHref = null, town = null, goTogether = NO_GO_TOGETHER, series = null, locale = 'en', isToday = false, moreNear = [] }: EventDetailProps) {
   const t = eventsT(locale)
-  const meta = getTypeMeta(event.event_type)
-  const Icon = EVENT_TYPE_ICONS[meta.icon] ?? Calendar
-  // The type's color for this surface: the navy-tuned one, or its ink on cream.
-  const ink = typeInk(meta, tone)
   // Easy / Moderate / Rec, only when the listing supports the call.
   const level = eventRideStyle(event)
   const noDrop = isNoDrop(event)
@@ -215,9 +215,7 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
   const deadline = isDeadline(event.event_type)
   const hasMap = !!(event.location_lat && event.location_lng) && !deadline && !placeless
   const images = eventImages(event)
-  const hasLeftColumn = !!(images.length > 0 || hasMap)
 
-  const [saved, setSaved] = useState(false)
   const [calMenuOpen, setCalMenuOpen] = useState(false)
   const [barMenuOpen, setBarMenuOpen] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
@@ -296,116 +294,204 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
   // Some listings carry the street address as the place name too; print it once.
   const sameAsName = (a: string | null) =>
     !!a && !!event.location_name && a.trim().toLowerCase() === event.location_name.trim().toLowerCase()
-  const address = sameAsName(event.location_address) ? null : event.location_address
+  // "Union Square" over "Union Square, Somerville, MA" reads twice; keep the rest.
+  const restOfAddress = (a: string | null) => {
+    const name = event.location_name?.trim().toLowerCase()
+    if (!a || !name) return a
+    return a.trim().toLowerCase().startsWith(`${name},`) ? a.trim().slice(name.length + 1).trim() : a
+  }
+  const address = sameAsName(event.location_address) ? null : restOfAddress(event.location_address)
   const location = [event.location_name, address].filter(Boolean).join(', ')
+
+  const showPlace = !!event.location_name && event.location_name !== 'See event page for details'
+  const hostLine = event.organizer_name
+    ? t('detail.host_line', { type: typeLabel(event.event_type, locale), host: event.organizer_name })
+    : typeLabel(event.event_type, locale)
+
+  // The phone bar repeats the first-screen buttons, so it shows only once
+  // they have scrolled away.
+  const actionsRef = useRef<HTMLDivElement>(null)
+  const [actionsInView, setActionsInView] = useState(true)
+  useEffect(() => {
+    const el = actionsRef.current
+    if (!el || typeof IntersectionObserver === 'undefined') return
+    const io = new IntersectionObserver(([entry]) => setActionsInView(entry.isIntersecting))
+    io.observe(el)
+    return () => io.disconnect()
+  }, [])
+
+  const H2 = 'font-(family-name:--font-headline) text-[22px] font-extrabold leading-tight text-(--ev-ink)'
+  const PRIMARY = 'inline-flex min-h-[48px] items-center justify-center gap-2 rounded-[10px] bg-(--ev-primary) px-4 text-[16px] font-bold text-white transition-opacity hover:opacity-90'
+  const SECONDARY = 'inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-[10px] border-[1.5px] border-(--ev-ink) px-4 text-[16px] font-bold text-(--ev-ink) transition-colors hover:bg-(--ev-panel)'
+
+  /** The one thing to do here: answer the Shift ride, sign up, read the host's page, or get directions. */
+  const primaryAction = (surface: 'details' | 'phone_bar', cls: string) => {
+    if (rideCode && !isPast) {
+      return (
+        <Link
+          href={eventLink(`/rides/${rideCode}?date=${event.event_date}`)}
+          className={cls}
+          onClick={() => posthog.capture('ride_page_open', { from: 'event_detail', surface: surface === 'details' ? 'actions' : 'phone_bar' })}
+        >
+          <Users size={17} aria-hidden />
+          {t('detail.rsvp')}
+        </Link>
+      )
+    }
+    if (event.registration_url) {
+      return (
+        <a href={withUtm(event.registration_url)} target="_blank" rel="noopener noreferrer" className={cls} onClick={() => trackOutbound('register', surface)}>
+          <Ticket size={17} aria-hidden />
+          {registerLabel}
+        </a>
+      )
+    }
+    if (event.event_url) {
+      return (
+        <a href={withUtm(event.event_url)} target="_blank" rel="noopener noreferrer" className={cls} onClick={() => trackOutbound('info', surface)}>
+          <Globe size={17} aria-hidden />
+          {t('detail.event_info')}
+        </a>
+      )
+    }
+    if (hasMap) {
+      return (
+        <a href={directionsUrl(event)} target="_blank" rel="noopener noreferrer" className={cls} onClick={() => trackDirections(surface)}>
+          <MapPin size={17} aria-hidden />
+          {t('detail.directions')}
+        </a>
+      )
+    }
+    return null
+  }
+  // "Event info" is a second link only when it isn't already the main button.
+  const infoIsPrimary = !(rideCode && !isPast) && !event.registration_url && !!event.event_url
+
+  const calendarMenu = (surface: 'details' | 'phone_bar', close: () => void, placement: string) => (
+    <div className={`absolute ${placement} z-50 w-60 overflow-hidden rounded-xl border border-(--ev-line-mid) bg-(--ev-menu-raised) py-1 shadow-(--ev-shadow-deep)`} role="menu">
+      <a
+        href={gcalUrl(calEvent)}
+        target="_blank"
+        rel="noopener noreferrer"
+        role="menuitem"
+        className="flex min-h-[44px] items-center gap-2 px-4 text-[15px] text-(--ev-ink-80) transition-colors hover:bg-(--ev-panel)"
+        onClick={() => { trackCalendar('google', surface); close() }}
+      >
+        <Globe size={15} aria-hidden />
+        Google Calendar
+      </a>
+      <button
+        type="button"
+        role="menuitem"
+        onClick={() => { handleDownloadIcs(surface); close() }}
+        className="flex min-h-[44px] w-full items-center gap-2 px-4 text-left text-[15px] text-(--ev-ink-80) transition-colors hover:bg-(--ev-panel)"
+      >
+        <Calendar size={15} aria-hidden />
+        Apple Calendar (.ics)
+      </button>
+      <button
+        type="button"
+        role="menuitem"
+        onClick={() => { handleDownloadIcs(surface); close() }}
+        className="flex min-h-[44px] w-full items-center gap-2 px-4 text-left text-[15px] text-(--ev-ink-80) transition-colors hover:bg-(--ev-panel)"
+      >
+        <ExternalLink size={15} aria-hidden />
+        {t('detail.download_ics')}
+      </button>
+    </div>
+  )
 
   return (
     <EventsToneProvider tone={tone} hrefBase={hrefBase} locale={locale}>
-    <div className={`min-h-screen bg-(--ev-bg) px-4 pb-32 pt-6 sm:px-8 sm:pt-8 lg:pb-24 ${toneClass(tone)}`}>
-      <div className="mx-auto max-w-[1040px]">
-        {/* Back button */}
-        <Link href={eventLink(hrefBase)} className="mb-6 inline-flex items-center gap-1 text-[13px] font-medium text-(--ev-ink-75) transition-colors hover:text-(--ev-ink) sm:mb-8">
-          <ChevronLeft size={16} />
+    <div className={`event-page min-h-screen bg-(--ev-card) px-4 pb-32 pt-4 font-(family-name:--font-gsi) sm:px-8 sm:pt-6 lg:pb-24 ${toneClass(tone)}`}>
+      <div className="mx-auto max-w-[1120px]">
+        <Link href={eventLink(hrefBase)} className="mb-4 inline-flex min-h-[44px] items-center gap-1 text-[15px] font-bold text-(--ev-accent) transition-opacity hover:opacity-80">
+          <ChevronLeft size={18} aria-hidden />
           {t('detail.all_events')}
         </Link>
 
         <ScheduleBanner event={event} />
         {isPast && <NextUpBanner nextUp={nextUp} host={hostHref && event.organizer_name ? { href: hostHref, name: event.organizer_name } : null} />}
 
-        <div className={`grid gap-6 sm:gap-10 ${hasLeftColumn ? 'lg:grid-cols-2' : ''}`}>
-          {/* ---- LEFT COLUMN ---- */}
-          {hasLeftColumn && (
-            <div>
-              <EventImageCarousel images={images} title={event.title} />
+        <div className="grid gap-8 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] lg:gap-14">
+          {/* ---- What, when, where, and the button: the first phone screen ---- */}
+          <div>
+            <div className={images.length > 0 ? 'grid grid-cols-[88px_minmax(0,1fr)] items-start gap-4 sm:grid-cols-[150px_minmax(0,1fr)] lg:grid-cols-[180px_minmax(0,1fr)] lg:gap-6' : ''}>
+              {images.length > 0 && (
+                <a href="#flyer" className="block aspect-[3/4] overflow-hidden rounded-[12px] border border-(--ev-line) bg-(--ev-panel)" aria-label={t('img.alt', { title: event.title, n: 1 })}>
+                  <img src={images[0]} alt="" className="h-full w-full object-cover" />
+                </a>
+              )}
+              <div className="min-w-0">
+                <h1 className="font-(family-name:--font-headline) text-[26px] font-extrabold leading-[1.1] tracking-[-0.01em] text-(--ev-ink) sm:text-[34px] lg:text-[40px]">
+                  {event.title}
+                </h1>
+                <p className="mt-1.5 text-[15px] text-(--ev-ink-75)">{hostLine}</p>
 
-              {hasMap && (
-                <div className="overflow-hidden rounded-2xl border border-(--ev-line) bg-(--ev-card)">
-                  <div className={images.length > 0 ? 'h-48' : 'h-72'}>
-                    <EventMap lat={event.location_lat!} lng={event.location_lng!} label={event.location_name} />
-                  </div>
-                  <div className="p-4">
-                    <p className="text-[14px] font-semibold text-(--ev-ink)">{event.location_name}</p>
-                    {address && (
-                      <p className="mt-0.5 text-[13px] text-(--ev-ink-75)">{address}</p>
+                {(level || noDrop || rideFacts.length > 0 || chipTags.length > 0) && (
+                  <div className="mt-3 flex flex-wrap gap-1.5">
+                    {level && (
+                      <span className="inline-block rounded-full bg-(--ev-panel) px-3 py-1 text-[14px] font-bold" style={{ color: rideStyleInk(level, tone) }} title={rideLevelBlurb(level, locale)}>
+                        {rideLevelLabel(level, locale)}
+                      </span>
                     )}
-                    {/* Walk, bike or transit, as the app's event page offers. */}
-                    <p className="mt-3 text-[14px] font-semibold text-(--ev-ink-75)">{t('detail.directions')}</p>
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      {DIRECTION_MODES.map(({ mode, key, Icon }) => (
-                        <a
-                          key={mode}
-                          href={directionsUrl(event, mode)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg border border-(--ev-line-mid) px-4 text-[14px] font-medium text-(--ev-ink) transition-colors hover:bg-(--ev-panel)"
-                          onClick={() => trackDirections('map_card', mode)}
-                        >
-                          <Icon size={15} aria-hidden />
-                          {t(key)}
-                        </a>
-                      ))}
-                    </div>
+                    {noDrop && (
+                      <span className="inline-block rounded-full bg-(--ev-accent-tint-15) px-3 py-1 text-[14px] font-bold text-(--ev-accent)" title={t('detail.no_drop_title')}>
+                        {t('card.no_drop')}
+                      </span>
+                    )}
+                    {rideFacts.map((f) => (
+                      <span key={f} className="inline-block rounded-full bg-(--ev-panel) px-3 py-1 text-[14px] font-bold text-(--ev-ink-80)">{f}</span>
+                    ))}
+                    {chipTags.map((tag) => {
+                      const tm = tagInk(getTagMeta(tag), tone)
+                      return (
+                        <span key={tag} className="inline-block rounded-full px-3 py-1 text-[14px] font-bold" style={{ color: tm.color, backgroundColor: tm.bg }}>
+                          {tagLabel(tag, locale)}
+                        </span>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* A group going to a bigger event says where (Go Together). */}
+            {goTogether.feeds && (
+              <div className="mt-4">
+                <FeedsToLine target={goTogether.feeds} walk={isWalkGroup(event.event_type)} fromId={event.id} />
+              </div>
+            )}
+
+            {/* When and where, each with its own picture: a date tile and a place sign. */}
+            <div className="mt-5 flex flex-col gap-3">
+              <div className="flex items-center gap-3">
+                <DateTile date={event.event_date} locale={locale} />
+                <div className="min-w-0">
+                  <p className="text-[17px] font-bold leading-snug text-(--ev-ink)">
+                    {deadline ? t('card.entry_deadline', { when: dateText }) : dateText}
+                  </p>
+                  {timeStr && (
+                    <p className="text-[15px] text-(--ev-ink-75)">
+                      {timeStr}{!deadline && endTimeStr ? ` – ${endTimeStr}` : ''}
+                    </p>
+                  )}
+                </div>
+              </div>
+              {showPlace && (
+                <div className="flex items-center gap-3">
+                  <PlaceSign locationName={event.location_name} />
+                  <div className="min-w-0">
+                    <p className="text-[17px] font-bold leading-snug text-(--ev-ink)">{event.location_name}</p>
+                    {address && <p className="text-[15px] text-(--ev-ink-75)">{address}</p>}
                   </div>
                 </div>
               )}
             </div>
-          )}
-
-          {/* ---- RIGHT COLUMN ---- */}
-          <div>
-            {/* Type + date header */}
-            <div className="mb-4 flex items-center gap-3">
-              <div
-                className="flex h-12 w-12 items-center justify-center rounded-[13px]"
-                style={{ backgroundColor: ink + TINT[tone].tile }}
-              >
-                <Icon size={22} style={{ color: ink }} />
-              </div>
-              <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.12em]" style={{ color: ink }}>
-                  {typeLabel(event.event_type, locale)}
-                  {level && (
-                    <>
-                      <span className="text-(--ev-ink-75)"> · </span>
-                      <span style={{ color: rideStyleInk(level, tone) }} title={rideLevelBlurb(level, locale)}>{rideLevelLabel(level, locale)}</span>
-                    </>
-                  )}
-                </p>
-                <p className="text-[13px] text-(--ev-ink-75)">
-                  {deadline ? t('card.entry_deadline', { when: whenText }) : whenText}
-                </p>
-              </div>
-              <div className="ml-auto">
-                <button
-                  onClick={() => { setSaved(!saved); showToast(saved ? t('toast.unsaved') : t('toast.saved')) }}
-                  className="flex h-10 w-10 items-center justify-center rounded-full border border-(--ev-line-mid) transition-colors hover:border-(--ev-line-stronger)"
-                  aria-label={saved ? t('card.unsave') : t('card.save')}
-                >
-                  <Bookmark size={18} className={saved ? 'fill-(--ev-accent) text-(--ev-accent)' : 'text-(--ev-ink-60)'} />
-                </button>
-              </div>
-            </div>
-
-            {/* Title */}
-            <h1 className="mb-4 font-display text-[clamp(28px,3.5vw,40px)] font-extrabold leading-[1.1] tracking-tight text-(--ev-ink)">
-              {event.title}
-            </h1>
-
-            {/* A group going to a bigger event says where (Go Together). */}
-            {goTogether.feeds && (
-              <FeedsToLine target={goTogether.feeds} walk={isWalkGroup(event.event_type)} fromId={event.id} />
-            )}
-
-            {/* Ride facts: the organizer's own numbers */}
-            {rideFacts.length > 0 && (
-              <p className="-mt-2 mb-4 text-[14px] font-medium text-(--ev-ink-80)">
-                {rideFacts.join(' · ')}
-              </p>
-            )}
 
             {/* What language it's led in (Shift 01697). */}
             {ledIn && (
-              <p className="mb-4 flex flex-wrap items-center gap-x-2 gap-y-1 text-[15px] font-semibold text-(--ev-ink)">
+              <p className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 text-[15px] font-semibold text-(--ev-ink)">
                 <Languages size={18} className="shrink-0 text-(--ev-accent)" aria-hidden />
                 {ledIn}
                 {ownLangs.length > 0 && (
@@ -414,135 +500,203 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
               </p>
             )}
 
-            {/* Tags */}
-            {(noDrop || chipTags.length > 0) && (
-              <div className="mb-6 flex flex-wrap gap-1.5">
-                {noDrop && (
-                  <span
-                    className="inline-block rounded-full bg-(--ev-accent-tint-15) px-3 py-1 text-[12px] font-semibold text-(--ev-accent)"
-                    title={t('detail.no_drop_title')}
-                  >
-                    {t('card.no_drop')}
-                  </span>
-                )}
-                {chipTags.map(tag => {
-                  const tm = tagInk(getTagMeta(tag), tone)
-                  return (
-                    <span
-                      key={tag}
-                      className="inline-block rounded-full px-3 py-1 text-[12px] font-semibold"
-                      style={{ color: tm.color, backgroundColor: tm.bg }}
-                    >
-                      {tagLabel(tag, locale)}
-                    </span>
-                  )
-                })}
-              </div>
-            )}
-
-            {/* Action row (desktop; phones get the bottom bar) */}
-            <div className="mb-8 hidden flex-wrap gap-2 lg:flex">
-              {/* A ride planned in Shift: answering Going is the point of the page. */}
-              {rideCode && !isPast && (
-                <Link
-                  href={eventLink(`/rides/${rideCode}?date=${event.event_date}`)}
-                  className="inline-flex items-center gap-2 rounded-[10px] bg-blue px-5 py-2.5 text-[13px] font-bold text-white transition-opacity hover:opacity-85"
-                  onClick={() => posthog.capture('ride_page_open', { from: 'event_detail', surface: 'actions' })}
-                >
-                  <Users size={15} />
-                  {t('detail.rsvp')}
-                </Link>
-              )}
-              {/* Directions stay under the map for a Shift ride, so RSVP leads here. */}
-              {(event.location_lat && event.location_lng) && !deadline && !placeless && !(rideCode && !isPast) && (
-                <a
-                  href={directionsUrl(event)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 rounded-[10px] bg-(--ev-accent-fill) px-5 py-2.5 text-[13px] font-bold text-(--ev-on-accent-fill) transition-opacity hover:opacity-85"
-                  onClick={() => trackDirections('details')}
-                >
-                  <MapPin size={15} />
-                  {t('detail.directions')}
-                </a>
-              )}
-
-              {/* Save to calendar */}
-              <div className="relative">
-                <button
-                  onClick={() => setCalMenuOpen(!calMenuOpen)}
-                  className="inline-flex items-center gap-2 rounded-[10px] border border-(--ev-line-strong) px-5 py-2.5 text-[13px] font-semibold text-(--ev-ink) transition-colors hover:bg-(--ev-panel)"
-                >
-                  <Calendar size={15} />
-                  {t('detail.save_calendar')}
+            {/* The buttons, on the first phone screen. */}
+            <div ref={actionsRef} className="mt-5 flex items-stretch gap-2">
+              {primaryAction('details', `${PRIMARY} flex-[1.4]`)}
+              <div className="relative flex-1">
+                <button type="button" onClick={() => setCalMenuOpen(!calMenuOpen)} className={SECONDARY} aria-haspopup="menu" aria-expanded={calMenuOpen}>
+                  <Calendar size={17} aria-hidden />
+                  <span className="xl:hidden">{t('detail.save')}</span>
+                  <span className="hidden xl:inline">{t('detail.save_calendar')}</span>
                 </button>
-                {calMenuOpen && (
-                  <div className="absolute left-0 top-full z-30 mt-2 w-56 overflow-hidden rounded-xl border border-(--ev-line-mid) bg-(--ev-menu-raised) py-1 shadow-(--ev-shadow-deep)">
-                    <a
-                      href={gcalUrl(calEvent)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-2 px-4 py-2.5 text-[13px] text-(--ev-ink-80) transition-colors hover:bg-(--ev-panel)"
-                      onClick={() => { trackCalendar('google', 'details'); setCalMenuOpen(false) }}
-                    >
-                      <Globe size={14} />
-                      Google Calendar
-                    </a>
-                    <button
-                      onClick={() => handleDownloadIcs('details')}
-                      className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-[13px] text-(--ev-ink-80) transition-colors hover:bg-(--ev-panel)"
-                    >
-                      <Calendar size={14} />
-                      Apple Calendar (.ics)
-                    </button>
-                    <button
-                      onClick={() => handleDownloadIcs('details')}
-                      className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-[13px] text-(--ev-ink-80) transition-colors hover:bg-(--ev-panel)"
-                    >
-                      <ExternalLink size={14} />
-                      {t('detail.download_ics')}
-                    </button>
-                  </div>
-                )}
+                {calMenuOpen && calendarMenu('details', () => setCalMenuOpen(false), 'right-0 top-full mt-2')}
               </div>
-
-              {/* Share */}
               <button
+                type="button"
                 onClick={handleShare}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-[10px] border border-(--ev-line-strong) text-(--ev-ink-75) transition-colors hover:bg-(--ev-panel)"
+                className="inline-flex min-h-[48px] w-12 shrink-0 items-center justify-center rounded-[10px] border-[1.5px] border-(--ev-line-strong) text-(--ev-ink-80) transition-colors hover:bg-(--ev-panel)"
                 aria-label={t('detail.share')}
               >
-                <Share2 size={16} />
+                <Share2 size={18} />
               </button>
             </div>
 
-            {/* The groups going here together, before the description, as in the app. */}
-            {!isPast && <GoTogetherSection eventId={event.id} groups={goTogether.groups} />}
-
-            {/* Description */}
-            {event.body && (
-              <div className="mb-8 text-[15px] leading-relaxed text-(--ev-ink-75)">
-                {parseEventBody(event.body).map((line, i) =>
-                  line.kind === 'blank' ? (
-                    <div key={i} className="h-3" aria-hidden />
-                  ) : line.kind === 'heading' ? (
-                    <p key={i} className="font-semibold text-(--ev-ink)">{line.text}</p>
-                  ) : (
-                    <p key={i} className={line.kind === 'bullet' ? 'pl-4 -indent-4' : undefined}>
-                      {line.kind === 'bullet' && '•\u00a0\u00a0'}
-                      {line.parts.map((part, j) =>
-                        part.bold ? <strong key={j} className="font-semibold text-(--ev-ink)">{part.text}</strong> : part.text,
-                      )}
-                    </p>
-                  ),
-                )}
+            {/* The groups going here together, as in the app. */}
+            {!isPast && (
+              <div className="mt-6">
+                <GoTogetherSection eventId={event.id} groups={goTogether.groups} />
               </div>
+            )}
+
+            {/* Where you meet: the map, then directions in each way to get there. */}
+            {hasMap && (
+              <section aria-labelledby="where-meet" className="mt-8 border-t border-(--ev-line) pt-6">
+                <h2 id="where-meet" className={H2}>{t('detail.where_meet')}</h2>
+                <div className="mt-3 overflow-hidden rounded-2xl border border-(--ev-line)">
+                  <div className="h-60 lg:h-80">
+                    <EventMap lat={event.location_lat!} lng={event.location_lng!} label={event.location_name} />
+                  </div>
+                  <div className="p-4">
+                    <p className="text-[15px] font-bold text-(--ev-ink)">{location}</p>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {DIRECTION_MODES.map(({ mode, key, Icon }) => (
+                        <a
+                          key={mode}
+                          href={directionsUrl(event, mode)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg border border-(--ev-line-mid) px-4 text-[15px] font-semibold text-(--ev-ink) transition-colors hover:bg-(--ev-panel)"
+                          onClick={() => trackDirections('map_card', mode)}
+                        >
+                          <Icon size={16} aria-hidden />
+                          {t(key)}
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </section>
+            )}
+          </div>
+
+          {/* ---- Getting there, the host's words, and what's next ---- */}
+          <div className="flex flex-col gap-8">
+            {hasMap && (
+              <section aria-labelledby="getting-there" className="border-t border-(--ev-line) pt-6 lg:border-t-0 lg:pt-0">
+                <h2 id="getting-there" className={H2}>{t('detail.getting_there')}</h2>
+                <div className="mt-3">
+                  <GettingThere
+                    event={event}
+                    isToday={isToday}
+                    t={t}
+                    onDirections={(surface, mode) => {
+                      const props = eventProps({ surface, mode })
+                      gaEvent('event_directions_click', props)
+                      posthog.capture('event_directions_click', props)
+                    }}
+                  />
+                </div>
+                {!deadline && town && (
+                  <Link
+                    href={eventLink(town.href)}
+                    className="mt-3 flex min-h-[44px] items-center gap-1 text-[15px] font-bold text-(--ev-accent) hover:underline"
+                    onClick={() => posthog.capture('event_town_click', eventProps({ town: town.name }))}
+                  >
+                    {t('detail.town_link', { town: town.name })}
+                    <ChevronRight size={16} aria-hidden />
+                  </Link>
+                )}
+              </section>
+            )}
+
+            {/* The host's own words, then who they are. */}
+            {(event.body || event.organizer_name || (event.sponsors?.length ?? 0) > 0) && (
+              <section aria-labelledby="host-says" className="border-t border-(--ev-line) pt-6">
+                <h2 id="host-says" className={H2}>{event.organizer_name ? t('detail.host_says') : t('detail.about')}</h2>
+                {event.body && (
+                  <div className="mt-3 text-[16px] leading-relaxed text-(--ev-ink-80) [overflow-wrap:anywhere]">
+                    {parseEventBody(event.body).map((line, i) =>
+                      line.kind === 'blank' ? (
+                        <div key={i} className="h-3" aria-hidden />
+                      ) : line.kind === 'heading' ? (
+                        <p key={i} className="font-bold text-(--ev-ink)">{line.text}</p>
+                      ) : (
+                        <p key={i} className={line.kind === 'bullet' ? 'pl-4 -indent-4' : undefined}>
+                          {line.kind === 'bullet' && '•  '}
+                          {line.parts.map((part, j) =>
+                            part.bold ? <strong key={j} className="font-bold text-(--ev-ink)">{part.text}</strong> : part.text,
+                          )}
+                        </p>
+                      ),
+                    )}
+                  </div>
+                )}
+
+                {event.organizer_name && (
+                  <div className="mt-4 flex items-center gap-3 rounded-[12px] bg-(--ev-panel) p-3">
+                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-(--ev-card) text-(--ev-accent)" aria-hidden>
+                      <Users size={20} />
+                    </span>
+                    <div className="min-w-0">
+                      {event.organizer_url ? (
+                        <a href={withUtm(event.organizer_url)} target="_blank" rel="noopener noreferrer" className="text-[16px] font-bold text-(--ev-ink) hover:underline">
+                          {event.organizer_name} <ExternalLink size={13} className="inline" aria-hidden />
+                        </a>
+                      ) : (
+                        <p className="text-[16px] font-bold text-(--ev-ink)">{event.organizer_name}</p>
+                      )}
+                      {hostHref && (
+                        <Link href={hostHref} className="block text-[15px] font-semibold text-(--ev-accent) hover:underline">
+                          {t('detail.host_page')}
+                        </Link>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {event.sponsors && event.sponsors.length > 0 && (
+                  <p className="mt-3 text-[15px] text-(--ev-ink-80)">
+                    {event.organizer_name ? t('detail.presented_with') : t('detail.presented_by')}{' '}
+                    {event.sponsors.map((name, i) => {
+                      const url = sponsorLinks[name]
+                      return (
+                        <span key={name}>
+                          {i > 0 && ' · '}
+                          {url ? (
+                            <a href={withUtm(url)} target="_blank" rel="noopener noreferrer" className="font-semibold text-(--ev-accent) hover:underline">
+                              {name}
+                            </a>
+                          ) : name}
+                        </span>
+                      )
+                    })}
+                  </p>
+                )}
+
+                {((event.event_url && !infoIsPrimary) || (event.route_links ?? []).length > 0) && (
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {event.event_url && !infoIsPrimary && (
+                      <a
+                        href={withUtm(event.event_url)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex min-h-[44px] items-center gap-2 rounded-[10px] border border-(--ev-line-strong) px-4 text-[15px] font-semibold text-(--ev-ink) transition-colors hover:bg-(--ev-panel)"
+                        onClick={() => trackOutbound('info', 'details')}
+                      >
+                        <Globe size={16} aria-hidden />
+                        {t('detail.event_info')}
+                      </a>
+                    )}
+                    {/* The organizer's published route (Shift 01394): a link, the route stays on their service. */}
+                    {(event.route_links ?? []).map((r) => (
+                      <a
+                        key={r.url}
+                        href={r.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex min-h-[44px] items-center gap-2 rounded-[10px] border border-(--ev-line-strong) px-4 text-[15px] font-semibold text-(--ev-ink) transition-colors hover:bg-(--ev-panel)"
+                        onClick={() => trackOutbound('route', 'details')}
+                      >
+                        <Route size={16} aria-hidden />
+                        {t('detail.route_on', { label: locale !== 'en' && r.label === 'Route' ? t('detail.route') : r.label, provider: r.provider })}
+                      </a>
+                    ))}
+                  </div>
+                )}
+              </section>
+            )}
+
+            {/* The whole flyer: the thumbnail at the top links here. */}
+            {images.length > 0 && (
+              <section id="flyer" className="scroll-mt-24">
+                <EventImageCarousel images={images} title={event.title} />
+              </section>
             )}
 
             {/* A repeating event's other dates, each a tap away. */}
             {series && (series.dates.length > 0 || series.href) && (
-              <section aria-labelledby="more-dates-title" className="mb-8">
-                <h2 id="more-dates-title" className="font-display text-[20px] font-extrabold text-(--ev-ink)">{t('series.more_dates')}</h2>
+              <section aria-labelledby="more-dates-title">
+                <h2 id="more-dates-title" className={H2}>{t('series.more_dates')}</h2>
                 <ul className="mt-3 flex flex-wrap gap-2">
                   {series.dates.map((d) => (
                     <li key={d.id}>
@@ -574,7 +728,7 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
             {/* Roams this ride or walk shares part of its route with. The
                 organizer's route is their own, so never "follows". */}
             {roamLinks.length > 0 && (
-              <div className="mb-8 flex flex-col gap-2">
+              <div className="flex flex-col gap-2">
                 {roamLinks.map((r) => (
                   <a
                     key={r.id}
@@ -589,184 +743,57 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
               </div>
             )}
 
-            {/* Meta list */}
-            <div className="mb-8 flex flex-col gap-3 border-t border-(--ev-line) pt-6">
-              <div className="flex gap-3">
-                <Calendar size={16} className="mt-0.5 shrink-0 text-(--ev-ink-40)" />
-                <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-(--ev-ink-70)">{deadline ? t('detail.label_deadline') : t('detail.label_date')}</p>
-                  <p className="text-[14px] text-(--ev-ink-80)">{dateText}</p>
+            {/* Other events close by on the same days. */}
+            {!isPast && moreNear.length > 0 && (
+              <section aria-labelledby="more-near">
+                <h2 id="more-near" className={H2}>{t('detail.more_near')}</h2>
+                <div className="mt-3">
+                  <MoreNearHere events={moreNear} fromId={event.id} hrefBase={hrefBase} locale={locale} />
                 </div>
-              </div>
-              {timeStr && (
-                <div className="flex gap-3">
-                  <Clock size={16} className="mt-0.5 shrink-0 text-(--ev-ink-40)" />
-                  <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-(--ev-ink-70)">{t('detail.label_time')}</p>
-                    <p className="text-[14px] text-(--ev-ink-80)">
-                      {timeStr}{endTimeStr && ` – ${endTimeStr}`}
-                    </p>
-                  </div>
-                </div>
-              )}
-              {event.location_name && event.location_name !== 'See event page for details' && (
-                <div className="flex gap-3">
-                  <MapPin size={16} className="mt-0.5 shrink-0 text-(--ev-ink-40)" />
-                  <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-(--ev-ink-70)">{t('detail.label_where')}</p>
-                    <p className="text-[14px] text-(--ev-ink-80)">{location}</p>
-                  </div>
-                </div>
-              )}
-              {event.organizer_name && (
-                <div className="flex gap-3">
-                  <Users size={16} className="mt-0.5 shrink-0 text-(--ev-ink-40)" />
-                  <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-(--ev-ink-70)">{t('detail.label_organizer')}</p>
-                    {event.organizer_url ? (
-                      <a href={withUtm(event.organizer_url)} target="_blank" rel="noopener noreferrer" className="text-[14px] text-(--ev-accent) hover:underline">
-                        {event.organizer_name} <ExternalLink size={12} className="inline" />
-                      </a>
-                                        ) : (
-                      <p className="text-[14px] text-(--ev-ink-80)">{event.organizer_name}</p>
-                    )}
-                    {hostHref && (
-                      <Link href={hostHref} className="mt-0.5 block text-[14px] font-semibold text-(--ev-accent) hover:underline">
-                        {t('detail.host_page')}
-                      </Link>
-                    )}
-                  </div>
-                </div>
-              )}
-              {event.sponsors && event.sponsors.length > 0 && (
-                <div className="flex gap-3">
-                  <Users size={16} className="mt-0.5 shrink-0 text-(--ev-ink-40)" />
-                  <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-(--ev-ink-70)">
-                      {event.organizer_name ? t('detail.presented_with') : t('detail.presented_by')}
-                    </p>
-                    <p className="text-[14px] text-(--ev-ink-80)">
-                      {event.sponsors.map((name, i) => {
-                        const url = sponsorLinks[name]
-                        return (
-                          <span key={name}>
-                            {i > 0 && ' · '}
-                            {url ? (
-                              <a href={withUtm(url)} target="_blank" rel="noopener noreferrer" className="text-(--ev-accent) hover:underline">
-                                {name} <ExternalLink size={12} className="inline" />
-                              </a>
-                            ) : (
-                              name
-                            )}
-                          </span>
-                        )
-                      })}
-                    </p>
-                  </div>
-                </div>
-              )}
-            </div>
+              </section>
+            )}
 
-            {/* Outbound link buttons */}
-            <div className="flex flex-wrap gap-2">
-              {event.event_url && (
-                <a
-                  href={withUtm(event.event_url)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 rounded-[10px] border border-(--ev-line-strong) px-5 py-2.5 text-[13px] font-semibold text-(--ev-ink) transition-colors hover:bg-(--ev-panel)"
-                  onClick={() => trackOutbound('info', 'details')}
-                >
-                  <Globe size={15} />
-                  {t('detail.event_info')}
-                </a>
-              )}
-              {rideCode && !isPast && (
-                <Link
-                  href={eventLink(`/rides/${rideCode}?date=${event.event_date}`)}
-                  className="inline-flex items-center gap-2 rounded-[10px] bg-blue px-5 py-2.5 text-[13px] font-bold text-white transition-opacity hover:opacity-85 lg:hidden"
-                  onClick={() => posthog.capture('ride_page_open', { from: 'event_detail', surface: 'details' })}
-                >
-                  <Users size={15} />
-                  {t('detail.rsvp')}
-                </Link>
-              )}
-              {event.registration_url && (
-                <a
-                  href={withUtm(event.registration_url)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 rounded-[10px] bg-blue px-5 py-2.5 text-[13px] font-bold text-white transition-opacity hover:opacity-85"
-                  onClick={() => trackOutbound('register', 'details')}
-                >
-                  <Ticket size={15} />
-                  {registerLabel}
-                </a>
-              )}
-              {/* The organizer's published route (Shift 01394): a link, the route stays on their service. */}
-              {(event.route_links ?? []).map((r) => (
-                <a
-                  key={r.url}
-                  href={r.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 rounded-[10px] border border-(--ev-line-strong) px-5 py-2.5 text-[13px] font-semibold text-(--ev-ink) transition-colors hover:bg-(--ev-panel)"
-                  onClick={() => trackOutbound('route', 'details')}
-                >
-                  <Route size={15} />
-                  {t('detail.route_on', { label: locale !== 'en' && r.label === 'Route' ? t('detail.route') : r.label, provider: r.provider })}
-                </a>
-              ))}
-            </div>
+            <div className="flex flex-col gap-6">
+              {/* Every event of this kind in this town, in the visitor's own
+                  calendar (PLG L-24). Rides, walks and bike repair only. */}
+              <EventFeedSubscribe event={event} />
 
-            {/* Every event of this kind in this town, in the visitor's own
-                calendar (PLG L-24): what search visitors came for, kept coming
-                each week with no account. Rides, walks and bike repair only. */}
-            <EventFeedSubscribe event={event} className="mt-6" />
+              {/* The weekly email, set to this event's kind and town (calendar
+                  growth plan bet 1). Past events too: a missed ride is the
+                  best moment to offer the next one. */}
+              <EventPageAlertSignup event={event} className="max-w-[440px]" />
 
-            {/* The weekly email, set to this event's kind and town (calendar
-                growth plan bet 1): someone who came for one ride is the person
-                most likely to want next week's. Past events too: a missed ride
-                is the best moment to offer the next one. */}
-            <EventPageAlertSignup event={event} className="mt-6 max-w-[440px]" />
-
-            {/* Getting there. Event pages are the site's top organic click class.
-                The app invitation that sat here (exp-2026-09-8) reached the app
-                for 0.6% of search visitors, against 6.3% from town pages, so an
-                event in a town with a page links there instead, where Shift is
-                pitched in context (exp-2026-11-1). Other events keep the card.
-                Contests are places to enter, not to travel to, so they skip both.
-                The map buttons say "Directions" so this is the page's only "Getting there". */}
-            {!deadline && town ? (
-              <p className="mt-6 text-[14px] text-(--ev-ink-80)">
+              {/* An event with no town page keeps the app card (exp-2026-11-1);
+                  one with a town page links there under Getting there. */}
+              {!deadline && !town && STORE_LIVE && (
+                <div className="rounded-[14px] border border-(--ev-line-strong) px-5 py-4">
+                  <p className="text-[16px] font-bold text-(--ev-ink)">{t('detail.app_title')}</p>
+                  <p className="mt-1 text-[15px] leading-relaxed text-(--ev-ink-80)">{t('detail.app_body')}</p>
+                  <StoreButtons
+                    iosUrl={withAppUtm(IOS_URL)}
+                    androidUrl={withAppUtm(ANDROID_URL)}
+                    placement="event_detail"
+                    tone={tone === 'light' ? 'light' : 'dark'}
+                    className="mt-3.5 [&>a]:max-[420px]:basis-full"
+                  />
+                </div>
+              )}
+              {!deadline && town && !hasMap && (
                 <Link
                   href={eventLink(town.href)}
-                  className="font-semibold text-(--ev-accent) hover:underline"
+                  className="flex min-h-[44px] items-center gap-1 text-[15px] font-bold text-(--ev-accent) hover:underline"
                   onClick={() => posthog.capture('event_town_click', eventProps({ town: town.name }))}
                 >
                   {t('detail.town_link', { town: town.name })}
+                  <ChevronRight size={16} aria-hidden />
                 </Link>
-              </p>
-            ) : !deadline && STORE_LIVE ? (
-              <div className="mt-6 rounded-[14px] border border-(--ev-line-strong) px-5 py-4">
-                <p className="text-[14px] font-semibold text-(--ev-ink)">{t('detail.app_title')}</p>
-                <p className="mt-1 text-[13px] leading-relaxed text-(--ev-ink-80)">
-                  {t('detail.app_body')}
-                </p>
-                <StoreButtons
-                  iosUrl={withAppUtm(IOS_URL)}
-                  androidUrl={withAppUtm(ANDROID_URL)}
-                  placement="event_detail"
-                  tone={tone === 'light' ? 'light' : 'dark'}
-                  className="mt-3.5 [&>a]:max-[420px]:basis-full"
-                />
-              </div>
-            ) : null}
+              )}
+            </div>
 
-            <div className="mt-8 border-t border-(--ev-line) pt-5">
+            <div className="border-t border-(--ev-line) pt-5">
               {/* A ride planned in Shift is the organizer's own listing, not one built from public posts. */}
               {event.ride_series_id && !event.source_id ? (
-                <p className="text-[14px] text-(--ev-ink-80)">
+                <p className="text-[15px] text-(--ev-ink-80)">
                   {t('detail.your_ride')}{' '}
                   <Link href={`/organizers/rides/${event.ride_series_id}`} className="font-semibold text-(--ev-accent) hover:underline">
                     {t('detail.change_ride')}
@@ -781,90 +808,33 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
         </div>
       </div>
 
-      {/* Phone action bar: the primary link, save to calendar, share */}
+      {/* Phone bar: the same buttons, once the ones at the top have scrolled away. */}
       <div
-        className="fixed inset-x-0 bottom-0 z-40 flex items-center gap-2 border-t border-(--ev-line-10) bg-(--ev-bar-deep) px-4 pt-3 backdrop-blur lg:hidden"
+        className={`fixed inset-x-0 bottom-0 z-40 flex items-center gap-2 border-t border-(--ev-line-10) bg-(--ev-bar-deep) px-4 pt-3 backdrop-blur transition-transform duration-200 lg:hidden ${actionsInView ? 'pointer-events-none translate-y-full' : 'translate-y-0'}`}
         style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}
+        aria-hidden={actionsInView}
       >
-        {rideCode && !isPast ? (
-          <Link
-            href={eventLink(`/rides/${rideCode}?date=${event.event_date}`)}
-            className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-[10px] bg-blue px-4 text-[14px] font-bold text-white"
-            onClick={() => posthog.capture('ride_page_open', { from: 'event_detail', surface: 'phone_bar' })}
-          >
-            <Users size={16} />
-            {t('detail.rsvp')}
-          </Link>
-        ) : event.registration_url ? (
-          <a
-            href={withUtm(event.registration_url)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-[10px] bg-blue px-4 text-[14px] font-bold text-white"
-            onClick={() => trackOutbound('register', 'phone_bar')}
-          >
-            <Ticket size={16} />
-            {registerLabel}
-          </a>
-        ) : event.event_url ? (
-          <a
-            href={withUtm(event.event_url)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-[10px] bg-(--ev-accent-fill) px-4 text-[14px] font-bold text-(--ev-on-accent-fill)"
-            onClick={() => trackOutbound('info', 'phone_bar')}
-          >
-            <Globe size={16} />
-            {t('detail.event_info')}
-          </a>
-        ) : hasMap ? (
-          <a
-            href={directionsUrl(event)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-[10px] bg-(--ev-accent-fill) px-4 text-[14px] font-bold text-(--ev-on-accent-fill)"
-            onClick={() => trackDirections('phone_bar')}
-          >
-            <MapPin size={16} />
-            {t('detail.directions')}
-          </a>
-        ) : null}
+        {primaryAction('phone_bar', `${PRIMARY} flex-1 min-h-[44px] text-[15px]`)}
         <div className="relative">
           <button
+            type="button"
             onClick={() => setBarMenuOpen(!barMenuOpen)}
-            className="inline-flex min-h-[44px] items-center gap-2 rounded-[10px] border border-(--ev-line-strong) px-4 text-[13px] font-semibold text-(--ev-ink)"
+            className="inline-flex min-h-[44px] items-center gap-2 rounded-[10px] border-[1.5px] border-(--ev-ink) px-4 text-[15px] font-bold text-(--ev-ink)"
             aria-haspopup="menu"
             aria-expanded={barMenuOpen}
+            tabIndex={actionsInView ? -1 : 0}
           >
-            <Calendar size={16} />
+            <Calendar size={16} aria-hidden />
             {t('detail.save')}
           </button>
-          {barMenuOpen && (
-            <div className="absolute bottom-full right-0 z-50 mb-2 w-56 overflow-hidden rounded-xl border border-(--ev-line-mid) bg-(--ev-menu-raised) py-1 shadow-(--ev-shadow-deep)">
-              <a
-                href={gcalUrl(calEvent)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 px-4 py-2.5 text-[13px] text-(--ev-ink-80) transition-colors hover:bg-(--ev-panel)"
-                onClick={() => { trackCalendar('google', 'phone_bar'); setBarMenuOpen(false) }}
-              >
-                <Globe size={14} />
-                Google Calendar
-              </a>
-              <button
-                onClick={() => { handleDownloadIcs('phone_bar'); setBarMenuOpen(false) }}
-                className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-[13px] text-(--ev-ink-80) transition-colors hover:bg-(--ev-panel)"
-              >
-                <Calendar size={14} />
-                Apple Calendar (.ics)
-              </button>
-            </div>
-          )}
+          {barMenuOpen && calendarMenu('phone_bar', () => setBarMenuOpen(false), 'bottom-full right-0 mb-2')}
         </div>
         <button
+          type="button"
           onClick={handleShare}
           className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] border border-(--ev-line-strong) text-(--ev-ink-80)"
           aria-label={t('detail.share')}
+          tabIndex={actionsInView ? -1 : 0}
         >
           <Share2 size={17} />
         </button>
@@ -873,7 +843,7 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
       {/* Toast */}
       {toast && (
         <div
-          className="fixed bottom-8 left-1/2 z-50 -translate-x-1/2 rounded-xl border border-(--ev-line-mid) bg-(--ev-toast) px-5 py-3 text-[13px] font-medium text-(--ev-ink-on-toast) shadow-(--ev-shadow)"
+          className="fixed bottom-24 left-1/2 z-50 -translate-x-1/2 rounded-xl border border-(--ev-line-mid) bg-(--ev-toast) px-5 py-3 text-[15px] font-medium text-(--ev-ink-on-toast) shadow-(--ev-shadow)"
           style={{ animation: 'animate-in 0.22s cubic-bezier(0.2, 0.8, 0.2, 1)' }}
         >
           {toast}
