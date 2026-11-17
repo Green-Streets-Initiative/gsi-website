@@ -146,6 +146,8 @@ function matchFacts(m: LoganTrip['matches'][number]) {
     status: m.status === 'proposed' ? 'suggested' : m.status === 'connected' ? 'both said yes' : 'went together',
     with: [m.other.first_name, m.other.last_initial ? `${m.other.last_initial}.` : null].filter(Boolean).join(' ') || 'someone',
     their_town: m.other.town,
+    ...(m.school ? { same_school: `You're both ${m.school} students` } : {}),
+    ...(m.campus_dropoff ? { campus_dropoff: m.campus_dropoff } : {}),
     their_flight_at_logan: when(m.other.trip_at),
     meet: meet ? `${meet}, ${clockText(m.meet_at)}` : null,
     how: m.way === 'transit' ? 'the T or Logan Express together' : 'one taxi or ride-app car, splitting the fare',

@@ -21,6 +21,10 @@ export type LoganMatch = {
   /** A Logan Express lot, when there's no T station near both (Shift 01703). meet_place then has the words. */
   meet_lx: string | null
   miles: number | null
+  /** Both of you are students at this school (its short name, "BU"), from your school groups (Shift 01804). */
+  school?: string | null
+  /** A shared ride back when you both live near campus: where it drops you ("George Sherman Union, 775 Commonwealth Ave"). */
+  campus_dropoff?: string | null
   my_answer: 'yes' | 'no' | null
   their_answer: 'yes' | 'no' | 'waiting' | null
   my_phone: string | null

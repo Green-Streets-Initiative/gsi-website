@@ -629,7 +629,11 @@ function planLine(trip: LoganTrip, m: LoganMatch, t: T<LoganKey>, locale: SiteLo
   }
   const how = out
     ? (m.way === 'split' ? t('logan.how_out_split') : t('logan.how_out_t'))
-    : (m.way === 'split' ? t(taxiTerminal(m.meet_place) ? 'logan.how_back_taxi' : 'logan.how_back_split') : t('logan.how_back_t'))
+    : (m.way === 'split'
+      ? t(taxiTerminal(m.meet_place)
+        ? (m.campus_dropoff ? 'logan.how_back_taxi_campus' : 'logan.how_back_taxi')
+        : (m.campus_dropoff ? 'logan.how_back_split_campus' : 'logan.how_back_split'))
+      : t('logan.how_back_t'))
   if (out) return t('logan.plan_out', { station: m.meet_station, time, how })
   const place = m.meet_place == null ? m.meet_place : placeText(m.meet_place, t, locale)
   if (m.way === 'transit' && m.meet_place?.startsWith('the same')) return t('logan.plan_same_bus', { place, time })
@@ -670,13 +674,17 @@ function Offer({ trip, m, onChange }: { trip: LoganTrip; m: LoganMatch; onChange
       <div className="flex items-start gap-3">
         <Avatar name={name} url={m.other.avatar_url} size={48} />
         <div className="min-w-0">
-          <p className="text-[17px] font-bold leading-snug">{m.other.town ? t('logan.from_town', { name, town: m.other.town }) : name}</p>
+          <p className="text-[17px] font-bold leading-snug">
+            {m.school
+              ? (m.other.first_name?.trim() ? t('logan.name_school', { name, school: m.school }) : t('logan.another_school', { school: m.school }))
+              : m.other.town ? t('logan.from_town', { name, town: m.other.town }) : name}
+          </p>
           <p className="text-[15px] leading-snug text-(--ev-ink-80)">
             {[miles != null ? t('logan.miles_from', { miles }) : null, gapLine(trip, m, t), ...group].filter(Boolean).join(' · ')}
           </p>
         </div>
       </div>
-      <p className="rounded-xl bg-(--ev-panel) px-4 py-3 text-[15px] leading-snug"><strong>{t('logan.plan_label')}</strong>{locale === 'zh-Hans' ? '' : ' '}{planLine(trip, m, t, locale)}</p>
+      <p className="rounded-xl bg-(--ev-panel) px-4 py-3 text-[15px] leading-snug"><strong>{t('logan.plan_label')}</strong>{locale === 'zh-Hans' ? '' : ' '}{planLine(trip, m, t, locale)}{m.campus_dropoff ? `${locale === 'zh-Hans' ? '' : ' '}${t('logan.dropoff', { place: m.campus_dropoff })}` : ''}</p>
       {m.my_answer === 'yes' ? (
         <p className="text-[15px] font-semibold">{t('logan.said_yes', { name })}</p>
       ) : (
@@ -753,6 +761,9 @@ function Plan({ trip, m, onChange }: { trip: LoganTrip; m: LoganMatch; onChange:
             <Clock className="mt-0.5 h-4 w-4 shrink-0 text-(--ev-accent)" aria-hidden />
             {t('logan.moved_note', { time: clockText(m.orig_meet_at, locale) })}
           </p>
+        ) : null}
+        {m.campus_dropoff ? (
+          <p className="mt-2 text-[15px] font-semibold leading-snug">{t('logan.dropoff', { place: m.campus_dropoff })}</p>
         ) : null}
         {busBoard ? (
           <p className="mt-2 text-[15px] leading-snug text-(--ev-ink-85)">
