@@ -19,6 +19,7 @@ import {
 import { usePortal, type PortalRole } from '../_lib/portal-context'
 import { computeSetupSteps, nextDoableStep } from '../_lib/setup-steps'
 import MobileNav from './MobileNav'
+import WorkplaceHeader from './WorkplaceHeader'
 import { openAssistant } from './AssistantPanel'
 
 export type PortalNavItem = {
@@ -116,34 +117,7 @@ function SidebarContent() {
     <>
       {/* Workplace: the company this portal belongs to */}
       <div className="px-4 pb-3 pt-5 pr-12 min-[980px]:pr-4">
-        <div className="flex items-center gap-3">
-          {group?.logo_url ? (
-            <div
-              className="flex h-10 shrink-0 items-center rounded-[9px] bg-white px-1.5"
-              style={{ boxShadow: '0 0 0 1px rgba(25,26,46,0.06)' }}
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={group.logo_url} alt="" className="h-[30px] w-auto max-w-[120px] object-contain" />
-            </div>
-          ) : group ? (
-            <div
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[9px] bg-white text-[14px] font-extrabold"
-              style={{ color: '#191A2E', fontFamily: "'Bricolage Grotesque', var(--font-display), sans-serif" }}
-            >
-              {group.name.slice(0, 2).toUpperCase()}
-            </div>
-          ) : (
-            <div className="h-10 w-10 shrink-0 animate-pulse rounded-[9px] bg-white/[0.14]" />
-          )}
-          <div className="min-w-0">
-            {group ? (
-              <div className="truncate text-[15px] font-bold leading-tight text-white">{group.name}</div>
-            ) : (
-              <div className="h-4 w-28 animate-pulse rounded bg-white/[0.14]" />
-            )}
-            <div className="mt-0.5 truncate text-[14px] text-white/75">Shift for Employers</div>
-          </div>
-        </div>
+        <WorkplaceHeader name={group?.name ?? null} logoUrl={group?.logo_url ?? null} />
       </div>
 
       {/* The assistant (Shift 01298): one quiet field at the top, ⌘J anywhere */}
