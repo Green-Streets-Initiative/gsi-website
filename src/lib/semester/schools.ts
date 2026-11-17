@@ -236,6 +236,7 @@ export const SCHOOLS: School[] = [
     transit: [
       { text: 'Harvard Square is a Red Line hub with bus connections in every direction — most of Cambridge and Boston is a one-seat ride.', sourceUrl: 'https://www.hupd.harvard.edu/transportation' },
       { text: 'The free Evening Van runs nightly across Cambridge and Allston during the academic year, 7 p.m.–3 a.m.', sourceUrl: 'https://transportation.harvard.edu/harvard-shuttle/evening-van' },
+      { text: 'Going home for break? Harvard’s student government (the HUA) hands out free Uber rides to the airport at travel times, for 400 to 500 students a year.', sourceUrl: 'https://www.thecrimson.com/article/2026/4/20/hua-uber-vouchers-summer-storage/' },
     ],
     bike: [
       { text: 'Quad Bikes, the student-run shop at Cabot House, offers free repairs during open-stand hours plus maintenance teaching and group rides.', sourceUrl: 'https://www.thecrimson.com/article/2025/9/16/quad-bikes-kickoff-event/' },
@@ -266,6 +267,7 @@ export const SCHOOLS: School[] = [
     transit: [
       { text: 'MIT covers 50–70% of the cost of MBTA passes for students — bus, subway, commuter rail, and boat.', sourceUrl: 'https://web.mit.edu/facilities/transportation/students.html' },
       { text: 'Free shuttles run early to late — including named grocery runs to Trader Joe’s, Market Basket, and Costco — with live tracking.', sourceUrl: 'https://web.mit.edu/facilities/transportation/students.html' },
+      { text: 'Before Thanksgiving and winter break, MIT runs shuttles from the Chapel stop on Amherst Street to Logan for students and staff. Reserve a seat ahead; they run one way, to the airport.', sourceUrl: 'https://web.mit.edu/Facilities/transportation/shuttles/airport.html' },
     ],
     bike: [
       { text: 'A deeply subsidized Bluebikes membership for Cambridge-based students, plus the free volunteer-run MIT Bike Lab and eight fix-it stations.', sourceUrl: 'https://web.mit.edu/facilities/transportation/pw/bicycle_benefits.html' },
@@ -296,6 +298,7 @@ export const SCHOOLS: School[] = [
     transit: [
       { text: 'The Green Line Extension’s Medford/Tufts station puts the Hill one stop from Davis Square and a straight shot downtown.', sourceUrl: 'https://access.tufts.edu/commuter-benefits-discounts' },
       { text: 'Campus shuttles cover Davis Square, the SMFA campus, Saturday groceries, and TUPD SafeRide for late nights.', sourceUrl: 'https://access.tufts.edu/shuttles-sharing-services' },
+      { text: 'Flying home for break? Tufts’ break guide points you to the T or Massport’s Logan Express bus from Back Bay, and the Silver Line back from the airport is free.', sourceUrl: 'https://students.tufts.edu/residential-life-learning/plan-ahead-breaks/fall-break' },
     ],
     bike: [
       // Tufts Bikes (2026-09-16, Orion, president): the bikeshare is students only, and the shop is a
