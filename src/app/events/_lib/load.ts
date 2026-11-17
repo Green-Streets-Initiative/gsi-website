@@ -448,10 +448,30 @@ export async function loadEvent(key: string): Promise<LoadedEvent | null> {
     .select(DETAIL_SELECT)
     .in('content_items.status', ['approved', 'archived'])
     .eq('content_items.content_type', 'community_event')
-  const { data } = await (isLegacyEventId(decoded)
+  let { data } = await (isLegacyEventId(decoded)
     ? query.eq('content_id', decoded)
     : query.eq('content_items.slug', decoded)
   ).single()
+
+  // A moved event's link carries its new date (Shift 01813); its old link is
+  // kept in event_slug_history and resolves here, and the page then forwards
+  // it to the new address like any other non-canonical key.
+  if (!data && !isLegacyEventId(decoded)) {
+    const { data: moved } = await supabase
+      .from('event_slug_history')
+      .select('content_id')
+      .eq('old_slug', decoded)
+      .maybeSingle()
+    if (moved?.content_id) {
+      ;({ data } = await supabase
+        .from('event_details')
+        .select(DETAIL_SELECT)
+        .in('content_items.status', ['approved', 'archived'])
+        .eq('content_items.content_type', 'community_event')
+        .eq('content_id', moved.content_id)
+        .single())
+    }
+  }
 
   if (!data) return null
 
