@@ -50,8 +50,8 @@ export default function FiltersSheet({ open, onClose, onClear, activeCount, resu
       >
         <div className="flex items-center justify-between border-b border-(--ev-line) px-4 py-3">
           <div>
-            <p className="font-display text-[16px] font-bold text-(--ev-ink)">{t('filters.button')}</p>
-            <p className="text-[12px] text-(--ev-ink-75)">
+            <p className="font-(family-name:--font-headline) text-[18px] font-extrabold text-(--ev-ink)">{t('filters.button')}</p>
+            <p className="text-[14px] text-(--ev-ink-75)">
               {eventCount(t, resultCount)}{activeCount > 0 ? ` · ${plural(t, activeCount, 'sheet.filters_on_one', 'sheet.filters_on_other')}` : ''}
             </p>
           </div>
@@ -59,7 +59,7 @@ export default function FiltersSheet({ open, onClose, onClear, activeCount, resu
             {onClear && activeCount > 0 && (
               <button
                 onClick={onClear}
-                className="rounded-full border border-(--ev-line-mid) px-3 py-1.5 text-[12px] font-semibold text-(--ev-ink-80) transition-colors hover:bg-(--ev-panel)"
+                className="rounded-full border border-(--ev-line-mid) px-3 py-1.5 text-[14px] font-semibold text-(--ev-ink-80) transition-colors hover:bg-(--ev-panel)"
               >
                 {t('chip.clear_all')}
               </button>

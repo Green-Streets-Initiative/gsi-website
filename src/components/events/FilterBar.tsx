@@ -56,7 +56,7 @@ export default function FilterBar({ filters: f, savedCount, resultCount }: Filte
             onChange={(e) => f.setQuery(e.target.value)}
             placeholder={t('search.placeholder')}
             aria-label={t('search.placeholder')}
-            className="h-9 w-full rounded-full border border-(--ev-line-mid) bg-(--ev-input) pl-9 pr-3 text-[13px] text-(--ev-ink) placeholder:text-(--ev-ink-60) focus:border-(--ev-accent) focus:outline-none"
+            className="h-9 w-full rounded-full border border-(--ev-line-mid) bg-(--ev-input) pl-9 pr-3 text-[15px] text-(--ev-ink) placeholder:text-(--ev-ink-60) focus:border-(--ev-accent) focus:outline-none"
           />
         </div>
 
@@ -65,7 +65,7 @@ export default function FilterBar({ filters: f, savedCount, resultCount }: Filte
         </FilterPill>
 
         <FilterPill label={nearLabel} active={f.geoStatus === 'active' || f.distance !== 'all'} open={open === 'near'} onOpen={() => setOpen('near')} onClose={close} panelClassName="w-[300px]">
-          <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-(--ev-ink-75)">{t('bar.where')}</p>
+          <p className="mb-2 font-(family-name:--font-headline) text-[15px] font-extrabold text-(--ev-ink)">{t('bar.where')}</p>
           <LocationControl
             geoStatus={f.geoStatus}
             userLoc={f.userLoc}
@@ -73,7 +73,7 @@ export default function FilterBar({ filters: f, savedCount, resultCount }: Filte
             onUseMyLocation={f.useMyLocation}
             onCitySelect={f.selectCity}
           />
-          <p className="mb-2 mt-4 text-[11px] font-semibold uppercase tracking-[0.12em] text-(--ev-ink-75)">{t('bar.how_far')}</p>
+          <p className="mb-2 mt-4 font-(family-name:--font-headline) text-[15px] font-extrabold text-(--ev-ink)">{t('bar.how_far')}</p>
           <DistancePills value={f.distance} onChange={f.setDistance} />
         </FilterPill>
 
@@ -92,7 +92,7 @@ export default function FilterBar({ filters: f, savedCount, resultCount }: Filte
           <TagToggles selected={f.tags} counts={f.tagCounts} onToggle={f.toggleTag} />
           {hasAudienceChoices(f.audience, f.audienceCounts) && (
             <>
-              <p className="mb-2 mt-4 text-[11px] font-semibold uppercase tracking-[0.12em] text-(--ev-ink-75)">{t('sheet.rides_for')}</p>
+              <p className="mb-2 mt-4 font-(family-name:--font-headline) text-[15px] font-extrabold text-(--ev-ink)">{t('sheet.rides_for')}</p>
               <AudienceToggles selected={f.audience} counts={f.audienceCounts} onToggle={f.toggleAudience} />
             </>
           )}
@@ -100,7 +100,7 @@ export default function FilterBar({ filters: f, savedCount, resultCount }: Filte
 
         {f.languageChoices.length > 0 && (
           <FilterPill label={langLabel} active={f.langs.length > 0} open={open === 'lang'} onOpen={() => setOpen('lang')} onClose={close} panelClassName="w-[300px]">
-            <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-(--ev-ink-75)">{t('sheet.led_in')}</p>
+            <p className="mb-2 font-(family-name:--font-headline) text-[15px] font-extrabold text-(--ev-ink)">{t('sheet.led_in')}</p>
             <LanguageToggles choices={f.languageChoices} selected={f.langs} counts={f.languageCounts} onToggle={f.toggleLang} />
           </FilterPill>
         )}
@@ -109,7 +109,7 @@ export default function FilterBar({ filters: f, savedCount, resultCount }: Filte
           <button
             onClick={() => f.setSavedOnly(!f.savedOnly)}
             aria-pressed={f.savedOnly}
-            className={`inline-flex h-9 items-center gap-1.5 whitespace-nowrap rounded-full border px-3.5 text-[13px] font-semibold transition-colors ${
+            className={`inline-flex h-9 items-center gap-1.5 whitespace-nowrap rounded-full border px-3.5 text-[14px] font-semibold transition-colors ${
               f.savedOnly ? 'border-(--ev-accent-line) bg-(--ev-accent-tint-8) text-(--ev-accent)' : 'border-(--ev-line-mid) text-(--ev-ink-85) hover:bg-(--ev-panel)'
             }`}
           >
@@ -118,7 +118,7 @@ export default function FilterBar({ filters: f, savedCount, resultCount }: Filte
           </button>
         )}
 
-        <span className="ml-auto shrink-0 font-mono text-[13px] text-(--ev-ink-75)">
+        <span className="ml-auto shrink-0 text-[14px] text-(--ev-ink-75)">
           {eventCount(t, resultCount)}
         </span>
       </div>

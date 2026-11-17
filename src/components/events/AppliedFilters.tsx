@@ -18,7 +18,7 @@ export default function AppliedFilters({ filters, onClearAll, className = '' }: 
         <button
           key={f.key}
           onClick={f.clear}
-          className="inline-flex items-center gap-1 rounded-full border border-(--ev-accent-line-40) bg-(--ev-accent-tint-8) py-1 pl-3 pr-2 text-[12px] font-semibold text-(--ev-accent) transition-colors hover:bg-(--ev-accent-tint-14)"
+          className="inline-flex items-center gap-1 rounded-full border border-(--ev-accent-line-40) bg-(--ev-accent-tint-8) py-1 pl-3 pr-2 text-[14px] font-semibold text-(--ev-accent) transition-colors hover:bg-(--ev-accent-tint-14)"
           aria-label={t('chip.remove', { label: f.label })}
         >
           {f.label}
@@ -27,7 +27,7 @@ export default function AppliedFilters({ filters, onClearAll, className = '' }: 
       ))}
       <button
         onClick={onClearAll}
-        className="text-[12px] font-semibold text-(--ev-ink-80) underline-offset-2 hover:underline"
+        className="text-[14px] font-semibold text-(--ev-ink-80) underline-offset-2 hover:underline"
       >
         {t('chip.clear_all')}
       </button>

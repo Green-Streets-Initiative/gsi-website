@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { type CommunityEvent, DEFAULT_LOCATION, parseEventDate } from '@/lib/events'
 import { groupLabelL } from '@/lib/events-i18n'
 import EventCard from './EventCard'
+import { DateTile } from './EventPageParts'
 import { trackEvents } from './events-analytics'
 
 /**
@@ -41,14 +42,15 @@ export default function KindEventList({ kind, sections, inset }: { kind: string;
         return (
           <div key={s.id}>
             <section aria-labelledby={`${s.id}-h`}>
-              <h2 id={`${s.id}-h`} className="font-display text-[22px] font-extrabold text-(--ev-ink)">{s.title}</h2>
+              <h2 id={`${s.id}-h`} className="font-(family-name:--font-headline) text-[24px] font-extrabold tracking-[-0.01em] text-(--ev-ink)">{s.title}</h2>
               <div className="mt-3 flex flex-col gap-6">
                 {groups.map((g) => (
                   <div key={g.day}>
                     <div className="mb-3 flex items-center gap-3">
-                      <h3 className="whitespace-nowrap text-[14px] font-semibold text-(--ev-ink-85)">{groupLabelL(parseEventDate(g.day), 'en')}</h3>
-                      <div className="h-px flex-1 bg-(--ev-line)" />
-                      <span className="font-mono text-[13px] text-(--ev-ink-75)">{g.items.length}</span>
+                      <DateTile date={g.day} locale="en" size="sm" />
+                      <h3 className="min-w-0 truncate font-(family-name:--font-headline) text-[18px] font-extrabold tracking-[-0.01em] text-(--ev-ink)">{groupLabelL(parseEventDate(g.day), 'en')}</h3>
+                      <div className="h-px min-w-4 flex-1 bg-(--ev-line)" />
+                      <span className="shrink-0 text-[14px] text-(--ev-ink-75)">{g.items.length === 1 ? '1 event' : `${g.items.length} events`}</span>
                     </div>
                     <div className="flex flex-col gap-2.5">
                       {g.items.map(({ event }) => {

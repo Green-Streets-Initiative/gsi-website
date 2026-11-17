@@ -84,10 +84,10 @@ export default function WeekStrip({ events, selectedDay, onSelectDay }: WeekStri
           <ChevronLeft size={16} />
         </button>
         <div className="flex items-center gap-2">
-          <span className="font-display text-[15px] font-bold text-(--ev-ink)">{rangeLabel}</span>
+          <span className="font-(family-name:--font-headline) text-[16px] font-extrabold text-(--ev-ink)">{rangeLabel}</span>
           <button
             onClick={goToday}
-            className="rounded-full border border-(--ev-line-mid) px-2.5 py-0.5 text-[11px] font-semibold text-(--ev-ink-80) transition-colors hover:bg-(--ev-panel)"
+            className="rounded-full border border-(--ev-line-mid) px-3 py-1 text-[13px] font-semibold text-(--ev-ink-80) transition-colors hover:bg-(--ev-panel)"
           >
             {t('cal.today')}
           </button>
@@ -126,7 +126,7 @@ export default function WeekStrip({ events, selectedDay, onSelectDay }: WeekStri
                     : 'text-(--ev-ink) hover:bg-(--ev-panel)'
               } ${isToday && !isSelected ? 'ring-1 ring-(--ev-accent-line-60)' : ''}`}
             >
-              <span className={`text-[10px] font-semibold uppercase tracking-[0.08em] ${isSelected ? 'text-(--ev-on-accent-fill-soft)' : isPast ? 'text-(--ev-ink-60)' : 'text-(--ev-ink-75)'}`}>
+              <span className={`text-[13px] font-semibold ${isSelected ? 'text-(--ev-on-accent-fill-soft)' : isPast ? 'text-(--ev-ink-60)' : 'text-(--ev-ink-75)'}`}>
                 {dayAbbr(d)}
               </span>
               <span className="mt-0.5 text-[16px] font-bold leading-none">{d.getDate()}</span>
@@ -147,7 +147,7 @@ export default function WeekStrip({ events, selectedDay, onSelectDay }: WeekStri
       {selectedDay && (
         <button
           onClick={() => onSelectDay(null)}
-          className="mt-2 w-full rounded-lg py-1.5 text-center text-[12px] font-semibold text-(--ev-accent) transition-colors hover:bg-(--ev-panel-faint)"
+          className="mt-2 w-full rounded-lg py-1.5 text-center text-[14px] font-semibold text-(--ev-accent) transition-colors hover:bg-(--ev-panel-faint)"
         >
           {t('cal.show_all_upcoming')}
         </button>

@@ -22,12 +22,12 @@ import { languageLabel, type PartnerLanguage } from '@/lib/languages'
  */
 
 export const pillClass = (active: boolean) =>
-  `rounded-full border px-3 py-1.5 text-[12px] font-medium transition-colors ${
+  `rounded-full border px-3.5 py-1.5 text-[14px] font-medium transition-colors ${
     active ? 'border-(--ev-accent-line) text-(--ev-accent)' : 'border-(--ev-line-mid) text-(--ev-ink-78) hover:bg-(--ev-panel)'
   }`
 
 const rowClass = (active: boolean) =>
-  `flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-[13px] font-medium transition-colors ${
+  `flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-[15px] font-medium transition-colors ${
     active ? 'border border-(--ev-accent-line-30) bg-(--ev-accent-tint) text-(--ev-accent)' : 'text-(--ev-ink-85) hover:bg-(--ev-panel)'
   }`
 
@@ -91,14 +91,14 @@ export function LocationControl({ geoStatus, userLoc, initialCity, onUseMyLocati
         <button
           onClick={onUseMyLocation}
           disabled={geoStatus === 'locating'}
-          className="flex items-center gap-1.5 rounded-lg border border-(--ev-line-mid) px-3 py-1.5 text-[12px] font-medium text-(--ev-ink-80) transition-colors hover:bg-(--ev-panel) disabled:opacity-60"
+          className="flex items-center gap-1.5 rounded-lg border border-(--ev-line-mid) px-3.5 py-1.5 text-[14px] font-medium text-(--ev-ink-80) transition-colors hover:bg-(--ev-panel) disabled:opacity-60"
         >
           <Navigation size={13} />
           {geoStatus === 'locating' ? t('loc.locating') : t('loc.use_mine')}
         </button>
       </div>
       <CityAutocomplete onSelect={onCitySelect} initialValue={initialCity} placeholder={t('loc.placeholder')} />
-      <p className="mt-1.5 text-[11px] text-(--ev-ink-75)">
+      <p className="mt-1.5 text-[14px] text-(--ev-ink-75)">
         {geoStatus === 'active' ? t('loc.near', { place }) : t('loc.measured', { place })}
       </p>
     </div>
@@ -147,7 +147,7 @@ export function TypeList({ value, counts, types, expanded, onToggleExpanded, onC
     <div className="flex flex-col gap-0.5">
       <button onClick={() => onChange('All')} className={rowClass(value === 'All')}>
         <span>{tr('types.all_types')}</span>
-        <span className="font-mono text-[12px] text-(--ev-ink-70)">{counts.All ?? 0}</span>
+        <span className="text-[14px] tabular-nums text-(--ev-ink-70)">{counts.All ?? 0}</span>
       </button>
       {visible.map((t) => {
         const meta = EVENT_TYPES[t]
@@ -157,14 +157,14 @@ export function TypeList({ value, counts, types, expanded, onToggleExpanded, onC
               <span className="h-2 w-2 rounded-full" style={{ backgroundColor: typeInk(meta, tone) }} />
               {typeLabel(t, locale)}
             </span>
-            <span className="font-mono text-[12px] text-(--ev-ink-70)">{counts[t] ?? 0}</span>
+            <span className="text-[14px] tabular-nums text-(--ev-ink-70)">{counts[t] ?? 0}</span>
           </button>
         )
       })}
       {(hidden > 0 || expanded) && (
         <button
           onClick={onToggleExpanded}
-          className="mt-1 rounded-lg px-3 py-1.5 text-left text-[12px] font-semibold text-(--ev-accent) transition-colors hover:bg-(--ev-panel-faint)"
+          className="mt-1 rounded-lg px-3 py-1.5 text-left text-[14px] font-semibold text-(--ev-accent) transition-colors hover:bg-(--ev-panel-faint)"
         >
           {expanded ? tr('types.show_fewer') : plural(tr, hidden, 'types.show_more_one', 'types.show_more_other')}
         </button>
@@ -192,7 +192,7 @@ function LevelRows({ value, counts, onChange }: TypeProps) {
   if (levels.length === 0) return null
   return (
     <>
-      <p className="mb-1 mt-3 border-t border-(--ev-line) px-3 pt-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-(--ev-ink-75)">
+      <p className="mb-1 mt-3 border-t border-(--ev-line) px-3 pt-3 text-[14px] font-bold text-(--ev-ink)">
         {t('sheet.level')}
       </p>
       {levels.map((s) => {
@@ -204,12 +204,12 @@ function LevelRows({ value, counts, onChange }: TypeProps) {
               <span className="mt-[5px] h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: rideStyleInk(s, tone) }} />
               <span className="min-w-0">
                 <span className="block">{rideLevelFilterLabel(s, locale)}</span>
-                <span className={`block text-[11px] font-normal leading-snug ${active ? 'text-(--ev-accent-90)' : 'text-(--ev-ink-75)'}`}>
+                <span className={`block text-[13px] font-normal leading-snug ${active ? 'text-(--ev-accent-90)' : 'text-(--ev-ink-75)'}`}>
                   {rideLevelBlurb(s, locale)}
                 </span>
               </span>
             </span>
-            <span className="ml-2 shrink-0 font-mono text-[12px] text-(--ev-ink-70)">{counts[v] ?? 0}</span>
+            <span className="ml-2 shrink-0 text-[14px] tabular-nums text-(--ev-ink-70)">{counts[v] ?? 0}</span>
           </button>
         )
       })}
@@ -230,7 +230,7 @@ export function LevelPills({ value, counts, onChange }: TypeProps) {
         return (
           <button key={v} onClick={() => onChange(active ? 'All' : v)} aria-pressed={active} className={pillClass(active)}>
             {rideLevelFilterLabel(s, locale)}
-            <span className={`ml-1.5 font-mono text-[11px] ${active ? 'text-(--ev-accent-90)' : 'text-(--ev-ink-70)'}`}>{counts[v] ?? 0}</span>
+            <span className={`ml-1.5 text-[13px] tabular-nums ${active ? 'text-(--ev-accent-90)' : 'text-(--ev-ink-70)'}`}>{counts[v] ?? 0}</span>
           </button>
         )
       })}
@@ -262,7 +262,7 @@ export function TagToggles({ selected, counts, onToggle }: TagProps) {
             className={`${pillClass(active)} disabled:opacity-60`}
           >
             {tagLabel(t, locale)}
-            <span className={`ml-1.5 font-mono text-[11px] ${active ? 'text-(--ev-accent-90)' : 'text-(--ev-ink-70)'}`}>{n}</span>
+            <span className={`ml-1.5 text-[13px] tabular-nums ${active ? 'text-(--ev-accent-90)' : 'text-(--ev-ink-70)'}`}>{n}</span>
           </button>
         )
       })}
@@ -286,7 +286,7 @@ export function AudienceToggles({ selected, counts, onToggle }: TagProps) {
         return (
           <button key={t} onClick={() => onToggle(t)} aria-pressed={active} className={pillClass(active)}>
             {tagLabel(t, locale)}
-            <span className={`ml-1.5 font-mono text-[11px] ${active ? 'text-(--ev-accent-90)' : 'text-(--ev-ink-70)'}`}>{n}</span>
+            <span className={`ml-1.5 text-[13px] tabular-nums ${active ? 'text-(--ev-accent-90)' : 'text-(--ev-ink-70)'}`}>{n}</span>
           </button>
         )
       })}
@@ -324,7 +324,7 @@ export function LanguageToggles({ choices, selected, counts, onToggle }: {
             {!ownNameRepeats(c, locale) && (
               <span lang={c} className={`ml-1 ${active ? 'text-(--ev-accent-90)' : 'text-(--ev-ink-75)'}`}>· {languageLabel(c)}</span>
             )}
-            <span className={`ml-1.5 font-mono text-[11px] ${active ? 'text-(--ev-accent-90)' : 'text-(--ev-ink-70)'}`}>{counts[c] ?? 0}</span>
+            <span className={`ml-1.5 text-[13px] tabular-nums ${active ? 'text-(--ev-accent-90)' : 'text-(--ev-ink-70)'}`}>{counts[c] ?? 0}</span>
           </button>
         )
       })}

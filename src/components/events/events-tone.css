@@ -60,11 +60,11 @@
   --ev-shadow-up: 0 -16px 40px rgba(0, 0, 0, 0.5);
 }
 .events-tone-light {
-  --ev-bg: #F4F8EE;
-  --ev-bar: rgba(244, 248, 238, 0.95);
-  --ev-bar-deep: rgba(244, 248, 238, 0.95);
+  --ev-bg: #ffffff;
+  --ev-bar: rgba(255, 255, 255, 0.95);
+  --ev-bar-deep: rgba(255, 255, 255, 0.95);
   --ev-card: #ffffff;
-  --ev-card-hover: #ffffff;
+  --ev-card-hover: #FAFBF7;
   --ev-input: #ffffff;
   --ev-sheet: #ffffff;
   --ev-menu: #ffffff;

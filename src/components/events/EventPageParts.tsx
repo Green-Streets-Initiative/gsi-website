@@ -26,14 +26,27 @@ export const SIGN_GREEN = '#1F6B45'
 const intlTag = (locale: SiteLocale) => (locale === 'en' ? 'en-US' : locale)
 
 /** "Sat" over "21": the day a person scans for. */
-export function DateTile({ date, locale }: { date: string; locale: SiteLocale }) {
+export function DateTile({ date, locale, size = 'md' }: { date: string; locale: SiteLocale; size?: 'sm' | 'md' }) {
   const d = parseEventDate(date)
   const weekday = new Intl.DateTimeFormat(intlTag(locale), { weekday: 'short' }).format(d)
+  const sm = size === 'sm'
   return (
-    <div className="flex h-[56px] w-[56px] shrink-0 flex-col items-center justify-center rounded-[12px] border border-(--ev-line-strong) bg-(--ev-card) leading-none" aria-hidden>
+    <div className={`flex shrink-0 flex-col items-center justify-center border border-(--ev-line-strong) bg-(--ev-card) leading-none ${sm ? 'h-[46px] w-[46px] rounded-[10px]' : 'h-[56px] w-[56px] rounded-[12px]'}`} aria-hidden>
       <span className="text-[13px] font-bold text-(--ev-accent)">{weekday}</span>
-      <span className="mt-1 font-(family-name:--font-headline) text-[22px] font-extrabold text-(--ev-ink)">{d.getDate()}</span>
+      <span className={`font-(family-name:--font-headline) font-extrabold text-(--ev-ink) ${sm ? 'mt-0.5 text-[19px]' : 'mt-1 text-[22px]'}`}>{d.getDate()}</span>
     </div>
+  )
+}
+
+/** The place's short name as a small green street-sign blade, inline in a line of text. */
+export function PlaceBlade({ name, className = '' }: { name: string; className?: string }) {
+  return (
+    <span
+      className={`inline-block whitespace-nowrap rounded-[4px] px-2 pb-[2px] pt-[3px] align-middle font-(family-name:--font-headline) text-[13px] font-extrabold leading-tight text-white ${className}`}
+      style={{ backgroundColor: SIGN_GREEN, boxShadow: `inset 0 0 0 1.5px #fff, 0 0 0 1px ${SIGN_GREEN}` }}
+    >
+      {name}
+    </span>
   )
 }
 
@@ -42,16 +55,20 @@ export function DateTile({ date, locale }: { date: string; locale: SiteLocale })
  * Somerville, MA" becomes "Union Sq". Null when the listing gives a street
  * address or nothing short enough to fit the tile.
  */
-export function signName(locationName: string | null): string | null {
+export function signName(locationName: string | null, max = 10): string | null {
   const first = (locationName ?? '').split(',')[0].trim()
   if (!first || /^\d/.test(first) || /see event page/i.test(first)) return null
+  // An online meeting has no street corner to sign.
+  if (/\b(zoom|online|virtual|webinar|teams|google meet|livestream)\b/i.test(first)) return null
+  // Placeholders and rooms aren't places someone could find on a map.
+  if (/\b(location|varies|tbd|tba|room|wherever)\b/i.test(first)) return null
   const short = first
     .replace(/\bSquare\b/g, 'Sq')
     .replace(/\bStation\b/g, 'Sta')
     .replace(/\bStreet\b/g, 'St')
     .replace(/\bAvenue\b/g, 'Ave')
     .replace(/^The\s+/i, '')
-  return short.length <= 10 ? short : null
+  return short.length <= max ? short : null
 }
 
 /** The green place sign: the short name when it fits, a pin when it doesn't. */

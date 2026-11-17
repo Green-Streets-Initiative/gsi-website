@@ -10,7 +10,6 @@ import {
 import { withLang, type SiteLocale } from '@/lib/site-i18n'
 import { typeLabel, timeL, dateRangeLongL, dayTitleL, eventCount, eventsT } from '@/lib/events-i18n'
 import { typeInk, TINT } from '@/lib/events-tone'
-import { PILL } from '@/components/org/Section'
 import { EVENT_TYPE_ICONS } from './event-type-icons'
 import { EventsToneProvider, toneClass, useEventsTone, useEventsI18n, type EventsTone } from './EventsTone'
 import './events-tone.css'
@@ -27,6 +26,7 @@ import ForYou from './ForYou'
 import { TypePills, LevelPills, LocationControl, DistancePills, WhenPills, TagToggles, AudienceToggles, hasAudienceChoices, LanguageToggles } from './FilterControls'
 import { useEventFilters } from './useEventFilters'
 import { useSavedEvents } from './useSavedEvents'
+import { DateTile } from './EventPageParts'
 import { eventBodyPlain } from '@/lib/event-body'
 
 /** On phones the email sign-up sits after this many events. */
@@ -67,34 +67,37 @@ function SpotlightCard({ event, compact }: { event: CommunityEvent; compact: boo
   const dateLine = isDeadline(event.event_type) ? t('card.entry_deadline', { when }) : when
   const firstLine = event.body?.split('\n').find((line) => line.trim())
   const summary = firstLine ? eventBodyPlain(firstLine) : null
+  const upcoming = event.event_date >= new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' })
 
   return (
     <Link
       href={withLang(eventPath(event, hrefBase), locale)}
-      className="group flex min-w-[86%] snap-start items-start gap-4 rounded-2xl border p-5 transition-all duration-200 hover:brightness-110 sm:min-w-0 sm:gap-5 sm:p-7 lg:gap-4 lg:p-4"
+      className="group flex min-w-[86%] snap-start items-start gap-3.5 rounded-2xl border p-4 transition-all duration-200 hover:brightness-110 sm:min-w-0 sm:gap-5 sm:p-6 lg:gap-4 lg:p-4"
       style={{ borderColor: ink + tint.spotLine, backgroundColor: ink + tint.spotBg }}
     >
-      <div
-        className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[13px] lg:h-11 lg:w-11"
-        style={{ backgroundColor: ink + tint.tile }}
-      >
-        <Icon size={26} className="lg:hidden" style={{ color: ink }} />
-        <Icon size={20} className="hidden lg:block" style={{ color: ink }} />
-      </div>
+      {/* The date tile while it is still ahead; a campaign that has started keeps its type icon. */}
+      {upcoming ? (
+        <DateTile date={event.event_date} locale={locale} />
+      ) : (
+        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[12px]" style={{ backgroundColor: ink + tint.tile }}>
+          <Icon size={26} style={{ color: ink }} />
+        </div>
+      )}
       <div className="min-w-0 flex-1">
-        <p className="text-[11px] font-bold uppercase tracking-[0.14em]" style={{ color: ink }}>
+        <p className="flex items-center gap-1.5 text-[14px] font-semibold" style={{ color: ink }}>
+          {upcoming && <Icon size={16} aria-hidden />}
           {t('spot.label', { type: typeLabel(event.event_type, locale) })}
         </p>
-        <h2 className="mt-1 font-display text-[20px] font-bold leading-snug text-(--ev-ink) sm:text-[22px] lg:text-[17px]">
+        <h2 className="mt-1 font-(family-name:--font-headline) text-[18px] font-extrabold leading-snug tracking-[-0.01em] text-(--ev-ink) sm:text-[22px] lg:text-[18px]">
           {event.title}
         </h2>
-        <p className="mt-1 text-[13px] font-medium text-(--ev-ink-75)">{dateLine}</p>
+        <p className="mt-1 text-[14px] font-medium text-(--ev-ink-75)">{dateLine}</p>
         {summary && (
-          <p className="mt-2 line-clamp-2 text-[14px] leading-relaxed text-(--ev-ink-75) lg:mt-1 lg:line-clamp-1 lg:text-[13px]">{summary}</p>
+          <p className="mt-2 line-clamp-2 text-[15px] leading-relaxed text-(--ev-ink-75) max-sm:hidden lg:mt-1 lg:line-clamp-1 lg:text-[14px]">{summary}</p>
         )}
       </div>
       <span
-        className={`mt-1 hidden shrink-0 items-center gap-1.5 text-[13px] font-semibold sm:flex ${compact ? 'lg:hidden' : ''}`}
+        className={`mt-1 hidden shrink-0 items-center gap-1.5 text-[14px] font-semibold sm:flex ${compact ? 'lg:hidden' : ''}`}
         style={{ color: ink }}
       >
         {t('spot.see_details')}
@@ -118,26 +121,18 @@ interface EventsPageProps {
   locale?: SiteLocale
 }
 
-// The header is the one place the two tones differ in typography, not just
-// color: cream gets the editorial serif and the navy pill; dark keeps the
-// display face and the accent button it always had.
-const HEADER: Record<EventsTone, { eyebrow: string; h1: string; lede: string; cta: string }> = {
-  dark: {
-    eyebrow: 'text-[11px] font-bold uppercase tracking-[0.14em] text-(--ev-accent)',
-    h1: 'mt-3 font-display text-[clamp(32px,5.4vw,64px)] font-extrabold leading-[1.06] tracking-tighter text-(--ev-ink) lg:mt-2 lg:text-[40px]',
-    lede: 'mt-4 hidden max-w-[640px] text-base leading-relaxed text-(--ev-ink-75) sm:block lg:mt-2 lg:text-[15px]',
-    cta: 'inline-block shrink-0 self-start rounded-[10px] bg-(--ev-accent-fill) px-6 py-3 text-[14px] font-bold text-(--ev-on-accent-fill) transition-opacity hover:opacity-85 lg:self-end',
-  },
-  light: {
-    eyebrow: 'text-[11px] font-semibold uppercase tracking-[0.14em] text-forest',
-    h1: 'mt-3 font-serif text-[clamp(2.25rem,5vw,3.5rem)] font-normal leading-[1.04] tracking-[-0.01em] text-navy lg:mt-2 lg:text-[2.75rem]',
-    lede: 'mt-4 hidden max-w-[640px] text-[1.0625rem] leading-[1.6] text-ink-soft sm:block lg:mt-2',
-    cta: `${PILL} shrink-0 self-start lg:self-end`,
-  },
+// Direction A (Keith 2026-11-17): one plain Overpass headline and a short
+// line, no eyebrow, so the first phone screen reaches the listings. Both tones
+// share it; only the colors differ, through the --ev-* tokens.
+const HEADER = {
+  h1: 'font-(family-name:--font-headline) text-[30px] font-extrabold leading-[1.1] tracking-[-0.01em] text-(--ev-ink) sm:text-[38px] lg:text-[42px]',
+  // Phones show the count on the list's own count line, just below.
+  lede: 'mt-2 hidden text-[16px] leading-snug text-(--ev-ink-75) sm:block lg:text-[17px]',
+  cta: 'hidden shrink-0 self-end rounded-[10px] border-2 border-(--ev-primary) px-5 py-2.5 font-(family-name:--font-headline) text-[15px] font-extrabold text-(--ev-primary) transition-colors hover:bg-(--ev-accent-tint-8) lg:inline-block',
 }
 
 export default function EventsPage({ events, tone = 'dark', hrefBase = '/events', locale = 'en' }: EventsPageProps) {
-  const h = HEADER[tone]
+  const h = HEADER
   const t = eventsT(locale)
   const submitHref = `${hrefBase}/submit`
   const isDesktop = useSyncExternalStore(subscribeDesktop, getDesktopSnapshot, getDesktopServerSnapshot)
@@ -191,6 +186,21 @@ export default function EventsPage({ events, tone = 'dark', hrefBase = '/events'
     showToast(toggleSaved(id) ? t('toast.saved') : t('toast.unsaved'))
   }
 
+  const hostCard = (cls: string) => (
+    <div className={`${cls} rounded-2xl border border-(--ev-line) bg-(--ev-card) p-4`}>
+      <p className="font-(family-name:--font-headline) text-[16px] font-extrabold text-(--ev-ink)">{t('host.title')}</p>
+      <p className="mt-1 text-[14px] leading-relaxed text-(--ev-ink-75)">
+        {t('host.body')}
+      </p>
+      <Link
+        href={submitHref}
+        className="mt-3 inline-block rounded-[10px] border-2 border-(--ev-primary) px-4 py-2 font-(family-name:--font-headline) text-[14px] font-extrabold text-(--ev-primary) transition-colors hover:bg-(--ev-accent-tint-8)"
+      >
+        {t('cta.submit')}
+      </Link>
+    </div>
+  )
+
   const dayPanelTitle = f.selectedDay ? dayTitleL(parseEventDate(f.selectedDay), locale) : t('day.upcoming')
 
   // =========================================================================
@@ -201,16 +211,11 @@ export default function EventsPage({ events, tone = 'dark', hrefBase = '/events'
     <EventsToneProvider tone={tone} hrefBase={hrefBase} locale={locale}>
     <div className={`min-h-screen bg-(--ev-bg) ${toneClass(tone)}`}>
       {/* Header */}
-      <section className="px-4 pb-5 pt-8 sm:px-8 lg:pb-4 lg:pt-8">
+      <section className="px-4 pb-4 pt-6 sm:px-8 lg:pb-4 lg:pt-8">
         <div className="mx-auto flex max-w-[1200px] flex-col gap-4 lg:flex-row lg:items-end lg:justify-between lg:gap-8">
           <div className="min-w-0">
-            <p className={h.eyebrow}>
-              {t('page.eyebrow')}
-            </p>
             <h1 className={h.h1}>
-              {t('page.h1_a')}{' '}
-              <br className="hidden sm:block lg:hidden" />
-              {t('page.h1_b')}
+              {t('page.h1')}
             </h1>
             <p className={h.lede}>
               {t('page.lede', { count: events.length })}
@@ -254,12 +259,12 @@ export default function EventsPage({ events, tone = 'dark', hrefBase = '/events'
               onChange={(e) => f.setQuery(e.target.value)}
               placeholder={t('search.placeholder')}
               aria-label={t('search.placeholder')}
-              className="h-10 w-full rounded-lg border border-(--ev-line-mid) bg-(--ev-input) pl-9 pr-3 text-[14px] text-(--ev-ink) placeholder:text-(--ev-ink-60) focus:border-(--ev-accent) focus:outline-none"
+              className="h-10 w-full rounded-lg border border-(--ev-line-mid) bg-(--ev-input) pl-9 pr-3 text-[16px] text-(--ev-ink) placeholder:text-(--ev-ink-60) focus:border-(--ev-accent) focus:outline-none"
             />
           </div>
           <button
             onClick={() => setFiltersOpen(true)}
-            className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-lg border border-(--ev-line-mid) px-3 text-[13px] font-semibold text-(--ev-ink) transition-colors hover:bg-(--ev-panel)"
+            className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-lg border border-(--ev-line-mid) px-3 text-[14px] font-semibold text-(--ev-ink) transition-colors hover:bg-(--ev-panel)"
           >
             <SlidersHorizontal size={15} />
             {t('filters.button')}
@@ -303,15 +308,15 @@ export default function EventsPage({ events, tone = 'dark', hrefBase = '/events'
               <WeekStrip events={f.filteredNoDay} selectedDay={f.selectedDay} onSelectDay={f.setSelectedDay} />
               <div className="mt-6">
                 <div className="mb-4 flex items-center justify-between">
-                  <h3 className="font-display text-lg font-bold text-(--ev-ink)">{dayPanelTitle}</h3>
-                  <span className="font-mono text-[13px] text-(--ev-ink-75)">{locale === 'en' ? t('count.events_other', { count: f.filtered.length }) : eventCount(t, f.filtered.length)}</span>
+                  <h3 className="font-(family-name:--font-headline) text-[19px] font-extrabold text-(--ev-ink)">{dayPanelTitle}</h3>
+                  <span className="text-[14px] text-(--ev-ink-75)">{locale === 'en' ? t('count.events_other', { count: f.filtered.length }) : eventCount(t, f.filtered.length)}</span>
                 </div>
                 {f.filtered.length === 0 ? (
                   <div className="rounded-2xl border border-(--ev-line) bg-(--ev-card) px-8 py-12 text-center">
                     <p className="text-[15px] text-(--ev-ink-75)">
                       {f.selectedDay ? t('empty.day_phone') : t('empty.filters_phone')}
                     </p>
-                    <Link href={submitHref} className="mt-3 inline-block text-[13px] font-semibold text-(--ev-accent) hover:underline">
+                    <Link href={submitHref} className="mt-3 inline-block text-[15px] font-semibold text-(--ev-accent) hover:underline">
                       {t('cta.submit')}
                     </Link>
                   </div>
@@ -377,7 +382,7 @@ export default function EventsPage({ events, tone = 'dark', hrefBase = '/events'
                 showCount
                 countAction={
                   f.filtered.length > 0 && (
-                    <a href="#event-alerts" className="flex min-h-[44px] items-center text-[13px] font-semibold text-(--ev-accent) hover:underline">
+                    <a href="#event-alerts" className="flex min-h-[44px] items-center text-[14px] font-semibold text-(--ev-accent) hover:underline">
                       {t('alerts.jump')}
                     </a>
                   )
@@ -390,23 +395,14 @@ export default function EventsPage({ events, tone = 'dark', hrefBase = '/events'
                   node: <EventAlertSignup filters={f} source="events_list" id="event-alerts" className="mt-2.5 scroll-mt-[140px] lg:hidden" />,
                 }}
               />
+              {/* Phones: the header has no Submit button, so hosts find it after the list. */}
+              {hostCard('mt-8 lg:hidden')}
             </div>
 
             <aside className="sticky top-[132px] hidden self-start lg:block">
               <MiniMonth events={f.filteredNoDay} selectedDay={f.selectedDay} onSelectDay={f.setSelectedDay} />
               <EventAlertSignup filters={f} source="events_sidebar" className="mt-4" />
-              <div className="mt-4 rounded-2xl border border-(--ev-line) bg-(--ev-card) p-4">
-                <p className="text-[14px] font-bold text-(--ev-ink)">{t('host.title')}</p>
-                <p className="mt-1 text-[13px] leading-relaxed text-(--ev-ink-75)">
-                  {t('host.body')}
-                </p>
-                <Link
-                  href={submitHref}
-                  className="mt-3 inline-block rounded-[10px] border border-(--ev-accent-line) px-4 py-2 text-[13px] font-bold text-(--ev-accent) transition-colors hover:bg-(--ev-accent-tint-8)"
-                >
-                  {t('cta.submit')}
-                </Link>
-              </div>
+              {hostCard('mt-4')}
             </aside>
           </div>
         </div>
@@ -424,20 +420,20 @@ export default function EventsPage({ events, tone = 'dark', hrefBase = '/events'
           {/* First when there is a choice: for someone who'd rather ride in Spanish, it is the question (Shift 01697). */}
           {f.languageChoices.length > 0 && (
             <div>
-              <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-(--ev-ink-75)">{t('sheet.led_in')}</p>
+              <p className="mb-2 font-(family-name:--font-headline) text-[15px] font-extrabold text-(--ev-ink)">{t('sheet.led_in')}</p>
               <LanguageToggles choices={f.languageChoices} selected={f.langs} counts={f.languageCounts} onToggle={f.toggleLang} />
             </div>
           )}
           <div>
-            <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-(--ev-ink-75)">{t('sheet.type')}</p>
+            <p className="mb-2 font-(family-name:--font-headline) text-[15px] font-extrabold text-(--ev-ink)">{t('sheet.type')}</p>
             <TypePills value={f.typeFilter} counts={f.typeCounts} onChange={f.setTypeFilter} />
           </div>
           <div>
-            <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-(--ev-ink-75)">{t('sheet.level')}</p>
+            <p className="mb-2 font-(family-name:--font-headline) text-[15px] font-extrabold text-(--ev-ink)">{t('sheet.level')}</p>
             <LevelPills value={f.typeFilter} counts={f.typeCounts} onChange={f.setTypeFilter} />
           </div>
           <div>
-            <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-(--ev-ink-75)">{t('sheet.distance')}</p>
+            <p className="mb-2 font-(family-name:--font-headline) text-[15px] font-extrabold text-(--ev-ink)">{t('sheet.distance')}</p>
             <LocationControl
               geoStatus={f.geoStatus}
               userLoc={f.userLoc}
@@ -449,27 +445,27 @@ export default function EventsPage({ events, tone = 'dark', hrefBase = '/events'
           </div>
           {phoneView === 'list' && (
             <div>
-              <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-(--ev-ink-75)">{t('sheet.when')}</p>
+              <p className="mb-2 font-(family-name:--font-headline) text-[15px] font-extrabold text-(--ev-ink)">{t('sheet.when')}</p>
               <WhenPills value={f.dateRange} onChange={f.setDateRange} />
             </div>
           )}
           <div>
-            <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-(--ev-ink-75)">{t('sheet.good_for')}</p>
+            <p className="mb-2 font-(family-name:--font-headline) text-[15px] font-extrabold text-(--ev-ink)">{t('sheet.good_for')}</p>
             <TagToggles selected={f.tags} counts={f.tagCounts} onToggle={f.toggleTag} />
           </div>
           {hasAudienceChoices(f.audience, f.audienceCounts) && (
             <div>
-              <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-(--ev-ink-75)">{t('sheet.rides_for')}</p>
+              <p className="mb-2 font-(family-name:--font-headline) text-[15px] font-extrabold text-(--ev-ink)">{t('sheet.rides_for')}</p>
               <AudienceToggles selected={f.audience} counts={f.audienceCounts} onToggle={f.toggleAudience} />
             </div>
           )}
           {savedCount > 0 && (
             <div>
-              <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-(--ev-ink-75)">{t('sheet.saved')}</p>
+              <p className="mb-2 font-(family-name:--font-headline) text-[15px] font-extrabold text-(--ev-ink)">{t('sheet.saved')}</p>
               <button
                 onClick={() => f.setSavedOnly(!f.savedOnly)}
                 aria-pressed={f.savedOnly}
-                className={`rounded-full border px-3 py-1.5 text-[12px] font-medium transition-colors ${
+                className={`rounded-full border px-3.5 py-1.5 text-[14px] font-medium transition-colors ${
                   f.savedOnly ? 'border-(--ev-accent-line) text-(--ev-accent)' : 'border-(--ev-line-mid) text-(--ev-ink-78) hover:bg-(--ev-panel)'
                 }`}
               >
@@ -483,7 +479,7 @@ export default function EventsPage({ events, tone = 'dark', hrefBase = '/events'
       {/* Toast */}
       {toast && (
         <div
-          className="fixed bottom-8 left-1/2 z-50 -translate-x-1/2 rounded-xl border border-(--ev-line-mid) bg-(--ev-toast) px-5 py-3 text-[13px] font-medium text-(--ev-ink-on-toast) shadow-(--ev-shadow)"
+          className="fixed bottom-8 left-1/2 z-50 -translate-x-1/2 rounded-xl border border-(--ev-line-mid) bg-(--ev-toast) px-5 py-3 text-[14px] font-medium text-(--ev-ink-on-toast) shadow-(--ev-shadow)"
           style={{ animation: 'animate-in 0.22s cubic-bezier(0.2, 0.8, 0.2, 1)' }}
         >
           {toast}

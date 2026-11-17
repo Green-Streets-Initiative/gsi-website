@@ -131,7 +131,7 @@ export default function ForYou({ events }: { events: CommunityEvent[] }) {
   return (
     <section className="px-4 pb-5 sm:px-8 sm:pb-6 lg:pb-4" aria-labelledby="events-for-you">
       <div className="mx-auto max-w-[1200px]">
-        <h2 id="events-for-you" className="text-[13px] font-bold uppercase tracking-[0.14em] text-(--ev-accent)">
+        <h2 id="events-for-you" className="font-(family-name:--font-headline) text-[20px] font-extrabold tracking-[-0.01em] text-(--ev-ink)">
           {t('foryou.title')}
         </h2>
         <p className="mt-1 text-[14px] text-(--ev-ink-75)">{t('foryou.lede')}</p>
@@ -154,12 +154,12 @@ export default function ForYou({ events }: { events: CommunityEvent[] }) {
                 </div>
                 <div className="min-w-0 flex-1">
                   {reason && (
-                    <p className="text-[13px] font-semibold" style={{ color: ink }}>
+                    <p className="text-[14px] font-semibold" style={{ color: ink }}>
                       {t(`foryou.why_${reason}`)}
                     </p>
                   )}
-                  <h3 className="mt-0.5 line-clamp-2 font-display text-[17px] font-bold leading-snug text-(--ev-ink)">{event.title}</h3>
-                  <p className="mt-1 text-[13px] font-medium text-(--ev-ink-75)">
+                  <h3 className="mt-0.5 line-clamp-2 font-(family-name:--font-headline) text-[17px] font-extrabold leading-snug text-(--ev-ink)">{event.title}</h3>
+                  <p className="mt-1 text-[14px] font-medium text-(--ev-ink-75)">
                     {dateRangeLongL(event, locale) + (timeStr ? ` · ${timeStr}` : '')}
                   </p>
                 </div>

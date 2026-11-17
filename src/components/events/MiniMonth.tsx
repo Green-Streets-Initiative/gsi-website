@@ -127,12 +127,12 @@ export default function MiniMonth({ events, selectedDay, onSelectDay }: MiniMont
   return (
     <div className="rounded-2xl border border-(--ev-line) bg-(--ev-card) p-4">
       <div className="mb-3 flex items-center justify-between">
-        <span className="font-display text-[15px] font-bold text-(--ev-ink)">{monthTitle(locale, ym.y, ym.m)}</span>
+        <span className="font-(family-name:--font-headline) text-[16px] font-extrabold text-(--ev-ink)">{monthTitle(locale, ym.y, ym.m)}</span>
         <div className="flex items-center gap-1">
           {!inMonth(today) && (
             <button
               onClick={goToday}
-              className="mr-1 rounded-full border border-(--ev-line-mid) px-2.5 py-0.5 text-[11px] font-semibold text-(--ev-ink-80) transition-colors hover:bg-(--ev-panel)"
+              className="mr-1 rounded-full border border-(--ev-line-mid) px-3 py-1 text-[13px] font-semibold text-(--ev-ink-80) transition-colors hover:bg-(--ev-panel)"
             >
               {t('cal.today')}
             </button>
@@ -156,7 +156,7 @@ export default function MiniMonth({ events, selectedDay, onSelectDay }: MiniMont
 
       <div className="mb-1 grid grid-cols-7">
         {dayLetters(locale).map((l, i) => (
-          <div key={i} className="py-1 text-center text-[10px] font-semibold uppercase tracking-[0.08em] text-(--ev-ink-70)">{l}</div>
+          <div key={i} className="py-1 text-center text-[13px] font-semibold text-(--ev-ink-70)">{l}</div>
         ))}
       </div>
 
@@ -181,7 +181,7 @@ export default function MiniMonth({ events, selectedDay, onSelectDay }: MiniMont
               onClick={() => { if (!isPast) onSelectDay(isSelected ? null : key) }}
               onKeyDown={(e) => onKey(e, key)}
               onFocus={() => setFocusKey(key)}
-              className={`flex h-9 flex-col items-center justify-center rounded-lg text-[12px] font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-(--ev-accent-line-70) ${
+              className={`flex h-9 flex-col items-center justify-center rounded-lg text-[14px] font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-(--ev-accent-line-70) ${
                 isSelected
                   ? 'bg-(--ev-accent-fill) text-(--ev-on-accent-fill)'
                   : isPast
@@ -203,12 +203,12 @@ export default function MiniMonth({ events, selectedDay, onSelectDay }: MiniMont
       {selectedDay ? (
         <button
           onClick={() => onSelectDay(null)}
-          className="mt-3 w-full rounded-lg py-1.5 text-center text-[12px] font-semibold text-(--ev-accent) transition-colors hover:bg-(--ev-panel-faint)"
+          className="mt-3 w-full rounded-lg py-1.5 text-center text-[14px] font-semibold text-(--ev-accent) transition-colors hover:bg-(--ev-panel-faint)"
         >
           {t('cal.showing', { date: dateMediumL(parseEventDate(selectedDay), locale) })}
         </button>
       ) : (
-        <p className="mt-3 text-center text-[12px] text-(--ev-ink-75)">{t('cal.hint')}</p>
+        <p className="mt-3 text-center text-[14px] text-(--ev-ink-75)">{t('cal.hint')}</p>
       )}
     </div>
   )

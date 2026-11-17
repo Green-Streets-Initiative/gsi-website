@@ -235,13 +235,13 @@ export async function KindPage({ slug }: { slug: EventKindSlug }) {
   return (
     <>
       <Nav variant="light" />
-      <main className="bg-cream" style={{ paddingTop: '60px' }}>
+      <main className="bg-white" style={{ paddingTop: '60px' }}>
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
         <EventsToneProvider tone="light" locale="en">
           <div className="min-h-screen bg-(--ev-bg) px-4 pb-24 pt-6 sm:px-8 sm:pt-10 events-tone events-tone-light">
             <div className="mx-auto max-w-[1040px]">
               <Link href="/events" className="text-[14px] font-semibold text-(--ev-accent) hover:underline">All events</Link>
-              <h1 className="mt-3 font-serif text-[clamp(2.25rem,5vw,3.25rem)] font-normal leading-[1.06] tracking-[-0.01em] text-navy">
+              <h1 className="mt-3 font-(family-name:--font-headline) text-[30px] font-extrabold leading-[1.1] tracking-[-0.01em] text-(--ev-ink) sm:text-[38px] lg:text-[42px]">
                 {c.h1}
               </h1>
               <p className="mt-3 max-w-[640px] text-[16px] leading-relaxed text-(--ev-ink-80)">{c.lede}</p>

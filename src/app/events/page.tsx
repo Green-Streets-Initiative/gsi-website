@@ -35,13 +35,13 @@ export default async function EventsListingPage({ searchParams }: { searchParams
     <>
       <HtmlLang locale={locale} />
       <Nav variant="light" locale={locale} />
-      <main className="bg-cream" style={{ paddingTop: '60px' }}>
+      <main className="bg-white" style={{ paddingTop: '60px' }}>
         <Suspense fallback={null}>
           <EventsPage events={events} tone="light" locale={locale} />
         </Suspense>
         {/* The kind pages (/events/group-rides...) are English only so far. */}
         {locale === 'en' && (
-          <section className="border-t border-navy/10 bg-cream px-6 py-8">
+          <section className="border-t border-navy/10 bg-white px-6 py-8">
             <KindChips className="mx-auto max-w-[960px]" />
           </section>
         )}

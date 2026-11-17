@@ -10,6 +10,7 @@ import type { CalendarEntry } from '@/lib/go-together'
 import type { UserLoc } from './useEventFilters'
 import { trackEvents } from './events-analytics'
 import { useEventsTone, useEventsI18n } from './EventsTone'
+import { DateTile } from './EventPageParts'
 
 /**
  * The day-grouped list used by the phone list view and the desktop agenda:
@@ -49,6 +50,8 @@ export default function Agenda({
   const { locale, t } = useEventsI18n()
   const entries = useMemo(() => nested ?? events.map((event) => ({ event, feeders: [] })), [nested, events])
   const shown = paged ? entries.slice(0, limit) : entries
+  // Boston's date on server and browser alike, so the label hydrates the same.
+  const todayBoston = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' })
 
   const groups = useMemo(() => {
     const out: { key: string; label: string; entries: CalendarEntry<CommunityEvent>[] }[] = []
@@ -69,7 +72,7 @@ export default function Agenda({
       <div className="rounded-2xl border border-(--ev-line) bg-(--ev-card) px-8 py-14 text-center">
         <p className="text-[15px] text-(--ev-ink-75)">{emptyMessage}</p>
         {emptyAction ?? (
-          <Link href={`${hrefBase}/submit`} className="mt-3 inline-block text-[13px] font-semibold text-(--ev-accent) hover:underline">
+          <Link href={`${hrefBase}/submit`} className="mt-3 inline-block text-[15px] font-semibold text-(--ev-accent) hover:underline">
             {t('cta.submit')}
           </Link>
         )}
@@ -84,8 +87,8 @@ export default function Agenda({
   return (
     <div>
       {showCount && (
-        <div className="mb-4 flex items-center justify-between gap-3 lg:hidden">
-          <p className="text-[13px] text-(--ev-ink-75)">
+        <div className="mb-2 flex items-center justify-between gap-3 lg:hidden">
+          <p className="text-[14px] text-(--ev-ink-75)">
             {eventCount(t, events.length)}
           </p>
           {countAction}
@@ -94,10 +97,15 @@ export default function Agenda({
       <div className="flex flex-col gap-7">
         {groups.map((group) => (
           <div key={group.key}>
-            <div className="sticky top-[116px] z-20 mb-3 flex items-center gap-3 bg-(--ev-bg) py-2 lg:top-[116px]">
-              <h3 className="whitespace-nowrap text-[14px] font-semibold text-(--ev-ink-85)">{group.label}</h3>
-              <div className="h-px flex-1 bg-(--ev-line)" />
-              <span className="font-mono text-[12px] text-(--ev-ink-75)">{group.entries.reduce((n, e) => n + 1 + e.feeders.length, 0)}</span>
+            {/* Each day opens on its date tile (Direction A), sticky while its events scroll by. */}
+            <div className="sticky top-[121px] z-[25] mb-3 flex min-h-[62px] items-center gap-3 bg-(--ev-bg) py-2 lg:top-[116px]">
+              {/* A multi-day event that started before today sits under "Going on now", not under its first day. */}
+              {group.key >= todayBoston && <DateTile date={group.key} locale={locale} size="sm" />}
+              <h3 className="min-w-0 truncate font-(family-name:--font-headline) text-[18px] font-extrabold tracking-[-0.01em] text-(--ev-ink)">
+                {group.key < todayBoston ? t('agenda.ongoing') : group.key === todayBoston ? t('cal.today') : group.label}
+              </h3>
+              <div className="h-px min-w-4 flex-1 bg-(--ev-line)" />
+              <span className="shrink-0 text-[14px] text-(--ev-ink-75)">{eventCount(t, group.entries.reduce((n, e) => n + 1 + e.feeders.length, 0))}</span>
             </div>
             <div className="flex flex-col gap-2.5">
               {group.entries.map(({ event: ev, feeders }) => {

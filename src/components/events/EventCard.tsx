@@ -11,6 +11,7 @@ import { townFromAddress } from '@/lib/events-seo'
 import { EVENT_TYPE_ICONS } from './event-type-icons'
 import { useEventsTone, useEventsI18n } from './EventsTone'
 import { eventLanguages, ownNames } from '@/lib/languages'
+import { PlaceBlade, signName } from './EventPageParts'
 
 interface EventCardProps {
   event: CommunityEvent
@@ -81,6 +82,11 @@ export default function EventCard({ event, userLat, userLng, showAway, showDate,
   // with the town: "16 Park Street" alone doesn't say it's in Topsfield.
   const town = away ? null : townFromAddress(event.location_address)
   const placeLead = away ?? (town && !place?.includes(town) ? town : null)
+  // Direction A: the place's short name as a green street-sign blade
+  // ("Union Sq"). The rest of the place line is then just the town or how far.
+  // A blade sits inline, so it fits a longer name than the event page's square tile.
+  const blade = signName(place, 18)
+  const placeTail = blade ? (away ?? town ?? (place?.split(',')[1]?.trim() || null)) : null
 
   // Desktop: the time lives in its own column and the distance in its own, so date · organizer · place
   const whenLg = datePart ? (deadline ? t('card.entry_deadline', { when: datePart }) : datePart) : ''
@@ -116,18 +122,18 @@ export default function EventCard({ event, userLat, userLng, showAway, showDate,
       {/* Flyer thumbnail when the event has one; the type tile otherwise */}
       {event.image_url ? (
         <div
-          className="h-12 w-12 shrink-0 overflow-hidden rounded-[12px] border sm:h-14 sm:w-14 lg:h-11 lg:w-11 lg:rounded-[10px]"
+          className="h-16 w-16 shrink-0 overflow-hidden rounded-[12px] border lg:h-12 lg:w-12 lg:rounded-[10px]"
           style={{ borderColor: ink + tint.spotLine, backgroundColor: ink + tint.thumb }}
         >
           <img src={event.image_url} alt="" className="h-full w-full object-cover" loading="lazy" />
         </div>
       ) : (
         <div
-          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[12px] sm:h-14 sm:w-14 lg:h-11 lg:w-11 lg:rounded-[10px]"
+          className="flex h-16 w-16 shrink-0 items-center justify-center rounded-[12px] lg:h-12 lg:w-12 lg:rounded-[10px]"
           style={{ backgroundColor: ink + tint.tile }}
         >
-          <Icon size={22} className="lg:hidden" style={{ color: ink }} />
-          <Icon size={18} className="hidden lg:block" style={{ color: ink }} />
+          <Icon size={26} className="lg:hidden" style={{ color: ink }} />
+          <Icon size={20} className="hidden lg:block" style={{ color: ink }} />
         </div>
       )}
 
@@ -143,14 +149,19 @@ export default function EventCard({ event, userLat, userLng, showAway, showDate,
             </>
           )}
         </p>
-        <h3 className={`mt-0.5 line-clamp-2 font-display text-[17px] font-bold leading-snug sm:text-[18px] lg:mt-0 lg:line-clamp-1 lg:text-[16px] ${off ? 'text-(--ev-ink-75)' : 'text-(--ev-ink)'}`}>
-          {off && <span className="mr-2 inline-block rounded-full bg-[#FBE4DF] px-2 py-0.5 align-middle font-sans text-[13px] font-bold leading-tight text-(--ev-danger)">{t('card.cancelled')}</span>}
+        <h3 className={`mt-0.5 line-clamp-2 font-(family-name:--font-headline) text-[17px] font-extrabold leading-snug tracking-[-0.01em] sm:text-[18px] lg:mt-0 lg:line-clamp-1 lg:text-[17px] ${off ? 'text-(--ev-ink-75)' : 'text-(--ev-ink)'}`}>
+          {off && <span className="mr-2 inline-block rounded-full bg-[#FBE4DF] px-2 py-0.5 align-middle font-(family-name:--font-gsi) text-[13px] font-bold leading-tight text-(--ev-danger)">{t('card.cancelled')}</span>}
           <span className={off ? 'line-through' : undefined}>{event.title}</span>
         </h3>
         <p className={`mt-1 text-[14px] leading-snug text-(--ev-ink-75) lg:hidden ${off ? 'line-through' : ''}`}>
           {metaLine(when, null)}
         </p>
-        {(place || placeLead) && (
+        {blade ? (
+          <p className="mt-1.5 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-[14px] leading-snug text-(--ev-ink-75) lg:hidden">
+            <PlaceBlade name={blade} />
+            {placeTail && <span className={away ? 'font-semibold text-(--ev-ink-85)' : undefined}>{placeTail}</span>}
+          </p>
+        ) : (place || placeLead) && (
           // How far away leads, so it is never the part that gets cut off; the place may take two lines.
           <p className="mt-0.5 line-clamp-2 text-[14px] leading-snug text-(--ev-ink-75) lg:hidden">
             {placeLead && <span className="font-semibold text-(--ev-ink-85)">{placeLead}</span>}
@@ -169,9 +180,10 @@ export default function EventCard({ event, userLat, userLng, showAway, showDate,
                 {rideLength && ` · ${rideLength}`}
               </>
             )}
-            {(whenLg || organizer || place) && ' · '}
+            {(whenLg || organizer || (!blade && place)) && ' · '}
           </span>
-          <span className="truncate">{metaLine(whenLg, [town && !place?.includes(town) ? town : null, place].filter(Boolean).join(' · ') || null)}</span>
+          {/* The town (or sign) has its own column; this line keeps the venue. */}
+          <span className="truncate">{metaLine(whenLg, blade ? null : place)}</span>
         </p>
         {ridesTo && (
           <p className="mt-1 truncate text-[14px] font-semibold text-(--ev-accent)">
@@ -181,21 +193,21 @@ export default function EventCard({ event, userLat, userLng, showAway, showDate,
         {(event.ride_series_id || noDrop || langs.length > 0 || event.tags.length > 0) && (
           <div className="mt-1.5 flex flex-wrap gap-1 lg:mt-1">
             {noDrop && (
-              <span className="inline-block rounded-full bg-(--ev-accent-tint-15) px-2 py-0.5 text-[10px] font-semibold leading-tight text-(--ev-accent)">
+              <span className="inline-block rounded-full bg-(--ev-accent-tint-15) px-2.5 py-0.5 text-[13px] font-semibold leading-snug text-(--ev-accent)">
                 {t('card.no_drop')}
               </span>
             )}
             {/* Planned in the Shift app — riders can RSVP there rather than
                 following a link to somebody else's site. */}
             {event.ride_series_id && !off && (
-              <span className="inline-block rounded-full bg-(--ev-accent-tint-15) px-2 py-0.5 text-[10px] font-semibold leading-tight text-(--ev-accent)">
+              <span className="inline-block rounded-full bg-(--ev-accent-tint-15) px-2.5 py-0.5 text-[13px] font-semibold leading-snug text-(--ev-accent)">
                 {t('card.rsvp_no_app')}
               </span>
             )}
             {/* Led in another language (Shift 01697), in its own words: "Español". */}
             {langs.length > 0 && (
               <span lang={langs[0]} title={ledInLineL(event.languages, event.event_type, locale) ?? undefined}
-                className="inline-block rounded-full bg-(--ev-accent-tint-15) px-2 py-0.5 text-[10px] font-semibold leading-tight text-(--ev-accent)">
+                className="inline-block rounded-full bg-(--ev-accent-tint-15) px-2.5 py-0.5 text-[13px] font-semibold leading-snug text-(--ev-accent)">
                 {ownNames(langs)}
               </span>
             )}
@@ -204,7 +216,7 @@ export default function EventCard({ event, userLat, userLng, showAway, showDate,
               return (
                 <span
                   key={tag}
-                  className="inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold leading-tight"
+                  className="inline-block rounded-full px-2.5 py-0.5 text-[13px] font-semibold leading-snug"
                   style={{ color: tm.color, backgroundColor: tm.bg }}
                 >
                   {tagLabel(tag, locale)}
@@ -215,10 +227,12 @@ export default function EventCard({ event, userLat, userLng, showAway, showDate,
         )}
       </div>
 
-      {/* Desktop distance column, beside the bookmark */}
-      {away && (
-        <span className="hidden w-[92px] shrink-0 text-right text-[14px] font-semibold text-(--ev-ink-85) lg:block">{away}</span>
-      )}
+      {/* Desktop where column, beside the bookmark: the place blade or the town, then how far */}
+      <div className="hidden w-[156px] shrink-0 flex-col items-end gap-1 text-right lg:flex">
+        {blade && <PlaceBlade name={blade} />}
+        {town && <span className={`max-w-full truncate text-[14px] ${blade ? 'text-(--ev-ink-75)' : 'font-semibold text-(--ev-ink-85)'}`}>{town}</span>}
+        {away && <span className="text-[14px] font-semibold text-(--ev-ink-85)">{away}</span>}
+      </div>
 
       {/* Bookmark */}
       {onToggleSave && (

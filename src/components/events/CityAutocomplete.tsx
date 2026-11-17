@@ -98,7 +98,7 @@ export default function CityAutocomplete({ onSelect, placeholder = 'Town or city
         }}
         onBlur={() => setFocused(false)}
         placeholder={placeholder}
-        className="w-full rounded-lg border border-(--ev-line-mid) bg-(--ev-input) px-3 py-1.5 text-[13px] text-(--ev-ink) placeholder:text-(--ev-ink-60) focus:border-(--ev-accent) focus:outline-none"
+        className="w-full rounded-lg border border-(--ev-line-mid) bg-(--ev-input) px-3 py-2 text-[16px] text-(--ev-ink) placeholder:text-(--ev-ink-60) focus:border-(--ev-accent) focus:outline-none"
       />
       {open && focused && predictions.length > 0 && (
         <ul className="absolute left-0 right-0 top-full z-20 mt-1 overflow-hidden rounded-xl border border-(--ev-line-12) bg-(--ev-menu) shadow-lg">
@@ -108,7 +108,7 @@ export default function CityAutocomplete({ onSelect, placeholder = 'Town or city
                 type="button"
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => selectPrediction(p)}
-                className="w-full px-3 py-2 text-left text-[13px] text-(--ev-ink) hover:bg-(--ev-panel)"
+                className="w-full px-3 py-2.5 text-left text-[15px] text-(--ev-ink) hover:bg-(--ev-panel)"
               >
                 {p.text}
               </button>
