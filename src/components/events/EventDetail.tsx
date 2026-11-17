@@ -15,7 +15,7 @@ import FixListingLink from '@/components/hosts/FixListingLink'
 import { gaEvent } from '@/lib/ga'
 import StoreButtons from '@/components/StoreButtons'
 import { withUtm as appUtm } from '@/lib/utm'
-import { DateTile, PlaceSign, GettingThere, MoreNearHere } from './EventPageParts'
+import { DateTile, PlaceSign, GettingThere, MoreNearHere, PlaceThumb, Linkified } from './EventPageParts'
 import {
   type CommunityEvent, type NextUp,
   getTagMeta, isDeadline, parseEventDate,
@@ -178,6 +178,8 @@ interface EventDetailProps {
   isToday?: boolean
   /** Other events close by on the same few days ("More near here"). */
   moreNear?: CommunityEvent[]
+  /** The host's logo from the organizer directory, when it has one. */
+  hostLogo?: string | null
 }
 
 
@@ -187,7 +189,7 @@ const DIRECTION_MODES = [
   { mode: 'transit', key: 'detail.dir_transit', Icon: Bus },
 ] as const
 
-export default function EventDetail({ event, nextUp = null, isPast = false, tone = 'dark', hrefBase = '/events', sponsorLinks = {}, roamLinks = [], rideCode = null, hostHref = null, town = null, goTogether = NO_GO_TOGETHER, series = null, locale = 'en', isToday = false, moreNear = [] }: EventDetailProps) {
+export default function EventDetail({ event, nextUp = null, isPast = false, tone = 'dark', hrefBase = '/events', sponsorLinks = {}, roamLinks = [], rideCode = null, hostHref = null, town = null, goTogether = NO_GO_TOGETHER, series = null, locale = 'en', isToday = false, moreNear = [], hostLogo = null }: EventDetailProps) {
   const t = eventsT(locale)
   // Easy / Moderate / Rec, only when the listing supports the call.
   const level = eventRideStyle(event)
@@ -308,9 +310,14 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
   const location = [event.location_name, address].filter(Boolean).join(', ')
 
   const showPlace = !!event.location_name && event.location_name !== 'See event page for details'
-  const hostLine = event.organizer_name
-    ? t('detail.host_line', { type: typeLabel(event.event_type, locale), host: event.organizer_name })
+  // Sentence case in English: "Group ride with ...", not "Group Ride with ...".
+  const typeText = locale === 'en'
+    ? typeLabel(event.event_type, locale).replace(/ ([A-Z])(?=[a-z])/g, (_m, c: string) => ` ${c.toLowerCase()}`)
     : typeLabel(event.event_type, locale)
+  const hostLine = event.organizer_name ? t('detail.host_line', { type: typeText, host: event.organizer_name }) : typeText
+  const hostInitials = (event.organizer_name ?? '').split(/\s+/).filter((w) => /^[A-Za-z0-9]/.test(w)).slice(0, 2).map((w) => w[0]!.toUpperCase()).join('')
+  // The first screen always carries a picture: the flyer, or the meeting spot's map.
+  const thumb: 'flyer' | 'map' | null = images.length > 0 ? 'flyer' : hasMap ? 'map' : null
 
   // The phone bar repeats the first-screen buttons, so it shows only once
   // they have scrolled away.
@@ -369,7 +376,10 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
     return null
   }
   // "Event info" is a second link only when it isn't already the main button.
-  const infoIsPrimary = !(rideCode && !isPast) && !event.registration_url && !!event.event_url
+  // Same page as Register (stripped of tracking) counts as the same link.
+  const bare = (u: string | null) => (u ?? '').replace(/[?#].*$/, '').replace(/\/$/, '')
+  const infoIsPrimary = (!(rideCode && !isPast) && !event.registration_url && !!event.event_url)
+    || (!!event.event_url && bare(event.event_url) === bare(event.registration_url))
 
   const calendarMenu = (surface: 'details' | 'phone_bar', close: () => void, placement: string) => (
     <div className={`absolute ${placement} z-50 w-60 overflow-hidden rounded-xl border border-(--ev-line-mid) bg-(--ev-menu-raised) py-1 shadow-(--ev-shadow-deep)`} role="menu">
@@ -420,8 +430,14 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
         <div className="grid gap-8 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] lg:gap-14">
           {/* ---- What, when, where, and the button: the first phone screen ---- */}
           <div>
-            <div className={images.length > 0 ? 'grid grid-cols-[88px_minmax(0,1fr)] items-start gap-4 sm:grid-cols-[150px_minmax(0,1fr)] lg:grid-cols-[180px_minmax(0,1fr)] lg:gap-6' : ''}>
-              {images.length > 0 && (
+            {/* On wide screens the full map sits just below, so a map thumbnail would repeat it. */}
+            <div className={thumb === 'flyer'
+              ? 'grid grid-cols-[88px_minmax(0,1fr)] items-start gap-4 sm:grid-cols-[150px_minmax(0,1fr)] lg:grid-cols-[180px_minmax(0,1fr)] lg:gap-6'
+              : thumb === 'map' ? 'grid grid-cols-[88px_minmax(0,1fr)] items-start gap-4 sm:grid-cols-[150px_minmax(0,1fr)] lg:block' : ''}>
+              {thumb === 'map' && (
+                <div className="lg:hidden"><PlaceThumb lat={Number(event.location_lat)} lng={Number(event.location_lng)} label={t('detail.where_meet')} /></div>
+              )}
+              {thumb === 'flyer' && (
                 <a href="#flyer" className="block aspect-[3/4] overflow-hidden rounded-[12px] border border-(--ev-line) bg-(--ev-panel)" aria-label={t('img.alt', { title: event.title, n: 1 })}>
                   <img src={images[0]} alt="" className="h-full w-full object-cover" />
                 </a>
@@ -610,7 +626,7 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
                         <p key={i} className={line.kind === 'bullet' ? 'pl-4 -indent-4' : undefined}>
                           {line.kind === 'bullet' && '•  '}
                           {line.parts.map((part, j) =>
-                            part.bold ? <strong key={j} className="font-bold text-(--ev-ink)">{part.text}</strong> : part.text,
+                            part.bold ? <strong key={j} className="font-bold text-(--ev-ink)">{part.text}</strong> : <Linkified key={j} text={part.text} />,
                           )}
                         </p>
                       ),
@@ -620,9 +636,13 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
 
                 {event.organizer_name && (
                   <div className="mt-4 flex items-center gap-3 rounded-[12px] bg-(--ev-panel) p-3">
-                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-(--ev-card) text-(--ev-accent)" aria-hidden>
-                      <Users size={20} />
-                    </span>
+                    {hostLogo ? (
+                      <img src={hostLogo} alt="" className="h-11 w-11 shrink-0 rounded-full border border-(--ev-line) bg-white object-contain p-1" />
+                    ) : (
+                      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-(--ev-primary) font-(family-name:--font-headline) text-[15px] font-extrabold text-white" aria-hidden>
+                        {hostInitials || <Users size={20} />}
+                      </span>
+                    )}
                     <div className="min-w-0">
                       {event.organizer_url ? (
                         <a href={withUtm(event.organizer_url)} target="_blank" rel="noopener noreferrer" className="text-[16px] font-bold text-(--ev-ink) hover:underline">

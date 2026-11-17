@@ -95,7 +95,7 @@ export default async function EventDetailPage({ params, searchParams }: { params
   if (event.slug && decodeURIComponent(id) !== event.slug) permanentRedirect(lang ? withLang(eventPath(event), locale) : eventPath(event))
   const jsonLd = buildEventJsonLd(event, { timeZone: timezone })
   const past = isPastEvent(event.event_date, event.event_end_date)
-  const [{ roamLinks, hostHref, town, goTogether, rideCode }, moreNear] = await Promise.all([
+  const [{ roamLinks, hostHref, town, goTogether, rideCode, hostLogo }, moreNear] = await Promise.all([
     loadEventExtras(event, organizerId),
     past ? Promise.resolve([] as CommunityEvent[]) : loadMoreNear(event),
   ])
@@ -113,7 +113,7 @@ export default async function EventDetailPage({ params, searchParams }: { params
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
-        <EventDetail event={event} nextUp={nextUp} isPast={past} isToday={event.event_date === todayEt()} moreNear={moreNear} tone="light" sponsorLinks={sponsorLinks} roamLinks={roamLinks} rideCode={rideCode} hostHref={hostHref} town={town} goTogether={goTogether} series={series} locale={locale} />
+        <EventDetail event={event} nextUp={nextUp} isPast={past} isToday={event.event_date === todayEt()} moreNear={moreNear} tone="light" sponsorLinks={sponsorLinks} roamLinks={roamLinks} rideCode={rideCode} hostHref={hostHref} town={town} goTogether={goTogether} hostLogo={hostLogo} series={series} locale={locale} />
       </main>
       <Footer variant="light" locale={locale} />
     </>

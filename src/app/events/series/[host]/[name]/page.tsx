@@ -54,7 +54,7 @@ export default async function EventSeriesPage({ params, searchParams }: { params
   const { series, isPast } = found
   const { event, nextUp, timezone, sponsorLinks, organizerId } = found.loaded
   const jsonLd = { ...buildEventJsonLd(event, { timeZone: timezone }), url: `${SITE_URL}${series.path}` }
-  const { roamLinks, hostHref, town, goTogether, rideCode } = await loadEventExtras(event, organizerId)
+  const { roamLinks, hostHref, town, goTogether, rideCode, hostLogo } = await loadEventExtras(event, organizerId)
 
   return (
     <>
@@ -65,7 +65,7 @@ export default async function EventSeriesPage({ params, searchParams }: { params
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
-        <EventDetail event={event} nextUp={nextUp} isPast={isPast} tone="light" sponsorLinks={sponsorLinks} roamLinks={roamLinks} rideCode={rideCode} hostHref={hostHref} town={town} goTogether={goTogether} series={{ dates: series.upcoming.slice(1, 9) }} locale={locale} />
+        <EventDetail event={event} nextUp={nextUp} isPast={isPast} tone="light" sponsorLinks={sponsorLinks} roamLinks={roamLinks} rideCode={rideCode} hostHref={hostHref} town={town} goTogether={goTogether} hostLogo={hostLogo} series={{ dates: series.upcoming.slice(1, 9) }} locale={locale} />
       </main>
       <Footer variant="light" locale={locale} />
     </>

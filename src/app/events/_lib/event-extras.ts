@@ -20,7 +20,7 @@ export async function loadEventExtras(event: CommunityEvent, organizerId: string
   // towns publish, so a same-named town elsewhere never matches.
   const townName = townFromAddress(event.location_address)
   const supabase = createServerSupabaseClient()
-  const [roamLinks, hasHostPage, towns, goTogether, ride] = await Promise.all([
+  const [roamLinks, hasHostPage, towns, goTogether, ride, organizer] = await Promise.all([
     getEventRoams(event.id),
     organizerId ? hostQualifies(organizerId) : Promise.resolve(false),
     townName ? getQualifyingTowns() : Promise.resolve([]),
@@ -28,6 +28,10 @@ export async function loadEventExtras(event: CommunityEvent, organizerId: string
     // A ride planned in Shift takes RSVPs on its own page (/rides/<code>).
     event.ride_series_id
       ? supabase.from('ride_series').select('invite_code, kind, status').eq('id', event.ride_series_id).maybeSingle()
+      : Promise.resolve({ data: null }),
+    // The host's logo for the host card (event_organizers.logo_url).
+    organizerId
+      ? supabase.from('event_organizers').select('logo_url').eq('id', organizerId).maybeSingle()
       : Promise.resolve({ data: null }),
   ])
   const townMatch = townName ? towns.find((t) => t.town_name.toLowerCase() === townName.toLowerCase()) : undefined
@@ -38,5 +42,6 @@ export async function loadEventExtras(event: CommunityEvent, organizerId: string
     town: townMatch ? { name: townMatch.town_name, href: `/shift/towns/${townMatch.slug}` } : null,
     goTogether,
     rideCode: rideRow?.kind === 'group_ride' && rideRow.status === 'active' ? rideRow.invite_code : null,
+    hostLogo: ((organizer.data as { logo_url: string | null } | null)?.logo_url) ?? null,
   }
 }

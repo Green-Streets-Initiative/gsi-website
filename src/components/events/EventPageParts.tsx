@@ -11,14 +11,14 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import posthog from 'posthog-js'
-import { Bike, Bus, ChevronRight, MapPin, ParkingSquare, TrainFront } from 'lucide-react'
+import { Bike, Bus, ChevronRight, MapPin, TrainFront } from 'lucide-react'
 import { gaEvent } from '@/lib/ga'
 import { eventPath } from '@/lib/events-url'
 import { type CommunityEvent, directionsUrl, parseEventDate } from '@/lib/events'
 import { withLang, type SiteLocale } from '@/lib/site-i18n'
 import { timeL, type EventsT } from '@/lib/events-i18n'
-import { capitalizeStopName, fetchBikeParking, fetchBikeShareDocks, fetchMBTAStops, fetchTrainStops } from '@/lib/nearby/live-data'
-import type { BikeParkingSpot, BluebikeStationLive, MBTAStopLive } from '@/lib/wayfinding/types'
+import { capitalizeStopName, fetchBikeShareDocks, fetchMBTAStops, fetchTrainStops } from '@/lib/nearby/live-data'
+import type { BluebikeStationLive, MBTAStopLive } from '@/lib/wayfinding/types'
 
 /** The green of a street-name sign. */
 export const SIGN_GREEN = '#1F6B45'
@@ -102,7 +102,6 @@ interface Live {
   train: MBTAStopLive[] | null
   bus: MBTAStopLive[] | null
   dock: BluebikeStationLive | null | undefined
-  racks: BikeParkingSpot[] | null
 }
 
 type Row = {
@@ -126,7 +125,7 @@ export function GettingThere({
 }) {
   const lat = event.location_lat
   const lng = event.location_lng
-  const [live, setLive] = useState<Live>({ train: null, bus: null, dock: undefined, racks: null })
+  const [live, setLive] = useState<Live>({ train: null, bus: null, dock: undefined })
 
   useEffect(() => {
     if (!lat || !lng) return
@@ -137,7 +136,6 @@ export function GettingThere({
     fetchBikeShareDocks(lat, lng, 800)
       .then((docks) => set({ dock: [...docks].sort((a, b) => a.distance_meters - b.distance_meters)[0] ?? null }))
       .catch(() => set({ dock: null }))
-    fetchBikeParking(lat, lng, 400).then((racks) => set({ racks })).catch(() => set({ racks: [] }))
     return () => { alive = false }
   }, [lat, lng])
 
@@ -203,18 +201,6 @@ export function GettingThere({
       badge: { bg: '#1D5FA8', fg: '#fff', text: null, Icon: Bike },
     })
   }
-  if (live.racks && live.racks.length > 0) {
-    rows.push({
-      key: 'racks',
-      href: mapsDir(event, 'bicycling'),
-      name: t('gt.racks'),
-      sub: t('gt.racks_sub'),
-      value: String(live.racks.length),
-      surface: 'getting_there_racks',
-      badge: { bg: '#4A4D68', fg: '#fff', text: null, Icon: ParkingSquare },
-    })
-  }
-
   return (
     <ul className="flex flex-col gap-2">
       {rows.map((r) => (
@@ -223,7 +209,7 @@ export function GettingThere({
             href={r.href}
             target="_blank"
             rel="noopener noreferrer"
-            onClick={() => onDirections(r.surface, r.key === 'dock' || r.key === 'bike' || r.key === 'racks' ? 'bicycling' : 'transit')}
+            onClick={() => onDirections(r.surface, r.key === 'dock' || r.key === 'bike' ? 'bicycling' : 'transit')}
             className="grid min-h-[64px] grid-cols-[44px_1fr_auto] items-center gap-3 rounded-[12px] border border-(--ev-line) bg-(--ev-card) px-3 py-2.5 transition-colors hover:border-(--ev-line-stronger)"
           >
             <span
@@ -291,5 +277,55 @@ export function MoreNearHere({
         )
       })}
     </ul>
+  )
+}
+
+/**
+ * A picture of the meeting spot for the first screen when the listing has no
+ * flyer: one cached map tile (/api/map-tiles) cropped around the start, with
+ * the pin. Taps through to the full map under Where you meet.
+ */
+export function PlaceThumb({ lat, lng, label }: { lat: number; lng: number; label: string }) {
+  const z = 16
+  const n = 2 ** z
+  const xf = ((lng + 180) / 360) * n
+  const latR = (lat * Math.PI) / 180
+  const yf = ((1 - Math.log(Math.tan(latR) + 1 / Math.cos(latR)) / Math.PI) / 2) * n
+  const x = Math.floor(xf)
+  const y = Math.floor(yf)
+  // The start's spot inside the 256px tile, as a share of it.
+  const px = (xf - x) * 100
+  const py = (yf - y) * 100
+  return (
+    <a href="#where-meet" className="relative block aspect-[3/4] overflow-hidden rounded-[12px] border border-(--ev-line) bg-(--ev-panel)" aria-label={label}>
+      <img
+        src={`/api/map-tiles/${z}/${x}/${y}`}
+        alt=""
+        className="absolute h-[256px] w-[256px] max-w-none"
+        style={{ left: `calc(50% - ${(px / 100) * 256}px)`, top: `calc(50% - ${(py / 100) * 256}px)` }}
+      />
+      <svg className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-full" width="26" height="32" viewBox="0 0 32 40" aria-hidden>
+        <path d="M16 0C7.163 0 0 7.163 0 16c0 12 16 24 16 24s16-12 16-24C32 7.163 24.837 0 16 0z" fill={SIGN_GREEN} />
+        <circle cx="16" cy="15" r="6" fill="#fff" />
+      </svg>
+    </a>
+  )
+}
+
+/** Web addresses in the host's text become links. */
+export function Linkified({ text }: { text: string }) {
+  const parts = text.split(/(https?:\/\/[^\s<>()]+[^\s<>().,;:!?'"])/g)
+  return (
+    <>
+      {parts.map((p, i) =>
+        /^https?:\/\//.test(p) ? (
+          <a key={i} href={p} target="_blank" rel="noopener noreferrer nofollow ugc" className="font-semibold text-(--ev-accent) underline underline-offset-2">
+            {p.replace(/^https?:\/\/(www\.)?/, '')}
+          </a>
+        ) : (
+          p
+        ),
+      )}
+    </>
   )
 }
