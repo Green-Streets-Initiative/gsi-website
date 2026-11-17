@@ -213,7 +213,11 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
   // rule as the app's event screen (community-event.tsx `placeless`).
   const placeless = !event.location_address && Number(event.target_radius_miles) >= 100
   const deadline = isDeadline(event.event_type)
-  const hasMap = !!(event.location_lat && event.location_lng) && !deadline && !placeless
+  // A private home is listed as "A home in <town>" with its pin rounded to
+  // about 1 km (Shift 01813): no map, directions or nearest stops, which
+  // would point at a spot that isn't the door. The host shares the address.
+  const privateHome = /^a home in /i.test(event.location_name ?? '')
+  const hasMap = !!(event.location_lat && event.location_lng) && !deadline && !placeless && !privateHome
   const images = eventImages(event)
 
   const [calMenuOpen, setCalMenuOpen] = useState(false)
@@ -483,7 +487,9 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
                   <PlaceSign locationName={event.location_name} />
                   <div className="min-w-0">
                     <p className="text-[17px] font-bold leading-snug text-(--ev-ink)">{event.location_name}</p>
-                    {address && <p className="text-[15px] text-(--ev-ink-75)">{address}</p>}
+                    {privateHome
+                      ? <p className="text-[15px] text-(--ev-ink-75)">{t('detail.home_note')}</p>
+                      : address && <p className="text-[15px] text-(--ev-ink-75)">{address}</p>}
                   </div>
                 </div>
               )}
