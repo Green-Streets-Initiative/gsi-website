@@ -38,18 +38,6 @@ export function DateTile({ date, locale, size = 'md' }: { date: string; locale: 
   )
 }
 
-/** The place's short name as a small green street-sign blade, inline in a line of text. */
-export function PlaceBlade({ name, className = '' }: { name: string; className?: string }) {
-  return (
-    <span
-      className={`inline-block whitespace-nowrap rounded-[4px] px-2 pb-[2px] pt-[3px] align-middle font-(family-name:--font-headline) text-[13px] font-extrabold leading-tight text-white ${className}`}
-      style={{ backgroundColor: SIGN_GREEN, boxShadow: `inset 0 0 0 1.5px #fff, 0 0 0 1px ${SIGN_GREEN}` }}
-    >
-      {name}
-    </span>
-  )
-}
-
 /**
  * The place's short name the way a street sign prints it: "Union Square,
  * Somerville, MA" becomes "Union Sq". Null when the listing gives a street

@@ -11,7 +11,6 @@ import { townFromAddress } from '@/lib/events-seo'
 import { EVENT_TYPE_ICONS } from './event-type-icons'
 import { useEventsTone, useEventsI18n } from './EventsTone'
 import { eventLanguages, ownNames } from '@/lib/languages'
-import { PlaceBlade, signName } from './EventPageParts'
 
 interface EventCardProps {
   event: CommunityEvent
@@ -82,11 +81,6 @@ export default function EventCard({ event, userLat, userLng, showAway, showDate,
   // with the town: "16 Park Street" alone doesn't say it's in Topsfield.
   const town = away ? null : townFromAddress(event.location_address)
   const placeLead = away ?? (town && !place?.includes(town) ? town : null)
-  // Direction A: the place's short name as a green street-sign blade
-  // ("Union Sq"). The rest of the place line is then just the town or how far.
-  // A blade sits inline, so it fits a longer name than the event page's square tile.
-  const blade = signName(place, 18)
-  const placeTail = blade ? (away ?? town ?? (place?.split(',')[1]?.trim() || null)) : null
 
   // Desktop: the time lives in its own column and the distance in its own, so date · organizer · place
   const whenLg = datePart ? (deadline ? t('card.entry_deadline', { when: datePart }) : datePart) : ''
@@ -156,12 +150,7 @@ export default function EventCard({ event, userLat, userLng, showAway, showDate,
         <p className={`mt-1 text-[14px] leading-snug text-(--ev-ink-75) lg:hidden ${off ? 'line-through' : ''}`}>
           {metaLine(when, null)}
         </p>
-        {blade ? (
-          <p className="mt-1.5 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-[14px] leading-snug text-(--ev-ink-75) lg:hidden">
-            <PlaceBlade name={blade} />
-            {placeTail && <span className={away ? 'font-semibold text-(--ev-ink-85)' : undefined}>{placeTail}</span>}
-          </p>
-        ) : (place || placeLead) && (
+        {(place || placeLead) && (
           // How far away leads, so it is never the part that gets cut off; the place may take two lines.
           <p className="mt-0.5 line-clamp-2 text-[14px] leading-snug text-(--ev-ink-75) lg:hidden">
             {placeLead && <span className="font-semibold text-(--ev-ink-85)">{placeLead}</span>}
@@ -180,10 +169,10 @@ export default function EventCard({ event, userLat, userLng, showAway, showDate,
                 {rideLength && ` · ${rideLength}`}
               </>
             )}
-            {(whenLg || organizer || (!blade && place)) && ' · '}
+            {(whenLg || organizer || place) && ' · '}
           </span>
           {/* The town (or sign) has its own column; this line keeps the venue. */}
-          <span className="truncate">{metaLine(whenLg, blade ? null : place)}</span>
+          <span className="truncate">{metaLine(whenLg, place)}</span>
         </p>
         {ridesTo && (
           <p className="mt-1 truncate text-[14px] font-semibold text-(--ev-accent)">
@@ -227,10 +216,9 @@ export default function EventCard({ event, userLat, userLng, showAway, showDate,
         )}
       </div>
 
-      {/* Desktop where column, beside the bookmark: the place blade or the town, then how far */}
+      {/* Desktop where column, beside the bookmark: the town, then how far */}
       <div className="hidden w-[156px] shrink-0 flex-col items-end gap-1 text-right lg:flex">
-        {blade && <PlaceBlade name={blade} />}
-        {town && <span className={`max-w-full truncate text-[14px] ${blade ? 'text-(--ev-ink-75)' : 'font-semibold text-(--ev-ink-85)'}`}>{town}</span>}
+        {town && <span className="max-w-full truncate text-[14px] font-semibold text-(--ev-ink-85)">{town}</span>}
         {away && <span className="text-[14px] font-semibold text-(--ev-ink-85)">{away}</span>}
       </div>
 
