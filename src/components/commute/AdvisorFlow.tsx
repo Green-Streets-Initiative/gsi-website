@@ -264,6 +264,10 @@ export default function AdvisorFlow({
     return []
   }, [locations, benefits.destination_address, benefits.destination_lat, benefits.destination_lng])
   const startOffice = officeOptions.find((l) => l.id === initialLocationId) ?? officeOptions[0] ?? null
+  // Every demo shares the slug 'demo', so its saved plan is keyed by the office
+  // too: opening a second company's preview must never show the first
+  // company's office and plan.
+  const planKey = storageKey(variant, group?.slug) + (isDemo && startOffice ? `:${startOffice.lat.toFixed(5)},${startOffice.lng.toFixed(5)}` : '')
 
   /* ── Inputs ── */
   const [step, setStep] = useState(1)
@@ -355,7 +359,7 @@ export default function AdvisorFlow({
   useEffect(() => {
     if (!persistSession || restoredRef.current) return
     restoredRef.current = true
-    const s = readSession(storageKey(variant, group?.slug))
+    const s = readSession(planKey)
     if (!s) return
     if (typeof s.homeAddress === 'string') setHomeAddress(s.homeAddress)
     if (s.homePlaceData && typeof s.homePlaceData.lat === 'number') setHomePlaceData(s.homePlaceData)
@@ -391,10 +395,10 @@ export default function AdvisorFlow({
     // restore's setState calls land on the next render); an empty form must
     // never overwrite a saved plan.
     if (!result && !homePlaceData && step === 1) return
-    writeSession(storageKey(variant, group?.slug), {
+    writeSession(planKey, {
       homeAddress, homePlaceData, workAddress, workPlaceData, locationId, step, arriveBy, motivation, vehicle, parkingPerDay, daysPerWeek, commuteMode, result,
     } satisfies Session)
-  }, [persistSession, variant, group?.slug, homeAddress, homePlaceData, workAddress, workPlaceData, locationId, step, arriveBy, motivation, vehicle, parkingPerDay, daysPerWeek, commuteMode, result])
+  }, [persistSession, planKey, homeAddress, homePlaceData, workAddress, workPlaceData, locationId, step, arriveBy, motivation, vehicle, parkingPerDay, daysPerWeek, commuteMode, result])
 
   const pickLocation = (id: string) => {
     const l = officeOptions.find((x) => x.id === id)
@@ -691,7 +695,7 @@ export default function AdvisorFlow({
   }
   /** Clear the plan and the addresses from this browser and go back to an empty step 1. */
   const startOver = () => {
-    const key = storageKey(variant, group?.slug)
+    const key = planKey
     try { sessionStorage.removeItem(key) } catch { /* blocked */ }
     try { localStorage.removeItem(key) } catch { /* blocked */ }
     setResult(null)
