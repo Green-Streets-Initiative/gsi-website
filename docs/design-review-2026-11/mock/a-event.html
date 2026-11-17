@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Direction A event</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Overpass:wght@600;800&display=swap">
+<style>
+/* Direction A event page: what, when, where and the two buttons on the first phone screen. Map and getting-there below. */
+:root{--ink:#191A2E;--soft:#4A4D68;--forest:#2D6A4F;--deep:#1B4332;--pale:#F4F8EE;--line:#E3E6DD;--sign:#1F6B45}
+*{box-sizing:border-box}body{margin:0;font:16px/1.45 "Trebuchet MS",sans-serif;color:var(--ink);background:#fff}
+h1,h2,h3{font-family:Overpass,sans-serif;font-weight:800;margin:0;letter-spacing:-.01em}
+a{color:inherit;text-decoration:none}
+.wrap{max-width:1180px;margin:0 auto;padding:0 16px}
+header{border-bottom:1px solid var(--line)}
+.bar{display:flex;align-items:center;gap:24px;height:60px}.bar img{height:20px}
+.nav{display:none;gap:22px;font:600 15px Overpass}
+.bar .get{margin-left:auto;background:var(--forest);color:#fff;padding:8px 14px;border-radius:8px;font:800 14px Overpass}
+.back{font-size:15px;color:var(--forest);font-weight:bold;padding:12px 0 8px;display:block}
+.top{display:grid;grid-template-columns:96px 1fr;gap:14px;align-items:start}
+.flyer{border-radius:12px;overflow:hidden;aspect-ratio:3/4}.flyer img{width:100%;height:100%;object-fit:cover;display:block}
+h1{font-size:26px;line-height:1.1}
+.host{font-size:15px;color:var(--soft);margin-top:6px}
+.facts{display:grid;gap:10px;margin:16px 0}
+.fact{display:grid;grid-template-columns:52px 1fr;gap:12px;align-items:center}
+.tile{border:1px solid var(--line);border-radius:10px;text-align:center;line-height:1.05;padding:5px 0}
+.tile small{display:block;font-size:12px;font-weight:bold;color:var(--forest)}.tile b{font:800 20px Overpass}
+.fact strong{font-size:17px;display:block}.fact span{font-size:15px;color:var(--soft)}
+.blade{display:inline-block;background:var(--sign);color:#fff;font:800 14px Overpass;padding:4px 9px 3px;border-radius:4px;box-shadow:inset 0 0 0 1.5px #fff,0 0 0 1px var(--sign)}
+.chips{display:flex;gap:8px;flex-wrap:wrap}.chips span{background:var(--pale);color:var(--deep);border-radius:999px;padding:5px 11px;font-size:14px;font-weight:bold}
+.btns{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:16px 0}
+.btn{display:block;text-align:center;font:800 16px Overpass;padding:13px 10px;border-radius:10px}
+.p{background:var(--forest);color:#fff}.s{border:1.5px solid var(--ink)}
+.small{font-size:14px;color:var(--soft)}
+section{padding:18px 0;border-top:1px solid var(--line)}
+section h2{font-size:20px;margin-bottom:10px}
+.map{border-radius:14px;width:100%;display:block}
+.ways{display:grid;gap:8px}
+.way{display:grid;grid-template-columns:44px 1fr auto;gap:10px;align-items:center;border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.ic{width:44px;height:44px;border-radius:10px;display:grid;place-items:center;font:800 15px Overpass;color:#fff}
+.way b{display:block;font-size:16px}.way span{font-size:14px;color:var(--soft)}
+.way em{font-style:normal;font:800 16px Overpass}
+.more{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.more div{border:1px solid var(--line);border-radius:12px;padding:12px}
+.more b{font-family:Overpass;font-size:16px;display:block;margin:4px 0}
+.credit{font-size:12px;color:var(--soft);margin-top:4px}
+@media(min-width:900px){
+ .nav{display:flex}
+ .layout{display:grid;grid-template-columns:1.2fr 1fr;gap:40px;align-items:start}
+ .top{grid-template-columns:200px 1fr;gap:24px}h1{font-size:40px}
+ .side{position:sticky;top:16px}
+ .more{grid-template-columns:repeat(3,1fr)}
+}
+</style></head><body>
+<header><div class="wrap bar"><img src="img/gsi-wordmark.png" alt="Green Streets Initiative">
+<nav class="nav"><a>What's on</a><a>Places</a><a>Get there</a><a>Learn to ride</a><a>For organizations</a></nav>
+<a class="get">Get Shift</a></div></header>
+<main class="wrap">
+<a class="back">‹ Saturday near Somerville</a>
+<div class="layout"><div>
+<div class="top"><div class="flyer"><img src="img/cafe-bikers-november-flyer.jpg" alt="Boston Cafe Bikers November ride schedule"></div>
+<div><h1>Better Not Miss Butternut</h1><div class="host">Group ride with Boston Cafe Bikers</div>
+<div class="chips" style="margin-top:10px"><span>No-drop</span><span>Ends at a bakery</span></div></div></div>
+<div class="facts">
+<div class="fact"><div class="tile"><small>SAT</small><b>21</b></div><div><strong>Saturday, Nov 21 at 10:00 AM</strong><span>Meet a few minutes early</span></div></div>
+<div class="fact"><div class="tile" style="background:var(--sign);border-color:var(--sign);color:#fff;font:800 13px/1.1 Overpass;padding:8px 2px;box-shadow:inset 0 0 0 1.5px #fff">Union Sq</div><div><strong>Union Square Bluebikes</strong><span>61 Union Sq, Somerville. Ride to Butternut Bakehouse.</span></div></div>
+</div>
+<div class="btns"><a class="btn p">Sign up with host</a><a class="btn s">Add to calendar</a></div>
+<div class="small">The host asks everyone to sign up first.</div>
+<section style="margin-top:16px"><h2>Where you meet</h2><img class="map" src="img/map-union-sq.jpg" alt="Map of Union Square, Somerville with the meeting point"><div class="credit">© OpenStreetMap contributors</div></section>
+</div>
+<div class="side">
+<section><h2>Getting there</h2><div class="ways">
+<div class="way"><div class="ic" style="background:#00843D">GL</div><div><b>Green Line to Union Square</b><span>A short walk to the start</span></div><em>›</em></div>
+<div class="way"><div class="ic" style="background:#FFC72C;color:#191A2E">87</div><div><b>Bus 87 or 91</b><span>Stop in Union Square</span></div><em>›</em></div>
+<div class="way"><div class="ic" style="background:#1D5FA8">BB</div><div><b>No bike? Grab a Bluebike</b><span>The ride starts at the dock</span></div><em>›</em></div>
+</div></section>
+<section><h2>What the host says</h2><p style="margin:0">Join Boston Cafe Bikers for a group ride starting at Union Square and ending at Butternut Bakehouse. All rides start at a BlueBike station.</p></section>
+<section><h2>Also this weekend</h2><div class="more">
+<div><span class="small">Sat 10:00 AM</span><b>Minuteman Path to Lexington</b><span class="blade" style="font-size:12px">Davis Sq</span></div>
+<div><span class="small">Sun 10:00 AM</span><b>Thankful for Coffee</b><span class="blade" style="font-size:12px">Ruggles</span></div>
+<div><span class="small">Sun 3:15 PM</span><b>Sunset Walk at Fresh Pond</b><span class="blade" style="font-size:12px">Fresh Pond</span></div>
+</div></section>
+</div></div>
+</main></body></html>

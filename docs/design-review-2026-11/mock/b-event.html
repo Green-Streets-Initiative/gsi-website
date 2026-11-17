@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Direction B event</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Overpass:wght@600;800;900&display=swap">
+<style>
+/* Direction B event: the place and the host lead. Photo of where you meet, a green block with the facts and buttons, then the host. */
+:root{--ink:#191A2E;--soft:#4A4D68;--forest:#2D6A4F;--deep:#1B4332;--teal:#52B788;--line:#E3E6DD}
+*{box-sizing:border-box}body{margin:0;font:17px/1.5 "Trebuchet MS",sans-serif;color:var(--ink);background:#fff}
+h1,h2,h3{font-family:Overpass,sans-serif;font-weight:900;margin:0;letter-spacing:-.02em;line-height:1.04}
+a{color:inherit;text-decoration:none}
+.bar{display:flex;align-items:center;gap:24px;height:60px;padding:0 16px;max-width:1280px;margin:0 auto}.bar img{height:20px}
+.nav{display:none;gap:22px;font:600 15px Overpass}.menu{margin-left:auto;font:800 15px Overpass}
+.photo img{width:100%;display:block;aspect-ratio:16/9;object-fit:cover}
+.credit{font-size:12px;color:var(--soft);padding:4px 16px 0}
+.block{background:var(--deep);color:#fff;padding:20px 16px 22px}
+.block .host{font:800 15px Overpass;color:var(--teal)}
+.block h1{font-size:32px;margin:6px 0 12px}
+.row{display:flex;gap:18px;flex-wrap:wrap;font-size:16px;color:rgba(255,255,255,.88)}
+.row b{color:#fff;display:block;font:800 18px Overpass}
+.btns{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap}
+.btn{display:inline-block;font:800 16px Overpass;padding:13px 20px;border-radius:999px;background:#fff;color:var(--deep)}
+.btn.o{background:transparent;color:#fff;box-shadow:inset 0 0 0 1.5px #fff}
+.in{max-width:1180px;margin:0 auto;padding:0 16px}
+.hostsec{display:grid;grid-template-columns:120px 1fr;gap:16px;padding:28px 0;align-items:start}
+.hostsec img{width:100%;border-radius:4px;display:block}
+.hostsec h2{font-size:24px}
+.hostsec .n{font:900 34px Overpass;color:var(--forest);line-height:1;margin-top:10px}
+q{display:block;font-size:18px;margin:10px 0 0;quotes:none}
+.src{font-size:13px;color:var(--soft)}
+.meet{padding:24px 0;border-top:1px solid var(--line)}
+.meet h2{font-size:24px;margin-bottom:10px}
+.meet img{width:100%;display:block;border-radius:4px}
+.next{padding:24px 0;border-top:1px solid var(--line);display:grid;gap:14px}
+.next h2{font-size:24px}
+.strip{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.strip img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:4px;display:block}
+.np{aspect-ratio:4/3;border-radius:4px;background:var(--deep);color:#fff;font:900 24px Overpass;display:flex;align-items:flex-end;padding:12px;line-height:1}
+.strip b{font:800 16px Overpass;display:block;margin-top:6px}
+@media(min-width:900px){
+ .nav{display:flex}.menu{display:none}
+ .hero{display:grid;grid-template-columns:1.4fr 1fr;max-width:1280px;margin:0 auto}
+ .photo img{aspect-ratio:auto;height:470px}
+ .block{padding:36px;display:flex;flex-direction:column;justify-content:flex-end}.block h1{font-size:46px}
+ .body{display:grid;grid-template-columns:1fr 1fr;gap:48px}
+ .hostsec{grid-template-columns:180px 1fr}
+ .strip{grid-template-columns:repeat(3,1fr)}
+}
+</style></head><body>
+<header><div class="bar"><img src="img/gsi-wordmark.png" alt="Green Streets Initiative">
+<nav class="nav"><a>What's on</a><a>Places</a><a>Ride along</a><a>Learn to ride</a><a>Work with us</a><a>Donate</a></nav><span class="menu">Menu</span></div></header>
+<div class="hero">
+<div class="photo"><img src="img/union-sq-prospect.jpg" alt="Union Square, Somerville, from Prospect Street"><div class="credit">Union Square, where the ride starts. Photo: Pi.1415926535, CC BY-SA 4.0</div></div>
+<div class="block"><div class="host">Boston Cafe Bikers</div><h1>Better Not Miss Butternut</h1>
+<div class="row"><div><b>Sat, Nov 21</b>10:00 AM</div><div><b>Union Square</b>Bluebikes dock</div></div>
+<div class="btns"><a class="btn">Sign up with host</a><a class="btn o">Add to calendar</a></div></div>
+</div>
+<main class="in"><div class="body">
+<div class="hostsec"><img src="img/cafe-bikers-november-flyer.jpg" alt="Boston Cafe Bikers November ride schedule">
+<div><h2>Your host</h2><div class="n">10 rides</div><div>this November, each one ending at a cafe or bakery</div>
+<q>“Join Boston Cafe Bikers for a group ride starting at Union Square and ending at Butternut Bakehouse. All rides start at a BlueBike station.”</q><div class="src">From the host's listing</div></div></div>
+<div class="meet"><h2>Where you meet</h2><img src="img/map-union-sq.jpg" alt="Map of the meeting point in Union Square"><div class="credit" style="padding-left:0">61 Union Square, Somerville. Green Line and buses 87 and 91 stop here. © OpenStreetMap contributors</div></div>
+</div>
+<div class="next"><h2>More rides that start near a T stop</h2><div class="strip">
+<div><img src="img/davis-bluebikes.jpg" alt="Bluebikes station at Davis Square"><b>Minuteman Path to Lexington</b><span class="src">Sat 10:00 AM · Davis Square · Photo: 4300streetcar, CC BY 4.0</span></div>
+<div><div class="np">Ruggles</div><b>Thankful for Coffee</b><span class="src">Sun 10:00 AM · Boston Cafe Bikers</span></div>
+<div><div class="np">Blackstone Square</div><b>Fall Bike Picnic and Food Drive</b><span class="src">Sat 11:00 AM · Boston Pedals</span></div>
+</div></div>
+</main></body></html>

@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Direction A home</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Overpass:wght@600;800&display=swap">
+<style>
+/* Direction A: listings first. White ground, photo cards, date tiles, green sign used only as a place-name blade. */
+:root{--ink:#191A2E;--soft:#4A4D68;--forest:#2D6A4F;--deep:#1B4332;--pale:#F4F8EE;--line:#E3E6DD;--sign:#1F6B45}
+*{box-sizing:border-box}body{margin:0;font:16px/1.45 "Trebuchet MS",sans-serif;color:var(--ink);background:#fff}
+h1,h2,h3,.ov{font-family:Overpass,sans-serif;font-weight:800;margin:0;letter-spacing:-.01em}
+a{color:inherit;text-decoration:none}
+.wrap{max-width:1180px;margin:0 auto;padding:0 16px}
+header{border-bottom:1px solid var(--line)}
+.bar{display:flex;align-items:center;gap:24px;height:60px}
+.bar img{height:20px}
+.nav{display:none;gap:22px;font-size:15px;font-weight:600;font-family:Overpass}
+.bar .get{margin-left:auto;background:var(--forest);color:#fff;padding:8px 14px;border-radius:8px;font:800 14px Overpass}
+.hero{padding:22px 0 8px}
+.hero h1{font-size:30px;line-height:1.1}
+.where{display:inline-flex;align-items:center;gap:8px;margin-top:8px;font:600 16px Overpass;color:var(--forest)}
+.where b{border-bottom:2px solid var(--forest)}
+.days{display:flex;gap:8px;overflow:hidden;margin:16px 0 4px}
+.day{flex:0 0 auto;border:1px solid var(--line);border-radius:10px;padding:8px 12px;text-align:center;min-width:62px}
+.day small{display:block;font-size:13px;color:var(--soft)}.day b{font:800 20px Overpass}
+.day.on{background:var(--ink);color:#fff;border-color:var(--ink)}.day.on small{color:#fff}
+.kinds{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 0}
+.kinds span{border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:14px}
+.kinds span.on{background:var(--pale);border-color:var(--forest);color:var(--deep)}
+section{padding:22px 0}
+.rowh{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px}
+.rowh h2{font-size:21px}.rowh a{font-size:15px;color:var(--forest);font-weight:bold}
+.cards{display:grid;grid-template-columns:1fr;gap:18px}
+.card{display:grid;grid-template-columns:112px 1fr;gap:12px;align-items:start}
+.ph{position:relative;aspect-ratio:1;border-radius:12px;overflow:hidden;background:var(--pale)}
+.ph img{width:100%;height:100%;object-fit:cover;display:block}
+.tile{position:absolute;left:6px;top:6px;background:#fff;border-radius:8px;padding:3px 7px;text-align:center;line-height:1.05;box-shadow:0 1px 3px #0003}
+.tile small{display:block;font-size:11px;font-weight:bold;color:var(--forest)}.tile b{font:800 17px Overpass}
+.blade{display:inline-block;background:var(--sign);color:#fff;font:800 13px Overpass;padding:3px 8px 2px;border-radius:4px;box-shadow:inset 0 0 0 1.5px #fff,0 0 0 1px var(--sign)}
+.nophoto{display:flex;flex-direction:column;justify-content:flex-end;padding:8px;background:var(--pale)}
+.card h3{font-size:17px;line-height:1.2;margin:2px 0 4px}
+.meta{font-size:14px;color:var(--soft)}
+.places{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.place .ph{aspect-ratio:4/3}
+.place h3{font-size:16px;margin-top:8px}
+.credit{font-size:12px;color:var(--soft);margin-top:2px}
+.getthere{background:var(--pale);border-radius:16px;padding:18px;display:grid;gap:12px}
+.ft{display:flex;gap:8px;flex-direction:column}
+.ft div{background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px 14px;font-size:16px}
+.ft div span{color:var(--soft);font-size:14px;display:block}
+.btn{display:inline-block;background:var(--forest);color:#fff;font:800 16px Overpass;padding:12px 18px;border-radius:10px;text-align:center}
+.town{display:grid;gap:14px;grid-template-columns:1fr}
+.town img{width:100%;border-radius:14px;display:block}
+.big{font:800 34px Overpass;color:var(--deep)}
+@media(min-width:900px){
+ .nav{display:flex}.hero h1{font-size:44px}.hero{padding:36px 0 8px}
+ .cards{grid-template-columns:repeat(4,1fr)}
+ .card{grid-template-columns:1fr}.card .ph{aspect-ratio:4/3}
+ .places{grid-template-columns:repeat(4,1fr)}
+ .split{display:grid;grid-template-columns:1.1fr 1fr;gap:28px;align-items:center}
+ .town{grid-template-columns:1.2fr 1fr;align-items:center}
+}
+</style></head><body>
+<header><div class="wrap bar"><img src="img/gsi-wordmark.png" alt="Green Streets Initiative">
+<nav class="nav"><a>What's on</a><a>Places</a><a>Get there</a><a>Learn to ride</a><a>For organizations</a></nav>
+<a class="get">Get Shift</a></div></header>
+<main class="wrap">
+<div class="hero"><h1>Try a ride, walk or class this weekend</h1>
+<div class="where">Near <b>Somerville</b> ▾</div>
+<div class="days"><div class="day"><small>Thu</small><b>19</b></div><div class="day"><small>Fri</small><b>20</b></div><div class="day on"><small>Sat</small><b>21</b></div><div class="day"><small>Sun</small><b>22</b></div><div class="day"><small>Mon</small><b>23</b></div><div class="day"><small>Tue</small><b>24</b></div></div>
+<div class="kinds"><span class="on">All</span><span>Group rides</span><span>Walks</span><span>Classes</span><span>Easy pace</span></div></div>
+
+<section><div class="rowh"><h2>Saturday near you</h2><a>See all 21</a></div>
+<div class="cards">
+<a class="card"><div class="ph"><img src="img/cafe-bikers-november-flyer.jpg" alt=""><div class="tile"><small>SAT</small><b>21</b></div></div><div><h3>Better Not Miss Butternut</h3><div class="meta">10:00 AM · Boston Cafe Bikers</div><div style="margin-top:6px"><span class="blade">Union Sq</span> <span class="meta">to Butternut Bakehouse</span></div></div></a>
+<a class="card"><div class="ph"><img src="img/minuteman-bikeway.jpg" alt=""><div class="tile"><small>SAT</small><b>21</b></div></div><div><h3>Minuteman Path to Lexington</h3><div class="meta">10:00 AM · 16 miles</div><div style="margin-top:6px"><span class="blade">Davis Sq</span> <span class="meta">by the T entrance</span></div></div></a>
+<a class="card"><div class="ph nophoto"><div class="tile"><small>SAT</small><b>21</b></div><span class="blade">Blackstone Sq</span></div><div><h3>Fall Bike Picnic, Social and Food Drive</h3><div class="meta">11:00 AM · Boston Pedals</div><div style="margin-top:6px"><span class="meta">South End</span></div></div></a>
+<a class="card"><div class="ph nophoto"><div class="tile"><small>SUN</small><b>22</b></div><span class="blade">Fresh Pond</span></div><div><h3>Sunset Walk at Fresh Pond</h3><div class="meta">3:15 PM · easy pace</div><div style="margin-top:6px"><span class="meta">Aberdeen Ave and Huron Ave</span></div></div></a>
+</div></section>
+
+<section><div class="rowh"><h2>Places to try on foot or by bike</h2><a>All 28 trails</a></div>
+<div class="places">
+<a class="place"><div class="ph"><img src="img/community-path.jpg" alt=""></div><h3>Somerville Community Path</h3><div class="meta">Flat · car-free · 3.2 miles</div><div class="credit">Photo: 4300streetcar, CC BY 4.0</div></a>
+<a class="place"><div class="ph"><img src="img/minuteman-bikeway.jpg" alt=""></div><h3>Minuteman Bikeway</h3><div class="meta">Flat · car-free · 10 miles</div><div class="credit">Photo: Daderot, public domain</div></a>
+<a class="place"><div class="ph"><img src="img/charles-river-path.jpg" alt=""></div><h3>Charles River paths</h3><div class="meta">Flat · river views</div><div class="credit">Photo: 4300streetcar, CC BY 4.0</div></a>
+<a class="place"><div class="ph"><img src="img/concord-bikes-on-the-train.jpg" alt=""></div><h3>Train and bike to Concord</h3><div class="meta">Bikes ride free off-peak</div><div class="credit">Photo: 4300streetcar, CC BY 4.0</div></a>
+</div></section>
+
+<section class="split"><div class="getthere"><h2 style="font-size:21px">Get there without the guesswork</h2>
+<div class="ft"><div><span>From</span>Union Square</div><div><span>To</span>Fenway Park</div></div>
+<a class="btn">Show me the ways</a></div>
+<div class="town"><img src="img/somerville-where-we-move.jpg" alt="Map of the streets Shift members walk and bike most in Somerville"><div><div class="big">#2 of 26</div><p style="margin:4px 0 10px">Somerville's rank for trips on foot, bike and transit this month.</p><a class="btn" style="background:var(--ink)">See Somerville</a><div class="credit">Map: Shift trip data · © OpenStreetMap contributors</div></div></div>
+</section>
+</main></body></html>

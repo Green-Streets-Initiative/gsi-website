@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Direction B home</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Overpass:wght@600;800;900&display=swap">
+<style>
+/* Direction B: a field guide made by neighbors. Big credited photos of real places, solid green blocks carry the words, every section a different layout. */
+:root{--ink:#191A2E;--soft:#4A4D68;--forest:#2D6A4F;--deep:#1B4332;--teal:#52B788;--line:#E3E6DD;--paper:#FFFFFF}
+*{box-sizing:border-box}body{margin:0;font:17px/1.5 "Trebuchet MS",sans-serif;color:var(--ink);background:var(--paper)}
+h1,h2,h3{font-family:Overpass,sans-serif;font-weight:900;margin:0;letter-spacing:-.02em;line-height:1.02}
+a{color:inherit;text-decoration:none}
+.bar{display:flex;align-items:center;gap:24px;height:60px;padding:0 16px;max-width:1280px;margin:0 auto}.bar img{height:20px}
+.nav{display:none;gap:22px;font:600 15px Overpass}.nav a:last-child{color:var(--forest)}
+.menu{margin-left:auto;font:800 15px Overpass}
+.full img{width:100%;display:block;aspect-ratio:4/3;object-fit:cover}
+.credit{font-size:12px;color:var(--soft);padding:4px 16px 0}
+.block{background:var(--deep);color:#fff;padding:24px 16px 28px}
+.block h1{font-size:38px}
+.block p{color:rgba(255,255,255,.85);margin:10px 0 18px;max-width:30em}
+.btn{display:inline-block;background:#fff;color:var(--deep);font:800 16px Overpass;padding:13px 20px;border-radius:999px}
+.btn.g{background:var(--forest);color:#fff}
+.in{max-width:1180px;margin:0 auto;padding:0 16px}
+.feature{padding:36px 0;display:grid;gap:16px}
+.feature .pic img{width:100%;display:block;border-radius:4px}
+.feature h2{font-size:30px}
+.feature .when{font:800 15px Overpass;color:var(--forest)}
+.feature p{margin:6px 0 14px}
+.mapsec{background:#EEF1EC;padding:30px 0}
+.mapsec h2{font-size:28px;margin-bottom:6px}
+.mapsec img{width:100%;display:block;border-radius:4px;margin-top:14px}
+.key{display:flex;gap:16px;font-size:14px;margin-top:8px}
+.key i{display:inline-block;width:22px;height:4px;vertical-align:middle;margin-right:6px}
+.duo{display:grid;gap:22px;padding:36px 0}
+.duo .card img{width:100%;display:block;aspect-ratio:3/2;object-fit:cover;border-radius:4px}
+.duo h3{font-size:24px;margin:12px 0 4px}
+.duo p{margin:0 0 10px;color:var(--soft)}
+.duo a.l{font:800 16px Overpass;color:var(--forest)}
+.num{font:900 46px Overpass;color:var(--deep)}
+@media(min-width:900px){
+ .nav{display:flex}.menu{display:none}
+ .hero{display:grid;grid-template-columns:1.35fr 1fr;max-width:1280px;margin:0 auto}
+ .hero .full img{aspect-ratio:auto;height:520px}
+ .block{display:flex;flex-direction:column;justify-content:flex-end;padding:40px}
+ .block h1{font-size:56px}
+ .feature{grid-template-columns:1fr 1.3fr;align-items:center;gap:40px;padding:56px 16px}
+ .feature .pic{order:2}
+ .mapgrid{display:grid;grid-template-columns:1fr 1.6fr;gap:40px;align-items:center}
+ .duo{grid-template-columns:1fr 1fr;gap:40px}
+}
+</style></head><body>
+<header><div class="bar"><img src="img/gsi-wordmark.png" alt="Green Streets Initiative">
+<nav class="nav"><a>What's on</a><a>Places</a><a>Ride along</a><a>Learn to ride</a><a>Work with us</a><a>Donate</a></nav><span class="menu">Menu</span></div></header>
+<div class="hero">
+<div class="full"><img src="img/union-sq-87-bus.jpg" alt="The 87 bus on Somerville Avenue at Union Square at sunset"><div class="credit">Union Square, Somerville. Photo: Pi.1415926535, CC BY 3.0</div></div>
+<div class="block"><h1>Try one new trip this week.</h1><p>Neighbors host rides, walks and classes all over Greater Boston. Pick one and go with people who know the way.</p><div><a class="btn">See what's on</a></div></div>
+</div>
+<main class="in">
+<div class="feature">
+<div class="pic"><img src="img/union-sq-prospect.jpg" alt="Union Square from Prospect Street"><div class="credit" style="padding-left:0">Union Square from Prospect Street. Photo: Pi.1415926535, CC BY-SA 4.0</div></div>
+<div><div class="when">This Saturday, 10:00 AM</div><h2>Ride from Union Square to Butternut Bakehouse</h2><p>Boston Cafe Bikers ride to a cafe or bakery ten times this month. Nobody gets left behind.</p><a class="btn g">See the ride</a></div>
+</div>
+</main>
+<div class="mapsec"><div class="in mapgrid"><div><h2>Where Somerville walks and bikes</h2><p style="margin:0">Each line is a street Shift members use. The thicker the line, the more trips.</p><div class="key"><span><i style="background:#2D6A4F"></i>Walking</span><span><i style="background:#191A2E"></i>Biking</span></div><div style="margin-top:18px"><div class="num">#2 of 26</div><div>towns this month</div></div></div>
+<div><img src="img/somerville-where-we-move.jpg" alt="Map of Somerville streets drawn from Shift trips"><div class="credit" style="padding-left:0">Shift trip data, November 2026 · © OpenStreetMap contributors</div></div></div></div>
+<main class="in"><div class="duo">
+<div class="card"><img src="img/walk-ride-day-2014.jpg" alt="People with bikes on City Hall Plaza at Walk/Ride Day"><h3>Busy streets make you nervous?</h3><p>A free one-on-one lesson on real streets near you.</p><a class="l">Ask for a lesson ›</a></div>
+<div class="card"><img src="img/concord-bikes-on-the-train.jpg" alt="Riders lifting bikes onto the Commuter Rail"><h3>Go with someone the first time</h3><p>Find someone to bike, walk or ride the T with.</p><a class="l">Ride along ›</a><div class="credit" style="padding-left:0">Photo: 4300streetcar, CC BY 4.0</div></div>
+</div></main>
+</body></html>

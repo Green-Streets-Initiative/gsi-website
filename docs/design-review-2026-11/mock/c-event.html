@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Direction C event</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Overpass:wght@600;800;900&display=swap">
+<style>
+/* Direction C event: getting there is the page. Facts on one sign, then a line diagram from the T to the start. */
+:root{--ink:#191A2E;--soft:#4A4D68;--forest:#2D6A4F;--deep:#1B4332;--sign:#1F6B45;--teal:#52B788;--line:#E3E6DD;--pale:#F4F8EE}
+*{box-sizing:border-box}body{margin:0;font:16px/1.45 "Trebuchet MS",sans-serif;color:var(--ink);background:#fff}
+h1,h2,h3{font-family:Overpass,sans-serif;font-weight:900;margin:0;letter-spacing:-.01em;line-height:1.05}
+a{color:inherit;text-decoration:none}
+.top{background:var(--ink);color:#fff}
+.bar{display:flex;align-items:center;gap:22px;height:58px;max-width:1180px;margin:0 auto;padding:0 16px}
+.wm{font:900 17px Overpass}.wm span{color:var(--teal)}
+.nav{display:none;gap:22px;font:600 15px Overpass;color:rgba(255,255,255,.88)}
+.get{margin-left:auto;background:var(--teal);color:var(--ink);font:800 14px Overpass;padding:8px 14px;border-radius:8px}
+.in{max-width:1180px;margin:0 auto;padding:0 16px}
+.head{padding:18px 0 10px}
+.kind{font:800 15px Overpass;color:var(--forest)}
+h1{font-size:30px;margin-top:4px}
+.sign{background:var(--sign);color:#fff;border-radius:12px;padding:16px;box-shadow:inset 0 0 0 2px #fff,0 0 0 1px var(--sign);display:grid;gap:12px;margin-top:14px}
+.sign .l{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:baseline}
+.sign .k{font:900 26px Overpass;min-width:84px}
+.sign span{color:rgba(255,255,255,.9);font-size:16px}
+.btns{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0 6px}
+.btn{display:block;text-align:center;font:800 16px Overpass;padding:13px 10px;border-radius:10px}
+.p{background:var(--ink);color:#fff}.s{border:1.5px solid var(--ink)}
+section{padding:20px 0;border-top:1px solid var(--line)}
+section h2{font-size:22px;margin-bottom:12px}
+.tabs{display:flex;gap:8px;margin-bottom:14px}.tabs span{border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:15px}.tabs span.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.line{position:relative;padding-left:34px}
+.line:before{content:"";position:absolute;left:11px;top:10px;bottom:10px;width:6px;border-radius:3px;background:linear-gradient(#00843D 0 62%, #9aa0a6 62% 100%)}
+.stop{position:relative;padding:4px 0 16px}
+.stop:before{content:"";position:absolute;left:-31px;top:7px;width:16px;height:16px;border-radius:50%;background:#fff;border:4px solid #00843D}
+.stop.walk:before{border-color:#9aa0a6}
+.stop.end:before{background:var(--sign);border-color:var(--sign)}
+.stop b{display:block;font:800 17px Overpass}.stop span{font-size:15px;color:var(--soft)}
+.map{width:100%;border-radius:12px;display:block}
+.credit{font-size:12px;color:var(--soft)}
+.small{font-size:15px;color:var(--soft)}
+.photo img{width:100%;border-radius:12px;display:block;aspect-ratio:16/10;object-fit:cover}
+@media(min-width:900px){
+ .nav{display:flex}h1{font-size:44px}
+ .grid{display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:start}
+ .btns{max-width:420px}
+}
+</style></head><body>
+<div class="top"><div class="bar"><span class="wm">Green <span>Streets</span></span>
+<nav class="nav"><a>Plan a trip</a><a>Rides and walks</a><a>Learn to ride</a><a>Your town</a><a>For organizations</a></nav><a class="get">Get Shift</a></div></div>
+<main class="in">
+<div class="grid"><div class="head"><div class="kind">Group ride · Boston Cafe Bikers</div><h1>Better Not Miss Butternut</h1>
+<div class="sign"><div class="l"><div class="k">Sat 21</div><span>November, 10:00 AM</span></div><div class="l"><div class="k">Start</div><span>Union Square Bluebikes, 61 Union Sq</span></div><div class="l"><div class="k">End</div><span>Butternut Bakehouse</span></div></div>
+<div class="btns"><a class="btn p">Sign up with host</a><a class="btn s">Add to calendar</a></div>
+<div class="small">No-drop. The host asks everyone to sign up first.</div></div>
+<div class="photo" style="padding-top:18px"><img src="img/union-sq-87-bus.jpg" alt="Somerville Avenue at Union Square"><div class="credit">Union Square. Photo: Pi.1415926535, CC BY 3.0</div></div></div>
+<div class="grid">
+<section><h2>Getting to the start</h2><div class="tabs"><span class="on">T</span><span>Bus</span><span>Bike</span><span>Walk</span></div>
+<div class="line">
+<div class="stop"><b>Green Line D branch</b><span>Ride to Union Square, the end of the line</span></div>
+<div class="stop walk"><b>Union Square station</b><span>Walk up Prospect St to the square</span></div>
+<div class="stop end"><b>Union Square Bluebikes dock</b><span>Look for the group by the bikes</span></div>
+</div><a class="btn s" style="display:inline-block;padding:11px 16px">Plan from my address</a></section>
+<section><h2>Where you meet</h2><img class="map" src="img/map-union-sq.jpg" alt="Map of the meeting point"><div class="credit">© OpenStreetMap contributors</div></section>
+</div></main></body></html>

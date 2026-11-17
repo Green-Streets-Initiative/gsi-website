@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Direction C home</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Overpass:wght@600;800;900&display=swap">
+<style>
+/* Direction C: street wayfinding with hierarchy. One big task at the top, guide signs as doors, place blades, live numbers as meters. */
+:root{--ink:#191A2E;--soft:#4A4D68;--forest:#2D6A4F;--deep:#1B4332;--sign:#1F6B45;--teal:#52B788;--line:#E3E6DD;--pale:#F4F8EE}
+*{box-sizing:border-box}body{margin:0;font:16px/1.45 "Trebuchet MS",sans-serif;color:var(--ink);background:#fff}
+h1,h2,h3{font-family:Overpass,sans-serif;font-weight:900;margin:0;letter-spacing:-.01em;line-height:1.05}
+a{color:inherit;text-decoration:none}
+.top{background:var(--ink);color:#fff}
+.bar{display:flex;align-items:center;gap:22px;height:58px;max-width:1180px;margin:0 auto;padding:0 16px}
+.wm{font:900 17px Overpass;color:#fff}.wm span{color:var(--teal)}
+.nav{display:none;gap:22px;font:600 15px Overpass;color:rgba(255,255,255,.88)}
+.get{margin-left:auto;background:var(--teal);color:var(--ink);font:800 14px Overpass;padding:8px 14px;border-radius:8px}
+.plan{max-width:1180px;margin:0 auto;padding:18px 16px 26px}
+.plan h1{font-size:32px}
+.fields{background:#fff;color:var(--ink);border-radius:14px;margin-top:16px;overflow:hidden}
+.f{display:grid;grid-template-columns:28px 1fr;gap:10px;align-items:center;padding:13px 14px;border-bottom:1px solid var(--line);font-size:17px}
+.f small{display:block;font-size:13px;color:var(--soft)}
+.dot{width:14px;height:14px;border-radius:50%;border:3px solid var(--forest);margin:auto}
+.dot.to{background:var(--forest)}
+.go{display:block;background:var(--forest);color:#fff;text-align:center;font:800 17px Overpass;padding:14px}
+.modes{display:flex;gap:16px;margin-top:12px;font-size:14px;color:rgba(255,255,255,.85);flex-wrap:wrap}
+.in{max-width:1180px;margin:0 auto;padding:0 16px}
+.signs{display:grid;gap:10px;padding:24px 0 8px}
+.gs{background:var(--sign);color:#fff;border-radius:10px;padding:14px 16px;box-shadow:inset 0 0 0 2px #fff,0 0 0 1px var(--sign);display:grid;grid-template-columns:1fr auto;align-items:center;gap:10px}
+.gs h3{font-size:21px}.gs span{font-size:15px;color:rgba(255,255,255,.88)}
+.gs .ar{font:900 30px Overpass}
+.gs.photo{grid-template-columns:84px 1fr auto;padding:8px 16px 8px 8px}
+.gs.photo img{width:84px;height:64px;object-fit:cover;border-radius:6px}
+.stats{display:grid;grid-template-columns:1fr;gap:12px;padding:20px 0}
+.stat{border:1px solid var(--line);border-radius:14px;padding:16px}
+.stat .big{font:900 32px Overpass;color:var(--deep)}
+.meter{height:10px;background:var(--pale);border-radius:99px;margin:10px 0 6px;overflow:hidden}
+.meter i{display:block;height:100%;background:var(--forest)}
+.rank{display:flex;gap:3px;margin:12px 0 6px}.rank i{flex:1;height:14px;background:var(--pale);border-radius:2px}.rank i.on{background:var(--forest)}
+.small{font-size:14px;color:var(--soft)}
+.blade{display:inline-block;background:var(--sign);color:#fff;font:800 13px Overpass;padding:3px 8px 2px;border-radius:4px;box-shadow:inset 0 0 0 1.5px #fff,0 0 0 1px var(--sign)}
+.orgs{background:var(--pale);border-radius:14px;padding:18px;margin:8px 0 28px;display:grid;gap:10px}
+.orgs h2{font-size:22px}
+.orgs .r{display:flex;gap:8px;flex-wrap:wrap}.orgs .r span{background:#fff;border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:15px}
+.btn{display:inline-block;background:var(--ink);color:#fff;font:800 16px Overpass;padding:12px 18px;border-radius:10px}
+.credit{font-size:12px;color:var(--soft)}
+@media(min-width:900px){
+ .nav{display:flex}
+ .plan{display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:center;padding:36px 16px 40px}
+ .plan h1{font-size:50px}
+ .signs{grid-template-columns:repeat(3,1fr)}
+ .stats{grid-template-columns:repeat(3,1fr)}
+}
+</style></head><body>
+<div class="top"><div class="bar"><span class="wm">Green <span>Streets</span></span>
+<nav class="nav"><a>Plan a trip</a><a>Rides and walks</a><a>Learn to ride</a><a>Your town</a><a>For organizations</a></nav><a class="get">Get Shift</a></div>
+<div class="plan"><div><h1>Where are you headed?</h1><div class="modes"><span>Walk</span><span>Bike</span><span>T and bus</span><span>Carpool</span></div></div>
+<div class="fields"><div class="f"><div class="dot"></div><div><small>From</small>Union Square, Somerville</div></div><div class="f"><div class="dot to"></div><div><small>To</small>Fenway Park</div></div><a class="go">Show me the ways</a></div></div></div>
+<main class="in">
+<div class="signs">
+<a class="gs photo"><img src="img/davis-bluebikes.jpg" alt=""><div><h3>Group rides this weekend</h3><span>Easy, no-drop rides near you</span></div><div class="ar">↗</div></a>
+<a class="gs photo"><img src="img/cambridge-protected-lane.jpg" alt=""><div><h3>Learn to ride in traffic</h3><span>Free one-on-one lessons</span></div><div class="ar">→</div></a>
+<a class="gs photo"><img src="img/community-path.jpg" alt=""><div><h3>Car-free paths</h3><span>28 trails near Boston</span></div><div class="ar">↑</div></a>
+</div>
+<div class="credit">Photos: 4300streetcar, CC BY 4.0; Adam Coppola, CC0</div>
+<div class="stats">
+<div class="stat"><span class="blade">Somerville</span><div class="big" style="margin-top:8px">1,126 trips</div><div class="small">on foot, bike and transit this month</div><div class="rank"><i></i><i class="on"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="small">#2 of 26 Shift towns this month</div></div>
+<div class="stat"><span class="blade">Sat 21</span><div class="big" style="margin-top:8px">Butternut ride</div><div class="small">10:00 AM from Union Square with Boston Cafe Bikers</div><a style="display:block;margin-top:10px;font:800 15px Overpass;color:var(--forest)">See the ride ›</a></div>
+<div class="stat"><span class="blade">Fri 20</span><div class="big" style="margin-top:8px">Walk/Ride Day</div><div class="small">Walk, bike or ride the T to work and get counted</div><a style="display:block;margin-top:10px;font:800 15px Overpass;color:var(--forest)">How it works ›</a></div>
+</div>
+<div class="orgs"><h2>Help more of your people walk, bike or take transit</h2><div class="r"><span>Employers</span><span>Schools and colleges</span><span>Towns</span><span>Local businesses</span></div><div><a class="btn">Book a call</a></div></div>
+</main></body></html>
