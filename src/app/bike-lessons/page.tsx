@@ -164,7 +164,12 @@ const BODY = 'text-[1.0625rem] leading-[1.6] text-navy'
 const ROW = 'block rounded-[12px] border border-navy/10 bg-white px-4 py-3 transition-colors hover:border-forest/50'
 
 export default async function BikeLessonsPage({ searchParams }: { searchParams: SearchParams }) {
-  const locale = await siteLocale((await searchParams).lang)
+  const sp = await searchParams
+  const locale = await siteLocale(sp.lang)
+  // Ads and partner links promise the free lesson, so they open on it (?for=street, or any
+  // lessons-* campaign); everyone else gets the page that starts with "Where are you starting?".
+  const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) ?? ''
+  const streetFirst = one(sp.for) === 'street' || one(sp.utm_campaign).startsWith('lessons')
   const t = translator(bikeLessonsStrings, locale)
   const { lessons, rides, instructors, slugs, extras } = await load()
   const rideCards: RideCard[] = rides.slice(0, 6).map((e) => ({
@@ -203,11 +208,69 @@ export default async function BikeLessonsPage({ searchParams }: { searchParams: 
     )
   }
 
+  // Nervous in traffic: the free 1:1 lesson. First on the page for ad and partner links.
+  const streetLesson = (
+    <section id="street-lesson" className={`scroll-mt-[128px] bg-white ${streetFirst ? 'pt-[60px]' : ''}`}>
+      <div className={`${CONTAINER} ${streetFirst ? 'pt-8 pb-14' : 'py-14'} lg:py-16`}>
+        <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_380px] lg:gap-14">
+          <div className="min-w-0">
+            <h2 className={H2}>{t('lessons.street_title')}</h2>
+            <p className={`${BODY} mt-4 max-w-[640px]`}>
+              {t('lessons.street_body')}
+            </p>
+            <ul className="mt-6 flex max-w-[640px] flex-wrap gap-2" aria-label={t('lessons.facts_label')}>
+              {FACTS.map((f) => (
+                <li key={f} className="rounded-full bg-forest/10 px-4 py-2 text-[0.9375rem] font-bold leading-snug text-navy">
+                  {t(f)}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="rounded-[20px] bg-cream p-6 sm:p-7">
+            <h3 className={H3}>{t('lessons.form_title')}</h3>
+            <p className="mt-2 mb-4 text-[0.9375rem] leading-relaxed text-navy/80">
+              {t('lessons.form_area')}
+            </p>
+            <FreeLessonForm
+              buttonClass={BUTTON}
+              leagueUrl={league?.url}
+              locale={locale}
+              after={
+                <div className="mt-5 border-t border-navy/10 pt-4">
+                  <p className="text-[1rem] leading-[1.55] text-navy">
+                    {t('lessons.form_after')}
+                  </p>
+                  <StoreBadges className="mt-3" placement={PLACEMENT} />
+                </div>
+              }
+            />
+          </div>
+        </div>
+
+        {league && (
+          <p className={`${BODY} mt-10 max-w-[760px]`}>
+            {t('lessons.league_body')}{locale === 'zh-Hans' ? '' : ' '}
+            <a
+              href={league.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-bold text-forest underline underline-offset-4 hover:opacity-80"
+            >
+              {t('lessons.league_link')}
+            </a>
+          </p>
+        )}
+      </div>
+    </section>
+  )
+
   return (
     <div className="street min-h-screen bg-cream text-navy" style={{ fontFamily: GSI_FONT }}>
       <HtmlLang locale={locale} />
       <Nav variant="light" street locale={locale} />
       <JumpBar after="start" locale={locale} />
+      {streetFirst && streetLesson}
 
       <SignHero
         title={t('lessons.hero_title')}
@@ -239,60 +302,7 @@ export default async function BikeLessonsPage({ searchParams }: { searchParams: 
         </div>
       </section>
 
-      {/* Nervous in traffic: the free 1:1 lesson. */}
-      <section id="street-lesson" className="scroll-mt-[128px] bg-white">
-        <div className={`${CONTAINER} py-14 lg:py-16`}>
-          <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_380px] lg:gap-14">
-            <div className="min-w-0">
-              <h2 className={H2}>{t('lessons.street_title')}</h2>
-              <p className={`${BODY} mt-4 max-w-[640px]`}>
-                {t('lessons.street_body')}
-              </p>
-              <ul className="mt-6 flex max-w-[640px] flex-wrap gap-2" aria-label={t('lessons.facts_label')}>
-                {FACTS.map((f) => (
-                  <li key={f} className="rounded-full bg-forest/10 px-4 py-2 text-[0.9375rem] font-bold leading-snug text-navy">
-                    {t(f)}
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <div className="rounded-[20px] bg-cream p-6 sm:p-7">
-              <h3 className={H3}>{t('lessons.form_title')}</h3>
-              <p className="mt-2 mb-4 text-[0.9375rem] leading-relaxed text-navy/80">
-                {t('lessons.form_area')}
-              </p>
-              <FreeLessonForm
-                buttonClass={BUTTON}
-                leagueUrl={league?.url}
-                locale={locale}
-                after={
-                  <div className="mt-5 border-t border-navy/10 pt-4">
-                    <p className="text-[1rem] leading-[1.55] text-navy">
-                      {t('lessons.form_after')}
-                    </p>
-                    <StoreBadges className="mt-3" placement={PLACEMENT} />
-                  </div>
-                }
-              />
-            </div>
-          </div>
-
-          {league && (
-            <p className={`${BODY} mt-10 max-w-[760px]`}>
-              {t('lessons.league_body')}{locale === 'zh-Hans' ? '' : ' '}
-              <a
-                href={league.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-bold text-forest underline underline-offset-4 hover:opacity-80"
-              >
-                {t('lessons.league_link')}
-              </a>
-            </p>
-          )}
-        </div>
-      </section>
+      {!streetFirst && streetLesson}
 
       {/* Not sure I can ride: classes. */}
       <section id="classes" className="scroll-mt-[128px] bg-cream">

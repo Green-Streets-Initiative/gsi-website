@@ -11,7 +11,7 @@ const FN = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/free-lessons`
 
 const FIELDS: Record<string, string[]> = {
   match: ['place'],
-  claim: ['name', 'email', 'phone', 'place', 'cells', 'teacher', 'availability', 'note', 'website'],
+  claim: ['name', 'email', 'phone', 'place', 'cells', 'teacher', 'availability', 'note', 'source', 'website'],
   offer_get: ['token'],
   offer_answer: ['token', 'answer'],
   teacher_get: ['token'],

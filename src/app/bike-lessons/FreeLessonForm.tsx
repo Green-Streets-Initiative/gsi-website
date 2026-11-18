@@ -66,6 +66,8 @@ export default function FreeLessonForm({
   const [status, setStatus] = useState<Status>('idle')
   const [error, setError] = useState('')
   const [askedName, setAskedName] = useState('')
+  const [showWho, setShowWho] = useState(false)
+  const [source, setSource] = useState('')
   const seq = useRef(0)
   const box = useRef<HTMLDivElement>(null)
 
@@ -75,6 +77,21 @@ export default function FreeLessonForm({
       box.current?.scrollIntoView({ block: 'center', behavior: 'smooth' })
     }
   }, [status])
+
+  // Where this visit came from (an ad, a partner's newsletter), so each request names its channel.
+  // Kept for the tab, so a language switch or a second look at the page keeps it.
+  useEffect(() => {
+    try {
+      const raw = new URLSearchParams(window.location.search).get('utm_source') || sessionStorage.getItem('gsi_lesson_src') || ''
+      const clean = raw.toLowerCase().replace(/[^a-z0-9_.-]/g, '').slice(0, 30)
+      if (clean) {
+        setSource(clean)
+        sessionStorage.setItem('gsi_lesson_src', clean)
+      }
+    } catch {
+      /* private mode: no source, the request still goes */
+    }
+  }, [])
 
   // Who reaches this place, looked up as they type (a ZIP is enough).
   useEffect(() => {
@@ -117,9 +134,15 @@ export default function FreeLessonForm({
   const clearError = () => {
     if (status === 'error') setStatus('idle')
   }
-  const fail = (msg: string) => {
+  const fail = (msg: string, reason = 'other') => {
     setStatus('error')
     setError(msg)
+    // Counted so a form that stops working shows up as errors, not silence (Nov 13 to 17: 0 of 6 finished).
+    try {
+      posthog.capture('free_lesson_form_error', { reason })
+    } catch {
+      /* analytics must never break the form */
+    }
   }
   const toggle = (cell: string) => {
     clearError()
@@ -133,12 +156,12 @@ export default function FreeLessonForm({
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()
-    if (look.state !== 'ok') return fail(t(look.state === 'bad' ? 'lessons.err_place_unknown' : 'lessons.err_place'))
-    if (!cells.size) return fail(t('lessons.err_cells'))
-    if (!chosen) return fail(t('lessons.err_teacher'))
-    if (!name.trim()) return fail(t('lessons.err_name'))
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim())) return fail(t('lessons.err_email'))
-    if (chosen.calls_first && phone.replace(/\D/g, '').length < 10) return fail(t('lessons.err_phone', { name: chosen.name }))
+    if (look.state !== 'ok') return fail(t(look.state === 'bad' ? 'lessons.err_place_unknown' : 'lessons.err_place'), 'place')
+    if (!cells.size) return fail(t('lessons.err_cells'), 'cells')
+    if (!chosen) return fail(t('lessons.err_teacher'), 'teacher')
+    if (!name.trim()) return fail(t('lessons.err_name'), 'name')
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim())) return fail(t('lessons.err_email'), 'email')
+    if (chosen.calls_first && phone.replace(/\D/g, '').length < 10) return fail(t('lessons.err_phone', { name: chosen.name }), 'phone')
     setStatus('sending')
     try {
       const res = await fetch('/api/free-lesson', {
@@ -153,6 +176,7 @@ export default function FreeLessonForm({
           cells: [...cells],
           teacher: chosen.id,
           note: note.trim(),
+          source,
           website,
         }),
       })
@@ -172,15 +196,15 @@ export default function FreeLessonForm({
         }
         return
       }
-      if (res.ok && state === 'no_fit') return fail(t('lessons.err_teacher'))
-      if (data?.error === 'name') return fail(t('lessons.err_name'))
-      if (data?.error === 'email') return fail(t('lessons.err_email'))
-      if (data?.error === 'phone') return fail(t('lessons.err_phone', { name: chosen.name }))
-      if (data?.error === 'availability') return fail(t('lessons.err_cells'))
-      if (data?.error === 'place') return fail(t('lessons.err_place_unknown'))
-      fail(t('lessons.err_failed'))
+      if (res.ok && state === 'no_fit') return fail(t('lessons.err_teacher'), 'server_no_fit')
+      if (data?.error === 'name') return fail(t('lessons.err_name'), 'server_name')
+      if (data?.error === 'email') return fail(t('lessons.err_email'), 'server_email')
+      if (data?.error === 'phone') return fail(t('lessons.err_phone', { name: chosen.name }), 'server_phone')
+      if (data?.error === 'availability') return fail(t('lessons.err_cells'), 'server_cells')
+      if (data?.error === 'place') return fail(t('lessons.err_place_unknown'), 'server_place')
+      fail(t('lessons.err_failed'), `server_${res.status}`)
     } catch {
-      fail(t('lessons.err_failed'))
+      fail(t('lessons.err_failed'), 'network')
     }
   }
 
@@ -259,7 +283,7 @@ export default function FreeLessonForm({
       {far && <div className="mt-2">{farNote}</div>}
       {full && <div className="mt-2">{fullNote}</div>}
 
-      {!far && !full && (
+      {ready && (
         <>
           <fieldset className="mt-3">
             <legend className={LABEL}>{t('lessons.label_availability')}</legend>
@@ -319,7 +343,25 @@ export default function FreeLessonForm({
             )}
           </fieldset>
 
-          {ready && (
+          {cells.size > 0 && chosen && !showWho && (
+            <div className="mt-5 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+              <p className="text-[1rem] leading-snug text-navy">
+                <span className="font-bold">{t('lessons.ask_first', { name: chosen.name })}</span>{' '}
+                <span className="text-navy/80">{t('lessons.around', { area: chosen.area })}.</span>
+              </p>
+              {ranked.length > 1 && (
+                <button type="button" onClick={() => setShowWho(true)} className={`${LINK} text-[0.9375rem]`}>
+                  {t('lessons.pick_other')}
+                </button>
+              )}
+            </div>
+          )}
+
+          {cells.size > 0 && !chosen && (
+            <p className={`${NOTE} mt-4 font-semibold`} role="status">{t('lessons.no_fit')}</p>
+          )}
+
+          {cells.size > 0 && (showWho || !chosen) && (
             <fieldset className="mt-5">
               <legend className={LABEL}>{t('lessons.who_title')}</legend>
               <div className="flex flex-col gap-2">
@@ -367,7 +409,7 @@ export default function FreeLessonForm({
             </fieldset>
           )}
 
-          {ready && (
+          {chosen && cells.size > 0 && (
             <>
               <label className="mt-5 block">
                 <span className={LABEL}>{t('lessons.label_name')}</span>
@@ -446,15 +488,19 @@ export default function FreeLessonForm({
             className="hidden"
             name="website"
           />
-          <button type="submit" disabled={status === 'sending'} className={`${buttonClass} mt-4 w-full disabled:opacity-50`}>
-            {status === 'sending' ? t('lessons.sending') : chosen ? t('lessons.send_to', { name: chosen.name }) : t('lessons.send')}
-          </button>
+          {chosen && cells.size > 0 && (
+            <>
+              <button type="submit" disabled={status === 'sending'} className={`${buttonClass} mt-4 w-full disabled:opacity-50`}>
+                {status === 'sending' ? t('lessons.sending') : t('lessons.send_to', { name: chosen.name })}
+              </button>
+              <p className="mt-3 text-[0.9375rem] leading-relaxed text-navy/80">{t('lessons.form_note')}</p>
+            </>
+          )}
           {status === 'error' && (
             <p className="mt-2 text-[0.9375rem] font-semibold text-[#B42318]" role="alert">
               {error}
             </p>
           )}
-          <p className="mt-3 text-[0.9375rem] leading-relaxed text-navy/80">{t('lessons.form_note')}</p>
         </>
       )}
     </form>
