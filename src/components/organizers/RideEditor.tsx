@@ -718,7 +718,7 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
       {fromCalendar && (
         <div className="mt-4">
           <Notice tone="good">
-            Filled in from your listing on the GSI calendar. Check each part, then save.{' '}
+            Filled in from your listing on our events calendar. Check each part, then save.{' '}
             <button type="button" className="font-semibold underline" onClick={discardDraft}>Start from scratch instead</button>
           </Notice>
         </div>
