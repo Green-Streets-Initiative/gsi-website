@@ -252,7 +252,7 @@ export default function FreeLessonForm({
   const fullNote = (
     <p className={NOTE}>
       {t('lessons.full_body')}{sp}
-      <a href="#wait" className={LINK}>
+      <a href="#classes" className={LINK}>
         {t('lessons.full_link')}
       </a>
     </p>
@@ -339,7 +339,7 @@ export default function FreeLessonForm({
               <div className="min-w-0">
                 <p className="text-[1rem] leading-snug text-navy">
                   <span className="font-bold">{t('lessons.ask_first', { name: chosen.name })}</span>{' '}
-                  <span className="text-navy/80">{t('lessons.around', { area: chosen.area })}.</span>
+                  <span className="text-navy/80">{t('lessons.chosen_why', { name: chosen.name })}</span>
                 </p>
                 {ranked.length > 1 && (
                   <button type="button" onClick={() => setShowWho(true)} className={`${LINK} mt-1 min-h-[44px] text-[0.9375rem]`}>
@@ -382,7 +382,6 @@ export default function FreeLessonForm({
                           {x.name}
                           {x.org && <span className="font-normal text-navy/80"> · {x.org}</span>}
                         </span>
-                        <span className="text-[0.875rem] leading-snug text-navy/80">{t('lessons.around', { area: x.area })}</span>
                         <span className="flex flex-wrap items-center gap-2">
                           <FitMeter fits={x.fits} of={cells.size} />
                           <span className="text-[0.875rem] font-semibold text-navy">
@@ -533,7 +532,7 @@ function FitMeter({ fits, of }: { fits: number; of: number }) {
   )
 }
 
-/** The instructor's initial, until we have their photo (asking them, 2026-11-18). */
+/** The instructor's initial. */
 function Initial({ name }: { name: string }) {
   return (
     <span
