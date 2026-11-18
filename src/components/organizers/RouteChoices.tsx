@@ -124,7 +124,7 @@ export default function RouteChoices({ label, options, chosen, onChoose, pace, a
         {/* Column heads: wide screens only; on a phone each row labels itself. */}
         <div className="hidden grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_120px_80px] gap-4 border-b border-(--ev-line) bg-(--ev-panel-faint) px-4 py-2 text-[14px] font-semibold text-(--ev-ink-75) sm:grid">
           <span>Way</span>
-          <span>On calm streets</span>
+          <span>Bike-friendly</span>
           <span>{timeHead}</span>
           <span className="text-right">Distance</span>
         </div>
@@ -132,11 +132,11 @@ export default function RouteChoices({ label, options, chosen, onChoose, pace, a
           const o = options[i]
           const on = chosen === i
           const pct = Math.round(comfortableShare(segs(o)) * 100)
-          const badge = i === calmest && i === fastest ? 'Calmest · Fastest' : i === calmest ? 'Calmest' : i === fastest ? 'Fastest' : null
+          const badge = i === calmest && i === fastest ? 'Safest · Fastest' : i === calmest ? 'Safest' : i === fastest ? 'Fastest' : null
           const name = names.get(i) ? `via ${names.get(i)}` : `Way ${row + 1}`
           return (
             <button key={i} type="button" role="radio" aria-checked={on} onClick={() => onChoose(i)}
-              aria-label={`${name}${badge ? `, ${badge.toLowerCase()}` : ''}: ${pct}% on calm streets, about ${minutesText(mins(o))}, ${o.distanceMiles.toFixed(1)} miles`}
+              aria-label={`${name}${badge ? `, ${badge.toLowerCase()}` : ''}: ${pct}% bike-friendly, about ${minutesText(mins(o))}, ${o.distanceMiles.toFixed(1)} miles`}
               className={cx(
                 'grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-2 px-4 py-3 text-left transition sm:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_120px_80px]',
                 row > 0 && 'border-t border-(--ev-line)',
@@ -162,7 +162,7 @@ export default function RouteChoices({ label, options, chosen, onChoose, pace, a
               </span>
               <span className="col-span-2 flex items-center gap-2.5 sm:col-span-1">
                 <span className="min-w-0 flex-1"><MiniBar o={o} /></span>
-                <span className="w-[86px] shrink-0 text-[15px] font-bold text-(--ev-ink) sm:w-[44px]">{pct}%<span className="font-semibold text-(--ev-ink-75) sm:hidden"> calm</span></span>
+                <span className="w-[140px] shrink-0 whitespace-nowrap text-[15px] font-bold text-(--ev-ink) sm:w-[44px]">{pct}%<span className="font-semibold text-(--ev-ink-75) sm:hidden"> bike-friendly</span></span>
               </span>
               <span className="hidden text-[15px] font-bold text-(--ev-ink) sm:block">{minutesText(mins(o))}</span>
               <span className="hidden text-right text-[15px] font-semibold text-(--ev-ink-85) sm:block">{o.distanceMiles.toFixed(1)} mi</span>

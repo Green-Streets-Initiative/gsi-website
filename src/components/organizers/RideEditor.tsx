@@ -287,7 +287,7 @@ function Preview({ f, route, hostName }: { f: Form; route: RouteDraft | null; ho
         <dl className="grid grid-cols-3 border-t border-(--ev-line)">
           {([
             ['Distance', miles ? `${miles.toFixed(1)} mi` : '–'],
-            ['Calm streets', calm != null ? `${calm}%` : '–'],
+            ['Bike-friendly', calm != null ? `${calm}%` : '–'],
             [walk ? 'Walking' : 'Pace', walk ? (miles ? `${Math.round((miles / 3) * 60)} min` : pace?.label ?? '–') : pace ? pace.mph : '–'],
           ] as const).map(([k, v], i) => (
             <div key={k} className={cx('px-3 py-3', i > 0 && 'border-l border-(--ev-line)')}>

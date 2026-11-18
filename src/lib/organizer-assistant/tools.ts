@@ -206,7 +206,7 @@ export const TOOLS: Anthropic.Tool[] = [
   },
   {
     name: 'plan_route',
-    description: "Design a ride route from goals and have Shift's route planner build it: a loop or A to B, a target distance, places to pass (by name, or a kind like \"a coffee shop\"), bike lanes to show off (the longest protected lanes and paths nearby, or lanes opened in the last six months), and staying near Bluebikes docks and T stations. Returns the distance, riding time, share on calm streets, the spots to take carefully, how each goal came out, and a button that opens the route street by street with Street View in the editor, where they save it. Nothing is saved by this tool. Takes up to a minute.",
+    description: "Design a ride route from goals and have Shift's route planner build it: a loop or A to B, a target distance, places to pass (by name, or a kind like \"a coffee shop\"), bike lanes to show off (the longest protected lanes and paths nearby, or lanes opened in the last six months), and staying near Bluebikes docks and T stations. Returns the distance, riding time, bike-friendly share (bike lanes, paths, quiet streets), the spots to take carefully, how each goal came out, and a button that opens the route street by street with Street View in the editor, where they save it. Nothing is saved by this tool. Takes up to a minute.",
     input_schema: {
       type: 'object',
       properties: {
@@ -227,7 +227,7 @@ export const TOOLS: Anthropic.Tool[] = [
   },
   {
     name: 'check_route_link',
-    description: 'Read a Ride with GPS route link the organizer pasted and check how it rides: distance, climbing, share on calm streets, spots to take carefully, new lanes on it. Returns a button that opens it in the route editor street by street, with Street View, where they save it to a ride.',
+    description: 'Read a Ride with GPS route link the organizer pasted and check how it rides: distance, climbing, bike-friendly share (bike lanes, paths, quiet streets), spots to take carefully, new lanes on it. Returns a button that opens it in the route editor street by street, with Street View, where they save it to a ride.',
     input_schema: {
       type: 'object',
       properties: {
@@ -240,7 +240,7 @@ export const TOOLS: Anthropic.Tool[] = [
   },
   {
     name: 'replan_route',
-    description: "Re-plan a route the organizer brought in (a Ride with GPS link, or a GPX file from its [Attached route] note) on calmer streets along the same course: Shift sets stops about every 1.5 miles along it and plans comfortable streets between them, the same as the editor's \"Re-plan it on comfortable streets\" button. Returns how the new version rides and a button that opens it in the editor, where they can move or drop stops and save it. Nothing is saved by this tool. Takes up to a minute.",
+    description: "Re-plan a route the organizer brought in (a Ride with GPS link, or a GPX file from its [Attached route] note) on bike lanes, paths and quiet streets along the same course: Shift sets stops about every 1.5 miles along it and plans comfortable streets between them, the same as the editor's \"Re-plan it on comfortable streets\" button. Returns how the new version rides and a button that opens it in the editor, where they can move or drop stops and save it. Nothing is saved by this tool. Takes up to a minute.",
     input_schema: {
       type: 'object',
       properties: {
@@ -420,7 +420,7 @@ export const ACTIVITY: Record<string, string> = {
   find_place: 'Looking up the place',
   plan_route: 'Planning the route (up to a minute)',
   check_route_link: 'Checking the route',
-  replan_route: 'Re-planning on calmer streets',
+  replan_route: 'Re-planning on bike lanes and paths',
   note_feedback: 'Passing it to the GSI team',
   create_ride: 'Creating the ride',
   update_ride: 'Saving the changes',

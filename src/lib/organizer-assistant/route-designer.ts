@@ -780,7 +780,7 @@ export async function replanCourse(
   const pinPace = pace && PACE_MID_MPH[pace] ? pace : null
   const pins: (LatLng & { label?: string })[] = [{ lat: meetup.lat, lng: meetup.lng }, ...stopsFromCourse(course, meetup)]
   const plan = await planLegs(token, pins, pinPace, activity)
-  if (plan.legs.some((l) => !l.options.length)) return { ok: false, notes: ["The planner couldn't connect one stretch of this route on calmer streets."] }
+  if (plan.legs.some((l) => !l.options.length)) return { ok: false, notes: ["The planner couldn't connect one stretch of this route on bike lanes, paths or quiet streets."] }
   const chosen = plan.legs.map((l) => calmestWay(l.options))
   const route = routeFromPlan(plan, chosen, pins)
   const total = routeMiles(route.waypoints)
