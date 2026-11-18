@@ -64,8 +64,8 @@ export default function FirstRide() {
       <h1 className="mt-1 font-display text-[clamp(28px,3.6vw,38px)] font-extrabold leading-tight">Make your first {thing}</h1>
       <p className="mt-2 text-[16px] leading-snug text-(--ev-ink-85)">
         {start.listings.length === 1
-          ? `Here\u2019s your ${thing} on the GSI calendar. Use it and we\u2019ll fill in the details for you to check.`
-          : `Pick one of your ${thing === 'ride or walk' ? 'rides or walks' : `${thing}s`} on the GSI calendar and we\u2019ll fill in the details for you to check.`}
+          ? `Here\u2019s your ${thing} on our events calendar. Use it and we\u2019ll fill in the details for you to check.`
+          : `Pick one of your ${thing === 'ride or walk' ? 'rides or walks' : `${thing}s`} on our events calendar and we\u2019ll fill in the details for you to check.`}
       </p>
 
       {host && <p className="mt-6 text-[14px] font-semibold text-(--ev-ink-75)">Listed under {host}</p>}
