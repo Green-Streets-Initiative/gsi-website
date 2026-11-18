@@ -379,7 +379,7 @@ export default async function OrganizerKitPage({ searchParams }: { searchParams:
         <Section id="only" title="What you get only on Shift">
           {/* Side by side; on phones one row that scrolls sideways, so the page stays short. */}
           <div className="-mx-6 flex snap-x snap-mandatory scroll-pl-6 gap-4 overflow-x-auto px-6 pb-2 lg:mx-0 lg:grid lg:grid-cols-3 lg:gap-5 lg:overflow-visible lg:px-0 print:grid print:grid-cols-3">
-            <div className="w-[84vw] max-w-[380px] shrink-0 snap-start rounded-[18px] border border-navy/10 bg-white p-5 lg:w-auto lg:max-w-none">
+            <div className="w-[84vw] max-w-[380px] shrink-0 snap-start rounded-[18px] border border-navy/10 bg-white p-5 lg:w-auto lg:max-w-none print:break-inside-avoid">
               <p className="text-[1.375rem] font-extrabold leading-snug">The bike lanes on every street of your route</p>
               <p className={`mt-2 ${BODY}`}>
                 Protected, painted or none, from MassDOT and OpenStreetMap, with busy crossings and hills marked.
@@ -406,7 +406,7 @@ export default async function OrganizerKitPage({ searchParams }: { searchParams:
               </div>
             </div>
 
-            <div className="w-[84vw] max-w-[380px] shrink-0 snap-start rounded-[18px] border border-navy/10 bg-white p-5 lg:w-auto lg:max-w-none">
+            <div className="w-[84vw] max-w-[380px] shrink-0 snap-start rounded-[18px] border border-navy/10 bg-white p-5 lg:w-auto lg:max-w-none print:break-inside-avoid">
               <p className="text-[1.375rem] font-extrabold leading-snug">Discounts near your meeting spot</p>
               <p className={`mt-2 ${BODY}`}>
                 Shops in the Bicycle Benefits program show on your ride page.
@@ -424,7 +424,7 @@ export default async function OrganizerKitPage({ searchParams }: { searchParams:
               </div>
             </div>
 
-            <div className="w-[84vw] max-w-[380px] shrink-0 snap-start rounded-[18px] border border-navy/10 bg-white p-5 lg:w-auto lg:max-w-none">
+            <div className="w-[84vw] max-w-[380px] shrink-0 snap-start rounded-[18px] border border-navy/10 bg-white p-5 lg:w-auto lg:max-w-none print:break-inside-avoid">
               <p className="text-[1.375rem] font-extrabold leading-snug">Ask the assistant to do it for you</p>
               <p className={`mt-2 ${BODY}`}>
                 It asks before it changes anything.
