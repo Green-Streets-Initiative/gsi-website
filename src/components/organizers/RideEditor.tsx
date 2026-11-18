@@ -308,8 +308,8 @@ function Preview({ f, route, hostName }: { f: Form; route: RouteDraft | null; ho
 }
 
 const JOB_ROWS: { job: HelperJob; label: string; hint: (walk: boolean) => string; max: number }[] = [
-  { job: 'sweep', label: 'Sweep', hint: (walk) => `${walk ? 'Walks' : 'Rides'} at the back with the last ${walk ? 'walker' : 'rider'}.`, max: 2 },
-  { job: 'corner', label: 'Crossing guards', hint: () => 'Each waits at a busy crossing until everyone is through.', max: 4 },
+  { job: 'sweep', label: 'At the back', hint: (walk) => `${walk ? 'Walks' : 'Rides'} at the back with the last ${walk ? 'walker' : 'rider'}.`, max: 2 },
+  { job: 'corner', label: 'At busy crossings', hint: () => 'Each waits at a busy crossing until everyone is through.', max: 4 },
 ]
 
 /**
@@ -334,9 +334,9 @@ function HelpersField({ jobs, walk, noDrop, crossings, onChange }: {
       <label className="flex cursor-pointer items-start gap-3">
         <input type="checkbox" checked={on} onChange={(e) => onChange(e.target.checked ? (jobs ?? start) : null)} className="mt-1 h-5 w-5 accent-(--ev-accent-fill)" />
         <span>
-          <span className="block text-[15px] font-semibold text-(--ev-ink)">Ask people to help</span>
+          <span className="block text-[15px] font-semibold text-(--ev-ink)">Ask people to co-lead</span>
           <span className="block text-[14px] text-(--ev-ink-75)">
-            People who say Going and have been on a ride before can take a job in one tap. First to say yes gets it, and you can swap anyone. Each crossing guard is given a crossing and a time. You lead from the front.
+            People who say Going and have been on a ride before can take a job in one tap. First to say yes gets it, and you can swap anyone. Someone waiting at a busy crossing is given the crossing and a time. You lead from the front.
           </span>
         </span>
       </label>
@@ -612,7 +612,7 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
       if (JSON.stringify(f.helper_jobs ?? null) !== JSON.stringify(ride?.helper_jobs ?? null)) {
         try { await setHelperJobs(res.id, f.helper_jobs) } catch (e) {
           if (ride) {
-            setErr(errorText(e, "The ride saved, but the helpers didn't. Try again."))
+            setErr(errorText(e, "The ride saved, but the co-leaders didn't. Try again."))
             setSaving(false)
             return
           }

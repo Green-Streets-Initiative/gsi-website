@@ -414,7 +414,7 @@ export default function SubmitEventForm({ tone = 'dark', hrefBase = '/events' }:
                         className="mt-0.5 h-4 w-4 shrink-0 accent-(--ev-accent)"
                       />
                       <span className="text-[13px] leading-snug text-(--ev-ink-80)">
-                        <span className="font-semibold text-(--ev-ink)">No-drop ride.</span> The group waits, or a sweep rides at the back.
+                        <span className="font-semibold text-(--ev-ink)">No-drop ride.</span> The group waits, or a co-leader rides at the back.
                       </span>
                     </label>
                   </div>

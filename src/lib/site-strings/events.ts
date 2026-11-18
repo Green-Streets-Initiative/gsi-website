@@ -272,7 +272,7 @@ export const eventsStrings = defineStrings(
     'detail.dir_walk': 'Walk',
     'detail.dir_bike': 'Bike',
     'detail.dir_transit': 'Transit',
-    'detail.no_drop_title': 'The organizer says nobody gets left behind: the group waits, or a sweep rides at the back.',
+    'detail.no_drop_title': 'The organizer says nobody gets left behind: the group waits, or a co-leader rides at the back.',
     'detail.rsvp': 'RSVP',
     'detail.save_calendar': 'Save to calendar',
     'detail.download_ics': 'Download .ics file',

@@ -61,7 +61,7 @@ interface WentResult {
   went: boolean
 }
 
-const JOB_WORDS: Record<Job, string> = { front: 'Lead', sweep: 'Sweep at the back', corner: 'Crossing guard' }
+const JOB_WORDS: Record<Job, string> = { front: 'Lead from the front', sweep: 'Stay at the back', corner: 'Wait at a busy crossing' }
 
 const ANSWERS: { value: RsvpStatus; label: string }[] = [
   { value: 'going', label: 'Going' },
@@ -360,8 +360,8 @@ function NextChoices({ next, going, saving, onPick }: {
       )}
       {jobs.length > 0 && (
         <div>
-          <p className="text-[15px] font-semibold text-(--ev-ink)">Can you help?</p>
-          <div className="mt-1.5 flex flex-wrap gap-1.5" role="radiogroup" aria-label="Can you help?">
+          <p className="text-[15px] font-semibold text-(--ev-ink)">Can you co-lead?</p>
+          <div className="mt-1.5 flex flex-wrap gap-1.5" role="radiogroup" aria-label="Can you co-lead?">
             {[...jobs, null].map((j) => {
               const on = j === next.my_job || (j === null && !next.my_job)
               const key = `job-${j ?? 'none'}`

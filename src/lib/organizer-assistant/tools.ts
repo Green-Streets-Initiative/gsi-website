@@ -434,9 +434,9 @@ export const ACTIVITY: Record<string, string> = {
   settle_credit: 'Settling the request',
   set_chat_access: 'Updating the group chat',
   set_headcount: 'Saving the head count',
-  get_helpers_and_stops: 'Checking helpers and stops',
+  get_helpers_and_stops: 'Checking co-leaders and stops',
   set_helper_jobs: 'Saving the helper jobs',
-  give_helper_job: 'Updating the helpers',
+  give_helper_job: 'Updating the co-leaders',
 }
 
 /** Labels whose completion means a screen should reload. */
@@ -1165,11 +1165,11 @@ export async function approvalCard(ctx: ToolCtx, name: string, input: Record<str
         const walk = d.ride.activity === 'walk'
         const j = input.jobs && typeof input.jobs === 'object' ? input.jobs as Record<string, number> : null
         const jobs = j ? { front: Math.min(Math.max(Math.round(j.front ?? 1), 1), 3), sweep: Math.min(Math.max(Math.round(j.sweep ?? 0), 0), 3), corner: walk ? 0 : Math.min(Math.max(Math.round(j.corner ?? 0), 0), 6) } : null
-        if (jobs && jobs.front === 1 && !jobs.sweep && !jobs.corner) return { result: fail('Ask for at least one sweep or crossing guard, or leave helpers off.') }
+        if (jobs && jobs.front === 1 && !jobs.sweep && !jobs.corner) return { result: fail('Ask for at least one co-leader at the back or at a busy crossing, or leave co-leaders off.') }
         const words = jobs ? [
           jobs.front > 1 ? plural(jobs.front - 1, 'more leader', 'more leaders') : null,
-          jobs.sweep ? plural(jobs.sweep, 'sweep', 'sweeps') : null,
-          jobs.corner ? plural(jobs.corner, 'crossing guard', 'crossing guards') : null,
+          jobs.sweep ? plural(jobs.sweep, 'co-leader at the back', 'co-leaders at the back') : null,
+          jobs.corner ? plural(jobs.corner, 'co-leader at a busy crossing', 'co-leaders at busy crossings') : null,
         ].filter(Boolean).join(', ') : ''
         return {
           card: jobs ? {
@@ -1194,7 +1194,7 @@ export async function approvalCard(ctx: ToolCtx, name: string, input: Record<str
         if (match.length !== 1) return { result: fail(match.length ? `More than one person matches ${input.name}: ${match.map((r) => r.display_name).join(', ')}.` : `No one called ${input.name} is on that date.`) }
         const who = match[0]
         if (input.job && who.rsvp_status !== 'going' && who.role !== 'organizer') return { result: fail(`${who.display_name} hasn't said Going for ${dateLabel(o.date)}.`) }
-        const JOB: Record<string, string> = { front: 'lead from the front', sweep: 'sweep at the back', corner: 'be a crossing guard' }
+        const JOB: Record<string, string> = { front: 'lead from the front', sweep: 'co-lead at the back', corner: 'co-lead at a busy crossing' }
         return {
           card: input.job ? {
             title: `${who.display_name} to ${JOB[String(input.job)]} on ${dateLabel(o.date)}?`,

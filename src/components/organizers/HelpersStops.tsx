@@ -14,14 +14,14 @@ import { Button, Select, cx } from './ui'
  * each stop. The organizer can give anyone going a job or take it off them.
  */
 
-const JOB_NAME: Record<HelperJob, string> = { front: 'Front', sweep: 'Sweep', corner: 'Crossing guard' }
+const JOB_NAME: Record<HelperJob, string> = { front: 'Front', sweep: 'At the back', corner: 'At a crossing' }
 
 export function askText(open: Record<HelperJob, number>, dateWords: string, walk: boolean, url?: string, crossings: string[] = []): string | null {
   const at = crossings.length ? ` (${crossings.join('; ')})` : ''
   const wants = [
     open.front > 0 ? 'someone to lead from the front' : null,
-    open.sweep > 0 ? `a sweep to ${walk ? 'walk' : 'ride'} at the back` : null,
-    open.corner === 1 ? `a crossing guard at a busy crossing${at}` : open.corner > 1 ? `${open.corner} crossing guards at busy crossings${at}` : null,
+    open.sweep > 0 ? `a co-leader to ${walk ? 'walk' : 'ride'} at the back` : null,
+    open.corner === 1 ? `a co-leader at a busy crossing${at}` : open.corner > 1 ? `${open.corner} co-leaders at busy crossings${at}` : null,
   ].filter(Boolean) as string[]
   if (!wants.length) return null
   const list = wants.length === 1 ? wants[0] : `${wants.slice(0, -1).join(', ')} and ${wants[wants.length - 1]}`
@@ -79,7 +79,7 @@ export default function HelpersStops({ occurrenceId, dateWords, walk, canManage,
     <div className="mt-4 grid gap-4 border-t border-(--ev-line) pt-4 sm:grid-cols-2">
       {help && (
         <div>
-          <p className="text-[15px] font-semibold text-(--ev-ink)">Helpers</p>
+          <p className="text-[15px] font-semibold text-(--ev-ink)">Co-leaders</p>
           <ul className="mt-2 space-y-1.5">
             {help.front_is_organizer && (
               <li className="flex items-center gap-2 text-[15px] text-(--ev-ink-85)">
