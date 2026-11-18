@@ -324,7 +324,8 @@ export default function RideOverview() {
         </Card>
       )}
 
-      {/* Dates, updates and history behind tabs, so the first screen shows all three are here. */}
+      {/* Dates, updates and history behind tabs, so the first screen shows all three are here. A draft has none yet (Shift 01833). */}
+      {!draft && (
       <Card className="!pt-2 sm:!pt-3">
         <Tabs tabs={[
           { id: 'dates' as const, label: heroShown ? 'Later dates' : 'Dates', count: later.length },
@@ -404,6 +405,7 @@ export default function RideOverview() {
           ))}
         </div>
       </Card>
+      )}
 
       {cancelling && <CancelDateDialog key={cancelling.id} date={cancelling} onClose={() => setCancelling(null)} onDone={done} />}
       {changing && <ChangeDateDialog key={changing.id} date={changing} ride={r} onClose={() => setChanging(null)} onDone={done} />}
