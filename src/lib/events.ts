@@ -59,6 +59,10 @@ export interface CommunityEvent {
   schedule_note?: string | null
   previous_event_date?: string | null
   previous_event_time?: string | null
+  /** Nearest T station and bus stop to the start (Shift 01819), filled by /api/cron/event-transit. */
+  nearest_transit?: import('@/lib/event-transit').NearestTransit | null
+  /** The host's logo (event_organizers.logo_url), for the card's square when there's no flyer. */
+  organizer_logo?: string | null
 }
 
 export interface EventOrganizer {

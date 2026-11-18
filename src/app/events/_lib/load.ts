@@ -3,6 +3,7 @@ import 'server-only'
 import type { Metadata } from 'next'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import type { CommunityEvent, NextUp } from '@/lib/events'
+import type { NearestTransit } from '@/lib/event-transit'
 import { findNextUp, isPastEvent, todayEt } from '@/lib/events-next'
 import { buildEventTitle, buildEventDescription } from '@/lib/events-seo'
 import type { SiteLocale } from '@/lib/site-i18n'
@@ -48,6 +49,9 @@ const EVENT_FIELDS = `
       schedule_note,
       previous_event_date,
       previous_event_time,
+      target_radius_miles,
+      nearest_transit,
+      event_organizers ( logo_url ),
       content_items!inner (
         id,
         slug,
@@ -58,7 +62,7 @@ const EVENT_FIELDS = `
 
 const LISTING_SELECT = EVENT_FIELDS
 // The extra flyer pages (Shift 01250) are only read here, on the event page.
-const DETAIL_SELECT = `timezone,\n      organizer_id,\n      route_links,\n      extra_image_urls,\n      target_radius_miles,${EVENT_FIELDS}`
+const DETAIL_SELECT = `timezone,\n      organizer_id,\n      route_links,\n      extra_image_urls,${EVENT_FIELDS}`
 
 type EventRow = Record<string, unknown> & {
   content_items: Record<string, unknown>
@@ -116,6 +120,8 @@ function toCommunityEvent(row: EventRow): CommunityEvent {
     schedule_note: (row.schedule_note as string | null) ?? null,
     previous_event_date: (row.previous_event_date as string | null) ?? null,
     previous_event_time: (row.previous_event_time as string | null) ?? null,
+    nearest_transit: (row.nearest_transit as NearestTransit | null) ?? null,
+    organizer_logo: ((row.event_organizers as { logo_url: string | null } | null)?.logo_url) ?? null,
   }
 }
 

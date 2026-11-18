@@ -4,6 +4,7 @@ import { useMemo, type ReactNode } from 'react'
 import Link from 'next/link'
 import { type CommunityEvent, parseEventDate } from '@/lib/events'
 import { groupLabelL, eventCount } from '@/lib/events-i18n'
+import { siteDate } from '@/lib/site-i18n'
 import EventCard from './EventCard'
 import FeederTray from './FeederTray'
 import type { CalendarEntry } from '@/lib/go-together'
@@ -54,13 +55,13 @@ export default function Agenda({
   const todayBoston = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' })
 
   const groups = useMemo(() => {
-    const out: { key: string; label: string; entries: CalendarEntry<CommunityEvent>[] }[] = []
+    const out: { key: string; label: string; day: string; entries: CalendarEntry<CommunityEvent>[] }[] = []
     let currentKey = ''
     for (const entry of shown) {
       const ev = entry.event
       if (ev.event_date !== currentKey) {
         currentKey = ev.event_date
-        out.push({ key: currentKey, label: groupLabelL(parseEventDate(ev.event_date), locale), entries: [] })
+        out.push({ key: currentKey, label: groupLabelL(parseEventDate(ev.event_date), locale), day: siteDate(locale, parseEventDate(ev.event_date), { weekday: 'long' }), entries: [] })
       }
       out[out.length - 1].entries.push(entry)
     }
@@ -101,8 +102,11 @@ export default function Agenda({
             <div className="sticky top-[121px] z-[25] mb-3 flex min-h-[62px] items-center gap-3 bg-(--ev-bg) py-2 lg:top-[116px]">
               {/* A multi-day event that started before today sits under "Going on now", not under its first day. */}
               {group.key >= todayBoston && <DateTile date={group.key} locale={locale} size="sm" />}
-              <h3 className="min-w-0 truncate font-(family-name:--font-headline) text-[18px] font-extrabold tracking-[-0.01em] text-(--ev-ink)">
-                {group.key < todayBoston ? t('agenda.ongoing') : group.key === todayBoston ? t('cal.today') : group.label}
+              <h3 className="min-w-0 truncate font-(family-name:--font-headline) text-[18px] font-extrabold tracking-[-0.01em] [word-spacing:0.12em] text-(--ev-ink)">
+                {group.key < todayBoston ? t('agenda.ongoing') : group.key === todayBoston ? t('cal.today') : (
+                  // On a phone the date tile beside it already says "Sat 21", so the weekday is enough.
+                  <><span className="sm:hidden">{group.day}</span><span className="hidden sm:inline">{group.label}</span></>
+                )}
               </h3>
               <div className="h-px min-w-4 flex-1 bg-(--ev-line)" />
               <span className="shrink-0 text-[14px] text-(--ev-ink-75)">{eventCount(t, group.entries.reduce((n, e) => n + 1 + e.feeders.length, 0))}</span>
