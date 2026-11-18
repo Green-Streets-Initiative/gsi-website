@@ -13,7 +13,6 @@ import { eventPath } from '@/lib/events-url'
 import { BUTTON, CONTAINER, GSI_FONT, H3 } from '@/app/move-in/sign'
 import JumpBar from './JumpBar'
 import FreeLessonForm from './FreeLessonForm'
-import TeachMap, { type MapTeacher } from './TeachMap'
 import RideCards, { type RideCard } from './RideCards'
 import { siteLocale } from '@/lib/site-locale'
 import { SITE_LOCALE_TAG, translator, withLang, type SiteLocale } from '@/lib/site-i18n'
@@ -27,9 +26,9 @@ import { bikeLessonsStrings } from '@/lib/site-strings/bike-lessons'
  * totem-pole page"; ad visitors left in about 4 seconds). One page, one job:
  *   1. The offer and the form, on the first screen at phone and desktop
  *      width, headlined in the learners' own words.
- *   2. How it works (three steps) beside who teaches and where: a real map
- *      of each instructor's area and their usual week, live from Shift's
- *      lesson_teachers (active and not paused, as the form's matcher).
+ *   2. How it works, in three steps. Who teaches comes up in the form once
+ *      the learner's ZIP and times are in (Keith 2026-11-18: the instructor
+ *      map was "not a thing someone coming to this form needs to see").
  *   3. Classes, for people who never learned (Ad Grants "bike lessons" search).
  *   4. Easy group rides, for people who'd like company.
  * A jump bar keeps the four reachable. The form asks one instructor at a time
@@ -72,9 +71,6 @@ type Ev = {
   organizer_name: string | null
 }
 
-/** A free-lesson instructor as the page shows them (no contact details). */
-type Teacher = MapTeacher & { org: string | null; hours: string[]; calls_first: boolean }
-
 /** What a ride card adds to the RPC's row: the picture, the meeting spot, the level (event_details, as the calendar reads it). */
 type RideExtra = Omit<RideCard, 'href' | keyof Ev>
 
@@ -84,7 +80,6 @@ type Loaded = {
   lessons: Ev[]
   rides: Ev[]
   instructors: Instructor[]
-  teachers: Teacher[]
   left: number | null
   slugs: [string, string | null][]
   extras: [string, RideExtra][]
@@ -92,37 +87,17 @@ type Loaded = {
 
 async function readLessons(): Promise<Loaded> {
   // Slugs travel as pairs: the cache stores JSON, which has no Map.
-  const empty: Loaded = { lessons: [], rides: [], instructors: [], teachers: [], left: null, slugs: [], extras: [] }
+  const empty: Loaded = { lessons: [], rides: [], instructors: [], left: null, slugs: [], extras: [] }
   try {
     const supabase = createServerSupabaseClient()
-    const [{ data, error }, { data: tRows }, { data: program }, { count: used }] = await Promise.all([
+    const [{ data, error }, { data: program }, { count: used }] = await Promise.all([
       supabase.rpc('get_bike_lessons'),
-      supabase
-        .from('lesson_teachers')
-        .select('id, name, org, area, lat, lng, reach_miles, hours, calls_first')
-        .eq('active', true)
-        .eq('paused', false),
       // Codes left, counted as the free-lessons function counts them (codesLeft).
       supabase.from('free_lesson_programs').select('max_codes').eq('id', 'brs_road').maybeSingle(),
       supabase.from('free_lesson_codes').select('id', { count: 'exact', head: true }).eq('program_id', 'brs_road'),
     ])
-    const teachers: Teacher[] = ((tRows ?? []) as Record<string, unknown>[])
-      .filter((r) => r.lat != null && r.lng != null)
-      .map((r) => ({
-        id: String(r.id),
-        name: String(r.name),
-        org: (r.org as string | null) ?? null,
-        area: String(r.area ?? ''),
-        lat: Number(r.lat),
-        lng: Number(r.lng),
-        reach_miles: Number(r.reach_miles ?? 5),
-        hours: (r.hours as string[] | null) ?? [],
-        calls_first: !!r.calls_first,
-      }))
-      // Most hours first: the instructor a learner is likeliest to get.
-      .sort((a, b) => b.hours.length - a.hours.length)
     const left = program?.max_codes != null ? Math.max(Number(program.max_codes) - (used ?? 0), 0) : null
-    if (error || !data) return { ...empty, teachers, left }
+    if (error || !data) return { ...empty, left }
     const lessons = (data.lessons ?? []) as Ev[]
     const rides = (data.easy_rides ?? []) as Ev[]
     const instructors = (data.instructors ?? []) as Instructor[]
@@ -152,15 +127,15 @@ async function readLessons(): Promise<Loaded> {
         })
       }
     }
-    return { lessons, rides, instructors, teachers, left, slugs: [...slugs], extras: [...extras] }
+    return { lessons, rides, instructors, left, slugs: [...slugs], extras: [...extras] }
   } catch {
     return empty
   }
 }
 
-// Reading the language renders the page per request; the listings and the
-// instructors refresh every ten minutes.
-const loadCached = unstable_cache(readLessons, ['bike-lessons-listings-v3'], { revalidate: 600 })
+// Reading the language renders the page per request; the listings refresh
+// every ten minutes.
+const loadCached = unstable_cache(readLessons, ['bike-lessons-listings-v4'], { revalidate: 600 })
 
 async function load() {
   const d = await loadCached()
@@ -196,14 +171,12 @@ const H1 = `${HEADLINE} text-balance text-[clamp(2rem,4.6vw,3.125rem)] leading-[
 const H2 = `${HEADLINE} text-balance text-[clamp(1.625rem,3.4vw,2.25rem)] leading-[1.08]`
 const BODY = 'text-[1.0625rem] leading-[1.6] text-navy'
 const LINK = 'font-bold text-forest underline underline-offset-4 hover:opacity-80'
-const DAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']
-const PART_KEYS = ['am', 'pm', 'eve'] as const
 
 export default async function BikeLessonsPage({ searchParams }: { searchParams: SearchParams }) {
   const sp = await searchParams
   const locale = await siteLocale(sp.lang)
   const t = translator(bikeLessonsStrings, locale)
-  const { lessons, rides, instructors, teachers, left, slugs, extras } = await load()
+  const { lessons, rides, instructors, left, slugs, extras } = await load()
   const rideCards: RideCard[] = rides.slice(0, 6).map((e) => ({
     event_type: 'group_ride', image_url: null, location_address: null, location_lat: null, location_lng: null,
     tags: [], pace: null, distance_text: null, no_drop: null, body: null,
@@ -218,12 +191,7 @@ export default async function BikeLessonsPage({ searchParams }: { searchParams: 
     ...instructors.filter((x) => x.kind === 'seasonal'),
     ...instructors.filter((x) => x.kind === 'adaptive'),
   ]
-  const days = t('lessons.days').split(',')
-  const parts = { am: t('lessons.part_am'), pm: t('lessons.part_pm'), eve: t('lessons.part_eve') }
-  const daysLong = t('lessons.days_long').split(',')
-  const partsLong = t('lessons.parts_long').split(',')
-
-  const facts = [t('lessons.fact_free'), t('lessons.fact_minutes'), t('lessons.fact_length')]
+  const facts = [t('lessons.fact_free'), t('lessons.fact_length')]
 
   const streetPhoto = (className: string) => (
     <figure className={`relative overflow-hidden bg-navy/10 ${className}`}>
@@ -241,39 +209,6 @@ export default async function BikeLessonsPage({ searchParams }: { searchParams: 
       </figcaption>
     </figure>
   )
-
-  /** An instructor's usual week, small: the same grid the form uses, read only. */
-  const week = (x: Teacher) => {
-    const on = new Set(x.hours)
-    return (
-      <div className="grid w-full max-w-[260px] grid-cols-[34px_repeat(7,minmax(0,1fr))] gap-1" role="group" aria-label={x.name}>
-        <span />
-        {days.map((d, i) => (
-          <span key={i} aria-hidden="true" className="text-center text-[0.8125rem] font-semibold text-navy/80">
-            {d}
-          </span>
-        ))}
-        {PART_KEYS.map((p, pi) => (
-          <div key={p} className="contents">
-            <span aria-hidden="true" className="flex items-center text-[0.8125rem] font-semibold text-navy/80">
-              {parts[p]}
-            </span>
-            {DAY_KEYS.map((d, di) => {
-              const lit = on.has(`${d}-${p}`)
-              return (
-                <span
-                  key={d}
-                  role="img"
-                  aria-label={`${daysLong[di]} ${partsLong[pi]}${lit ? ' ✓' : ''}`}
-                  className={`h-5 rounded-[5px] border ${lit ? 'border-forest bg-forest' : 'border-[#E3E6DE] bg-white'}`}
-                />
-              )
-            })}
-          </div>
-        ))}
-      </div>
-    )
-  }
 
   const classRow = (x: Instructor) => {
     const meta = [x.price?.[locale] || x.price?.en, x.season?.[locale] || x.season?.en].filter(Boolean).join(' · ')
@@ -364,58 +299,23 @@ export default async function BikeLessonsPage({ searchParams }: { searchParams: 
         </div>
       </section>
 
-      {/* 2. How it works, beside who teaches and where. */}
+      {/* 2. How it works: what happens after they ask, in three steps. */}
       <section id="how" className="scroll-mt-[128px] bg-cream">
         <div className={`${CONTAINER} py-14 lg:py-16`}>
-          <div className="grid gap-12 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-14">
-            <div className="min-w-0">
-              <h2 className={H2}>{t('lessons.how_title')}</h2>
-              <ol className="mt-6 space-y-6">
-                {(['lessons.how_1', 'lessons.how_2', 'lessons.how_3'] as const).map((k, i) => (
-                  <li key={k} className="flex gap-4">
-                    <span className={`${HEADLINE} flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-forest text-[1.375rem] text-white`}>
-                      {i + 1}
-                    </span>
-                    <p className={`${BODY} pt-1.5`}>{t(k)}</p>
-                  </li>
-                ))}
-              </ol>
-              <a href="#street-lesson" className={`${BUTTON} mt-8 inline-flex w-full justify-center sm:w-auto`}>
-                {t('lessons.form_title')}
-              </a>
-            </div>
-
-            {teachers.length > 0 && (
-              <div className="min-w-0">
-                <h2 className={H2}>{t('lessons.teach_title')}</h2>
-                <TeachMap teachers={teachers} title={t('lessons.map_title')} className="mt-6 aspect-[16/11]" />
-                <ul className="mt-4 grid gap-3 sm:grid-cols-2">
-                  {teachers.map((x) => (
-                    <li key={x.id} className="rounded-[14px] border border-navy/10 bg-white p-4">
-                      <div className="flex items-center gap-3">
-                        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-forest text-[1.125rem] font-extrabold text-white">
-                          {x.name.trim().charAt(0).toUpperCase()}
-                        </span>
-                        <span className="min-w-0">
-                          <span className="block text-[1.0625rem] font-bold leading-snug text-navy">{x.name}</span>
-                          {x.org && <span className="block text-[0.9375rem] leading-snug text-navy/80">{x.org}</span>}
-                        </span>
-                      </div>
-                      <p className="mt-3 text-[0.9375rem] leading-snug text-navy">
-                        {t('lessons.who_reach', { miles: x.reach_miles, area: x.area })}
-                      </p>
-                      <div className="mt-3">{week(x)}</div>
-                      {x.calls_first && (
-                        <span className="mt-3 inline-block rounded-full bg-forest/10 px-3 py-1 text-[0.875rem] font-bold text-[#1F4D3A]">
-                          {t('lessons.calls_first')}
-                        </span>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
+          <h2 className={H2}>{t('lessons.how_title')}</h2>
+          <ol className="mt-8 grid gap-6 md:grid-cols-3 md:gap-8">
+            {(['lessons.how_1', 'lessons.how_2', 'lessons.how_3'] as const).map((k, i) => (
+              <li key={k} className="flex gap-4 md:flex-col md:gap-3">
+                <span className={`${HEADLINE} flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-forest text-[1.375rem] text-white`}>
+                  {i + 1}
+                </span>
+                <p className={`${BODY} pt-1.5 md:pt-0`}>{t(k)}</p>
+              </li>
+            ))}
+          </ol>
+          <a href="#street-lesson" className={`${BUTTON} mt-8 inline-flex w-full justify-center sm:w-auto`}>
+            {t('lessons.form_title')}
+          </a>
         </div>
       </section>
 
