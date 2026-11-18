@@ -11,10 +11,18 @@ import { forwardRouteIssue, routeIssueConfigured, routeIssueStatus, siteVersion 
  * report-route-issue, which checks every field, rate-limits per visitor,
  * saves it to route_feedback and answers { ok, id, street, town }.
  *
- * Body: multipart/form-data with `note` (JSON: surface, kinds, note,
- * heading, both_ways, osm, segment) and an optional `photo` (a JPEG the
- * sheet already resized and re-encoded, which drops the camera's EXIF).
+ * Body: multipart/form-data with `note` (JSON: surface, kinds, detail,
+ * note, heading, both_ways, osm, segment) and an optional `photo` (a JPEG
+ * the sheet already resized and re-encoded, which drops the camera's EXIF).
  * Built like /api/spot/report.
+ *
+ * One street-report framework (Shift 01818): `detail` is the second tap
+ * (lane_blocked: car, bins, construction, snow). For a town work order
+ * (rough_pavement, lane_blocked) the answer also carries destination (the
+ * town's own report page) or held (a state road the town can't fix), as a
+ * spot's does. The hand-off ({ handoff: id }, the person opened the town's
+ * page) goes through /api/spot/report, which forwards it the same way, so
+ * the sender matches.
  */
 
 const MAX_NOTE_BYTES = 4096
@@ -81,6 +89,7 @@ export async function POST(req: NextRequest) {
     surface: n.surface,
     note_mode: 'bike',
     kinds: n.kinds,
+    detail: typeof n.detail === 'string' ? n.detail : null,
     note: n.note,
     heading: n.heading,
     both_ways: n.both_ways === true,
@@ -98,6 +107,9 @@ export async function POST(req: NextRequest) {
         id: typeof data.id === 'string' ? data.id : null,
         street: typeof data.street === 'string' ? data.street : null,
         town: typeof data.town === 'string' ? data.town : null,
+        // 01818: only for a town work order.
+        destination: data.destination && typeof data.destination === 'object' ? data.destination : null,
+        held: data.held && typeof data.held === 'object' ? data.held : null,
       })
     }
     // Not saved: the photo has nothing to belong to.

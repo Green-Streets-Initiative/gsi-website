@@ -10,7 +10,9 @@ import {
   NOTE_KINDS, NOTE_MAX, OSM_KINDS, compassKey, nearestOnLine, noteKindLabel, notesT,
   type LatLng, type NoteSheetKind, type NoteSurface,
 } from '@/lib/route-notes'
-import type { NotesKey } from '@/lib/site-strings/notes'
+import { notesStrings, type NotesKey } from '@/lib/site-strings/notes'
+import { copyText, detailsOf, forTown, kindRow, safeUrl, sheetChoices, useReportKinds } from '@/lib/street-reports'
+import { mapsLink } from '@/components/spot/spotCopy'
 import { defaultTrack, type Track } from './NoteDetail'
 
 /*
@@ -29,11 +31,28 @@ import { defaultTrack, type Track } from './NoteDetail'
  * and pin, the same photo handling (resized and re-encoded here, so the
  * camera's location never leaves the device), the same dialog. Saved
  * through /api/notes/add. Mount it to open it; it closes through onClose.
+ *
+ * One street-report framework (Shift 01818): the choices, their second tap
+ * (lane blocked: car, bins, construction, snow) and which go to the town or
+ * OpenStreetMap come from the shared list (src/lib/street-reports.ts). A
+ * town work order (pothole, blocked lane) ends with "Open <town>'s report
+ * page", the words copied, as Report a spot does; on a state road it says
+ * who runs the street instead. The words copied for the town's form are
+ * English, as Report a spot's are (spotCopy.ts).
  */
 
 type Spot = LatLng
 type SendState = 'idle' | 'sending' | 'sent' | 'error' | 'too_many'
 type Photo = { status: 'none' } | { status: 'working' } | { status: 'failed' } | { status: 'ready'; blob: Blob; url: string }
+/** Where a town work order goes (01818): the town's own report page, or why the town can't fix it. */
+type NoteTown = { town: string; url: string | null }
+type NoteHeld = { owner: 'massdot' | 'dcr' | 'state'; street: string | null }
+type SentTo = { id: string | null; town: NoteTown | null; held: NoteHeld | null; text: string }
+
+/** Whether this site has words for a key (the app's i18n.exists). */
+const hasWords = (key: string): boolean => key in notesStrings.en
+/** English words for the town's form, as Report a spot copies (spotCopy.ts copiedText). */
+const enT = notesT('en')
 
 const BOSTON: Spot = { lat: 42.3601, lng: -71.0589 }
 /** Farther than this from the line, the direction can't be told: both ways. */
@@ -156,7 +175,16 @@ export default function NoteSheet({ onClose, surface, line, unordered = false, s
   const [start] = useState<Spot>(() => spot ?? (usable.length > 0 ? usable[Math.floor(usable.length / 2)] : BOSTON))
   const [center, setCenter] = useState<Spot>(start)
   const [street, setStreet] = useState<string | null>(null)
-  const [kind, setKind] = useState<NoteSheetKind | null>(null)
+  const [kind, setKindRaw] = useState<NoteSheetKind | null>(null)
+  const [detail, setDetail] = useState<string | null>(null)
+  const setKind = (k: NoteSheetKind | null) => {
+    setKindRaw(k)
+    setDetail(null)
+  }
+  const reportKinds = useReportKinds()
+  const [sentTo, setSentTo] = useState<SentTo | null>(null)
+  const [copied, setCopied] = useState(false)
+  const [copyFailed, setCopyFailed] = useState(false)
   const [bothWays, setBothWays] = useState(false)
   const [note, setNote] = useState('')
   const [photo, setPhoto] = useState<Photo>({ status: 'none' })
@@ -239,16 +267,24 @@ export default function NoteSheet({ onClose, surface, line, unordered = false, s
   }
 
   const words = note.trim()
-  const canOsm = !!kind && OSM_KINDS.has(kind) && words.length > 0
+  const row = kindRow(reportKinds, kind)
+  const osmKind = row ? row.osm : !!kind && OSM_KINDS.has(kind)
+  const canOsm = !!kind && osmKind && words.length > 0
   const working = photo.status === 'working'
-  const canSend = !!kind && state !== 'sending' && !working
+  const details = detailsOf(reportKinds, kind, (k, d) => hasWords(`notes.detail_${k}_${d}`))
+  const needsDetail = details.length > 0 && !detail
+  const toTown = forTown(row, detail)
+  const canSend = !!kind && state !== 'sending' && !working && !needsDetail
+  const bikeChoices = sheetChoices(reportKinds, 'bike', (k) => hasWords(`notes.kind_${k}`)) as NoteSheetKind[]
+  const choices: NoteSheetKind[] = bikeChoices.length > 0 ? bikeChoices : [...NOTE_KINDS]
 
   const send = async () => {
-    if (!kind || state === 'sending' || working) return
+    if (!kind || state === 'sending' || working || needsDetail) return
     setState('sending')
     const body = {
       surface,
       kinds: [kind],
+      detail: detail ?? null,
       note: words || null,
       heading: both ? null : Math.round(heading ?? 0) % 360,
       both_ways: both,
@@ -260,15 +296,30 @@ export default function NoteSheet({ onClose, surface, line, unordered = false, s
     if (photo.status === 'ready') form.append('photo', photo.blob, 'note.jpg')
     try {
       const res = await fetch('/api/notes/add', { method: 'POST', body: form })
-      const data = (await res.json().catch(() => null)) as { ok?: boolean } | null
+      const data = (await res.json().catch(() => null)) as
+        { ok?: boolean; id?: unknown; destination?: { town?: unknown; url?: unknown } | null; held?: { owner?: unknown; street?: unknown } | null } | null
       if (res.ok && data?.ok) {
         setSentWith({ words: !!body.note, photo: photo.status === 'ready', osm: body.osm })
+        // A town work order: where to send it, or why the town can't fix it.
+        const d = data.destination
+        const h = data.held
+        const owner = h && (h.owner === 'massdot' || h.owner === 'dcr' || h.owner === 'state') ? h.owner : null
+        const problem = detail
+          ? `${noteKindLabel(enT, kind)}: ${enT(`notes.detail_${kind}_${detail}` as NotesKey)}`
+          : noteKindLabel(enT, kind)
+        setSentTo({
+          id: typeof data.id === 'string' ? data.id : null,
+          town: d && typeof d.town === 'string' ? { town: d.town, url: safeUrl(typeof d.url === 'string' ? d.url : null) } : null,
+          held: owner ? { owner, street: typeof h?.street === 'string' ? h.street : null } : null,
+          text: [street ? `${problem} near ${street}.` : `${problem}.`, words, `Map: ${mapsLink(at.lat, at.lng)}`].filter(Boolean).join(' '),
+        })
         setState('sent')
         onAdded?.()
         // Never the words or the place: what was picked and how.
         track('note_added', {
           surface,
           kind,
+          detail,
           both_ways: both,
           has_note: !!body.note,
           has_photo: photo.status === 'ready',
@@ -285,6 +336,26 @@ export default function NoteSheet({ onClose, surface, line, unordered = false, s
     }
   }
 
+  // The town's page opens in a new tab with the words copied. A real link,
+  // so no browser blocks it as a pop-up; the copy starts first. The hand-off
+  // goes through /api/spot/report, which forwards it as this visitor.
+  const openTownPage = () => {
+    if (!sentTo) return
+    void copyText(sentTo.text).then((ok) => {
+      setCopied(ok)
+      setCopyFailed(!ok)
+    })
+    if (sentTo.id) {
+      void fetch('/api/spot/report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ handoff: sentTo.id }),
+        keepalive: true,
+      }).catch(() => {})
+    }
+    track('note_handed_off', { surface, kind, detail, town: sentTo.town?.town ?? null })
+  }
+
   const where = street
     ? both
       ? t('notes.where_both', { street })
@@ -295,6 +366,11 @@ export default function NoteSheet({ onClose, surface, line, unordered = false, s
 
   const tile = (on: boolean) =>
     `min-h-[48px] cursor-pointer rounded-xl border px-3 py-2 text-left text-[0.9375rem] font-semibold leading-tight transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2D6A4F] ${
+      on ? 'border-[#2D6A4F] bg-[#2D6A4F] text-white' : 'border-[rgba(25,26,46,0.18)] bg-white text-[#191A2E] hover:border-[#2D6A4F]'
+    }`
+  // Report a spot's second-tap chip (components/spot/ReportSpotSheet.tsx).
+  const chip = (on: boolean) =>
+    `min-h-[44px] cursor-pointer rounded-full border px-3.5 text-left text-[0.9375rem] font-semibold leading-tight transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2D6A4F] ${
       on ? 'border-[#2D6A4F] bg-[#2D6A4F] text-white' : 'border-[rgba(25,26,46,0.18)] bg-white text-[#191A2E] hover:border-[#2D6A4F]'
     }`
   const quietButton =
@@ -337,6 +413,41 @@ export default function NoteSheet({ onClose, surface, line, unordered = false, s
               <p className="mt-2 text-[0.9375rem] leading-snug text-[#4A4D68]">{sentWith.photo ? t('notes.thanks_photo') : t('notes.thanks_words')}</p>
             )}
             {sentWith.osm && <p className="mt-2 text-[0.9375rem] leading-snug text-[#4A4D68]">{t('notes.thanks_osm_web')}</p>}
+            {sentTo?.held ? (
+              <p className="mt-2 text-[0.9375rem] leading-snug text-[#4A4D68]">
+                {t('notes.held_body', {
+                  street: sentTo.held.street ?? t('spot_report.this_street'),
+                  owner: t(`spot_report.owner_${sentTo.held.owner}`),
+                  town: sentTo.town?.town ?? t('spot_report.the_town'),
+                })}
+              </p>
+            ) : sentTo?.town?.url ? (
+              <>
+                <p className="mt-4 text-[1rem] leading-snug text-[#191A2E]">{t('notes.thanks_town_body', { town: sentTo.town.town })}</p>
+                <a
+                  href={sentTo.town.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={openTownPage}
+                  className={`${primary} mt-3 flex items-center justify-center px-4 text-center`}
+                >
+                  {t('spot_report.open_town', { town: sentTo.town.town })}
+                </a>
+                <p className="mt-2 text-center text-[0.875rem] leading-snug text-[#4A4D68]">
+                  {copied ? t('spot_report.copied_done') : t('spot_report.copied_note')}
+                </p>
+                {copyFailed && (
+                  <textarea
+                    readOnly
+                    value={sentTo.text}
+                    rows={3}
+                    onFocus={(e) => e.currentTarget.select()}
+                    aria-label={t('spot_report.copied_label')}
+                    className="mt-2 block w-full resize-none rounded-[10px] border-[1.5px] border-[rgba(25,26,46,0.15)] bg-white px-3 py-2.5 text-[0.9375rem] text-[#191A2E]"
+                  />
+                )}
+              </>
+            ) : null}
             <div className="pt-5" style={{ paddingBottom: 'max(14px, env(safe-area-inset-bottom))' }}>
               <button
                 type="button"
@@ -373,7 +484,7 @@ export default function NoteSheet({ onClose, surface, line, unordered = false, s
               <fieldset className="m-0 mt-5 border-0 p-0">
                 <legend className="mb-2 text-[0.9375rem] font-bold">{t('notes.what_like')}</legend>
                 <div role="radiogroup" aria-label={t('notes.what_like')} className="grid grid-cols-2 gap-2">
-                  {NOTE_KINDS.map((k) => (
+                  {choices.map((k) => (
                     <button key={k} type="button" role="radio" aria-checked={kind === k} onClick={() => setKind(kind === k ? null : k)} className={tile(kind === k)}>
                       {noteKindLabel(t, k)}
                     </button>
@@ -391,6 +502,20 @@ export default function NoteSheet({ onClose, surface, line, unordered = false, s
                   {noteKindLabel(t, 'map_wrong')}
                 </button>
               </fieldset>
+
+              {/* The second tap, where it decides who fixes it and how long it lasts */}
+              {kind && details.length > 0 && (
+                <div className="mt-4">
+                  <p id={`${titleId}-which`} className="mb-2 text-[0.9375rem] font-bold">{t('spot_report.which_one')}</p>
+                  <div role="radiogroup" aria-labelledby={`${titleId}-which`} className="flex flex-wrap gap-2">
+                    {details.map((d) => (
+                      <button key={d} type="button" role="radio" aria-checked={detail === d} onClick={() => setDetail(detail === d ? null : d)} className={chip(detail === d)}>
+                        {t(`notes.detail_${kind}_${d}` as NotesKey)}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {kind && (
                 <>
@@ -451,7 +576,7 @@ export default function NoteSheet({ onClose, surface, line, unordered = false, s
                   </div>
 
                   {/* A map fact can also go to OpenStreetMap, in their words */}
-                  {OSM_KINDS.has(kind) && (
+                  {osmKind && (
                     <label className={`mt-4 flex min-h-[44px] items-center gap-3 text-[0.9375rem] leading-snug ${canOsm ? 'cursor-pointer text-[#191A2E]' : 'text-[#4A4D68]'}`}>
                       <input
                         type="checkbox"
@@ -473,12 +598,12 @@ export default function NoteSheet({ onClose, surface, line, unordered = false, s
                   {state === 'too_many' ? t('route_report.too_many') : t('route_report.failed')}
                 </p>
               ) : (
-                <p className="mb-2 text-[0.9375rem] leading-snug text-[#4A4D68]">{kind === 'map_wrong' ? t('notes.next_map') : t('notes.next')}</p>
+                <p className="mb-2 text-[0.9375rem] leading-snug text-[#4A4D68]">{kind === 'map_wrong' ? t('notes.next_map') : toTown ? t('notes.next_town') : t('notes.next')}</p>
               )}
               <button type="button" onClick={() => void send()} disabled={!canSend} className={primary}>
                 {state === 'sending' || working ? (
                   <span role="status" aria-label={t('notes.send')} className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-[rgba(25,26,46,0.2)] border-t-[#191A2E] align-middle" />
-                ) : kind ? t('notes.send') : t('notes.send_pick_first')}
+                ) : !kind ? t('notes.send_pick_first') : needsDetail ? t('spot_report.send_pick_detail') : t('notes.send')}
               </button>
             </div>
           </>
