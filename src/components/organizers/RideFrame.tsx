@@ -89,7 +89,7 @@ export default function RideFrame({ id, children }: { id: string; children: Reac
     { href: `${base}/promote`, label: 'Promote', short: 'Promote' },
     { href: `${base}/turnout`, label: 'Turnout', short: 'Turnout' },
     ...(hasPhotos ? [{ href: `${base}/photos`, label: 'Photos', short: 'Photos' }] : []),
-    { href: `${base}/team`, label: 'Leaders', short: 'Leaders' },
+    { href: `${base}/team`, label: 'Organizers', short: 'Organizers' },
     ...(detail.can_edit ? [{ href: `${base}/edit`, label: `Edit ${thing}`, short: 'Edit' }] : []),
   ]
   // Edit ride and Plan a date are full-page forms with their own heading.

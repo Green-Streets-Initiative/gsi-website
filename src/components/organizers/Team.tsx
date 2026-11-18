@@ -52,9 +52,9 @@ export default function Team() {
       const who = email.trim()
       setMsg({
         tone: 'good',
-        text: res.status === 'invited' ? `Invited ${who}.${res.emailed ? ' They have an email with how to sign in.' : res.already_emailed ? ' We already emailed them today, so no new email went out.' : ''} Once they sign in here or in the app with that address, they're a leader.`
-          : res.status === 'made_leader' ? `${who} was already on the ride and is now a leader.${res.emailed ? " We've let them know." : ''}`
-            : res.status === 'already_leader' ? `${who} is already a leader.` : `${who} organizes this ride.`,
+        text: res.status === 'invited' ? `Invited ${who}.${res.emailed ? ' They have an email with how to sign in.' : res.already_emailed ? ' We already emailed them today, so no new email went out.' : ''} Once they sign in here or in the app with that address, they're a co-organizer.`
+          : res.status === 'made_leader' ? `${who} was already on the ride and is now a co-organizer.${res.emailed ? " We've let them know." : ''}`
+            : res.status === 'already_leader' ? `${who} is already a co-organizer.` : `${who} organizes this ride.`,
       })
       setEmail('')
       await reload()
@@ -110,12 +110,12 @@ export default function Team() {
 
       {askedMe && !ended && (
         <Card>
-          <SectionTitle hint="You'd become the organizer. They stay on as a leader.">
+          <SectionTitle hint="You'd become the organizer. They stay on as a co-organizer.">
             {detail.organizer_person || 'The organizer'} asked you to run this ride
           </SectionTitle>
           <div className="flex flex-wrap gap-2">
             <Button variant="primary" busy={busy === 'accept'}
-              onClick={() => void handoff('accept', () => answerHandoff(r.id, true), "You're the organizer now. They stay on as a leader.")}>
+              onClick={() => void handoff('accept', () => answerHandoff(r.id, true), "You're the organizer now. They stay on as a co-organizer.")}>
               Yes, I&apos;ll run it
             </Button>
             <Button busy={busy === 'decline'}
@@ -127,7 +127,7 @@ export default function Team() {
       )}
 
       <Card>
-        <SectionTitle hint="Leaders see who's coming and post updates.">
+        <SectionTitle hint="Co-organizers see who's coming and post updates.">
           Who runs this ride
         </SectionTitle>
         <ul className="divide-y divide-(--ev-line)">
@@ -135,12 +135,12 @@ export default function Team() {
             <li key={l.member_id} className="flex flex-wrap items-center justify-between gap-3 py-3">
               <div className="flex items-center gap-2">
                 <span className="text-[15px] font-semibold text-(--ev-ink)">{l.name}{l.is_you ? ' (you)' : ''}</span>
-                <Badge tone={l.role === 'organizer' ? 'good' : 'plain'}>{l.role === 'organizer' ? 'Organizer' : 'Leader'}</Badge>
+                <Badge tone={l.role === 'organizer' ? 'good' : 'plain'}>{l.role === 'organizer' ? 'Organizer' : 'Co-organizer'}</Badge>
               </div>
               {canRename && l.role === 'leader' && (
                 <Button size="sm" variant="ghost" busy={busy === l.member_id}
-                  onClick={() => void act(l.member_id, () => setMemberRole(r.id, l.user_id, 'rider'), `${l.name} is no longer a leader. They stay on the ride.`)}>
-                  Remove as leader
+                  onClick={() => void act(l.member_id, () => setMemberRole(r.id, l.user_id, 'rider'), `${l.name} is no longer a co-organizer. They stay on the ride.`)}>
+                  Remove as co-organizer
                 </Button>
               )}
             </li>
@@ -165,7 +165,7 @@ export default function Team() {
       {manage && r.status !== 'archived' && (
         <Card>
           <SectionTitle hint="They get an email and sign in with that address.">
-            Invite a leader
+            Invite a co-organizer
           </SectionTitle>
           <form onSubmit={invite} className="flex flex-col gap-2 sm:flex-row sm:items-end">
             <div className="flex-1">
@@ -182,7 +182,7 @@ export default function Team() {
 
       {manage && !ended && r.invite_code && (
         <Card>
-          <SectionTitle hint="Once they join in the Shift app, make them a leader below.">
+          <SectionTitle hint="Once they join in the Shift app, make them a co-organizer below.">
             Or send the ride&apos;s link
           </SectionTitle>
           <p className="break-all text-[15px] text-(--ev-ink-85)">{rideJoinUrl(r.invite_code)}</p>
@@ -210,14 +210,14 @@ export default function Team() {
 
       {canRename && riders.length > 0 && (
         <Card>
-          <SectionTitle hint="People already on the ride with the Shift app.">Make someone on the ride a leader</SectionTitle>
+          <SectionTitle hint="People already on the ride with the Shift app.">Make someone on the ride a co-organizer</SectionTitle>
           <ul className="divide-y divide-(--ev-line)">
             {(allRiders ? riders : riders.slice(0, 6)).map((m) => (
               <li key={m.member_id} className="flex flex-wrap items-center justify-between gap-3 py-2.5">
                 <span className="text-[15px] text-(--ev-ink)">{m.display_name}</span>
                 <Button size="sm" busy={busy === m.member_id}
-                  onClick={() => void act(m.member_id, () => setMemberRole(r.id, m.user_id!, 'leader'), `${m.display_name} is now a leader.`)}>
-                  Make a leader
+                  onClick={() => void act(m.member_id, () => setMemberRole(r.id, m.user_id!, 'leader'), `${m.display_name} is now a co-organizer.`)}>
+                  Make a co-organizer
                 </Button>
               </li>
             ))}
@@ -232,7 +232,7 @@ export default function Team() {
 
       {canRename && !ended && (waitingOn || handoffTo || takers.length > 0) && (
         <Card>
-          <SectionTitle hint="They become the organizer once they say yes. Until then, you are. After, you stay on as a leader.">
+          <SectionTitle hint="They become the organizer once they say yes. Until then, you are. After, you stay on as a co-organizer.">
             Hand the ride to someone
           </SectionTitle>
           {handoffTo ? (
@@ -253,7 +253,7 @@ export default function Team() {
                   <Select id="handoff-to" value={pick} onChange={(e) => setPick(e.target.value)}>
                     <option value="">Choose someone</option>
                     {takers.map((m) => (
-                      <option key={m.member_id} value={m.user_id!}>{m.display_name}{m.role === 'leader' ? ' (leader)' : ''}</option>
+                      <option key={m.member_id} value={m.user_id!}>{m.display_name}{m.role === 'leader' ? ' (co-organizer)' : ''}</option>
                     ))}
                   </Select>
                 </Field>
@@ -275,7 +275,7 @@ export default function Team() {
           </Button>
         </>}>
         <p className="text-[15px] leading-snug text-(--ev-ink-85)">
-          {asking?.display_name} gets a notice in the Shift app and becomes the organizer when they say yes. You&apos;ll stay on as a leader.
+          {asking?.display_name} gets a notice in the Shift app and becomes the organizer when they say yes. You&apos;ll stay on as a co-organizer.
         </p>
       </Dialog>
     </div>
