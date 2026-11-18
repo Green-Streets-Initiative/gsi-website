@@ -166,6 +166,16 @@ export default function EventCard({ event, userLat, userLng, showAway, showDate,
     </div>
   )
 
+  const saveBtn = (cls: string) => onToggleSave && (
+    <button
+      onClick={(e) => { e.preventDefault(); e.stopPropagation(); onToggleSave(event.id) }}
+      className={`relative z-20 shrink-0 items-center justify-center rounded-full border border-(--ev-line-mid) transition-colors hover:border-(--ev-line-stronger) ${cls}`}
+      aria-label={saved ? t('card.unsave') : t('card.save')}
+    >
+      <Bookmark size={18} className={saved ? 'fill-(--ev-accent) text-(--ev-accent)' : 'text-(--ev-ink-75)'} />
+    </button>
+  )
+
   return (
     <div className={`group relative flex min-h-[72px] items-start gap-3 border border-(--ev-line) bg-(--ev-card) p-3.5 transition-all duration-200 hover:border-(--ev-line-mid) hover:bg-(--ev-card-hover) sm:gap-4 sm:p-4 lg:min-h-0 lg:items-center lg:px-4 lg:py-3 ${attached ? 'rounded-t-[14px]' : 'rounded-[14px]'}`}>
       <Link href={withLang(eventPath(event, hrefBase), locale)} onClick={onOpen} className={`absolute inset-0 z-10 ${attached ? 'rounded-t-[14px]' : 'rounded-[14px]'}`} aria-label={event.title} />
@@ -180,29 +190,33 @@ export default function EventCard({ event, userLat, userLng, showAway, showDate,
         )}
       </div>
 
-      {/* The flyer when there is one; else the host's square logo, a map of the start, or the type tile */}
-      {event.image_url && flyerOk ? (
-        <div
-          className="h-16 w-16 shrink-0 overflow-hidden rounded-[12px] border lg:h-12 lg:w-12 lg:rounded-[10px]"
-          style={{ borderColor: ink + tint.spotLine, backgroundColor: ink + tint.thumb }}
-        >
-          <img ref={flyerRef} src={event.image_url} alt="" className="h-full w-full object-cover" loading="lazy" onError={() => setFlyerOk(false)} />
-        </div>
-      ) : (
-        <CardThumb
-          lat={deadline || privateHome || placeless ? null : event.location_lat}
-          lng={deadline || privateHome || placeless ? null : event.location_lng}
-          logo={event.organizer_logo ?? null}
-          fallback={typeTile}
-        />
-      )}
+      {/* Phones: the save button sits under the square, so the title gets the width. */}
+      <div className="flex shrink-0 flex-col items-center gap-2">
+        {/* The flyer when there is one; else the host's square logo, a map of the start, or the type tile */}
+        {event.image_url && flyerOk ? (
+          <div
+            className="h-16 w-16 shrink-0 overflow-hidden rounded-[12px] border lg:h-12 lg:w-12 lg:rounded-[10px]"
+            style={{ borderColor: ink + tint.spotLine, backgroundColor: ink + tint.thumb }}
+          >
+            <img ref={flyerRef} src={event.image_url} alt="" className="h-full w-full object-cover" loading="lazy" onError={() => setFlyerOk(false)} />
+          </div>
+        ) : (
+          <CardThumb
+            lat={deadline || privateHome || placeless ? null : event.location_lat}
+            lng={deadline || privateHome || placeless ? null : event.location_lng}
+            logo={event.organizer_logo ?? null}
+            fallback={typeTile}
+          />
+        )}
+        {saveBtn('flex h-11 w-11 lg:hidden')}
+      </div>
 
       {/* Body */}
       <div className="min-w-0 flex-1">
         <p className="text-[14px] font-semibold leading-snug lg:hidden" style={{ color: ink }}>
           {metaLabel}
         </p>
-        <h3 className={`mt-0.5 line-clamp-2 font-(family-name:--font-headline) text-[17px] font-extrabold leading-snug tracking-[-0.01em] sm:text-[18px] lg:mt-0 lg:line-clamp-1 lg:text-[17px] ${off ? 'text-(--ev-ink-75)' : 'text-(--ev-ink)'}`}>
+        <h3 className={`mt-0.5 line-clamp-3 font-(family-name:--font-headline) text-[17px] font-extrabold leading-snug tracking-[-0.01em] sm:text-[18px] lg:mt-0 lg:line-clamp-1 lg:text-[17px] ${off ? 'text-(--ev-ink-75)' : 'text-(--ev-ink)'}`}>
           {off && <span className="mr-2 inline-block rounded-full bg-[#FBE4DF] px-2 py-0.5 align-middle font-(family-name:--font-gsi) text-[13px] font-bold leading-tight text-(--ev-danger)">{t('card.cancelled')}</span>}
           <span className={off ? 'line-through' : undefined}>{event.title}</span>
         </h3>
@@ -273,16 +287,8 @@ export default function EventCard({ event, userLat, userLng, showAway, showDate,
         {transit && <TransitLine tr={transit} label={walkTo} className="max-w-full" />}
       </div>
 
-      {/* Bookmark */}
-      {onToggleSave && (
-        <button
-          onClick={(e) => { e.preventDefault(); e.stopPropagation(); onToggleSave(event.id) }}
-          className="relative z-20 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-(--ev-line-mid) transition-colors hover:border-(--ev-line-stronger) lg:h-9 lg:w-9"
-          aria-label={saved ? t('card.unsave') : t('card.save')}
-        >
-          <Bookmark size={18} className={saved ? 'fill-(--ev-accent) text-(--ev-accent)' : 'text-(--ev-ink-75)'} />
-        </button>
-      )}
+      {/* Bookmark (desktop; on phones it sits under the square) */}
+      {saveBtn('hidden h-9 w-9 lg:flex')}
     </div>
   )
 }
