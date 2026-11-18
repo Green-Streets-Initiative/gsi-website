@@ -10,38 +10,34 @@ import LessonAlertForm from '@/components/guides/LessonAlertForm'
 import type { Placement } from '@/components/home/tracking'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { eventPath } from '@/lib/events-url'
-import { BUTTON, CONTAINER, GSI_FONT, H3, SignHero } from '@/app/move-in/sign'
+import { BUTTON, CONTAINER, GSI_FONT, H3 } from '@/app/move-in/sign'
 import JumpBar from './JumpBar'
 import FreeLessonForm from './FreeLessonForm'
+import TeachMap, { type MapTeacher } from './TeachMap'
 import RideCards, { type RideCard } from './RideCards'
 import { siteLocale } from '@/lib/site-locale'
 import { SITE_LOCALE_TAG, translator, withLang, type SiteLocale } from '@/lib/site-i18n'
 import { bikeLessonsStrings } from '@/lib/site-strings/bike-lessons'
 
 /*
- * gogreenstreets.org/bike-lessons: the landing page for the Ad Grants "Bike
- * lessons" test (Keith, 2026-10-27). People search "bike lessons near me" and
- * "adult bike lessons", not "learn to ride in traffic", so the page answers
- * that search and sorts people by where they're starting, in the app's own
- * three answers (bike-confidence.tsx): nervous in traffic, not sure I can
- * ride, would like company. The free lesson form shows the instructors who
- * reach the visitor by first name (Shift 01750, matching 2026-11-12).
+ * gogreenstreets.org/bike-lessons: the free one-on-one street lesson, for
+ * adults who can ride but whom busy streets scare (persona `first-timer`).
  *
- * Listings come live from get_bike_lessons (Shift 01218): upcoming classes
- * from the events calendar, easy-pace group rides, and bike_instructors, the
- * same rows the app and the bike guides show.
+ * Rebuilt 2026-11-18 (Keith: "CLEAR, SIMPLE, persona-aligned, not a
+ * totem-pole page"; ad visitors left in about 4 seconds). One page, one job:
+ *   1. The offer and the form, on the first screen at phone and desktop
+ *      width, headlined in the learners' own words.
+ *   2. How it works (three steps) beside who teaches and where: a real map
+ *      of each instructor's area and their usual week, live from Shift's
+ *      lesson_teachers (active and not paused, as the form's matcher).
+ *   3. Classes, for people who never learned (Ad Grants "bike lessons" search).
+ *   4. Easy group rides, for people who'd like company.
+ * A jump bar keeps the four reachable. The form asks one instructor at a time
+ * (Shift 01750, the free-lessons function).
  *
- * The free 1:1 street lesson: the form here asks one instructor at a time
- * who reaches the visitor and usually teaches when they're free (Shift
- * 01750 and the free-lessons function; Keith: no app needed first). Shift is
- * offered after the request is in.
- *
- * Live 2026-10-28 (Keith: go) for the Ad Grants "learn to ride" test.
- *
- * In the visitor's language (?lang=, then the browser's), with the footer's
- * language links (Keith 2026-11-08). Strings: src/lib/site-strings/bike-lessons.ts.
- * Class, ride and instructor names come from the calendar as published;
- * instructor details use their own translations when the row has them.
+ * Listings come live from get_bike_lessons (Shift 01218), the same rows the
+ * app and the bike guides show. In the visitor's language (?lang=, then the
+ * browser's). Strings: src/lib/site-strings/bike-lessons.ts.
  */
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>
@@ -76,18 +72,57 @@ type Ev = {
   organizer_name: string | null
 }
 
+/** A free-lesson instructor as the page shows them (no contact details). */
+type Teacher = MapTeacher & { org: string | null; hours: string[]; calls_first: boolean }
+
 /** What a ride card adds to the RPC's row: the picture, the meeting spot, the level (event_details, as the calendar reads it). */
 type RideExtra = Omit<RideCard, 'href' | keyof Ev>
 
 const RIDE_FIELDS = 'content_id, image_url, location_address, location_lat, location_lng, event_type, tags, pace, distance_text, no_drop, content_items!inner(body)'
 
-async function readLessons(): Promise<{ lessons: Ev[]; rides: Ev[]; instructors: Instructor[]; slugs: [string, string | null][]; extras: [string, RideExtra][] }> {
+type Loaded = {
+  lessons: Ev[]
+  rides: Ev[]
+  instructors: Instructor[]
+  teachers: Teacher[]
+  left: number | null
+  slugs: [string, string | null][]
+  extras: [string, RideExtra][]
+}
+
+async function readLessons(): Promise<Loaded> {
   // Slugs travel as pairs: the cache stores JSON, which has no Map.
-  const empty = { lessons: [], rides: [], instructors: [], slugs: [] as [string, string | null][], extras: [] as [string, RideExtra][] }
+  const empty: Loaded = { lessons: [], rides: [], instructors: [], teachers: [], left: null, slugs: [], extras: [] }
   try {
     const supabase = createServerSupabaseClient()
-    const { data, error } = await supabase.rpc('get_bike_lessons')
-    if (error || !data) return empty
+    const [{ data, error }, { data: tRows }, { data: program }, { count: used }] = await Promise.all([
+      supabase.rpc('get_bike_lessons'),
+      supabase
+        .from('lesson_teachers')
+        .select('id, name, org, area, lat, lng, reach_miles, hours, calls_first')
+        .eq('active', true)
+        .eq('paused', false),
+      // Codes left, counted as the free-lessons function counts them (codesLeft).
+      supabase.from('free_lesson_programs').select('max_codes').eq('id', 'brs_road').maybeSingle(),
+      supabase.from('free_lesson_codes').select('id', { count: 'exact', head: true }).eq('program_id', 'brs_road'),
+    ])
+    const teachers: Teacher[] = ((tRows ?? []) as Record<string, unknown>[])
+      .filter((r) => r.lat != null && r.lng != null)
+      .map((r) => ({
+        id: String(r.id),
+        name: String(r.name),
+        org: (r.org as string | null) ?? null,
+        area: String(r.area ?? ''),
+        lat: Number(r.lat),
+        lng: Number(r.lng),
+        reach_miles: Number(r.reach_miles ?? 5),
+        hours: (r.hours as string[] | null) ?? [],
+        calls_first: !!r.calls_first,
+      }))
+      // Most hours first: the instructor a learner is likeliest to get.
+      .sort((a, b) => b.hours.length - a.hours.length)
+    const left = program?.max_codes != null ? Math.max(Number(program.max_codes) - (used ?? 0), 0) : null
+    if (error || !data) return { ...empty, teachers, left }
     const lessons = (data.lessons ?? []) as Ev[]
     const rides = (data.easy_rides ?? []) as Ev[]
     const instructors = (data.instructors ?? []) as Instructor[]
@@ -117,15 +152,15 @@ async function readLessons(): Promise<{ lessons: Ev[]; rides: Ev[]; instructors:
         })
       }
     }
-    return { lessons, rides, instructors, slugs: [...slugs], extras: [...extras] }
+    return { lessons, rides, instructors, teachers, left, slugs: [...slugs], extras: [...extras] }
   } catch {
     return empty
   }
 }
 
-// Reading the language renders the page per request; the listings still
-// refresh every ten minutes, as when the whole page was cached for 600s.
-const loadCached = unstable_cache(readLessons, ['bike-lessons-listings-v2'], { revalidate: 600 })
+// Reading the language renders the page per request; the listings and the
+// instructors refresh every ten minutes.
+const loadCached = unstable_cache(readLessons, ['bike-lessons-listings-v3'], { revalidate: 600 })
 
 async function load() {
   const d = await loadCached()
@@ -145,22 +180,6 @@ function when(e: Ev, locale: SiteLocale): string {
   return date.toLocaleString(SITE_LOCALE_TAG[locale], opts)
 }
 
-type K = keyof (typeof bikeLessonsStrings)['en']
-
-const STARTS: { href: string; label: K; hint: K }[] = [
-  { href: '#street-lesson', label: 'lessons.start_nervous', hint: 'lessons.start_nervous_hint' },
-  { href: '#classes', label: 'lessons.start_learn', hint: 'lessons.start_learn_hint' },
-  { href: '#group-rides', label: 'lessons.start_company', hint: 'lessons.start_company_hint' },
-]
-
-/** "Free" and "one-on-one" are already in the headline, so only the facts it doesn't say. */
-const FACTS: K[] = ['lessons.fact_who', 'lessons.fact_where']
-
-/** The two bike guides, in the reader's language (both are translated: /es, /pt-BR, /zh-Hans). */
-function guideHref(slug: string, locale: SiteLocale): string {
-  return locale === 'en' ? `/guides/${slug}` : `/${locale}/guides/${slug}`
-}
-
 /** A real street of the kind learners worry about, where our first requests came from (Somerville). */
 const STREET_PHOTO = {
   src: '/bike-lessons/washington-st-somerville.jpg',
@@ -172,19 +191,19 @@ const STREET_PHOTO = {
 /** Credit is fine print: one line, so it doesn't cover the short phone band. */
 const CREDIT = 'absolute bottom-2 right-2 whitespace-nowrap rounded-md bg-[rgba(25,26,46,.6)] px-2 py-0.5 text-[0.75rem] leading-snug text-white'
 
-const H2 = '[font-family:var(--font-overpass),Trebuchet_MS,sans-serif] text-[clamp(1.625rem,3.4vw,2.25rem)] font-extrabold leading-[1.08] text-navy'
+const HEADLINE = '[font-family:var(--font-overpass),Trebuchet_MS,sans-serif] font-extrabold text-navy'
+const H1 = `${HEADLINE} text-balance text-[clamp(2rem,4.6vw,3.125rem)] leading-[1.04]`
+const H2 = `${HEADLINE} text-balance text-[clamp(1.625rem,3.4vw,2.25rem)] leading-[1.08]`
 const BODY = 'text-[1.0625rem] leading-[1.6] text-navy'
-const ROW = 'block rounded-[12px] border border-navy/10 bg-white px-4 py-3 transition-colors hover:border-forest/50'
+const LINK = 'font-bold text-forest underline underline-offset-4 hover:opacity-80'
+const DAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']
+const PART_KEYS = ['am', 'pm', 'eve'] as const
 
 export default async function BikeLessonsPage({ searchParams }: { searchParams: SearchParams }) {
   const sp = await searchParams
   const locale = await siteLocale(sp.lang)
-  // Ads and partner links promise the free lesson, so they open on it (?for=street, or any
-  // lessons-* campaign); everyone else gets the page that starts with "Where are you starting?".
-  const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) ?? ''
-  const streetFirst = one(sp.for) === 'street' || one(sp.utm_campaign).startsWith('lessons')
   const t = translator(bikeLessonsStrings, locale)
-  const { lessons, rides, instructors, slugs, extras } = await load()
+  const { lessons, rides, instructors, teachers, left, slugs, extras } = await load()
   const rideCards: RideCard[] = rides.slice(0, 6).map((e) => ({
     event_type: 'group_ride', image_url: null, location_address: null, location_lat: null, location_lng: null,
     tags: [], pace: null, distance_text: null, no_drop: null, body: null,
@@ -192,34 +211,19 @@ export default async function BikeLessonsPage({ searchParams }: { searchParams: 
     ...extras.get(e.id),
     href: withLang(eventPath({ id: e.id, slug: slugs.get(e.id) ?? null }), locale),
   }))
-  const school = instructors.find((x) => x.kind === 'school')
   const league = instructors.find((x) => x.id === 'league_instructors')
-  const seasonal = instructors.filter((x) => x.kind === 'seasonal')
-  const adaptive = instructors.filter((x) => x.kind === 'adaptive')
+  // Classes for people who never learned: the school you can book any time, the city classes, then adaptive.
+  const classRows = [
+    ...instructors.filter((x) => x.kind === 'school'),
+    ...instructors.filter((x) => x.kind === 'seasonal'),
+    ...instructors.filter((x) => x.kind === 'adaptive'),
+  ]
+  const days = t('lessons.days').split(',')
+  const parts = { am: t('lessons.part_am'), pm: t('lessons.part_pm'), eve: t('lessons.part_eve') }
+  const daysLong = t('lessons.days_long').split(',')
+  const partsLong = t('lessons.parts_long').split(',')
 
-  const eventRow = (e: Ev) => (
-    <li key={e.id}>
-      <Link href={withLang(eventPath({ id: e.id, slug: slugs.get(e.id) ?? null }), locale)} className={ROW}>
-        <span className="block text-[1rem] font-bold leading-snug text-navy">{e.title}</span>
-        <span className="block text-[0.9375rem] leading-snug text-navy/80">
-          {[when(e, locale), e.location_name].filter(Boolean).join(' · ')}
-        </span>
-      </Link>
-    </li>
-  )
-
-  const instructorRow = (x: Instructor) => {
-    const meta = [x.price?.[locale] || x.price?.en, x.season?.[locale] || x.season?.en].filter(Boolean).join(' · ')
-    return (
-      <li key={x.id}>
-        <a href={x.url} target="_blank" rel="noopener noreferrer" className={ROW}>
-          <span className="block text-[1rem] font-bold leading-snug text-navy">{x.name}</span>
-          <span className="block text-[0.9375rem] leading-snug text-navy/80">{x.details[locale] || x.details.en}</span>
-          {meta && <span className="mt-1 block text-[0.9375rem] font-bold leading-snug text-navy">{meta}</span>}
-        </a>
-      </li>
-    )
-  }
+  const facts = [t('lessons.fact_free'), t('lessons.fact_minutes'), t('lessons.fact_length')]
 
   const streetPhoto = (className: string) => (
     <figure className={`relative overflow-hidden bg-navy/10 ${className}`}>
@@ -229,7 +233,7 @@ export default async function BikeLessonsPage({ searchParams }: { searchParams: 
         alt={t('lessons.photo_alt')}
         width={STREET_PHOTO.width}
         height={STREET_PHOTO.height}
-        loading={streetFirst ? 'eager' : 'lazy'}
+        loading="eager"
         className="absolute inset-0 h-full w-full object-cover"
       />
       <figcaption className={CREDIT}>
@@ -238,195 +242,229 @@ export default async function BikeLessonsPage({ searchParams }: { searchParams: 
     </figure>
   )
 
-  // Nervous in traffic: the free 1:1 lesson. First on the page for ad and partner links.
-  const streetLesson = (
-    <section id="street-lesson" className={`scroll-mt-[128px] bg-white ${streetFirst ? 'pt-[60px]' : ''}`}>
-      <div className={`${CONTAINER} ${streetFirst ? 'pt-8 pb-14' : 'py-14'} lg:py-16`}>
-        {/* On a phone the street comes first, as a short band; on a wide screen it sits under the facts. */}
-        {streetPhoto(`-mx-6 mb-6 h-[150px] sm:mx-0 sm:h-[220px] sm:rounded-[16px] lg:hidden ${streetFirst ? '-mt-8 sm:mt-0' : ''}`)}
-        <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_380px] lg:gap-14">
-          <div className="min-w-0">
-            <h2 className={`${H2} text-balance`}>{t('lessons.street_title')}</h2>
-            <p className={`${BODY} mt-4 max-w-[640px]`}>
-              {t('lessons.street_body')}
-            </p>
-            <ul className="mt-6 flex max-w-[640px] flex-wrap gap-2" aria-label={t('lessons.facts_label')}>
-              {FACTS.map((f) => (
-                <li key={f} className="rounded-full bg-forest/10 px-4 py-2 text-[0.9375rem] font-bold leading-snug text-navy">
-                  {t(f)}
-                </li>
-              ))}
-            </ul>
-            {streetPhoto('mt-8 hidden aspect-[3/2] max-w-[640px] rounded-[16px] lg:block')}
+  /** An instructor's usual week, small: the same grid the form uses, read only. */
+  const week = (x: Teacher) => {
+    const on = new Set(x.hours)
+    return (
+      <div className="grid w-full max-w-[260px] grid-cols-[34px_repeat(7,minmax(0,1fr))] gap-1" role="group" aria-label={x.name}>
+        <span />
+        {days.map((d, i) => (
+          <span key={i} aria-hidden="true" className="text-center text-[0.8125rem] font-semibold text-navy/80">
+            {d}
+          </span>
+        ))}
+        {PART_KEYS.map((p, pi) => (
+          <div key={p} className="contents">
+            <span aria-hidden="true" className="flex items-center text-[0.8125rem] font-semibold text-navy/80">
+              {parts[p]}
+            </span>
+            {DAY_KEYS.map((d, di) => {
+              const lit = on.has(`${d}-${p}`)
+              return (
+                <span
+                  key={d}
+                  role="img"
+                  aria-label={`${daysLong[di]} ${partsLong[pi]}${lit ? ' ✓' : ''}`}
+                  className={`h-5 rounded-[5px] border ${lit ? 'border-forest bg-forest' : 'border-[#E3E6DE] bg-white'}`}
+                />
+              )
+            })}
           </div>
-
-          <div className="rounded-[20px] bg-cream p-6 sm:p-7">
-            <h3 className={H3}>{t('lessons.form_title')}</h3>
-            <p className="mt-2 mb-4 text-[0.9375rem] leading-relaxed text-navy/80">
-              {t('lessons.form_area')}
-            </p>
-            <FreeLessonForm
-              buttonClass={BUTTON}
-              leagueUrl={league?.url}
-              locale={locale}
-              after={
-                <div className="mt-5 border-t border-navy/10 pt-4">
-                  <p className="text-[1rem] leading-[1.55] text-navy">
-                    {t('lessons.form_after')}
-                  </p>
-                  <StoreBadges className="mt-3" placement={PLACEMENT} />
-                </div>
-              }
-            />
-          </div>
-        </div>
-
-        {league && (
-          <p className={`${BODY} mt-10 max-w-[760px]`}>
-            {t('lessons.league_body')}{locale === 'zh-Hans' ? '' : ' '}
-            <a
-              href={league.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-bold text-forest underline underline-offset-4 hover:opacity-80"
-            >
-              {t('lessons.league_link')}
-            </a>
-          </p>
-        )}
+        ))}
       </div>
-    </section>
-  )
+    )
+  }
+
+  const classRow = (x: Instructor) => {
+    const meta = [x.price?.[locale] || x.price?.en, x.season?.[locale] || x.season?.en].filter(Boolean).join(' · ')
+    return (
+      <li key={x.id}>
+        <a href={x.url} target="_blank" rel="noopener noreferrer" className="block h-full rounded-[12px] border border-navy/10 bg-white px-4 py-3 transition-colors hover:border-forest/50">
+          <span className="block text-[1rem] font-bold leading-snug text-navy">{x.name}</span>
+          <span className="block text-[0.9375rem] leading-snug text-navy/80">{x.details[locale] || x.details.en}</span>
+          {meta && <span className="mt-1 block text-[0.9375rem] font-bold leading-snug text-navy">{meta}</span>}
+        </a>
+      </li>
+    )
+  }
 
   return (
     <div className="street min-h-screen bg-cream text-navy" style={{ fontFamily: GSI_FONT }}>
       <HtmlLang locale={locale} />
       <Nav variant="light" street locale={locale} />
-      <JumpBar after="start" locale={locale} />
-      {streetFirst && streetLesson}
-
-      <SignHero
-        title={t('lessons.hero_title')}
-        lede={<p>{t('lessons.hero_lede')}</p>}
-        after={
-          <p className="mt-5 max-w-[780px] text-[1.0625rem] leading-[1.6] text-navy">
-            {t('lessons.hero_after')}
-          </p>
-        }
+      <JumpBar
+        after="street-lesson"
+        locale={locale}
+        links={[
+          { id: 'street-lesson', label: t('lessons.jump_street') },
+          { id: 'how', label: t('lessons.how_title') },
+          { id: 'classes', label: t('lessons.jump_classes') },
+          { id: 'group-rides', label: t('lessons.jump_rides') },
+        ]}
       />
 
-      {/* Where are you starting: the in-page nav, in the app's own answers. */}
-      <section id="start" className="bg-cream" aria-labelledby="start-heading">
-        <div className={`${CONTAINER} pb-12`}>
-          <h2 id="start-heading" className={H3}>{t('lessons.start_heading')}</h2>
-          <ul className="mt-4 grid gap-2.5 md:grid-cols-3 md:gap-3">
-            {STARTS.map((s) => (
-              <li key={s.href}>
-                <a
-                  href={s.href}
-                  className="flex h-full min-h-[64px] flex-col justify-center rounded-[14px] border-2 border-forest/30 bg-white px-4 py-3 transition-colors hover:border-forest sm:px-5 sm:py-4"
-                >
-                  <span className="text-[1.0625rem] font-bold leading-snug text-navy">{t(s.label)}</span>
-                  <span className="mt-1 text-[0.9375rem] leading-snug text-navy/80">{t(s.hint)}</span>
-                </a>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </section>
-
-      {!streetFirst && streetLesson}
-
-      {/* Not sure I can ride: classes. */}
-      <section id="classes" className="scroll-mt-[128px] bg-cream">
-        <div className={`${CONTAINER} py-14 lg:py-16`}>
-          <h2 className={H2}>{t('lessons.classes_title')}</h2>
-          <p className={`${BODY} mt-4 max-w-[680px]`}>
-            {t('lessons.classes_body')}
-          </p>
-
-          <div className="mt-8 grid gap-10 lg:grid-cols-2">
+      {/* 1. The offer and the form: the whole first screen. */}
+      <section id="street-lesson" className="scroll-mt-[128px] bg-white pt-[60px]">
+        <div className={`${CONTAINER} pb-12 lg:pt-12 lg:pb-16`}>
+          {/* On a phone the street comes first, as a short band; on a wide screen it sits under the facts. */}
+          {streetPhoto('-mx-6 mb-6 h-[150px] sm:mx-0 sm:mt-8 sm:h-[220px] sm:rounded-[16px] lg:hidden')}
+          <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_400px] lg:gap-14">
             <div className="min-w-0">
-              <h3 className="text-[1.125rem] font-bold text-navy">{t('lessons.coming_up')}</h3>
-              {lessons.length > 0 ? (
-                <ul className="mt-3 space-y-2">{lessons.slice(0, 5).map(eventRow)}</ul>
-              ) : (
-                <p className={`${BODY} mt-2`}>
-                  {t('lessons.no_classes')}
-                </p>
-              )}
-              {school && (
-                <>
-                  <h3 className="mt-8 text-[1.125rem] font-bold text-navy">{t('lessons.book_any_time')}</h3>
-                  <ul className="mt-3 space-y-2">{instructorRow(school)}</ul>
-                </>
-              )}
+              <h1 className={H1}>
+                {/* One worry per line, as the learners listed them (and as on the ad). */}
+                {t('lessons.street_title')
+                  .split(/(?<=[.。])\s*/)
+                  .filter(Boolean)
+                  .map((line) => (
+                    <span key={line} className="block">{line}</span>
+                  ))}
+              </h1>
+              <p className={`${BODY} mt-4 max-w-[600px] text-[1.125rem]`}>{t('lessons.lede')}</p>
+              <ul className="mt-5 flex flex-wrap gap-2" aria-label={t('lessons.facts_label')}>
+                {facts.map((f) => (
+                  <li key={f} className="rounded-full bg-forest/10 px-4 py-2 text-[0.9375rem] font-bold leading-snug text-[#1F4D3A]">
+                    {f}
+                  </li>
+                ))}
+                {left != null && left > 0 && (
+                  <li className="rounded-full border-2 border-forest px-4 py-1.5 text-[0.9375rem] font-bold leading-snug text-[#1F4D3A]">
+                    {t('lessons.fact_left', { n: left })}
+                  </li>
+                )}
+              </ul>
+              {streetPhoto('mt-8 hidden aspect-[3/2] max-w-[640px] rounded-[16px] lg:block')}
             </div>
-            <div className="min-w-0">
-              {seasonal.length > 0 && (
-                <>
-                  <h3 className="text-[1.125rem] font-bold text-navy">{t('lessons.city_classes')}</h3>
-                  <ul className="mt-3 space-y-2">{seasonal.map(instructorRow)}</ul>
-                </>
-              )}
-              {adaptive.length > 0 && (
-                <>
-                  <h3 className="mt-8 text-[1.125rem] font-bold text-navy">{t('lessons.adaptive')}</h3>
-                  <ul className="mt-3 space-y-2">{adaptive.map(instructorRow)}</ul>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      </section>
 
-      {/* Would like company: easy group rides. */}
-      <section id="group-rides" className="scroll-mt-[128px] bg-white">
-        <div className={`${CONTAINER} py-14 lg:py-16`}>
-          <h2 className={H2}>{t('lessons.rides_title')}</h2>
-          <p className={`${BODY} mt-4 max-w-[680px]`}>
-            {t('lessons.rides_body')}
-          </p>
-          {rideCards.length > 0 && <RideCards rides={rideCards} locale={locale} />}
-          <Link
-            href={withLang('/events', locale)}
-            className="mt-5 inline-block text-[1rem] font-bold text-forest underline underline-offset-4 hover:opacity-80"
-          >
-            {t('lessons.all_events')}
-          </Link>
-        </div>
-      </section>
-
-      {/* Rather wait: an email when a class is posted. */}
-      <section id="wait" className="scroll-mt-[128px] bg-cream">
-        <div className={`${CONTAINER} py-14 lg:py-16`}>
-          <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-14">
             <div className="min-w-0">
-              <h2 className={H2}>{t('lessons.wait_title')}</h2>
-              <p className={`${BODY} mt-4 max-w-[520px]`}>
-                {t('lessons.wait_body')}
+              <div className="rounded-[20px] bg-cream p-6 sm:p-7">
+                <h2 className={H3}>{t('lessons.form_title')}</h2>
+                <p className="mt-2 mb-4 text-[0.9375rem] leading-relaxed text-navy/80">{t('lessons.form_area')}</p>
+                <FreeLessonForm
+                  buttonClass={BUTTON}
+                  leagueUrl={league?.url}
+                  locale={locale}
+                  after={
+                    <div className="mt-5 border-t border-navy/10 pt-4">
+                      <p className="text-[1rem] leading-[1.55] text-navy">{t('lessons.form_after')}</p>
+                      <StoreBadges className="mt-3" placement={PLACEMENT} />
+                    </div>
+                  }
+                />
+              </div>
+              {/* The other two starting points, for search visitors who can't ride yet or want company. */}
+              <p className="mt-5 text-[1rem] leading-[1.7] text-navy">
+                {t('lessons.other_learn')}{' '}
+                <a href="#classes" className={LINK}>{t('lessons.other_learn_link')}</a>
+                <br />
+                {t('lessons.other_company')}{' '}
+                <a href="#group-rides" className={LINK}>{t('lessons.other_company_link')}</a>
               </p>
             </div>
-            <div className="min-w-0 [&>div]:mt-0">
-              <LessonAlertForm locale={locale} />
-            </div>
           </div>
+        </div>
+      </section>
 
-          <h2 className={`${H3} mt-14`}>{t('lessons.first_ride_heading')}</h2>
-          <ul className="mt-4 grid gap-3 md:grid-cols-2">
-            <li>
-              <Link href={guideHref('your-first-ride-in-a-bike-lane', locale)} className={ROW}>
-                <span className="block text-[1rem] font-bold leading-snug text-navy">{t('lessons.guide_lane_title')}</span>
-                <span className="block text-[0.9375rem] leading-snug text-navy/80">{t('lessons.guide_lane_body')}</span>
-              </Link>
-            </li>
-            <li>
-              <Link href={guideHref('picking-a-bike-route', locale)} className={ROW}>
-                <span className="block text-[1rem] font-bold leading-snug text-navy">{t('lessons.guide_route_title')}</span>
-                <span className="block text-[0.9375rem] leading-snug text-navy/80">{t('lessons.guide_route_body')}</span>
-              </Link>
-            </li>
-          </ul>
+      {/* 2. How it works, beside who teaches and where. */}
+      <section id="how" className="scroll-mt-[128px] bg-cream">
+        <div className={`${CONTAINER} py-14 lg:py-16`}>
+          <div className="grid gap-12 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-14">
+            <div className="min-w-0">
+              <h2 className={H2}>{t('lessons.how_title')}</h2>
+              <ol className="mt-6 space-y-6">
+                {(['lessons.how_1', 'lessons.how_2', 'lessons.how_3'] as const).map((k, i) => (
+                  <li key={k} className="flex gap-4">
+                    <span className={`${HEADLINE} flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-forest text-[1.375rem] text-white`}>
+                      {i + 1}
+                    </span>
+                    <p className={`${BODY} pt-1.5`}>{t(k)}</p>
+                  </li>
+                ))}
+              </ol>
+              <a href="#street-lesson" className={`${BUTTON} mt-8 inline-flex w-full justify-center sm:w-auto`}>
+                {t('lessons.form_title')}
+              </a>
+            </div>
+
+            {teachers.length > 0 && (
+              <div className="min-w-0">
+                <h2 className={H2}>{t('lessons.teach_title')}</h2>
+                <TeachMap teachers={teachers} title={t('lessons.map_title')} className="mt-6 aspect-[16/11]" />
+                <ul className="mt-4 grid gap-3 sm:grid-cols-2">
+                  {teachers.map((x) => (
+                    <li key={x.id} className="rounded-[14px] border border-navy/10 bg-white p-4">
+                      <div className="flex items-center gap-3">
+                        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-forest text-[1.125rem] font-extrabold text-white">
+                          {x.name.trim().charAt(0).toUpperCase()}
+                        </span>
+                        <span className="min-w-0">
+                          <span className="block text-[1.0625rem] font-bold leading-snug text-navy">{x.name}</span>
+                          {x.org && <span className="block text-[0.9375rem] leading-snug text-navy/80">{x.org}</span>}
+                        </span>
+                      </div>
+                      <p className="mt-3 text-[0.9375rem] leading-snug text-navy">
+                        {t('lessons.who_reach', { miles: x.reach_miles, area: x.area })}
+                      </p>
+                      <div className="mt-3">{week(x)}</div>
+                      {x.calls_first && (
+                        <span className="mt-3 inline-block rounded-full bg-forest/10 px-3 py-1 text-[0.875rem] font-bold text-[#1F4D3A]">
+                          {t('lessons.calls_first')}
+                        </span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* 3. Never learned to ride: classes. */}
+      <section id="classes" className="scroll-mt-[128px] bg-white">
+        <div className={`${CONTAINER} py-14 lg:py-16`}>
+          <h2 className={H2}>{t('lessons.classes_title')}</h2>
+          <p className={`${BODY} mt-4 max-w-[680px]`}>{t('lessons.classes_body')}</p>
+          {lessons.length > 0 ? (
+            <>
+              <h3 className="mt-8 text-[1.125rem] font-bold text-navy">{t('lessons.coming_up')}</h3>
+              <ul className="mt-3 grid gap-3 md:grid-cols-2">
+                {lessons.slice(0, 4).map((e) => (
+                  <li key={e.id}>
+                    <Link
+                      href={withLang(eventPath({ id: e.id, slug: slugs.get(e.id) ?? null }), locale)}
+                      className="block h-full rounded-[12px] border border-navy/10 bg-white px-4 py-3 transition-colors hover:border-forest/50"
+                    >
+                      <span className="block text-[1rem] font-bold leading-snug text-navy">{e.title}</span>
+                      <span className="block text-[0.9375rem] leading-snug text-navy/80">
+                        {[when(e, locale), e.location_name].filter(Boolean).join(' · ')}
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </>
+          ) : null}
+          {classRows.length > 0 && <ul className="mt-6 grid gap-3 md:grid-cols-2">{classRows.map(classRow)}</ul>}
+          {lessons.length === 0 && (
+            <div className="mt-8 grid gap-4 rounded-[20px] bg-cream p-6 sm:p-7 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-center lg:gap-10">
+              <p className={`${H3}`}>{t('lessons.no_classes_now')}</p>
+              <div className="min-w-0 [&>div]:mt-0">
+                <LessonAlertForm locale={locale} />
+              </div>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* 4. Would like company: easy group rides. */}
+      <section id="group-rides" className="scroll-mt-[128px] bg-cream">
+        <div className={`${CONTAINER} py-14 lg:py-16`}>
+          <h2 className={H2}>{t('lessons.rides_title')}</h2>
+          <p className={`${BODY} mt-4 max-w-[680px]`}>{t('lessons.rides_body')}</p>
+          {rideCards.length > 0 && <RideCards rides={rideCards} locale={locale} />}
+          <Link href={withLang('/events', locale)} className={`mt-5 inline-block text-[1rem] ${LINK}`}>
+            {t('lessons.all_events')}
+          </Link>
         </div>
       </section>
 
