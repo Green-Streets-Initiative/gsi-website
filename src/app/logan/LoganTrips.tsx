@@ -1,9 +1,10 @@
 'use client'
 
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
-import { CheckCircle2, Clock, Loader2, Mail, MessageSquare, Minus, Plane, PlaneLanding, Plus, Search } from 'lucide-react'
+import { CheckCircle2, Clock, Footprints, Loader2, Mail, MessageSquare, Minus, Plane, PlaneLanding, Plus, Search } from 'lucide-react'
 import AddressAutocomplete from '@/components/AddressAutocomplete'
 import { Avatar, Chip } from '@/components/together/bits'
+import PinMap from '@/components/together/PinMap'
 import { useTogether } from '@/components/together/TogetherShell'
 import { Button, Card, Field, Input, Notice, Spinner, cx } from '@/components/organizers/ui'
 import { acceptTerms, myPlaces, track } from '@/lib/together'
@@ -765,6 +766,7 @@ function Plan({ trip, m, onChange }: { trip: LoganTrip; m: LoganMatch; onChange:
         {m.campus_dropoff ? (
           <p className="mt-2 text-[15px] font-semibold leading-snug">{t('logan.dropoff', { place: m.campus_dropoff })}</p>
         ) : null}
+        <MeetMap trip={trip} m={m} />
         {busBoard ? (
           <p className="mt-2 text-[15px] leading-snug text-(--ev-ink-85)">
             {t('logan.bus_board')}
@@ -812,6 +814,34 @@ function Plan({ trip, m, onChange }: { trip: LoganTrip; m: LoganMatch; onChange:
       <div className="border-t border-(--ev-line) pt-3">
         <Button size="sm" variant="ghost" onClick={() => void cantGo()}>{t('logan.cant_go')}</Button>
       </div>
+    </div>
+  )
+}
+
+/**
+ * Going out: where you meet (the station, or your campus spot) and your own
+ * place on a small map, with walking directions. Meeting someone you've never
+ * met, the place is the one thing to get right.
+ */
+function MeetMap({ trip, m }: { trip: LoganTrip; m: LoganMatch }) {
+  const { t } = useWords()
+  if (trip.kind !== 'airport_out' || m.meet_lat == null || m.meet_lng == null || !m.meet_station) return null
+  // "Stratton Student Center (84 Massachusetts Ave)": the name on the pin.
+  const short = m.meet_station.replace(/\s*\(.*\)\s*$/, '')
+  const walk = `https://www.google.com/maps/dir/?api=1&origin=${trip.place_lat},${trip.place_lng}&destination=${m.meet_lat},${m.meet_lng}&travelmode=walking`
+  return (
+    <div className="mt-3 grid max-w-[480px] grid-cols-1 gap-1">
+      <PinMap
+        pins={[
+          { lat: m.meet_lat, lng: m.meet_lng, kind: 'spot', label: short },
+          { lat: trip.place_lat, lng: trip.place_lng, kind: 'home', label: t('logan.map_you') },
+        ]}
+        maxZoom={16}
+        title={t('logan.map_title', { place: m.meet_station })}
+      />
+      <a href={walk} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-[44px] items-center gap-2 text-[16px] font-semibold text-(--ev-accent) underline">
+        <Footprints className="h-5 w-5" aria-hidden /> {t('logan.walk_there')}
+      </a>
     </div>
   )
 }
