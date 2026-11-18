@@ -246,7 +246,7 @@ export default async function BikeLessonsPage({ searchParams }: { searchParams: 
         {streetPhoto(`-mx-6 mb-6 h-[150px] sm:mx-0 sm:h-[220px] sm:rounded-[16px] lg:hidden ${streetFirst ? '-mt-8 sm:mt-0' : ''}`)}
         <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_380px] lg:gap-14">
           <div className="min-w-0">
-            <h2 className={H2}>{t('lessons.street_title')}</h2>
+            <h2 className={`${H2} text-balance`}>{t('lessons.street_title')}</h2>
             <p className={`${BODY} mt-4 max-w-[640px]`}>
               {t('lessons.street_body')}
             </p>
