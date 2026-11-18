@@ -157,11 +157,14 @@ function when(e: Ev, locale: SiteLocale): string {
 
 /** A real street of the kind learners worry about, where our first requests came from (Somerville). */
 const STREET_PHOTO = {
-  src: '/bike-lessons/washington-st-somerville.jpg',
-  width: 1200,
-  height: 800,
-  credit: '4300streetcar / Wikimedia Commons, CC BY 4.0',
-  url: 'https://commons.wikimedia.org/wiki/File:Bus_Bike_lane_in_Somerville_April_2024.jpg',
+  // Washington Street at the Paramount, Downtown Crossing: the green lane, a bus and a car (Unsplash License,
+  // unsplash.com/photos/JwAeeifBANs). PhotoCredit turns "Name / Unsplash" into Unsplash's required credit.
+  src: '/bike-lessons/washington-st-boston.jpg',
+  width: 1400,
+  height: 934,
+  credit: 'Aaron Doucett / Unsplash',
+  url: 'https://unsplash.com/@adoucett',
+  position: '55% 35%',
 }
 /** Credit is fine print: one line, so it doesn't cover the short phone band. */
 const CREDIT = 'absolute bottom-2 right-2 whitespace-nowrap rounded-md bg-[rgba(25,26,46,.6)] px-2 py-0.5 text-[0.75rem] leading-snug text-white'
@@ -202,9 +205,10 @@ export default async function BikeLessonsPage({ searchParams }: { searchParams: 
         height={STREET_PHOTO.height}
         loading="eager"
         className="absolute inset-0 h-full w-full object-cover"
+        style={{ objectPosition: STREET_PHOTO.position }}
       />
       <figcaption className={CREDIT}>
-        <PhotoCredit text={`Photo: ${STREET_PHOTO.credit}`} url={STREET_PHOTO.url} linkClassName="underline-offset-2 hover:underline" />
+        <PhotoCredit text={STREET_PHOTO.credit} url={STREET_PHOTO.url} linkClassName="underline-offset-2 hover:underline" />
       </figcaption>
     </figure>
   )

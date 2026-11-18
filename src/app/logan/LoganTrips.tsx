@@ -6,8 +6,8 @@ import AddressAutocomplete from '@/components/AddressAutocomplete'
 import { Avatar, Chip } from '@/components/together/bits'
 import PinMap from '@/components/together/PinMap'
 import { useTogether } from '@/components/together/TogetherShell'
-import { Button, Card, Field, Input, Notice, Spinner, cx } from '@/components/organizers/ui'
-import { acceptTerms, myPlaces, track } from '@/lib/together'
+import { Button, Card, Field, Input, Notice, Spinner, Textarea, cx } from '@/components/organizers/ui'
+import { acceptTerms, myPlaces, reportMatch, track, type ReportReason } from '@/lib/together'
 import { supabase } from '@/lib/supabase'
 import { SITE_LOCALE_TAG, translator, type SiteLocale, type T } from '@/lib/site-i18n'
 import { loganStrings, type LoganKey } from '@/lib/site-strings/logan'
@@ -745,6 +745,7 @@ function Plan({ trip, m, onChange }: { trip: LoganTrip; m: LoganMatch; onChange:
             <Mail className="h-5 w-5" aria-hidden /> {m.other.email}
           </a>
         ) : null}
+        <SomethingWrong m={m} onChange={onChange} />
       </div>
     )
   }
@@ -780,11 +781,14 @@ function Plan({ trip, m, onChange }: { trip: LoganTrip; m: LoganMatch; onChange:
         ) : null}
         {m.way === 'split' && taxiStand ? (
           <>
-            <p className="mt-2 text-[15px] leading-snug text-(--ev-ink-85)">{t('logan.taxi_note')}</p>
+            <p className="mt-2 text-[15px] leading-snug text-(--ev-ink-85)">{t('logan.taxi_note')}{locale === 'zh-Hans' ? '' : ' '}{t('logan.safe_taxi')}</p>
             <p className="mt-2 text-[15px] leading-snug text-(--ev-ink-85)">{t(taxiStand === 'B' ? 'logan.rideapp_b' : 'logan.rideapp_central')}</p>
           </>
         ) : m.way === 'split' ? (
-          <p className="mt-2 text-[15px] leading-snug text-(--ev-ink-85)">{t('logan.split_note')}</p>
+          <>
+            <p className="mt-2 text-[15px] leading-snug text-(--ev-ink-85)">{t('logan.split_note')}</p>
+            <p className="mt-2 text-[15px] leading-snug text-(--ev-ink-85)">{t('logan.safe_car')}</p>
+          </>
         ) : null}
         <p className="mt-2 text-[15px] leading-snug text-(--ev-ink-85)">
           {t(trip.kind === 'airport_back' ? 'logan.wait_note_back' : 'logan.wait_note', { name })}
@@ -811,8 +815,73 @@ function Plan({ trip, m, onChange }: { trip: LoganTrip; m: LoganMatch; onChange:
         </div>
       </Field>
       {saved ? <p className="text-[15px]" role="status">{saved}</p> : null}
-      <div className="border-t border-(--ev-line) pt-3">
-        <Button size="sm" variant="ghost" onClick={() => void cantGo()}>{t('logan.cant_go')}</Button>
+      <div className="grid grid-cols-1 gap-2 border-t border-(--ev-line) pt-3">
+        <div><Button size="sm" variant="ghost" onClick={() => void cantGo()}>{t('logan.cant_go')}</Button></div>
+        <SomethingWrong m={m} onChange={onChange} />
+      </div>
+    </div>
+  )
+}
+
+const REASONS: ReportReason[] = ['no_show', 'uncomfortable', 'unsafe', 'other']
+
+/**
+ * "Something wrong?" on a Logan match (2026-11-18, Keith: "Yes, build both"):
+ * the same report as Your matches (report_partner_match). It ends this match,
+ * and anything but a no-show pauses the other person's matches until GSI
+ * looks. The thank-you stays until Done, since the match then leaves the page.
+ */
+function SomethingWrong({ m, onChange }: { m: LoganMatch; onChange: () => Promise<void> }) {
+  const { t, tt } = useWords()
+  const [open, setOpen] = useState(false)
+  const [reason, setReason] = useState<ReportReason | null>(null)
+  const [details, setDetails] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [sent, setSent] = useState(false)
+  const [failed, setFailed] = useState(false)
+  const first = m.other.first_name?.trim() || null
+  const name = first || t('logan.your_match')
+
+  async function send() {
+    if (!reason) return
+    setBusy(true)
+    setFailed(false)
+    const ok = await reportMatch(m.id, reason, details.trim() || null)
+    track('together_logan_reported', { reason, ok })
+    setBusy(false)
+    if (ok) setSent(true)
+    else setFailed(true)
+  }
+
+  if (sent) {
+    return (
+      <div className="grid grid-cols-1 gap-3 rounded-xl border border-(--ev-line) p-4" role="status">
+        <p className="text-[16px] leading-snug">{first ? tt('matches.reported', { name: first }) : tt('matches.reported_anon')}</p>
+        <div><Button size="sm" onClick={() => void onChange()}>{t('logan.report_done')}</Button></div>
+      </div>
+    )
+  }
+  if (!open) {
+    return (
+      <button type="button" onClick={() => setOpen(true)} className="min-h-[44px] justify-self-start text-[15px] font-semibold text-(--ev-ink-80) underline">
+        {tt('matches.wrong')}
+      </button>
+    )
+  }
+  return (
+    <div className="grid grid-cols-1 gap-3 rounded-xl border border-(--ev-line) p-4">
+      <p className="text-[16px] font-bold">{t('logan.report_q')}</p>
+      <div className="flex flex-wrap gap-2" role="radiogroup" aria-label={tt('matches.report_aria')}>
+        {REASONS.map((r) => (
+          <Chip key={r} role="radio" aria-checked={reason === r} on={reason === r} onClick={() => setReason(r)}>{tt(`matches.report_${r}`)}</Chip>
+        ))}
+      </div>
+      <Textarea rows={2} maxLength={1000} value={details} onChange={(e) => setDetails(e.target.value)} placeholder={tt('matches.report_placeholder')} aria-label={tt('matches.report_aria')} />
+      <p className="text-[15px] leading-snug text-(--ev-ink-80)">{tt('matches.report_hint', { name })}</p>
+      {failed ? <p className="text-[15px] leading-snug" role="alert">{tt('matches.failed')}</p> : null}
+      <div className="flex flex-wrap gap-3">
+        <Button busy={busy} disabled={!reason} onClick={() => void send()}>{tt('matches.report_send')}</Button>
+        <Button variant="ghost" onClick={() => setOpen(false)}>{tt('cancel')}</Button>
       </div>
     </div>
   )

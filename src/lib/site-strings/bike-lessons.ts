@@ -121,7 +121,7 @@ export const bikeLessonsStrings = defineStrings(
     'lessons.days': 'M,T,W,T,F,S,S',
     'lessons.when_hint': 'Tap the times that work for you. Gray times have no instructor near you.',
     'lessons.add_note': 'Add a note for {name}',
-    'lessons.photo_alt': 'A shared bus and bike lane on Washington Street in Somerville, near Union Square',
+    'lessons.photo_alt': 'Someone rides in the green bike lane on Washington Street in downtown Boston, beside an SL5 bus and a car',
   },
   {
     es: {
@@ -236,7 +236,7 @@ export const bikeLessonsStrings = defineStrings(
       'lessons.days': 'L,M,M,J,V,S,D',
       'lessons.when_hint': 'Toca los horarios que te sirvan. Los horarios en gris no tienen instructor cerca de ti.',
       'lessons.add_note': 'Agregar una nota para {name}',
-      'lessons.photo_alt': 'Un carril compartido de autobús y bicicleta en Washington Street, Somerville, cerca de Union Square',
+      'lessons.photo_alt': 'Una persona va en bici por el carril verde de Washington Street, en el centro de Boston, junto a un autobús SL5 y un auto',
     },
     'pt-BR': {
       'lessons.meta_title': 'Aulas de bike para adultos em Massachusetts | Green Streets Initiative',
@@ -350,7 +350,7 @@ export const bikeLessonsStrings = defineStrings(
       'lessons.days': 'S,T,Q,Q,S,S,D',
       'lessons.when_hint': 'Toque nos horários que funcionam para você. Os horários em cinza não têm instrutor perto de você.',
       'lessons.add_note': 'Adicionar um recado para {name}',
-      'lessons.photo_alt': 'Uma faixa compartilhada de ônibus e bicicleta na Washington Street, em Somerville, perto da Union Square',
+      'lessons.photo_alt': 'Uma pessoa pedala na ciclofaixa verde da Washington Street, no centro de Boston, ao lado de um ônibus SL5 e de um carro',
     },
     'zh-Hans': {
       'lessons.meta_title': '马萨诸塞州成人自行车课 | Green Streets Initiative',
@@ -459,7 +459,7 @@ export const bikeLessonsStrings = defineStrings(
       'lessons.days': '一,二,三,四,五,六,日',
       'lessons.when_hint': '点选适合你的时间。灰色的时间附近没有教练。',
       'lessons.add_note': '给 {name} 留言',
-      'lessons.photo_alt': 'Somerville 的 Washington Street 上公交车与自行车共用的车道，靠近 Union Square',
+      'lessons.photo_alt': '波士顿市中心 Washington Street 的绿色自行车道上，有人骑车经过一辆 SL5 公交车和一辆汽车',
     },
   },
 )
