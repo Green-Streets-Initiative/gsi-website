@@ -95,7 +95,10 @@ export default function EventCard({ event, userLat, userLng, showAway, showDate,
   // else the nearest T stop (Keith 2026-11-18: most riders bring a bike).
   const privateHome = /^a home in /i.test(event.location_name ?? '')
   const placeless = !event.location_address && Number(event.target_radius_miles) >= 100
-  const transit = !isRide && !privateHome && !placeless ? cardTransit(event.nearest_transit) : null
+  // "Franklin, MA 02038" names only the town: its pin is the town center, not a
+  // meeting spot, so no map and no nearest stop.
+  const townOnly = /^[^,\d]+,\s*(MA|Massachusetts)\b[^,]*$/i.test(event.location_address?.trim() ?? '')
+  const transit = !isRide && !privateHome && !placeless && !townOnly ? cardTransit(event.nearest_transit) : null
   const hasFacts = isRide && (!!rideLength || !!level || noDrop)
 
   const away = showAway && event.location_lat && event.location_lng
@@ -158,7 +161,7 @@ export default function EventCard({ event, userLat, userLng, showAway, showDate,
   const walkTo = transit ? t('card.walk_to', { min: transit.walk, stop: transit.stop.name }) : ''
   const typeTile = (
     <div
-      className="flex h-16 w-16 shrink-0 items-center justify-center rounded-[12px] lg:h-12 lg:w-12 lg:rounded-[10px]"
+      className="flex h-16 w-16 shrink-0 items-center justify-center rounded-[12px] lg:h-14 lg:w-14 lg:rounded-[10px]"
       style={{ backgroundColor: ink + tint.tile }}
     >
       <Icon size={26} className="lg:hidden" style={{ color: ink }} />
@@ -195,15 +198,15 @@ export default function EventCard({ event, userLat, userLng, showAway, showDate,
         {/* The flyer when there is one; else the host's square logo, a map of the start, or the type tile */}
         {event.image_url && flyerOk ? (
           <div
-            className="h-16 w-16 shrink-0 overflow-hidden rounded-[12px] border lg:h-12 lg:w-12 lg:rounded-[10px]"
+            className="h-16 w-16 shrink-0 overflow-hidden rounded-[12px] border lg:h-14 lg:w-14 lg:rounded-[10px]"
             style={{ borderColor: ink + tint.spotLine, backgroundColor: ink + tint.thumb }}
           >
             <img ref={flyerRef} src={event.image_url} alt="" className="h-full w-full object-cover" loading="lazy" onError={() => setFlyerOk(false)} />
           </div>
         ) : (
           <CardThumb
-            lat={deadline || privateHome || placeless ? null : event.location_lat}
-            lng={deadline || privateHome || placeless ? null : event.location_lng}
+            lat={deadline || privateHome || placeless || townOnly ? null : event.location_lat}
+            lng={deadline || privateHome || placeless || townOnly ? null : event.location_lng}
             logo={event.organizer_logo ?? null}
             fallback={typeTile}
           />
@@ -216,7 +219,7 @@ export default function EventCard({ event, userLat, userLng, showAway, showDate,
         <p className="text-[14px] font-semibold leading-snug lg:hidden" style={{ color: ink }}>
           {metaLabel}
         </p>
-        <h3 className={`mt-0.5 line-clamp-3 font-(family-name:--font-headline) text-[17px] font-extrabold leading-snug tracking-[-0.01em] sm:text-[18px] lg:mt-0 lg:line-clamp-1 lg:text-[17px] ${off ? 'text-(--ev-ink-75)' : 'text-(--ev-ink)'}`}>
+        <h3 className={`mt-0.5 line-clamp-3 font-(family-name:--font-headline) text-[17px] font-extrabold leading-snug tracking-[-0.01em] sm:text-[18px] lg:mt-0 lg:line-clamp-2 lg:text-[17px] ${off ? 'text-(--ev-ink-75)' : 'text-(--ev-ink)'}`}>
           {off && <span className="mr-2 inline-block rounded-full bg-[#FBE4DF] px-2 py-0.5 align-middle font-(family-name:--font-gsi) text-[13px] font-bold leading-tight text-(--ev-danger)">{t('card.cancelled')}</span>}
           <span className={off ? 'line-through' : undefined}>{event.title}</span>
         </h3>
