@@ -284,7 +284,7 @@ function consoleHref(link: string | null): string {
 function Section({ id, title, children, className = '' }: { id: string; title: string; children: ReactNode; className?: string }) {
   return (
     <section id={id} className={`scroll-mt-[124px] border-t border-navy/10 py-10 md:py-14 print:py-6 ${className}`}>
-      <h2 className={`${HEAD} text-[clamp(1.75rem,3.4vw,2.5rem)] leading-[1.1]`}>{title}</h2>
+      <h2 className={`${HEAD} text-[clamp(1.75rem,3.4vw,2.5rem)] leading-[1.1] print:break-after-avoid`}>{title}</h2>
       <div className="mt-6">{children}</div>
     </section>
   )
