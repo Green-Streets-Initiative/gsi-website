@@ -1,32 +1,38 @@
 import type { Metadata } from 'next'
 import Image from 'next/image'
 import type { ReactNode } from 'react'
-import {
-  BellRing, Bike, Download, Gift, MessagesSquare, QrCode, Repeat, ShieldCheck, Trophy, Users,
-} from 'lucide-react'
+import { Check, MessageSquareText, X } from 'lucide-react'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { BUTTON, CONTAINER, GSI_FONT } from '../move-in/sign'
+import KitNav from './KitNav'
 
 /**
- * The organizer kit (Keith 2026-11-01 calls 1-4; reworked 2026-11-02 after
- * his landing-page review): a private page for the ~12 ride and walk
- * organizers Keith invites to the pilot. Reached only from his invitation,
- * so it is noindex, unlisted and not in the sitemap. The same page prints
- * to the kit's PDF.
+ * The organizer kit: a private page for the ride and walk organizers Green
+ * Streets invites to the pilot. Reached only from the invitation, so it is
+ * noindex, unlisted and not in the sitemap. It speaks as Green Streets, never
+ * as one person (Keith 2026-11-18).
  *
- * Keith's email links here with the organizer's personal console link
- * (/organizer-kit?link=…), so "Make your first ride" opens their ride,
- * filled in from their calendar listing (01588). Without one, the button
- * goes to the console's sign-in.
+ * Shape (rebuilt 2026-11-09, polished 2026-11-18):
+ *  - The ride from start to finish: the questions every organizer fields,
+ *    each with what Shift does and a picture. Ride day (where the group is)
+ *    is the wide band in the middle, written as today vs with Shift, since
+ *    it saves the most work: today the organizer shares a location in the
+ *    group chat by hand, or riders ask each other to.
+ *  - What only Shift does, with real data: the route's bike lanes street by
+ *    street, real Bicycle Benefits members near Davis Square, the assistant.
+ *  - How it fits with the tools they use, the pilot, short facts.
  *
- * Proof comes from the pilot itself: after a ride's first date the console
- * asks the organizer how it went, and answers they let us share show here
- * (01595, get_organizer_quotes). Until then the section explains the ask.
+ * Words are concrete (Keith 2026-11-18): name the bike lane (protected,
+ * painted, none), never "calm"; say what a feature does, not a label for it.
+ * Body text is 17px.
  *
- * Every claim matches what the tools do on 2026-11-02. Pictures are from a
- * made-up, invite-only test ride with made-up people (public/organizer-kit).
+ * The invitation links here with the organizer's personal console link
+ * (/organizer-kit?link=…), so the button opens their ride, filled in from
+ * their calendar listing (01588). Quotes come from organizers who said yes
+ * to being quoted after their first date (01595, get_organizer_quotes).
+ * Screenshots are from made-up test rides with made-up people.
  */
 
 export const metadata: Metadata = {
@@ -38,53 +44,56 @@ export const metadata: Metadata = {
 export const dynamic = 'force-dynamic'
 
 const HEAD = '[font-family:var(--font-overpass),Trebuchet_MS,sans-serif] font-extrabold text-navy'
+const BODY = 'text-[17px] leading-[1.5] text-navy/85'
 
-type Pic = { src: string; w: number; h: number; alt: string }
-
-const BENEFITS: { title: string; body: string; chips?: string[]; pic: Pic }[] = [
-  {
-    title: 'Bring your route. We’ll rate it.',
-    body: 'Paste a Ride with GPS link, upload a GPX file, or plan it here. Shift rates every stretch for comfort and flags crash hot spots and hills.',
-    chips: ['Ride with GPS', 'GPX from Strava, Komoot or Garmin', 'Plan it here'],
-    pic: { src: '/organizer-kit/route.jpg', w: 640, h: 800, alt: 'A ride’s route on the map, with distance, climbing, riding time and how much is on calm streets' },
-  },
-  {
-    title: 'Know who’s coming, with no app needed.',
-    body: 'People answer Going, Maybe or Can’t go on your ride page with a name and email. You see the list, and Shift emails them if anything changes.',
-    pic: { src: '/organizer-kit/whos-coming.jpg', w: 640, h: 668, alt: 'The organizer’s list for one date: 7 going, 2 maybe, 1 can’t go, with first names and last initials' },
-  },
-  {
-    title: 'Turnout, counted for you.',
-    body: 'Shift counts people whose app recorded the ride, and asks people who answered on your ride page if they made it. Monthly numbers and a spreadsheet for your funders.',
-    pic: { src: '/organizer-kit/turnout.jpg', w: 640, h: 596, alt: 'Turnout: dates run, said going, came, first-timers, by month' },
-  },
+const SECTIONS: [string, string][] = [
+  ['start', 'Start to finish'],
+  ['only', 'Only on Shift'],
+  ['tools', 'Your other tools'],
+  ['pilot', 'The pilot'],
+  ['facts', 'Good to know'],
 ]
 
-const ALSO: { icon: typeof Bike; title: string; body: string }[] = [
-  { icon: BellRing, title: 'Changes reach everyone', body: 'Cancel or move one date, and everyone coming hears.' },
-  { icon: MessagesSquare, title: 'Your group chat', body: 'People who say they’re coming get your WhatsApp or Discord link. Replies to updates can come to you.' },
-  { icon: QrCode, title: 'Flyer and QR code', body: 'Plus ready captions and four calendars to post on.' },
-  { icon: Download, title: 'GPX for bike computers', body: 'People load your route with one tap.' },
-  { icon: Repeat, title: 'Every week', body: 'Regulars tick once and they’re on the list for every date.' },
-  { icon: Users, title: 'Leaders', body: 'Share the work with your ride leaders.' },
-  { icon: Gift, title: 'Bike shop perks', body: 'Shops and cafés near the ride with Bicycle Benefits discounts.' },
-  { icon: Trophy, title: 'Their ride counts', body: 'People on Shift get Walk/Ride Day entries and challenges.' },
+/** The route in route.jpg (Mattapan to Roslindale, 4.8 mi: 2.1 protected, 2.1 painted, 0.5 with no bike lane). Same colors as the ride page. */
+const LANES: { label: string; pct: number; color: string }[] = [
+  { label: 'Protected bike lane', pct: 45, color: '#2DD4BF' },
+  { label: 'Painted bike lane', pct: 45, color: '#7FB5FF' },
+  { label: 'No bike lane', pct: 10, color: '#B4BAD2' },
 ]
 
-const PEOPLE: Pic[] = [
-  { src: '/organizer-kit/ride-facts.jpg', w: 640, h: 1045, alt: 'Ride facts in the app: distance, hills, level, no-drop, beginner friendly' },
-  { src: '/organizer-kit/live-map.jpg', w: 640, h: 1094, alt: 'The ride’s map with the route and the meeting spot' },
+/** Bicycle Benefits members within a few blocks of Davis Square (the program's own list, 2026-11-09). */
+const PERKS: { name: string; perk: string }[] = [
+  { name: 'Redbones', perk: 'Free soft drink' },
+  { name: 'Flatbread Company', perk: '10% off' },
+  { name: 'Bike Boom', perk: '10% off accessories' },
+  { name: 'Dave’s Fresh Pasta', perk: '5% off' },
 ]
 
-const QUESTIONS: [string, string][] = [
-  ['Do the people who come need the app?', 'No. They answer on your ride page with a name and email, and hear about changes by email. People who already use Shift get a phone notice, directions from home and the group on a map.'],
-  ['Who sees names?', 'You, and anyone who joined the ride in the Shift app, see the first name and last initial of everyone coming. Email addresses stay private.'],
-  ['Can I keep Meetup, Facebook or our group chat?', 'Yes. Post your Shift ride link wherever you post now, so every answer lands on one list.'],
-  ['What about waivers?', 'Your ride’s registration link can point to your own waiver form.'],
-  ['What does it cost?', 'Nothing. It’s your ride, under your name: Green Streets never runs or brands it.'],
+/** How Shift sits next to what organizers use now. */
+const TOOLS: { tool: string; keep: string; shift: string }[] = [
+  { tool: 'Meetup or a Facebook event', keep: 'Getting found by members', shift: 'Put your Shift link in the event for the route and the turnout count.' },
+  { tool: 'Instagram', keep: 'Getting seen by your followers', shift: 'Shift makes a post or Story image with a QR code.' },
+  { tool: 'Partiful', keep: 'Invites and RSVPs', shift: 'Keep them there. Add your Shift link for the route and live map, and a head count after the ride.' },
+  { tool: 'Your group chat', keep: 'Talking with your regulars', shift: 'Shift sends newcomers your chat link once they RSVP.' },
+  { tool: 'Strava, Ride with GPS, Komoot, Garmin', keep: 'Drawing and recording rides', shift: 'Bring a route in, or send it out as a GPX file.' },
 ]
 
-/** A personal console link from Keith's email, passed through to the button. */
+/** Ride day, the way it goes today and the way it goes with Shift. */
+const TODAY = [
+  'You open your map app and share your location by hand.',
+  'You paste it in the group chat, every ride.',
+  'Late riders text the group, or ask someone else to share theirs.',
+]
+const WITH_SHIFT = [
+  'Turn sharing on once. Every ride day, your phone shares the group’s spot from start to finish.',
+  'Everyone going sees the group on the ride page, in the app or a web browser.',
+  'Running late? Shift shows a spot on the route to meet the group, with directions.',
+]
+
+/** Free here, paid on other ride apps (checked on their own pages, November 2026). */
+const FREE = ['RSVPs and reminders', 'Weekly ride dates', 'The group’s location for everyone going', 'A page for your group']
+
+/** A personal console link from the invitation, passed through to the button. */
 function linkFrom(v: string | string[] | undefined): string | null {
   const s = Array.isArray(v) ? v[0] : v
   return s && /^[A-Za-z0-9_-]{8,128}$/.test(s) ? s : null
@@ -99,32 +108,184 @@ async function sharedQuotes(): Promise<{ quote: string; shown_name: string }[]> 
   }
 }
 
+/*
+ * Each step's picture is the screen it stands for, drawn at card size with
+ * the numbers from the real screens (public/organizer-kit/*.jpg): a full
+ * screenshot shrunk to 200px can't be read (polish pass 2026-11-09).
+ */
+const ART = 'flex h-[176px] flex-col justify-center gap-2.5 rounded-[12px] bg-cream px-4'
+
+/** The week before: a planned route and its bike lanes. */
+function RouteArt() {
+  return (
+    <div className={ART} aria-hidden>
+      <svg viewBox="0 0 200 64" className="h-[70px] w-full">
+        <rect width="200" height="64" rx="8" fill="#EEF2E6" />
+        <path d="M18 50 L46 40 L70 42 L96 24 L128 28 L152 14 L182 12" fill="none" stroke="#2DD4BF" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M128 28 L152 14" fill="none" stroke="#7FB5FF" strokeWidth="5" strokeLinecap="round" />
+        <circle cx="18" cy="50" r="6" fill="#191A2E" />
+        <circle cx="182" cy="12" r="5" fill="#191A2E" />
+      </svg>
+      <div className="flex items-baseline justify-between text-navy">
+        <span className="text-[17px] font-bold">4.8 mi</span>
+        <span className="text-[17px] font-extrabold text-forest">90% in bike lanes</span>
+      </div>
+      <div className="flex h-2.5 overflow-hidden rounded-full">
+        <span className="w-[45%] bg-[#2DD4BF]" /><span className="w-[45%] bg-[#7FB5FF]" /><span className="w-[10%] bg-[#B4BAD2]" />
+      </div>
+    </div>
+  )
+}
+
+/** The week before: one list of who's coming. */
+function ListArt() {
+  return (
+    <div className={ART} aria-hidden>
+      <div className="grid grid-cols-2 gap-1 text-center text-navy">
+        {[['7', 'Going'], ['2', 'Maybe']].map(([n, k]) => (
+          <p key={k}><span className="block text-[26px] font-extrabold leading-none">{n}</span><span className="text-[15px] font-semibold">{k}</span></p>
+        ))}
+      </div>
+      <ul className="flex flex-col gap-1.5 border-t border-navy/10 pt-2.5">
+        {['Maria G.', 'Aisha K.'].map((n) => (
+          <li key={n} className="flex items-center gap-2 text-[16px] text-navy">
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-navy/[0.08] text-[13px] font-bold">{n[0]}</span>{n}
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
+/** Ride morning: the update people get, drawn like the notification. */
+function NoticeArt() {
+  return (
+    <div className="flex h-[176px] flex-col justify-center gap-2.5 rounded-[12px] bg-navy px-4 text-white" aria-hidden>
+      <div className="rounded-[12px] bg-white/[0.12] px-3.5 py-3">
+        <p className="text-[15px] font-bold text-white/75">Shift · now</p>
+        <p className="mt-0.5 text-[17px] font-bold leading-snug">It&rsquo;s on!</p>
+        <p className="text-[16px] leading-snug text-white/85">See you at Davis Square at 10.</p>
+      </div>
+      <p className="px-1 text-[15px] text-white/75">Sent to 9 people</p>
+    </div>
+  )
+}
+
+/** After: turnout, counted for you. */
+function TurnoutArt() {
+  return (
+    <div className={ART} aria-hidden>
+      <p className="px-1 text-[16px] font-bold text-navy/80">October</p>
+      {[['14', 'came', 'bg-lime'], ['9', 'came for the first time', 'bg-navy/[0.06]']].map(([n, k, c]) => (
+        <p key={k} className={`flex items-baseline gap-2 rounded-[10px] px-3 py-2 text-navy ${c}`}>
+          <span className="text-[28px] font-extrabold leading-none">{n}</span><span className="text-[16px] font-bold leading-tight">{k}</span>
+        </p>
+      ))}
+    </div>
+  )
+}
+
+/** After: the date's shared album, drawn like the ride page's photos card with real ride and walk photos (credited at the foot of the page). */
+const ALBUM = ['album-group-ride.jpg', 'album-common-walk.jpg', 'album-city-hall.jpg', 'album-minuteman.jpg', 'album-comm-ave.jpg']
+function AlbumArt() {
+  return (
+    <div className={ART} aria-hidden>
+      <p className="flex items-baseline justify-between px-1 text-navy">
+        <span className="text-[16px] font-bold">Saturday&rsquo;s photos</span>
+        <span className="text-[15px] font-semibold text-navy/75">23</span>
+      </p>
+      <div className="grid grid-cols-3 gap-1.5">
+        {ALBUM.map((f) => (
+          <span key={f} className="relative h-[56px] overflow-hidden rounded-[6px]">
+            <Image src={`/organizer-kit/${f}`} alt="" fill className="object-cover" sizes="120px" />
+          </span>
+        ))}
+        <span className="flex h-[56px] items-center justify-center rounded-[6px] border border-dashed border-navy/30 text-[15px] font-bold text-navy">+ Add</span>
+      </div>
+    </div>
+  )
+}
+
+type Stage = { when: string; ask: string; does: string; art: ReactNode }
+
+/** Before ride day. */
+const BEFORE: Stage[] = [
+  {
+    when: 'The week before',
+    ask: 'Which streets are OK for beginners?',
+    does: 'Plan a route on bike lanes and paths, or bring yours and see which streets have them.',
+    art: <RouteArt />,
+  },
+  {
+    when: 'The week before',
+    ask: 'Who’s actually coming?',
+    does: 'People answer on your ride page with a name and email. No app needed.',
+    art: <ListArt />,
+  },
+  {
+    when: 'Ride morning',
+    ask: 'Is it still on?',
+    does: 'Post “It’s on” or a change once, and everyone coming gets a notification or an email.',
+    art: <NoticeArt />,
+  },
+]
+
+/** After the ride. */
+const AFTER: Stage[] = [
+  {
+    when: 'After',
+    ask: 'How many came this year?',
+    does: 'Shift counts who came and who was new, month by month.',
+    art: <TurnoutArt />,
+  },
+  {
+    when: 'After',
+    ask: 'Can someone send me the photos?',
+    does: 'Each date gets one shared album that everyone who came can add to.',
+    art: <AlbumArt />,
+  },
+]
+
+function StageCard({ s }: { s: Stage }) {
+  return (
+    <li className="flex w-[80vw] max-w-[320px] shrink-0 snap-start flex-col gap-3 rounded-[18px] border border-navy/10 bg-white p-3 pb-5 sm:w-auto sm:max-w-none print:break-inside-avoid">
+      {s.art}
+      <div className="px-1">
+        <p className="text-[15px] font-bold text-forest">{s.when}</p>
+        <p className="mt-1 text-[1.25rem] font-extrabold leading-snug text-navy">&ldquo;{s.ask}&rdquo;</p>
+        <p className={`mt-1.5 ${BODY}`}>{s.does}</p>
+      </div>
+    </li>
+  )
+}
+
+/** A row of stage cards: a swipe row on phones (the next card peeks in), a grid from tablet width. */
+const ROW = '-mx-6 flex snap-x snap-mandatory scroll-pl-6 gap-4 overflow-x-auto px-6 pb-2 [scrollbar-width:thin] sm:mx-0 sm:grid sm:overflow-visible sm:px-0 sm:pb-0 print:grid'
+
 function Start({ link, light }: { link: string | null; light?: boolean }) {
   return (
-    <div>
-      <a
-        href={link ? `/organizers?link=${encodeURIComponent(link)}` : '/organizers'}
-        className={`${BUTTON} ${light ? '!bg-white !text-navy' : ''} print:hidden`}
-      >
-        Make your first ride
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-5">
+      <a href={consoleHref(link)} className={`${BUTTON} ${light ? '!bg-white !text-navy' : ''} shrink-0 print:hidden`}>
+        Set up my ride
       </a>
-      <p className={`mt-3 text-[15px] leading-snug ${light ? 'text-white/85' : 'text-navy/75'} print:mt-0`}>
+      <p className={`max-w-[460px] text-[17px] leading-snug ${light ? 'text-white/85' : 'text-navy/80'}`}>
         {link
-          ? 'Opens your ride, filled in from your calendar listing. It takes a few minutes.'
-          : 'Use the personal link in Keith’s email. It opens your ride, filled in from your calendar listing.'}
+          ? 'It opens filled in from our events calendar.'
+          : 'Use the link in your invitation. It opens your ride filled in.'}
       </p>
     </div>
   )
 }
 
-function Section({ id, title, lede, children, className = '' }: { id: string; title: string; lede?: ReactNode; children: ReactNode; className?: string }) {
+function consoleHref(link: string | null): string {
+  return link ? `/organizers?link=${encodeURIComponent(link)}` : '/organizers'
+}
+
+function Section({ id, title, children, className = '' }: { id: string; title: string; children: ReactNode; className?: string }) {
   return (
-    <section id={id} className={`scroll-mt-24 py-12 md:py-16 print:py-6 ${className}`}>
-      <div className="print:break-inside-avoid print:break-after-avoid">
-        <h2 className={`${HEAD} text-[clamp(1.75rem,3.6vw,2.5rem)] leading-[1.08]`}>{title}</h2>
-        {lede && <div className="mt-3 max-w-[680px] text-[1.0625rem] leading-[1.6] text-navy/80">{lede}</div>}
-      </div>
-      <div className="mt-8">{children}</div>
+    <section id={id} className={`scroll-mt-[124px] border-t border-navy/10 py-10 md:py-14 print:py-6 ${className}`}>
+      <h2 className={`${HEAD} text-[clamp(1.75rem,3.4vw,2.5rem)] leading-[1.1]`}>{title}</h2>
+      <div className="mt-6">{children}</div>
     </section>
   )
 }
@@ -134,171 +295,260 @@ export default async function OrganizerKitPage({ searchParams }: { searchParams:
   const quotes = await sharedQuotes()
 
   return (
-    <div className="street min-h-screen bg-cream text-navy" style={{ fontFamily: GSI_FONT }}>
+    <div className="street min-h-screen bg-white text-navy" style={{ fontFamily: GSI_FONT }}>
       <div className="print:hidden">
         <Nav variant="light" street />
       </div>
 
-      {/* Hero: the promise, the button, and the product. */}
-      <section className="bg-cream pt-[60px] print:pt-0">
-        <div className={`${CONTAINER} pb-6 pt-6 md:pt-10`}>
-          <div className="grid items-center gap-8 overflow-hidden rounded-[24px] bg-forest px-5 pb-8 pt-7 text-white sm:px-10 sm:pb-10 sm:pt-9 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] print:grid-cols-[1.2fr_0.8fr] print:gap-6">
-            <div>
-              <p className="text-[1rem] font-bold text-white/90">For people who lead group rides and walks in Massachusetts</p>
-              <h1 className={`mt-4 [font-family:var(--font-overpass),Trebuchet_MS,sans-serif] text-[clamp(2rem,5vw,3.5rem)] font-extrabold leading-[1.03] tracking-[-0.01em] text-white`}>
-                Run your rides with less work, and bring more people along.
-              </h1>
-              <p className="mt-5 max-w-[560px] text-[1.125rem] leading-[1.55] text-white/90">
-                Free tools from Green Streets Initiative. Bring your route, see who&rsquo;s coming, and let Shift count who came.
-              </p>
-              <div className="mt-7"><Start link={link} light /></div>
-            </div>
-            <div className="mx-auto w-full max-w-[420px] overflow-hidden rounded-[18px] bg-white shadow-[0_18px_40px_rgba(0,0,0,0.25)] print:max-w-[280px]">
-              <Image src="/organizer-kit/ride-page.jpg" width={640} height={848} priority alt="A ride page: pick a date, then Going, Maybe or Can’t go, with distance, pace, hills and level" className="h-auto w-full" sizes="(min-width: 1024px) 420px, 100vw" />
-            </div>
+      {/* Room for the fixed site nav; the section menu sticks under it. */}
+      <div className="h-[60px] print:hidden" />
+      <KitNav sections={SECTIONS} href={consoleHref(link)} />
+
+      {/*
+        Hero, in the website's Nov 17 look (Direction A): white ground, the
+        green sign only as a short label, and on the first phone screen what
+        it is, one button and a photo of people meeting up for a ride.
+      */}
+      <header className={`${CONTAINER} pt-6 md:pt-10`}>
+        <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,480px)] lg:items-center lg:gap-12">
+          <div>
+            <p className="inline-block rounded-[8px] bg-forest px-3 py-1 text-[16px] font-bold text-white">For ride and walk organizers</p>
+            <h1 className={`${HEAD} mt-3 text-[clamp(2.125rem,4.8vw,3.125rem)] leading-[1.05] tracking-[-0.01em]`}>
+              Run your group ride from one link.
+            </h1>
+            <p className="mt-3 max-w-[560px] text-[1.25rem] leading-[1.5] text-navy/85">
+              Plan the route, see who&rsquo;s coming and count who came. Free, from Green Streets Initiative.
+            </p>
+            <div className="mt-5"><Start link={link} /></div>
           </div>
-          <ul className="mt-4 grid gap-2 text-[15px] font-bold text-navy sm:grid-cols-3 print:grid-cols-3">
-            {['Free, under your name', 'No app needed to join', 'Ready in a few minutes'].map((t) => (
-              <li key={t} className="flex items-center gap-2 rounded-full bg-white px-4 py-2.5">
-                <ShieldCheck className="h-4 w-4 shrink-0 text-forest" aria-hidden /> {t}
-              </li>
-            ))}
-          </ul>
+          <figure className="overflow-hidden rounded-[18px] border border-navy/10 bg-white">
+            <div className="relative h-[190px] sm:h-[280px] lg:h-[330px]">
+              <Image src="/organizer-kit/walk-ride-day-2014.jpg" alt="Riders meeting up on Boston City Hall Plaza before a Walk/Ride Day ride" fill priority className="object-cover object-[50%_60%]" sizes="(min-width: 1024px) 480px, 100vw" />
+            </div>
+            <figcaption className="px-4 py-2 text-[15px] text-navy/75">Walk/Ride Day, Boston. Photo: MassDOT</figcaption>
+          </figure>
         </div>
-      </section>
+      </header>
 
       <main className={CONTAINER}>
-        {/* The three things that change an organizer's week, each with its picture. */}
-        <Section id="benefits" title="What changes for you">
-          <div className="space-y-10 md:space-y-16 print:space-y-6">
-            {BENEFITS.map((b, i) => (
-              <article key={b.title} className="grid items-center gap-6 md:grid-cols-2 md:gap-12 print:break-inside-avoid print:grid-cols-2 print:gap-6">
-                <div className={i % 2 ? 'md:order-2' : ''}>
-                  <h3 className={`${HEAD} text-[clamp(1.5rem,2.6vw,2rem)] leading-[1.1]`}>{b.title}</h3>
-                  <p className="mt-3 text-[1.125rem] leading-[1.55] text-navy/85">{b.body}</p>
-                  {b.chips && (
-                    <ul className="mt-4 flex flex-wrap gap-2">
-                      {b.chips.map((c) => <li key={c} className="rounded-full border border-navy/15 bg-white px-3 py-1.5 text-[14px] font-bold text-navy">{c}</li>)}
-                    </ul>
-                  )}
-                </div>
-                <div className="overflow-hidden rounded-[18px] border border-navy/10 bg-white shadow-[0_10px_30px_rgba(25,26,46,0.08)] print:max-h-[300px]">
-                  <Image src={b.pic.src} width={b.pic.w} height={b.pic.h} alt={b.pic.alt} className="h-auto w-full" sizes="(min-width: 768px) 520px, 100vw" />
-                </div>
-              </article>
-            ))}
-          </div>
-        </Section>
+        {/* The framework the page leads with: the ride from start to finish. */}
+        <section id="start" className="scroll-mt-[124px] pb-10 pt-8 md:pt-12 print:py-4">
+          <h2 className={`${HEAD} text-[clamp(1.75rem,3.4vw,2.5rem)] leading-[1.1]`}>Your ride, start to finish</h2>
+          <ol className={`${ROW} mt-6 sm:grid-cols-3 print:grid-cols-3`}>
+            {BEFORE.map((s) => <StageCard key={s.ask} s={s} />)}
+          </ol>
 
-        <Section id="also" title="Also included" className="border-t border-navy/10">
-          <ul className="grid gap-x-8 gap-y-6 sm:grid-cols-2 lg:grid-cols-4 print:grid-cols-4 print:gap-4">
-            {ALSO.map(({ icon: Icon, title, body }) => (
-              <li key={title} className="print:break-inside-avoid">
-                <span className="flex h-11 w-11 items-center justify-center rounded-full bg-forest/10 text-forest"><Icon className="h-5 w-5" aria-hidden /></span>
-                <p className="mt-3 text-[1.0625rem] font-bold text-navy">{title}</p>
-                <p className="mt-1 text-[15px] leading-snug text-navy/80">{body}</p>
-              </li>
-            ))}
-          </ul>
-        </Section>
-
-        <Section
-          id="people"
-          title="What the people who come see"
-          lede="Distance, hills, pace and no-drop before they decide. One tap to say they’re coming. Your route and meeting spot on the day."
-          className="border-t border-navy/10"
-        >
-          <div className="grid max-w-[760px] grid-cols-2 gap-3 sm:gap-6 print:gap-4">
-            {PEOPLE.map((p) => (
-              <div key={p.src} className="h-[300px] overflow-hidden rounded-[16px] border border-navy/10 bg-white sm:h-[460px] print:h-[230px]">
-                <Image src={p.src} width={p.w} height={p.h} alt={p.alt} className="h-auto w-full" sizes="(min-width: 768px) 360px, 33vw" />
+          {/* Ride day: what it takes today, and what Shift does on its own. */}
+          <div className="mt-5 rounded-[18px] border border-navy/10 bg-white p-5 sm:p-7 print:break-inside-avoid">
+            <p className="text-[15px] font-bold text-forest">At the meetup</p>
+            <h3 className={`${HEAD} mt-1 text-[clamp(1.5rem,2.8vw,2rem)] leading-[1.15]`}>Nobody has to text &ldquo;where are you guys?&rdquo;</h3>
+            <div className="mt-5 grid gap-6 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,250px)] md:items-start lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,280px)]">
+              <div className="rounded-[14px] bg-navy/[0.05] p-5">
+                <p className="text-[19px] font-extrabold text-navy">Today</p>
+                <ul className="mt-3 flex flex-col gap-3">
+                  {TODAY.map((t) => (
+                    <li key={t} className="flex gap-2.5 text-[17px] leading-[1.45] text-navy/85">
+                      <X className="mt-1 h-5 w-5 shrink-0 text-navy/60" aria-hidden />{t}
+                    </li>
+                  ))}
+                </ul>
               </div>
-            ))}
+              <div className="rounded-[14px] bg-lime/40 p-5">
+                <p className="text-[19px] font-extrabold text-navy">With Shift, on its own</p>
+                <ul className="mt-3 flex flex-col gap-3">
+                  {WITH_SHIFT.map((t) => (
+                    <li key={t} className="flex gap-2.5 text-[17px] leading-[1.45] text-navy">
+                      <Check className="mt-1 h-5 w-5 shrink-0 text-forest" aria-hidden />{t}
+                    </li>
+                  ))}
+                </ul>
+                <p className="mt-4 border-t border-navy/10 pt-3 text-[16px] leading-[1.45] text-navy/85">Whoever leads carries a phone with the Shift app. Nobody else needs it.</p>
+              </div>
+              <figure className="mx-auto w-full max-w-[250px] overflow-hidden rounded-[22px] border-[6px] border-navy bg-navy md:max-w-none">
+                <Image src="/organizer-kit/live-group.jpg" width={640} height={723} alt="The Shift app's live ride screen: the group's bike marker on the route map, marked Live and updated 8 seconds ago" className="h-auto w-full" sizes="280px" />
+              </figure>
+            </div>
           </div>
-        </Section>
-      </main>
 
-      {/* Reach and why: the calendar's size, and what Green Streets is after. */}
-      <section className="bg-navy py-12 text-white md:py-16 print:break-inside-avoid print:py-8">
-        <div className={`${CONTAINER} grid gap-10 md:grid-cols-2`}>
-          <div>
-            <p className={`[font-family:var(--font-overpass),Trebuchet_MS,sans-serif] text-[clamp(2.5rem,6vw,4rem)] font-extrabold leading-none text-lime`}>600+</p>
-            <p className="mt-3 text-[1.125rem] leading-[1.55] text-white/90">
-              rides, walks and events from 200+ Massachusetts organizers on our events calendar in the last six months. Your ride
-              joins them, on a page built to show up in Google.
-            </p>
-          </div>
-          <div>
-            <h2 className={`[font-family:var(--font-overpass),Trebuchet_MS,sans-serif] text-[clamp(1.5rem,3vw,2rem)] font-extrabold leading-[1.1] text-white`}>Why we&rsquo;re doing this</h2>
-            <p className="mt-3 text-[1.125rem] leading-[1.55] text-white/90">
-              We want a friendly group ride or walk within reach of everyone in Massachusetts, so getting around by bike or on
-              foot is easy to start. Organizers like you are how most people take their first ride.
-            </p>
-          </div>
-        </div>
-      </section>
+          <ol className={`${ROW} mt-5 sm:grid-cols-2 print:grid-cols-2`}>
+            {AFTER.map((s) => <StageCard key={s.ask} s={s} />)}
+          </ol>
+        </section>
 
-      <div className={CONTAINER}>
-        {/* The pilot's journey, with the feedback ask built in. */}
-        <Section
-          id="pilot"
-          title="Build it with us"
-          lede="You’re one of about a dozen organizers trying this first. Here’s the whole ask."
-        >
-          <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)] lg:items-start print:grid-cols-[1fr_0.8fr]">
-            <ol className="space-y-4">
-              {[
-                ['Put one ride on Shift', 'Your ride comes filled in from your calendar listing. Check it, save it, and share the link.'],
-                ['Tell us how it went', 'After your first date, your rides page asks three quick questions. Say what to fix, and what you’d tell another organizer.'],
-                ['A 15-minute call, if you like', 'Keith will ask what to build next. Pilot organizers shape what comes after.'],
-              ].map(([t, b], i) => (
-                <li key={t} className="flex gap-4 rounded-[18px] border border-navy/10 bg-white px-5 py-5 print:break-inside-avoid">
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-navy text-[1rem] font-bold text-white">{i + 1}</span>
-                  <div>
-                    <p className="text-[1.125rem] font-bold text-navy">{t}</p>
-                    <p className="mt-1 text-[1.0625rem] leading-[1.55] text-navy/80">{b}</p>
-                  </div>
+        {/* What only Shift does, each shown with real data. */}
+        <Section id="only" title="What you get only on Shift">
+          {/* Side by side; on phones one row that scrolls sideways, so the page stays short. */}
+          <div className="-mx-6 flex snap-x snap-mandatory scroll-pl-6 gap-4 overflow-x-auto px-6 pb-2 lg:mx-0 lg:grid lg:grid-cols-3 lg:gap-5 lg:overflow-visible lg:px-0 print:grid print:grid-cols-3">
+            <div className="w-[84vw] max-w-[380px] shrink-0 snap-start rounded-[18px] border border-navy/10 bg-white p-5 lg:w-auto lg:max-w-none">
+              <p className="text-[1.375rem] font-extrabold leading-snug">The bike lanes on every street of your route</p>
+              <p className={`mt-2 ${BODY}`}>
+                Protected, painted or none, from MassDOT and OpenStreetMap, with busy crossings and hills marked.
+              </p>
+              <div className="relative mt-4 h-[170px] overflow-hidden rounded-[14px] border border-navy/10">
+                <Image src="/organizer-kit/route.jpg" alt="A route planned in the organizer console, each stretch colored by its kind of bike lane" fill className="object-cover object-[50%_58%]" sizes="(min-width: 1024px) 340px, 90vw" />
+              </div>
+              <div className="mt-3 rounded-[14px] bg-cream p-4">
+                <div className="flex items-baseline justify-between gap-2">
+                  <p className="text-[17px] font-bold">Mattapan to Roslindale</p>
+                  <p className="text-[17px] font-bold text-navy/80">4.8 mi</p>
+                </div>
+                <p className="mt-0.5 text-[1.375rem] font-extrabold text-forest">90% in bike lanes</p>
+                <div className="mt-3 flex h-3 overflow-hidden rounded-full" role="img" aria-label="45% protected bike lane, 45% painted bike lane, 10% no bike lane">
+                  {LANES.map((c) => <span key={c.label} style={{ width: `${c.pct}%`, background: c.color }} />)}
+                </div>
+                <ul className="mt-2.5 flex flex-col gap-1 text-[16px] text-navy/85">
+                  {LANES.map((c) => (
+                    <li key={c.label} className="flex items-center gap-2">
+                      <span className="h-3 w-3 rounded-full" style={{ background: c.color }} aria-hidden />{c.label} {c.pct}%
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+
+            <div className="w-[84vw] max-w-[380px] shrink-0 snap-start rounded-[18px] border border-navy/10 bg-white p-5 lg:w-auto lg:max-w-none">
+              <p className="text-[1.375rem] font-extrabold leading-snug">Discounts near your meeting spot</p>
+              <p className={`mt-2 ${BODY}`}>
+                Shops in the Bicycle Benefits program show on your ride page.
+              </p>
+              <div className="mt-4 rounded-[14px] bg-cream p-4">
+                <p className="text-[17px] font-bold">Near Davis Square</p>
+                <ul className="mt-2 divide-y divide-navy/10">
+                  {PERKS.map((p) => (
+                    <li key={p.name} className="flex items-center justify-between gap-3 py-2.5 text-[17px]">
+                      <span className="min-w-0 truncate">{p.name}</span>
+                      <span className="shrink-0 rounded-full bg-lime px-3 py-0.5 text-[15px] font-bold text-navy">{p.perk}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+
+            <div className="w-[84vw] max-w-[380px] shrink-0 snap-start rounded-[18px] border border-navy/10 bg-white p-5 lg:w-auto lg:max-w-none">
+              <p className="text-[1.375rem] font-extrabold leading-snug">Ask the assistant to do it for you</p>
+              <p className={`mt-2 ${BODY}`}>
+                It asks before it changes anything.
+              </p>
+              <div className="mt-4 flex flex-col gap-2 rounded-[14px] bg-cream p-4">
+                {[
+                  'Plan a 10-mile loop from Davis Square with a coffee stop halfway.',
+                  'Who’s coming Saturday, and what’s the forecast?',
+                  'Rain is coming. Cancel Saturday and tell everyone.',
+                ].map((q) => (
+                  <p key={q} className="ml-6 rounded-[14px] rounded-br-[4px] bg-navy px-3.5 py-2.5 text-[17px] leading-snug text-white">{q}</p>
+                ))}
+                <p className="mt-1 flex items-center gap-2 text-[16px] font-bold text-navy/80">
+                  <MessageSquareText className="h-5 w-5 text-forest" aria-hidden /> On your rides page
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Free, including what other ride apps put in a paid plan. */}
+          <div className="mt-6 rounded-[18px] bg-navy px-5 py-6 text-white sm:px-7 print:break-inside-avoid">
+            <p className="text-[1.375rem] font-extrabold leading-snug">Free, including what other ride apps charge for</p>
+            <ul className="mt-4 flex flex-wrap gap-2.5">
+              {FREE.map((f) => (
+                <li key={f} className="flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-[17px] font-bold">
+                  <Check className="h-5 w-5 text-lime" aria-hidden />{f}
                 </li>
               ))}
-            </ol>
-            <figure className="overflow-hidden rounded-[18px] border border-navy/10 bg-white shadow-[0_10px_30px_rgba(25,26,46,0.08)] print:self-start print:break-inside-avoid">
-              <Image src="/organizer-kit/feedback.jpg" width={640} height={622} alt="The rides page asking how the first date went, what to fix, and what they would tell another organizer, with a box to share it" className="h-auto w-full" sizes="(min-width: 1024px) 460px, 100vw" />
-              <figcaption className="border-t border-navy/10 px-5 py-3 text-[15px] text-navy/80">With your OK, what you&rsquo;d tell another organizer goes on this page.</figcaption>
+            </ul>
+          </div>
+        </Section>
+
+        {/* How Shift fits next to what they use, tool by tool. */}
+        <Section id="tools" title="Keep your other tools">
+          <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_280px] lg:items-start">
+            <div className="overflow-hidden rounded-[18px] border border-navy/10 bg-white">
+              <div className="hidden grid-cols-[minmax(0,0.9fr)_minmax(0,0.9fr)_minmax(0,1.6fr)] gap-6 border-b border-navy/10 bg-navy/[0.04] px-6 py-3 text-[16px] font-bold text-navy/80 md:grid">
+                <span>What you use</span><span>Keep it for</span><span>With Shift</span>
+              </div>
+              <ul className="divide-y divide-navy/10">
+                {TOOLS.map((t) => (
+                  <li key={t.tool} className="grid gap-1.5 px-5 py-4 md:grid-cols-[minmax(0,0.9fr)_minmax(0,0.9fr)_minmax(0,1.6fr)] md:gap-6 md:px-6 print:break-inside-avoid">
+                    <p className="text-[18px] font-bold">{t.tool}</p>
+                    <p className="hidden text-[17px] leading-[1.5] text-navy/80 md:block">{t.keep}</p>
+                    <p className="text-[17px] leading-[1.5] text-navy">{t.shift}</p>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            {/* The thing they post everywhere: the ride page their link opens. */}
+            <figure className="overflow-hidden rounded-[18px] border border-navy/10 bg-white">
+              <div className="relative h-[260px] lg:h-[380px]">
+                <Image src="/organizer-kit/ride-page.jpg" alt="A ride page: pick a date, then Going, Maybe or Can’t go, with distance, pace, hills and level" fill className="object-cover object-top" sizes="(min-width: 1024px) 280px, 90vw" />
+              </div>
+              <figcaption className="border-t border-navy/10 px-4 py-3 text-[16px] leading-snug text-navy/85">
+                The page your link opens. People RSVP here, in any browser.
+              </figcaption>
             </figure>
           </div>
+        </Section>
+
+        {/* The pilot: three steps, and who we are. */}
+        <Section id="pilot" title="Be one of the first">
+          <ol className="grid gap-3 md:grid-cols-3">
+            {[
+              ['Set up one ride', 'Your link opens it filled in. Add the route and save.'],
+              ['Share your ride’s link', 'Wherever you post now: Meetup, Instagram, the group chat.'],
+              ['Tell us how it went', 'Three questions after your first ride. Your answers shape what we build.'],
+            ].map(([t, b], i) => (
+              <li key={t} className="flex gap-4 rounded-[18px] border border-navy/10 bg-white px-5 py-4 print:break-inside-avoid">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-navy text-[17px] font-bold text-white">{i + 1}</span>
+                <div>
+                  <p className="text-[1.25rem] font-bold">{t}</p>
+                  <p className={`mt-0.5 ${BODY}`}>{b}</p>
+                </div>
+              </li>
+            ))}
+          </ol>
+          <p className={`mt-4 ${BODY}`}>Green Streets Initiative has run Walk/Ride Day since 2006 and keeps the events calendar your rides are on.</p>
 
           {quotes.length > 0 && (
-            <div className="mt-10 grid gap-4 md:grid-cols-3">
+            <div className="mt-6 grid gap-4 md:grid-cols-3">
               {quotes.map((q) => (
-                <blockquote key={q.quote} className="rounded-[18px] bg-white px-6 py-5 print:break-inside-avoid">
-                  <p className="text-[1.125rem] leading-[1.5] text-navy">&ldquo;{q.quote}&rdquo;</p>
-                  <footer className="mt-3 text-[15px] font-bold text-navy/80">{q.shown_name}</footer>
+                <blockquote key={q.quote} className="rounded-[18px] border border-navy/10 bg-white px-6 py-5 print:break-inside-avoid">
+                  <p className="text-[1.125rem] leading-[1.5]">&ldquo;{q.quote}&rdquo;</p>
+                  <footer className="mt-3 text-[16px] font-bold text-navy/80">{q.shown_name}</footer>
                 </blockquote>
               ))}
             </div>
           )}
         </Section>
 
-        <Section id="questions" title="Questions" className="border-t border-navy/10">
-          <dl className="grid gap-x-10 gap-y-6 md:grid-cols-2 print:grid-cols-2 print:gap-y-4">
-            {QUESTIONS.map(([q, a]) => (
-              <div key={q} className="print:break-inside-avoid">
-                <dt className="text-[1.0625rem] font-bold text-navy">{q}</dt>
-                <dd className="mt-1 text-[1.0625rem] leading-[1.55] text-navy/80">{a}</dd>
+        {/* Short facts, not a Q&A. */}
+        <Section id="facts" title="Good to know">
+          <dl className="grid gap-x-8 gap-y-5 rounded-[18px] border border-navy/10 bg-white p-5 sm:grid-cols-2 sm:p-6">
+            {[
+              ['Why it’s free', 'Helping people start riding and walking is our mission.'],
+              ['The people who come', 'They answer in any browser and get changes by email.'],
+              ['Names', 'Others see a first name and last initial.'],
+              ['Our calendar', 'Public rides you make on Shift show on our events calendar.'],
+              ['Co-leaders', 'People going can sign up to ride at the back, or to wait at a busy crossing until everyone is through.'],
+            ].map(([k, v]) => (
+              <div key={k}>
+                <dt className="text-[18px] font-bold">{k}</dt>
+                <dd className={`mt-0.5 ${BODY}`}>{v}</dd>
               </div>
             ))}
           </dl>
         </Section>
 
-        <section className="mb-12 rounded-[24px] bg-forest px-6 py-8 text-white sm:px-10 print:break-inside-avoid">
-          <h2 className={`[font-family:var(--font-overpass),Trebuchet_MS,sans-serif] text-[clamp(1.5rem,3vw,2.125rem)] font-extrabold leading-[1.1] text-white`}>Ready when you are</h2>
+        <section className="mb-8 rounded-[24px] bg-navy px-6 py-8 text-white sm:px-10 print:break-inside-avoid">
+          <h2 className="[font-family:var(--font-overpass),Trebuchet_MS,sans-serif] text-[clamp(1.625rem,3.2vw,2.25rem)] font-extrabold leading-[1.1] text-white">Set up your next ride</h2>
           <div className="mt-5"><Start link={link} light /></div>
-          <p className="mt-5 text-[15px] text-white/85">
-            Questions? Reply to Keith&rsquo;s email, or write to{' '}
+          <p className="mt-5 text-[17px] text-white/85">
+            Questions? Reply to your invitation, or write to{' '}
             <a href="mailto:info@gogreenstreets.org" className="font-bold text-white underline underline-offset-2">info@gogreenstreets.org</a>.
           </p>
         </section>
-      </div>
+
+        <p className="mb-12 text-[14px] leading-[1.5] text-navy/75">
+          Photos: MassDOT (public domain); Leo_Visions on Unsplash; Sarah Nichols, CC BY-SA 2.0; Daderot, public domain;
+          4300streetcar, CC BY 4.0 (all cropped). Screens show made-up rides.
+        </p>
+      </main>
 
       <div className="print:hidden">
         <Footer variant="light" />
