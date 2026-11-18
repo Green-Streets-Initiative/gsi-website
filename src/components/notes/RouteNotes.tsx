@@ -149,6 +149,12 @@ export default function RouteNotes({
           </ul>
         </>
       )}
+      {groups.length === 0 && (
+        <>
+          <h3 className="text-[0.875rem] font-bold text-(--nb-ink-80)">{t('notes.box_title')}</h3>
+          <p className="mt-1 text-[0.9375rem] leading-snug text-(--nb-ink)">{t('notes.box_empty')}</p>
+        </>
+      )}
       {canAdd && (
         <button
           type="button"
