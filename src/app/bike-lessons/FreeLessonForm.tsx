@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import posthog from 'posthog-js'
 import { Check } from '@phosphor-icons/react'
 import { gaEvent } from '@/lib/ga'
+import { trackAdConversion } from '@/lib/ad-pixels'
 import { translator, type SiteLocale } from '@/lib/site-i18n'
 import { bikeLessonsStrings } from '@/lib/site-strings/bike-lessons'
 
@@ -188,8 +189,12 @@ export default function FreeLessonForm({
         setAskedName(data?.teacher?.name ?? chosen.name)
         setStatus(state)
         // Only a request sent to an instructor is a result for the ads; the rest are tracked apart.
-        if (state === 'sent') gaEvent('free_lesson_code_requested')
-        else gaEvent('free_lesson_code_unavailable', { state })
+        if (state === 'sent') {
+          gaEvent('free_lesson_code_requested')
+          // The Meta and Reddit pixels too, so a lesson ad can pay for requests rather than visits.
+          trackAdConversion('FreeLessonRequested', { source: source || undefined })
+        }
+        if (state !== 'sent') gaEvent('free_lesson_code_unavailable', { state })
         // PostHog too, so the weekly search and ads scoreboard counts a lesson request (SEO hyp-20).
         try {
           posthog.capture(state === 'sent' ? 'free_lesson_code_requested' : 'free_lesson_code_unavailable', { state })
