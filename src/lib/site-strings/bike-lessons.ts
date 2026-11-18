@@ -14,18 +14,6 @@ export const bikeLessonsStrings = defineStrings(
     'lessons.meta_title': 'Bike lessons for adults in Massachusetts | Green Streets Initiative',
     'lessons.meta_description':
       'Bike lessons for adults, from your first ride to riding on busy streets. A free one-on-one street lesson in Boston and nearby towns, learn-to-ride classes and easy group rides.',
-    'lessons.hero_title': 'Learn to bike in the city.',
-    'lessons.hero_lede':
-      'Lessons for adults, whether you’re getting on a bike for the first time or you can ride but busy streets make you nervous. Many are free.',
-    'lessons.hero_after':
-      'Green Streets Initiative is a Massachusetts nonprofit that has helped people walk, bike and take transit more since 2006.',
-    'lessons.start_heading': 'Where are you starting?',
-    'lessons.start_nervous': 'I can ride, but traffic makes me nervous',
-    'lessons.start_nervous_hint': 'A free 1:1 lesson on real streets, in Boston and nearby towns.',
-    'lessons.start_learn': 'I’m not sure I can ride',
-    'lessons.start_learn_hint': 'Learn-to-ride classes for adults.',
-    'lessons.start_company': 'I’d like company the first time',
-    'lessons.start_company_hint': 'Easy-pace group rides open to beginners.',
     'lessons.street_title': 'Car doors. Big streets. Not sure of the rules.',
     'lessons.street_body': 'Take a free one-on-one lesson. A local instructor rides those streets with you, at your own pace.',
     'lessons.lede': 'A local instructor rides your own streets with you, at your pace. Green Streets Initiative pays for it.',
@@ -139,18 +127,6 @@ export const bikeLessonsStrings = defineStrings(
       'lessons.meta_title': 'Clases de bici para adultos en Massachusetts | Green Streets Initiative',
       'lessons.meta_description':
         'Clases de bici para adultos, desde tu primer paseo hasta andar por calles con mucho tráfico. Una clase individual gratis en las calles de Boston y pueblos cercanos, clases para aprender a andar y paseos en grupo tranquilos.',
-      'lessons.hero_title': 'Aprende a andar en bici en la ciudad.',
-      'lessons.hero_lede':
-        'Clases para adultos, ya sea que te subas a una bici por primera vez o que sepas andar pero las calles con tráfico te pongan nervioso. Muchas son gratis.',
-      'lessons.hero_after':
-        'Green Streets Initiative es una organización sin fines de lucro de Massachusetts que desde 2006 ayuda a la gente a caminar, andar en bici y usar el transporte público más.',
-      'lessons.start_heading': '¿Desde dónde empiezas?',
-      'lessons.start_nervous': 'Sé andar en bici, pero el tráfico me pone nervioso',
-      'lessons.start_nervous_hint': 'Una clase individual gratis en calles reales, en Boston y pueblos cercanos.',
-      'lessons.start_learn': 'No estoy seguro de saber andar en bici',
-      'lessons.start_learn_hint': 'Clases para que los adultos aprendan a andar.',
-      'lessons.start_company': 'Me gustaría ir acompañado la primera vez',
-      'lessons.start_company_hint': 'Paseos en grupo a ritmo tranquilo, abiertos a principiantes.',
       'lessons.street_title': 'Puertas de autos. Calles grandes. Dudas sobre las reglas.',
       'lessons.street_body': 'Toma una clase individual gratis. Un instructor de tu zona recorre esas calles contigo, a tu ritmo.',
       'lessons.lede': 'Un instructor de tu zona recorre tus propias calles contigo, a tu ritmo. Green Streets Initiative lo paga.',
@@ -264,18 +240,6 @@ export const bikeLessonsStrings = defineStrings(
       'lessons.meta_title': 'Aulas de bike para adultos em Massachusetts | Green Streets Initiative',
       'lessons.meta_description':
         'Aulas de bike para adultos, da primeira pedalada até andar em ruas movimentadas. Uma aula individual grátis nas ruas de Boston e cidades vizinhas, aulas para aprender a pedalar e passeios em grupo tranquilos.',
-      'lessons.hero_title': 'Aprenda a pedalar na cidade.',
-      'lessons.hero_lede':
-        'Aulas para adultos, seja para subir numa bike pela primeira vez ou para quem já sabe andar mas fica nervoso em ruas movimentadas. Muitas são grátis.',
-      'lessons.hero_after':
-        'A Green Streets Initiative é uma organização sem fins lucrativos de Massachusetts que, desde 2006, ajuda as pessoas a caminhar, pedalar e usar mais o transporte público.',
-      'lessons.start_heading': 'Onde você está começando?',
-      'lessons.start_nervous': 'Sei andar, mas o trânsito me deixa nervoso',
-      'lessons.start_nervous_hint': 'Uma aula individual grátis em ruas de verdade, em Boston e cidades vizinhas.',
-      'lessons.start_learn': 'Não tenho certeza se sei andar de bike',
-      'lessons.start_learn_hint': 'Aulas para adultos aprenderem a pedalar.',
-      'lessons.start_company': 'Quero companhia na primeira vez',
-      'lessons.start_company_hint': 'Passeios em grupo em ritmo tranquilo, abertos a iniciantes.',
       'lessons.street_title': 'Portas de carro. Ruas grandes. Dúvidas sobre as regras.',
       'lessons.street_body': 'Faça uma aula individual grátis. Um instrutor da sua região pedala com você por essas ruas, no seu ritmo.',
       'lessons.lede': 'Um instrutor da sua região pedala com você pelas suas próprias ruas, no seu ritmo. A Green Streets Initiative paga.',
@@ -389,17 +353,6 @@ export const bikeLessonsStrings = defineStrings(
       'lessons.meta_title': '马萨诸塞州成人自行车课 | Green Streets Initiative',
       'lessons.meta_description':
         '面向成人的自行车课，从第一次骑车到在繁忙街道上骑行。波士顿及周边城镇的免费一对一街道课程、学骑车课程和轻松的集体骑行。',
-      'lessons.hero_title': '在城市里学骑自行车。',
-      'lessons.hero_lede': '面向成人的课程：无论你是第一次骑车，还是会骑但一上繁忙街道就紧张。很多课程是免费的。',
-      'lessons.hero_after':
-        'Green Streets Initiative 是马萨诸塞州的一家非营利组织，自 2006 年起帮助大家更多地步行、骑车和乘坐公共交通。',
-      'lessons.start_heading': '你现在是什么情况？',
-      'lessons.start_nervous': '我会骑，但车流让我紧张',
-      'lessons.start_nervous_hint': '在波士顿及周边城镇的真实街道上上一节免费一对一课程。',
-      'lessons.start_learn': '我不确定自己会不会骑',
-      'lessons.start_learn_hint': '面向成人的学骑车课程。',
-      'lessons.start_company': '第一次想有人陪我',
-      'lessons.start_company_hint': '对新手开放的慢速集体骑行。',
       'lessons.street_title': '突然打开的车门。大马路。不确定交通规则。',
       'lessons.street_body': '免费上一节一对一课程。本地教练按你的节奏，陪你骑过这些街道。',
       'lessons.lede': '本地教练按你的节奏，陪你骑你自己常走的街道。费用由 Green Streets Initiative 支付。',

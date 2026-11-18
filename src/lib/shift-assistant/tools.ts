@@ -530,7 +530,7 @@ export const TOOLS: Anthropic.Tool[] = [
   },
   {
     name: 'get_lesson_offer',
-    description: "Whether Green Streets' free one-on-one road riding lesson is open to them: for someone who can ride but is rusty after years away or nervous in traffic. Says the school, how far it is from their home, how many lessons are left, or that they already have a code, live too far, or have no home saved. Call it before you mention the free lesson, and say exactly what it found.",
+    description: "Whether Green Streets' free one-on-one road riding lesson is open to them: for someone who can ride but is rusty after years away or not riding on busy streets yet. Says how far they are from an instructor, how many lessons are left, or that they already have a code, live too far, or have no home saved. Call it before you mention the free lesson, and say exactly what it found.",
     input_schema: { type: 'object', properties: {} },
   },
   {
@@ -1748,8 +1748,8 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
         const o = data as { state: string; code?: string; requested?: boolean; from_home?: boolean; reminder?: boolean
           program?: { school: string; minutes: number; miles?: number; left?: number; max?: number } }
         const button = 'Give a bike_confidence button with answer nervous: the code is claimed there, and they book with the school.'
-        if (o.state === 'has_code') return ok({ qualifies: true, already_has_code: o.code, school: o.program?.school, booked_by_email: !!o.requested, next: 'They already have their code. Remind them to give it to the school when they book. ' + button })
-        if (o.state === 'offer') return ok({ qualifies: true, school: o.program?.school, minutes: o.program?.minutes, miles_from: o.from_home ? 'their home' : 'where they are now', miles: o.program?.miles, left: o.program?.left, of: o.program?.max, who: 'People who can ride but are rusty or nervous in traffic. Green Streets pays; they pay nothing.', next: button })
+        if (o.state === 'has_code') return ok({ qualifies: true, already_asked: true, next: 'They already asked for their free lesson. Their instructor gets in touch by email (or a call) to pick a time; if they have not heard in a week, they can reply to our email. ' + button })
+        if (o.state === 'offer') return ok({ qualifies: true, teacher: 'a local instructor who teaches near them (never name where an instructor is based)', length: 'set by the instructor and the learner; never state a length', miles_from: o.from_home ? 'their home' : 'where they are now', miles: o.program?.miles, left: o.program?.left, of: o.program?.max, who: 'People who can ride but are rusty or not riding on busy streets yet. Green Streets pays; they pay nothing.', next: button })
         if (o.state === 'full') return ok({ qualifies: false, why: 'All of this round of free lessons are taken.', next: 'Say so. The bike_confidence screen (answer nervous) has a "remind me in April" option and other ways to build confidence.' })
         if (o.state === 'far') return ok({ qualifies: false, why: 'The free lesson is for people who live in Boston and nearby towns, close enough to one of the instructors.', next: 'Say so plainly, then offer bike_confidence (answer nervous), which lists classes and instructors near them.' })
         return ok({ qualifies: null, why: 'No home saved and no location shared, so the distance to the school is unknown.', next: 'Offer commute_setup to save their home, or ask them to share their location, then check again.' })
