@@ -4,13 +4,12 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
 import { ArrowLeft, ExternalLink, MessageSquareText } from 'lucide-react'
-import { scheduleText } from '@/lib/rides/public'
 import { errorText, getRide } from '@/lib/organizers/api'
 import { loadDatePhotos, photoDates } from '@/lib/organizers/photos'
 import type { RideDetail } from '@/lib/organizers/types'
 import { ASSISTANT_CHANGED_EVENT, openAssistant } from './AssistantPanel'
 import { useConsole } from './ConsoleContext'
-import { rideStateBadges } from './Dashboard'
+import { rideStateBadges, whenText } from './Dashboard'
 import { Badge, Button, Card, Spinner, cx } from './ui'
 
 interface RideCtx {
@@ -106,7 +105,7 @@ export default function RideFrame({ id, children }: { id: string; children: Reac
             <div className="min-w-0">
               <h1 className="font-display text-[clamp(26px,3.4vw,36px)] font-extrabold leading-tight">{r.name}</h1>
               <p className="mt-1 text-[15px] text-(--ev-ink-80)">
-                {scheduleText(r)}{r.meetup_name ? ` · ${r.meetup_name}` : ''}
+                {whenText(r)}{r.meetup_name ? ` · ${r.meetup_name}` : ''}
               </p>
               <div className="mt-2 flex flex-wrap gap-1.5">
                 {rideStateBadges({ ...r, my_role: detail.my_role }).map((b) => <Badge key={b.text} tone={b.tone}>{b.text}</Badge>)}
@@ -120,10 +119,13 @@ export default function RideFrame({ id, children }: { id: string; children: Reac
                   <MessageSquareText className="h-4 w-4" aria-hidden />Ask about this {thing}
                 </button>
               )}
-              <a href={ridePageUrl(r.invite_code)} target="_blank" rel="noopener noreferrer"
-                className="inline-flex min-h-[40px] items-center gap-1.5 rounded-[10px] border border-(--ev-line-strong) bg-white px-3.5 text-[14px] font-semibold text-(--ev-ink) hover:bg-(--ev-panel)">
-                {thing === 'walk' ? 'Walk page' : 'Ride page'}<ExternalLink className="h-4 w-4" aria-hidden />
-              </a>
+              {/* A draft has no page until it has a date (Shift 01833). */}
+              {r.status !== 'draft' && (
+                <a href={ridePageUrl(r.invite_code)} target="_blank" rel="noopener noreferrer"
+                  className="inline-flex min-h-[40px] items-center gap-1.5 rounded-[10px] border border-(--ev-line-strong) bg-white px-3.5 text-[14px] font-semibold text-(--ev-ink) hover:bg-(--ev-panel)">
+                  {thing === 'walk' ? 'Walk page' : 'Ride page'}<ExternalLink className="h-4 w-4" aria-hidden />
+                </a>
+              )}
             </div>
           </div>
 

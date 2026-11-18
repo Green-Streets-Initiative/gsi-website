@@ -547,7 +547,8 @@ function trimDetail(d: RideDetail) {
 function rowPayload(r: RideRow): Record<string, unknown> {
   return {
     name: r.name, description: r.description, flyer_url: r.flyer_url,
-    schedule: r.ride_date ? 'one_time' : 'recurring', ride_date: r.ride_date, frequency: r.frequency, days: r.days,
+    // A draft (Shift 01833) is a one-off still waiting for its date.
+    schedule: r.ride_date || r.status === 'draft' ? 'one_time' : 'recurring', ride_date: r.ride_date, frequency: r.frequency, days: r.days,
     week_of_month: r.week_of_month, season_start: r.season_start, season_end: r.season_end,
     start_time: r.start_time?.slice(0, 5), end_time: r.end_time?.slice(0, 5) ?? null,
     meetup_name: r.meetup_name, meetup_address: r.meetup_address, meetup_lat: r.meetup_lat, meetup_lng: r.meetup_lng,
@@ -933,7 +934,8 @@ export async function approvalCard(ctx: ToolCtx, name: string, input: Record<str
         if (change.schedule === 'one_time' && !change.ride_date && !before.ride_date) return { result: fail('A one-time ride needs its date.') }
         const after = { ...before, ...change }
         const missing = missingForRide(after)
-        if (missing) return { result: fail(`That would leave the ride without ${missing}.`) }
+        // A draft may stay without its date (Shift 01833).
+        if (missing && !(missing === 'the date' && d.ride.status === 'draft')) return { result: fail(`That would leave the ride without ${missing}.`) }
         const lines: string[] = []
         if (change.name !== undefined && change.name !== before.name) lines.push(`Name: ${after.name}`)
         if (['schedule', 'ride_date', 'frequency', 'days', 'week_of_month', 'season_start', 'season_end', 'start_time'].some((k) => k in change)) lines.push(`When: ${scheduleLine(after)}`)

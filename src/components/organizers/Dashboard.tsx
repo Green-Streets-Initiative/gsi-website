@@ -14,12 +14,19 @@ import { FeedbackDueCard, FeedbackLink } from './Feedback'
 import { NoMeetupHint, RideDayRiders, useRideDay, useRideTime } from './RideDay'
 import { Badge, Card, Empty, Notice, Spinner, Tabs, cx, tabPanel, type Tone } from './ui'
 
+/** When it runs; a draft (Shift 01833) says it has no date yet. */
+export function whenText(r: Parameters<typeof scheduleText>[0] & { status: DashboardRide['status'] }): string {
+  if (r.status === 'draft' && !r.ride_date) return `No date yet${r.start_time ? ` · ${clock(r.start_time)}` : ''}`
+  return scheduleText(r)
+}
+
 export function rideStateBadges(r: Pick<DashboardRide, 'status' | 'visibility' | 'calendar_status' | 'break_until' | 'my_role'>) {
   const out: { tone: Tone; text: string }[] = []
   if (r.status === 'archived') out.push({ tone: 'plain', text: 'Ended' })
+  else if (r.status === 'draft') out.push({ tone: 'warn', text: 'Not shared yet' })
   else if (r.break_until) out.push({ tone: 'warn', text: `On a break until ${dateLabel(r.break_until)}` })
   if (r.visibility === 'invite') out.push({ tone: 'plain', text: 'Invite only' })
-  else if (r.status !== 'archived') {
+  else if (r.status !== 'archived' && r.status !== 'draft') {
     out.push(r.calendar_status === 'approved'
       ? { tone: 'good', text: 'On the calendar' }
       : r.calendar_status === 'rejected'
@@ -54,7 +61,8 @@ function DateChip({ d, rideId, phoneHidden }: { d: NextDate; rideId: string; pho
 /** One ride as a row: what it is, its next dates, and the two things you do from here. */
 function RideRow({ r, goingTo }: { r: DashboardRide; goingTo?: FeedTarget | null }) {
   const over = r.status === 'archived' || (!!r.ride_date && r.next_dates.length === 0)
-  const canPost = !over && (!r.ride_date || r.next_dates.length > 0)
+  const draft = r.status === 'draft'
+  const canPost = !over && !draft && (!r.ride_date || r.next_dates.length > 0)
   const badges = rideStateBadges(r)
   return (
     <li className="list-none rounded-2xl border border-(--ev-line-mid) bg-(--ev-card) p-4 sm:p-5">
@@ -64,7 +72,7 @@ function RideRow({ r, goingTo }: { r: DashboardRide; goingTo?: FeedTarget | null
             {r.name}
           </Link>
           <p className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-[14px] text-(--ev-ink-80)">
-            <span className="inline-flex items-center gap-1.5"><CalendarDays className="h-4 w-4" aria-hidden />{scheduleText(r)}</span>
+            <span className="inline-flex items-center gap-1.5"><CalendarDays className="h-4 w-4" aria-hidden />{whenText(r)}</span>
             {r.meetup_name && <span className="inline-flex items-center gap-1.5"><MapPin className="h-4 w-4" aria-hidden />{r.meetup_name}</span>}
             <span className="inline-flex items-center gap-1.5"><Users className="h-4 w-4" aria-hidden />{plural(r.members, 'person', 'people')}</span>
           </p>
@@ -105,7 +113,12 @@ function RideRow({ r, goingTo }: { r: DashboardRide; goingTo?: FeedTarget | null
         </div>
       )}
 
-      {!over && (
+      {draft ? (
+        <p className="mt-3 text-[15px] text-(--ev-ink-85)">
+          <Link href={`/organizers/rides/${r.id}/edit#sec-when`} className="font-semibold text-(--ev-ink) underline">Add the date</Link>{' '}
+          when you know it, and it gets its own page to share.
+        </p>
+      ) : !over && (
         r.next_dates.length > 0 ? (
           <div className="mt-3 flex flex-wrap gap-2">
             {r.next_dates.map((d, i) => <DateChip key={d.id} d={d} rideId={r.id} phoneHidden={i > 1} />)}
