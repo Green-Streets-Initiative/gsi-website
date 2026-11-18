@@ -157,12 +157,13 @@ function when(e: Ev, locale: SiteLocale): string {
 
 /** A real street of the kind learners worry about, where our first requests came from (Somerville). */
 const STREET_PHOTO = {
-  // Washington Street at the Paramount, Downtown Crossing: the green lane, a bus and a car (Unsplash License).
+  // Washington Street at the Paramount, Downtown Crossing: the green lane, a bus and a car (Unsplash License,
+  // unsplash.com/photos/JwAeeifBANs). PhotoCredit turns "Name / Unsplash" into Unsplash's required credit.
   src: '/bike-lessons/washington-st-boston.jpg',
   width: 1400,
   height: 934,
   credit: 'Aaron Doucett / Unsplash',
-  url: 'https://unsplash.com/photos/man-in-black-jacket-riding-bicycle-on-road-during-daytime-JwAeeifBANs',
+  url: 'https://unsplash.com/@adoucett',
   position: '55% 35%',
 }
 /** Credit is fine print: one line, so it doesn't cover the short phone band. */
@@ -207,7 +208,7 @@ export default async function BikeLessonsPage({ searchParams }: { searchParams: 
         style={{ objectPosition: STREET_PHOTO.position }}
       />
       <figcaption className={CREDIT}>
-        <PhotoCredit text={`Photo: ${STREET_PHOTO.credit}`} url={STREET_PHOTO.url} linkClassName="underline-offset-2 hover:underline" />
+        <PhotoCredit text={STREET_PHOTO.credit} url={STREET_PHOTO.url} linkClassName="underline-offset-2 hover:underline" />
       </figcaption>
     </figure>
   )
