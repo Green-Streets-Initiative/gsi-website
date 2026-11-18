@@ -381,7 +381,7 @@ export default function RouteSection({ route, onRoute, meetup, pace, activity = 
             <>
               <p className="text-[14px] leading-snug text-(--ev-ink-80)">
                 Add the places you want to pass, in order: {activity === 'walk' ? 'a café, a park, a view' : 'a café, a park, a new bike lane'}. Search by name or click the map.
-                The planner picks the calmest streets between them.
+                The planner keeps to bike lanes, paths and quiet streets between them.
               </p>
               <AddressAutocomplete
                 value={stopQuery}
@@ -509,12 +509,12 @@ export default function RouteSection({ route, onRoute, meetup, pace, activity = 
             <div className="mt-3 rounded-[12px] border border-(--ev-line-strong) bg-(--ev-panel) px-4 py-3">
               <p className="text-[15px] font-semibold text-(--ev-ink)">Want to change part of this route?</p>
               <p className="mt-1 text-[14px] leading-snug text-(--ev-ink-80)">
-                Shift turns it into stops along the same course and finds comfortable streets between them. Then you can move,
+                Shift turns it into stops along the same course and finds bike lanes, paths and quiet streets between them. Then you can move,
                 add or remove any stop.
               </p>
               <div className="mt-2">
                 <Button size="sm" variant="primary" onClick={replanImported} busy={busy}>
-                  <Shuffle className="h-4 w-4" aria-hidden />Re-plan it on comfortable streets
+                  <Shuffle className="h-4 w-4" aria-hidden />Re-plan it on bike lanes and paths
                 </Button>
               </div>
             </div>

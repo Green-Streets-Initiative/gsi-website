@@ -214,7 +214,7 @@ export default function PromoteView() {
       case 'email':
         return lines(r.name, `${when}${at}`, about, welcome, `RSVP: ${link}`)
       case 'partiful':
-        return lines(extras && `${extras[0].toUpperCase()}${extras.slice(1)}.`, `Route and how comfortable each street is: ${link}`, 'RSVP there too and you’ll get any ride-day changes by email.', liveOpen && `On ride day, see where the group is (no app needed): ${liveLink}`)
+        return lines(extras && `${extras[0].toUpperCase()}${extras.slice(1)}.`, `Route, with the bike lanes on each street: ${link}`, 'RSVP there too and you’ll get any ride-day changes by email.', liveOpen && `On ride day, see where the group is (no app needed): ${liveLink}`)
     }
   }
   const caption = edits[post] ?? captionFor(post)
