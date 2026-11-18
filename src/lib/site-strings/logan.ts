@@ -154,6 +154,7 @@ export const loganStrings = defineStrings(
     'logan.plan_label': 'The plan:',
     'logan.said_yes': 'You said yes. We’ll email you when {name} answers.',
     'logan.go_with': 'Go with {name}',
+    'logan.go_together': 'Yes, go together',
     'logan.no_thanks': 'No thanks',
 
     // You're going together.
@@ -372,6 +373,7 @@ export const loganStrings = defineStrings(
       'logan.plan_label': 'El plan:',
       'logan.said_yes': 'Dijiste que sí. Te escribiremos cuando {name} responda.',
       'logan.go_with': 'Ir con {name}',
+      'logan.go_together': 'Sí, ir juntos',
       'logan.no_thanks': 'No, gracias',
 
       'logan.your_match': 'tu coincidencia',
@@ -585,6 +587,7 @@ export const loganStrings = defineStrings(
       'logan.plan_label': 'O plano:',
       'logan.said_yes': 'Você disse sim. Vamos te avisar por e-mail quando {name} responder.',
       'logan.go_with': 'Ir com {name}',
+      'logan.go_together': 'Sim, ir juntos',
       'logan.no_thanks': 'Não, obrigado',
 
       'logan.your_match': 'sua combinação',
@@ -798,6 +801,7 @@ export const loganStrings = defineStrings(
       'logan.plan_label': '计划：',
       'logan.said_yes': '你已同意。{name} 回复后，我们会发邮件告诉你。',
       'logan.go_with': '和 {name} 一起去',
+      'logan.go_together': '好，一起去',
       'logan.no_thanks': '不用了，谢谢',
 
       'logan.your_match': '对方',

@@ -687,10 +687,10 @@ function Offer({ trip, m, onChange }: { trip: LoganTrip; m: LoganMatch; onChange
       </div>
       <p className="rounded-xl bg-(--ev-panel) px-4 py-3 text-[15px] leading-snug"><strong>{t('logan.plan_label')}</strong>{locale === 'zh-Hans' ? '' : ' '}{planLine(trip, m, t, locale)}{m.campus_dropoff ? `${locale === 'zh-Hans' ? '' : ' '}${t('logan.dropoff', { place: m.campus_dropoff })}` : ''}</p>
       {m.my_answer === 'yes' ? (
-        <p className="text-[15px] font-semibold">{t('logan.said_yes', { name })}</p>
+        <p className="text-[15px] font-semibold">{t('logan.said_yes', { name: m.other.first_name?.trim() || t('logan.your_match') })}</p>
       ) : (
         <div className="flex flex-wrap gap-2">
-          <Button variant="primary" busy={busy === 'yes'} onClick={() => void reply(true)}>{t('logan.go_with', { name })}</Button>
+          <Button variant="primary" busy={busy === 'yes'} onClick={() => void reply(true)}>{m.other.first_name?.trim() ? t('logan.go_with', { name }) : t('logan.go_together')}</Button>
           <Button variant="ghost" busy={busy === 'no'} onClick={() => void reply(false)}>{t('logan.no_thanks')}</Button>
         </div>
       )}
