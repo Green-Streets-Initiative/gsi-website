@@ -101,7 +101,7 @@ export default function FirstRide() {
       </p>
 
       <p className="mt-8 border-t border-(--ev-line) pt-4 text-[14px] leading-snug text-(--ev-ink-75)">
-        Saving gives your {thing} a page to share, and nobody needs the app to say they&rsquo;re coming.
+        {`Saving gives your ${thing} a page to share, and nobody needs the app to say they\u2019re coming.`}
       </p>
     </div>
   )

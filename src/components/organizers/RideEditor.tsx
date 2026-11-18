@@ -372,6 +372,9 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
   const walk = f.activity === 'walk'
   const noun = walk ? 'walk' : 'ride'
   const [dirty, setDirty] = useState(false)
+  // A meeting-point name the organizer typed stays when they re-pick the place;
+  // one filled in from a listing or an earlier pick follows the new place.
+  const nameTyped = useRef(false)
   const [restored, setRestored] = useState(false)
   const [saving, setSaving] = useState(false)
   const [err, setErr] = useState<string | null>(null)
@@ -702,20 +705,24 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
         <ArrowLeft className="h-4 w-4" aria-hidden />{ride ? ride.name : 'Your rides'}
       </Link>
       <h1 className="font-display text-[clamp(28px,3.6vw,38px)] font-extrabold leading-tight">{ride ? (walk ? 'Edit walk' : 'Edit ride') : first ? (walk ? 'Make your first walk' : 'Make your first ride') : walk ? 'New walk' : 'New ride'}</h1>
-      <p className="mt-1 max-w-2xl text-[15px] leading-snug text-(--ev-ink-80)">
-        {ride
-          ? 'Changes show on the ride page and in the app right away. To change one date only, open that date from Dates & updates.'
-          : `A ${noun} you set up here shows up in the Shift app too, with a page you can share anywhere.`}
-      </p>
+      {/* The intro and the notes under it show on the first step only, so on
+          a phone each later step opens on its own fields (walk-through 11-18). */}
+      {(ride || step === STEPS[0].id) && (
+        <p className="mt-1 max-w-2xl text-[15px] leading-snug text-(--ev-ink-80)">
+          {ride
+            ? 'Changes show on the ride page and in the app right away. To change one date only, open that date from Dates & updates.'
+            : `A ${noun} you set up here shows up in the Shift app too, with a page you can share anywhere.`}
+        </p>
+      )}
 
-      {!ride && assistant && (
+      {!ride && assistant && step === STEPS[0].id && (
         <div className="mt-4 flex flex-col items-start gap-3 rounded-xl border border-(--ev-accent-line-30) bg-white px-4 py-3 sm:flex-row sm:items-center">
           <p className="flex min-w-0 flex-1 items-start gap-2 text-[15px] text-(--ev-ink-85)"><MessageSquareText className="mt-0.5 h-5 w-5 shrink-0 text-(--ev-accent)" aria-hidden />Rather talk it through? The assistant asks a few questions and sets it up with you.</p>
           <Button size="sm" onClick={() => openAssistant('Plan a new ride with me')}>Plan it with the assistant</Button>
         </div>
       )}
 
-      {fromCalendar && (
+      {fromCalendar && step === STEPS[0].id && (
         <div className="mt-4">
           <Notice tone="good">
             Filled in from your listing on our events calendar. Check each part, then save.{' '}
@@ -890,7 +897,7 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
                       meetup_address: p.address,
                       meetup_lat: p.lat,
                       meetup_lng: p.lng,
-                      meetup_name: prev.meetup_name || p.address.split(',')[0],
+                      meetup_name: nameTyped.current && prev.meetup_name ? prev.meetup_name : p.address.split(',')[0],
                     }))
                     setDirty(true)
                     setMeetupFit((k) => k + 1)
@@ -901,7 +908,7 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
                 />
               </Field>
               <Field label="What to call it" htmlFor="meetup-name" hint="The spot people look for when they arrive.">
-                <Input id="meetup-name" value={f.meetup_name} onChange={(e) => set('meetup_name', e.target.value)} placeholder="The bike racks by the Davis T entrance" />
+                <Input id="meetup-name" value={f.meetup_name} onChange={(e) => { nameTyped.current = true; set('meetup_name', e.target.value) }} placeholder="The bike racks by the Davis T entrance" />
               </Field>
               {meetup && <p className="text-[14px] text-(--ev-ink-75)">Tap or click the map to move the pin to the exact spot.</p>}
             </div>
@@ -922,7 +929,7 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
         {/* Kept mounted while hidden: the planner's choices and stops survive a look at another step. */}
         <div hidden={step !== 'route'} className="grid grid-cols-[minmax(0,1fr)] gap-5">
         <Card id="sec-route">
-          <SectionTitle hint={`Optional. With a route, people see how far, how hilly and how comfortable the ${noun} is before they come.`}>Route</SectionTitle>
+          <SectionTitle hint={`Optional. With a route, people see how far and how hilly the ${noun} is, and which streets have bike lanes, before they come.`}>Route</SectionTitle>
           {plannedMoved && (
             <div className="mb-3"><Notice tone="info">The assistant&rsquo;s route starts somewhere else, so the meeting point moved there. Change it under Meeting point if that&rsquo;s not right.</Notice></div>
           )}

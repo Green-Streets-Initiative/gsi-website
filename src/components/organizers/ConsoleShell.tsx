@@ -161,7 +161,7 @@ function SignIn() {
           Plan and run your group&rsquo;s rides and walks
         </h1>
         <ul className="mt-5 space-y-2.5 text-[16px] leading-snug text-(--ev-ink-85)">
-          <li>Set up a one-off ride or walk, or a whole season, with a route planned on comfortable streets or brought in from Ride with GPS or a GPX file.</li>
+          <li>Set up a one-off ride or walk, or a whole season, with a route planned on bike lanes and paths or brought in from Ride with GPS or a GPX file.</li>
           <li>See who&rsquo;s coming to each date, from the app and from your ride page.</li>
           <li>Post &ldquo;It&rsquo;s on&rdquo; or &ldquo;Running late&rdquo; once, and everyone hears it.</li>
           <li>Pull monthly turnout for your funders.</li>

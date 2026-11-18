@@ -242,7 +242,7 @@ export default function DateEditor({ ride, date, dates, onSaved }: {
         </Card>
 
         <Card>
-          <SectionTitle hint="People see how far, how hilly and how comfortable it is before they come.">Route</SectionTitle>
+          <SectionTitle hint="People see how far and how hilly it is, and which streets have bike lanes, before they come.">Route</SectionTitle>
           <div className="flex flex-wrap gap-2" role="group" aria-label="Which route">
             <Toggle on={!f.own} onClick={() => set('own', false)}>{usual || ride.route_google_maps_url ? 'The usual route' : 'No route'}</Toggle>
             <Toggle on={f.own} onClick={() => set('own', true)}>A route for this date</Toggle>
