@@ -71,7 +71,7 @@ function PunchCard() {
 
 /** The new-way goal as a month page: five different days marked. */
 function MonthDays() {
-  const marked: Record<number, typeof Bike> = { 3: Bike, 9: TrainFront, 12: Bike, 18: Footprints, 24: TrainFront }
+  const marked: Partial<Record<number, typeof Bike>> = { 3: Bike, 9: TrainFront, 12: Bike, 18: Footprints, 24: TrainFront }
   return (
     <div className="inline-block rounded-[12px] border border-navy/15 bg-white px-3 py-3 print:px-2 print:py-1.5" aria-hidden>
       <div className="grid grid-cols-7 gap-1">
