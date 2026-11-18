@@ -77,6 +77,8 @@ This is where you can help most. Ask what they want the ride to be in one questi
 - Turnout (get_turnout): monthly dates run, said going, came, first-timers, people who came back. Came is the head count when there is one (shift_counted is Shift's own number); offer set_headcount when a recent date has none. They can download it for funders on the Turnout tab.
 
 ## Who can do what
+A one-off can be saved with no date yet ("No date yet" in the ride form, Shift 01833): it stays on the organizer's rides, off the calendar, with no page to share, and goes live when it gets a date. The create tool still needs a date; for a ride with no date yet, send them to New ride in the console.
+
 Only the ride's organizer changes its details and dates, pauses or ends it, invites co-organizers and settles credit. Co-organizers (the tools call them leaders; say "co-organizer", and the tab is called Organizers) see who's coming and post updates. GSI admins can see every ride. If a tool says they can't, tell them who can.
 
 ## Things worth knowing

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { ArrowLeft, ArrowRight, Bike, CalendarDays, Check, Footprints, ImagePlus, Languages, MapPin, MessageSquareText, Trash2 } from 'lucide-react'
 import { comfortableShare } from '@/components/commute/calm-route'
-import { scheduleText } from '@/lib/rides/public'
+import { clock, scheduleText } from '@/lib/rides/public'
 import { routeMiles } from '@/lib/organizers/route-geo'
 import AddressAutocomplete from '@/components/AddressAutocomplete'
 import { errorText, getRideFundFor, getSeriesDestination, saveRide, saveRideDestination, setEndShop, setHelperJobs, setRepliesToOrganizer, uploadFlyer, type FeedTarget, type RideFundHere } from '@/lib/organizers/api'
@@ -29,7 +29,8 @@ interface Form {
   name: string
   description: string
   flyer_url: string | null
-  schedule: 'one_time' | 'recurring'
+  /** 'undated': a one-off with no date yet, saved as a draft (Shift 01833). */
+  schedule: 'one_time' | 'recurring' | 'undated'
   ride_date: string
   frequency: Frequency
   days: number[]
@@ -85,7 +86,7 @@ function blank(): Form {
 function fromRow(r: RideRow): Form {
   return {
     name: r.name, description: r.description ?? '', flyer_url: r.flyer_url,
-    schedule: r.ride_date ? 'one_time' : 'recurring', ride_date: r.ride_date ?? '',
+    schedule: r.ride_date ? 'one_time' : r.status === 'draft' ? 'undated' : 'recurring', ride_date: r.ride_date ?? '',
     frequency: r.frequency, days: r.days ?? [], week_of_month: r.week_of_month ?? 1,
     season_start: r.season_start ?? '', season_end: r.season_end ?? '',
     start_time: hhmm(r.start_time), end_time: hhmm(r.end_time),
@@ -128,7 +129,7 @@ function shownLanguages(languages: PartnerLanguage[]): PartnerLanguage[] {
 function toPayload(f: Form): Record<string, unknown> {
   return {
     name: f.name, description: f.description, flyer_url: f.flyer_url,
-    schedule: f.schedule, ride_date: f.ride_date || null, frequency: f.frequency,
+    schedule: f.schedule === 'undated' ? 'one_time' : f.schedule, ride_date: f.schedule === 'undated' ? null : f.ride_date || null, frequency: f.frequency,
     days: f.frequency === 'daily' ? [] : f.days, week_of_month: f.frequency === 'monthly' ? f.week_of_month : null,
     season_start: f.season_start || null, season_end: f.season_end || null,
     start_time: f.start_time, end_time: f.end_time || null,
@@ -256,7 +257,9 @@ function PreviewRow({ icon: Icon, children, empty }: { icon: typeof CalendarDays
 
 function Preview({ f, route, hostName }: { f: Form; route: RouteDraft | null; hostName: string | null }) {
   const walk = f.activity === 'walk'
-  const sched = f.schedule === 'one_time'
+  const sched = f.schedule === 'undated'
+    ? `No date yet${f.start_time ? ` · ${clock(f.start_time)}` : ''}`
+    : f.schedule === 'one_time'
     ? (f.ride_date ? scheduleText({ ride_date: f.ride_date, frequency: null, days: null, week_of_month: null, start_time: f.start_time || null }) : null)
     : (f.frequency === 'daily' || f.days.length
       ? scheduleText({ ride_date: null, frequency: f.frequency, days: f.days, week_of_month: f.week_of_month, start_time: f.start_time || null })
@@ -301,7 +304,8 @@ function Preview({ f, route, hostName }: { f: Form; route: RouteDraft | null; ho
         )}
       </div>
       <p className="mt-2 text-[14px] text-(--ev-ink-75)">
-        {f.visibility === 'invite' ? 'Invite only: people need your link or code.' : 'Public: on the events calendar and in the Shift app.'}
+        {f.schedule === 'undated' ? 'Not shared yet: the page opens once it has a date.'
+          : f.visibility === 'invite' ? 'Invite only: people need your link or code.' : 'Public: on the events calendar and in the Shift app.'}
       </p>
     </aside>
   )
@@ -796,10 +800,18 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
             <div className="flex flex-wrap gap-2" role="group" aria-label="Schedule">
               <Toggle on={f.schedule === 'recurring'} onClick={() => set('schedule', 'recurring')}>Repeats</Toggle>
               <Toggle on={f.schedule === 'one_time'} onClick={() => set('schedule', 'one_time')}>One date</Toggle>
+              {/* Nothing planned yet: save it now and add the date later (Shift 01833). A live ride keeps its date. */}
+              {(!ride || ride.status === 'draft') && (
+                <Toggle on={f.schedule === 'undated'} onClick={() => set('schedule', 'undated')}>No date yet</Toggle>
+              )}
             </div>
 
-            {f.schedule === 'one_time' ? (
-              <Field label="Date" htmlFor="ride-date" error={tried && !f.ride_date ? 'Pick a date' : null}>
+            {f.schedule === 'undated' ? (
+              <p className="text-[17px] text-(--ev-ink-85)">
+                We&rsquo;ll keep it on your rides, off the calendar. When you add the date, it gets its own page to share.
+              </p>
+            ) : f.schedule === 'one_time' ? (
+              <Field label="Date" htmlFor="ride-date" error={tried && !f.ride_date ? (!ride || ride.status === 'draft' ? 'Pick a date, or choose “No date yet” above' : 'Pick a date') : null}>
                 <Input id="ride-date" type="date" value={f.ride_date} onChange={(e) => set('ride_date', e.target.value)} className="max-w-[220px]" />
               </Field>
             ) : (

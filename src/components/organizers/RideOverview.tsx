@@ -160,6 +160,7 @@ export default function RideOverview() {
   const upcoming = useMemo(() => detail.occurrences.filter((d) => d.date >= today), [detail.occurrences, today])
   const past = useMemo(() => detail.occurrences.filter((d) => d.date < today).reverse(), [detail.occurrences, today])
   const ended = r.status === 'archived'
+  const draft = r.status === 'draft'
   const nextDate = upcoming.find((d) => d.status === 'scheduled') ?? null
   const onBreak = !!r.break_until && r.break_until > today
   // The latest date this past week that ran and has no head count yet.
@@ -238,7 +239,18 @@ export default function RideOverview() {
 
       {toCount && <HeadcountPrompt d={toCount} onSaved={done} onSkip={() => setSkipped((s) => [...s, toCount.id])} />}
 
-      {(params.get('created') || detail.updates.length === 0) && !ended && <ShareCard code={r.invite_code} fresh={!!params.get('created')} rideId={r.id} walk={r.activity === 'walk'} />}
+      {/* Saved with no date yet (Shift 01833): the one thing to do is add it. */}
+      {draft && (
+        <Card>
+          <p className="font-display text-[22px] font-extrabold leading-tight">{params.get('created') ? 'Saved. Add the date when you know it.' : 'Add the date when you know it'}</p>
+          <p className="mt-1 text-[17px] text-(--ev-ink-85)">
+            It&rsquo;s on your rides and off the calendar. Once it has a date, it gets its own page to share and people can say they&rsquo;re coming.
+          </p>
+          <Link href={`/organizers/rides/${r.id}/edit#sec-when`} className="mt-4 inline-flex min-h-[44px] items-center rounded-[10px] bg-(--ev-ink) px-4 text-[15px] font-semibold text-white hover:opacity-90">Add the date</Link>
+        </Card>
+      )}
+
+      {(params.get('created') || detail.updates.length === 0) && !ended && !draft && <ShareCard code={r.invite_code} fresh={!!params.get('created')} rideId={r.id} walk={r.activity === 'walk'} />}
 
       {nextDate && !ended && (
         <Card>
