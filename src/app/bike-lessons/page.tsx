@@ -191,7 +191,6 @@ export default async function BikeLessonsPage({ searchParams }: { searchParams: 
     ...instructors.filter((x) => x.kind === 'seasonal'),
     ...instructors.filter((x) => x.kind === 'adaptive'),
   ]
-  const facts = [t('lessons.fact_free'), t('lessons.fact_length')]
 
   const streetPhoto = (className: string) => (
     <figure className={`relative overflow-hidden bg-navy/10 ${className}`}>
@@ -241,9 +240,9 @@ export default async function BikeLessonsPage({ searchParams }: { searchParams: 
       {/* 1. The offer and the form: the whole first screen. */}
       <section id="street-lesson" className="scroll-mt-[128px] bg-white pt-[60px]">
         <div className={`${CONTAINER} pb-12 lg:pt-12 lg:pb-16`}>
-          {/* On a phone the street comes first, as a short band; on a wide screen it sits under the facts. */}
+          {/* On a phone the street comes first, as a short band; on a wide screen it fills the right column. */}
           {streetPhoto('-mx-6 mb-6 h-[150px] sm:mx-0 sm:mt-8 sm:h-[220px] sm:rounded-[16px] lg:hidden')}
-          <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_400px] lg:gap-14">
+          <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,480px)] lg:gap-14">
             <div className="min-w-0">
               <h1 className={H1}>
                 {/* One worry per line, as the learners listed them (and as on the ad). */}
@@ -255,24 +254,17 @@ export default async function BikeLessonsPage({ searchParams }: { searchParams: 
                   ))}
               </h1>
               <p className={`${BODY} mt-4 max-w-[600px] text-[1.125rem]`}>{t('lessons.lede')}</p>
-              <ul className="mt-5 flex flex-wrap gap-2" aria-label={t('lessons.facts_label')}>
-                {facts.map((f) => (
-                  <li key={f} className="rounded-full bg-forest/10 px-4 py-2 text-[0.9375rem] font-bold leading-snug text-[#1F4D3A]">
-                    {f}
-                  </li>
-                ))}
-                {left != null && left > 0 && (
-                  <li className="rounded-full border-2 border-forest px-4 py-1.5 text-[0.9375rem] font-bold leading-snug text-[#1F4D3A]">
-                    {t('lessons.fact_left', { n: left })}
-                  </li>
-                )}
-              </ul>
-              {streetPhoto('mt-8 hidden aspect-[3/2] max-w-[640px] rounded-[16px] lg:block')}
-            </div>
 
-            <div className="min-w-0">
-              <div className="rounded-[20px] bg-cream p-6 sm:p-7">
-                <h2 className={H3}>{t('lessons.form_title')}</h2>
+              {/* The form sits right under the promise: the one thing to do on this page. */}
+              <div className="mt-6 max-w-[600px] rounded-[20px] bg-cream p-6 sm:p-7">
+                <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+                  <h2 className={H3}>{t('lessons.form_title')}</h2>
+                  {left != null && left > 0 && (
+                    <span className="rounded-full border-2 border-forest px-3 py-1 text-[0.875rem] font-bold leading-snug text-[#1F4D3A]">
+                      {t('lessons.fact_left', { n: left })}
+                    </span>
+                  )}
+                </div>
                 <p className="mt-2 mb-4 text-[0.9375rem] leading-relaxed text-navy/80">{t('lessons.form_area')}</p>
                 <FreeLessonForm
                   buttonClass={BUTTON}
@@ -295,6 +287,7 @@ export default async function BikeLessonsPage({ searchParams }: { searchParams: 
                 <a href="#group-rides" className={LINK}>{t('lessons.other_company_link')}</a>
               </p>
             </div>
+            {streetPhoto('hidden min-h-[520px] rounded-[16px] lg:block')}
           </div>
         </div>
       </section>
