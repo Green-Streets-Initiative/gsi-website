@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import posthog from 'posthog-js'
+import { Check } from '@phosphor-icons/react'
 import { gaEvent } from '@/lib/ga'
 import { translator, type SiteLocale } from '@/lib/site-i18n'
 import { bikeLessonsStrings } from '@/lib/site-strings/bike-lessons'
@@ -30,8 +31,8 @@ const NOTE = 'text-[1rem] leading-[1.55] text-navy'
 const DAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const
 const PARTS = ['am', 'pm', 'eve'] as const
 const PART_KEY = { am: 'lessons.part_am', pm: 'lessons.part_pm', eve: 'lessons.part_eve' } as const
-/** One color per instructor, in list order (the sketch's blue, forest, brown). */
-const COLORS = ['#2966E5', '#2D6A4F', '#8F5217', '#6B4BA8']
+/** Forest, the one accent on GSI pages (blue is Shift's; brown was retired 2026-10-12). */
+const FOREST = '#2D6A4F'
 
 type Teacher = { id: string; name: string; org: string | null; area: string; hours: string[]; calls_first: boolean }
 type Status = 'idle' | 'sending' | 'sent' | 'already' | 'far' | 'full' | 'error'
@@ -67,6 +68,7 @@ export default function FreeLessonForm({
   const [error, setError] = useState('')
   const [askedName, setAskedName] = useState('')
   const [showWho, setShowWho] = useState(false)
+  const [noteOpen, setNoteOpen] = useState(false)
   const [source, setSource] = useState('')
   const seq = useRef(0)
   const box = useRef<HTMLDivElement>(null)
@@ -124,7 +126,7 @@ export default function FreeLessonForm({
   const ranked = useMemo(() => {
     const fits = (x: Teacher) => x.hours.filter((h) => cells.has(h)).length
     return teachers
-      .map((x, i) => ({ ...x, color: COLORS[i % COLORS.length], fits: fits(x) }))
+      .map((x) => ({ ...x, fits: fits(x) }))
       .sort((a, b) => b.fits - a.fits)
   }, [teachers, cells])
   // The best fit is picked until they pick someone themselves.
@@ -291,7 +293,7 @@ export default function FreeLessonForm({
             <div className="grid grid-cols-[34px_repeat(7,minmax(0,1fr))] gap-1" role="group">
               <span />
               {DAYS.map((d, i) => (
-                <span key={d} className="text-center text-[0.8125rem] font-semibold text-navy/80" aria-hidden="true">
+                <span key={d} className="text-center text-[0.875rem] font-semibold text-navy/80" aria-hidden="true">
                   {dayShort[i]}
                 </span>
               ))}
@@ -303,57 +305,43 @@ export default function FreeLessonForm({
                     const cell = `${d}-${p}`
                     const on = cells.has(cell)
                     const by = ready ? teaches(cell) : undefined
-                    const mine = on && by
+                    // Only times an instructor near them teaches can be picked; the rest are gray.
+                    const off = !by && !on
                     return (
                       <button
                         key={cell}
                         type="button"
                         onClick={() => toggle(cell)}
+                        disabled={off}
                         aria-pressed={on}
-                        aria-label={`${dayLong[di]} ${partLong[pi]}${by ? `, ${by.name}` : ''}`}
-                        className="relative flex h-11 items-center justify-center rounded-lg border-2 text-[0.8125rem] font-bold transition-colors"
-                        style={
-                          mine
-                            ? { background: by.color, borderColor: by.color, color: '#fff' }
-                            : on
-                            ? { background: '#E7F0EA', borderColor: '#9CC3AE', color: '#1F4D3A' }
-                            : { background: '#fff', borderColor: by ? '#D9DDD3' : '#ECEEE8' }
-                        }
+                        aria-label={`${dayLong[di]} ${partLong[pi]}`}
+                        className={`flex h-11 items-center justify-center rounded-lg border-2 transition-colors ${
+                          on ? 'border-forest bg-forest text-white' : off ? 'cursor-default border-transparent bg-navy/[0.06]' : 'border-forest/40 bg-white hover:border-forest'
+                        }`}
                       >
-                        {mine ? by.name.slice(0, 1) : by ? <span className="h-1.5 w-1.5 rounded-full" style={{ background: by.color }} /> : null}
+                        {on && <Check size={20} weight="bold" aria-hidden="true" />}
                       </button>
                     )
                   })}
                 />
               ))}
             </div>
-            {ready && (
-              <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[0.8125rem] text-navy/80" aria-hidden="true">
-                <li className="flex items-center gap-1.5">
-                  <span className="h-3.5 w-3.5 rounded border-2 border-[#9CC3AE] bg-[#E7F0EA]" />
-                  {t('lessons.legend_free')}
-                </li>
-                <li className="flex items-center gap-1.5">
-                  <span className="flex h-3.5 w-3.5 items-center justify-center rounded border-2 border-[#D9DDD3] bg-white">
-                    <span className="h-1 w-1 rounded-full bg-navy" />
-                  </span>
-                  {t('lessons.legend_teaches')}
-                </li>
-              </ul>
-            )}
           </fieldset>
 
           {cells.size > 0 && chosen && !showWho && (
-            <div className="mt-5 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-              <p className="text-[1rem] leading-snug text-navy">
-                <span className="font-bold">{t('lessons.ask_first', { name: chosen.name })}</span>{' '}
-                <span className="text-navy/80">{t('lessons.around', { area: chosen.area })}.</span>
-              </p>
-              {ranked.length > 1 && (
-                <button type="button" onClick={() => setShowWho(true)} className={`${LINK} text-[0.9375rem]`}>
-                  {t('lessons.pick_other')}
-                </button>
-              )}
+            <div className="mt-5 flex items-start gap-3">
+              <Initial name={chosen.name} />
+              <div className="min-w-0">
+                <p className="text-[1rem] leading-snug text-navy">
+                  <span className="font-bold">{t('lessons.ask_first', { name: chosen.name })}</span>{' '}
+                  <span className="text-navy/80">{t('lessons.around', { area: chosen.area })}.</span>
+                </p>
+                {ranked.length > 1 && (
+                  <button type="button" onClick={() => setShowWho(true)} className={`${LINK} mt-1 min-h-[44px] text-[0.9375rem]`}>
+                    {t('lessons.pick_other')}
+                  </button>
+                )}
+              </div>
             </div>
           )}
 
@@ -370,9 +358,8 @@ export default function FreeLessonForm({
                   return (
                     <label
                       key={x.id}
-                      className={`flex cursor-pointer items-stretch gap-3 overflow-hidden rounded-2xl border-2 bg-white pr-3 transition-colors ${sel ? 'border-forest' : 'border-transparent'}`}
+                      className={`flex cursor-pointer items-start gap-3 rounded-2xl border-2 bg-white px-3 py-3 transition-colors ${sel ? 'border-forest' : 'border-transparent'}`}
                     >
-                      <span className="w-1.5 shrink-0" style={{ background: x.color }} aria-hidden="true" />
                       <input
                         type="radio"
                         name="teacher"
@@ -382,21 +369,22 @@ export default function FreeLessonForm({
                           setPicked(x.id)
                           clearError()
                         }}
-                        className="mt-4 h-5 w-5 shrink-0 accent-forest"
+                        className="mt-2.5 h-5 w-5 shrink-0 accent-forest"
                       />
-                      <span className="flex min-w-0 flex-1 flex-col gap-1 py-3">
+                      <Initial name={x.name} />
+                      <span className="flex min-w-0 flex-1 flex-col gap-1">
                         <span className="text-[1rem] font-bold leading-snug text-navy">
                           {x.name}
                           {x.org && <span className="font-normal text-navy/80"> · {x.org}</span>}
                         </span>
                         <span className="text-[0.875rem] leading-snug text-navy/80">{t('lessons.around', { area: x.area })}</span>
                         <span className="flex flex-wrap items-center gap-2">
-                          <FitMeter fits={x.fits} of={cells.size} color={x.color} />
+                          <FitMeter fits={x.fits} of={cells.size} />
                           <span className="text-[0.875rem] font-semibold text-navy">
                             {x.fits ? t('lessons.fits', { n: x.fits }) : t('lessons.fits_none')}
                           </span>
                           {x.calls_first && (
-                            <span className="rounded-full bg-forest/10 px-2 py-0.5 text-[0.8125rem] font-bold text-[#1F4D3A]">
+                            <span className="rounded-full bg-forest/10 px-2 py-0.5 text-[0.875rem] font-bold text-[#1F4D3A]">
                               {t('lessons.calls_first')}
                             </span>
                           )}
@@ -461,19 +449,30 @@ export default function FreeLessonForm({
                   </span>
                 </label>
               )}
-              <label className="mt-3 block">
-                <span className={LABEL}>
-                  {t('lessons.label_note')} <span className="font-normal text-navy/80">{t('lessons.optional')}</span>
-                </span>
-                <textarea
-                  value={note}
-                  onChange={(e) => setNote(e.target.value)}
-                  placeholder={t('lessons.placeholder_note')}
-                  rows={2}
-                  maxLength={500}
-                  className={`${FIELD} resize-y`}
-                />
-              </label>
+              {/* Optional, so it stays a link: the long note was where one learner stalled (Nov 13 to 17). */}
+              {noteOpen ? (
+                <label className="mt-3 block">
+                  <span className={LABEL}>
+                    {t('lessons.label_note')} <span className="font-normal text-navy/80">{t('lessons.optional')}</span>
+                  </span>
+                  <textarea
+                    value={note}
+                    onChange={(e) => setNote(e.target.value)}
+                    placeholder={t('lessons.placeholder_note')}
+                    rows={2}
+                    maxLength={500}
+                    autoFocus
+                    className={`${FIELD} resize-y`}
+                  />
+                </label>
+              ) : (
+                <p className="mt-2 text-[0.9375rem] text-navy/80">
+                  <button type="button" onClick={() => setNoteOpen(true)} className={`${LINK} min-h-[44px]`}>
+                    {t('lessons.add_note', { name: chosen.name })}
+                  </button>{' '}
+                  {t('lessons.optional')}
+                </p>
+              )}
             </>
           )}
 
@@ -510,21 +509,33 @@ export default function FreeLessonForm({
 function PartRow({ label, cells }: { label: string; cells: ReactNode[] }) {
   return (
     <>
-      <span className="flex items-center text-[0.8125rem] font-semibold text-navy/80">{label}</span>
+      <span className="flex items-center text-[0.875rem] font-semibold text-navy/80">{label}</span>
       {cells}
     </>
   )
 }
 
 /** How many of their times this instructor usually teaches, as a small meter. */
-function FitMeter({ fits, of, color }: { fits: number; of: number; color: string }) {
+function FitMeter({ fits, of }: { fits: number; of: number }) {
   const n = Math.min(Math.max(of, 1), 7)
   const on = Math.min(fits, n)
   return (
     <span className="inline-flex gap-[3px]" aria-hidden="true">
       {Array.from({ length: n }, (_, i) => (
-        <span key={i} className="h-2 w-3 rounded-[3px]" style={{ background: i < on ? color : '#E3E6DE' }} />
+        <span key={i} className="h-2 w-3 rounded-[3px]" style={{ background: i < on ? FOREST : '#E3E6DE' }} />
       ))}
+    </span>
+  )
+}
+
+/** The instructor's initial, until we have their photo (asking them, 2026-11-18). */
+function Initial({ name }: { name: string }) {
+  return (
+    <span
+      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-forest text-[1.0625rem] font-bold text-white"
+      aria-hidden="true"
+    >
+      {name.trim().slice(0, 1).toUpperCase()}
     </span>
   )
 }
