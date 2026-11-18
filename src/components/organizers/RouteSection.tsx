@@ -201,7 +201,7 @@ export default function RouteSection({ route, onRoute, meetup, pace, activity = 
     if (gen !== routeGen.current) return
     if (answers.some((a) => a.status === 'none')) {
       track('organizer_route_avoid_street_none', {})
-      setAvoidNote({ text: `No good way around ${street}`, sub: "The ride starts or ends on this street, or there's no calmer street nearby. Your route hasn't changed." })
+      setAvoidNote({ text: `No good way around ${street}`, sub: "The ride starts or ends on this street, or there's no safer street nearby. Your route hasn't changed." })
       return
     }
     if (answers.some((a) => a.status === 'failed')) {
