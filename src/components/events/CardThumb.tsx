@@ -60,7 +60,7 @@ export default function CardThumb({ lat, lng, logo, fallback }: {
   const logoRef = (img: HTMLImageElement | null) => {
     if (img && img.complete) check(img)
   }
-  const box = 'relative h-16 w-16 shrink-0 overflow-hidden rounded-[12px] border border-(--ev-line) lg:h-12 lg:w-12 lg:rounded-[10px]'
+  const box = 'relative h-16 w-16 shrink-0 overflow-hidden rounded-[12px] border border-(--ev-line) lg:h-14 lg:w-14 lg:rounded-[10px]'
   const hasMap = lat != null && lng != null && Number.isFinite(Number(lat)) && Number.isFinite(Number(lng))
 
   if (logo && logoOk) {
