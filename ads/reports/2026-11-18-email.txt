@@ -1,0 +1,9 @@
+Act this week: two grant rules fail, both quick fixes. Clicks are fine: November is at 7.9% (419 clicks on 5,297 impressions) with 45 conversions, well above the 5% floor.
+
+1. Pause the keyword "boston harborwalk" (Trails): Google scores it 1, and the grant forbids keywords scoring 1 or 2. Say "do ad grants item 1".
+2. Finish the new "Logan: share a ride" ad group: it has one ad (the rule is two) and no keywords yet. A second ad and 5 keywords are drafted on the page. Say "do ad grants item 2".
+3. Pause the T closures ad group: 0 clicks on 140 impressions this month, through two closures. Say "do ad grants item 3".
+
+The script email's Venue Parking warning (4.0%) is not a grant problem; its new ads get judged Nov 25. Shift Together has not shown yet; judge it Nov 27.
+
+Report: https://claude.ai/artifact/UuoYJsktAySt3HY5KinrbF
