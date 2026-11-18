@@ -5,6 +5,7 @@ import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
 import HtmlLang from '@/components/HtmlLang'
 import StoreBadges from '@/components/StoreBadges'
+import PhotoCredit from '@/components/PhotoCredit'
 import LessonAlertForm from '@/components/guides/LessonAlertForm'
 import type { Placement } from '@/components/home/tracking'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
@@ -152,12 +153,24 @@ const STARTS: { href: string; label: K; hint: K }[] = [
   { href: '#group-rides', label: 'lessons.start_company', hint: 'lessons.start_company_hint' },
 ]
 
-const FACTS: K[] = ['lessons.fact_free', 'lessons.fact_length', 'lessons.fact_who', 'lessons.fact_where']
+/** "Free" and "one-on-one" are already in the headline, so only the facts it doesn't say. */
+const FACTS: K[] = ['lessons.fact_who', 'lessons.fact_where']
 
 /** The two bike guides, in the reader's language (both are translated: /es, /pt-BR, /zh-Hans). */
 function guideHref(slug: string, locale: SiteLocale): string {
   return locale === 'en' ? `/guides/${slug}` : `/${locale}/guides/${slug}`
 }
+
+/** A real street of the kind learners worry about, where our first requests came from (Somerville). */
+const STREET_PHOTO = {
+  src: '/bike-lessons/washington-st-somerville.jpg',
+  width: 1200,
+  height: 800,
+  credit: '4300streetcar / Wikimedia Commons, CC BY 4.0',
+  url: 'https://commons.wikimedia.org/wiki/File:Bus_Bike_lane_in_Somerville_April_2024.jpg',
+}
+/** Credit is fine print: one line, so it doesn't cover the short phone band. */
+const CREDIT = 'absolute bottom-2 right-2 whitespace-nowrap rounded-md bg-[rgba(25,26,46,.6)] px-2 py-0.5 text-[0.75rem] leading-snug text-white'
 
 const H2 = '[font-family:var(--font-overpass),Trebuchet_MS,sans-serif] text-[clamp(1.625rem,3.4vw,2.25rem)] font-extrabold leading-[1.08] text-navy'
 const BODY = 'text-[1.0625rem] leading-[1.6] text-navy'
@@ -208,10 +221,29 @@ export default async function BikeLessonsPage({ searchParams }: { searchParams: 
     )
   }
 
+  const streetPhoto = (className: string) => (
+    <figure className={`relative overflow-hidden bg-navy/10 ${className}`}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={STREET_PHOTO.src}
+        alt={t('lessons.photo_alt')}
+        width={STREET_PHOTO.width}
+        height={STREET_PHOTO.height}
+        loading={streetFirst ? 'eager' : 'lazy'}
+        className="absolute inset-0 h-full w-full object-cover"
+      />
+      <figcaption className={CREDIT}>
+        <PhotoCredit text={`Photo: ${STREET_PHOTO.credit}`} url={STREET_PHOTO.url} linkClassName="underline-offset-2 hover:underline" />
+      </figcaption>
+    </figure>
+  )
+
   // Nervous in traffic: the free 1:1 lesson. First on the page for ad and partner links.
   const streetLesson = (
     <section id="street-lesson" className={`scroll-mt-[128px] bg-white ${streetFirst ? 'pt-[60px]' : ''}`}>
       <div className={`${CONTAINER} ${streetFirst ? 'pt-8 pb-14' : 'py-14'} lg:py-16`}>
+        {/* On a phone the street comes first, as a short band; on a wide screen it sits under the facts. */}
+        {streetPhoto(`-mx-6 mb-6 h-[150px] sm:mx-0 sm:h-[220px] sm:rounded-[16px] lg:hidden ${streetFirst ? '-mt-8 sm:mt-0' : ''}`)}
         <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_380px] lg:gap-14">
           <div className="min-w-0">
             <h2 className={H2}>{t('lessons.street_title')}</h2>
@@ -225,6 +257,7 @@ export default async function BikeLessonsPage({ searchParams }: { searchParams: 
                 </li>
               ))}
             </ul>
+            {streetPhoto('mt-8 hidden aspect-[3/2] max-w-[640px] rounded-[16px] lg:block')}
           </div>
 
           <div className="rounded-[20px] bg-cream p-6 sm:p-7">
