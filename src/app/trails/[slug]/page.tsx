@@ -243,7 +243,7 @@ export default async function TrailPage({ params, searchParams }: PageProps) {
     surface ? { icon: Route, label: tr('tile.surface'), value: surface.value, sub: surface.sub } : null,
     pts.length > 0 ? { icon: MapPin, label: tr('tile.get_on'), value: tr(pts.length === 1 ? 'tile.places_one' : 'tile.places_other', { count: pts.length }), sub: tr('tile.on_map') } : null,
   ].filter((x): x is { icon: typeof Ruler; label: string; value: string; sub: string | null } => !!x)
-  const loop = isLoopLike(pts)
+  const loop = isLoopLike(pts, t.full_miles)
   const spanLine = first && last && !loop
     ? tr('span.from_to', { from: place(first.name), to: place(last.name) })
     : loop && t.towns.length > 0

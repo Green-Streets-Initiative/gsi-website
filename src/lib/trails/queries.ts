@@ -104,13 +104,17 @@ const TRAIL_FIELDS =
   'id, name, aka, kind, towns, full_miles, full_miles_source, surface, summary, agency, official_url, friends_url, access_points, parking_note, transit_note, bike_share_note, amenities, rules_note, hero_image_url, hero_image_attribution, hero_image_attribution_url, sources, facts_checked_on, notices'
 
 /** True when the first and last access points sit within 1.5 km: a loop or a
- *  network (the Charles paths), where "from X to Y" would mislead. */
-export function isLoopLike(pts: Array<{ lat: number; lng: number }>): boolean {
+ *  network (the Charles paths), where "from X to Y" would mislead. Given the
+ *  trail's length, ends also have to be close for its size, so a short
+ *  end-to-end path (Salem's Bridge Street Path, 0.7 mi) keeps its "X to Y". */
+export function isLoopLike(pts: Array<{ lat: number; lng: number }>, fullMiles?: number | null): boolean {
   if (pts.length < 2) return false
   const a = pts[0], b = pts[pts.length - 1]
   const dy = (b.lat - a.lat) * 111_000
   const dx = (b.lng - a.lng) * 111_000 * Math.cos((a.lat * Math.PI) / 180)
-  return Math.hypot(dx, dy) < 1500
+  const d = Math.hypot(dx, dy)
+  if (d >= 1500) return false
+  return !fullMiles || d < fullMiles * 1609 * 0.3
 }
 
 function shortPlace(name: string): string {
@@ -140,6 +144,7 @@ export async function getTrails(): Promise<TrailSummary[]> {
   const closed = new Set(closedRows.map((r) => r.trail_id))
   return ((trailsRes.data ?? []) as Array<Record<string, unknown>>).map((t) => {
     const pts = (t.access_points as TrailAccessPoint[] | null) ?? []
+    const loop = isLoopLike(pts, t.full_miles != null ? Number(t.full_miles) : null)
     return {
       id: t.id as string,
       name: t.name as string,
@@ -148,9 +153,9 @@ export async function getTrails(): Promise<TrailSummary[]> {
       full_miles: t.full_miles != null ? Number(t.full_miles) : null,
       summary: (t.summary as string) ?? null,
       closed: closed.has(t.id as string),
-      from_label: pts.length > 1 && !isLoopLike(pts) ? shortPlace(pts[0].name) : null,
-      to_label: pts.length > 1 && !isLoopLike(pts) ? shortPlace(pts[pts.length - 1].name) : null,
-      ends: pts.length === 0 ? [] : (isLoopLike(pts) ? [pts[0]] : [pts[0], pts[pts.length - 1]]).map((p) => ({ label: shortPlace(p.name), lat: p.lat, lng: p.lng })),
+      from_label: pts.length > 1 && !loop ? shortPlace(pts[0].name) : null,
+      to_label: pts.length > 1 && !loop ? shortPlace(pts[pts.length - 1].name) : null,
+      ends: pts.length === 0 ? [] : (loop ? [pts[0]] : [pts[0], pts[pts.length - 1]]).map((p) => ({ label: shortPlace(p.name), lat: p.lat, lng: p.lng })),
       center: pts.length > 0 ? [pts.reduce((x, p) => x + p.lat, 0) / pts.length, pts.reduce((x, p) => x + p.lng, 0) / pts.length] : null,
       places: MAP_PLACES.filter((m) => m.trail === t.id).flatMap((m) => {
         const p = pts.find((x) => x.name.includes(m.match))
