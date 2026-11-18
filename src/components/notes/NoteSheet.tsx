@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { Camera, Image as ImageIcon, X } from '@phosphor-icons/react'
+import { Camera, Check, Image as ImageIcon, X } from '@phosphor-icons/react'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { loadMaplibre } from '@/lib/map/loadMaplibre'
 import { toJpeg } from '@/lib/photo/to-jpeg'
@@ -483,6 +483,22 @@ export default function NoteSheet({ onClose, surface, line, unordered = false, s
               {/* What it was like (one tap) */}
               <fieldset className="m-0 mt-5 border-0 p-0">
                 <legend className="mb-2 text-[0.9375rem] font-bold">{t('notes.what_like')}</legend>
+                {kind ? (
+                  // Picked: the choice stays in view with a way back, and the
+                  // second tap sits right under it (Report a spot's pattern).
+                  <div className="flex min-h-[48px] items-center gap-2 rounded-2xl bg-[#2D6A4F] pl-4 pr-1 text-white">
+                    <Check size={18} weight="bold" aria-hidden />
+                    <span className="flex-1 text-[0.9375rem] font-semibold">{noteKindLabel(t, kind)}</span>
+                    <button
+                      type="button"
+                      onClick={() => setKind(null)}
+                      aria-label={t('spot_report.change_label')}
+                      className="min-h-[44px] cursor-pointer rounded-full px-3 text-[0.9375rem] font-semibold underline underline-offset-[3px] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+                    >
+                      {t('spot_report.change')}
+                    </button>
+                  </div>
+                ) : (<>
                 <div role="radiogroup" aria-label={t('notes.what_like')} className="grid grid-cols-2 gap-2">
                   {choices.map((k) => (
                     <button key={k} type="button" role="radio" aria-checked={kind === k} onClick={() => setKind(kind === k ? null : k)} className={tile(kind === k)}>
@@ -501,6 +517,7 @@ export default function NoteSheet({ onClose, surface, line, unordered = false, s
                 >
                   {noteKindLabel(t, 'map_wrong')}
                 </button>
+                </>)}
               </fieldset>
 
               {/* The second tap, where it decides who fixes it and how long it lasts */}
