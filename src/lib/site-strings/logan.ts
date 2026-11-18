@@ -178,6 +178,10 @@ export const loganStrings = defineStrings(
     'logan.phone_hint': 'Only {name} sees it, so you can text when you’re there.',
     'logan.save': 'Save',
     'logan.cant_go': 'Can’t make it?',
+    'logan.safe_car': 'Share the trip from the ride app with a friend, and check the plate together before you get in. In Uber, Split fare charges each of you your own half.',
+    'logan.safe_taxi': 'Before you get in, send a friend a photo of the taxi’s number.',
+    'logan.report_q': 'Tell us what happened',
+    'logan.report_done': 'Done',
 
     // Still looking.
     'logan.looking': 'We’re looking.',
@@ -396,6 +400,10 @@ export const loganStrings = defineStrings(
       'logan.phone_hint': 'Solo {name} lo ve, para que se escriban cuando lleguen.',
       'logan.save': 'Guardar',
       'logan.cant_go': '¿No puedes ir?',
+      'logan.safe_car': 'Compartan el viaje desde la app con un amigo y revisen juntos la placa antes de subir. En Uber, Dividir tarifa le cobra a cada uno su mitad.',
+      'logan.safe_taxi': 'Antes de subir, mándale a un amigo una foto del número del taxi.',
+      'logan.report_q': 'Cuéntanos qué pasó',
+      'logan.report_done': 'Listo',
 
       'logan.looking': 'Estamos buscando.',
       'logan.know_someone': '¿Conoces a alguien que vuele por esas fechas?',
@@ -610,6 +618,10 @@ export const loganStrings = defineStrings(
       'logan.phone_hint': 'Só {name} vê, para vocês trocarem mensagens quando chegarem.',
       'logan.save': 'Salvar',
       'logan.cant_go': 'Não vai dar?',
+      'logan.safe_car': 'Compartilhem a viagem pelo app com um amigo e confiram juntos a placa antes de entrar. Na Uber, Dividir tarifa cobra de cada um a sua metade.',
+      'logan.safe_taxi': 'Antes de entrar, mande para um amigo uma foto do número do táxi.',
+      'logan.report_q': 'Conte o que aconteceu',
+      'logan.report_done': 'Pronto',
 
       'logan.looking': 'Estamos procurando.',
       'logan.know_someone': 'Conhece alguém que vai voar nessa época?',
@@ -824,6 +836,10 @@ export const loganStrings = defineStrings(
       'logan.phone_hint': '只有 {name} 能看到，方便你们到了以后发短信联系。',
       'logan.save': '保存',
       'logan.cant_go': '去不了了？',
+      'logan.safe_car': '在叫车 App 里把行程分享给一位朋友，上车前一起核对车牌。在 Uber 里用“分摊车费”，各付各的一半。',
+      'logan.safe_taxi': '上车前，把出租车的车号拍照发给一位朋友。',
+      'logan.report_q': '告诉我们发生了什么',
+      'logan.report_done': '好的',
 
       'logan.looking': '我们正在寻找。',
       'logan.know_someone': '认识那段时间要坐飞机的人吗？',
