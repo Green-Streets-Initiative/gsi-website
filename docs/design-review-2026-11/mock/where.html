@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Where on event cards</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Overpass:wght@600;800&family=DM+Sans:wght@400;500;600;700&display=swap">
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<style>
+/* Mock-up of /events with three ways to show where an event is (2026-11-17).
+   Same real events (Saturday Nov 21), same card; only the "where" changes.
+   ?opt=map | transit | photo | combo (round 2, 2026-11-18) */
+:root{--ink:#191A2E;--ink85:#2F3150;--ink75:#4A4D68;--line:rgba(25,26,46,.1);--line2:rgba(25,26,46,.25);--accent:#2D6A4F;--pale:#F4F8EE}
+*{box-sizing:border-box}
+body{margin:0;background:#fff;color:var(--ink);font:15px/1.4 "DM Sans",sans-serif}
+.hd{font-family:Overpass,sans-serif;font-weight:800;letter-spacing:-.01em}
+.opt{background:var(--pale);border-bottom:1px solid var(--line);padding:10px 16px}
+.opt b{font-family:Overpass;font-weight:800;font-size:16px}
+.opt span{display:block;font-size:14px;color:var(--ink75)}
+.wrap{max-width:1200px;margin:0 auto;padding:0 16px}
+.dayh{display:flex;align-items:center;gap:12px;padding:14px 0 10px}
+.tile{width:46px;height:46px;border:1px solid var(--line2);border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1}
+.tile small{font-size:13px;font-weight:700;color:var(--accent)}.tile b{font:800 19px Overpass;margin-top:2px}
+.dayh h3{margin:0;font-size:18px}.dayh .rule{flex:1;height:1px;background:var(--line)}.dayh .n{font-size:14px;color:var(--ink75)}
+.list{display:flex;flex-direction:column;gap:10px;padding-bottom:18px}
+.card{position:relative;display:flex;gap:12px;align-items:flex-start;border:1px solid var(--line);border-radius:14px;padding:14px}
+.time{display:none}
+.thumb{flex:0 0 auto;width:80px;height:80px;border-radius:12px;overflow:hidden;position:relative}
+.thumb img.cover{width:100%;height:100%;object-fit:cover;display:block}
+.thumb.type{display:flex;align-items:center;justify-content:center}
+.thumb.type.small{width:64px;height:64px}
+.map{position:relative;width:100%;height:100%;background:#eef0ea}
+.map img{position:absolute;width:128px;height:128px;max-width:none}
+.pin{position:absolute;left:50%;top:50%;width:16px;height:16px;margin:-8px 0 0 -8px;border-radius:50%;background:#2D6A4F;border:3px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.45)}
+.body{min-width:0;flex:1}
+.kind{font-size:14px;font-weight:600}
+.title{font:800 17px/1.25 Overpass;margin:2px 0 3px;letter-spacing:-.01em}
+.meta{font-size:14px;color:var(--ink75)}
+.meta b{font-weight:500;color:var(--ink85)}
+.place{font-size:14px;color:var(--ink75);margin-top:2px}
+.place b{font-weight:600;color:var(--ink85)}
+.chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+.chip{font-size:13px;font-weight:600;border-radius:999px;padding:1px 10px;background:rgba(45,106,79,.12);color:var(--accent)}
+.chip.warm{background:#FBEBDD;color:#9A4A12}.chip.blue{background:#E3ECFB;color:#1D4FA8}.chip.red{background:#FBE4DF;color:#B3361F}
+.save{flex:0 0 auto;width:40px;height:40px;border:1px solid rgba(25,26,46,.15);border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--ink75)}
+.ride{display:block;line-height:24px;margin-top:6px;font-size:14px;color:var(--ink85)}
+.line{white-space:nowrap;flex:0 0 auto;margin-right:4px;vertical-align:1px;display:inline-flex;align-items:center;justify-content:center;height:22px;min-width:22px;padding:0 7px;border-radius:11px;font:800 13px/1 Overpass;color:#fff;letter-spacing:0}
+.line.bus{background:#FFC72C;color:#191A2E;border-radius:4px}
+.ride .walk{color:var(--ink75)}
+.credit{font-size:13px;color:var(--ink75);margin-top:4px}
+.facts{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;margin-top:6px;font-size:14px;color:var(--ink85)}
+.fact{display:inline-flex;align-items:center;gap:5px;font-weight:600;white-space:nowrap}
+.fact svg{width:16px;height:16px;color:var(--accent)}
+.pace{display:inline-flex;align-items:flex-end;gap:2px;height:14px}
+.pace i{display:block;width:4px;border-radius:1px;background:rgba(45,106,79,.22)}
+.pace i.on{background:var(--accent)}
+.thumb.logo{background:#fff;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;padding:8px}
+.thumb.logo img{max-width:100%;max-height:100%;object-fit:contain}
+.where{display:none}
+.deskonly{display:none}
+@media(min-width:900px){
+ .wrap{padding:0 32px}
+ .card{align-items:center;padding:12px 16px;gap:16px}
+ .time{display:block;width:76px;flex:0 0 auto}
+ .time b{display:block;font-size:14px}.time span{font-size:13px;color:var(--ink75)}
+ .thumb{width:64px;height:64px;border-radius:10px}
+ .thumb.type.small{width:48px;height:48px}
+ .kind{display:none}
+ .title{font-size:17px;margin:0}
+ .meta .k{font-weight:500}
+ .place,.ride,.credit.ph{display:none}
+ .where{display:flex;flex-direction:column;align-items:flex-end;gap:4px;width:300px;flex:0 0 auto;text-align:right;font-size:14px}
+ .where .town{font-weight:600;color:var(--ink85)}
+ .where .ride{display:flex;margin:0;justify-content:flex-end;align-items:center;white-space:nowrap}
+ .where .credit{margin:0}
+ .place .facts,.body>.facts{display:none}
+ .where .facts{margin:0;justify-content:flex-end}
+ .phoneonly{display:none}
+ .deskonly{display:inline}
+}
+</style></head><body>
+<div class="opt" id="opt"></div>
+<main class="wrap">
+ <div id="days"></div>
+</main>
+<script>
+const OPT = new URLSearchParams(location.search).get('opt') || 'map';
+const TYPES = {
+  walking_tour:{label:'Walking Tour',ink:'#0B6B75',icon:'footprints'},
+  group_ride:{label:'Group Ride',ink:'#2D6A4F',icon:'bike'},
+  guided_ride:{label:'Guided Ride',ink:'#2D6A4F',icon:'bike'},
+  class:{label:'Class',ink:'#2D6A4F',icon:'graduation-cap'},
+  talk:{label:'Talk / Panel',ink:'#9D2BB0',icon:'mic'},
+  other:{label:'Other',ink:'#4A4D68',icon:'calendar'},
+};
+const SB='https://xyqcpgwbqrhykpgpqbdi.supabase.co/storage/v1/object/public/community-event-images/';
+// Real listings, Saturday 2026-11-21 (event_details, status approved). Nearest stops from the MBTA v3 API.
+const EVENTS = [
+ {day:'fri',logo:'crw.png',t:'Praline Croissant WNB (20)',type:'group_ride',time:'7 AM',end:'to 9 AM',org:'Charles River Wheelers',place:'Minuteman Bikeway Trailhead, Alewife',town:'Cambridge',lat:42.39647,lng:-71.143216,
+  ride:{lines:[['RL','#DA291C']],stop:'Alewife',walk:3},facts:{mi:20,pace:'moderate'},photo:null,chips:[['Women & nonbinary','blue']]},
+ {t:'Family Wellness Walk',type:'walking_tour',time:'8 AM',end:'to 9:30 AM',org:'Arnold Arboretum of Harvard',place:'In front of the Hunnewell Building',town:'Jamaica Plain',lat:42.3077,lng:-71.1207,flyer:'https://arboretum.harvard.edu/wp-content/uploads/2026/11/Family-Wellness-Walks-landscape.jpg-smaller-scaled.jpg',
+  ride:{lines:[['35','bus'],['38','bus']],stop:'Centre St @ Orchard St',walk:2},photo:{f:'arboretum-1.jpg',c:'gohepcat, CC BY 3.0'},chips:[['Free'],['Family-friendly','blue'],['Registration req’d','warm']]},
+ {facts:{nodrop:true},logo:'bcb.png',t:'Butternut Bake House Ride',type:'group_ride',time:'10 AM',org:'Boston Cafe Bikers',place:'Union Square',town:'Somerville',lat:42.3796,lng:-71.0955,
+  ride:{lines:[['GL D','#00843D']],stop:'Union Square',walk:5},photo:{f:'union-sq-1.jpg',c:'Pi.1415926535, CC BY-SA 4.0'},chips:[['Beginner-friendly','blue']]},
+ {t:'Nature Walk at Arnold Arboretum',type:'walking_tour',time:'10 AM',end:'to 12:30 PM',org:'Nature Walking Group',place:'Forest Hill Rd',town:'Jamaica Plain',lat:42.3015,lng:-71.1181,
+  ride:{lines:[['OL','#ED8B00']],stop:'Forest Hills',walk:5},photo:{f:'arboretum-bussey-3.jpg',c:'EgorovaSvetlana, CC BY-SA 4.0'},chips:[['Free'],['Beginner-friendly','blue'],['Family-friendly','blue']]},
+ {t:'Major Taylor Birthday Ride',type:'guided_ride',time:'11 AM',org:'MassBike',place:'Major Taylor Museum',town:'Worcester',lat:42.2709,lng:-71.8011,flyer:SB+'ce_sync_major_taylor_association_814b53b06961.jpg',
+  ride:null,photo:null,chips:[['Registration req’d','warm'],['Seniors','blue']]},
+ {t:'Boston Fall Bike Picnic, Social and Food Drive',type:'other',time:'11 AM',end:'to 2 PM',org:'Boston Pedals',place:'Blackstone Square',town:'South End',lat:42.3396,lng:-71.0735,flyer:SB+'flyer_boston-pedals-fall-bike-picnic_2026-11-21.jpg',
+  ride:{lines:[['10','bus']],stop:'E Newton St @ Washington St',walk:2},photo:{f:'blackstone-2.jpg',c:'Daderot, CC0'},chips:[['Free'],['Free gear']]},
+ {t:'Lizzie Learns to Ride Book Launch',type:'talk',time:'1 PM',end:'to 2 PM',org:'Turtle Books',place:'Turtle Books',town:'Brookline',lat:42.3324,lng:-71.1186,flyer:SB+'ce_sync_boston_bike_events_c8a78ebc2aa7.png',
+  ride:{lines:[['GL D','#00843D']],stop:'Brookline Village',walk:2},photo:{f:'brookline-village-0.jpg',c:'John Phelan, CC BY 3.0'},chips:[['Free'],['Family-friendly','blue']]},
+ {t:'Physics of Bikes',type:'class',time:'2 PM',end:'to 4 PM',org:'BU Cycle Kitchen',place:'BU Cycle Kitchen',town:'Boston',lat:42.3521,lng:-71.1213,
+  ride:{lines:[['GL B','#00843D']],stop:'Babcock Street',walk:2},photo:null,chips:[['Free'],['Registration req’d','warm']]},
+ {logo:'fbh.png',t:'Golden Hour Photography Hike at Blue Hills',type:'walking_tour',time:'3 PM',end:'to 4:30 PM',org:'Friends of the Blue Hills',place:'Houghton’s Pond',town:'Milton',lat:42.2081,lng:-71.0945,
+  ride:null,photo:{f:'houghtons-1.jpg',c:'Eric Moreno, CC BY 2.0'},chips:[['Paid','warm'],['Beginner-friendly','blue']]},
+ {t:'Owl Prowl',type:'walking_tour',time:'4 PM',end:'to 5 PM',org:'Arnold Arboretum of Harvard',place:'Flora Way Gate',town:'Roslindale',lat:42.2961,lng:-71.1256,
+  ride:{lines:[['35','bus'],['38','bus']],stop:'Centre St opp Walter St',walk:7},photo:{f:'arboretum-bussey-1.jpg',c:'EgorovaSvetlana, CC BY-SA 4.0'},chips:[['Free'],['Sold out','red']]},
+];
+const INTRO = {
+ map:['Option 1 · A map of the spot','Every event without a flyer shows a small street map with a pin.'],
+ transit:['Option 2 · The nearest T stop','A line-colored tag says which train or bus gets you there.'],
+ photo:['Option 3 · A photo of the place','A credited photo of the park, square or street; a map when there is none.'],
+ logo:['Round 3 · The host’s logo, else a map','Same as round 2, with the organizer’s logo in the square when we have one.'],
+ combo:['Round 2 · Map, plus the fact that matters','Rides show distance, pace and no-drop. Walks, classes and talks show the nearest T stop.'],
+}[OPT];
+document.getElementById('opt').innerHTML = `<b>${INTRO[0]}</b><span>${INTRO[1]}</span>`;
+
+function mapHTML(lat,lng){
+  // z16 tiles drawn at half size: z15 framing, sharp on 2x screens.
+  const z=16, S=128, n=2**z;
+  const px=(lng+180)/360*n*S;
+  const r=lat*Math.PI/180, py=(1-Math.log(Math.tan(r)+1/Math.cos(r))/Math.PI)/2*n*S;
+  const box=80, x0=px-box/2, y0=py-box/2;
+  let h='';
+  for(let tx=Math.floor(x0/S); tx<=Math.floor((x0+box)/S); tx++)
+    for(let ty=Math.floor(y0/S); ty<=Math.floor((y0+box)/S); ty++)
+      h+=`<img src="https://www.gogreenstreets.org/api/map-tiles/${z}/${tx}/${ty}" style="left:${(tx*S-x0)}px;top:${(ty*S-y0)}px" alt="">`;
+  return `<div class="map" style="--b:${box}px">${h}<div class="pin"></div></div>`;
+}
+function typeTile(e,small){
+  const m=TYPES[e.type];
+  return `<div class="thumb type ${small?'small':''}" style="background:${m.ink}1F"><i data-lucide="${m.icon}" style="color:${m.ink};width:26px;height:26px"></i></div>`;
+}
+function thumb(e){
+  if(e.flyer) return `<div class="thumb" style="border:1px solid ${TYPES[e.type].ink}40"><img class="cover" src="${e.flyer}" alt=""></div>`;
+  if(OPT==='logo' && e.logo) return `<div class="thumb logo"><img src="img/where/logos/${e.logo}" alt="${e.org}"></div>`;
+  if(OPT==='map'||OPT==='combo'||OPT==='logo') return `<div class="thumb">${mapHTML(e.lat,e.lng)}</div>`;
+  if(OPT==='photo') return e.photo ? `<div class="thumb"><img class="cover" src="img/where/${e.photo.f}" alt="${e.place}"></div>` : `<div class="thumb">${mapHTML(e.lat,e.lng)}</div>`;
+  return typeTile(e,true);
+}
+function rideHTML(e){
+  if(!e.ride) return '';
+  const pills=e.ride.lines.map(([l,c])=> c==='bus'?`<span class="line bus">${l}</span>`:`<span class="line" style="background:${c}">${l}</span>`).join('');
+  return `<div class="ride">${pills}<span>${e.ride.stop} <span class="walk">· ${e.ride.walk}&nbsp;min&nbsp;walk</span></span></div>`;
+}
+const RIDE_TYPES=['group_ride','guided_ride'];
+const isRide=e=>RIDE_TYPES.includes(e.type);
+const PACES=['relaxed','moderate','brisk','fast'];
+function factsHTML(e){
+  const f=e.facts||{}; const out=[];
+  if(f.mi) out.push(`<span class="fact"><i data-lucide="route"></i>${f.mi} mi</span>`);
+  if(f.pace){const k=PACES.indexOf(f.pace);out.push(`<span class="fact"><span class="pace" title="Pace">${PACES.map((_,i)=>`<i class="${i<=k?'on':''}" style="height:${6+i*2.7}px"></i>`).join('')}</span>${f.pace[0].toUpperCase()+f.pace.slice(1)}</span>`);}
+  if(f.nodrop) out.push(`<span class="fact"><i data-lucide="users"></i>No-drop</span>`);
+  return out.length?`<div class="facts">${out.join('')}</div>`:'';
+}
+function whereLine(e){
+  if(OPT==='transit') return rideHTML(e);
+  if(OPT==='combo'||OPT==='logo') return isRide(e)?factsHTML(e):rideHTML(e);
+  return '';
+}
+const DAYS=[['fri','Fri','20','Friday · November 20'],['sat','Sat','21','Saturday · November 21']];
+const shown=EVENTS.filter(e=>OPT==='combo'||OPT==='logo'||e.day!=='fri');
+document.getElementById('days').innerHTML = DAYS.map(([k,dw,dn,label])=>{
+ const evs=shown.filter(e=>(e.day||'sat')===k); if(!evs.length) return '';
+ return `<div class="dayh"><div class="tile"><small>${dw}</small><b>${dn}</b></div><h3 class="hd">${label}</h3><div class="rule"></div><div class="n">${evs.length} event${evs.length>1?'s':''}</div></div>
+ <div class="list">${evs.map(e=>{
+  const m=TYPES[e.type];
+  const showPhotoCredit = OPT==='photo' && !e.flyer && e.photo;
+  return `<div class="card">
+    <div class="time"><b>${e.time}</b>${e.end?`<span>${e.end}</span>`:''}</div>
+    ${thumb(e)}
+    <div class="body">
+      <div class="kind" style="color:${m.ink}">${m.label}</div>
+      <div class="title">${e.t}</div>
+      <div class="meta"><span class="phoneonly">${e.time} · </span><span class="deskonly" style="color:${m.ink};font-weight:500">${m.label} · </span><b>${e.org}</b> · ${e.place}</div>
+      <div class="place"><b>${e.town}</b></div>
+      ${whereLine(e)}
+      ${showPhotoCredit?`<div class="credit ph" title="${e.photo.c}">Photo: ${e.photo.c.split(',')[0]}</div>`:''}
+      <div class="chips">${e.chips.map(([c,k])=>`<span class="chip ${k||''}">${c}</span>`).join('')}</div>
+    </div>
+    <div class="where"><span class="town">${e.town}</span>${whereLine(e)}${showPhotoCredit?`<span class="credit" title="${e.photo.c}">Photo: ${e.photo.c.split(',')[0]}</span>`:''}</div>
+    <div class="save"><i data-lucide="bookmark" style="width:18px;height:18px"></i></div>
+  </div>`}).join('')}</div>`}).join('');
+lucide.createIcons();
+</script>
+</body></html>

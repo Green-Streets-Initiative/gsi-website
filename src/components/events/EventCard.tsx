@@ -1,14 +1,18 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
 import { eventPath } from '@/lib/events-url'
-import { Calendar, Bookmark } from 'lucide-react'
+import { Calendar, Bookmark, Route, Users } from 'lucide-react'
 import { type CommunityEvent, getTypeMeta, getTagMeta, haversine, isDeadline, eventDayKeys, isMultiDay, eventRideStyle, isNoDrop } from '@/lib/events'
 import { withLang } from '@/lib/site-i18n'
 import { typeLabel, tagLabel, rideLevelLabel, rideLengthL, distanceL, timeL, dateRangeShortL, ledInLineL } from '@/lib/events-i18n'
 import { typeInk, tagInk, rideStyleInk, TINT } from '@/lib/events-tone'
 import { townFromAddress } from '@/lib/events-seo'
 import { EVENT_TYPE_ICONS } from './event-type-icons'
+import CardThumb from './CardThumb'
+import { cardTransit, stopTags, type CardTransit } from '@/lib/event-transit'
+import { RIDE_STYLE_ORDER, type RideStyle } from '@/lib/ride-style'
 import { useEventsTone, useEventsI18n } from './EventsTone'
 import { eventLanguages, ownNames } from '@/lib/languages'
 
@@ -28,6 +32,34 @@ interface EventCardProps {
   attached?: boolean
 }
 
+/** Easy, Moderate, Rec as a three-step meter: how hard, at a glance. */
+function LevelMeter({ level, color }: { level: RideStyle; color: string }) {
+  const k = RIDE_STYLE_ORDER.indexOf(level)
+  return (
+    <span className="inline-flex h-3.5 items-end gap-[2px]" aria-hidden>
+      {RIDE_STYLE_ORDER.map((l, i) => (
+        <span key={l} className="block w-[4px] rounded-[1px]" style={{ height: 6 + i * 4, backgroundColor: color, opacity: i <= k ? 1 : 0.22 }} />
+      ))}
+    </span>
+  )
+}
+
+/** "[GL D] 5 min walk to Union Square": the line's own tags, then the walk, then the stop (two lines at most). */
+function TransitLine({ tr, label, className }: { tr: CardTransit; label: string; className?: string }) {
+  return (
+    <p className={`line-clamp-2 text-[14px] leading-[24px] text-(--ev-ink-85) ${className ?? ''}`}>
+      {stopTags(tr.stop).map((tag) => (
+        <span key={tag.text}
+          className={`mr-1 inline-flex h-[22px] min-w-[22px] items-center justify-center whitespace-nowrap px-1.5 align-[1px] font-(family-name:--font-headline) text-[13px] font-extrabold leading-none ${tag.bg === '#FFC72C' ? 'rounded-[4px]' : 'rounded-full'}`}
+          style={{ backgroundColor: tag.bg, color: tag.fg }}>
+          {tag.text}
+        </span>
+      ))}
+      {label}
+    </p>
+  )
+}
+
 /**
  * One event. Phones get the stacked card; from lg up the same markup becomes
  * a denser row with a fixed time column on the left (CSS only, so there is no
@@ -35,6 +67,12 @@ interface EventCardProps {
  */
 export default function EventCard({ event, userLat, userLng, showAway, showDate, saved, onToggleSave, onOpen, ridesTo, attached }: EventCardProps) {
   const { tone, hrefBase } = useEventsTone()
+  // A flyer link that no longer loads falls back to the logo or map, never an empty square.
+  const [flyerOk, setFlyerOk] = useState(true)
+  // It may have failed before the page hydrated, when onError wasn't listening yet.
+  const flyerRef = (img: HTMLImageElement | null) => {
+    if (img && img.complete && img.naturalWidth === 0) setFlyerOk(false)
+  }
   const { locale, t } = useEventsI18n()
   const meta = getTypeMeta(event.event_type)
   const metaLabel = typeLabel(event.event_type, locale)
@@ -52,6 +90,13 @@ export default function EventCard({ event, userLat, userLng, showAway, showDate,
   // the ride's length ("24 mi ride") next to its level, and how far it is from
   // you ("2.3 mi away") at the end of the place line, where it never gets cut off.
   const rideLength = level ? rideLengthL(event.distance_text, locale) : null
+  const isRide = !!level || event.event_type === 'group_ride' || event.event_type === 'guided_ride'
+  // Under the place: a ride's length, level and no-drop; for everything
+  // else the nearest T stop (Keith 2026-11-18: most riders bring a bike).
+  const privateHome = /^a home in /i.test(event.location_name ?? '')
+  const placeless = !event.location_address && Number(event.target_radius_miles) >= 100
+  const transit = !isRide && !privateHome && !placeless ? cardTransit(event.nearest_transit) : null
+  const hasFacts = isRide && (!!rideLength || !!level || noDrop)
 
   const away = showAway && event.location_lat && event.location_lng
     ? t('card.away', { distance: distanceL(haversine(userLat, userLng, event.location_lat, event.location_lng), locale) })
@@ -99,6 +144,28 @@ export default function EventCard({ event, userLat, userLng, showAway, showDate,
     </>
   )
 
+  const facts = hasFacts ? (
+    <span className="inline-flex flex-wrap items-center gap-x-3 gap-y-1 text-[14px] font-semibold text-(--ev-ink-85)">
+      {rideLength && <span className="inline-flex items-center gap-1.5 whitespace-nowrap"><Route size={16} className="text-(--ev-accent)" aria-hidden />{rideLength}</span>}
+      {level && (
+        <span className="inline-flex items-center gap-1.5 whitespace-nowrap" style={{ color: rideStyleInk(level, tone) }}>
+          <LevelMeter level={level} color={rideStyleInk(level, tone)} />{rideLevelLabel(level, locale)}
+        </span>
+      )}
+      {noDrop && <span className="inline-flex items-center gap-1.5 whitespace-nowrap"><Users size={16} className="text-(--ev-accent)" aria-hidden />{t('card.no_drop')}</span>}
+    </span>
+  ) : null
+  const walkTo = transit ? t('card.walk_to', { min: transit.walk, stop: transit.stop.name }) : ''
+  const typeTile = (
+    <div
+      className="flex h-16 w-16 shrink-0 items-center justify-center rounded-[12px] lg:h-12 lg:w-12 lg:rounded-[10px]"
+      style={{ backgroundColor: ink + tint.tile }}
+    >
+      <Icon size={26} className="lg:hidden" style={{ color: ink }} />
+      <Icon size={20} className="hidden lg:block" style={{ color: ink }} />
+    </div>
+  )
+
   return (
     <div className={`group relative flex min-h-[72px] items-start gap-3 border border-(--ev-line) bg-(--ev-card) p-3.5 transition-all duration-200 hover:border-(--ev-line-mid) hover:bg-(--ev-card-hover) sm:gap-4 sm:p-4 lg:min-h-0 lg:items-center lg:px-4 lg:py-3 ${attached ? 'rounded-t-[14px]' : 'rounded-[14px]'}`}>
       <Link href={withLang(eventPath(event, hrefBase), locale)} onClick={onOpen} className={`absolute inset-0 z-10 ${attached ? 'rounded-t-[14px]' : 'rounded-[14px]'}`} aria-label={event.title} />
@@ -113,35 +180,27 @@ export default function EventCard({ event, userLat, userLng, showAway, showDate,
         )}
       </div>
 
-      {/* Flyer thumbnail when the event has one; the type tile otherwise */}
-      {event.image_url ? (
+      {/* The flyer when there is one; else the host's square logo, a map of the start, or the type tile */}
+      {event.image_url && flyerOk ? (
         <div
           className="h-16 w-16 shrink-0 overflow-hidden rounded-[12px] border lg:h-12 lg:w-12 lg:rounded-[10px]"
           style={{ borderColor: ink + tint.spotLine, backgroundColor: ink + tint.thumb }}
         >
-          <img src={event.image_url} alt="" className="h-full w-full object-cover" loading="lazy" />
+          <img ref={flyerRef} src={event.image_url} alt="" className="h-full w-full object-cover" loading="lazy" onError={() => setFlyerOk(false)} />
         </div>
       ) : (
-        <div
-          className="flex h-16 w-16 shrink-0 items-center justify-center rounded-[12px] lg:h-12 lg:w-12 lg:rounded-[10px]"
-          style={{ backgroundColor: ink + tint.tile }}
-        >
-          <Icon size={26} className="lg:hidden" style={{ color: ink }} />
-          <Icon size={20} className="hidden lg:block" style={{ color: ink }} />
-        </div>
+        <CardThumb
+          lat={deadline || privateHome || placeless ? null : event.location_lat}
+          lng={deadline || privateHome || placeless ? null : event.location_lng}
+          logo={event.organizer_logo ?? null}
+          fallback={typeTile}
+        />
       )}
 
       {/* Body */}
       <div className="min-w-0 flex-1">
         <p className="text-[14px] font-semibold leading-snug lg:hidden" style={{ color: ink }}>
           {metaLabel}
-          {level && (
-            <>
-              <span className="text-(--ev-ink-75)"> · </span>
-              <span style={{ color: rideStyleInk(level, tone) }}>{rideLevelLabel(level, locale)}</span>
-              {rideLength && <span className="text-(--ev-ink-75)"> · <span className="whitespace-nowrap">{rideLength}</span></span>}
-            </>
-          )}
         </p>
         <h3 className={`mt-0.5 line-clamp-2 font-(family-name:--font-headline) text-[17px] font-extrabold leading-snug tracking-[-0.01em] sm:text-[18px] lg:mt-0 lg:line-clamp-1 lg:text-[17px] ${off ? 'text-(--ev-ink-75)' : 'text-(--ev-ink)'}`}>
           {off && <span className="mr-2 inline-block rounded-full bg-[#FBE4DF] px-2 py-0.5 align-middle font-(family-name:--font-gsi) text-[13px] font-bold leading-tight text-(--ev-danger)">{t('card.cancelled')}</span>}
@@ -158,17 +217,12 @@ export default function EventCard({ event, userLat, userLng, showAway, showDate,
             {place}
           </p>
         )}
-        {/* Desktop: the type, level and ride length never truncate; the place does. */}
+        {facts && <div className="mt-1.5 lg:hidden">{facts}</div>}
+        {transit && <TransitLine tr={transit} label={walkTo} className="mt-1 lg:hidden" />}
+        {/* Desktop: the type never truncates; the place does. */}
         <p className="mt-0.5 hidden min-w-0 text-[14px] leading-snug text-(--ev-ink-75) lg:flex">
           <span className="shrink-0 whitespace-pre">
             <span className="font-medium" style={{ color: ink }}>{metaLabel}</span>
-            {level && (
-              <>
-                {' · '}
-                <span className="font-medium" style={{ color: rideStyleInk(level, tone) }}>{rideLevelLabel(level, locale)}</span>
-                {rideLength && ` · ${rideLength}`}
-              </>
-            )}
             {(whenLg || organizer || place) && ' · '}
           </span>
           {/* The town (or sign) has its own column; this line keeps the venue. */}
@@ -179,13 +233,8 @@ export default function EventCard({ event, userLat, userLng, showAway, showDate,
             {t(event.event_type === 'walking_tour' ? 'card.walks_to' : 'card.rides_to', { event: ridesTo })}
           </p>
         )}
-        {(event.ride_series_id || noDrop || langs.length > 0 || event.tags.length > 0) && (
+        {(event.ride_series_id || langs.length > 0 || event.tags.length > 0) && (
           <div className="mt-1.5 flex flex-wrap gap-1 lg:mt-1">
-            {noDrop && (
-              <span className="inline-block rounded-full bg-(--ev-accent-tint-15) px-2.5 py-0.5 text-[13px] font-semibold leading-snug text-(--ev-accent)">
-                {t('card.no_drop')}
-              </span>
-            )}
             {/* Planned in the Shift app — riders can RSVP there rather than
                 following a link to somebody else's site. */}
             {event.ride_series_id && !off && (
@@ -217,9 +266,11 @@ export default function EventCard({ event, userLat, userLng, showAway, showDate,
       </div>
 
       {/* Desktop where column, beside the bookmark: the town, then how far */}
-      <div className="hidden w-[156px] shrink-0 flex-col items-end gap-1 text-right lg:flex">
+      <div className="hidden w-[240px] shrink-0 flex-col items-end gap-1 text-right lg:flex">
         {town && <span className="max-w-full truncate text-[14px] font-semibold text-(--ev-ink-85)">{town}</span>}
         {away && <span className="text-[14px] font-semibold text-(--ev-ink-85)">{away}</span>}
+        {facts && <div className="flex justify-end">{facts}</div>}
+        {transit && <TransitLine tr={transit} label={walkTo} className="max-w-full" />}
       </div>
 
       {/* Bookmark */}
