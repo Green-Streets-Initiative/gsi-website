@@ -2,7 +2,7 @@
  * Free road lessons (Shift 01465, matching 01750). Forwards to Shift's
  * free-lessons function, one action at a time and only the fields each one
  * takes:
- *   match          who reaches this ZIP or town (the week grid on /bike-lessons)
+ *   match          who reaches this ZIP or town, or a shared location (lat, lng: the function sends back its ZIP)
  *   claim          the request: the function picks the code and asks one instructor
  *   offer_get / offer_answer   the instructor's Yes / Can't page (/bike-lessons/offer/[token])
  *   teacher_get / teacher_save the instructor's usual hours (/bike-lessons/teach/[token])
@@ -10,7 +10,7 @@
 const FN = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/free-lessons`
 
 const FIELDS: Record<string, string[]> = {
-  match: ['place'],
+  match: ['place', 'lat', 'lng'],
   claim: ['name', 'email', 'phone', 'place', 'cells', 'teacher', 'availability', 'note', 'source', 'website'],
   offer_get: ['token'],
   offer_answer: ['token', 'answer'],

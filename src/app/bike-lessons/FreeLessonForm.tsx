@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import posthog from 'posthog-js'
-import { Check } from '@phosphor-icons/react'
+import { Check, NavigationArrow } from '@phosphor-icons/react'
 import { gaEvent } from '@/lib/ga'
 import { trackAdConversion } from '@/lib/ad-pixels'
 import { translator, type SiteLocale } from '@/lib/site-i18n'
@@ -71,7 +71,12 @@ export default function FreeLessonForm({
   const [showWho, setShowWho] = useState(false)
   const [noteOpen, setNoteOpen] = useState(false)
   const [source, setSource] = useState('')
+  const [locating, setLocating] = useState(false)
+  const [geoErr, setGeoErr] = useState(false)
   const seq = useRef(0)
+  // The ZIP a shared location turned into: already looked up, so typing it in doesn't look it up again.
+  const resolved = useRef('')
+  const placeInput = useRef<HTMLInputElement>(null)
   const box = useRef<HTMLDivElement>(null)
 
   // The answer replaces a tall form; keep it in view rather than leave them further down the page.
@@ -96,32 +101,89 @@ export default function FreeLessonForm({
     }
   }, [])
 
-  // Who reaches this place, looked up as they type (a ZIP is enough).
+  // Who reaches this place: looked up as they type (a ZIP is enough), or at once from the button.
+  const lookup = async (q: string) => {
+    const n = ++seq.current
+    setLook({ state: 'looking' })
+    try {
+      const res = await fetch('/api/free-lesson', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'match', place: q }),
+      })
+      const data = await res.json().catch(() => null)
+      if (n !== seq.current) return
+      if (!res.ok || !data?.ok) return setLook({ state: 'bad' })
+      setLook({ state: 'ok', place: q, teachers: data.teachers ?? [], left: data.left ?? 0 })
+    } catch {
+      if (n === seq.current) setLook({ state: 'bad' })
+    }
+  }
+
   useEffect(() => {
     const q = place.trim()
     if (q.length < 3) {
       setLook({ state: 'none' })
       return
     }
-    const n = ++seq.current
-    const timer = setTimeout(async () => {
-      setLook({ state: 'looking' })
-      try {
-        const res = await fetch('/api/free-lesson', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'match', place: q }),
-        })
-        const data = await res.json().catch(() => null)
-        if (n !== seq.current) return
-        if (!res.ok || !data?.ok) return setLook({ state: 'bad' })
-        setLook({ state: 'ok', place: q, teachers: data.teachers ?? [], left: data.left ?? 0 })
-      } catch {
-        if (n === seq.current) setLook({ state: 'bad' })
-      }
-    }, 600)
+    if (q === resolved.current) return
+    const timer = setTimeout(() => lookup(q), 600)
     return () => clearTimeout(timer)
   }, [place])
+
+  const findNow = () => {
+    const q = place.trim()
+    if (q.length < 3) return placeInput.current?.focus()
+    lookup(q)
+  }
+
+  // Their location, rounded to about a block, turned into a ZIP by the function. The ZIP fills the box,
+  // so the instructor sees a ZIP as with a typed one, never a point.
+  const locateMe = () => {
+    setGeoErr(false)
+    if (!navigator.geolocation) return setGeoErr(true)
+    setLocating(true)
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const n = ++seq.current
+        setLook({ state: 'looking' })
+        try {
+          const res = await fetch('/api/free-lesson', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: 'match',
+              lat: Math.round(pos.coords.latitude * 1000) / 1000,
+              lng: Math.round(pos.coords.longitude * 1000) / 1000,
+            }),
+          })
+          const data = await res.json().catch(() => null)
+          if (n !== seq.current) return
+          if (!res.ok || !data?.ok || typeof data.place !== 'string') {
+            setLook({ state: 'none' })
+            setGeoErr(true)
+            return
+          }
+          resolved.current = data.place
+          setPlace(data.place)
+          clearError()
+          setLook({ state: 'ok', place: data.place, teachers: data.teachers ?? [], left: data.left ?? 0 })
+        } catch {
+          if (n === seq.current) {
+            setLook({ state: 'none' })
+            setGeoErr(true)
+          }
+        } finally {
+          setLocating(false)
+        }
+      },
+      () => {
+        setLocating(false)
+        setGeoErr(true)
+      },
+      { enableHighAccuracy: false, timeout: 10000, maximumAge: 5 * 60_000 },
+    )
+  }
 
   const teachers = look.state === 'ok' ? look.teachers : []
   const ranked = useMemo(() => {
@@ -267,24 +329,52 @@ export default function FreeLessonForm({
 
   return (
     <form onSubmit={submit} noValidate>
-      <label className="block">
-        <span className={LABEL}>{t('lessons.label_place')}</span>
+      <label htmlFor="lesson-place" className={LABEL}>{t('lessons.label_place')}</label>
+      <div className="flex flex-col gap-2 sm:flex-row">
         <input
+          id="lesson-place"
+          ref={placeInput}
           type="text"
+          inputMode="text"
           value={place}
           onChange={(e) => {
             setPlace(e.target.value)
+            setGeoErr(false)
             clearError()
+          }}
+          onKeyDown={(e) => {
+            // Enter looks them up; it never sends a half-filled request.
+            if (e.key === 'Enter') {
+              e.preventDefault()
+              findNow()
+            }
           }}
           placeholder={t('lessons.placeholder_place')}
           autoComplete="postal-code"
           required
-          className={FIELD}
+          className={`${FIELD} min-w-0 sm:flex-1`}
         />
-      </label>
-      <p className="mt-1.5 min-h-[22px] text-[0.875rem] leading-snug text-navy/80" aria-live="polite">
+        {look.state !== 'ok' && (
+          <button type="button" onClick={findNow} className={`${buttonClass} shrink-0`}>
+            {t('lessons.find_button')}
+          </button>
+        )}
+      </div>
+      {look.state !== 'ok' && (
+        <button
+          type="button"
+          onClick={locateMe}
+          disabled={locating}
+          className={`${LINK} mt-1 inline-flex min-h-[44px] items-center gap-1.5 text-[0.9375rem]`}
+        >
+          <NavigationArrow size={18} weight="bold" aria-hidden="true" className="-scale-x-100" />
+          {locating ? t('lessons.locating') : t('lessons.use_location')}
+        </button>
+      )}
+      <p className="min-h-[22px] text-[0.875rem] leading-snug text-navy/80" aria-live="polite">
         {look.state === 'looking' && t('lessons.place_looking')}
         {look.state === 'bad' && <span className="font-semibold text-[#B42318]">{t('lessons.err_place_unknown')}</span>}
+        {geoErr && look.state !== 'bad' && <span className="font-semibold text-[#B42318]">{t('lessons.err_location')}</span>}
       </p>
 
       {far && <div className="mt-2">{farNote}</div>}
