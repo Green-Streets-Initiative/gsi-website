@@ -112,6 +112,10 @@
     {
       "date": "2026-11-13",
       "what": "Claude, on Keith's 'Let's do it' (interactive chat, Claude in Chrome). How-to Guides > Riding in traffic Ad 1: headline '90 minutes, one-on-one' -> 'One-on-one, on real streets' (27 chars). Why: lesson length is up to each instructor; 90 minutes is only Bicycle Riding School's format (site and emails changed the same day). Saved with no policy issues; ad strength Excellent; the edit form shows the new headline. The ad had 0 impressions this month before the edit."
+    },
+    {
+      "date": "2026-11-19",
+      "what": "Claude, on Keith's 'Signed in, go' (marketing plan approved 'Yes to all three', interactive chat, Claude in Chrome). Shift Together - Start Biking (24469296673): upload ad-grants-nov19-together-start.csv added 3 phrase keywords to 'Start biking to work' (how to start biking to work, bike commuting for beginners, bike route to work boston) and one RSA per group landing on gogreenstreets.org/together/start (the one-minute sign-up, utm_source=grant, utm_content=route); 2 traffic-hook RSAs failed on the 3-RSA limit. Paused the 4 older RSAs (landing on /together/bike-to-work and /together/bike-buddy; 0 impressions since Nov 13; said 'calm streets'). Second upload ad-grants-nov19-together-start-traffic.csv added the 2 traffic-hook RSAs (utm_content=traffic), 0 errors. Locations: added Everett and Malden (now Arlington, Boston, Cambridge, Everett, Malden, Medford, Somerville). Each group now runs 2 enabled RSAs, both on /together/start."
     }
   ],
   "open_items": [
@@ -242,6 +246,11 @@
       "id": "logan-adgroup-2-ads",
       "what": "Venue Parking / 'Logan: share a ride' ad group has 1 RSA (Pending) and no keywords seen; breaks the 2-ads-per-ad-group rule.",
       "status": "OPEN 2026-11-18: recommended as weekly item 2 with a drafted second RSA (shared ride first, T second) and 5 phrase keywords on the report page. Emailed Keith. Added ~11-17 by another session; add its change entry when the group is finished."
+    },
+    {
+      "id": "together-start-first-read",
+      "what": "Shift Together - Start Biking had 0 impressions Nov 13-18. Read it on 2026-12-03 (14 days after the 11-19 rewrite): impressions, clicks, and together_start_sent / together_signup_saved events with utm_source=grant. If still 0 impressions, add broader phrase keywords (learn to bike to work, bike commute help).",
+      "status": "OPEN 2026-11-19"
     }
   ],
   "pulse_log": [
