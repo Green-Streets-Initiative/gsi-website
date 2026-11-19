@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Spotlight card</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Overpass:wght@600;800&family=DM+Sans:wght@400;500;600;700&display=swap">
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<style>
+/* Mock-up of the /events Spotlight card (Keith 2026-11-19: "needs a little
+   polish"). Real featured event, real flyer, today = Nov 19. */
+:root{--ink:#191A2E;--ink85:#2F3150;--ink75:#4A4D68;--line:rgba(25,26,46,.1);--accent:#2D6A4F;--warm:#9A4A12;--warmbg:#F8F1EC;--warmline:#EAD8C8}
+*{box-sizing:border-box}
+body{margin:0;background:#fff;color:var(--ink);font:15px/1.4 "DM Sans",sans-serif}
+.wrap{max-width:1200px;margin:0 auto;padding:16px}
+@media(min-width:900px){.wrap{padding:24px 32px}}
+.opt{margin:28px 0 10px;font:800 16px Overpass}.opt span{display:block;font:400 14px "DM Sans";color:var(--ink75)}
+h1{font:800 30px/1.1 Overpass;margin:0}@media(min-width:900px){h1{font-size:42px}}
+.lede{color:var(--ink75);font-size:16px;margin:8px 0 16px}
+.before{max-width:950px}
+/* shared */
+.card{display:flex;gap:16px;align-items:center;border:1px solid var(--warmline);background:var(--warmbg);border-radius:16px;padding:14px;text-decoration:none;color:inherit}
+.flyer{flex:0 0 auto;width:72px;height:92px;border-radius:10px;overflow:hidden;border:1px solid var(--warmline);background:#fff}
+.flyer img{width:100%;height:100%;object-fit:cover;object-position:top;display:block}
+.label{font-size:14px;font-weight:600;color:var(--warm);display:flex;align-items:center;gap:6px}
+.title{font:800 19px/1.2 Overpass;margin:3px 0 0;letter-spacing:-.01em}
+.meter{margin-top:10px;max-width:360px}
+.bar{height:8px;border-radius:4px;background:rgba(154,74,18,.15);overflow:hidden}
+.bar i{display:block;height:100%;width:63%;background:var(--warm);border-radius:4px}
+.mt{display:flex;justify-content:space-between;font-size:14px;color:var(--ink85);margin-top:5px}
+.mt b{font-weight:700}
+.btn{flex:0 0 auto;margin-left:auto;display:inline-flex;align-items:center;gap:6px;height:44px;padding:0 16px;border-radius:10px;background:var(--warm);color:#fff;font-weight:700;font-size:15px;white-space:nowrap}
+.body{min-width:0;flex:1}
+@media(max-width:640px){.card{flex-wrap:wrap}.btnrow{width:100%}.btn{width:100%;justify-content:center;margin:0}}
+.state{flex:0 0 auto;width:120px;height:84px;border-radius:12px;background:#fff;border:1px solid var(--warmline);display:flex;align-items:center;justify-content:center;padding:8px}
+.state svg{width:100%;height:100%}
+.state.big{width:auto;height:auto;border-radius:0;border:0;border-right:1px solid var(--warmline);padding:16px}
+@media(max-width:640px){.state{width:96px;height:68px}}
+/* B: banner */
+.banner{display:grid;grid-template-columns:220px 1fr;border:1px solid var(--warmline);background:var(--warmbg);border-radius:16px;overflow:hidden}
+.banner .pic{background:#fff;border-right:1px solid var(--warmline)}
+.banner .pic img{width:100%;height:100%;object-fit:cover;object-position:top;display:block}
+.banner .in{padding:16px 18px;display:flex;flex-direction:column;gap:2px}
+.facts{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:8px;font-size:14px;color:var(--ink85)}
+.facts span{display:inline-flex;align-items:center;gap:5px;font-weight:600}
+.facts svg{width:16px;height:16px;color:var(--warm)}
+.row{display:flex;align-items:center;gap:12px;margin-top:12px;flex-wrap:wrap}
+.link{color:var(--warm);font-weight:700;font-size:15px}
+@media(max-width:640px){.banner{grid-template-columns:110px 1fr}.banner .in{padding:12px 14px}.title{font-size:17px}}
+/* before */
+.old{display:flex;gap:16px;align-items:flex-start;border:1px solid var(--warmline);background:var(--warmbg);border-radius:16px;padding:22px}
+.old .ic{width:56px;height:56px;border-radius:12px;background:#EEDFD2;display:flex;align-items:center;justify-content:center;color:var(--warm)}
+.old .d{font-size:14px;color:var(--ink75);margin-top:6px}.old .s{font-size:14px;color:var(--ink75);margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:520px}
+</style></head><body>
+<main class="wrap">
+ <h1>Events near you</h1>
+ <p class="lede">277 upcoming events across Massachusetts.</p>
+
+ <div class="opt">Now (live)<span>The dates show three times, a trophy where the flyer could be, and a cut-off line.</span></div>
+ <div class="old before">
+  <div class="ic"><i data-lucide="trophy"></i></div>
+  <div style="flex:1;min-width:0">
+   <div class="label">Spotlight · Community Challenge</div>
+   <div class="title">Beat the Bay State: walk with Team Green Streets, Nov 1 to 30</div>
+   <div class="d">November 1 to 30, 2026</div>
+   <div class="s">Beat the Bay State is WalkMassachusetts's virtual challenge, Nov 1 to 30. Walk anywhere you like.</div>
+  </div>
+  <div class="link" style="white-space:nowrap">See details →</div>
+ </div>
+
+ <div class="opt">A · The state, time left, one button<span>The picture is the challenge itself: the state&rsquo;s border, traced as far as the month has gone. The dates become a meter. The button is the one thing to do.</span></div>
+ <a class="card">
+  <div class="state"><svg class="ma" viewBox="-6 -6 212 136.3" aria-hidden="true"><path d="M13.6,10.6 L58.6,12.1 L98.5,13.5 L123.8,14.3 L125.8,11.3 L130.0,11.3 L129.8,7.3 L132.8,4.9 L136.6,6.1 L138.4,2.1 L145.6,0.0 L148.6,1.9 L150.3,1.1 L150.7,5.8 L152.5,14.6 L157.5,17.6 L159.9,14.9 L162.7,17.1 L159.5,22.9 L154.9,23.4 L147.2,25.7 L149.6,28.9 L146.0,32.1 L144.6,31.6 L143.6,35.4 L142.8,32.7 L140.6,36.2 L142.8,41.0 L140.2,40.3 L139.2,42.1 L140.8,43.8 L139.8,45.6 L142.6,46.5 L143.8,44.1 L146.6,43.6 L148.4,46.7 L153.3,48.5 L155.7,51.2 L156.1,54.2 L160.3,60.2 L160.1,63.4 L158.7,66.0 L156.3,66.3 L156.9,67.9 L161.1,71.2 L163.5,70.6 L165.1,72.2 L166.7,77.6 L165.7,80.8 L168.3,83.9 L172.9,86.2 L179.7,87.0 L181.5,88.5 L185.4,85.6 L189.2,85.1 L194.6,83.0 L195.8,81.3 L195.6,76.2 L194.4,72.3 L191.8,74.3 L191.8,68.0 L190.8,64.4 L187.8,62.2 L186.0,62.7 L185.0,65.2 L182.7,61.4 L185.4,60.7 L189.6,61.8 L194.2,65.6 L197.8,73.6 L199.6,81.3 L200.0,90.2 L197.0,98.5 L196.6,101.4 L195.2,100.8 L197.6,93.5 L196.2,92.0 L191.0,92.4 L182.3,94.9 L176.3,94.4 L174.9,96.2 L171.5,96.7 L168.5,100.7 L161.9,101.4 L155.1,105.6 L151.9,108.7 L147.6,110.5 L143.0,111.5 L144.2,109.8 L151.3,107.6 L154.5,104.5 L159.3,101.4 L160.3,98.8 L159.9,91.2 L161.1,88.5 L155.9,86.8 L155.9,90.7 L154.5,89.8 L153.7,93.0 L150.9,92.8 L151.3,94.9 L145.0,95.6 L143.6,98.8 L144.0,101.6 L142.8,103.5 L137.8,105.0 L135.4,103.9 L133.4,104.8 L132.8,92.5 L129.2,91.4 L127.6,88.7 L125.6,85.6 L121.8,83.5 L120.8,79.8 L121.2,74.6 L118.8,75.0 L118.8,65.5 L95.5,66.3 L95.3,65.1 L54.8,64.3 L50.4,64.6 L41.9,64.2 L41.3,66.7 L38.5,67.1 L38.7,64.2 L27.9,64.0 L4.2,63.1 L1.2,63.1 L0.0,60.4 L6.8,34.8 L13.6,10.6 Z" fill="#F3E7DC" stroke="rgba(154,74,18,.35)" stroke-width="2" stroke-linejoin="round"/><path d="M149.4,115.7 L153.1,115.7 L156.9,109.9 L162.3,106.0 L164.5,106.9 L165.9,111.5 L168.9,113.2 L170.9,110.6 L170.7,116.1 L162.5,116.0 L156.3,116.6 L152.7,119.6 L149.4,115.7 Z" fill="#F3E7DC" stroke="rgba(154,74,18,.35)" stroke-width="1.5"/><path d="M180.5,118.9 L183.1,120.5 L189.0,120.2 L192.6,119.1 L195.0,114.5 L198.2,121.3 L198.0,123.3 L196.0,124.3 L189.4,124.0 L181.1,120.2 L180.5,118.9 Z" fill="#F3E7DC" stroke="rgba(154,74,18,.35)" stroke-width="1.5"/><path d="M13.6,10.6 L58.6,12.1 L98.5,13.5 L123.8,14.3 L125.8,11.3 L130,11.3 L129.8,7.3 L132.8,4.9 L136.6,6.1 L138.4,2.1 L145.6,0 L148.6,1.9 L150.3,1.1 L150.7,5.8 L152.5,14.6 L157.5,17.6 L159.9,14.9 L162.7,17.1 L159.5,22.9 L154.9,23.4 L147.2,25.7 L149.6,28.9 L146,32.1 L144.6,31.6 L143.6,35.4 L142.8,32.7 L140.6,36.2 L142.8,41 L140.2,40.3 L139.2,42.1 L140.8,43.8 L139.8,45.6 L142.6,46.5 L143.8,44.1 L146.6,43.6 L148.4,46.7 L153.3,48.5 L155.7,51.2 L156.1,54.2 L160.3,60.2 L160.1,63.4 L158.7,66 L156.3,66.3 L156.9,67.9 L161.1,71.2 L163.5,70.6 L165.1,72.2 L166.7,77.6 L165.7,80.8 L168.3,83.9 L172.9,86.2 L179.7,87 L181.5,88.5 L185.4,85.6 L189.2,85.1 L194.6,83 L195.8,81.3 L195.6,76.2 L194.4,72.3 L191.8,74.3 L191.8,68 L190.8,64.4 L187.8,62.2 L186,62.7 L185,65.2 L182.7,61.4 L185.4,60.7 L189.6,61.8 L194.2,65.6 L197.8,73.6 L199.6,81.3 L200,90.2 L197,98.5 L196.6,101.4 L195.2,100.8 L197.6,93.5 L196.2,92 L191,92.4 L182.3,94.9 L176.3,94.4 L174.9,96.2 L171.5,96.7 L168.5,100.7 L161.9,101.4 L155.1,105.6 L151.9,108.7 L147.6,110.5 L143,111.5 L144.2,109.8 L151.3,107.6 L154.5,104.5 L159.3,101.4 L160.3,98.8 L159.9,91.2 L161.1,88.5 L155.9,86.8 L155.9,90.7 L154.5,89.8 L153.7,93 L150.9,92.8 L151.3,94.9 L145,95.6 L143.6,98.8 L144,101.6 L142.8,103.5 L137.8,105 L135.4,103.9 L133.4,104.8 L132.8,92.5 L129.2,91.4 L127.6,88.7 L125.6,85.6 L121.8,83.5 L120.8,79.8 L121.2,74.6 L118.8,75 L118.8,65.5 L95.5,66.3 L95.3,65.1 L54.8,64.3 L50.4,64.6 L41.9,64.2 L41.3,66.7 L38.5,67.1 L38.7,64.2 L27.9,64 L4.2,63.1 L1.2,63.1 L0,60.4 L6.8,34.8 L13.6,10.6 Z" fill="none" stroke="#9A4A12" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" pathLength="100" stroke-dasharray="63 100"/></svg></div>
+  <div class="body">
+   <div class="label"><i data-lucide="trophy" style="width:16px;height:16px"></i>Spotlight · Walking challenge</div>
+   <div class="title">Beat the Bay State: walk with Team Green Streets</div>
+   <div class="meter"><div class="bar"><i></i></div><div class="mt"><span>Nov 1 to 30</span><b>11 days left</b></div></div>
+  </div>
+  <div class="btnrow"><span class="btn">Join the team <i data-lucide="arrow-right" style="width:16px;height:16px"></i></span></div>
+ </a>
+
+ <div class="opt">B · Banner with the facts<span>A bigger state picture, and the three facts a walker asks about as icons: when, where, cost.</span></div>
+ <a class="banner">
+  <div class="pic state big"><svg class="ma" viewBox="-6 -6 212 136.3" aria-hidden="true"><path d="M13.6,10.6 L58.6,12.1 L98.5,13.5 L123.8,14.3 L125.8,11.3 L130.0,11.3 L129.8,7.3 L132.8,4.9 L136.6,6.1 L138.4,2.1 L145.6,0.0 L148.6,1.9 L150.3,1.1 L150.7,5.8 L152.5,14.6 L157.5,17.6 L159.9,14.9 L162.7,17.1 L159.5,22.9 L154.9,23.4 L147.2,25.7 L149.6,28.9 L146.0,32.1 L144.6,31.6 L143.6,35.4 L142.8,32.7 L140.6,36.2 L142.8,41.0 L140.2,40.3 L139.2,42.1 L140.8,43.8 L139.8,45.6 L142.6,46.5 L143.8,44.1 L146.6,43.6 L148.4,46.7 L153.3,48.5 L155.7,51.2 L156.1,54.2 L160.3,60.2 L160.1,63.4 L158.7,66.0 L156.3,66.3 L156.9,67.9 L161.1,71.2 L163.5,70.6 L165.1,72.2 L166.7,77.6 L165.7,80.8 L168.3,83.9 L172.9,86.2 L179.7,87.0 L181.5,88.5 L185.4,85.6 L189.2,85.1 L194.6,83.0 L195.8,81.3 L195.6,76.2 L194.4,72.3 L191.8,74.3 L191.8,68.0 L190.8,64.4 L187.8,62.2 L186.0,62.7 L185.0,65.2 L182.7,61.4 L185.4,60.7 L189.6,61.8 L194.2,65.6 L197.8,73.6 L199.6,81.3 L200.0,90.2 L197.0,98.5 L196.6,101.4 L195.2,100.8 L197.6,93.5 L196.2,92.0 L191.0,92.4 L182.3,94.9 L176.3,94.4 L174.9,96.2 L171.5,96.7 L168.5,100.7 L161.9,101.4 L155.1,105.6 L151.9,108.7 L147.6,110.5 L143.0,111.5 L144.2,109.8 L151.3,107.6 L154.5,104.5 L159.3,101.4 L160.3,98.8 L159.9,91.2 L161.1,88.5 L155.9,86.8 L155.9,90.7 L154.5,89.8 L153.7,93.0 L150.9,92.8 L151.3,94.9 L145.0,95.6 L143.6,98.8 L144.0,101.6 L142.8,103.5 L137.8,105.0 L135.4,103.9 L133.4,104.8 L132.8,92.5 L129.2,91.4 L127.6,88.7 L125.6,85.6 L121.8,83.5 L120.8,79.8 L121.2,74.6 L118.8,75.0 L118.8,65.5 L95.5,66.3 L95.3,65.1 L54.8,64.3 L50.4,64.6 L41.9,64.2 L41.3,66.7 L38.5,67.1 L38.7,64.2 L27.9,64.0 L4.2,63.1 L1.2,63.1 L0.0,60.4 L6.8,34.8 L13.6,10.6 Z" fill="#F3E7DC" stroke="rgba(154,74,18,.35)" stroke-width="2" stroke-linejoin="round"/><path d="M149.4,115.7 L153.1,115.7 L156.9,109.9 L162.3,106.0 L164.5,106.9 L165.9,111.5 L168.9,113.2 L170.9,110.6 L170.7,116.1 L162.5,116.0 L156.3,116.6 L152.7,119.6 L149.4,115.7 Z" fill="#F3E7DC" stroke="rgba(154,74,18,.35)" stroke-width="1.5"/><path d="M180.5,118.9 L183.1,120.5 L189.0,120.2 L192.6,119.1 L195.0,114.5 L198.2,121.3 L198.0,123.3 L196.0,124.3 L189.4,124.0 L181.1,120.2 L180.5,118.9 Z" fill="#F3E7DC" stroke="rgba(154,74,18,.35)" stroke-width="1.5"/><path d="M13.6,10.6 L58.6,12.1 L98.5,13.5 L123.8,14.3 L125.8,11.3 L130,11.3 L129.8,7.3 L132.8,4.9 L136.6,6.1 L138.4,2.1 L145.6,0 L148.6,1.9 L150.3,1.1 L150.7,5.8 L152.5,14.6 L157.5,17.6 L159.9,14.9 L162.7,17.1 L159.5,22.9 L154.9,23.4 L147.2,25.7 L149.6,28.9 L146,32.1 L144.6,31.6 L143.6,35.4 L142.8,32.7 L140.6,36.2 L142.8,41 L140.2,40.3 L139.2,42.1 L140.8,43.8 L139.8,45.6 L142.6,46.5 L143.8,44.1 L146.6,43.6 L148.4,46.7 L153.3,48.5 L155.7,51.2 L156.1,54.2 L160.3,60.2 L160.1,63.4 L158.7,66 L156.3,66.3 L156.9,67.9 L161.1,71.2 L163.5,70.6 L165.1,72.2 L166.7,77.6 L165.7,80.8 L168.3,83.9 L172.9,86.2 L179.7,87 L181.5,88.5 L185.4,85.6 L189.2,85.1 L194.6,83 L195.8,81.3 L195.6,76.2 L194.4,72.3 L191.8,74.3 L191.8,68 L190.8,64.4 L187.8,62.2 L186,62.7 L185,65.2 L182.7,61.4 L185.4,60.7 L189.6,61.8 L194.2,65.6 L197.8,73.6 L199.6,81.3 L200,90.2 L197,98.5 L196.6,101.4 L195.2,100.8 L197.6,93.5 L196.2,92 L191,92.4 L182.3,94.9 L176.3,94.4 L174.9,96.2 L171.5,96.7 L168.5,100.7 L161.9,101.4 L155.1,105.6 L151.9,108.7 L147.6,110.5 L143,111.5 L144.2,109.8 L151.3,107.6 L154.5,104.5 L159.3,101.4 L160.3,98.8 L159.9,91.2 L161.1,88.5 L155.9,86.8 L155.9,90.7 L154.5,89.8 L153.7,93 L150.9,92.8 L151.3,94.9 L145,95.6 L143.6,98.8 L144,101.6 L142.8,103.5 L137.8,105 L135.4,103.9 L133.4,104.8 L132.8,92.5 L129.2,91.4 L127.6,88.7 L125.6,85.6 L121.8,83.5 L120.8,79.8 L121.2,74.6 L118.8,75 L118.8,65.5 L95.5,66.3 L95.3,65.1 L54.8,64.3 L50.4,64.6 L41.9,64.2 L41.3,66.7 L38.5,67.1 L38.7,64.2 L27.9,64 L4.2,63.1 L1.2,63.1 L0,60.4 L6.8,34.8 L13.6,10.6 Z" fill="none" stroke="#9A4A12" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" pathLength="100" stroke-dasharray="63 100"/></svg></div>
+  <div class="in">
+   <div class="label"><i data-lucide="trophy" style="width:16px;height:16px"></i>Spotlight · Walking challenge</div>
+   <div class="title">Beat the Bay State: walk with Team Green Streets</div>
+   <div class="facts">
+    <span><i data-lucide="calendar"></i>Nov 1 to 30 · 11 days left</span>
+    <span><i data-lucide="map-pin"></i>Walk anywhere</span>
+    <span><i data-lucide="ticket"></i>$20 to WalkMassachusetts</span>
+   </div>
+   <div class="row"><span class="btn" style="margin:0">Join the team <i data-lucide="arrow-right" style="width:16px;height:16px"></i></span><span class="link">See details</span></div>
+  </div>
+ </a>
+</main>
+<script>lucide.createIcons();</script>
+</body></html>
