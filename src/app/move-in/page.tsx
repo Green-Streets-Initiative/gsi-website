@@ -26,7 +26,7 @@ import { loadNewRoutesOffer } from '@/lib/nearby/newroutes-offer-server'
 export const metadata: Metadata = {
   title: 'Help new residents get around from day one | Green Streets Initiative',
   description:
-    'Put your logo on a free, live guide to getting around for new residents: the nearest T stops and buses with arrival times, Bluebikes docks, bike routes and what is within a short walk. Ready in about a minute.',
+    'Put your logo on a free, live guide to getting around for new residents: the nearest T stops and buses with live arrival times, Bluebikes docks, bike paths and bike lanes, and how long it takes to get to nearby places. All it needs is your building’s name.',
   alternates: { canonical: '/move-in' },
 }
 
@@ -45,9 +45,10 @@ export default async function MoveInPage() {
         title="Help new residents get around from day one."
         lede={
           <p>
-            A free page with your logo on it, ready in about a minute. It shows the nearest T stops
-            and buses with arrival times, Bluebikes docks, comfortable bike routes and what&rsquo;s
-            within a short walk. Share the link in move-in emails, or print it for welcome packets.
+            A free page with your logo on it. It shows the nearest T stops and buses with live
+            arrival times, Bluebikes docks, bike paths and bike lanes, and how long it takes to get
+            to nearby places. All it needs is your building&rsquo;s name. Share the link in move-in
+            emails, or print it for welcome packets.
           </p>
         }
         after={
