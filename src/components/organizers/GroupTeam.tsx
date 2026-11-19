@@ -2,13 +2,18 @@
 
 import Link from 'next/link'
 import { useCallback, useEffect, useState } from 'react'
-import { UserPlus, X } from 'lucide-react'
+import { Mail, UserPlus, X } from 'lucide-react'
 import { errorText } from '@/lib/organizers/api'
 import { getGroupTeam, inviteGroupOrganizer, revokeGroupInvite, stepDownFromGroup, type GroupTeam as Team } from '@/lib/organizers/group'
 import type { OrgClaim } from '@/lib/organizers/types'
 import { Badge, Button, Card, Dialog, Field, Input, Notice, SectionTitle, Spinner } from './ui'
 
 const looksLikeEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim())
+
+function initials(name: string): string {
+  const parts = name.replace(/@.*/, '').split(/[\s._+-]+/).filter(Boolean)
+  return ((parts[0]?.[0] ?? '') + (parts.length > 1 ? parts[parts.length - 1][0] : '')).toUpperCase() || '?'
+}
 
 function dayText(iso: string): string {
   try { return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) } catch { return '' }
@@ -120,22 +125,32 @@ export default function GroupTeam({ org, onSteppedDown }: { org: OrgClaim; onSte
         <>
           <ul className="divide-y divide-(--ev-line) rounded-xl border border-(--ev-line-mid)">
             {team.organizers.map((o) => (
-              <li key={o.user_id} className="px-4 py-3">
-                <p className="flex flex-wrap items-center gap-2 text-[15px] font-semibold text-(--ev-ink)">
-                  <span className="min-w-0 break-all">{o.name || o.email}</span>
-                  {o.is_you && <Badge tone="good">You</Badge>}
-                </p>
-                {o.name && <p className="break-all text-[14px] text-(--ev-ink-75)">{o.email}</p>}
-                <p className="text-[14px] text-(--ev-ink-75)">Organizer since {dayText(o.since)}</p>
+              <li key={o.user_id} className="flex items-start gap-3 px-4 py-3">
+                <span aria-hidden className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-(--ev-accent-tint-15) text-[15px] font-bold text-(--ev-accent-90)">
+                  {initials(o.name || o.email)}
+                </span>
+                <div className="min-w-0">
+                  <p className="flex flex-wrap items-center gap-2 text-[15px] font-semibold text-(--ev-ink)">
+                    <span className="min-w-0 break-all">{o.name || o.email}</span>
+                    {o.is_you && <Badge tone="good">You</Badge>}
+                  </p>
+                  {o.name && <p className="break-all text-[14px] text-(--ev-ink-75)">{o.email}</p>}
+                  <p className="text-[14px] text-(--ev-ink-75)">Organizer since {dayText(o.since)}</p>
+                </div>
               </li>
             ))}
             {team.invites.map((i) => (
               <li key={i.id} className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 px-4 py-3">
+                <div className="flex min-w-0 items-start gap-3">
+                <span aria-hidden className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-dashed border-(--ev-line-strong) text-(--ev-ink-75)">
+                  <Mail className="h-4 w-4" />
+                </span>
                 <div className="min-w-0">
                   <p className="break-all text-[15px] font-semibold text-(--ev-ink)">{i.email}</p>
                   <p className="text-[14px] text-(--ev-ink-75)">
                     Asked {dayText(i.sent_at)} · {i.handoff ? `takes over ${org.name} when they sign in` : 'an organizer once they sign in'}
                   </p>
+                </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <Button size="sm" variant="ghost" busy={busy === `revoke-${i.id}`} onClick={() => void revoke(i.id)} aria-label={`Take back the invite to ${i.email}`}>

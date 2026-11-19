@@ -20,7 +20,7 @@ function clip(s: string, max: number): string {
   return s.length > max ? `${s.slice(0, max - 1).trimEnd()}…` : s
 }
 
-export function groupInviteHtml(inviter: string, group: string, handoff: boolean): string {
+export function groupInviteHtml(inviter: string, group: string, handoff: boolean, canReply = true): string {
   const heading = handoff ? `${esc(group)} is yours to run` : `You're an organizer for ${esc(group)}`
   const lead = handoff
     ? `${esc(inviter)} is handing <b>${esc(group)}</b> to you on Shift. Once you sign in, you run the group there, and ${esc(inviter)} steps down.`
@@ -36,7 +36,7 @@ export function groupInviteHtml(inviter: string, group: string, handoff: boolean
 <table role="presentation" cellpadding="0" cellspacing="0"><tr><td bgcolor="#191A2E" style="border-radius:999px;">
 <a href="${CONSOLE_URL}" style="display:inline-block;padding:13px 26px;font-size:16px;font-weight:bold;color:#ffffff;text-decoration:none;border-radius:999px;">Open organizer tools</a>
 </td></tr></table>
-<p style="margin:20px 0 0;font-size:14px;line-height:1.55;color:#4A4D68;">Sign in with this email address. It's free.</p>
+<p style="margin:20px 0 0;font-size:14px;line-height:1.55;color:#4A4D68;">Sign in with this email address. It's free.${canReply ? ` Questions for ${esc(inviter)}? Reply to this email.` : ''}</p>
 </td></tr>
 <tr><td style="padding:18px 28px 26px;font-family:'Trebuchet MS','Lucida Grande',Verdana,sans-serif;font-size:13px;line-height:1.6;color:#4A4D68;">
 <b style="color:#191A2E;">Shift</b> is a project of <b style="color:#2D6A4F;">Green Streets</b> Initiative, a 501(c)(3) nonprofit.
@@ -66,7 +66,7 @@ export async function inviteGroupOrganizer(
       to: email,
       replyTo: args.organizerEmail ?? undefined,
       subject: args.handoff ? `${inviter} is handing ${group} to you on Shift` : `${inviter} added you as an organizer for ${group}`,
-      html: groupInviteHtml(inviter, group, args.handoff),
+      html: groupInviteHtml(inviter, group, args.handoff, !!args.organizerEmail),
     }).catch((e: unknown) => ({ error: e as Error }))
     if (sendError) console.error('[organizers] group invite email refused:', sendError)
     else emailed = true
