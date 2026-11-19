@@ -38,6 +38,7 @@ type Preview = { notify: number; notify_guests: number; upcoming: number; past: 
 export function StopRideDialog({ ride, open, onClose, onDone }: { ride: RideRow; open: boolean; onClose: () => void; onDone: (msg: string) => void }) {
   const router = useRouter()
   const choices = useMemo(() => restartChoices(ride), [ride])
+  const noun = ride.activity === 'walk' ? 'walk' : 'ride'
   const [mode, setMode] = useState<'break' | 'end'>(choices.length ? 'break' : 'end')
   const [until, setUntil] = useState(choices[1] ?? choices[0] ?? '')
   const [note, setNote] = useState('')
@@ -86,7 +87,7 @@ export function StopRideDialog({ ride, open, onClose, onDone }: { ride: RideRow;
     }
   }
 
-  const stoppedLine = mode === 'end' ? 'The ride has ended.' : `The ride is on a break until ${dateLabel(until)}.`
+  const stoppedLine = mode === 'end' ? `The ${noun} has ended.` : `The ${noun} is on a break until ${dateLabel(until)}.`
   function finish(r: Sent, again: boolean) {
     if (!r.noticeFailed) { onDone(`${stoppedLine} ${sentLine(r.sent)}`); return }
     setFailed(true)
@@ -102,7 +103,7 @@ export function StopRideDialog({ ride, open, onClose, onDone }: { ride: RideRow;
   if (failed) {
     const close = () => onDone(`${stoppedLine} The notice didn't go out.`)
     return (
-      <Dialog open={open} onClose={close} title={mode === 'end' ? 'The ride has ended' : 'The ride is on a break'}
+      <Dialog open={open} onClose={close} title={mode === 'end' ? `The ${noun} has ended` : `The ${noun} is on a break`}
         footer={<>
           <Button variant="ghost" onClick={close}>Close</Button>
           <Button variant="primary" onClick={() => void resend()} busy={busy}>Send it again</Button>
@@ -113,16 +114,16 @@ export function StopRideDialog({ ride, open, onClose, onDone }: { ride: RideRow;
   }
 
   return (
-    <Dialog open={open} onClose={onClose} title={preview?.can_delete ? 'Pause, end or delete the ride' : 'Pause or end the ride'}
+    <Dialog open={open} onClose={onClose} title={preview?.can_delete ? `Pause, end or delete the ${noun}` : `Pause or end the ${noun}`}
       footer={<>
         <Button variant="ghost" onClick={onClose}>Keep it running</Button>
         <Button variant={mode === 'end' ? 'danger' : 'primary'} onClick={() => void go()} busy={busy}>
-          {deleting ? 'Delete this ride' : mode === 'end' ? 'End the ride' : 'Take the break'}
+          {deleting ? `Delete this ${noun}` : mode === 'end' ? `End the ${noun}` : 'Take the break'}
         </Button>
       </>}>
       <div className="flex flex-wrap gap-2" role="group" aria-label="Pause or end">
         {choices.length > 0 && <Toggle on={mode === 'break'} onClick={() => setMode('break')}>Take a break</Toggle>}
-        <Toggle on={mode === 'end'} onClick={() => setMode('end')}>{preview?.can_delete ? 'Delete this ride' : 'End the ride'}</Toggle>
+        <Toggle on={mode === 'end'} onClick={() => setMode('end')}>{preview?.can_delete ? `Delete this ${noun}` : `End the ${noun}`}</Toggle>
       </div>
 
       {mode === 'break' ? (
@@ -142,12 +143,12 @@ export function StopRideDialog({ ride, open, onClose, onDone }: { ride: RideRow;
         </p>
       ) : (
         <p className="mt-4 text-[15px] leading-relaxed text-(--ev-ink-85)">
-          Upcoming dates are cancelled and the ride page says it has ended. Its history and turnout stay.
+          Upcoming dates are cancelled and the {noun} page says it has ended. Its history and turnout stay.
         </p>
       )}
 
       {!deleting && <div className="mt-4">
-        <Field label="A word to everyone" htmlFor="stop-note" optional hint="Shown on the ride page and in the notice.">
+        <Field label="A word to everyone" htmlFor="stop-note" optional hint={`Shown on the ${noun} page and in the notice.`}>
           <Textarea id="stop-note" value={note} maxLength={500} rows={3} onChange={(e) => setNote(e.target.value)}
             placeholder={mode === 'end' ? 'Thanks for a great season. Watch for spring dates.' : 'Taking December off. See you in the new year.'} />
         </Field>
