@@ -158,11 +158,20 @@ export default function RouteMap({
       const ml = await loadMaplibre()
       if (cancelled || !box.current) return
       libRef.current = ml
+      // Open already framed on the whole route, so the first tiles drawn are the
+      // right ones and the map does not zoom out after it loads.
+      const first: LatLng[] = meet ? [] : [...line, ...(stops ?? []), ...(meetup ? [meetup] : [])]
+      const lngs = first.map((p) => p.lng)
+      const lats = first.map((p) => p.lat)
       const map = new ml.Map({
         container: box.current,
         style: STYLE,
         center: meetup ? [meetup.lng, meetup.lat] : BOSTON,
         zoom: meetup ? 14 : 11.5,
+        ...(first.length > 1 ? {
+          bounds: [[Math.min(...lngs), Math.min(...lats)], [Math.max(...lngs), Math.max(...lats)]] as [[number, number], [number, number]],
+          fitBoundsOptions: { padding: 48, maxZoom: 15 },
+        } : {}),
         cooperativeGestures: true,
         attributionControl: { compact: true },
       })
