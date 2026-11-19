@@ -15,6 +15,13 @@ function initials(name: string): string {
   return ((parts[0]?.[0] ?? '') + (parts.length > 1 ? parts[parts.length - 1][0] : '')).toUpperCase() || '?'
 }
 
+/** An address that wraps after the @ on a phone, not mid-word. */
+function EmailText({ email }: { email: string }) {
+  const at = email.indexOf('@')
+  if (at < 0) return <>{email}</>
+  return <>{email.slice(0, at + 1)}<wbr />{email.slice(at + 1)}</>
+}
+
 function dayText(iso: string): string {
   try { return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) } catch { return '' }
 }
@@ -131,29 +138,25 @@ export default function GroupTeam({ org, onSteppedDown }: { org: OrgClaim; onSte
                 </span>
                 <div className="min-w-0">
                   <p className="flex flex-wrap items-center gap-2 text-[15px] font-semibold text-(--ev-ink)">
-                    <span className="min-w-0 break-all">{o.name || o.email}</span>
+                    <span className="min-w-0 [overflow-wrap:anywhere]">{o.name || <EmailText email={o.email} />}</span>
                     {o.is_you && <Badge tone="good">You</Badge>}
                   </p>
-                  {o.name && <p className="break-all text-[14px] text-(--ev-ink-75)">{o.email}</p>}
+                  {o.name && <p className="text-[14px] text-(--ev-ink-75) [overflow-wrap:anywhere]"><EmailText email={o.email} /></p>}
                   <p className="text-[14px] text-(--ev-ink-75)">Organizer since {dayText(o.since)}</p>
                 </div>
               </li>
             ))}
             {team.invites.map((i) => (
-              <li key={i.id} className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 px-4 py-3">
-                <div className="flex min-w-0 items-start gap-3">
+              <li key={i.id} className="flex items-start gap-3 px-4 py-3">
                 <span aria-hidden className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-dashed border-(--ev-line-strong) text-(--ev-ink-75)">
                   <Mail className="h-4 w-4" />
                 </span>
-                <div className="min-w-0">
-                  <p className="break-all text-[15px] font-semibold text-(--ev-ink)">{i.email}</p>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[15px] font-semibold text-(--ev-ink) [overflow-wrap:anywhere]"><EmailText email={i.email} /></p>
                   <p className="text-[14px] text-(--ev-ink-75)">
                     Asked {dayText(i.sent_at)} · {i.handoff ? `takes over ${org.name} when they sign in` : 'an organizer once they sign in'}
                   </p>
-                </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button size="sm" variant="ghost" busy={busy === `revoke-${i.id}`} onClick={() => void revoke(i.id)} aria-label={`Take back the invite to ${i.email}`}>
+                  <Button size="sm" variant="ghost" className="-ml-3 mt-1" busy={busy === `revoke-${i.id}`} onClick={() => void revoke(i.id)} aria-label={`Take back the invite to ${i.email}`}>
                     <X className="h-4 w-4" aria-hidden />Take back
                   </Button>
                 </div>
