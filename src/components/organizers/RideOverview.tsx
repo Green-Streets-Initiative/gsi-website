@@ -150,8 +150,8 @@ export default function RideOverview() {
   const r = detail.ride
   const today = todayKey()
   const [msg, setMsg] = useState<{ tone: 'good' | 'off'; text: string } | null>(
-    params.get('saved') === 'date' ? { tone: 'good', text: 'Saved. The ride page shows that date\u2019s plan.' }
-      : params.get('saved') ? { tone: 'good', text: 'Saved. The ride page and the app show your changes.' } : null,
+    params.get('saved') === 'date' ? { tone: 'good', text: `Saved. The ${r.activity === 'walk' ? 'walk' : 'ride'} page shows that date\u2019s plan.` }
+      : params.get('saved') ? { tone: 'good', text: `Saved. The ${r.activity === 'walk' ? 'walk' : 'ride'} page and the app show your changes.` } : null,
   )
   const [cancelling, setCancelling] = useState<DetailDate | null>(null)
   const [changing, setChanging] = useState<DetailDate | null>(null)

@@ -8,6 +8,7 @@ import AddressAutocomplete from '@/components/AddressAutocomplete'
 import { clock } from '@/lib/rides/public'
 import { changeDate, errorText, saveDateDetails, uploadFlyer } from '@/lib/organizers/api'
 import { dateLabel } from '@/lib/organizers/ride-words'
+import { haversineM } from '@/lib/organizers/route-geo'
 import { decodePlan, draftOf, routePayload } from '@/lib/organizers/saved-route'
 import type { DetailDate, RideRow, RouteDraft } from '@/lib/organizers/types'
 import { ROUTE_IMPORT_KEY } from './AssistantPanel'
@@ -217,6 +218,8 @@ export default function DateEditor({ ride, date, dates, onSaved }: {
   const usual = draftOf(ride)
   const noun = ride.activity === 'walk' ? 'walk' : 'ride'
   // The usual route's distances when the ride offers more than one (01868).
+  // A new meeting place with the usual route still starting at the old one (a walk that moves town to town).
+  const usualStartsElsewhere = !f.own && !!usual && usual.waypoints.length > 0 && !!meetup && haversineM(usual.waypoints[0], meetup) > 400
   const usualMiles = [ride.route_miles, ...(ride.route_options ?? []).map((o) => o.route_miles)].filter((m): m is number => m != null && m > 0)
 
   return (
@@ -278,10 +281,18 @@ export default function DateEditor({ ride, date, dates, onSaved }: {
         <Card>
           <SectionTitle hint="People see how far and how hilly it is, and which streets have bike lanes, before they come.">Route</SectionTitle>
           <div className="flex flex-wrap gap-2" role="group" aria-label="Which route">
-            <Toggle on={!f.own} onClick={() => set('own', false)}>{usual || ride.route_google_maps_url ? 'The usual route' : 'No route'}</Toggle>
+            <Toggle on={!f.own} onClick={() => set('own', false)}>{usual || ride.route_google_maps_url ? (patterned ? 'The usual route' : `The ${noun}’s route`) : 'No route'}</Toggle>
             <Toggle on={f.own} onClick={() => set('own', true)}>A route for this date</Toggle>
           </div>
 
+          {usualStartsElsewhere && (
+            <div className="mt-4">
+              <Notice tone="info">
+                This route starts at {usualSpot}, not {meetName || 'this date’s meeting place'}.{' '}
+                <button type="button" className="font-semibold underline" onClick={() => set('own', true)}>Plan a route from {meetName || 'there'}</button>
+              </Notice>
+            </div>
+          )}
           {!f.own && usual && (
             <div className="mt-4 grid gap-2">
               <RouteMap line={usual.waypoints} stops={[]} meetup={meetup} pick={false} className="h-[240px] w-full overflow-hidden rounded-xl border border-(--ev-line-mid)" label="The usual route" />
