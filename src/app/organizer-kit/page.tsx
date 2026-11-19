@@ -267,7 +267,7 @@ const BEFORE: Stage[] = [
   {
     when: 'The week before',
     ask: 'Who’s actually coming?',
-    does: 'People answer on your ride page with a name and email. No app needed.',
+    does: 'People answer on your ride page with a name and email.',
     art: <ListArt />,
   },
   {
