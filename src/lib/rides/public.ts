@@ -15,6 +15,23 @@ import { ridesStrings } from '@/lib/site-strings/rides'
 
 export type RsvpStatus = 'going' | 'maybe' | 'not_going'
 
+/** Another route on the same ride (Shift 01868), e.g. the 34-mile beside the 25. */
+export interface PublicRouteOption {
+  name: string | null
+  route_waypoints: { lat: number; lng: number }[]
+  route_miles: number | null
+  route_google_maps_url?: string | null
+}
+
+/** A route's name: the organizer's, else its distance ("25 mi"; a walk under 7 miles also in km, "5 km · 3.1 mi"). */
+export function routeOptionName(name: string | null | undefined, miles: number | null, walk = false): string {
+  if (name && name.trim()) return name.trim()
+  if (miles == null) return 'Route'
+  const mi = miles < 10 ? miles.toFixed(1).replace(/\.0$/, '') : String(Math.round(miles))
+  if (walk && miles < 7) return `${(miles * 1.609).toFixed(1).replace(/\.0$/, '')} km · ${mi} mi`
+  return `${mi} mi`
+}
+
 export interface RideDate {
   id: string
   date: string
@@ -41,6 +58,9 @@ export interface RideDate {
     route_google_maps_url: string | null
     route_miles: number | null
     route_elevation: { ascent_ft?: number; descent_ft?: number; max_grade_pct?: number } | null
+    /** The date's main route name and its other options (Shift 01868). */
+    route_name?: string | null
+    route_options?: PublicRouteOption[] | null
   } | null
   /** Where people can join along the way, in route order (Shift 01744). The first is the start; [] when the date has none. */
   stops?: RideStop[]
@@ -124,6 +144,9 @@ export interface PublicRide {
   route_google_maps_url: string | null
   /** The organizer's route, [{lat,lng}], or empty. */
   route_waypoints: { lat: number; lng: number }[] | null
+  /** The main route's name and the ride's other route options (Shift 01868); older servers leave them out. */
+  route_name?: string | null
+  route_options?: PublicRouteOption[] | null
   pace: 'kids' | 'relaxed' | 'moderate' | 'brisk' | 'fast' | null
   no_drop: boolean | null
   tags: string[] | null

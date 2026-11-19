@@ -3,22 +3,27 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { ArrowLeft, ImagePlus, Trash2 } from 'lucide-react'
+import { ArrowLeft, ImagePlus, MapPin, Trash2 } from 'lucide-react'
+import AddressAutocomplete from '@/components/AddressAutocomplete'
 import { clock } from '@/lib/rides/public'
-import { errorText, saveDateDetails, uploadFlyer } from '@/lib/organizers/api'
+import { changeDate, errorText, saveDateDetails, uploadFlyer } from '@/lib/organizers/api'
 import { dateLabel } from '@/lib/organizers/ride-words'
 import { decodePlan, draftOf, routePayload } from '@/lib/organizers/saved-route'
 import type { DetailDate, RideRow, RouteDraft } from '@/lib/organizers/types'
 import { ROUTE_IMPORT_KEY } from './AssistantPanel'
 import RouteMap from './RouteMap'
+import RouteOptions, { optionsOf, optionsPayload, optionsProblem, type OptionDraft } from './RouteOptions'
 import RouteSection from './RouteSection'
 import { Button, Card, Field, Input, Notice, Select, SectionTitle, Textarea, Toggle, cx } from './ui'
 
 /**
- * Plan one date (Shift 01432): its own name, description, flyer and route.
- * Most groups ride somewhere new each time; anything left empty uses the
- * ride's usual details.
+ * Plan one date (Shift 01432): its own name, description, flyer and route,
+ * and (Shift 01868) where it starts and its other route options. Most groups
+ * ride somewhere new each time; anything left empty uses the ride's usual
+ * details.
  */
+interface Place { name: string; address: string; lat: number; lng: number }
+
 interface Form {
   title: string
   description: string
@@ -26,12 +31,20 @@ interface Form {
   own: boolean
   route: RouteDraft | null
   link: string
+  /** A new start for this date, picked here (Shift 01868); null keeps it. */
+  place: Place | null
+  /** Back to the ride's usual meeting place. */
+  usualPlace: boolean
+  route_name: string
+  route_options: OptionDraft[]
 }
 
 function fromDate(d: DetailDate): Form {
   return {
     title: d.title ?? '', description: d.description ?? '', flyer_url: d.flyer_url,
     own: d.own_route, route: draftOf(d.route), link: d.route?.route_google_maps_url ?? '',
+    place: null, usualPlace: false,
+    route_name: d.route?.route_name ?? '', route_options: optionsOf(d.route?.route_options),
   }
 }
 
@@ -50,6 +63,7 @@ export default function DateEditor({ ride, date, dates, onSaved }: {
   const [saving, setSaving] = useState(false)
   const [err, setErr] = useState<string | null>(null)
   const [flyerBusy, setFlyerBusy] = useState(false)
+  const [placeAddr, setPlaceAddr] = useState('')
   // Remounts the route tool when a whole route is loaded into it.
   const [routeKey, setRouteKey] = useState(0)
   const [planned, setPlanned] = useState<{ stops: { lat: number; lng: number; label?: string }[]; chosen: number[] } | null>(null)
@@ -152,7 +166,8 @@ export default function DateEditor({ ride, date, dates, onSaved }: {
     setDirty(true)
   }
 
-  const reason = f.own && !f.route && !f.link.trim() ? 'Add a route or a link for this date, or pick the usual route' : null
+  const reason = f.own && !f.route && !f.link.trim() ? 'Add a route or a link for this date, or pick the usual route'
+    : f.own && f.route ? optionsProblem(f.route_options) : null
   const linkErr = !LINK_OK(f.link) || !LINK_OK(f.flyer_url ?? '')
 
   async function save() {
@@ -160,11 +175,19 @@ export default function DateEditor({ ride, date, dates, onSaved }: {
     setSaving(true)
     setErr(null)
     try {
-      const res = await saveDateDetails(date.id, {
+      // Where it starts first: anyone already coming hears about a new place.
+      if (f.place || f.usualPlace) {
+        await changeDate(date.id, f.place ? { meetup: f.place } : { resetMeetup: true })
+      }
+      await saveDateDetails(date.id, {
         title: f.title.trim() || null,
         description: f.description.trim() || null,
         flyer_url: f.flyer_url,
-        route: f.own ? routePayload(f.route, f.link.trim()) : null,
+        route: f.own ? {
+          ...routePayload(f.route, f.link.trim()),
+          route_name: f.route && f.route_options.length ? f.route_name.trim() || null : null,
+          route_options: f.route ? optionsPayload(f.route_options) : [],
+        } : null,
       })
       try { localStorage.removeItem(draftKey) } catch { /* ignore */ }
       setDirty(false)
@@ -182,9 +205,14 @@ export default function DateEditor({ ride, date, dates, onSaved }: {
     try { set('flyer_url', await uploadFlyer(file)) } catch (e) { setErr(errorText(e)) } finally { setFlyerBusy(false) }
   }
 
-  const meetLat = date.meetup_lat ?? ride.meetup_lat
-  const meetLng = date.meetup_lng ?? ride.meetup_lng
-  const meetName = date.meetup_name ?? ride.meetup_name
+  // The ride repeats on a pattern, so a different start is a change for this date; a ride
+  // whose organizer picks each date (Shift 01868) just has each date's own start.
+  const patterned = !!ride.ride_date || ride.frequency === 'daily' || (ride.days ?? []).length > 0
+  const usualSpot = ride.meetup_name || ride.meetup_address || 'the usual spot'
+  const meetLat = f.place?.lat ?? (f.usualPlace ? ride.meetup_lat : date.meetup_lat ?? ride.meetup_lat)
+  const meetLng = f.place?.lng ?? (f.usualPlace ? ride.meetup_lng : date.meetup_lng ?? ride.meetup_lng)
+  const meetName = f.place?.name ?? (f.usualPlace ? ride.meetup_name : date.meetup_name ?? ride.meetup_name)
+  const meetAddress = f.place?.address ?? (f.usualPlace ? ride.meetup_address : date.meetup_address ?? ride.meetup_address)
   const meetup = meetLat != null && meetLng != null ? { lat: meetLat, lng: meetLng, label: meetName || undefined } : null
   const usual = draftOf(ride)
 
@@ -211,6 +239,39 @@ export default function DateEditor({ ride, date, dates, onSaved }: {
       )}
 
       <div className="mt-6 grid grid-cols-[minmax(0,1fr)] gap-5">
+        <Card>
+          <SectionTitle hint={patterned
+            ? `Usually ${usualSpot}. A different place here is for this date only; anyone already coming hears about it.`
+            : 'Where people meet on this date.'}>Meeting place</SectionTitle>
+          <div className="grid gap-4">
+            <div className="flex items-start gap-2.5">
+              <MapPin className="mt-0.5 h-5 w-5 shrink-0 text-(--ev-accent)" aria-hidden />
+              <div className="min-w-0">
+                <p className="text-[16px] font-semibold text-(--ev-ink)">{meetName || meetAddress || 'No meeting place yet'}</p>
+                {meetName && meetAddress && meetAddress !== meetName && <p className="text-[14px] text-(--ev-ink-75)">{meetAddress}</p>}
+              </div>
+            </div>
+            <Field label={patterned ? 'A different place for this date' : 'Change the meeting place'} htmlFor="date-place" optional={patterned}>
+              <AddressAutocomplete value={placeAddr} onChange={setPlaceAddr} label="Meeting place" hideLabel placeholder="Search for a place"
+                onPlaceSelected={(p) => {
+                  setF((prev) => ({ ...prev, place: { name: p.address.split(',')[0], address: p.address, lat: p.lat, lng: p.lng }, usualPlace: false }))
+                  setDirty(true)
+                }} />
+            </Field>
+            {f.place && (
+              <Field label="What to call it" htmlFor="date-place-name">
+                <Input id="date-place-name" value={f.place.name} maxLength={120}
+                  onChange={(e) => set('place', { ...f.place!, name: e.target.value })} className="max-w-[420px]" />
+              </Field>
+            )}
+            {patterned && (date.place_moved || f.place) && !f.usualPlace && (
+              <Button size="sm" variant="ghost" className="w-fit" onClick={() => { setF((prev) => ({ ...prev, place: null, usualPlace: !!date.place_moved })); setPlaceAddr(''); setDirty(true) }}>
+                Go back to the usual meeting place
+              </Button>
+            )}
+          </div>
+        </Card>
+
         <Card>
           <SectionTitle>This date</SectionTitle>
           <div className="grid gap-4">
@@ -266,13 +327,15 @@ export default function DateEditor({ ride, date, dates, onSaved }: {
                 </Field>
               )}
               {plannedElsewhere && (
-                <Notice tone="info">This route starts somewhere other than this date&rsquo;s meeting point. To move the meeting point, use Change on the ride page.</Notice>
+                <Notice tone="info">This route starts somewhere other than this date&rsquo;s meeting place. Change the meeting place above if it should start there.</Notice>
               )}
               <RouteSection key={routeKey} route={f.route} onRoute={(r) => set('route', r)} meetup={meetup} pace={ride.pace ?? null} activity={ride.activity === 'walk' ? 'walk' : 'bike'} initialPlan={planned} initialImport={imported} />
               <Field label="Link to the route elsewhere" htmlFor="date-link" optional hint="Ride with GPS, Strava, Komoot or Google Maps, shown as a link."
                 error={!LINK_OK(f.link) ? 'Links start with https://' : null}>
                 <Input id="date-link" value={f.link} onChange={(e) => set('link', e.target.value)} placeholder="https://ridewithgps.com/routes/…" inputMode="url" />
               </Field>
+              <RouteOptions mainName={f.route_name} onMainName={(v) => set('route_name', v)} mainRoute={f.route}
+                options={f.route_options} onOptions={(o) => set('route_options', o)} meetup={meetup} pace={ride.pace ?? null} activity={ride.activity === 'walk' ? 'walk' : 'bike'} />
             </div>
           )}
         </Card>

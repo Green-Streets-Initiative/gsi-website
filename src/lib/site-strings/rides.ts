@@ -5,7 +5,7 @@ export const ridesStrings = defineStrings(
   {
     // schedule (lib/rides/public scheduleText / everyLabel)
     'sched.every_day': 'Every day',
-    'sched.no_days': 'No days set',
+    'sched.no_days': 'Dates vary',
     'sched.every': 'Every {days}',
     'sched.every_other': 'Every other {days}',
     'sched.monthly': '{ord} {day} of the month',
@@ -229,6 +229,7 @@ export const ridesStrings = defineStrings(
 
     // map
     'route_map': 'Route map for {name}',
+    'route_options': 'Routes to pick from',
     'meet_at': 'Meet at {place}',
     'the_start': 'the start',
     'get_there': 'Get there by bike or T',
@@ -411,7 +412,7 @@ export const ridesStrings = defineStrings(
   {
     es: {
       'sched.every_day': 'Todos los días',
-      'sched.no_days': 'Sin días',
+      'sched.no_days': 'Fechas variables',
       'sched.every': 'Cada {days}',
       'sched.every_other': '{days} cada dos semanas',
       'sched.monthly': '{ord} {day} de cada mes',
@@ -629,6 +630,7 @@ export const ridesStrings = defineStrings(
       'copy_prompt': 'Copia el enlace del paseo:',
 
       'route_map': 'Mapa de la ruta de {name}',
+      'route_options': 'Rutas para elegir',
       'meet_at': 'Punto de encuentro: {place}',
       'the_start': 'la salida',
       'get_there': 'Llega en bici o en el T',
@@ -804,7 +806,7 @@ export const ridesStrings = defineStrings(
     },
     'pt-BR': {
       'sched.every_day': 'Todos os dias',
-      'sched.no_days': 'Sem dias definidos',
+      'sched.no_days': 'Datas variadas',
       'sched.every': 'Semanal: {days}',
       'sched.every_other': '{days} a cada duas semanas',
       'sched.monthly': '{ord} {day} do mês',
@@ -1022,6 +1024,7 @@ export const ridesStrings = defineStrings(
       'copy_prompt': 'Copie o link do passeio:',
 
       'route_map': 'Mapa da rota de {name}',
+      'route_options': 'Rotas para escolher',
       'meet_at': 'Ponto de encontro: {place}',
       'the_start': 'a largada',
       'get_there': 'Chegue de bicicleta ou de T',
@@ -1197,7 +1200,7 @@ export const ridesStrings = defineStrings(
     },
     'zh-Hans': {
       'sched.every_day': '每天',
-      'sched.no_days': '未设日期',
+      'sched.no_days': '日期不固定',
       'sched.every': '每{days}',
       'sched.every_other': '隔周{days}',
       'sched.monthly': '每月{ord}{day}',
@@ -1415,6 +1418,7 @@ export const ridesStrings = defineStrings(
       'copy_prompt': '复制骑行链接：',
 
       'route_map': '{name}的路线图',
+      'route_options': '可选路线',
       'meet_at': '集合地点：{place}',
       'the_start': '起点',
       'get_there': '骑车或乘 T 前往',

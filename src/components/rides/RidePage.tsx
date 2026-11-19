@@ -33,6 +33,7 @@ import {
   dateStatusLine,
   dayShort,
   everyLabel,
+  routeOptionName,
   scheduleText,
   type HelperJob,
   type PublicRide,
@@ -529,14 +530,48 @@ export default function RidePage({ ride, host = null, hostPerson = null, organiz
     : undefined, [rawPieces])
   // The stretch someone tapped, on the map or in the street photos: lit on both.
   const [street, setStreet] = useState<number | null>(null)
+  // More than one route from the same start (Shift 01868): the 5K and the 10K,
+  // the 25, 34 and 47 miles. The main route keeps the street colors and the
+  // live map; picking another shows its line and distance.
+  const optSrc = own ? selected?.route ?? null : ride
+  const routeOpts = (() => {
+    const others = (optSrc?.route_options ?? []).filter((o) => (o.route_waypoints?.length ?? 0) >= 2)
+    if (!others.length || route.length < 2) return []
+    const label = (name: string | null | undefined, mi: number | null) => {
+      const dist = routeOptionName(null, mi, walk)
+      const named = routeOptionName(name, mi, walk)
+      return named === dist ? dist : `${named} · ${dist}`
+    }
+    return [
+      { label: label(optSrc?.route_name, miles), line: route },
+      ...others.map((o) => {
+        const mi = o.route_miles ?? routeMiles(o.route_waypoints)
+        return { label: label(o.name, mi), line: o.route_waypoints }
+      }),
+    ]
+  })()
+  const [routePickRaw, setRoutePick] = useState(0)
+  const routePick = routeOpts[routePickRaw] ? routePickRaw : 0
+  const mapLine = routePick > 0 ? routeOpts[routePick].line : route
   // The page leads with a picture: a photo from the last ride when there is one, else the map.
   const heroPhoto = photos?.album.photos.find((p) => p.kind === 'photo' && p.status === 'ok' && p.url && (p.width ?? 1) >= (p.height ?? 1)) ?? null
   const mapCard = hasMap && place ? (
             <div className="overflow-hidden rounded-2xl border border-(--ev-line-mid) bg-(--ev-card) shadow-(--ev-shadow)">
+              {routeOpts.length > 1 && (
+                <div className="flex flex-wrap gap-2 border-b border-(--ev-line) p-3" role="group" aria-label={t('route_options')}>
+                  {routeOpts.map((o, i) => (
+                    <button key={i} type="button" aria-pressed={routePick === i} onClick={() => { setRoutePick(i); setStreet(null) }}
+                      className={`min-h-[44px] rounded-full border px-4 text-[15px] font-semibold transition-colors ${
+                        routePick === i ? 'border-(--ev-ink) bg-(--ev-ink) text-white' : 'border-(--ev-line-mid) text-(--ev-ink) hover:border-(--ev-line-stronger)'}`}>
+                      {o.label}
+                    </button>
+                  ))}
+                </div>
+              )}
               <div className={route.length >= 2 ? 'h-[230px] sm:h-[360px]' : 'h-56 sm:h-64'}>
                 {route.length >= 2 ? (
-                  <RouteMap line={route} stops={mapStops} meetup={{ lat: place.meetup_lat!, lng: place.meetup_lng! }} pieces={pieces} pick={false}
-                    focus={street != null ? { kind: 'piece', index: street } : null} onPieceClick={(i) => setStreet((cur) => (cur === i ? null : i))}
+                  <RouteMap key={routePick} line={mapLine} stops={routePick === 0 ? mapStops : []} meetup={{ lat: place.meetup_lat!, lng: place.meetup_lng! }} pieces={routePick === 0 ? pieces : undefined} pick={false}
+                    focus={street != null && routePick === 0 ? { kind: 'piece', index: street } : null} onPieceClick={(i) => setStreet((cur) => (cur === i ? null : i))}
                     className="h-full w-full" label={t('route_map', { name: ride.name })} />
                 ) : (
                   <EventMap lat={place.meetup_lat!} lng={place.meetup_lng!} label={place.meetup_name ?? undefined} />

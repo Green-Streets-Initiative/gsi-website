@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { CalendarX, Check, Copy, PauseCircle, PlayCircle, Radio, Route as RouteIcon } from 'lucide-react'
+import { CalendarPlus, CalendarX, Check, Copy, PauseCircle, PlayCircle, Radio, Route as RouteIcon } from 'lucide-react'
 import { ago, clock } from '@/lib/rides/public'
 import { errorText, setDateCanceled } from '@/lib/organizers/api'
 import { UPDATE_KIND_LABEL, dateLabel, plural, todayKey } from '@/lib/organizers/ride-words'
@@ -15,6 +15,7 @@ import PostUpdate from './PostUpdate'
 import { NoMeetupHint, RideDayRiders, useRideDay, useRideTime } from './RideDay'
 import { ridePageUrl, useRide } from './RideFrame'
 import { SkipDatesDialog } from './SkipDates'
+import { AddDateDialog } from './AddedDates'
 import { StopRideDialog, resume } from './StopRide'
 import { Badge, Button, Card, Empty, Notice, SectionTitle, Tabs, Toast, copyText, cx, tabPanel } from './ui'
 
@@ -150,6 +151,8 @@ export default function RideOverview() {
   // "Ask for help" opens the update box with the ask written (Shift 01744).
   const [askNote, setAskNote] = useState<string | null>(null)
   const [skipping, setSkipping] = useState(false)
+  // Add one date (Shift 01868): a Sunday ride for a Saturday group, or the next date of a ride with no pattern.
+  const [adding, setAdding] = useState(false)
   // Just back from a break: offer the "it's back" note, ready to send.
   const [backOffer, setBackOffer] = useState(false)
   // Head counts (Shift 01725): the date being counted in the dialog, and
@@ -181,6 +184,7 @@ export default function RideOverview() {
     setChanging(null)
     setStopping(false)
     setSkipping(false)
+    setAdding(false)
     setCounting(null)
     void reload()
   }
@@ -341,7 +345,10 @@ export default function RideOverview() {
                   {!ended ? (
                     <div className="flex flex-wrap gap-1.5">
                       {/* Skip dates beyond the ones listed: writes the ride itself, so its organizer only. */}
-                      {detail.my_role === 'organizer' && !r.ride_date && (
+                      {!r.ride_date && !draft && (
+                        <Button size="sm" variant="ghost" onClick={() => setAdding(true)}><CalendarPlus className="h-4 w-4" aria-hidden />Add a date</Button>
+                      )}
+                      {detail.my_role === 'organizer' && !r.ride_date && (r.frequency === 'daily' || (r.days ?? []).length > 0) && (
                         <Button size="sm" variant="ghost" onClick={() => setSkipping(true)}><CalendarX className="h-4 w-4" aria-hidden />Skip dates further out</Button>
                       )}
                       {onBreak
@@ -358,7 +365,7 @@ export default function RideOverview() {
                 <p className="text-[15px] text-(--ev-ink-85)">No later dates yet.</p>
               ) : later.length === 0 ? (
                 <Empty title={ended ? 'This ride has ended' : 'No upcoming dates'}>
-                  {ended ? 'Its history and turnout are under Past dates.' : r.ride_date ? 'This one-off ride has happened. Set up a new ride for the next one.' : 'No upcoming dates. Check When and the season dates in Edit ride.'}
+                  {ended ? 'Its history and turnout are under Past dates.' : r.ride_date ? 'This one-off ride has happened. Set up a new ride for the next one.' : (r.frequency === 'daily' || (r.days ?? []).length > 0 ? 'No upcoming dates. Check When and the season dates in Edit ride, or add a date.' : 'No upcoming dates. Add the next one with Add a date.')}
                 </Empty>
               ) : (
                 <ul>
@@ -411,6 +418,7 @@ export default function RideOverview() {
       {changing && <ChangeDateDialog key={changing.id} date={changing} ride={r} onClose={() => setChanging(null)} onDone={done} />}
       {counting && <HeadcountDialog d={counting} onClose={() => setCounting(null)} onSaved={done} />}
       {detail.can_manage && <StopRideDialog ride={r} open={stopping} onClose={() => setStopping(false)} onDone={done} />}
+      {adding && <AddDateDialog ride={r} open={adding} onClose={() => setAdding(false)} onDone={done} />}
       {skipping && <SkipDatesDialog ride={r} dates={detail.occurrences} open={skipping} onClose={() => setSkipping(false)} onDone={done} />}
     </div>
   )

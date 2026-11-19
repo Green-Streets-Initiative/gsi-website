@@ -25,9 +25,11 @@ export function scheduleDates(
   from: string,
   { limit = 4, horizonDays = 370, includeSkipped = false, today = from }: { limit?: number; horizonDays?: number; includeSkipped?: boolean; today?: string } = {},
 ): string[] {
-  // A one-time ride keeps its date however far off it is.
+  // A one-time ride keeps its date however far off it is; so does a date added by hand (Shift 01868).
   if (s.ride_date) return s.ride_date >= from && isRideDay(s, s.ride_date, today, includeSkipped) ? [s.ride_date] : []
-  return rideDays(s, from, addDayKey(from, horizonDays), { limit, includeSkipped, anchorFallback: today })
+  const far = (s.extra_dates ?? []).filter((d) => d > addDayKey(from, horizonDays) && isRideDay(s, d, today, includeSkipped))
+  const near = rideDays(s, from, addDayKey(from, horizonDays), { limit, includeSkipped, anchorFallback: today })
+  return far.length ? [...near, ...far].sort().slice(0, limit) : near
 }
 
 /**
