@@ -8,7 +8,7 @@ import { comfortableShare } from '@/components/commute/calm-route'
 import { clock, scheduleText } from '@/lib/rides/public'
 import { routeMiles } from '@/lib/organizers/route-geo'
 import AddressAutocomplete from '@/components/AddressAutocomplete'
-import { errorText, getRideFundFor, getSeriesDestination, saveRide, saveRideDestination, setEndShop, setHelperJobs, setRepliesToOrganizer, uploadFlyer, type FeedTarget, type RideFundHere } from '@/lib/organizers/api'
+import { errorText, getRide, getRideFundFor, getSeriesDestination, saveRide, saveRideDestination, setEndShop, setHelperJobs, setRepliesToOrganizer, uploadFlyer, type FeedTarget, type RideFundHere } from '@/lib/organizers/api'
 import { takePrefill } from '@/lib/organizers/first-ride'
 import { decodePlan, draftOf, routePayload } from '@/lib/organizers/saved-route'
 import { DAY_LABELS, TAG_OPTIONS, WEEK_OPTIONS, dateLabel, paceOptionsFor, todayKey, travelMph, type Activity } from '@/lib/organizers/ride-words'
@@ -21,17 +21,21 @@ import EndShopCard from './EndShopCard'
 import GoingToEvent from './GoingToEvent'
 import { routeCrossings, type RouteCrossing } from '@/lib/organizers/crossings'
 import OrgPicker from './OrgPicker'
+import { AddedDates } from './AddedDates'
 import RouteMap from './RouteMap'
+import RouteOptions, { optionsOf, optionsPayload, optionsProblem, type OptionDraft } from './RouteOptions'
 import RouteSection from './RouteSection'
-import { Button, Card, Field, Input, Notice, Select, SectionTitle, Textarea, Toggle, cx } from './ui'
+import { Button, Card, Field, Input, Notice, Select, SectionTitle, Spinner, Textarea, Toggle, cx } from './ui'
 
 interface Form {
   name: string
   description: string
   flyer_url: string | null
-  /** 'undated': a one-off with no date yet, saved as a draft (Shift 01833). */
-  schedule: 'one_time' | 'recurring' | 'undated'
+  /** 'undated': a one-off with no date yet, saved as a draft (Shift 01833). 'dates': no pattern, the organizer picks each date (Shift 01868). */
+  schedule: 'one_time' | 'recurring' | 'dates' | 'undated'
   ride_date: string
+  /** Dates added one at a time (Shift 01868): a repeating ride's extra dates, or every date of a 'dates' ride. */
+  extra_dates: string[]
   frequency: Frequency
   days: number[]
   week_of_month: number
@@ -45,6 +49,9 @@ interface Form {
   meetup_lng: number | null
   route: RouteDraft | null
   route_google_maps_url: string
+  /** The main route's name and up to two more routes (Shift 01868). */
+  route_name: string
+  route_options: OptionDraft[]
   /** A bike ride or a group walk (Shift 01660). */
   activity: Activity
   pace: Pace | ''
@@ -72,10 +79,10 @@ const hhmm = (t: string | null | undefined) => (t ? t.slice(0, 5) : '')
 function blank(): Form {
   return {
     name: '', description: '', flyer_url: null,
-    schedule: 'recurring', ride_date: '', frequency: 'weekly', days: [6], week_of_month: 1,
+    schedule: 'recurring', ride_date: '', extra_dates: [], frequency: 'weekly', days: [6], week_of_month: 1,
     season_start: '', season_end: '', start_time: '10:00', end_time: '',
     meetup_name: '', meetup_address: '', meetup_lat: null, meetup_lng: null,
-    route: null, route_google_maps_url: '',
+    route: null, route_google_maps_url: '', route_name: '', route_options: [],
     activity: 'bike', pace: '', no_drop: false, tags: [], languages: [],
     registration_url: '', contact_url: '', replies_to_organizer: false, live_sharing: 'members',
     visibility: 'public', event_organizer_id: '', organizer_name: '', organizer_url: '',
@@ -86,7 +93,11 @@ function blank(): Form {
 function fromRow(r: RideRow): Form {
   return {
     name: r.name, description: r.description ?? '', flyer_url: r.flyer_url,
-    schedule: r.ride_date ? 'one_time' : r.status === 'draft' ? 'undated' : 'recurring', ride_date: r.ride_date ?? '',
+    schedule: r.ride_date ? 'one_time' : r.status === 'draft' ? 'undated'
+      : r.frequency !== 'daily' && !(r.days ?? []).length ? 'dates' : 'recurring',
+    ride_date: r.ride_date ?? '',
+    // Dates already past have their place on the ride page; the form keeps the ones ahead.
+    extra_dates: (r.extra_dates ?? []).filter((d) => d >= todayKey()),
     frequency: r.frequency, days: r.days ?? [], week_of_month: r.week_of_month ?? 1,
     season_start: r.season_start ?? '', season_end: r.season_end ?? '',
     start_time: hhmm(r.start_time), end_time: hhmm(r.end_time),
@@ -94,6 +105,7 @@ function fromRow(r: RideRow): Form {
     meetup_lat: r.meetup_lat, meetup_lng: r.meetup_lng,
     route: draftOf(r),
     route_google_maps_url: r.route_google_maps_url ?? '',
+    route_name: r.route_name ?? '', route_options: optionsOf(r.route_options),
     activity: r.activity === 'walk' ? 'walk' : 'bike',
     pace: r.pace ?? '', no_drop: !!r.no_drop, tags: r.tags ?? [], languages: rowLanguages(r),
     registration_url: r.registration_url ?? '', contact_url: r.contact_url ?? '',
@@ -105,6 +117,17 @@ function fromRow(r: RideRow): Form {
     end_location_id: r.end_location_id ?? null,
     helper_jobs: r.helper_jobs ?? null,
   }
+}
+
+/**
+ * A new ride started from an earlier one (Keith 2026-11-19: groups that run a
+ * few one-offs a year start the next from the last). Everything comes along
+ * but its dates, its flyer (the organizer is asked) and the event it went to;
+ * its other organizers stay with the old ride.
+ */
+function copyOf(r: RideRow): Form {
+  const base = fromRow(r)
+  return { ...base, ride_date: '', extra_dates: [], season_start: '', season_end: '', flyer_url: null }
 }
 
 /** A ride saved before 01697 said Spanish with its tags; read that as its languages. */
@@ -130,11 +153,14 @@ function toPayload(f: Form): Record<string, unknown> {
   return {
     name: f.name, description: f.description, flyer_url: f.flyer_url,
     schedule: f.schedule === 'undated' ? 'one_time' : f.schedule, ride_date: f.schedule === 'undated' ? null : f.ride_date || null, frequency: f.frequency,
-    days: f.frequency === 'daily' ? [] : f.days, week_of_month: f.frequency === 'monthly' ? f.week_of_month : null,
+    days: f.frequency === 'daily' || f.schedule === 'dates' ? [] : f.days, week_of_month: f.frequency === 'monthly' ? f.week_of_month : null,
+    extra_dates: f.schedule === 'recurring' || f.schedule === 'dates' ? f.extra_dates : [],
     season_start: f.season_start || null, season_end: f.season_end || null,
     start_time: f.start_time, end_time: f.end_time || null,
     meetup_name: f.meetup_name, meetup_address: f.meetup_address, meetup_lat: f.meetup_lat, meetup_lng: f.meetup_lng,
     ...routePayload(f.route, f.route_google_maps_url),
+    route_name: f.route_options.length ? f.route_name.trim() || null : null,
+    route_options: f.route ? optionsPayload(f.route_options) : [],
     activity: f.activity, pace: f.pace || null, no_drop: f.no_drop, tags: languageTags(f.tags, f.languages), languages: f.languages,
     registration_url: f.registration_url, contact_url: f.contact_url, live_sharing: f.live_sharing,
     visibility: f.visibility, event_organizer_id: f.event_organizer_id || null,
@@ -164,10 +190,13 @@ function blocking(f: Form): { step: Step; text: string } | null {
   if (!f.name.trim()) return { step: 'ride', text: f.activity === 'walk' ? 'Give the walk a name' : 'Give the ride a name' }
   if (f.schedule === 'one_time' && !f.ride_date) return { step: 'when', text: 'Pick a date' }
   if (f.schedule === 'recurring' && f.frequency !== 'daily' && f.days.length === 0) return { step: 'when', text: 'Pick at least one day' }
+  if (f.schedule === 'dates' && f.extra_dates.length === 0) return { step: 'when', text: 'Add at least one date' }
   if (!f.start_time) return { step: 'when', text: 'Pick a start time' }
   if (f.end_time && f.end_time <= f.start_time) return { step: 'when', text: 'Set "Back by" to after the start time' }
   if (f.schedule === 'recurring' && f.season_start && f.season_end && f.season_end < f.season_start) return { step: 'when', text: 'Set the season end after its start' }
   if (f.meetup_lat == null || f.meetup_lng == null) return { step: 'where', text: 'Pick a meeting point' }
+  const opt = f.route ? optionsProblem(f.route_options) : null
+  if (opt) return { step: 'route', text: opt }
   return null
 }
 
@@ -259,8 +288,10 @@ function Preview({ f, route, hostName }: { f: Form; route: RouteDraft | null; ho
   const walk = f.activity === 'walk'
   const sched = f.schedule === 'undated'
     ? `No date yet${f.start_time ? ` · ${clock(f.start_time)}` : ''}`
-    : f.schedule === 'one_time'
-    ? (f.ride_date ? scheduleText({ ride_date: f.ride_date, frequency: null, days: null, week_of_month: null, start_time: f.start_time || null }) : null)
+    : f.schedule === 'one_time' || f.schedule === 'dates'
+    ? ((f.schedule === 'dates' ? f.extra_dates[0] : f.ride_date)
+      ? scheduleText({ ride_date: (f.schedule === 'dates' ? f.extra_dates[0] : f.ride_date)!, frequency: null, days: null, week_of_month: null, start_time: f.start_time || null })
+      : null)
     : (f.frequency === 'daily' || f.days.length
       ? scheduleText({ ride_date: null, frequency: f.frequency, days: f.days, week_of_month: f.week_of_month, start_time: f.start_time || null })
       : null)
@@ -431,6 +462,10 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
   // ?from=calendar when the form is filled in from their calendar listing.
   const [first, setFirst] = useState(false)
   const [fromCalendar, setFromCalendar] = useState(false)
+  // Started from an earlier ride (?copy=<id>): its name, and its flyer to offer.
+  const [copied, setCopied] = useState<{ name: string; flyer: string | null } | null>(null)
+  const [copying, setCopying] = useState(false)
+  const [copyErr, setCopyErr] = useState<string | null>(null)
 
   // Unsaved work survives a closed tab or a lost sign-in.
   useEffect(() => {
@@ -445,6 +480,22 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
         url.searchParams.delete('from')
         url.searchParams.delete('first')
         window.history.replaceState({}, '', url.pathname + url.search + url.hash)
+      }
+      const copyId = params.get('copy')
+      if (copyId) {
+        const url = new URL(window.location.href)
+        url.searchParams.delete('copy')
+        window.history.replaceState({}, '', url.pathname + url.search + url.hash)
+        setCopying(true)
+        getRide(copyId).then((d) => {
+          // Its helper jobs come along as they were, not the starting set.
+          helpersTouched.current = true
+          setF(copyOf(d.ride))
+          setDirty(true)
+          setCopied({ name: d.ride.name, flyer: d.ride.flyer_url })
+        }, (e) => setCopyErr(errorText(e, "We couldn't copy that ride. Fill this one in, or go back to Your rides and try again.")))
+          .finally(() => setCopying(false))
+        return
       }
       const prefill = calendar ? takePrefill() : null
       if (prefill) {
@@ -547,6 +598,7 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
     setDirty(false)
     setRestored(false)
     setFromCalendar(false)
+    setCopied(null)
   }
 
   const orgs = me?.orgs ?? []
@@ -664,12 +716,14 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
   // date isn't the one they meant.
   const today = todayKey()
   const sched = {
-    ride_date: null, frequency: f.frequency, days: f.frequency === 'daily' ? [] : f.days,
+    ride_date: null, frequency: f.frequency, days: f.frequency === 'daily' || f.schedule === 'dates' ? [] : f.days,
+    extra_dates: f.schedule === 'recurring' || f.schedule === 'dates' ? f.extra_dates : [],
     week_of_month: f.frequency === 'monthly' ? f.week_of_month : null,
     season_start: f.season_start || null, season_end: f.season_end || null,
     skip_dates: ride?.skip_dates ?? [], break_until: ride?.break_until ?? null, created_at: ride?.created_at ?? null,
   }
-  const recurringReady = f.schedule === 'recurring' && (f.frequency === 'daily' || f.days.length > 0)
+  const recurringReady = (f.schedule === 'recurring' && (f.frequency === 'daily' || f.days.length > 0))
+    || (f.schedule === 'dates' && f.extra_dates.length > 0)
   const firstDates = recurringReady ? scheduleDates(sched, today, { limit: 4 }) : []
   // Every other week: which of the next two ride days comes first. The
   // server counts the weeks from the season start, so a pick sets it.
@@ -703,6 +757,8 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
   }
   const hostPreview = f.event_organizer_id ? (f.organizer_name || null) : (me?.first_name ?? null)
 
+  if (copying) return <Spinner label="Copying the ride" />
+
   return (
     <div className="pb-28">
       <Link href={ride ? `/organizers/rides/${ride.id}` : '/organizers'} className="mb-3 inline-flex items-center gap-1.5 text-[14px] font-semibold text-(--ev-ink-80) hover:text-(--ev-ink)">
@@ -733,6 +789,20 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
             <button type="button" className="font-semibold underline" onClick={discardDraft}>Start from scratch instead</button>
           </Notice>
         </div>
+      )}
+
+      {copied && step === STEPS[0].id && (
+        <div className="mt-4">
+          <Notice tone="good">
+            Copied from {copied.name}, all but its dates. Pick when this one happens and check each part, then save.
+            Its other organizers stay on the old {noun}; add them on the new one&rsquo;s Organizers tab.{' '}
+            <button type="button" className="font-semibold underline" onClick={discardDraft}>Start from scratch instead</button>
+          </Notice>
+        </div>
+      )}
+
+      {copyErr && (
+        <div className="mt-4"><Notice tone="warn">{copyErr}</Notice></div>
       )}
 
       {restored && (
@@ -780,13 +850,22 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
                   <Button size="sm" variant="ghost" onClick={() => set('flyer_url', null)}><Trash2 className="h-4 w-4" aria-hidden />Remove</Button>
                 </div>
               ) : (
-                <>
+                <div className="flex flex-wrap items-center gap-3">
+                  {/* A copied ride asks before bringing its flyer along. */}
+                  {copied?.flyer && (
+                    <button type="button" onClick={() => set('flyer_url', copied.flyer)}
+                      className="inline-flex min-h-[44px] items-center gap-2.5 rounded-[10px] border border-(--ev-line-strong) bg-white py-1.5 pl-1.5 pr-4 text-[15px] font-semibold text-(--ev-ink) hover:bg-(--ev-panel)">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={copied.flyer} alt="" className="h-10 w-10 rounded-md border border-(--ev-line-mid) object-cover" />
+                      Use the same flyer
+                    </button>
+                  )}
                   <input id="flyer" type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="sr-only"
                     onChange={(e) => { const file = e.target.files?.[0]; if (file) void onFlyer(file); e.target.value = '' }} />
                   <label htmlFor="flyer" className={cx('inline-flex min-h-[44px] cursor-pointer items-center gap-1.5 rounded-[10px] border border-(--ev-line-strong) bg-white px-4 text-[15px] font-semibold text-(--ev-ink) hover:bg-(--ev-panel)', flyerBusy && 'pointer-events-none opacity-60')}>
-                    <ImagePlus className="h-4 w-4" aria-hidden />{flyerBusy ? 'Uploading…' : 'Add a flyer'}
+                    <ImagePlus className="h-4 w-4" aria-hidden />{flyerBusy ? 'Uploading…' : copied?.flyer ? 'Add a new flyer' : 'Add a flyer'}
                   </label>
-                </>
+                </div>
               )}
             </Field>
           </div>
@@ -799,14 +878,26 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
           <div className="grid gap-4">
             <div className="flex flex-wrap gap-2" role="group" aria-label="Schedule">
               <Toggle on={f.schedule === 'recurring'} onClick={() => set('schedule', 'recurring')}>Repeats</Toggle>
-              <Toggle on={f.schedule === 'one_time'} onClick={() => set('schedule', 'one_time')}>One date</Toggle>
+              {/* Most groups don't ride on a fixed pattern (Shift 01868): they add each date. */}
+              <Toggle on={f.schedule === 'dates'} onClick={() => {
+                setF((p) => ({ ...p, schedule: 'dates', extra_dates: p.extra_dates.length || !p.ride_date || p.ride_date < todayKey() ? p.extra_dates : [p.ride_date] }))
+                setDirty(true)
+              }}>Pick each date</Toggle>
+              <Toggle on={f.schedule === 'one_time'} onClick={() => {
+                setF((p) => ({ ...p, schedule: 'one_time', ride_date: p.ride_date || (p.schedule === 'dates' ? p.extra_dates[0] ?? '' : '') }))
+                setDirty(true)
+              }}>One date</Toggle>
               {/* Nothing planned yet: save it now and add the date later (Shift 01833). A live ride keeps its date. */}
               {(!ride || ride.status === 'draft') && (
                 <Toggle on={f.schedule === 'undated'} onClick={() => set('schedule', 'undated')}>No date yet</Toggle>
               )}
             </div>
 
-            {f.schedule === 'undated' ? (
+            {f.schedule === 'dates' ? (
+              <AddedDates id="ride-dates" label="Add a date" dates={f.extra_dates} onChange={(d) => set('extra_dates', d)}
+                hint={`For a group that rides on different days. Add each date now, or more later from the ${noun} page.`}
+                error={tried && f.extra_dates.length === 0 ? 'Add at least one date' : null} />
+            ) : f.schedule === 'undated' ? (
               <p className="text-[17px] text-(--ev-ink-85)">
                 We&rsquo;ll keep it on your rides, off the calendar. When you add the date, it gets its own page to share.
               </p>
@@ -856,6 +947,9 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
                     <Input id="season-end" type="date" value={f.season_end} onChange={(e) => set('season_end', e.target.value)} />
                   </Field>
                 </div>
+                {/* A date off the usual days (Shift 01868): a Sunday ride for a Saturday group. */}
+                <AddedDates id="extra-dates" label="Extra dates" optional dates={f.extra_dates} onChange={(d) => set('extra_dates', d)}
+                  hint={`Off the usual days, like a Sunday ${noun} for a Saturday group.`} />
                 {starts && (
                   <Field label="Which week is first?">
                     <div className="flex flex-wrap gap-2" role="group" aria-label="First week">
@@ -957,6 +1051,8 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
               <Input id="route-link" value={f.route_google_maps_url} onChange={(e) => set('route_google_maps_url', e.target.value)} placeholder="https://www.strava.com/routes/…" inputMode="url" />
             </Field>
           </div>
+          <RouteOptions mainName={f.route_name} onMainName={(v) => set('route_name', v)} mainRoute={f.route}
+            options={f.route_options} onOptions={(o) => set('route_options', o)} meetup={meetup} pace={f.pace || null} activity={f.activity} />
           {/* Live location sits with the route, on by default (Keith 2026-11-07:
               high value to ride leaders, and it was off and hidden). Same as the app. */}
           <div className="mt-5 rounded-xl border border-(--ev-line-mid) bg-(--ev-panel) p-4">

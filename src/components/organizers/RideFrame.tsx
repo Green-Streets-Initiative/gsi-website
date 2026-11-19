@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
-import { ArrowLeft, ExternalLink, MessageSquareText } from 'lucide-react'
+import { ArrowLeft, CopyPlus, ExternalLink, MessageSquareText } from 'lucide-react'
 import { errorText, getRide } from '@/lib/organizers/api'
 import { loadDatePhotos, photoDates } from '@/lib/organizers/photos'
 import type { RideDetail } from '@/lib/organizers/types'
@@ -33,7 +33,7 @@ export default function RideFrame({ id, children }: { id: string; children: Reac
   const [detail, setDetail] = useState<RideDetail | null>(null)
   const [err, setErr] = useState<string | null>(null)
   const path = usePathname()
-  const { assistant } = useConsole()
+  const { assistant, me } = useConsole()
 
   const reload = useCallback(async () => {
     try {
@@ -118,6 +118,13 @@ export default function RideFrame({ id, children }: { id: string; children: Reac
                   className="inline-flex min-h-[40px] items-center gap-1.5 rounded-[10px] border border-(--ev-line-strong) bg-white px-3.5 text-[14px] font-semibold text-(--ev-ink) hover:bg-(--ev-panel)">
                   <MessageSquareText className="h-4 w-4" aria-hidden />Ask about this {thing}
                 </button>
+              )}
+              {/* The next one starts from this one: everything but its dates (Keith 2026-11-19). */}
+              {me?.can_create && (
+                <Link href={`/organizers/rides/new?copy=${r.id}`}
+                  className="inline-flex min-h-[40px] items-center gap-1.5 rounded-[10px] border border-(--ev-line-strong) bg-white px-3.5 text-[14px] font-semibold text-(--ev-ink) hover:bg-(--ev-panel)">
+                  <CopyPlus className="h-4 w-4" aria-hidden />Copy this {thing}
+                </Link>
               )}
               {/* A draft has no page until it has a date (Shift 01833). */}
               {r.status !== 'draft' && (

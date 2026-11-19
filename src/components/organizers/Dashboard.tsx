@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
-import { ArrowUp, CalendarDays, CalendarHeart, Check, ChevronRight, MapPin, Megaphone, MessageSquareText, Plus, Ticket, Users } from 'lucide-react'
+import { ArrowUp, CalendarDays, CalendarHeart, Check, ChevronRight, CopyPlus, MapPin, Megaphone, MessageSquareText, Plus, Ticket, Users } from 'lucide-react'
 import { ago, clock, scheduleText } from '@/lib/rides/public'
 import { errorText, getRides, getSeriesDestination, type FeedTarget } from '@/lib/organizers/api'
 import { UPDATE_KIND_LABEL, dateLabel, plural, todayKey } from '@/lib/organizers/ride-words'
@@ -62,7 +62,7 @@ function DateChip({ d, rideId, phoneHidden }: { d: NextDate; rideId: string; pho
 }
 
 /** One ride as a row: what it is, its next dates, and the two things you do from here. */
-function RideRow({ r, goingTo }: { r: DashboardRide; goingTo?: FeedTarget | null }) {
+function RideRow({ r, goingTo, canCopy }: { r: DashboardRide; goingTo?: FeedTarget | null; canCopy?: boolean }) {
   const over = r.status === 'archived' || (!!r.ride_date && r.next_dates.length === 0)
   const draft = r.status === 'draft'
   const canPost = !over && !draft && (!r.ride_date || r.next_dates.length > 0)
@@ -101,6 +101,12 @@ function RideRow({ r, goingTo }: { r: DashboardRide; goingTo?: FeedTarget | null
           {canPost && (
             <Link href={`/organizers/rides/${r.id}?post=1`} className="inline-flex min-h-[44px] items-center gap-1.5 rounded-[10px] border border-(--ev-line-strong) bg-white px-3.5 text-[14px] font-semibold text-(--ev-ink) hover:bg-(--ev-panel)">
               <Megaphone className="h-4 w-4" aria-hidden />Post an update
+            </Link>
+          )}
+          {/* An ended ride starts the next one, filled in from this one. */}
+          {over && canCopy && (
+            <Link href={`/organizers/rides/new?copy=${r.id}`} className="inline-flex min-h-[44px] items-center gap-1.5 rounded-[10px] border border-(--ev-line-strong) bg-white px-3.5 text-[14px] font-semibold text-(--ev-ink) hover:bg-(--ev-panel)">
+              <CopyPlus className="h-4 w-4" aria-hidden />Run it again
             </Link>
           )}
           <Link href={`/organizers/rides/${r.id}`} className="inline-flex min-h-[44px] items-center gap-1 rounded-[10px] bg-(--ev-ink) px-3.5 text-[14px] font-semibold text-white hover:opacity-90">
@@ -392,7 +398,7 @@ export default function Dashboard() {
           <div {...tabPanel('rides', shown)} className="pt-4">
             {shown === 'all' && <p className="mb-3 text-[14px] text-(--ev-ink-75)">Every group ride on Shift. You see these as a GSI admin.</p>}
             {list.length > 0 ? (
-              <ul className="space-y-3">{list.map((r) => <RideRow key={r.id} r={r} goingTo={goingTo[r.id]} />)}</ul>
+              <ul className="space-y-3">{list.map((r) => <RideRow key={r.id} r={r} goingTo={goingTo[r.id]} canCopy={!!me?.can_create} />)}</ul>
             ) : (
               <Empty title="Nothing coming up" action={newRide}>
                 {me?.can_create ? 'Set up the next one: a one-off or a regular ride, with its own page to share.' : 'When an organizer adds you as a co-organizer, their ride shows up here.'}
