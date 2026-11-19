@@ -172,8 +172,8 @@ function SignIn() {
       <div className="order-3 md:order-none md:col-start-1 md:row-start-2 md:self-start">
         <figure className="overflow-hidden rounded-2xl border border-(--ev-line-mid) bg-white">
           <img
-            src="/organizer-kit/ride-page-wide.jpg"
-            alt="A ride page on a phone: the route on a map colored by kind of bike lane, the dates to pick from with the weather, and street photos along the route"
+            src="/organizer-kit/signin-route-planner.jpg"
+            alt="A ride page on a phone beside the route planner: the route over a map of bike lanes and paths, its distance, climbing and miles in protected and painted bike lanes, and a street-by-street list"
             width={1000} height={460}
             className="block h-auto w-full"
           />
