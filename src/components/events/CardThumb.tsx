@@ -18,7 +18,7 @@ const REACH = 40
 /** A whole-pixel offset from the box's center (whole pixels keep server and browser markup identical). */
 const off = (d: number) => { const r = Math.round(d); return r < 0 ? `calc(50% - ${-r}px)` : `calc(50% + ${r}px)` }
 
-function MapSquare({ lat, lng }: { lat: number; lng: number }) {
+export function MapSquare({ lat, lng }: { lat: number; lng: number }) {
   const n = 2 ** Z
   const px = ((lng + 180) / 360) * n * T
   const r = (lat * Math.PI) / 180

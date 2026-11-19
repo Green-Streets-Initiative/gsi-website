@@ -15,7 +15,8 @@ import FixListingLink from '@/components/hosts/FixListingLink'
 import { gaEvent } from '@/lib/ga'
 import StoreButtons from '@/components/StoreButtons'
 import { withUtm as appUtm } from '@/lib/utm'
-import { DateTile, PlaceSign, GettingThere, MoreNearHere, PlaceThumb, Linkified } from './EventPageParts'
+import { DateTile, PlaceSquare, GettingThere, MoreNearHere, PlaceThumb, Linkified, HostMark } from './EventPageParts'
+import type { EventHost } from '@/lib/event-hosts'
 import {
   type CommunityEvent, type NextUp,
   getTagMeta, isDeadline, parseEventDate,
@@ -180,6 +181,8 @@ interface EventDetailProps {
   moreNear?: CommunityEvent[]
   /** The host's logo from the organizer directory, when it has one. */
   hostLogo?: string | null
+  /** Each host, the listed one first, with logos (lib/event-hosts). */
+  hosts?: EventHost[]
 }
 
 
@@ -189,7 +192,7 @@ const DIRECTION_MODES = [
   { mode: 'transit', key: 'detail.dir_transit', Icon: Bus },
 ] as const
 
-export default function EventDetail({ event, nextUp = null, isPast = false, tone = 'dark', hrefBase = '/events', sponsorLinks = {}, roamLinks = [], rideCode = null, hostHref = null, town = null, goTogether = NO_GO_TOGETHER, series = null, locale = 'en', isToday = false, moreNear = [], hostLogo = null }: EventDetailProps) {
+export default function EventDetail({ event, nextUp = null, isPast = false, tone = 'dark', hrefBase = '/events', sponsorLinks = {}, roamLinks = [], rideCode = null, hostHref = null, town = null, goTogether = NO_GO_TOGETHER, series = null, locale = 'en', isToday = false, moreNear = [], hostLogo = null, hosts: hostsIn }: EventDetailProps) {
   const t = eventsT(locale)
   // Easy / Moderate / Rec, only when the listing supports the call.
   const level = eventRideStyle(event)
@@ -315,7 +318,10 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
     ? typeLabel(event.event_type, locale).replace(/ ([A-Z])(?=[a-z])/g, (_m, c: string) => ` ${c.toLowerCase()}`)
     : typeLabel(event.event_type, locale)
   const hostLine = event.organizer_name ? t('detail.host_line', { type: typeText, host: event.organizer_name }) : typeText
-  const hostInitials = (event.organizer_name ?? '').split(/\s+/).filter((w) => /^[A-Za-z0-9]/.test(w)).slice(0, 2).map((w) => w[0]!.toUpperCase()).join('')
+  // Pages that don't load hosts still show the listed one.
+  const hosts: EventHost[] = hostsIn && hostsIn.length > 0
+    ? hostsIn
+    : event.organizer_name ? [{ id: null, name: event.organizer_name, logo: hostLogo, url: event.organizer_url ?? null }] : []
   // The first screen always carries a picture: the flyer, or the meeting spot's map.
   const thumb: 'flyer' | 'map' | null = images.length > 0 ? 'flyer' : hasMap ? 'map' : null
 
@@ -446,7 +452,26 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
                 <h1 className="font-(family-name:--font-headline) text-[26px] font-extrabold leading-[1.1] tracking-[-0.01em] text-(--ev-ink) sm:text-[34px] lg:text-[40px]">
                   {event.title}
                 </h1>
-                <p className="mt-1.5 text-[15px] text-(--ev-ink-75)">{hostLine}</p>
+                {hosts.length > 0 ? (
+                  <>
+                    <p className="mt-1.5 text-[15px] text-(--ev-ink-75)">{t('detail.hosted_by', { type: typeText })}</p>
+                    <ul className="mt-2 flex flex-wrap gap-2">
+                      {hosts.map((h) => (
+                        <li key={h.id ?? h.name}>
+                          <a
+                            href="#host-says"
+                            className="inline-flex min-h-[44px] items-center gap-2 rounded-full border border-(--ev-line) bg-(--ev-card) py-1 pl-1 pr-3.5 text-[15px] font-semibold text-(--ev-ink-85) transition-colors hover:border-(--ev-line-stronger)"
+                          >
+                            <HostMark host={h} size={34} />
+                            {h.name}
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                ) : (
+                  <p className="mt-1.5 text-[15px] text-(--ev-ink-75)">{hostLine}</p>
+                )}
 
                 {(level || noDrop || rideFacts.length > 0 || chipTags.length > 0) && (
                   <div className="mt-3 flex flex-wrap gap-1.5">
@@ -500,7 +525,12 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
               </div>
               {showPlace && (
                 <div className="flex items-center gap-3">
-                  <PlaceSign locationName={event.location_name} />
+                  <PlaceSquare
+                    // A town-only address ("Franklin, MA 02038") pins the town center, not a meeting spot;
+                    // with no flyer the first picture is already this map, so the square shows a pin.
+                    lat={hasMap && thumb !== 'map' && !/^[^,\d]+,\s*(MA|Massachusetts)\b[^,]*$/i.test(event.location_address?.trim() ?? '') ? event.location_lat : null}
+                    lng={event.location_lng}
+                  />
                   <div className="min-w-0">
                     <p className="text-[17px] font-bold leading-snug text-(--ev-ink)">{event.location_name}</p>
                     {privateHome
@@ -634,30 +664,31 @@ export default function EventDetail({ event, nextUp = null, isPast = false, tone
                   </div>
                 )}
 
-                {event.organizer_name && (
-                  <div className="mt-4 flex items-center gap-3 rounded-[12px] bg-(--ev-panel) p-3">
-                    {hostLogo ? (
-                      <img src={hostLogo} alt="" className="h-11 w-11 shrink-0 rounded-full border border-(--ev-line) bg-white object-contain p-1" />
-                    ) : (
-                      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-(--ev-primary) font-(family-name:--font-headline) text-[15px] font-extrabold text-white" aria-hidden>
-                        {hostInitials || <Users size={20} />}
-                      </span>
-                    )}
-                    <div className="min-w-0">
-                      {event.organizer_url ? (
-                        <a href={withUtm(event.organizer_url)} target="_blank" rel="noopener noreferrer" className="text-[16px] font-bold text-(--ev-ink) hover:underline">
-                          {event.organizer_name} <ExternalLink size={13} className="inline" aria-hidden />
-                        </a>
-                      ) : (
-                        <p className="text-[16px] font-bold text-(--ev-ink)">{event.organizer_name}</p>
-                      )}
-                      {hostHref && (
-                        <Link href={hostHref} className="block text-[15px] font-semibold text-(--ev-accent) hover:underline">
-                          {t('detail.host_page')}
-                        </Link>
-                      )}
-                    </div>
-                  </div>
+                {hosts.length > 0 && (
+                  <ul className="mt-4 flex flex-col gap-2">
+                    {hosts.map((h, i) => {
+                      // The listed host keeps its page on our site; each host's own site opens in a new tab.
+                      const site = h.url ?? (i === 0 ? event.organizer_url : null)
+                      return (
+                        <li key={h.id ?? h.name} className="flex items-center gap-3 rounded-[12px] bg-(--ev-panel) p-3">
+                          <HostMark host={h} size={52} />
+                          <div className="min-w-0 flex-1">
+                            <p className="text-[16px] font-bold text-(--ev-ink)">{h.name}</p>
+                            {i === 0 && hostHref && (
+                              <Link href={hostHref} className="block text-[15px] font-semibold text-(--ev-accent) hover:underline">
+                                {t('detail.host_page')}
+                              </Link>
+                            )}
+                          </div>
+                          {site && (
+                            <a href={withUtm(site)} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-[44px] shrink-0 items-center gap-1 text-[15px] font-semibold text-(--ev-accent) hover:underline">
+                              {t('detail.website')} <ExternalLink size={14} aria-hidden />
+                            </a>
+                          )}
+                        </li>
+                      )
+                    })}
+                  </ul>
                 )}
 
                 {event.sponsors && event.sponsors.length > 0 && (

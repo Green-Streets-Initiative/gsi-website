@@ -3,24 +3,25 @@
 /**
  * Pieces of the event page in the site's picked look (Direction A, "What's on
  * near you", Keith 2026-11-17; docs/design-review-2026-11). A date tile and a
- * green place sign say when and where at a glance; "Getting there" lists the
+ * small map of the start say when and where at a glance; "Getting there" lists the
  * real nearest station, bus stop and bike share dock with walk times, each a
  * tap away from directions; "More near here" shows what else is on close by.
  */
 
 import { useEffect, useState } from 'react'
-import Link from 'next/link'
 import posthog from 'posthog-js'
 import { Bike, Bus, ChevronRight, MapPin, TrainFront } from 'lucide-react'
 import { gaEvent } from '@/lib/ga'
-import { eventPath } from '@/lib/events-url'
 import { type CommunityEvent, directionsUrl, parseEventDate } from '@/lib/events'
-import { withLang, type SiteLocale } from '@/lib/site-i18n'
-import { timeL, type EventsT } from '@/lib/events-i18n'
+import type { SiteLocale } from '@/lib/site-i18n'
+import type { EventsT } from '@/lib/events-i18n'
 import { capitalizeStopName, fetchBikeShareDocks, fetchMBTAStops, fetchTrainStops } from '@/lib/nearby/live-data'
 import type { BluebikeStationLive, MBTAStopLive } from '@/lib/wayfinding/types'
+import type { EventHost } from '@/lib/event-hosts'
+import EventCard from './EventCard'
+import { MapSquare } from './CardThumb'
 
-/** The green of a street-name sign. */
+/** The site green, for the map pin. */
 export const SIGN_GREEN = '#1F6B45'
 
 const intlTag = (locale: SiteLocale) => (locale === 'en' ? 'en-US' : locale)
@@ -39,37 +40,35 @@ export function DateTile({ date, locale, size = 'md' }: { date: string; locale: 
 }
 
 /**
- * The place's short name the way a street sign prints it: "Union Square,
- * Somerville, MA" becomes "Union Sq". Null when the listing gives a street
- * address or nothing short enough to fit the tile.
+ * The place's picture beside its name: a small street map of the start with
+ * a pin, the same square the /events cards use (Keith 2026-11-19, replacing
+ * the green sign). A pin tile when there is no spot to map.
  */
-export function signName(locationName: string | null, max = 10): string | null {
-  const first = (locationName ?? '').split(',')[0].trim()
-  if (!first || /^\d/.test(first) || /see event page/i.test(first)) return null
-  // An online meeting has no street corner to sign.
-  if (/\b(zoom|online|virtual|webinar|teams|google meet|livestream)\b/i.test(first)) return null
-  // Placeholders and rooms aren't places someone could find on a map.
-  if (/\b(location|varies|tbd|tba|room|wherever)\b/i.test(first)) return null
-  const short = first
-    .replace(/\bSquare\b/g, 'Sq')
-    .replace(/\bStation\b/g, 'Sta')
-    .replace(/\bStreet\b/g, 'St')
-    .replace(/\bAvenue\b/g, 'Ave')
-    .replace(/^The\s+/i, '')
-  return short.length <= max ? short : null
+export function PlaceSquare({ lat, lng }: { lat: number | null | undefined; lng: number | null | undefined }) {
+  const ok = lat != null && lng != null && Number.isFinite(Number(lat)) && Number.isFinite(Number(lng)) && Number(lat) !== 0
+  return (
+    <div className="relative flex h-[56px] w-[56px] shrink-0 items-center justify-center overflow-hidden rounded-[12px] border border-(--ev-line) bg-[#EEF0EA] text-(--ev-accent)" aria-hidden>
+      {ok ? <MapSquare lat={Number(lat)} lng={Number(lng)} /> : <MapPin size={22} />}
+    </div>
+  )
 }
 
-/** The green place sign: the short name when it fits, a pin when it doesn't. */
-export function PlaceSign({ locationName }: { locationName: string | null }) {
-  const name = signName(locationName)
+/** A host's square logo on white, or their initials when we have no logo. */
+export function HostMark({ host, size }: { host: EventHost; size: number }) {
+  const [ok, setOk] = useState(true)
+  const initials = host.name.replace(/\([^)]*\)/g, '').split(/\s+/).filter((w) => /^[A-Za-z0-9]/.test(w)).slice(0, 2).map((w) => w[0]!.toUpperCase()).join('')
+  const radius = size >= 48 ? 'rounded-[12px]' : 'rounded-full'
+  if (host.logo && ok) {
+    return (
+      <span className={`flex shrink-0 items-center justify-center overflow-hidden border border-(--ev-line) bg-white ${radius}`} style={{ width: size, height: size, padding: Math.round(size * 0.1) }} aria-hidden>
+        <img src={host.logo} alt="" className="max-h-full max-w-full object-contain" onError={() => setOk(false)} />
+      </span>
+    )
+  }
   return (
-    <div
-      className="flex h-[56px] w-[56px] shrink-0 items-center justify-center rounded-[10px] px-1 text-center font-(family-name:--font-headline) text-[13px] font-extrabold leading-[1.1] text-white"
-      style={{ backgroundColor: SIGN_GREEN, boxShadow: `inset 0 0 0 2px #fff, 0 0 0 1px ${SIGN_GREEN}` }}
-      aria-hidden
-    >
-      {name ?? <MapPin size={22} />}
-    </div>
+    <span className={`flex shrink-0 items-center justify-center bg-(--ev-primary) font-(family-name:--font-headline) font-extrabold text-white ${radius}`} style={{ width: size, height: size, fontSize: Math.round(size * 0.36) }} aria-hidden>
+      {initials || <MapPin size={Math.round(size * 0.45)} />}
+    </span>
   )
 }
 
@@ -117,6 +116,25 @@ type Row = {
   value?: string
   surface: string
   badge: { bg: string; fg: string; text: string | null; Icon: typeof Bus }
+  /** Bluebikes' own wordmark in place of its name in the line under. */
+  mark?: boolean
+}
+
+const MARK = '\u0000'
+
+/** "[BLUEbikes] dock at the start": the system's wordmark where its name goes. */
+function SubLine({ text, mark }: { text: string; mark?: boolean }) {
+  if (!mark || !text.includes(MARK)) return <>{text.replace(MARK, 'Bluebikes')}</>
+  const [before, after] = text.split(MARK)
+  return (
+    <>
+      {before}
+      <span className="mx-0.5 inline-flex h-[20px] items-center rounded-[5px] bg-[#1D5FA8] px-1.5 align-[-4px]">
+        <img src="/assets/nearby/bluebikes.svg" alt="Bluebikes" className="block h-[11px] w-auto" />
+      </span>
+      {after}
+    </>
+  )
 }
 
 /** Real stops near the start, nearest first, each linking to directions in that mode. */
@@ -191,7 +209,8 @@ export function GettingThere({
       name: live.dock.name,
       sub: isToday
         ? t('gt.dock_now', { bikes: live.dock.num_bikes_available, docks: live.dock.num_docks_available })
-        : t(walkMin(live.dock.distance_meters) <= 1 ? 'gt.dock_at' : 'gt.dock_near', { system: live.dock.system_name ?? 'Bike share' }),
+        : t(walkMin(live.dock.distance_meters) <= 1 ? 'gt.dock_at' : 'gt.dock_near', { system: /bluebikes/i.test(live.dock.system_name ?? '') ? MARK : live.dock.system_name ?? 'Bike share' }),
+      mark: /bluebikes/i.test(live.dock.system_name ?? ''),
       value: minWalk(live.dock.distance_meters),
       surface: 'getting_there_bikeshare',
       badge: { bg: '#1D5FA8', fg: '#fff', text: null, Icon: Bike },
@@ -226,7 +245,7 @@ export function GettingThere({
             </span>
             <span className="min-w-0">
               <span className="block text-[16px] font-bold leading-snug text-(--ev-ink)">{r.name}</span>
-              <span className="block text-[14px] leading-snug text-(--ev-ink-75)">{r.sub}</span>
+              <span className="block text-[14px] leading-snug text-(--ev-ink-75)"><SubLine text={r.sub} mark={r.mark} /></span>
             </span>
             <span className="flex items-center gap-1 whitespace-nowrap text-[14px] font-bold text-(--ev-ink-80)">
               {r.value}
@@ -239,48 +258,33 @@ export function GettingThere({
   )
 }
 
-/** A few other events close by on the same days, with their own place signs. */
+/** A few other events close by on the same days, as the same cards /events shows (Keith 2026-11-19). */
 export function MoreNearHere({
-  events, fromId, hrefBase, locale,
+  events, fromId,
 }: {
   events: CommunityEvent[]
   fromId: string
-  hrefBase: string
-  locale: SiteLocale
+  hrefBase?: string
+  locale?: SiteLocale
 }) {
   if (events.length === 0) return null
   return (
-    <ul className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-1">
-      {events.map((e) => {
-        const d = parseEventDate(e.event_date)
-        const when = `${new Intl.DateTimeFormat(intlTag(locale), { weekday: 'short' }).format(d)}${e.event_time ? ` ${timeL(e.event_time, locale)}` : ''}`
-        const sign = signName(e.location_name)
-        return (
-          <li key={e.id}>
-            <Link
-              href={withLang(eventPath(e, hrefBase), locale)}
-              onClick={() => {
-                posthog.capture('event_more_near_click', { event_id: fromId, to_event_id: e.id })
-                gaEvent('event_more_near_click', { event_id: fromId })
-              }}
-              className="flex h-full flex-col gap-1.5 rounded-[12px] border border-(--ev-line) bg-(--ev-card) p-3 transition-colors hover:border-(--ev-line-stronger)"
-            >
-              <span className="text-[14px] font-bold text-(--ev-ink-75)">{when}</span>
-              <span className="font-(family-name:--font-headline) text-[16px] font-extrabold leading-snug text-(--ev-ink)">{e.title}</span>
-              {sign ? (
-                <span
-                  className="self-start rounded-[4px] px-2 pb-0.5 pt-1 font-(family-name:--font-headline) text-[13px] font-extrabold text-white"
-                  style={{ backgroundColor: SIGN_GREEN, boxShadow: `inset 0 0 0 1.5px #fff, 0 0 0 1px ${SIGN_GREEN}` }}
-                >
-                  {sign}
-                </span>
-              ) : e.location_name ? (
-                <span className="text-[14px] text-(--ev-ink-75)">{e.location_name.split(',')[0]}</span>
-              ) : null}
-            </Link>
-          </li>
-        )
-      })}
+    <ul className="flex flex-col gap-2.5">
+      {events.map((e) => (
+        <li key={e.id}>
+          <EventCard
+            event={e}
+            userLat={Number(e.location_lat) || 0}
+            userLng={Number(e.location_lng) || 0}
+            showDate
+            stacked
+            onOpen={() => {
+              posthog.capture('event_more_near_click', { event_id: fromId, to_event_id: e.id })
+              gaEvent('event_more_near_click', { event_id: fromId })
+            }}
+          />
+        </li>
+      ))}
     </ul>
   )
 }

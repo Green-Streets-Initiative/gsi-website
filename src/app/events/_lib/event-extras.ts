@@ -6,6 +6,7 @@ import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { hostPath, hostQualifies } from '@/lib/hosts'
 import { getQualifyingTowns } from '@/lib/towns/queries'
 import { loadGoTogether } from './go-together'
+import { eventHosts, type KnownOrganizer } from '@/lib/event-hosts'
 
 /**
  * What an event page shows beside the event itself: the trails it shares a
@@ -29,11 +30,12 @@ export async function loadEventExtras(event: CommunityEvent, organizerId: string
     event.ride_series_id
       ? supabase.from('ride_series').select('invite_code, kind, status').eq('id', event.ride_series_id).maybeSingle()
       : Promise.resolve({ data: null }),
-    // The host's logo for the host card (event_organizers.logo_url).
-    organizerId
-      ? supabase.from('event_organizers').select('logo_url').eq('id', organizerId).maybeSingle()
-      : Promise.resolve({ data: null }),
+    // Every organizer we know, to name each co-host with its own logo (Keith 2026-11-19).
+    supabase.from('event_organizers').select('id, name, aliases, logo_url, url').limit(2000),
   ])
+  const orgs = ((organizer.data ?? []) as KnownOrganizer[])
+  const listed = organizerId ? orgs.find((o) => o.id === organizerId) ?? null : null
+  const hosts = eventHosts(event, listed, orgs)
   const townMatch = townName ? towns.find((t) => t.town_name.toLowerCase() === townName.toLowerCase()) : undefined
   const rideRow = ride.data as { invite_code: string | null; kind: string; status: string } | null
   return {
@@ -42,6 +44,7 @@ export async function loadEventExtras(event: CommunityEvent, organizerId: string
     town: townMatch ? { name: townMatch.town_name, href: `/shift/towns/${townMatch.slug}` } : null,
     goTogether,
     rideCode: rideRow?.kind === 'group_ride' && rideRow.status === 'active' ? rideRow.invite_code : null,
-    hostLogo: ((organizer.data as { logo_url: string | null } | null)?.logo_url) ?? null,
+    hostLogo: hosts[0]?.logo ?? null,
+    hosts,
   }
 }

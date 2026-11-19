@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { eventPath } from '@/lib/events-url'
 import { Calendar, Bookmark, Route, Users } from 'lucide-react'
-import { type CommunityEvent, getTypeMeta, getTagMeta, haversine, isDeadline, eventDayKeys, isMultiDay, eventRideStyle, isNoDrop } from '@/lib/events'
+import { type CommunityEvent, getTypeMeta, getTagMeta, haversine, isDeadline, eventDayKeys, isMultiDay, eventRideStyle, isNoDrop, parseEventDate } from '@/lib/events'
 import { withLang } from '@/lib/site-i18n'
 import { typeLabel, tagLabel, rideLevelLabel, rideLengthL, distanceL, timeL, dateRangeShortL, ledInLineL } from '@/lib/events-i18n'
 import { typeInk, tagInk, rideStyleInk, TINT } from '@/lib/events-tone'
@@ -30,6 +30,8 @@ interface EventCardProps {
   ridesTo?: string | null
   /** A Go together tray sits flush underneath (FeederTray). */
   attached?: boolean
+  /** Keep the stacked phone layout at every width, for a narrow column ("More near here"). */
+  stacked?: boolean
 }
 
 /** Easy, Moderate, Rec as a three-step meter: how hard, at a glance. */
@@ -65,7 +67,9 @@ function TransitLine({ tr, label, className }: { tr: CardTransit; label: string;
  * a denser row with a fixed time column on the left (CSS only, so there is no
  * layout flash when the desktop media query resolves after hydration).
  */
-export default function EventCard({ event, userLat, userLng, showAway, showDate, saved, onToggleSave, onOpen, ridesTo, attached }: EventCardProps) {
+export default function EventCard({ event, userLat, userLng, showAway, showDate, saved, onToggleSave, onOpen, ridesTo, attached, stacked }: EventCardProps) {
+  // Stacked cards drop the desktop row classes (lg:...), so they read like the phone card.
+  const D = (cls: string) => (stacked ? cls.split(/\s+/).filter((c) => !c.startsWith('lg:')).join(' ') : cls)
   const { tone, hrefBase } = useEventsTone()
   // A flyer link that no longer loads falls back to the logo or map, never an empty square.
   const [flyerOk, setFlyerOk] = useState(true)
@@ -108,7 +112,11 @@ export default function EventCard({ event, userLat, userLng, showAway, showDate,
   const timeStr = event.event_time ? timeL(event.event_time, locale) : null
   const endStr = event.event_end_time ? timeL(event.event_end_time, locale) : null
   // "Nov 1 to 30" for a multi-day event (Shift 01557), "Nov 1" otherwise.
-  const datePart = showDate ? dateRangeShortL(event, locale) : null
+  // A stacked card stands without a day heading above it, so it names the weekday: "Mon, Dec 14".
+  const weekday = stacked && !isMultiDay(event)
+    ? new Intl.DateTimeFormat(locale === 'en' ? 'en-US' : locale, { weekday: 'short' }).format(parseEventDate(event.event_date))
+    : null
+  const datePart = showDate ? (weekday ? `${weekday}, ${dateRangeShortL(event, locale)}` : dateRangeShortL(event, locale)) : null
   // The desktop time column says how long a multi-day, all-day event runs.
   const spanLabel = isMultiDay(event) ? t('card.days', { count: eventDayKeys(event).length }) : t('card.all_day')
   const deadline = isDeadline(event.event_type)
@@ -161,11 +169,11 @@ export default function EventCard({ event, userLat, userLng, showAway, showDate,
   const walkTo = transit ? t('card.walk_to', { min: transit.walk, stop: transit.stop.name }) : ''
   const typeTile = (
     <div
-      className="flex h-16 w-16 shrink-0 items-center justify-center rounded-[12px] lg:h-14 lg:w-14 lg:rounded-[10px]"
+      className={D("flex h-16 w-16 shrink-0 items-center justify-center rounded-[12px] lg:h-14 lg:w-14 lg:rounded-[10px]")}
       style={{ backgroundColor: ink + tint.tile }}
     >
-      <Icon size={26} className="lg:hidden" style={{ color: ink }} />
-      <Icon size={20} className="hidden lg:block" style={{ color: ink }} />
+      <Icon size={26} className={D("lg:hidden")} style={{ color: ink }} />
+      <Icon size={20} className={D("hidden lg:block")} style={{ color: ink }} />
     </div>
   )
 
@@ -180,11 +188,11 @@ export default function EventCard({ event, userLat, userLng, showAway, showDate,
   )
 
   return (
-    <div className={`group relative flex min-h-[72px] items-start gap-3 border border-(--ev-line) bg-(--ev-card) p-3.5 transition-all duration-200 hover:border-(--ev-line-mid) hover:bg-(--ev-card-hover) sm:gap-4 sm:p-4 lg:min-h-0 lg:items-center lg:px-4 lg:py-3 ${attached ? 'rounded-t-[14px]' : 'rounded-[14px]'}`}>
+    <div className={D(`group relative flex min-h-[72px] items-start gap-3 border border-(--ev-line) bg-(--ev-card) p-3.5 transition-all duration-200 hover:border-(--ev-line-mid) hover:bg-(--ev-card-hover) sm:gap-4 sm:p-4 lg:min-h-0 lg:items-center lg:px-4 lg:py-3 ${attached ? 'rounded-t-[14px]' : 'rounded-[14px]'}`)}>
       <Link href={withLang(eventPath(event, hrefBase), locale)} onClick={onOpen} className={`absolute inset-0 z-10 ${attached ? 'rounded-t-[14px]' : 'rounded-[14px]'}`} aria-label={event.title} />
 
       {/* Desktop time column */}
-      <div className="hidden w-[76px] shrink-0 flex-col lg:flex">
+      <div className={D("hidden w-[76px] shrink-0 flex-col lg:flex")}>
         <span className={`text-[14px] font-semibold leading-tight ${off ? 'text-(--ev-ink-75) line-through' : 'text-(--ev-ink)'}`}>
           {deadline ? t('card.deadline') : timeStr ?? spanLabel}
         </span>
@@ -198,7 +206,7 @@ export default function EventCard({ event, userLat, userLng, showAway, showDate,
         {/* The flyer when there is one; else the host's square logo, a map of the start, or the type tile */}
         {event.image_url && flyerOk ? (
           <div
-            className="h-16 w-16 shrink-0 overflow-hidden rounded-[12px] border lg:h-14 lg:w-14 lg:rounded-[10px]"
+            className={D("h-16 w-16 shrink-0 overflow-hidden rounded-[12px] border lg:h-14 lg:w-14 lg:rounded-[10px]")}
             style={{ borderColor: ink + tint.spotLine, backgroundColor: ink + tint.thumb }}
           >
             <img ref={flyerRef} src={event.image_url} alt="" className="h-full w-full object-cover" loading="lazy" onError={() => setFlyerOk(false)} />
@@ -211,33 +219,33 @@ export default function EventCard({ event, userLat, userLng, showAway, showDate,
             fallback={typeTile}
           />
         )}
-        {saveBtn('flex h-11 w-11 lg:hidden')}
+        {saveBtn(D('flex h-11 w-11 lg:hidden'))}
       </div>
 
       {/* Body */}
       <div className="min-w-0 flex-1">
-        <p className="text-[14px] font-semibold leading-snug lg:hidden" style={{ color: ink }}>
+        <p className={D("text-[14px] font-semibold leading-snug lg:hidden")} style={{ color: ink }}>
           {metaLabel}
         </p>
-        <h3 className={`mt-0.5 line-clamp-3 font-(family-name:--font-headline) text-[17px] font-extrabold leading-snug tracking-[-0.01em] sm:text-[18px] lg:mt-0 lg:line-clamp-2 lg:text-[17px] ${off ? 'text-(--ev-ink-75)' : 'text-(--ev-ink)'}`}>
+        <h3 className={D(`mt-0.5 line-clamp-3 font-(family-name:--font-headline) text-[17px] font-extrabold leading-snug tracking-[-0.01em] sm:text-[18px] lg:mt-0 lg:line-clamp-2 lg:text-[17px] ${off ? 'text-(--ev-ink-75)' : 'text-(--ev-ink)'}`)}>
           {off && <span className="mr-2 inline-block rounded-full bg-[#FBE4DF] px-2 py-0.5 align-middle font-(family-name:--font-gsi) text-[13px] font-bold leading-tight text-(--ev-danger)">{t('card.cancelled')}</span>}
           <span className={off ? 'line-through' : undefined}>{event.title}</span>
         </h3>
-        <p className={`mt-1 text-[14px] leading-snug text-(--ev-ink-75) lg:hidden ${off ? 'line-through' : ''}`}>
+        <p className={D(`mt-1 text-[14px] leading-snug text-(--ev-ink-75) lg:hidden ${off ? 'line-through' : ''}`)}>
           {metaLine(when, null)}
         </p>
         {(place || placeLead) && (
           // How far away leads, so it is never the part that gets cut off; the place may take two lines.
-          <p className="mt-0.5 line-clamp-2 text-[14px] leading-snug text-(--ev-ink-75) lg:hidden">
+          <p className={D("mt-0.5 line-clamp-2 text-[14px] leading-snug text-(--ev-ink-75) lg:hidden")}>
             {placeLead && <span className="font-semibold text-(--ev-ink-85)">{placeLead}</span>}
             {placeLead && place && ' · '}
             {place}
           </p>
         )}
-        {facts && <div className="mt-1.5 lg:hidden">{facts}</div>}
-        {transit && <TransitLine tr={transit} label={walkTo} className="mt-1 lg:hidden" />}
+        {facts && <div className={D("mt-1.5 lg:hidden")}>{facts}</div>}
+        {transit && <TransitLine tr={transit} label={walkTo} className={D("mt-1 lg:hidden")} />}
         {/* Desktop: the type never truncates; the place does. */}
-        <p className="mt-0.5 hidden min-w-0 text-[14px] leading-snug text-(--ev-ink-75) lg:flex">
+        <p className={D("mt-0.5 hidden min-w-0 text-[14px] leading-snug text-(--ev-ink-75) lg:flex")}>
           <span className="shrink-0 whitespace-pre">
             <span className="font-medium" style={{ color: ink }}>{metaLabel}</span>
             {(whenLg || organizer || place) && ' · '}
@@ -251,7 +259,7 @@ export default function EventCard({ event, userLat, userLng, showAway, showDate,
           </p>
         )}
         {(event.ride_series_id || langs.length > 0 || event.tags.length > 0) && (
-          <div className="mt-1.5 flex flex-wrap gap-1 lg:mt-1">
+          <div className={D("mt-1.5 flex flex-wrap gap-1 lg:mt-1")}>
             {/* Planned in the Shift app — riders can RSVP there rather than
                 following a link to somebody else's site. */}
             {event.ride_series_id && !off && (
@@ -283,7 +291,7 @@ export default function EventCard({ event, userLat, userLng, showAway, showDate,
       </div>
 
       {/* Desktop where column, beside the bookmark: the town, then how far */}
-      <div className="hidden w-[240px] shrink-0 flex-col items-end gap-1 text-right lg:flex">
+      <div className={D("hidden w-[240px] shrink-0 flex-col items-end gap-1 text-right lg:flex")}>
         {town && <span className="max-w-full truncate text-[14px] font-semibold text-(--ev-ink-85)">{town}</span>}
         {away && <span className="text-[14px] font-semibold text-(--ev-ink-85)">{away}</span>}
         {facts && <div className="flex justify-end">{facts}</div>}
@@ -291,7 +299,7 @@ export default function EventCard({ event, userLat, userLng, showAway, showDate,
       </div>
 
       {/* Bookmark (desktop; on phones it sits under the square) */}
-      {saveBtn('hidden h-9 w-9 lg:flex')}
+      {saveBtn(D('hidden h-9 w-9 lg:flex'))}
     </div>
   )
 }
