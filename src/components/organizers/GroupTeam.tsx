@@ -10,10 +10,8 @@ import { Badge, Button, Card, Dialog, Field, Input, Notice, SectionTitle, Spinne
 
 const looksLikeEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim())
 
-function sinceText(iso: string): string {
-  try {
-    return `Since ${new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
-  } catch { return '' }
+function dayText(iso: string): string {
+  try { return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) } catch { return '' }
 }
 
 /** Rides you set up under the group, each with a link to hand it over. */
@@ -22,7 +20,7 @@ function MyRides({ rides }: { rides: Team['my_rides'] }) {
   return (
     <div className="mt-4">
       <p className="text-[15px] leading-snug text-(--ev-ink-85)">
-        Rides you set up stay yours, and you keep running them. To pass one on too, open it and use <b className="font-semibold text-(--ev-ink)">Hand the ride to someone</b>:
+        Rides you set up stay yours, and you keep running them. To pass one on too, open its Team tab, add a co-organizer, then hand the ride to them:
       </p>
       <ul className="mt-2 grid gap-1">
         {rides.map((r) => (
@@ -55,6 +53,8 @@ export default function GroupTeam({ org, onSteppedDown }: { org: OrgClaim; onSte
 
   const me = team?.organizers.find((o) => o.is_you) ?? null
   const onlyOne = !!me && team!.organizers.length === 1
+  const others = (team?.organizers ?? []).filter((o) => !o.is_you).map((o) => o.name || o.email)
+  const othersText = others.length > 2 ? `${others.slice(0, -1).join(', ')} and ${others[others.length - 1]}` : others.join(' and ')
   const address = email.trim().toLowerCase()
 
   async function invite(handoff: boolean) {
@@ -120,24 +120,24 @@ export default function GroupTeam({ org, onSteppedDown }: { org: OrgClaim; onSte
         <>
           <ul className="divide-y divide-(--ev-line) rounded-xl border border-(--ev-line-mid)">
             {team.organizers.map((o) => (
-              <li key={o.user_id} className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 px-4 py-3">
-                <div className="min-w-0">
-                  <p className="text-[15px] font-semibold text-(--ev-ink)">{o.name || o.email}</p>
-                  <p className="truncate text-[14px] text-(--ev-ink-75)">{o.name ? `${o.email} · ` : ''}{sinceText(o.since)}</p>
-                </div>
-                {o.is_you && <Badge tone="good">You</Badge>}
+              <li key={o.user_id} className="px-4 py-3">
+                <p className="flex flex-wrap items-center gap-2 text-[15px] font-semibold text-(--ev-ink)">
+                  <span className="min-w-0 break-all">{o.name || o.email}</span>
+                  {o.is_you && <Badge tone="good">You</Badge>}
+                </p>
+                {o.name && <p className="break-all text-[14px] text-(--ev-ink-75)">{o.email}</p>}
+                <p className="text-[14px] text-(--ev-ink-75)">Organizer since {dayText(o.since)}</p>
               </li>
             ))}
             {team.invites.map((i) => (
               <li key={i.id} className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 px-4 py-3">
                 <div className="min-w-0">
-                  <p className="truncate text-[15px] font-semibold text-(--ev-ink)">{i.email}</p>
+                  <p className="break-all text-[15px] font-semibold text-(--ev-ink)">{i.email}</p>
                   <p className="text-[14px] text-(--ev-ink-75)">
-                    {i.handoff ? `Takes over ${org.name} when they sign in` : 'An organizer once they sign in'}
+                    Asked {dayText(i.sent_at)} · {i.handoff ? `takes over ${org.name} when they sign in` : 'an organizer once they sign in'}
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Badge tone="warn">Asked</Badge>
                   <Button size="sm" variant="ghost" busy={busy === `revoke-${i.id}`} onClick={() => void revoke(i.id)} aria-label={`Take back the invite to ${i.email}`}>
                     <X className="h-4 w-4" aria-hidden />Take back
                   </Button>
@@ -150,7 +150,7 @@ export default function GroupTeam({ org, onSteppedDown }: { org: OrgClaim; onSte
             <Field label="Add someone" htmlFor="group-add-email" hint="We email them. They sign in with this address and the group shows up in their organizer tools.">
               <div className="flex flex-col gap-2 sm:flex-row">
                 <Input id="group-add-email" type="email" inputMode="email" autoComplete="off" value={email}
-                  onChange={(e) => setEmail(e.target.value)} placeholder="name@example.org"
+                  onChange={(e) => { setEmail(e.target.value); if (msg?.tone !== 'off') setMsg(null) }} placeholder="name@example.org"
                   onKeyDown={(e) => { if (e.key === 'Enter' && address) void invite(false) }} />
                 <Button variant="primary" className="shrink-0" busy={busy === 'add'} disabled={!address || !!busy} onClick={() => void invite(false)}>
                   <UserPlus className="h-4 w-4" aria-hidden />Add as organizer
@@ -172,11 +172,13 @@ export default function GroupTeam({ org, onSteppedDown }: { org: OrgClaim; onSte
             <div className="mt-6 border-t border-(--ev-line) pt-4">
               {onlyOne ? (
                 <p className="text-[14px] leading-snug text-(--ev-ink-75)">
-                  You&rsquo;re the only organizer for {org.name}. To step down, add someone first, or hand the group to them.
+                  {team.invites.length
+                    ? `You're the only organizer for ${org.name} until someone you asked signs in. Then you can step down.`
+                    : `You're the only organizer for ${org.name}. To step down, add someone first, or hand the group to them.`}
                 </p>
               ) : (
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                  <p className="text-[14px] leading-snug text-(--ev-ink-75)">The other organizers keep running {org.name} if you step down.</p>
+                  <p className="text-[14px] leading-snug text-(--ev-ink-75)">{othersText} {others.length === 1 ? 'keeps' : 'keep'} running {org.name} if you step down.</p>
                   <Button size="sm" variant="danger" onClick={() => setConfirm('stepdown')}>Step down</Button>
                 </div>
               )}
@@ -200,7 +202,7 @@ export default function GroupTeam({ org, onSteppedDown }: { org: OrgClaim; onSte
               <Button variant="danger" busy={busy === 'stepdown'} onClick={() => void stepDown()}>Step down</Button>
             </>}>
             <p className="text-[15px] leading-snug text-(--ev-ink-85)">
-              You stop being an organizer for {org.name}. {team.organizers.filter((o) => !o.is_you).map((o) => o.name || o.email).join(' and ')} keep{team.organizers.filter((o) => !o.is_you).length === 1 ? 's' : ''} running it.
+              You stop being an organizer for {org.name}. {othersText} {others.length === 1 ? 'keeps' : 'keep'} running it.
             </p>
             <MyRides rides={team.my_rides} />
           </Dialog>
