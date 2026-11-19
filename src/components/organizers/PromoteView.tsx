@@ -15,7 +15,14 @@ import { Button, Card, Notice, SectionTitle, Spinner, Toggle, copyText, cx, tabP
 import { track } from '@/lib/organizers/track'
 
 type Post = Exclude<PromoChannel, 'qr' | 'cal'>
-type PromoTab = 'posts' | 'flyer' | 'calendars' | 'results'
+type PromoTab = 'group' | 'posts' | 'flyer' | 'calendars' | 'results'
+/** The "Tell your group" messages: one-time notes to the organizer's regulars that they're using Shift. */
+type GroupMsg = 'chat' | 'email' | 'listing'
+const GROUP_MSGS: { key: GroupMsg; label: string; tip: string }[] = [
+  { key: 'chat', label: 'Group chat', tip: 'For WhatsApp, Signal, GroupMe, Discord or a text thread.' },
+  { key: 'email', label: 'Email or newsletter', tip: 'The first line is the subject.' },
+  { key: 'listing', label: 'Meetup or Partiful', tip: 'Add it to your group description or each event, next to your own RSVPs.' },
+]
 const POSTS = PROMO_CHANNELS.filter((c): c is { key: Post; label: string } => c.key !== 'qr' && c.key !== 'cal')
 
 /** One line on how each place treats links, shown under its caption. */
@@ -128,11 +135,16 @@ export default function PromoteView() {
   const [statsErr, setStatsErr] = useState<string | null>(null)
   const [done, setDone] = useState<Record<string, boolean>>({})
   const [making, setMaking] = useState(false)
-  const [tab, setTab] = useState<PromoTab>('posts')
-  // A link to #flyer, #calendars or #results opens that tab.
+  const [tab, setTab] = useState<PromoTab>('group')
+  const [groupMsg, setGroupMsg] = useState<GroupMsg>('chat')
+  const [groupEdits, setGroupEdits] = useState<Partial<Record<GroupMsg, string>>>({})
+  const [groupQr, setGroupQr] = useState<string | null>(null)
+  /** The group's public page (every upcoming ride, listed or Shift), once we know it opens. */
+  const [hostUrl, setHostUrl] = useState<string | null>(null)
+  // A link to #posts, #flyer, #calendars or #results opens that tab.
   useEffect(() => {
     const h = window.location.hash.slice(1)
-    const t = (['posts', 'flyer', 'calendars', 'results'] as const).find((x) => x === h)
+    const t = (['group', 'posts', 'flyer', 'calendars', 'results'] as const).find((x) => x === h)
     if (t) setTab(t)
   }, [])
 
@@ -164,6 +176,30 @@ export default function PromoteView() {
       .catch(() => { /* the download button stays off */ })
     return () => { live = false }
   }, [flyerLink])
+
+  // The group's page lists all its upcoming rides, Shift's and the calendar's,
+  // so it works as one link for the whole group. It exists only for an active
+  // group with enough on the calendar or a public verified Shift ride (lib/hosts),
+  // and lists this ride only once the calendar has it, so ask the page itself.
+  const hostId = r.visibility === 'public' && r.calendar_status === 'approved' ? r.event_organizer_id : null
+  useEffect(() => {
+    if (!hostId) { setHostUrl(null); return }
+    let live = true
+    const path = `/events/organizers/${encodeURIComponent(hostId)}`
+    fetch(path, { method: 'HEAD' })
+      .then((res) => { if (live) setHostUrl(res.ok ? `https://www.gogreenstreets.org${path}` : null) })
+      .catch(() => { if (live) setHostUrl(null) })
+    return () => { live = false }
+  }, [hostId])
+  const groupLinkFor = (m: GroupMsg | 'qr'): string => hostUrl ?? promoLink(code, m === 'chat' ? 'wa' : m === 'listing' ? 'partiful' : m)
+  const groupQrLink = groupLinkFor('qr')
+  useEffect(() => {
+    let live = true
+    QRCode.toDataURL(groupQrLink, { width: 1024, margin: 2, errorCorrectionLevel: 'M' })
+      .then((url) => { if (live) setGroupQr(url) })
+      .catch(() => { if (live) setGroupQr(null) })
+    return () => { live = false }
+  }, [groupQrLink])
 
   // The facts every caption is built from.
   const facts = useMemo(() => {
@@ -218,6 +254,53 @@ export default function PromoteView() {
     }
   }
   const caption = edits[post] ?? captionFor(post)
+
+  // What a member gets, in the organizer's voice. Each line is true for this
+  // ride: the route only when there is one, the live map by who can see it.
+  const walkRide = r.activity === 'walk'
+  const one = walkRide ? 'walk' : 'ride'
+  const many = walkRide ? 'walks' : 'rides'
+  const hasRoute = !!r.route_miles
+  const gets = [
+    hasRoute && (walkRide ? 'The route on a map' : 'The route, with the bike lanes and paths on each street'),
+    `One place to say you're coming`,
+    'An email the evening before, and right away if plans change',
+    r.live_sharing === 'link' && `A live map on ${one} day, so anyone running late can find the group`,
+    r.live_sharing === 'members' && `A live map on ${one} day, from your reminder email, so you can find the group if you're running late`,
+    `One album where everyone adds their photos after the ${one}`,
+  ].filter((x): x is string => typeof x === 'string')
+  const groupText = (m: GroupMsg): string => {
+    const link = groupLinkFor(m)
+    const where = hostUrl ? `All our ${many} are here` : facts.repeats ? `Our ${many} are here` : `Our next ${one} is here`
+    switch (m) {
+      case 'chat':
+        return `We're trying Shift for our ${many}. Say you're coming at the link and you'll get ${[
+          hasRoute && (walkRide ? 'the route' : 'the route with the bike lanes and paths marked'),
+          'an email if plans change',
+          r.live_sharing !== 'off' && `a live map on ${one} day`,
+          'one album for everyone\u2019s photos',
+        ].filter(Boolean).join(', ').replace(/, ([^,]*)$/, ' and $1')}. It works in any web browser with your name and email: ${link}`
+      case 'email':
+        return [
+          `We're using Shift for our ${many}`,
+          '',
+          'Hi everyone,',
+          '',
+          `We're trying something new for our ${many}: Shift, a free tool from Green Streets Initiative, a Somerville nonprofit. Here's what you get:`,
+          '',
+          ...gets.map((g) => `- ${g}`),
+          '',
+          `Saying you're coming takes your name and email, in any web browser. Only the ${one} leader uses the Shift app.`,
+          '',
+          `${where}: ${link}`,
+          '',
+          'See you there!',
+        ].join('\n')
+      case 'listing':
+        return `We use Shift for the route and ${one}-day updates. Say you're coming there too, from any web browser: ${link}`
+    }
+  }
+  const groupCopy = groupEdits[groupMsg] ?? groupText(groupMsg)
 
   const calendarText = [
     r.name,
@@ -277,10 +360,12 @@ export default function PromoteView() {
   const visits = (stats?.channels ?? []).reduce((a, c) => a + c.visits, 0)
   const people = (stats?.channels ?? []).reduce((a, c) => a + c.people, 0)
   // Posts first: it's what most organizers came for (the flyer is a one-time job).
+  // Telling the regulars comes first: it's a one-time note, and they're the ones who show up.
   const steps: { id: PromoTab; n?: number; label: string; value: string }[] = [
-    { id: 'posts', n: 1, label: 'Social posts', value: `${POSTS.length} captions` },
-    { id: 'flyer', n: 2, label: 'Flyer', value: r.flyer_url ? 'Yours is up' : 'QR ready' },
-    { id: 'calendars', n: 3, label: 'Calendars', value: `${calsDone} of ${CALENDARS.length + 1}` },
+    { id: 'group', n: 1, label: 'Tell your group', value: `${GROUP_MSGS.length} messages` },
+    { id: 'posts', n: 2, label: 'Social posts', value: `${POSTS.length} captions` },
+    { id: 'flyer', n: 3, label: 'Flyer', value: r.flyer_url ? 'Yours is up' : 'QR ready' },
+    { id: 'calendars', n: 4, label: 'Calendars', value: `${calsDone} of ${CALENDARS.length + 1}` },
     { id: 'results', label: 'Results', value: stats ? `${visits} visits, ${people} yes` : '–' },
   ]
 
@@ -309,7 +394,7 @@ export default function PromoteView() {
       ))}
 
       {/* The four jobs as tabs, each showing where it stands (Keith 2026-11-06: no totem-pole pages). */}
-      <div role="tablist" aria-label="Promote" className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+      <div role="tablist" aria-label="Promote" className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
         {steps.map((s) => {
           const on = s.id === tab
           return (
@@ -325,9 +410,59 @@ export default function PromoteView() {
       </div>
 
       <div {...tabPanel('promo', tab)}>
+      {tab === 'group' && <Card id="group">
+        <SectionTitle hint={`Let your regulars know you're using Shift, and what they get from it. Send it once, where your group already talks.`}>
+          <StepTitle n={1}>Tell your group</StepTitle>
+        </SectionTitle>
+        <div className="flex flex-wrap items-center gap-4 rounded-xl bg-(--ev-panel-faint) p-4">
+          <div className="h-[112px] w-[112px] shrink-0 overflow-hidden rounded-xl border border-(--ev-line) bg-white">
+            {groupQr ? <img src={groupQr} alt={hostUrl ? `QR code for your group's page` : `QR code for ${r.name}`} className="h-full w-full" /> : null}
+          </div>
+          <div className="flex min-w-0 flex-1 flex-col items-start gap-2">
+            <p className="text-[15px] font-semibold text-(--ev-ink)">
+              {hostUrl ? `Your group's page, with all your upcoming ${many}`
+                : facts.repeats ? `Your ${one}'s page, with every date` : `Your ${one}'s page`}
+            </p>
+            <span className="max-w-full break-all text-[14px] text-(--ev-ink-75)">{groupLinkFor('chat').replace('https://www.', '')}</span>
+            <div className="flex flex-wrap gap-2">
+              <CopyButton id="group-link" text={groupLinkFor('chat')} copied={copied} copy={copy} label="Copy link" />
+              <Button size="sm" disabled={!groupQr} onClick={() => { if (!groupQr) return; saveFile(`${fileSlug(hostUrl ? (detail.event_organizer?.name ?? r.name) : r.name)}-group-qr.png`, groupQr); track('organizer_group_qr_downloaded', { ride_id: r.id, page: hostUrl ? 'group' : 'ride' }) }}>
+                <Download className="h-4 w-4" aria-hidden />Download QR code
+              </Button>
+            </div>
+          </div>
+        </div>
+        <div className="mt-4 flex flex-wrap gap-2" role="group" aria-label="Where you're sending it">
+          {GROUP_MSGS.map((m) => (
+            <Toggle key={m.key} on={groupMsg === m.key} onClick={() => setGroupMsg(m.key)}>
+              {m.label}
+            </Toggle>
+          ))}
+        </div>
+        <label htmlFor="group-message" className="mt-4 block text-[14px] font-semibold text-(--ev-ink-85)">Message (edit it to sound like you)</label>
+        <textarea
+          id="group-message"
+          value={groupCopy}
+          onChange={(e) => setGroupEdits((x) => ({ ...x, [groupMsg]: e.target.value }))}
+          rows={groupMsg === 'email' ? 16 : 4}
+          className="mt-1.5 w-full rounded-[10px] border border-(--ev-line-strong) bg-white px-3.5 py-3 text-[15px] leading-relaxed text-(--ev-ink) focus-visible:outline-2 focus-visible:outline-(--ev-accent)"
+        />
+        <p className="mt-2 text-[14px] text-(--ev-ink-75)">{GROUP_MSGS.find((m) => m.key === groupMsg)!.tip}</p>
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <CopyButton id={`group-${groupMsg}`} text={groupCopy} copied={copied} copy={copy} label="Copy message" primary />
+          {groupEdits[groupMsg] !== undefined && (
+            <Button size="sm" variant="ghost" onClick={() => setGroupEdits((x) => { const n = { ...x }; delete n[groupMsg]; return n })}>Start over</Button>
+          )}
+        </div>
+        <p className="mt-4 text-[14px] text-(--ev-ink-75)">
+          {r.live_sharing === 'off'
+            ? <>The live map is off for this {one}. To add it, <Link href={`/organizers/rides/${r.id}/edit`} className="font-semibold text-(--ev-ink) underline">choose who sees it</Link>.</>
+            : <>Only the leader needs the Shift app: it shows where the group is on the live map. Everyone else uses a web browser.</>}
+        </p>
+      </Card>}
       {tab === 'flyer' && <Card id="flyer">
         <SectionTitle hint="Put this QR on your own flyer or poster. It opens the ride page.">
-          <StepTitle n={2}>Flyer</StepTitle>
+          <StepTitle n={3}>Flyer</StepTitle>
         </SectionTitle>
         <div className="flex flex-wrap items-center gap-4">
           <div className="h-[132px] w-[132px] shrink-0 overflow-hidden rounded-xl border border-(--ev-line) bg-white">
@@ -362,7 +497,7 @@ export default function PromoteView() {
 
       {tab === 'posts' && <Card id="posts">
         <SectionTitle hint="Each place gets its own link, so Results can show which posts bring people.">
-          <StepTitle n={1}>Social posts</StepTitle>
+          <StepTitle n={2}>Social posts</StepTitle>
         </SectionTitle>
         <div className="flex flex-wrap gap-2" role="group" aria-label="Where you're posting">
           {POSTS.map((c) => (
@@ -412,7 +547,7 @@ export default function PromoteView() {
           hint="Copy the listing once, then paste it into each calendar."
           action={<CopyButton id="cal" text={calendarText} copied={copied} copy={copy} label="Copy listing" primary />}
         >
-          <StepTitle n={3}>Event calendars</StepTitle>
+          <StepTitle n={4}>Event calendars</StepTitle>
         </SectionTitle>
         <ul className="grid grid-cols-[minmax(0,1fr)] gap-1 sm:grid-cols-2">
           <li className="flex items-start gap-3 rounded-xl bg-(--ev-panel-faint) px-3 py-3">

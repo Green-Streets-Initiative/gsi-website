@@ -33,7 +33,7 @@ function ShareCard({ code, fresh, rideId, walk = false }: { code: string; fresh:
         </Button>
       </div>
       <p className="mt-3 text-[14px] text-(--ev-ink-75)">
-        Captions, a flyer QR and calendar listings are ready in <Link href={`/organizers/rides/${rideId}/promote`} className="font-semibold text-(--ev-ink) underline">Promote</Link>.
+        Next, <Link href={`/organizers/rides/${rideId}/promote`} className="font-semibold text-(--ev-ink) underline">tell your group</Link> you&apos;re using Shift: a message to send them is ready in Promote, with captions, a flyer QR and calendar listings.
       </p>
     </Card>
   )
