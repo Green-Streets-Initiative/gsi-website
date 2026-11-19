@@ -151,7 +151,7 @@ def donate():
 <p class="what"><i data-lucide="tv"></i><span><b>$10 a month</b>, about what a streaming plan costs.</span></p>
 <a class="btn givebtn"><i data-lucide="heart"></i>Give $10 a month</a>'''
     form_once = f'''<div class="ams">{amts(['20', '35', '50', '100'], '35')}</div>
-<p class="what"><i data-lucide="bike"></i><span><b>$35</b> pays for an hour of a free bike lesson.</span><em>Keith confirms</em></p>
+<p class="what"><i data-lucide="bike"></i><span><b>$35</b> covers an hour of expert instruction from a local, <span style="white-space:nowrap">Bike League-certified</span> instructor.</span></p>
 <a class="btn givebtn"><i data-lucide="heart"></i>Give $35</a>'''
     body = f'''{nav2()}
 <main class="wrap">
