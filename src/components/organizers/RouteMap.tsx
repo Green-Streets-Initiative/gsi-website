@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { loadMaplibre } from '@/lib/map/loadMaplibre'
 import type { LatLng } from '@/lib/organizers/types'
@@ -138,6 +138,10 @@ export default function RouteMap({
   line, lanes = null, pieces, spots, focus = null, onPieceClick, onSpotClick, stops, guards, meetup, group = null, meet = null, me = null, pick, onPick, fitKey = 0, className, label = 'Route map',
 }: Props) {
   const groupMarker = useRef<import('maplibre-gl').Marker | null>(null)
+  // Until the first tiles and the route are drawn, the route's outline shows in
+  // their place, so the box is never empty.
+  const [drawn, setDrawn] = useState(false)
+  const sketch = useMemo(() => (meet || line.length < 2 ? null : sketchOf(line, meetup ?? null)), [line, meetup, meet])
   const box = useRef<HTMLDivElement>(null)
   const mapRef = useRef<import('maplibre-gl').Map | null>(null)
   const libRef = useRef<typeof import('maplibre-gl') | null>(null)
@@ -204,6 +208,7 @@ export default function RouteMap({
         map.on('mouseenter', 'route-hit', () => { if (!pickRef.current && onPieceRef.current) map.getCanvas().style.cursor = 'pointer' })
         map.on('mouseleave', 'route-hit', () => { if (!pickRef.current) map.getCanvas().style.cursor = '' })
         mapRef.current = map
+        map.once('idle', () => setDrawn(true))
         map.fire('organizer:ready')
         // A map created before its box has its final size (a lazy-loaded page) draws a corner only.
         map.resize()
@@ -351,5 +356,36 @@ export default function RouteMap({
     if (c) c.style.cursor = pick ? 'crosshair' : ''
   }, [pick])
 
-  return <div ref={box} role="region" aria-label={label} className={className ?? 'h-[380px] w-full overflow-hidden rounded-xl border border-(--ev-line-mid)'} />
+  return (
+    <div className={`relative ${className ?? 'h-[380px] w-full overflow-hidden rounded-xl border border-(--ev-line-mid)'}`}>
+      <div ref={box} role="region" aria-label={label} style={{ position: 'absolute', inset: 0 }} />
+      {sketch && !drawn && (
+        <svg viewBox={sketch.box} preserveAspectRatio="xMidYMid meet" aria-hidden
+          className="pointer-events-none absolute inset-0 h-full w-full bg-[#F2EFE9]">
+          <polyline points={sketch.points} fill="none" stroke="#2966E5" strokeOpacity={0.22} strokeWidth={9} strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+          <polyline points={sketch.points} fill="none" stroke="#2966E5" strokeWidth={5} strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+          {sketch.pin && <circle cx={sketch.pin[0]} cy={sketch.pin[1]} r={sketch.r} fill="#191A2E" stroke="#fff" strokeWidth={2} vectorEffect="non-scaling-stroke" />}
+        </svg>
+      )}
+    </div>
+  )
+}
+
+/** The route as an SVG outline in web-map (Mercator) proportions, framed with a margin like the map's own fit. */
+function sketchOf(line: LatLng[], meetup: LatLng | null): { box: string; points: string; pin: [number, number] | null; r: number } {
+  const xy = (p: LatLng): [number, number] => [p.lng, -Math.log(Math.tan(Math.PI / 4 + (p.lat * Math.PI) / 360)) * (180 / Math.PI)]
+  const pts = line.map(xy)
+  const pin = meetup ? xy(meetup) : null
+  const all = pin ? [...pts, pin] : pts
+  const xs = all.map((p) => p[0])
+  const ys = all.map((p) => p[1])
+  const w = Math.max(...xs) - Math.min(...xs) || 0.001
+  const h = Math.max(...ys) - Math.min(...ys) || 0.001
+  const pad = Math.max(w, h) * 0.14
+  return {
+    box: `${Math.min(...xs) - pad} ${Math.min(...ys) - pad} ${w + pad * 2} ${h + pad * 2}`,
+    points: pts.map((p) => `${p[0]},${p[1]}`).join(' '),
+    pin,
+    r: Math.max(w, h) * 0.025,
+  }
 }
