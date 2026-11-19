@@ -427,7 +427,7 @@ export default function PromoteView() {
         <SectionTitle hint={`Let your regulars know you're using Shift, and what they get from it. Send it once, where your group already talks.`}>
           <StepTitle n={1}>Tell your group</StepTitle>
         </SectionTitle>
-        <ul className="mb-4 grid grid-cols-3 gap-3" aria-label="What your group sees">
+        <ul className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-3" aria-label="What your group sees">
           {groupShots.map((s) => (
             <li key={s.src} className="flex flex-col gap-2">
               <div className="relative h-[120px] overflow-hidden rounded-xl border border-(--ev-line) bg-white sm:h-[160px]">
@@ -438,7 +438,7 @@ export default function PromoteView() {
           ))}
         </ul>
         <div className="flex flex-wrap items-center gap-4 rounded-xl bg-(--ev-panel-faint) p-4">
-          <div className="h-[112px] w-[112px] shrink-0 overflow-hidden rounded-xl border border-(--ev-line) bg-white">
+          <div className="h-[88px] w-[88px] shrink-0 overflow-hidden rounded-xl border border-(--ev-line) bg-white sm:h-[112px] sm:w-[112px]">
             {groupQr ? <img src={groupQr} alt={hostUrl ? `QR code for your group's page` : `QR code for ${r.name}`} className="h-full w-full" /> : null}
           </div>
           <div className="flex min-w-0 flex-1 flex-col items-start gap-2">
@@ -450,7 +450,7 @@ export default function PromoteView() {
             <div className="flex flex-wrap gap-2">
               <CopyButton id="group-link" text={groupCleanLink} copied={copied} copy={copy} label="Copy link" />
               <Button size="sm" disabled={!groupQr} onClick={() => { if (!groupQr) return; saveFile(`${fileSlug(hostUrl ? (detail.event_organizer?.name ?? r.name) : r.name)}-group-qr.png`, groupQr); track('organizer_group_qr_downloaded', { ride_id: r.id, page: hostUrl ? 'group' : 'ride' }) }}>
-                <Download className="h-4 w-4" aria-hidden />Download QR code
+                <Download className="h-4 w-4" aria-hidden />Download QR
               </Button>
             </div>
           </div>
@@ -467,7 +467,7 @@ export default function PromoteView() {
           id="group-message"
           value={groupCopy}
           onChange={(e) => setGroupEdits((x) => ({ ...x, [groupMsg]: e.target.value }))}
-          rows={groupMsg === 'email' ? 16 : 4}
+          rows={groupMsg === 'email' ? 16 : 6}
           className="mt-1.5 w-full rounded-[10px] border border-(--ev-line-strong) bg-white px-3.5 py-3 text-[15px] leading-relaxed text-(--ev-ink) focus-visible:outline-2 focus-visible:outline-(--ev-accent)"
         />
         <p className="mt-2 text-[14px] text-(--ev-ink-75)">{GROUP_MSGS.find((m) => m.key === groupMsg)!.tip}</p>
