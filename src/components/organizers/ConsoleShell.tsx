@@ -123,12 +123,31 @@ function SignIn() {
   const [sent, setSent] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
+  const [googleBusy, setGoogleBusy] = useState(false)
+
+  // Google, as in the app: a Gmail account signs in to the same Shift account
+  // (an emailed link to that address does too). Comes back to this page; a
+  // personal link stays in this browser and rides in the return address.
+  async function google() {
+    setGoogleBusy(true)
+    setErr(null)
+    clearNotice()
+    track('organizer_signin_google')
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: `${window.location.origin}/organizers${linkToken ? `?link=${linkToken}` : ''}` },
+    })
+    if (error) {
+      setGoogleBusy(false)
+      setErr("We couldn't open Google. Try again, or use your email below.")
+    }
+  }
 
   async function send(e?: FormEvent) {
     e?.preventDefault()
     const addr = email.trim().toLowerCase()
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(addr)) {
-      setErr('Enter the email address you use for Shift.')
+      setErr('Enter your email address.')
       return
     }
     setBusy(true)
@@ -181,9 +200,6 @@ function SignIn() {
             Plan the route on a map of bike lanes, street by street. People see it on your ride&rsquo;s page and say they&rsquo;re coming, in any browser.
           </figcaption>
         </figure>
-        <p className="mt-4 text-[14px] leading-snug text-(--ev-ink-75)">
-          Same account as the Shift app: a ride or walk you set up here shows up on your phone.
-        </p>
       </div>
 
       <Card className={cx('shadow-(--ev-shadow) md:col-start-2 md:row-span-2 md:row-start-1 md:self-center', linkToken && 'order-1 md:order-none')}>
@@ -207,12 +223,18 @@ function SignIn() {
           <form onSubmit={send} noValidate>
             <h2 className="font-display text-[22px] font-extrabold">{linkToken ? 'Sign in to get started' : 'Sign in'}</h2>
             <p className="mt-1 text-[15px] leading-snug text-(--ev-ink-80)">
-              {linkToken
-                ? 'Your personal link is ready. Enter your email and we\u2019ll send you a sign-in link. Open it and you\u2019re in.'
-                : <>Use the email address you use for Shift. We&rsquo;ll email you a sign-in link.</>}
+              {linkToken ? 'Your personal link is ready. Sign in and you\u2019re in. ' : ''}
+              New to Shift? Signing in sets up your account.
             </p>
             {notice && <div className="mt-4"><Notice tone="warn">{notice}</Notice></div>}
-            <div className="mt-5">
+            <Button className="mt-5 w-full" busy={googleBusy} onClick={() => void google()}>
+              {!googleBusy && <GoogleG />}
+              Continue with Google
+            </Button>
+            <div className="mt-4 flex items-center gap-3 text-[14px] text-(--ev-ink-75)" aria-hidden>
+              <span className="h-px flex-1 bg-(--ev-line)" />or<span className="h-px flex-1 bg-(--ev-line)" />
+            </div>
+            <div className="mt-4">
               <Field label="Email" htmlFor="org-email" error={err}>
                 <Input
                   id="org-email"
@@ -228,9 +250,8 @@ function SignIn() {
             </div>
             <Button type="submit" variant="primary" className="mt-4 w-full" busy={busy}>Email me a sign-in link</Button>
             <p className="mt-4 text-[14px] leading-snug text-(--ev-ink-75)">
-              {linkToken
-                ? 'New to Shift? The same email sets up your account. No app needed.'
-                : 'Ride tools are invite-only while we try them with a few groups.'}
+              Have the Shift app? Sign in the same way you do there, and the rides you set up here show up in the app too.
+              {!linkToken && ' Ride tools are invite-only while we try them with a few groups.'}
             </p>
           </form>
         )}
@@ -239,10 +260,22 @@ function SignIn() {
   )
 }
 
+/** Google's four-color G, as its sign-in button guidelines ask. */
+function GoogleG() {
+  return (
+    <svg viewBox="0 0 48 48" className="h-[18px] w-[18px]" aria-hidden>
+      <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
+      <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" />
+      <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" />
+      <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
+    </svg>
+  )
+}
+
 const LINK_PROBLEM: Record<LinkProblem, { title: string; body: string }> = {
   used: {
     title: 'This link has already been used',
-    body: 'Each personal link opens for one account, and a different account opened this one. If that was you, sign in with that email instead. If not, ask the person who sent it for a new link.',
+    body: 'Each personal link opens for one account, and a different account opened this one. If that was you, sign in with that account instead. If not, ask the person who sent it for a new link.',
   },
   revoked: {
     title: 'This link has been turned off',
@@ -276,7 +309,7 @@ function NoAccess() {
       )}
       <div className="mt-5 flex flex-wrap gap-2">
         {/* A used link most likely means they signed in with their other address. */}
-        {linkProblem === 'used' && <Button variant="primary" onClick={() => void signOut()}>Sign in with another email</Button>}
+        {linkProblem === 'used' && <Button variant="primary" onClick={() => void signOut()}>Sign in with another account</Button>}
         <a
           href="mailto:info@gogreenstreets.org?subject=Ride%20organizer%20tools"
           className={cx('inline-flex min-h-[44px] items-center justify-center rounded-[10px] px-4 text-[15px] font-semibold',
@@ -286,7 +319,7 @@ function NoAccess() {
         >
           {problem ? 'Email us' : 'Ask for access'}
         </a>
-        {linkProblem !== 'used' && <Button variant="ghost" onClick={() => void signOut()}>Use a different email</Button>}
+        {linkProblem !== 'used' && <Button variant="ghost" onClick={() => void signOut()}>Use a different account</Button>}
       </div>
     </Card>
   )
