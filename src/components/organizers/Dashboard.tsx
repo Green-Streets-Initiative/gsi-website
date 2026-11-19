@@ -9,6 +9,7 @@ import { UPDATE_KIND_LABEL, dateLabel, plural, todayKey } from '@/lib/organizers
 import type { DashboardRide, NextDate } from '@/lib/organizers/types'
 import { ASSISTANT_CHANGED_EVENT, openAssistant } from './AssistantPanel'
 import { useConsole } from './ConsoleContext'
+import CardThumb from '@/components/events/CardThumb'
 import PhotoNudge from './PhotoNudge'
 import { FeedbackDueCard, FeedbackLink } from './Feedback'
 import { NoMeetupHint, RideDayRiders, useRideDay, useRideTime } from './RideDay'
@@ -58,6 +59,27 @@ function DateChip({ d, rideId, phoneHidden }: { d: NextDate; rideId: string; pho
   )
 }
 
+/**
+ * The ride's square, as on the events calendar's cards (polish 2026-11-19):
+ * its flyer, else a small map of where people meet. A ride with neither
+ * (a draft with no meeting place yet) shows no square.
+ */
+function RideThumb({ r }: { r: DashboardRide }) {
+  const [flyerOk, setFlyerOk] = useState(true)
+  // It may have failed before the page hydrated, when onError wasn't listening yet.
+  const flyerRef = (img: HTMLImageElement | null) => {
+    if (img && img.complete && img.naturalWidth === 0) setFlyerOk(false)
+  }
+  if (r.flyer_url && flyerOk) {
+    return (
+      <div className="h-16 w-16 shrink-0 overflow-hidden rounded-[12px] border border-(--ev-line)">
+        <img ref={flyerRef} src={r.flyer_url} alt="" className="h-full w-full object-cover" loading="lazy" onError={() => setFlyerOk(false)} />
+      </div>
+    )
+  }
+  return <CardThumb lat={r.meetup_lat ?? null} lng={r.meetup_lng ?? null} logo={null} fallback={null} />
+}
+
 /** One ride as a row: what it is, its next dates, and the two things you do from here. */
 function RideRow({ r, goingTo }: { r: DashboardRide; goingTo?: FeedTarget | null }) {
   const over = r.status === 'archived' || (!!r.ride_date && r.next_dates.length === 0)
@@ -67,7 +89,9 @@ function RideRow({ r, goingTo }: { r: DashboardRide; goingTo?: FeedTarget | null
   return (
     <li className="list-none rounded-2xl border border-(--ev-line-mid) bg-(--ev-card) p-4 sm:p-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
-        <div className="min-w-0 sm:flex-1">
+        <div className="flex min-w-0 gap-3.5 sm:flex-1">
+        <RideThumb r={r} />
+        <div className="min-w-0 flex-1">
           <Link href={`/organizers/rides/${r.id}`} className="font-display text-[19px] font-extrabold leading-tight text-(--ev-ink) hover:underline">
             {r.name}
           </Link>
@@ -90,6 +114,7 @@ function RideRow({ r, goingTo }: { r: DashboardRide; goingTo?: FeedTarget | null
               {r.my_role === 'admin' && r.organizer_person && <Badge tone="plain">Organizer: {r.organizer_person}</Badge>}
             </div>
           )}
+        </div>
         </div>
         <div className="flex gap-2 *:flex-1 *:justify-center sm:*:flex-none">
           {canPost && (

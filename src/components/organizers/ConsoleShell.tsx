@@ -160,13 +160,22 @@ function SignIn() {
         <h1 className="mt-2 font-display text-[clamp(30px,4.2vw,44px)] font-extrabold leading-[1.05] text-(--ev-ink)">
           Plan and run your group&rsquo;s rides and walks
         </h1>
-        <ul className="mt-5 space-y-2.5 text-[16px] leading-snug text-(--ev-ink-85)">
-          <li>Set up a one-off ride or walk, or a whole season, with a route planned on bike lanes and paths or brought in from Ride with GPS or a GPX file.</li>
-          <li>See who&rsquo;s coming to each date, from the app and from your ride page.</li>
-          <li>Post &ldquo;It&rsquo;s on&rdquo; or &ldquo;Running late&rdquo; once, and everyone hears it.</li>
-          <li>Pull monthly turnout for your funders.</li>
-        </ul>
-        <p className="mt-5 text-[14px] leading-snug text-(--ev-ink-75)">
+        {/* The kit's own line and the page they'll make, not a second pitch in
+            different words (polish 2026-11-19: four lines of text, no picture). */}
+        <p className="mt-4 text-[17px] leading-snug text-(--ev-ink-85)">
+          Plan the route, see who&rsquo;s coming and count who came.
+        </p>
+        <figure className="mt-5 overflow-hidden rounded-2xl border border-(--ev-line-mid) bg-white">
+          <img
+            src="/organizer-kit/ride-page.jpg"
+            alt="A ride page: pick a date, then Going, Maybe or Can’t go, with distance, pace, hills and level"
+            className="h-[220px] w-full object-cover object-top md:h-[260px]"
+          />
+          <figcaption className="border-t border-(--ev-line) px-4 py-2.5 text-[15px] leading-snug text-(--ev-ink-80)">
+            Your ride&rsquo;s page. People say they&rsquo;re coming here, in any browser.
+          </figcaption>
+        </figure>
+        <p className="mt-4 text-[14px] leading-snug text-(--ev-ink-75)">
           Same account as the Shift app: a ride or walk you set up here shows up on your phone.
         </p>
       </div>

@@ -67,6 +67,10 @@ export interface DashboardRide {
   week_of_month: number | null
   start_time: string
   meetup_name: string | null
+  /** For the card's square (Shift 01862); absent until that migration is applied. */
+  meetup_lat?: number | null
+  meetup_lng?: number | null
+  flyer_url?: string | null
   break_until: string | null
   my_role: ConsoleRole
   organizer_name: string | null

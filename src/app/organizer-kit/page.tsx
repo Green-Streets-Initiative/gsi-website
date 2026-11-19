@@ -206,6 +206,47 @@ function AlbumArt() {
   )
 }
 
+/** Pilot step 2: one link, posted where the group already looks. */
+function ShareArt() {
+  return (
+    <div className={ART} aria-hidden>
+      <p className="truncate rounded-full border border-navy/15 bg-white px-3.5 py-2 text-[15px] font-bold text-navy">gogreenstreets.org/rides/your-ride</p>
+      {['Your Meetup event', 'An Instagram Story', 'The group chat'].map((p) => (
+        <p key={p} className="flex items-center gap-2 px-1 text-[16px] font-semibold text-navy">
+          <Check className="h-4 w-4 text-forest" aria-hidden />{p}
+        </p>
+      ))}
+    </div>
+  )
+}
+
+/** The pilot's three steps, each with the screen it happens on (made-up ride; real console screens). */
+const PILOT: { title: string; body: string; art: ReactNode }[] = [
+  {
+    title: 'Set up one ride',
+    body: 'Your link opens it filled in. Add the route and save.',
+    art: (
+      <span className="relative block h-[176px] overflow-hidden rounded-[12px] border border-navy/10">
+        <Image src="/organizer-kit/setup-step.jpg" alt="The organizer console's ride form on step 1 of 6, with the ride's page shown beside it as you type" fill className="object-cover object-left-top" sizes="(min-width: 768px) 340px, 90vw" />
+      </span>
+    ),
+  },
+  {
+    title: 'Share your ride’s link',
+    body: 'Wherever you post now: Meetup, Instagram, the group chat.',
+    art: <ShareArt />,
+  },
+  {
+    title: 'Tell us how it went',
+    body: 'Three questions after your first ride. Your answers shape what we build.',
+    art: (
+      <span className="relative block h-[176px] overflow-hidden rounded-[12px] border border-navy/10">
+        <Image src="/organizer-kit/feedback.jpg" alt="The feedback card after a first ride: how did it go, what should we fix, what would you tell another organizer" fill className="object-cover object-top" sizes="(min-width: 768px) 340px, 90vw" />
+      </span>
+    ),
+  },
+]
+
 type Stage = { when: string; ask: string; does: string; art: ReactNode }
 
 /** Before ride day. */
@@ -488,17 +529,18 @@ export default async function OrganizerKitPage({ searchParams }: { searchParams:
 
         {/* The pilot: three steps, and who we are. */}
         <Section id="pilot" title="Be one of the first">
+          {/* Each step shows the screen it happens on (polish 2026-11-19: the
+              steps were the only text-only cards above the facts). */}
           <ol className="grid gap-3 md:grid-cols-3">
-            {[
-              ['Set up one ride', 'Your link opens it filled in. Add the route and save.'],
-              ['Share your ride’s link', 'Wherever you post now: Meetup, Instagram, the group chat.'],
-              ['Tell us how it went', 'Three questions after your first ride. Your answers shape what we build.'],
-            ].map(([t, b], i) => (
-              <li key={t} className="flex gap-4 rounded-[18px] border border-navy/10 bg-white px-5 py-4 print:break-inside-avoid">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-navy text-[17px] font-bold text-white">{i + 1}</span>
-                <div>
-                  <p className="text-[1.25rem] font-bold">{t}</p>
-                  <p className={`mt-0.5 ${BODY}`}>{b}</p>
+            {PILOT.map((s, i) => (
+              <li key={s.title} className="flex flex-col gap-3 rounded-[18px] border border-navy/10 bg-white p-3 pb-4 print:break-inside-avoid">
+                {s.art}
+                <div className="flex gap-3 px-1">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-navy text-[17px] font-bold text-white">{i + 1}</span>
+                  <div>
+                    <p className="text-[1.25rem] font-bold leading-snug">{s.title}</p>
+                    <p className={`mt-0.5 ${BODY}`}>{s.body}</p>
+                  </div>
                 </div>
               </li>
             ))}

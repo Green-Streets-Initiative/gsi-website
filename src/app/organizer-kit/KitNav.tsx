@@ -58,7 +58,8 @@ export default function KitNav({ sections, href }: { sections: [string, string][
             </a>
           ))}
         </div>
-        <a href={href} className="hidden shrink-0 rounded-full bg-forest px-4 py-2 text-[15px] font-bold text-white hover:opacity-90 sm:inline-flex">
+        {/* On phones too (polish 2026-11-19): otherwise the button is only in the hero and at the foot, about nine screens apart. */}
+        <a href={href} className="inline-flex shrink-0 rounded-full bg-forest px-3.5 py-2 text-[15px] font-bold text-white hover:opacity-90 sm:px-4">
           Set up my ride
         </a>
       </div>
