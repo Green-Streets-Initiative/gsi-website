@@ -25,7 +25,7 @@ const R = { home: 9, match: 9, rail: 12, path: 11, spot: 11 } as const
 const FILL = { home: '#191A2E', match: '#2D6A4F', path: '#2D6A4F', spot: '#C77D0A' } as const
 const FONT = 14
 
-export default function PinMap({ pins, line, width = 480, height = 300, title, caption, className, boxClassName = 'aspect-[8/5]', maxZoom = 15, quiet = true }: {
+export default function PinMap({ pins, line, width = 480, height = 300, title, caption, className, boxClassName = 'aspect-[8/5]', minZoom = 12, maxZoom = 15, quiet = true }: {
   pins: Pin[]
   /** A route drawn under the pins (the map fits it too). */
   line?: { lat: number; lng: number }[]
@@ -38,6 +38,8 @@ export default function PinMap({ pins, line, width = 480, height = 300, title, c
   height?: number
   title: string
   className?: string
+  /** Lower it for pins spread across several towns (12 is street level). */
+  minZoom?: number
   maxZoom?: number
   /** Fade the basemap's colors so the pins are the only strong ones. */
   quiet?: boolean
@@ -49,7 +51,7 @@ export default function PinMap({ pins, line, width = 480, height = 300, title, c
     (b, p) => ({ minLat: Math.min(b.minLat, p.lat), maxLat: Math.max(b.maxLat, p.lat), minLng: Math.min(b.minLng, p.lng), maxLng: Math.max(b.maxLng, p.lng) }),
     { minLat: pins[0].lat, maxLat: pins[0].lat, minLng: pins[0].lng, maxLng: pins[0].lng },
   )
-  const vp = fitViewport(bounds, width, height, { padFactor: 0.8, minZoom: 12, maxZoom })
+  const vp = fitViewport(bounds, width, height, { padFactor: 0.8, minZoom, maxZoom })
   const tiles: { key: string; url: string; x: number; y: number }[] = []
   const maxTile = Math.pow(2, vp.zoom) - 1
   for (let tx = Math.floor(vp.originX / TILE); tx <= Math.floor((vp.originX + width) / TILE); tx++) {

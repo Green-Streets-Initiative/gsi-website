@@ -337,7 +337,7 @@ export default function Start({ locale }: { locale: SiteLocale }) {
               </li>
             ))}
           </ol>
-          <PinMap pins={AREAS} title={t('map_title')} caption={t('where')} className="mt-6" />
+          <PinMap pins={AREAS} title={t('map_title')} caption={t('where')} className="mt-6" width={400} height={400} boxClassName="aspect-square" minZoom={10} />
         </section>
       </div>
     </div>
