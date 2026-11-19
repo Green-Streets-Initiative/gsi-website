@@ -9,8 +9,8 @@ import { UPDATE_KIND_LABEL, dateLabel, plural, todayKey } from '@/lib/organizers
 import type { DashboardRide, NextDate } from '@/lib/organizers/types'
 import { ASSISTANT_CHANGED_EVENT, openAssistant } from './AssistantPanel'
 import { useConsole } from './ConsoleContext'
-import CardThumb from '@/components/events/CardThumb'
 import PhotoNudge from './PhotoNudge'
+import RideThumb from './RideThumb'
 import { FeedbackDueCard, FeedbackLink } from './Feedback'
 import { NoMeetupHint, RideDayRiders, useRideDay, useRideTime } from './RideDay'
 import { Badge, Card, Empty, Notice, Spinner, Tabs, cx, tabPanel, type Tone } from './ui'
@@ -57,27 +57,6 @@ function DateChip({ d, rideId, phoneHidden }: { d: NextDate; rideId: string; pho
       {!off && d.confirmed && <Check className="h-4 w-4 text-(--ev-accent)" strokeWidth={3} aria-label="It's on" />}
     </Link>
   )
-}
-
-/**
- * The ride's square, as on the events calendar's cards (polish 2026-11-19):
- * its flyer, else a small map of where people meet. A ride with neither
- * (a draft with no meeting place yet) shows no square.
- */
-function RideThumb({ r }: { r: DashboardRide }) {
-  const [flyerOk, setFlyerOk] = useState(true)
-  // It may have failed before the page hydrated, when onError wasn't listening yet.
-  const flyerRef = (img: HTMLImageElement | null) => {
-    if (img && img.complete && img.naturalWidth === 0) setFlyerOk(false)
-  }
-  if (r.flyer_url && flyerOk) {
-    return (
-      <div className="h-16 w-16 shrink-0 overflow-hidden rounded-[12px] border border-(--ev-line)">
-        <img ref={flyerRef} src={r.flyer_url} alt="" className="h-full w-full object-cover" loading="lazy" onError={() => setFlyerOk(false)} />
-      </div>
-    )
-  }
-  return <CardThumb lat={r.meetup_lat ?? null} lng={r.meetup_lng ?? null} logo={null} fallback={null} />
 }
 
 /** One ride as a row: what it is, its next dates, and the two things you do from here. */
