@@ -8,7 +8,7 @@ import {
   type CommunityEvent, getTypeMeta, parseEventDate, eventLastDay, isDeadline,
 } from '@/lib/events'
 import { withLang, type SiteLocale } from '@/lib/site-i18n'
-import { typeLabel, timeL, dateRangeLongL, dayTitleL, eventCount, eventsT } from '@/lib/events-i18n'
+import { typeLabel, timeL, dateRangeLongL, dateRangeShortL, dayTitleL, eventCount, eventsT, plural } from '@/lib/events-i18n'
 import { typeInk, TINT } from '@/lib/events-tone'
 import { EVENT_TYPE_ICONS } from './event-type-icons'
 import { EventsToneProvider, toneClass, useEventsTone, useEventsI18n, type EventsTone } from './EventsTone'
@@ -27,7 +27,7 @@ import { TypePills, LevelPills, LocationControl, DistancePills, WhenPills, TagTo
 import { useEventFilters } from './useEventFilters'
 import { useSavedEvents } from './useSavedEvents'
 import { DateTile } from './EventPageParts'
-import { eventBodyPlain } from '@/lib/event-body'
+import StateTrace from './StateTrace'
 
 /** On phones the email sign-up sits after this many events. */
 const PHONE_SIGNUP_AFTER = 5
@@ -54,29 +54,61 @@ const getDesktopServerSnapshot = () => false
 
 const SPOTLIGHT_MAX = 3
 
-function SpotlightCard({ event, compact }: { event: CommunityEvent; compact: boolean }) {
+/** Today in Boston as YYYY-MM-DD, and whole days between two such dates. */
+const todayIso = () => new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' })
+const dayNum = (iso: string) => Math.round(Date.parse(iso + 'T00:00:00Z') / 86_400_000)
+
+/** "Beat the Bay State: walk with Team Green Streets, Nov 1 to 30" loses the dates the meter already shows. */
+const TRAILING_DATES = /,\s*(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+\d{1,2}(?:\s*(?:to|-|–)\s*(?:[a-z]+\.?\s+)?\d{1,2})?(?:,\s*\d{4})?\s*$/i
+
+/** Where "Join" goes: the sign-up page, as a site path when it is one of ours. */
+function joinHref(event: CommunityEvent): string | null {
+  const url = event.registration_url || event.event_url
+  if (!url) return null
+  return url.replace(/^https?:\/\/(?:www\.)?gogreenstreets\.org(?=\/)/i, '')
+}
+
+/**
+ * Keith picked mockup A 2026-11-19 (docs/design-review-2026-11/mock/spotlight.html):
+ * a picture of the event itself, the dates once as a time-left meter, and
+ * one button. A statewide event (no map spot) shows Massachusetts with its
+ * border traced as far as the event has gone.
+ */
+function SpotlightCard({ event, compact, only }: { event: CommunityEvent; compact: boolean; only: boolean }) {
   const { tone, hrefBase } = useEventsTone()
   const { locale, t } = useEventsI18n()
   const meta = getTypeMeta(event.event_type)
   const ink = typeInk(meta, tone)
   const tint = TINT[tone]
   const Icon = EVENT_TYPE_ICONS[meta.icon] ?? CalendarIcon
+  const today = todayIso()
+  const last = eventLastDay(event)
+  const multiDay = last !== event.event_date
+  const started = event.event_date <= today
+  const total = dayNum(last) - dayNum(event.event_date) + 1
+  const progress = started ? Math.min(1, (dayNum(today) - dayNum(event.event_date) + 1) / total) : 0
+  const daysLeft = dayNum(last) - dayNum(today)
+  const statewide = event.location_lat == null || event.location_lng == null
+  const title = event.title.replace(TRAILING_DATES, '').trim() || event.title
+  const detailHref = withLang(eventPath(event, hrefBase), locale)
+  const rawJoin = joinHref(event)
+  const join = rawJoin && rawJoin.startsWith('/') ? withLang(rawJoin, locale) : rawJoin
+  const joinLabel = /\bteam\b/i.test(event.title) ? t('spot.join_team')
+    : event.event_type === 'challenge' ? t('spot.join_challenge') : t('spot.sign_up')
   const timeStr = event.event_time ? timeL(event.event_time, locale) : null
-  // "November 1 to 30, 2026" for a multi-day event (Shift 01557).
   const when = dateRangeLongL(event, locale) + (timeStr ? ` · ${timeStr}` : '')
   const dateLine = isDeadline(event.event_type) ? t('card.entry_deadline', { when }) : when
-  const firstLine = event.body?.split('\n').find((line) => line.trim())
-  const summary = firstLine ? eventBodyPlain(firstLine) : null
-  const upcoming = event.event_date >= new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' })
 
   return (
-    <Link
-      href={withLang(eventPath(event, hrefBase), locale)}
-      className="group flex min-w-[86%] snap-start items-start gap-3.5 rounded-2xl border p-4 transition-all duration-200 hover:brightness-110 sm:min-w-0 sm:gap-5 sm:p-6 lg:gap-4 lg:p-4"
+    <div
+      className={`relative flex snap-start flex-wrap items-center gap-3.5 rounded-2xl border p-3.5 transition-[filter] duration-200 hover:brightness-[1.03] sm:flex-nowrap sm:gap-4 sm:p-4 ${only ? 'w-full' : 'min-w-[86%] sm:min-w-0'} ${compact ? 'lg:flex-wrap' : ''}`}
       style={{ borderColor: ink + tint.spotLine, backgroundColor: ink + tint.spotBg }}
     >
-      {/* The date tile while it is still ahead; a campaign that has started keeps its type icon. */}
-      {upcoming ? (
+      {statewide && multiDay ? (
+        <div className="flex h-[68px] w-[96px] shrink-0 items-center justify-center rounded-[12px] border bg-(--ev-card) p-1.5 sm:h-[84px] sm:w-[120px] sm:p-2" style={{ borderColor: ink + tint.spotLine }}>
+          <StateTrace progress={progress} color={ink} className="h-full w-full" />
+        </div>
+      ) : !started ? (
         <DateTile date={event.event_date} locale={locale} />
       ) : (
         <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[12px]" style={{ backgroundColor: ink + tint.tile }}>
@@ -85,25 +117,48 @@ function SpotlightCard({ event, compact }: { event: CommunityEvent; compact: boo
       )}
       <div className="min-w-0 flex-1">
         <p className="flex items-center gap-1.5 text-[14px] font-semibold" style={{ color: ink }}>
-          {upcoming && <Icon size={16} aria-hidden />}
+          <Icon size={16} aria-hidden />
           {t('spot.label', { type: typeLabel(event.event_type, locale) })}
         </p>
-        <h2 className="mt-1 font-(family-name:--font-headline) text-[18px] font-extrabold leading-snug tracking-[-0.01em] text-(--ev-ink) sm:text-[22px] lg:text-[18px]">
-          {event.title}
+        <h2 className="mt-0.5 font-(family-name:--font-headline) text-[17px] font-extrabold leading-snug tracking-[-0.01em] text-(--ev-ink) sm:text-[19px]">
+          {/* The whole card opens the event page; the Join button sits above this link. */}
+          <Link href={detailHref} className="after:absolute after:inset-0 after:rounded-2xl after:content-[''] hover:underline">
+            {title}
+          </Link>
         </h2>
-        <p className="mt-1 text-[14px] font-medium text-(--ev-ink-75)">{dateLine}</p>
-        {summary && (
-          <p className="mt-2 line-clamp-2 text-[15px] leading-relaxed text-(--ev-ink-75) max-sm:hidden lg:mt-1 lg:line-clamp-1 lg:text-[14px]">{summary}</p>
+        {multiDay && started ? (
+          <div className="mt-2.5 max-w-[360px]">
+            <div className="h-2 overflow-hidden rounded-full" style={{ backgroundColor: ink + '26' }}>
+              <div className="h-full rounded-full" style={{ width: `${Math.round(progress * 100)}%`, backgroundColor: ink }} />
+            </div>
+            <div className="mt-1.5 flex justify-between gap-3 text-[14px] text-(--ev-ink-85)">
+              <span>{dateRangeShortL(event, locale)}</span>
+              <span className="font-bold">
+                {daysLeft <= 0 ? t('spot.last_day') : plural(t, daysLeft, 'spot.days_left_one', 'spot.days_left_other')}
+              </span>
+            </div>
+          </div>
+        ) : (
+          <p className="mt-1 text-[14px] font-medium text-(--ev-ink-75)">{dateLine}</p>
         )}
       </div>
-      <span
-        className={`mt-1 hidden shrink-0 items-center gap-1.5 text-[14px] font-semibold sm:flex ${compact ? 'lg:hidden' : ''}`}
-        style={{ color: ink }}
-      >
-        {t('spot.see_details')}
-        <ArrowRight size={15} className="transition-transform duration-200 group-hover:translate-x-0.5" />
-      </span>
-    </Link>
+      {join ? (
+        <a
+          href={join}
+          {...(/^https?:/.test(join) ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+          className={`relative z-10 inline-flex h-11 w-full shrink-0 items-center justify-center gap-1.5 rounded-[10px] px-4 text-[15px] font-bold text-white transition-[filter] hover:brightness-110 sm:w-auto ${compact ? 'lg:w-full' : ''}`}
+          style={{ backgroundColor: ink }}
+        >
+          {joinLabel}
+          <ArrowRight size={16} aria-hidden />
+        </a>
+      ) : (
+        <span className={`hidden shrink-0 items-center gap-1.5 text-[15px] font-semibold sm:flex ${compact ? 'lg:hidden' : ''}`} style={{ color: ink }}>
+          {t('spot.see_details')}
+          <ArrowRight size={15} aria-hidden />
+        </span>
+      )}
+    </div>
   )
 }
 
@@ -238,11 +293,11 @@ export default function EventsPage({ events, tone = 'dark', hrefBase = '/events'
         <section className="px-4 pb-5 sm:px-8 sm:pb-6 lg:pb-4">
           <div
             className={`mx-auto flex max-w-[1200px] snap-x snap-mandatory gap-3 overflow-x-auto pb-1 [scrollbar-width:none] sm:flex-col sm:gap-4 sm:overflow-visible sm:pb-0 lg:grid lg:gap-4 ${
-              spotlightEvents.length >= 3 ? 'lg:grid-cols-3' : 'lg:grid-cols-2'
+              spotlightEvents.length >= 3 ? 'lg:grid-cols-3' : spotlightEvents.length === 2 ? 'lg:grid-cols-2' : 'lg:grid-cols-1'
             }`}
           >
             {spotlightEvents.map((ev) => (
-              <SpotlightCard key={ev.id} event={ev} compact={spotlightEvents.length >= 3} />
+              <SpotlightCard key={ev.id} event={ev} compact={spotlightEvents.length >= 3} only={spotlightEvents.length === 1} />
             ))}
           </div>
         </section>
