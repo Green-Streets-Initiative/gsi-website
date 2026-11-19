@@ -56,7 +56,7 @@ export function AddedDates({ id, label, hint, optional, error, dates, onChange }
   )
 }
 
-/** "Add a date" on the ride page: one more date, open for sign-ups and on the calendar right away. */
+/** "Add a date" on the ride page: one more date, open for sign-ups right away (and on the calendar when the ride is public). */
 export function AddDateDialog({ ride, open, onClose, onDone }: {
   ride: RideRow
   open: boolean
@@ -69,6 +69,10 @@ export function AddDateDialog({ ride, open, onClose, onDone }: {
   const today = todayKey()
   const patterned = ride.frequency === 'daily' || (ride.days ?? []).length > 0
   const noun = ride.activity === 'walk' ? 'walk' : 'ride'
+  // An invite-only or school ride stays off the public calendar.
+  const opens = ride.visibility === 'public'
+    ? 'It opens for sign-ups and goes on the calendar right away.'
+    : 'It opens for sign-ups right away.'
 
   async function save() {
     if (!date) return
@@ -92,8 +96,8 @@ export function AddDateDialog({ ride, open, onClose, onDone }: {
       </>}>
       <p className="text-[15px] leading-snug text-(--ev-ink-85)">
         {patterned
-          ? `One more date off the usual days, like a Sunday ${noun} for a Saturday group. It opens for sign-ups and goes on the calendar right away.`
-          : 'It opens for sign-ups and goes on the calendar right away.'}
+          ? `One more date off the usual days, like a Sunday ${noun} for a Saturday group. ${opens}`
+          : opens}
       </p>
       <div className="mt-4">
         <Field label="Date" htmlFor="add-date">

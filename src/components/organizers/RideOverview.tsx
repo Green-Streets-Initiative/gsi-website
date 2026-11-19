@@ -64,10 +64,10 @@ function LiveMapLink({ code, date, members, walk, editHref }: { code: string; da
   )
 }
 
-/** What this date rides: its own route (Shift 01432), the usual one, or none. */
-function RouteChip({ d, usualMiles, hasUsual }: { d: DetailDate; usualMiles: number | null; hasUsual: boolean }) {
+/** What this date rides: its own route (Shift 01432), the usual one, or none. A ride with no pattern has no "usual" (01868). */
+function RouteChip({ d, usualMiles, hasUsual, patterned = true }: { d: DetailDate; usualMiles: number | null; hasUsual: boolean; patterned?: boolean }) {
   const miles = d.own_route ? d.route?.route_miles ?? null : usualMiles
-  const text = d.own_route ? 'Its own route' : hasUsual ? 'Usual route' : 'No route yet'
+  const text = d.own_route ? (patterned ? 'Its own route' : 'Route') : hasUsual ? (patterned ? 'Usual route' : 'Route') : 'No route yet'
   return (
     <span className={cx('inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-2.5 py-0.5 text-[13px] font-semibold',
       d.own_route ? 'border-(--ev-accent-line) bg-(--ev-panel) text-(--ev-ink)' : 'border-(--ev-line-mid) text-(--ev-ink-75)')}>
@@ -76,8 +76,8 @@ function RouteChip({ d, usualMiles, hasUsual }: { d: DetailDate; usualMiles: num
   )
 }
 
-function DateRow({ d, canManage, canEdit, rideId, usualMiles, hasUsual, onCancel, onChange, onRestore, onCount }: {
-  d: DetailDate; canManage: boolean; canEdit: boolean; rideId: string; usualMiles: number | null; hasUsual: boolean
+function DateRow({ d, canManage, canEdit, rideId, usualMiles, hasUsual, patterned = true, onCancel, onChange, onRestore, onCount }: {
+  d: DetailDate; canManage: boolean; canEdit: boolean; rideId: string; usualMiles: number | null; hasUsual: boolean; patterned?: boolean
   onCancel: () => void; onChange: () => void; onRestore: () => void; onCount?: () => void
 }) {
   const off = d.status === 'canceled'
@@ -88,8 +88,8 @@ function DateRow({ d, canManage, canEdit, rideId, usualMiles, hasUsual, onCancel
         <p className={cx('text-[15px] font-bold', off ? 'text-(--ev-ink-75) line-through' : 'text-(--ev-ink)')}>{dateLabel(d.date)}</p>
         {d.title && <p className="text-[15px] font-semibold text-(--ev-ink-85)">{d.title}</p>}
         <p className="text-[14px] text-(--ev-ink-75)">
-          {clock(d.start_time)}{d.time_moved ? ' (moved)' : ''}
-          {d.place_moved && d.meetup_name ? ` · ${d.meetup_name} (moved)` : ''}
+          {clock(d.start_time)}{d.time_moved && patterned ? ' (moved)' : ''}
+          {d.place_moved && d.meetup_name ? ` · ${d.meetup_name}${patterned ? ' (moved)' : ''}` : ''}
         </p>
       </div>
       <div className="flex flex-1 flex-wrap items-center gap-1.5">
@@ -102,7 +102,7 @@ function DateRow({ d, canManage, canEdit, rideId, usualMiles, hasUsual, onCancel
               {!past && d.maybe > 0 ? ` · ${d.maybe} maybe` : ''}
               {!past && d.cant > 0 ? ` · ${d.cant} can't` : ''}
             </span>
-            {d.own_route && <RouteChip d={d} usualMiles={usualMiles} hasUsual={hasUsual} />}
+            {d.own_route && <RouteChip d={d} usualMiles={usualMiles} hasUsual={hasUsual} patterned={patterned} />}
             {!past && d.confirmed && <Badge tone="good">It&rsquo;s on</Badge>}
             {d.requests > 0 && <Badge tone="warn">{plural(d.requests, 'request')}</Badge>}
           </>
@@ -169,6 +169,8 @@ export default function RideOverview() {
   // The latest date this past week that ran and has no head count yet.
   const toCount = useMemo(() => dateToCount(detail.occurrences.filter((d) => !skipped.includes(d.id))), [detail.occurrences, skipped])
   const hasUsual = (r.route_waypoints?.length ?? 0) >= 2 || !!r.route_google_maps_url
+  // A ride whose dates are each picked (01868): a date's own place or time isn't a change from anything.
+  const patterned = !!r.ride_date || r.frequency === 'daily' || (r.days ?? []).length > 0
 
   const closeMsg = useCallback(() => {
     setMsg(null)
@@ -262,10 +264,10 @@ export default function RideOverview() {
             <div>
               <p className="text-[15px] font-semibold text-(--ev-ink-75)">{rideTime ? 'Today' : r.activity === 'walk' ? 'Next walk' : 'Next ride'}</p>
               <p className="font-display text-[26px] font-extrabold leading-tight">{rideTime ? clock(nextDate.start_time) : `${dateLabel(nextDate.date)} · ${clock(nextDate.start_time)}`}</p>
-              {nextDate.time_moved && <p className="text-[14px] font-semibold text-(--ev-ink-75)">Time changed for this date</p>}
+              {nextDate.time_moved && patterned && <p className="text-[14px] font-semibold text-(--ev-ink-75)">Time changed for this date</p>}
               {nextDate.title && <p className="mt-0.5 text-[17px] font-bold text-(--ev-ink)">{nextDate.title}</p>}
-              <p className="mt-0.5 text-[15px] text-(--ev-ink-80)">{nextDate.meetup_name ?? r.meetup_name}{nextDate.place_moved ? ' (changed for this date)' : ''}</p>
-              <span className="mt-2 inline-block"><RouteChip d={nextDate} usualMiles={r.route_miles} hasUsual={hasUsual} /></span>
+              <p className="mt-0.5 text-[15px] text-(--ev-ink-80)">{nextDate.meetup_name ?? r.meetup_name}{nextDate.place_moved && patterned ? ' (changed for this date)' : ''}</p>
+              <span className="mt-2 inline-block"><RouteChip d={nextDate} usualMiles={r.route_miles} hasUsual={hasUsual} patterned={patterned} /></span>
               {nextForecast && <p className="mt-0.5 text-[15px] text-(--ev-ink-80)">Forecast: {nextForecast}</p>}
               {nextDate.confirmed && <span className="mt-2 inline-block"><Badge tone="good">It&rsquo;s on</Badge></span>}
             </div>
@@ -370,7 +372,7 @@ export default function RideOverview() {
               ) : (
                 <ul>
                   {later.map((d) => (
-                    <DateRow key={d.id} d={d} canManage={detail.can_manage} canEdit={detail.can_edit} rideId={r.id} usualMiles={r.route_miles} hasUsual={hasUsual}
+                    <DateRow key={d.id} d={d} canManage={detail.can_manage} canEdit={detail.can_edit} rideId={r.id} usualMiles={r.route_miles} hasUsual={hasUsual} patterned={patterned}
                       onCancel={() => setCancelling(d)} onChange={() => setChanging(d)} onRestore={() => void restore(d)} />
                   ))}
                 </ul>
@@ -381,7 +383,7 @@ export default function RideOverview() {
           {shownTab === 'past' && (
             <>
               <p className="mb-1 text-[14px] text-(--ev-ink-75)">Add a head count to include people who aren&rsquo;t on Shift, like those who answered on Partiful or just showed up.</p>
-              <ul>{past.map((d) => <DateRow key={d.id} d={d} canManage={false} canEdit={false} rideId={r.id} usualMiles={r.route_miles} hasUsual={hasUsual} onCancel={() => {}} onChange={() => {}} onRestore={() => {}} onCount={() => setCounting(d)} />)}</ul>
+              <ul>{past.map((d) => <DateRow key={d.id} d={d} canManage={false} canEdit={false} rideId={r.id} usualMiles={r.route_miles} hasUsual={hasUsual} patterned={patterned} onCancel={() => {}} onChange={() => {}} onRestore={() => {}} onCount={() => setCounting(d)} />)}</ul>
             </>
           )}
 
