@@ -85,7 +85,8 @@ function Stats({ items }: { items: { value: unknown; label: string }[] }) {
     <div className="grid grid-cols-3 gap-3">
       {items.map((s) => (
         <div key={s.label}>
-          <div className={`${HEAD} text-[1.875rem] text-forest`}>{n(s.value)}</div>
+          {/* HEAD carries text-ink; drop it so the number is forest, like the email. */}
+          <div className={`${HEAD.replace(' text-ink', '')} text-[1.875rem] text-forest`}>{n(s.value)}</div>
           <div className="mt-1 text-[0.9375rem] leading-snug text-ink-muted">{s.label}</div>
         </div>
       ))}
