@@ -113,24 +113,24 @@ export default function RideFrame({ id, children }: { id: string; children: Reac
               </div>
             </div>
             {/* One row on a phone (short labels), so none wraps alone onto a second line. */}
-            <div className="flex w-full gap-2 *:flex-1 sm:w-auto sm:flex-wrap sm:*:flex-none">
+            <div className="flex w-full gap-2 *:grow sm:w-auto sm:flex-wrap sm:*:grow-0">
               {assistant && (
                 <button type="button" onClick={() => openAssistant('What needs doing next on this ride?')}
-                  className="inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-[10px] border border-(--ev-line-strong) bg-white px-2.5 text-[14px] font-semibold text-(--ev-ink) hover:bg-(--ev-panel) sm:min-h-[40px] sm:px-3.5">
+                  className="inline-flex min-h-[44px] items-center justify-center gap-1.5 whitespace-nowrap rounded-[10px] border border-(--ev-line-strong) bg-white px-2.5 text-[14px] font-semibold text-(--ev-ink) hover:bg-(--ev-panel) sm:min-h-[40px] sm:px-3.5">
                   <MessageSquareText className="h-4 w-4" aria-hidden /><span className="sm:hidden">Ask</span><span className="hidden sm:inline">Ask about this {thing}</span>
                 </button>
               )}
               {/* The next one starts from this one: everything but its dates (Keith 2026-11-19). */}
               {me?.can_create && (
                 <Link href={`/organizers/rides/new?copy=${r.id}`}
-                  className="inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-[10px] border border-(--ev-line-strong) bg-white px-2.5 text-[14px] font-semibold text-(--ev-ink) hover:bg-(--ev-panel) sm:min-h-[40px] sm:px-3.5">
+                  className="inline-flex min-h-[44px] items-center justify-center gap-1.5 whitespace-nowrap rounded-[10px] border border-(--ev-line-strong) bg-white px-2.5 text-[14px] font-semibold text-(--ev-ink) hover:bg-(--ev-panel) sm:min-h-[40px] sm:px-3.5">
                   <CopyPlus className="h-4 w-4" aria-hidden /><span className="sm:hidden">Copy {thing}</span><span className="hidden sm:inline">Copy this {thing}</span>
                 </Link>
               )}
               {/* A draft has no page until it has a date (Shift 01833). */}
               {r.status !== 'draft' && (
                 <a href={ridePageUrl(r.invite_code)} target="_blank" rel="noopener noreferrer"
-                  className="inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-[10px] border border-(--ev-line-strong) bg-white px-2.5 text-[14px] font-semibold text-(--ev-ink) hover:bg-(--ev-panel) sm:min-h-[40px] sm:px-3.5">
+                  className="inline-flex min-h-[44px] items-center justify-center gap-1.5 whitespace-nowrap rounded-[10px] border border-(--ev-line-strong) bg-white px-2.5 text-[14px] font-semibold text-(--ev-ink) hover:bg-(--ev-panel) sm:min-h-[40px] sm:px-3.5">
                   {thing === 'walk' ? 'Walk page' : 'Ride page'}<ExternalLink className="h-4 w-4" aria-hidden />
                 </a>
               )}
