@@ -226,7 +226,7 @@ export default function RouteReview({ route, reading, pace, activity = 'bike', f
           ['Distance', `${miles.toFixed(1)} mi`],
           ['Climbing', route.elevation ? `${Math.round(route.elevation.ascent_ft).toLocaleString()} ft` : '–'],
           [timeLabel, `about ${minutes(rideMin)}`],
-          ['Bike-friendly', comfortPct != null ? `${comfortPct}%` : '–'],
+          [walk ? 'Off busy streets' : 'Bike-friendly', comfortPct != null ? `${comfortPct}%` : '–'],
         ] as const).map(([k, v]) => (
           <div key={k} className="rounded-xl bg-(--ev-panel-faint) px-3.5 py-2.5">
             <dt className="text-[14px] font-semibold text-(--ev-ink-75)">{k}</dt>
