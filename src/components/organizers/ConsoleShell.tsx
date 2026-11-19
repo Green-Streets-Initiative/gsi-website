@@ -168,8 +168,8 @@ function SignIn() {
         <figure className="mt-5 overflow-hidden rounded-2xl border border-(--ev-line-mid) bg-white">
           <img
             src="/organizer-kit/ride-page.jpg"
-            alt="A ride page: pick a date, then Going, Maybe or Can’t go, with distance, pace, hills and level"
-            className="h-[220px] w-full object-cover object-top md:h-[260px]"
+            alt="A ride page on a phone: the route on a map colored by kind of bike lane, the dates to pick from with the weather, and street photos along the route"
+            className="h-[240px] w-full object-cover object-[50%_36%] md:h-[280px]"
           />
           <figcaption className="border-t border-(--ev-line) px-4 py-2.5 text-[15px] leading-snug text-(--ev-ink-80)">
             Your ride&rsquo;s page. People say they&rsquo;re coming here, in any browser.
