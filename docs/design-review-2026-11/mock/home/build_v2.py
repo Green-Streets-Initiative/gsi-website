@@ -143,8 +143,16 @@ def home2():
 
 
 def donate():
-    amts = [('10', False), ('25', False), ('35', True), ('100', False)]
-    amt_html = ''.join(f'<span class="am{" on" if on else ""}">${a}</span>' for a, on in amts)
+    # Keith 2026-11-19: monthly is the accessible ask, benchmarked to an everyday bill;
+    # $35 is a one-time amount (memory feedback_donation_amounts).
+    def amts(vals, on):
+        return ''.join(f'<span class="am{" on" if a == on else ""}">${a}</span>' for a in vals) + '<span class="am other">Other</span>'
+    form_monthly = f'''<div class="ams">{amts(['5', '10', '15', '25'], '10')}</div>
+<p class="what"><i data-lucide="tv"></i><span><b>$10 a month</b>, about what a streaming plan costs.</span></p>
+<a class="btn givebtn"><i data-lucide="heart"></i>Give $10 a month</a>'''
+    form_once = f'''<div class="ams">{amts(['20', '35', '50', '100'], '35')}</div>
+<p class="what"><i data-lucide="bike"></i><span><b>$35</b> pays for an hour of a free bike lesson.</span><em>Keith confirms</em></p>
+<a class="btn givebtn"><i data-lucide="heart"></i>Give $35</a>'''
     body = f'''{nav2()}
 <main class="wrap">
 <section class="dn">
@@ -161,10 +169,8 @@ def donate():
 <figure class="dmap">{ma_map()}<figcaption>Each dot is a ride, walk or class in the next 30 days.</figcaption></figure>
 </div>
 <div class="give">
-<div class="tog"><span>Once</span><span class="on">Monthly</span></div>
-<div class="ams">{amt_html}<span class="am other">Other</span></div>
-<p class="what"><i data-lucide="bike"></i><span><b>$35 a month</b> pays for an hour of a free bike lesson.</span><em>Keith confirms</em></p>
-<a class="btn givebtn"><i data-lucide="heart"></i>Give $35 a month</a>
+<div class="tog"><a href="#once" data-t="once">Once</a><a href="#monthly" data-t="monthly">Monthly</a></div>
+<div class="fm" data-f="monthly">{form_monthly}</div><div class="fm" data-f="once">{form_once}</div>
 <p class="sec"><i data-lucide="lock"></i>Secure checkout by Donorbox</p>
 <div class="org"><span class="av">KA</span><p><b>Green Streets Initiative</b>501(c)(3) nonprofit · EIN 26-1484405<br>Gifts are tax-deductible. Questions? Keith Anderson, Executive Director.</p></div>
 </div>
@@ -190,7 +196,7 @@ def donate():
 .dmap{margin:18px 0 0;max-width:460px}.dmap svg{width:100%;height:auto;display:block}.dmap figcaption{font-size:14px;color:var(--ink75);margin-top:4px}
 @media(max-width:899px){.dmap{display:none}}
 .give{border:1px solid var(--line);border-radius:18px;padding:18px;box-shadow:0 4px 18px #191A2E12;background:#fff}
-.tog{display:grid;grid-template-columns:1fr 1fr;background:var(--pale);border-radius:12px;padding:4px}.tog span{text-align:center;padding:10px;border-radius:9px;font:700 16px Overpass;color:var(--ink75)}.tog .on{background:#fff;color:var(--ink);box-shadow:0 1px 3px #0002}
+.tog{display:grid;grid-template-columns:1fr 1fr;background:var(--pale);border-radius:12px;padding:4px}.tog a{text-align:center;padding:10px;border-radius:9px;font:700 16px Overpass;color:var(--ink75)}.tog a.on{background:#fff;color:var(--ink);box-shadow:0 1px 3px #0002}
 .ams{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-top:14px}.am{border:1.5px solid var(--line);border-radius:10px;height:48px;display:flex;align-items:center;justify-content:center;font:800 17px Overpass}
 .am.on{border-color:var(--warm);background:var(--warmbg);color:var(--warm)}.am.other{font-size:15px;color:var(--ink75)}
 .what{display:flex;gap:10px;align-items:flex-start;margin-top:14px;font-size:15px;color:var(--ink85);flex-wrap:wrap}.what [data-lucide]{color:var(--warm);flex:0 0 auto;margin-top:2px}.what span{flex:1;min-width:180px}
@@ -202,7 +208,8 @@ def donate():
 .other h2{font-size:22px;margin-bottom:12px}.ow{display:grid;gap:12px}@media(min-width:900px){.ow{grid-template-columns:repeat(3,1fr)}}
 .ow div{border:1px solid var(--line);border-radius:14px;padding:14px;display:grid;grid-template-columns:auto 1fr;gap:2px 10px;align-items:center}.ow [data-lucide]{grid-row:span 2;color:var(--forest)}
 .ow b{font:800 16px Overpass}.ow span{font-size:15px;color:var(--ink75)}''' + MAP_CSS + WHO_CSS + NAV_PHONE_CSS
-    return page('Donate', body, css)
+    js = """<script>function sh(){var t=location.hash==='#once'?'once':'monthly';document.querySelectorAll('[data-t]').forEach(function(e){e.classList.toggle('on',e.dataset.t===t)});document.querySelectorAll('[data-f]').forEach(function(e){e.style.display=e.dataset.f===t?'':'none'})}addEventListener('hashchange',sh);sh()</script>"""
+    return page('Donate', body + js, css)
 
 
 def inline(html):
