@@ -6,6 +6,8 @@ import { Bike, CheckCircle2, MailCheck, MapPin, UsersRound, type LucideIcon } fr
 import AddressAutocomplete from '@/components/AddressAutocomplete'
 import { toneClass } from '@/components/events/EventsTone'
 import { Button, Card, Field, Input, Notice, Spinner, cx } from '@/components/organizers/ui'
+import NextSteps from '@/components/together/NextSteps'
+import PinMap, { type Pin } from '@/components/together/PinMap'
 import { Chip } from '@/components/together/bits'
 import { PHOTOS, PhotoBand } from '@/components/together/photos'
 import { trackAdConversion } from '@/lib/ad-pixels'
@@ -39,6 +41,20 @@ const STEPS: { key: 'how_1' | 'how_2' | 'how_3'; Icon: LucideIcon }[] = [
   { key: 'how_3', Icon: Bike },
 ]
 
+/**
+ * Where the bike volunteers live, as neighborhood centers (never anyone's
+ * home): the two areas the ads run in (beginners bet, 2026-11-19).
+ */
+const AREAS: Pin[] = [
+  { lat: 42.3796, lng: -71.0935, kind: 'match', label: 'Union Sq' },
+  { lat: 42.3967, lng: -71.1224, kind: 'match', label: 'Davis' },
+  { lat: 42.4084, lng: -71.0537, kind: 'match', label: 'Everett' },
+  { lat: 42.4251, lng: -71.0662, kind: 'match', label: 'Malden' },
+  { lat: 42.3487, lng: -71.1527, kind: 'match', label: 'Brighton' },
+  { lat: 42.3097, lng: -71.1151, kind: 'match', label: 'JP' },
+  { lat: 42.3001, lng: -71.0617, kind: 'match', label: 'Dorchester' },
+]
+
 function asPlace(p: Place): AskPlace {
   return { address: p.address, lat: p.lat!, lng: p.lng!, placeId: p.placeId }
 }
@@ -57,6 +73,9 @@ export default function Start({ locale }: { locale: SiteLocale }) {
   const [agreed, setAgreed] = useState(false)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
+  /** Which field an error belongs to: it shows under that field (1Password does this; polish 2026-11-19). */
+  const [errAt, setErrAt] = useState<'home' | 'work' | 'days' | 'email' | null>(null)
+  const cardRef = useRef<HTMLDivElement>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const [sentTo, setSentTo] = useState<string | null>(null)
   const [matches, setMatches] = useState(0)
@@ -159,20 +178,23 @@ export default function Start({ locale }: { locale: SiteLocale }) {
     e.preventDefault()
     begin()
     const addr = (signedInAs ?? email).trim().toLowerCase()
-    if (home.lat == null) return setErr(t('need_home'))
-    if (work.lat == null) return setErr(t('need_work'))
-    if (!days.length) return setErr(t('need_days'))
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(addr)) return setErr(t('need_email'))
-    if (!termsDone && !agreed) return setErr(t('need_terms'))
+    const fail = (at: typeof errAt, key: Parameters<typeof t>[0]) => { setErrAt(at); setErr(t(key)) }
+    if (home.lat == null) return fail('home', 'need_home')
+    if (work.lat == null) return fail('work', 'need_work')
+    if (!days.length) return fail('days', 'need_days')
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(addr)) return fail('email', 'need_email')
+    if (!termsDone && !agreed) return fail(null, 'need_terms')
     setBusy(true)
     setErr(null)
+    setErrAt(null)
     setNotice(null)
     const utm = utmFromUrl()
     const saved = await startAsk({ email: addr, home: asPlace(home), work: asPlace(work), days, utm, locale })
     if (!saved.ok) {
       setBusy(false)
       track('together_start_failed', { reason: saved.reason })
-      return setErr(t(saved.reason === 'home' ? 'need_home' : saved.reason === 'work' ? 'need_work' : saved.reason === 'email' ? 'need_email' : 'failed'))
+      const at = saved.reason === 'home' || saved.reason === 'work' || saved.reason === 'email' ? saved.reason : null
+      return fail(at, at ? (`need_${at}` as const) : 'failed')
     }
     // The ask the ads pay for: answers saved, before the email link (Meta custom conversion "TogetherAsk").
     trackAdConversion('TogetherAsk', { utm_source: utm.utm_source, utm_content: utm.utm_content })
@@ -190,7 +212,8 @@ export default function Start({ locale }: { locale: SiteLocale }) {
     }
     setSentTo(addr)
     setPhase('sent')
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+    // The "Check your email" card, not the top of the page: on a phone the card sits under the photo.
+    requestAnimationFrame(() => cardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
   }
 
   const [sentBefore, sentAfter = ''] = t('sent_body').split('{email}')
@@ -204,7 +227,7 @@ export default function Start({ locale }: { locale: SiteLocale }) {
         <MailCheck className="h-8 w-8 text-(--ev-accent)" aria-hidden />
         <h2 className="mt-3 font-display text-[24px] font-extrabold">{t('sent_title')}</h2>
         <p className="mt-2 text-[17px] leading-relaxed text-(--ev-ink-85)">{sentBefore}<strong>{sentTo}</strong>{sentAfter}</p>
-        <p className="mt-2 text-[16px] leading-relaxed text-(--ev-ink-85)">{t('sent_look_for')}</p>
+        <p className="mt-2 text-[16px] leading-relaxed text-(--ev-ink-85)">{tt('signin.look_for')}</p>
         <button type="button" onClick={() => { setPhase('form'); setSentTo(null) }} className="mt-3 min-h-[44px] text-[16px] font-semibold text-(--ev-accent) underline">
           {t('other_email')}
         </button>
@@ -235,7 +258,7 @@ export default function Start({ locale }: { locale: SiteLocale }) {
       <form onSubmit={submit} onChange={begin} className="grid gap-5" noValidate>
         <h2 className="font-display text-[22px] font-extrabold">{t('form_title')}</h2>
         {notice ? <Notice tone="warn">{notice}</Notice> : null}
-        <Field label={t('home')} hint={t('home_hint')}>
+        <Field label={t('home')} hint={t('home_hint')} error={errAt === 'home' ? err : null}>
           <AddressAutocomplete
             value={home.address}
             onChange={(a) => setHome({ ...EMPTY, address: a })}
@@ -244,7 +267,7 @@ export default function Start({ locale }: { locale: SiteLocale }) {
             placeholder={t('home_placeholder')}
           />
         </Field>
-        <Field label={t('work')}>
+        <Field label={t('work')} error={errAt === 'work' ? err : null}>
           <AddressAutocomplete
             value={work.address}
             onChange={(a) => setWork({ ...EMPTY, address: a })}
@@ -253,7 +276,7 @@ export default function Start({ locale }: { locale: SiteLocale }) {
             placeholder={t('work_placeholder')}
           />
         </Field>
-        <Field label={t('days')}>
+        <Field label={t('days')} error={errAt === 'days' ? err : null}>
           <div className="flex flex-wrap gap-2">
             {WEEKDAYS.map((d) => (
               <Chip key={d} on={days.includes(d)} onClick={() => { begin(); setDays((v) => (v.includes(d) ? v.filter((x) => x !== d) : [...v, d])) }}>
@@ -265,7 +288,7 @@ export default function Start({ locale }: { locale: SiteLocale }) {
         {signedInAs ? (
           <p className="text-[16px] text-(--ev-ink-85)">{t('signed_in_as', { email: signedInAs })}</p>
         ) : (
-          <Field label={t('email')} hint={t('email_hint')} htmlFor="start-email">
+          <Field label={t('email')} hint={t('email_hint')} htmlFor="start-email" error={errAt === 'email' ? err : null}>
             <Input id="start-email" type="email" autoComplete="email" inputMode="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />
           </Field>
         )}
@@ -278,7 +301,7 @@ export default function Start({ locale }: { locale: SiteLocale }) {
             </span>
           </label>
         )}
-        {err ? <Notice tone="off">{err}</Notice> : null}
+        {err && !errAt ? <Notice tone="off">{err}</Notice> : null}
         <div className="grid gap-2">
           <Button type="submit" variant="primary" busy={busy}>{t('submit')}</Button>
           <p className="text-[15px] leading-snug text-(--ev-ink-80)">{signedInAs ? t('after_signed_in') : t('after')}</p>
@@ -297,7 +320,11 @@ export default function Start({ locale }: { locale: SiteLocale }) {
           <h1 className="font-display text-[clamp(30px,4.2vw,44px)] font-extrabold leading-[1.05] text-balance">{t('title')}</h1>
           <p className="text-[clamp(18px,2vw,21px)] font-semibold leading-snug text-(--ev-ink-85)">{t('lead')}</p>
         </div>
-        <Card className="shadow-(--ev-shadow) md:col-start-2 md:row-span-2 md:row-start-1">{card}</Card>
+        <div ref={cardRef} className="grid scroll-mt-20 content-start gap-6 md:col-start-2 md:row-span-2 md:row-start-1">
+          <Card className="shadow-(--ev-shadow)">{card}</Card>
+          {/* Nobody within 2 miles yet: what to do meanwhile, the same block as /together (never just "we'll email you"). */}
+          {phase === 'done' && matches === 0 ? <NextSteps kind="newcomer" ways={['bike']} source="saved" locale={locale} /> : null}
+        </div>
         <section aria-labelledby="start-how" className="md:col-start-1 md:row-start-2">
           <h2 id="start-how" className="mb-4 font-display text-[22px] font-extrabold">{t('how')}</h2>
           <ol className="grid gap-3">
@@ -310,7 +337,7 @@ export default function Start({ locale }: { locale: SiteLocale }) {
               </li>
             ))}
           </ol>
-          <p className="mt-4 text-[16px] leading-snug text-(--ev-ink-80)">{t('where')}</p>
+          <PinMap pins={AREAS} title={t('map_title')} caption={t('where')} className="mt-6" />
         </section>
       </div>
     </div>
