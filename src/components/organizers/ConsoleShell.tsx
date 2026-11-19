@@ -178,7 +178,7 @@ function SignIn() {
             className="block h-auto w-full"
           />
           <figcaption className="border-t border-(--ev-line) px-4 py-2.5 text-[15px] leading-snug text-(--ev-ink-80)">
-            Your ride&rsquo;s page. People say they&rsquo;re coming here, in any browser.
+            Plan the route on a map of bike lanes, street by street. People see it on your ride&rsquo;s page and say they&rsquo;re coming, in any browser.
           </figcaption>
         </figure>
         <p className="mt-4 text-[14px] leading-snug text-(--ev-ink-75)">
