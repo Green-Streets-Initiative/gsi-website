@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { CalendarX, Check, Copy, PauseCircle, PlayCircle, Radio, Route as RouteIcon } from 'lucide-react'
+import { CalendarPlus, CalendarX, Check, Copy, PauseCircle, PlayCircle, Radio, Route as RouteIcon } from 'lucide-react'
 import { ago, clock } from '@/lib/rides/public'
 import { errorText, setDateCanceled } from '@/lib/organizers/api'
 import { UPDATE_KIND_LABEL, dateLabel, plural, todayKey } from '@/lib/organizers/ride-words'
@@ -15,6 +15,7 @@ import PostUpdate from './PostUpdate'
 import { NoMeetupHint, RideDayRiders, useRideDay, useRideTime } from './RideDay'
 import { ridePageUrl, useRide } from './RideFrame'
 import { SkipDatesDialog } from './SkipDates'
+import { AddDateDialog } from './AddedDates'
 import { StopRideDialog, resume } from './StopRide'
 import { Badge, Button, Card, Empty, Notice, SectionTitle, Tabs, Toast, copyText, cx, tabPanel } from './ui'
 
@@ -33,7 +34,7 @@ function ShareCard({ code, fresh, rideId, walk = false }: { code: string; fresh:
         </Button>
       </div>
       <p className="mt-3 text-[14px] text-(--ev-ink-75)">
-        Captions, a flyer QR and calendar listings are ready in <Link href={`/organizers/rides/${rideId}/promote`} className="font-semibold text-(--ev-ink) underline">Promote</Link>.
+        Next: <Link href={`/organizers/rides/${rideId}/promote`} className="font-semibold text-(--ev-ink) underline">tell your group</Link>{' '}you&apos;re using Shift. A message for them is ready in Promote, with captions, a flyer QR and calendar listings.
       </p>
     </Card>
   )
@@ -63,10 +64,10 @@ function LiveMapLink({ code, date, members, walk, editHref }: { code: string; da
   )
 }
 
-/** What this date rides: its own route (Shift 01432), the usual one, or none. */
-function RouteChip({ d, usualMiles, hasUsual }: { d: DetailDate; usualMiles: number | null; hasUsual: boolean }) {
+/** What this date rides: its own route (Shift 01432), the usual one, or none. A ride with no pattern has no "usual" (01868). */
+function RouteChip({ d, usualMiles, hasUsual, patterned = true }: { d: DetailDate; usualMiles: number | null; hasUsual: boolean; patterned?: boolean }) {
   const miles = d.own_route ? d.route?.route_miles ?? null : usualMiles
-  const text = d.own_route ? 'Its own route' : hasUsual ? 'Usual route' : 'No route yet'
+  const text = d.own_route ? (patterned ? 'Its own route' : 'Route') : hasUsual ? (patterned ? 'Usual route' : 'Route') : 'No route yet'
   return (
     <span className={cx('inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-2.5 py-0.5 text-[13px] font-semibold',
       d.own_route ? 'border-(--ev-accent-line) bg-(--ev-panel) text-(--ev-ink)' : 'border-(--ev-line-mid) text-(--ev-ink-75)')}>
@@ -75,8 +76,8 @@ function RouteChip({ d, usualMiles, hasUsual }: { d: DetailDate; usualMiles: num
   )
 }
 
-function DateRow({ d, canManage, canEdit, rideId, usualMiles, hasUsual, onCancel, onChange, onRestore, onCount }: {
-  d: DetailDate; canManage: boolean; canEdit: boolean; rideId: string; usualMiles: number | null; hasUsual: boolean
+function DateRow({ d, canManage, canEdit, rideId, usualMiles, hasUsual, patterned = true, onCancel, onChange, onRestore, onCount }: {
+  d: DetailDate; canManage: boolean; canEdit: boolean; rideId: string; usualMiles: number | null; hasUsual: boolean; patterned?: boolean
   onCancel: () => void; onChange: () => void; onRestore: () => void; onCount?: () => void
 }) {
   const off = d.status === 'canceled'
@@ -87,8 +88,8 @@ function DateRow({ d, canManage, canEdit, rideId, usualMiles, hasUsual, onCancel
         <p className={cx('text-[15px] font-bold', off ? 'text-(--ev-ink-75) line-through' : 'text-(--ev-ink)')}>{dateLabel(d.date)}</p>
         {d.title && <p className="text-[15px] font-semibold text-(--ev-ink-85)">{d.title}</p>}
         <p className="text-[14px] text-(--ev-ink-75)">
-          {clock(d.start_time)}{d.time_moved ? ' (moved)' : ''}
-          {d.place_moved && d.meetup_name ? ` · ${d.meetup_name} (moved)` : ''}
+          {clock(d.start_time)}{d.time_moved && patterned ? ' (moved)' : ''}
+          {d.place_moved && d.meetup_name ? ` · ${d.meetup_name}${patterned ? ' (moved)' : ''}` : ''}
         </p>
       </div>
       <div className="flex flex-1 flex-wrap items-center gap-1.5">
@@ -101,7 +102,7 @@ function DateRow({ d, canManage, canEdit, rideId, usualMiles, hasUsual, onCancel
               {!past && d.maybe > 0 ? ` · ${d.maybe} maybe` : ''}
               {!past && d.cant > 0 ? ` · ${d.cant} can't` : ''}
             </span>
-            {d.own_route && <RouteChip d={d} usualMiles={usualMiles} hasUsual={hasUsual} />}
+            {d.own_route && <RouteChip d={d} usualMiles={usualMiles} hasUsual={hasUsual} patterned={patterned} />}
             {!past && d.confirmed && <Badge tone="good">It&rsquo;s on</Badge>}
             {d.requests > 0 && <Badge tone="warn">{plural(d.requests, 'request')}</Badge>}
           </>
@@ -150,6 +151,8 @@ export default function RideOverview() {
   // "Ask for help" opens the update box with the ask written (Shift 01744).
   const [askNote, setAskNote] = useState<string | null>(null)
   const [skipping, setSkipping] = useState(false)
+  // Add one date (Shift 01868): a Sunday ride for a Saturday group, or the next date of a ride with no pattern.
+  const [adding, setAdding] = useState(false)
   // Just back from a break: offer the "it's back" note, ready to send.
   const [backOffer, setBackOffer] = useState(false)
   // Head counts (Shift 01725): the date being counted in the dialog, and
@@ -166,6 +169,8 @@ export default function RideOverview() {
   // The latest date this past week that ran and has no head count yet.
   const toCount = useMemo(() => dateToCount(detail.occurrences.filter((d) => !skipped.includes(d.id))), [detail.occurrences, skipped])
   const hasUsual = (r.route_waypoints?.length ?? 0) >= 2 || !!r.route_google_maps_url
+  // A ride whose dates are each picked (01868): a date's own place or time isn't a change from anything.
+  const patterned = !!r.ride_date || r.frequency === 'daily' || (r.days ?? []).length > 0
 
   const closeMsg = useCallback(() => {
     setMsg(null)
@@ -181,6 +186,7 @@ export default function RideOverview() {
     setChanging(null)
     setStopping(false)
     setSkipping(false)
+    setAdding(false)
     setCounting(null)
     void reload()
   }
@@ -258,10 +264,10 @@ export default function RideOverview() {
             <div>
               <p className="text-[15px] font-semibold text-(--ev-ink-75)">{rideTime ? 'Today' : r.activity === 'walk' ? 'Next walk' : 'Next ride'}</p>
               <p className="font-display text-[26px] font-extrabold leading-tight">{rideTime ? clock(nextDate.start_time) : `${dateLabel(nextDate.date)} · ${clock(nextDate.start_time)}`}</p>
-              {nextDate.time_moved && <p className="text-[14px] font-semibold text-(--ev-ink-75)">Time changed for this date</p>}
+              {nextDate.time_moved && patterned && <p className="text-[14px] font-semibold text-(--ev-ink-75)">Time changed for this date</p>}
               {nextDate.title && <p className="mt-0.5 text-[17px] font-bold text-(--ev-ink)">{nextDate.title}</p>}
-              <p className="mt-0.5 text-[15px] text-(--ev-ink-80)">{nextDate.meetup_name ?? r.meetup_name}{nextDate.place_moved ? ' (changed for this date)' : ''}</p>
-              <span className="mt-2 inline-block"><RouteChip d={nextDate} usualMiles={r.route_miles} hasUsual={hasUsual} /></span>
+              <p className="mt-0.5 text-[15px] text-(--ev-ink-80)">{nextDate.meetup_name ?? r.meetup_name}{nextDate.place_moved && patterned ? ' (changed for this date)' : ''}</p>
+              <span className="mt-2 inline-block"><RouteChip d={nextDate} usualMiles={r.route_miles} hasUsual={hasUsual} patterned={patterned} /></span>
               {nextForecast && <p className="mt-0.5 text-[15px] text-(--ev-ink-80)">Forecast: {nextForecast}</p>}
               {nextDate.confirmed && <span className="mt-2 inline-block"><Badge tone="good">It&rsquo;s on</Badge></span>}
             </div>
@@ -341,7 +347,10 @@ export default function RideOverview() {
                   {!ended ? (
                     <div className="flex flex-wrap gap-1.5">
                       {/* Skip dates beyond the ones listed: writes the ride itself, so its organizer only. */}
-                      {detail.my_role === 'organizer' && !r.ride_date && (
+                      {!r.ride_date && !draft && (
+                        <Button size="sm" variant="ghost" onClick={() => setAdding(true)}><CalendarPlus className="h-4 w-4" aria-hidden />Add a date</Button>
+                      )}
+                      {detail.my_role === 'organizer' && !r.ride_date && (r.frequency === 'daily' || (r.days ?? []).length > 0) && (
                         <Button size="sm" variant="ghost" onClick={() => setSkipping(true)}><CalendarX className="h-4 w-4" aria-hidden />Skip dates further out</Button>
                       )}
                       {onBreak
@@ -358,12 +367,12 @@ export default function RideOverview() {
                 <p className="text-[15px] text-(--ev-ink-85)">No later dates yet.</p>
               ) : later.length === 0 ? (
                 <Empty title={ended ? 'This ride has ended' : 'No upcoming dates'}>
-                  {ended ? 'Its history and turnout are under Past dates.' : r.ride_date ? 'This one-off ride has happened. Set up a new ride for the next one.' : 'No upcoming dates. Check When and the season dates in Edit ride.'}
+                  {ended ? 'Its history and turnout are under Past dates.' : r.ride_date ? 'This one-off ride has happened. Set up a new ride for the next one.' : (r.frequency === 'daily' || (r.days ?? []).length > 0 ? 'No upcoming dates. Check When and the season dates in Edit ride, or add a date.' : 'No upcoming dates. Add the next one with Add a date.')}
                 </Empty>
               ) : (
                 <ul>
                   {later.map((d) => (
-                    <DateRow key={d.id} d={d} canManage={detail.can_manage} canEdit={detail.can_edit} rideId={r.id} usualMiles={r.route_miles} hasUsual={hasUsual}
+                    <DateRow key={d.id} d={d} canManage={detail.can_manage} canEdit={detail.can_edit} rideId={r.id} usualMiles={r.route_miles} hasUsual={hasUsual} patterned={patterned}
                       onCancel={() => setCancelling(d)} onChange={() => setChanging(d)} onRestore={() => void restore(d)} />
                   ))}
                 </ul>
@@ -374,7 +383,7 @@ export default function RideOverview() {
           {shownTab === 'past' && (
             <>
               <p className="mb-1 text-[14px] text-(--ev-ink-75)">Add a head count to include people who aren&rsquo;t on Shift, like those who answered on Partiful or just showed up.</p>
-              <ul>{past.map((d) => <DateRow key={d.id} d={d} canManage={false} canEdit={false} rideId={r.id} usualMiles={r.route_miles} hasUsual={hasUsual} onCancel={() => {}} onChange={() => {}} onRestore={() => {}} onCount={() => setCounting(d)} />)}</ul>
+              <ul>{past.map((d) => <DateRow key={d.id} d={d} canManage={false} canEdit={false} rideId={r.id} usualMiles={r.route_miles} hasUsual={hasUsual} patterned={patterned} onCancel={() => {}} onChange={() => {}} onRestore={() => {}} onCount={() => setCounting(d)} />)}</ul>
             </>
           )}
 
@@ -411,6 +420,7 @@ export default function RideOverview() {
       {changing && <ChangeDateDialog key={changing.id} date={changing} ride={r} onClose={() => setChanging(null)} onDone={done} />}
       {counting && <HeadcountDialog d={counting} onClose={() => setCounting(null)} onSaved={done} />}
       {detail.can_manage && <StopRideDialog ride={r} open={stopping} onClose={() => setStopping(false)} onDone={done} />}
+      {adding && <AddDateDialog ride={r} open={adding} onClose={() => setAdding(false)} onDone={done} />}
       {skipping && <SkipDatesDialog ride={r} dates={detail.occurrences} open={skipping} onClose={() => setSkipping(false)} onDone={done} />}
     </div>
   )

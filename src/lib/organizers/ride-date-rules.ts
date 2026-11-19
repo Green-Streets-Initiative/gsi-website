@@ -15,7 +15,10 @@
  *  - nothing before the season starts or after it ends, nor before a break
  *    ends, nor on a skipped day;
  *  - every other week counts whole weeks from the season start, else from
- *    the day the ride was created.
+ *    the day the ride was created;
+ *  - dates the organizer added one at a time (extra_dates, Shift 01868) are
+ *    ride days too, off the pattern or with no pattern at all. They ignore
+ *    the season (the organizer picked them) but not a break or a skip.
  *
  * Days are "YYYY-MM-DD" calendar strings worked in UTC, so no device's time
  * zone can shift a date.
@@ -29,6 +32,8 @@ export interface RideDateRuleInput {
   season_start: string | null;
   season_end: string | null;
   skip_dates?: string[] | null;
+  /** Dates added one at a time (Shift 01868): ride days whatever the pattern says. */
+  extra_dates?: string[] | null;
   break_until?: string | null;
   /** When the ride was made: an every-other-week ride counts its weeks from here when no season start is set. */
   created_at?: string | null;
@@ -86,8 +91,22 @@ export function patternFallsOn(s: RideDateRuleInput, day: string, anchor: string
   return false;
 }
 
-/** Whether the ride happens on this day: its one-time date, or its recurring pattern, inside the season and not skipped. */
+/** Whether this day is one the organizer added (Shift 01868), and it isn't skipped or inside a break. */
+export function isAddedDay(s: RideDateRuleInput, day: string, includeSkipped = false): boolean {
+  if (!(s.extra_dates ?? []).includes(day)) return false;
+  if (!includeSkipped && (s.skip_dates ?? []).includes(day)) return false;
+  if (s.break_until && day < s.break_until) return false;
+  return true;
+}
+
+/** Whether the ride has a pattern at all: a one-time date, daily, or days of the week. A ride without one has only its added dates. */
+export function hasPattern(s: RideDateRuleInput): boolean {
+  return !!s.ride_date || s.frequency === "daily" || (s.days ?? []).length > 0;
+}
+
+/** Whether the ride happens on this day: a date the organizer added, its one-time date, or its recurring pattern, inside the season and not skipped. */
 export function isRideDay(s: RideDateRuleInput, day: string, anchor: string, includeSkipped = false): boolean {
+  if (isAddedDay(s, day, includeSkipped)) return true;
   if (!dayIsOpen(s, day, includeSkipped)) return false;
   if (s.ride_date) return day === s.ride_date;
   return patternFallsOn(s, day, anchor);
@@ -106,10 +125,12 @@ export function rideDays(
 ): string[] {
   const limit = opts.limit ?? Infinity;
   const includeSkipped = opts.includeSkipped ?? false;
-  if (s.ride_date) {
-    return s.ride_date >= from && s.ride_date <= to && limit > 0 && isRideDay(s, s.ride_date, from, includeSkipped)
-      ? [s.ride_date]
-      : [];
+  // A one-time ride, or one with only added dates: no need to walk the calendar.
+  if (s.ride_date || !hasPattern(s)) {
+    return [...new Set([...(s.ride_date ? [s.ride_date] : []), ...(s.extra_dates ?? [])])]
+      .filter((d) => d >= from && d <= to && isRideDay(s, d, from, includeSkipped))
+      .sort()
+      .slice(0, limit);
   }
   const anchor = biweeklyAnchor(s, opts.anchorFallback ?? from);
   const out: string[] = [];

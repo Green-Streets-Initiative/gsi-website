@@ -105,6 +105,12 @@ export interface RideRow {
   season_start: string | null
   season_end: string | null
   skip_dates: string[]
+  /** Dates added one at a time (Shift 01868): off the usual days, or every date of a ride with no pattern. */
+  extra_dates?: string[]
+  /** The main route's name when the ride offers more than one (Shift 01868); null names it by distance. */
+  route_name?: string | null
+  /** Up to two more routes on the same ride (Shift 01868). */
+  route_options?: RouteOption[] | null
   visibility: 'public' | 'invite' | 'school'
   invite_code: string
   status: 'draft' | 'active' | 'paused' | 'archived'
@@ -213,6 +219,18 @@ export interface DateRoute {
   comfort_summary: string | null
   route_risk: 'high' | null
   route_risk_reasons: string[] | null
+  /** The date's main route name and its other options (Shift 01868). */
+  route_name?: string | null
+  route_options?: RouteOption[] | null
+}
+
+/** Another route on the same ride or date (Shift 01868): a 34-mile option beside the 25. The main route keeps the live map and the street colors. */
+export interface RouteOption {
+  name: string | null
+  route_waypoints: LatLng[]
+  route_miles: number | null
+  route_elevation: RouteElevation | null
+  route_google_maps_url?: string | null
 }
 
 export interface DetailUpdate {

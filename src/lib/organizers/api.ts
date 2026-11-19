@@ -395,6 +395,25 @@ export async function setSkipDates(seriesId: string, skipDates: string[]) {
   await generateDates(seriesId).catch(() => {})
 }
 
+/**
+ * Add one date to a repeating ride, or to one with no pattern (Shift 01868):
+ * a Sunday ride for a Saturday group. Organizers and leaders. Then makes the
+ * date, so it opens for sign-ups and goes on the calendar right away.
+ */
+export async function addRideDate(seriesId: string, date: string): Promise<'added' | 'already'> {
+  const r = await rpc<{ ok: boolean; reason?: string }>('set_ride_extra_date', { p_series_id: seriesId, p_date: date, p_add: true })
+  if (!r?.ok) {
+    if (r?.reason === 'already') return 'already'
+    throw new Error(r?.reason === 'past_date' ? 'Pick a date from today on.'
+      : r?.reason === 'too_far' ? 'Pick a date within the next year.'
+        : r?.reason === 'not_allowed' ? 'Only the ride’s organizers and leaders can add a date.'
+          : 'We couldn’t add that date. Try again.')
+  }
+  track('organizer_date_added', { ride_id: seriesId })
+  await generateDates(seriesId).catch(() => {})
+  return 'added'
+}
+
 /** Update emails carry Reply-To with the organizer's sign-in address (Shift 01598). Organizer only (the table's own rule). */
 export async function setRepliesToOrganizer(seriesId: string, on: boolean) {
   const { error } = await supabase.from('ride_series').update({ replies_to_organizer: on }).eq('id', seriesId)

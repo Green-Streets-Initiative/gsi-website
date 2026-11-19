@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { ArrowRight, CalendarDays, MapPin } from 'lucide-react'
@@ -99,6 +100,13 @@ export default function FirstRide() {
           Start from scratch
         </button>
       </p>
+
+      {host && (
+        <p className="mt-3 text-[15px] text-(--ev-ink-80)">
+          Someone else runs {host}?{' '}
+          <Link href="/organizers/host" className="font-semibold text-(--ev-ink) underline">Add them as an organizer, or hand {host} to them</Link>
+        </p>
+      )}
 
       <p className="mt-8 border-t border-(--ev-line) pt-4 text-[14px] leading-snug text-(--ev-ink-75)">
         {`Saving gives your ${thing} a page to share, and nobody needs the app to say they\u2019re coming.`}

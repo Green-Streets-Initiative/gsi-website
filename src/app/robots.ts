@@ -21,6 +21,8 @@ export default function robots(): MetadataRoute.Robots {
           '/volunteer',
           '/prize',
           '/record',
+          // GSI Today, Keith's private page (secret link); also noindex.
+          '/today',
           // Review harnesses (fake clocks, forced flags); each also carries noindex.
           '/preview',
           // Admin previews of unpublished Safe Routes maps; each carries noindex.

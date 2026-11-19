@@ -239,7 +239,7 @@ export default function Team() {
             <div className="flex flex-wrap items-center justify-between gap-3">
               <p className="text-[15px] text-(--ev-ink-85)">
                 <span className="font-semibold text-(--ev-ink)">Waiting for {waitingOn?.display_name || 'them'} to say yes.</span>{' '}
-                You&apos;re still the organizer until they do. They answer in the Shift app.
+                You&apos;re still the organizer until they do. They answer in the Shift app or in organizer tools.
               </p>
               <Button size="sm" variant="ghost" busy={busy === 'cancel-handoff'}
                 onClick={() => void handoff('cancel-handoff', () => cancelHandoff(r.id), 'Cancelled. You still run the ride.')}>

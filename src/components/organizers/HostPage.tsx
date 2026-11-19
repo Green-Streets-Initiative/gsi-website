@@ -1,11 +1,14 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { ExternalLink, ImagePlus, Trash2 } from 'lucide-react'
 import { errorText, saveHostPage, uploadLogo } from '@/lib/organizers/api'
 import { TAG_OPTIONS } from '@/lib/organizers/ride-words'
 import type { OrgClaim } from '@/lib/organizers/types'
 import { useConsole } from './ConsoleContext'
+import GroupTeam from './GroupTeam'
+import { rememberSteppedDown } from './HandoffsForMe'
 import { Button, Card, Empty, Field, Input, Notice, SectionTitle, Select, Textarea, Toggle, cx } from './ui'
 
 // The channels a ride page shows as "Follow" buttons (OrganizerChannels),
@@ -155,6 +158,7 @@ function Editor({ org, onSaved }: { org: OrgClaim; onSaved: () => void }) {
 
 export default function HostPage() {
   const { me, refreshMe } = useConsole()
+  const router = useRouter()
   const verified = useMemo(() => (me?.orgs ?? []).filter((o) => o.claim === 'verified'), [me])
   const pending = (me?.orgs ?? []).filter((o) => o.claim === 'pending')
   const [picked, setOrgId] = useState('')
@@ -197,7 +201,17 @@ export default function HostPage() {
         </div>
       )}
       <div className="mt-6">
-        {org ? <Editor key={org.id} org={org} onSaved={() => void refreshMe()} /> : (
+        {org ? (
+          <div className="grid grid-cols-[minmax(0,1fr)] gap-5">
+            <GroupTeam key={`team-${org.id}`} org={org} onSteppedDown={() => {
+              const others = verified.length > 1
+              setOrgId('')
+              void refreshMe()
+              if (!others) { rememberSteppedDown(org.name); router.push('/organizers') }
+            }} />
+            <Editor key={org.id} org={org} onSaved={() => void refreshMe()} />
+          </div>
+        ) : (
           <Empty title="No verified organization yet">
             {pending.length > 0
               ? `${pending.map((p) => p.name).join(' and ')} ${pending.length > 1 ? 'are' : 'is'} verified automatically when your sign-in email is at ${pending.length > 1 ? 'their websites\u2019 domains' : (domainOf(pending[0].url) ?? 'its website\u2019s domain')}. Then its host page is yours to edit here.`
