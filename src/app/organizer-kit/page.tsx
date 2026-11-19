@@ -79,6 +79,13 @@ const TOOLS: { tool: string; keep: string; shift: string }[] = [
 ]
 
 /** Ride day, the way it goes today and the way it goes with Shift. */
+/** The three benefits under the headline, each with what delivers it. */
+const BENEFITS: [string, string][] = [
+  ['More people find your ride.', 'It goes on our events calendar and on the home screen of Shift members who live nearby.'],
+  ['Less time planning.', 'Ask the assistant for a 10-mile loop on bike lanes and it draws the route. Post a change once and everyone coming gets it.'],
+  ['Easier for everyone who comes.', 'People say they’re coming from any browser, late riders see on the map where the group is, and everyone adds photos to one album.'],
+]
+
 const TODAY = [
   'You open your map app and share your location by hand.',
   'You paste it in the group chat, every ride.',
@@ -350,24 +357,42 @@ export default async function OrganizerKitPage({ searchParams }: { searchParams:
         green sign only as a short label, and on the first phone screen what
         it is, one button and a photo of people meeting up for a ride.
       */}
+      {/*
+        Benefits first, each with the thing that delivers it (Keith
+        2026-11-19: "orient around the benefits more than the features").
+        The photo carries why GSI builds this, so the reason sits on the
+        first screen next to a real group ride. On phones the photo comes
+        right after the headline; the sticky bar carries the button.
+      */}
       <header className={`${CONTAINER} pt-6 md:pt-10`}>
-        <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,480px)] lg:items-center lg:gap-12">
-          <div>
-            <p className="inline-block rounded-[8px] bg-forest px-3 py-1 text-[16px] font-bold text-white">For ride and walk organizers</p>
+        <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,480px)] lg:gap-x-12 lg:gap-y-5">
+          <div className="lg:col-start-1 lg:row-start-1 lg:self-end">
+            <p className="inline-block rounded-[8px] bg-forest px-3 py-1 text-[16px] font-bold text-white">Free for ride and walk organizers</p>
             <h1 className={`${HEAD} mt-3 text-[clamp(2.125rem,4.8vw,3.125rem)] leading-[1.05] tracking-[-0.01em]`}>
-              Run your group ride from one link.
+              Rides that are easier to find, easier to plan and easier to join
             </h1>
-            <p className="mt-3 max-w-[560px] text-[1.25rem] leading-[1.5] text-navy/85">
-              Plan the route, see who&rsquo;s coming and count who came. Free, from Green Streets Initiative.
-            </p>
-            <div className="mt-5"><Start link={link} /></div>
           </div>
-          <figure className="overflow-hidden rounded-[18px] border border-navy/10 bg-white">
+          <figure className="overflow-hidden rounded-[18px] border border-navy/10 bg-white lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:self-center">
             <div className="relative h-[190px] sm:h-[280px] lg:h-[330px]">
               <Image src="/organizer-kit/walk-ride-day-2014.jpg" alt="Riders meeting up on Boston City Hall Plaza before a Walk/Ride Day ride" fill priority className="object-cover object-[50%_60%]" sizes="(min-width: 1024px) 480px, 100vw" />
             </div>
-            <figcaption className="px-4 py-2 text-[15px] text-navy/75">Walk/Ride Day, Boston. Photo: MassDOT</figcaption>
+            <figcaption className="px-4 pb-3 pt-2.5">
+              <p className="text-[17px] leading-snug text-navy">
+                <strong>Why we build this:</strong> a group ride is one of the best ways people get comfortable and confident biking to work, school and errands.
+              </p>
+              <p className="mt-1 text-[14px] text-navy/75">Walk/Ride Day, Boston. Photo: MassDOT</p>
+            </figcaption>
           </figure>
+          <div className="lg:col-start-1 lg:row-start-2">
+            <ul className="flex max-w-[580px] flex-col gap-3">
+              {BENEFITS.map(([lead, rest]) => (
+                <li key={lead} className="text-[18px] leading-[1.45] text-navy/85">
+                  <strong className="text-navy">{lead}</strong> {rest}
+                </li>
+              ))}
+            </ul>
+            <div className="mt-5"><Start link={link} /></div>
+          </div>
         </div>
       </header>
 

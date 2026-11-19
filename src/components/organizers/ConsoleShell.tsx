@@ -160,10 +160,10 @@ function SignIn() {
         <h1 className="mt-2 font-display text-[clamp(30px,4.2vw,44px)] font-extrabold leading-[1.05] text-(--ev-ink)">
           Plan and run your group&rsquo;s rides and walks
         </h1>
-        {/* The kit's own line and the page they'll make, not a second pitch in
-            different words (polish 2026-11-19: four lines of text, no picture). */}
+        {/* One benefit line, the short form of the kit's three (Keith
+            2026-11-19), then the page they'll make. */}
         <p className="mt-4 text-[17px] leading-snug text-(--ev-ink-85)">
-          Plan the route, see who&rsquo;s coming and count who came.
+          Get more people to your rides and spend less time setting them up.
         </p>
         <figure className="mt-5 overflow-hidden rounded-2xl border border-(--ev-line-mid) bg-white">
           <img
