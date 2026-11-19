@@ -134,11 +134,10 @@ export default function RouteNotes({
                     )}
                     <span className="min-w-0 flex-1">
                       <span className="block text-[0.9375rem] font-semibold leading-snug text-(--nb-ink)">{noteKindLabel(t, g.kind)}</span>
-                      <span className="mt-0.5 block text-[0.875rem] leading-snug text-(--nb-ink-70)">
-                        {notesPlural(t, 'notes.row_meta', Math.max(1, g.people), {
-                          where: noteWhere(t, { ...g, mode }),
-                          date: shortDate(g.latest_at, locale),
-                        })}
+                      {/* Where on one line, who and when on the next, so a count never breaks across lines (app twin, 2026-11-19). */}
+                      <span className="mt-0.5 block text-[0.875rem] leading-snug text-(--nb-ink-70)">{noteWhere(t, { ...g, mode })}</span>
+                      <span className="block text-[0.875rem] leading-snug text-(--nb-ink-70)">
+                        {notesPlural(t, 'notes.row_said', Math.max(1, g.people), { date: shortDate(g.latest_at, locale) })}
                       </span>
                     </span>
                     <CaretRight size={16} aria-hidden className="shrink-0 text-(--nb-ink-60)" />

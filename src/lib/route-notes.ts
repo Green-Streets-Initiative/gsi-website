@@ -295,7 +295,7 @@ export function notesT(locale: SiteLocale = 'en'): NotesT {
 }
 
 /** The _one / _other pair, as i18next picks it in the app. */
-export function notesPlural(t: NotesT, base: 'notes.said_yes' | 'notes.said_no' | 'notes.row_meta', count: number, vars?: Vars): string {
+export function notesPlural(t: NotesT, base: 'notes.said_yes' | 'notes.said_no' | 'notes.row_said', count: number, vars?: Vars): string {
   return t(`${base}_${count === 1 ? 'one' : 'other'}` as NotesKey, { count, ...vars })
 }
 

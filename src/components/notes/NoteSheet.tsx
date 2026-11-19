@@ -434,7 +434,7 @@ export default function NoteSheet({ onClose, surface, line, unordered = false, s
                   {t('spot_report.open_town', { town: sentTo.town.town })}
                 </a>
                 <p className="mt-2 text-center text-[0.875rem] leading-snug text-[#4A4D68]">
-                  {copied ? t('spot_report.copied_done') : t('spot_report.copied_note')}
+                  {copied ? t('spot_report.copied_done') : words ? t('spot_report.copied_note') : t('spot_report.copied_note_spot')}
                 </p>
                 {copyFailed && (
                   <textarea
@@ -545,7 +545,7 @@ export default function NoteSheet({ onClose, surface, line, unordered = false, s
                     value={note}
                     onChange={(e) => setNote(Array.from(e.target.value).slice(0, NOTE_MAX).join(''))}
                     rows={3}
-                    placeholder={kind === 'map_wrong' ? t('notes.placeholder_map') : t('notes.placeholder')}
+                    placeholder={t(kind === 'map_wrong' ? 'notes.placeholder_map' : kind && `notes.placeholder_${kind}` in notesStrings.en ? (`notes.placeholder_${kind}` as NotesKey) : 'notes.placeholder')}
                     aria-describedby={`${titleId}-count`}
                     className="mt-1.5 block w-full resize-none rounded-[10px] border-[1.5px] border-[rgba(25,26,46,0.15)] bg-white px-3 py-2.5 text-[1rem] text-[#191A2E] outline-none placeholder:text-[#6B6E85] focus:border-[#2D6A4F]"
                   />
