@@ -130,6 +130,16 @@ function copyOf(r: RideRow): Form {
   return { ...base, ride_date: '', extra_dates: [], season_start: '', season_end: '', flyer_url: null }
 }
 
+/** "Sam", "Sam and Ana", "Sam, Ana and Lee". */
+function nameList(names: string[]): string {
+  return names.length < 2 ? names.join('') : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`
+}
+
+/** "2026-10-18" -> "Sunday, October 18, 2026": the year matters when last year's ride is the model. */
+function longDate(d: string): string {
+  return new Date(`${d}T12:00:00Z`).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
+}
+
 /** A ride saved before 01697 said Spanish with its tags; read that as its languages. */
 function rowLanguages(r: RideRow): PartnerLanguage[] {
   const set = (r.languages ?? []).filter(isLanguage)
@@ -463,7 +473,7 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
   const [first, setFirst] = useState(false)
   const [fromCalendar, setFromCalendar] = useState(false)
   // Started from an earlier ride (?copy=<id>): its name, and its flyer to offer.
-  const [copied, setCopied] = useState<{ name: string; flyer: string | null } | null>(null)
+  const [copied, setCopied] = useState<{ name: string; flyer: string | null; last: string | null; others: string[] } | null>(null)
   const [copying, setCopying] = useState(false)
   const [copyErr, setCopyErr] = useState<string | null>(null)
 
@@ -492,7 +502,10 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
           helpersTouched.current = true
           setF(copyOf(d.ride))
           setDirty(true)
-          setCopied({ name: d.ride.name, flyer: d.ride.flyer_url })
+          setCopied({
+            name: d.ride.name, flyer: d.ride.flyer_url, last: d.ride.ride_date,
+            others: d.leaders.filter((l) => !l.is_you).map((l) => l.name),
+          })
         }, (e) => setCopyErr(errorText(e, "We couldn't copy that ride. Fill this one in, or go back to Your rides and try again.")))
           .finally(() => setCopying(false))
         return
@@ -775,7 +788,7 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
         </p>
       )}
 
-      {!ride && assistant && step === STEPS[0].id && (
+      {!ride && assistant && !copied && step === STEPS[0].id && (
         <div className="mt-4 flex flex-col items-start gap-3 rounded-xl border border-(--ev-accent-line-30) bg-white px-4 py-3 sm:flex-row sm:items-center">
           <p className="flex min-w-0 flex-1 items-start gap-2 text-[15px] text-(--ev-ink-85)"><MessageSquareText className="mt-0.5 h-5 w-5 shrink-0 text-(--ev-accent)" aria-hidden />Rather talk it through? The assistant asks a few questions and sets it up with you.</p>
           <Button size="sm" onClick={() => openAssistant('Plan a new ride with me')}>Plan it with the assistant</Button>
@@ -794,8 +807,8 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
       {copied && step === STEPS[0].id && (
         <div className="mt-4">
           <Notice tone="good">
-            Copied from {copied.name}, all but its dates. Pick when this one happens and check each part, then save.
-            Its other organizers stay on the old {noun}; add them on the new one&rsquo;s Organizers tab.{' '}
+            Copied from {copied.name}: everything but its dates. Pick the new date, check each part, then save.
+            {copied.others.length > 0 && <> {nameList(copied.others)} helped organize it; add them again on the new {noun}&rsquo;s Organizers tab once it&rsquo;s saved.</>}{' '}
             <button type="button" className="font-semibold underline" onClick={discardDraft}>Start from scratch instead</button>
           </Notice>
         </div>
@@ -902,7 +915,7 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
                 We&rsquo;ll keep it on your rides, off the calendar. When you add the date, it gets its own page to share.
               </p>
             ) : f.schedule === 'one_time' ? (
-              <Field label="Date" htmlFor="ride-date" error={tried && !f.ride_date ? (!ride || ride.status === 'draft' ? 'Pick a date, or choose “No date yet” above' : 'Pick a date') : null}>
+              <Field label="Date" htmlFor="ride-date" hint={copied?.last ? `Last time: ${longDate(copied.last)}` : undefined} error={tried && !f.ride_date ? (!ride || ride.status === 'draft' ? 'Pick a date, or choose “No date yet” above' : 'Pick a date') : null}>
                 <Input id="ride-date" type="date" value={f.ride_date} onChange={(e) => set('ride_date', e.target.value)} className="max-w-[220px]" />
               </Field>
             ) : (
