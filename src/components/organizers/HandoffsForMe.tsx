@@ -45,7 +45,7 @@ export function HandoffsForMe({ onAnswered }: { onAnswered: () => void }) {
       {asks.map((h) => (
         <Card key={h.id}>
           <SectionTitle hint={`You'd become the organizer. ${h.from || 'They'} stay${h.from ? 's' : ''} on as a co-organizer.`}>
-            <span className="inline-flex items-center gap-2"><ArrowLeftRight className="h-5 w-5 shrink-0 text-(--ev-accent)" aria-hidden />{h.from || 'An organizer'} asked you to run {h.name}</span>
+            <span className="flex items-start gap-2"><ArrowLeftRight className="mt-0.5 h-5 w-5 shrink-0 text-(--ev-accent)" aria-hidden /><span>{h.from || 'An organizer'} asked you to run {h.name}</span></span>
           </SectionTitle>
           <div className="flex flex-wrap gap-2">
             <Button variant="primary" busy={busy === `${h.id}-yes`} disabled={!!busy} onClick={() => void answer(h, true)}>Yes, I&apos;ll run it</Button>
