@@ -312,8 +312,10 @@ export default function RidePage({ ride, host = null, hostPerson = null, organiz
   // A break ends on its own when its date comes: the banner goes with it.
   const paused = ride.status === 'paused' || (!!ride.break_until && ride.break_until > todayKey())
 
-  // The chosen date's join stops, in route order; the first is the start.
-  const stops = useMemo(() => (selected?.stops ?? []).filter((s) => s.lat != null && s.lng != null), [selected])
+  // The chosen date's start only. Join stops were taken out on 2026-11-13
+  // (Keith: live location and Meet them along the way do that job); stops
+  // saved before then stay in the database and no longer show here or in the RSVP.
+  const stops = useMemo(() => (selected?.stops ?? []).filter((s) => s.lat != null && s.lng != null).slice(0, 1), [selected])
   const hasStops = stops.length > 1
   const mapStops = useMemo(() => stops.slice(1).map((s) => ({ lat: s.lat!, lng: s.lng!, label: s.label })), [stops])
   // Busy crossings with a crossing guard, or needing one (Shift 01745): on the map and under it.
