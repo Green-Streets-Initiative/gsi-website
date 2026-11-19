@@ -5,7 +5,8 @@ import OfferAnswer from './OfferAnswer'
 
 /**
  * An instructor's Yes / Can't for one free lesson request (Shift 01750),
- * reached only from the ask email. Never indexed.
+ * reached only from the ask email; after Yes, the instructor's "We had the
+ * lesson" (01870, ?a=after puts it first). Never indexed.
  */
 export const metadata: Metadata = {
   title: 'A free lesson request',
@@ -20,7 +21,7 @@ type Props = {
 export default async function Page({ params, searchParams }: Props) {
   const { token } = await params
   const a = (await searchParams).a
-  const from = a === 'yes' || a === 'no' ? a : null
+  const from = a === 'yes' || a === 'no' || a === 'after' ? a : null
   return (
     <>
       <Nav variant="light" />
