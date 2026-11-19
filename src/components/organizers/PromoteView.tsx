@@ -274,7 +274,7 @@ export default function PromoteView() {
   ].filter((x): x is string => typeof x === 'string')
   /** What members see, from the kit's screens of made-up rides (public/organizer-kit). */
   const groupShots = [
-    { src: '/organizer-kit/ride-page.jpg', pos: '50% 0%', label: `Say you're coming, in any browser`, alt: `A ${one} page: pick a date, then Going, Maybe or Can’t go` },
+    { src: '/organizer-kit/ride-page.jpg', pos: '50% 34%', label: `Say you're coming, in any browser`, alt: `A ${one} page on a phone: the route on a map, the dates to pick from and street photos along the route` },
     hasRoute && !walkRide
       ? { src: '/organizer-kit/route.jpg', pos: '50% 58%', label: 'The route, by kind of bike lane', alt: 'A route map, each stretch colored by its kind of bike lane' }
       : null,
