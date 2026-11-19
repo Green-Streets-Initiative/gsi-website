@@ -448,7 +448,7 @@ export default async function OrganizerKitPage({ searchParams }: { searchParams:
             <div className="w-[84vw] max-w-[380px] shrink-0 snap-start rounded-[18px] border border-navy/10 bg-white p-5 lg:w-auto lg:max-w-none print:break-inside-avoid">
               <p className="text-[1.375rem] font-extrabold leading-snug">The bike lanes on every street of your route</p>
               <p className={`mt-2 ${BODY}`}>
-                Protected, painted or none, from MassDOT and OpenStreetMap, with busy crossings and hills marked.
+                Protected, painted or none, with fast streets, crash spots and hills marked. From MassDOT, MAPC&apos;s trail map, OpenStreetMap and Google.
               </p>
               <div className="relative mt-4 h-[170px] overflow-hidden rounded-[14px] border border-navy/10">
                 <Image src="/organizer-kit/route.jpg" alt="A route planned in the organizer console, each stretch colored by its kind of bike lane" fill className="object-cover object-[50%_58%]" sizes="(min-width: 1024px) 340px, 90vw" />
