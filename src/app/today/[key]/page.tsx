@@ -6,6 +6,7 @@ import {
 } from '@phosphor-icons/react/dist/ssr'
 import type { Icon } from '@phosphor-icons/react'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
+import OrganizerFunnel, { type Waiting } from './OrganizerFunnel'
 
 /**
  * GSI Today for Keith's phone (Shift 01863; Keith 2026-11-19: "Can we find a
@@ -170,8 +171,7 @@ export default async function GsiTodayPage({ params }: { params: Promise<{ key: 
   add(s.lessons_booked_yesterday, 'free bike lesson booked with an instructor', 'free bike lessons booked with an instructor')
   add(s.logan_flights_yesterday, 'flight added to Logan together', 'flights added to Logan together')
   add(s.logan_matched_yesterday, 'Logan match', 'Logan matches')
-  add(s.org_opened_yesterday, 'organizer link opened', 'organizer links opened')
-  add(s.org_rides_yesterday, "organizer's first ride saved", "organizers' first rides saved")
+  // Organizer links opened and first rides saved are each a win of their own, so not repeated here.
   if (Number(s.ay_opened) > 0) {
     did.push(`${people(s.ay_opened)} opened Around You` + (Number(s.ay_used) > 0 ? ` and ${n(s.ay_used)} used it to find a way to go` : ''))
   }
@@ -314,17 +314,17 @@ export default async function GsiTodayPage({ params }: { params: Promise<{ key: 
         )}
 
         {showOrg && (
-          <Section id="organizers" label="Since the invitations" title="Organizer tools">
-            <Stats items={[
-              { value: s.org_opened, label: `of ${n(s.org_links)} organizer links opened` },
-              { value: s.org_first_rides, label: 'first rides saved' },
-              { value: s.org_three_going, label: 'with 3 or more coming' },
-            ]} />
-            {Number(s.org_feedback) > 0 && (
-              <p className="mt-4 text-[1rem] leading-relaxed text-ink">
-                {n(s.org_feedback)} {Number(s.org_feedback) === 1 ? 'organizer has' : 'organizers have'} sent feedback.
-              </p>
-            )}
+          <Section id="organizers" label="Since the invitations went out" title="Ride organizers">
+            <OrganizerFunnel
+              links={Number(s.org_links)}
+              steps={[
+                { value: Number(s.org_opened), label: 'opened their link' },
+                { value: Number(s.org_first_rides), label: 'saved a ride or walk' },
+                { value: Number(s.org_three_going), label: 'had 3 or more people coming' },
+                { value: Number(s.org_feedback), label: 'sent feedback after a ride' },
+              ]}
+              waiting={(s.org_waiting as unknown as Waiting[] | undefined) ?? []}
+            />
           </Section>
         )}
 
