@@ -23,9 +23,9 @@ function useReach(occurrenceId: string | undefined, kind: 'cancel' | 'change'): 
 
 /** The sentence under a dialog: who hears about it. */
 function reachLine(reach: number | null, what: string): string {
-  if (reach == null) return `Everyone on the ride, except people who said they can't make it, will hear ${what}, by app or email.`
-  if (reach === 0) return 'Nobody else is on the ride yet, so no one gets a notice.'
-  return `This tells ${plural(reach, 'person', 'people')} on the ride ${what}, by app or email.`
+  if (reach == null) return `Everyone signed up, except people who said they can't make it, will hear ${what}, by app or email.`
+  if (reach === 0) return 'Nobody has signed up yet, so no one hears about it.'
+  return `This tells ${plural(reach, 'person', 'people')} who signed up ${what}, by app or email.`
 }
 
 /**

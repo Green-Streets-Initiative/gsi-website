@@ -565,6 +565,8 @@ export default function RidePage({ ride, host = null, hostPerson = null, organiz
             <div className="overflow-hidden rounded-2xl border border-(--ev-line-mid) bg-(--ev-card) shadow-(--ev-shadow)">
               {routeOpts.length > 1 && (
                 <div className="flex flex-wrap gap-2 border-b border-(--ev-line) p-3" role="group" aria-label={t('route_options')}>
+                  {/* Said in words: two pills over a map don't read as a choice to someone new. */}
+                  <p className="w-full text-[14px] font-semibold text-(--ev-ink-75)" aria-hidden>{t('route_options')}</p>
                   {routeOpts.map((o, i) => (
                     <button key={i} type="button" aria-pressed={routePick === i} onClick={() => { setRoutePick(i); setStreet(null) }}
                       className={`min-h-[44px] rounded-full border px-4 text-[15px] font-semibold transition-colors ${

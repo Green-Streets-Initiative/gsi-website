@@ -24,6 +24,9 @@ export interface OptionDraft {
 
 export const MAX_ROUTE_OPTIONS = 2
 
+/** The route above is the first; options are the second and third. */
+const ORDINAL = ['second', 'third']
+
 const newKey = () => Math.random().toString(36).slice(2, 10)
 
 /** Saved options, as the editor holds them. */
@@ -51,7 +54,7 @@ export function optionsPayload(opts: OptionDraft[]): RouteOption[] {
 /** What's missing before the options can save, or null. */
 export function optionsProblem(opts: OptionDraft[]): string | null {
   const i = opts.findIndex((o) => (o.route?.waypoints.length ?? 0) < 2)
-  return i < 0 ? null : `Add a route for route option ${i + 2}, or remove it`
+  return i < 0 ? null : `Plan the ${ORDINAL[i]} route, or remove it`
 }
 
 export default function RouteOptions({ mainName, onMainName, mainRoute, options, onOptions, meetup, pace, activity }: {
@@ -75,11 +78,11 @@ export default function RouteOptions({ mainName, onMainName, mainRoute, options,
       <div>
         <p className="text-[16px] font-semibold text-(--ev-ink)">More than one distance?</p>
         <p className="mt-0.5 text-[15px] text-(--ev-ink-80)">
-          Add up to two more routes from the same start{walk ? ', like a 5K and a 10K' : ', like 25, 34 and 47 miles'}. People see each one with its map and distance, and pick theirs. The live map follows the route above.
+          Add up to two more routes from the same start{walk ? ', like a 5K and a 10K' : ', like 25, 34 and 47 miles'}. People see each one with its own map and distance, and pick theirs.
         </p>
       </div>
       {options.length > 0 && (
-        <Field label="Name of the route above" htmlFor="route-main-name" optional hint={`Empty shows “${mainDefault}”.`}>
+        <Field label="Name of the first route" htmlFor="route-main-name" optional hint={`Empty shows “${mainDefault}”.`}>
           <Input id="route-main-name" value={mainName} maxLength={60} onChange={(e) => onMainName(e.target.value)} placeholder={mainDefault} className="max-w-[320px]" />
         </Field>
       )}
@@ -88,7 +91,7 @@ export default function RouteOptions({ mainName, onMainName, mainRoute, options,
         return (
           <div key={o.key} className="grid gap-3 rounded-xl border border-(--ev-line-mid) bg-(--ev-panel-faint) p-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <p className="text-[16px] font-semibold text-(--ev-ink)">Route option {i + 2}{o.route ? `: ${routeOptionName(o.name, miles, walk)}` : ''}</p>
+              <p className="text-[16px] font-semibold text-(--ev-ink)">{ORDINAL[i] === 'second' ? 'Second' : 'Third'} route{o.route ? `: ${routeOptionName(o.name, miles, walk)}` : ''}</p>
               <Button size="sm" variant="ghost" onClick={() => onOptions(options.filter((_, j) => j !== i))}>
                 <Trash2 className="h-4 w-4" aria-hidden />Remove
               </Button>

@@ -7,7 +7,7 @@ import { CalendarPlus, CalendarX, Check, Copy, PauseCircle, PlayCircle, Radio, R
 import { ago, clock } from '@/lib/rides/public'
 import { errorText, setDateCanceled } from '@/lib/organizers/api'
 import { UPDATE_KIND_LABEL, dateLabel, plural, todayKey } from '@/lib/organizers/ride-words'
-import type { DetailDate } from '@/lib/organizers/types'
+import type { DetailDate, RouteOption } from '@/lib/organizers/types'
 import { CancelDateDialog, ChangeDateDialog } from './DateDialogs'
 import { HeadcountDialog, HeadcountPrompt, dateToCount } from './Headcount'
 import HelpersStops from './HelpersStops'
@@ -65,19 +65,27 @@ function LiveMapLink({ code, date, members, walk, editHref }: { code: string; da
 }
 
 /** What this date rides: its own route (Shift 01432), the usual one, or none. A ride with no pattern has no "usual" (01868). */
-function RouteChip({ d, usualMiles, hasUsual, patterned = true }: { d: DetailDate; usualMiles: number | null; hasUsual: boolean; patterned?: boolean }) {
+function RouteChip({ d, usualMiles, usualOptions, hasUsual, patterned = true }: {
+  d: DetailDate; usualMiles: number | null; usualOptions?: RouteOption[] | null; hasUsual: boolean; patterned?: boolean
+}) {
   const miles = d.own_route ? d.route?.route_miles ?? null : usualMiles
-  const text = d.own_route ? (patterned ? 'Its own route' : 'Route') : hasUsual ? (patterned ? 'Usual route' : 'Route') : 'No route yet'
+  // More than one route (01868): say how many, with each one's distance.
+  const opts = (d.own_route ? d.route?.route_options : usualOptions) ?? []
+  const all = [miles, ...opts.map((o) => o.route_miles)].filter((m): m is number => m != null && m > 0)
+  const base = d.own_route ? (patterned ? 'Its own route' : 'Route') : hasUsual ? (patterned ? 'Usual route' : 'Route') : 'No route yet'
+  const text = opts.length && (d.own_route || hasUsual) ? `${opts.length + 1} routes${d.own_route && patterned ? ' of its own' : ''}` : base
+  const dist = opts.length && all.length ? ` · ${all.map((m) => m.toFixed(1)).join(', ')} mi` : miles != null && miles > 0 ? ` · ${miles.toFixed(1)} mi` : ''
   return (
     <span className={cx('inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-2.5 py-0.5 text-[13px] font-semibold',
       d.own_route ? 'border-(--ev-accent-line) bg-(--ev-panel) text-(--ev-ink)' : 'border-(--ev-line-mid) text-(--ev-ink-75)')}>
-      <RouteIcon className="h-3.5 w-3.5" aria-hidden />{text}{miles != null && miles > 0 ? ` · ${miles.toFixed(1)} mi` : ''}
+      <RouteIcon className="h-3.5 w-3.5" aria-hidden />{text}{dist}
     </span>
   )
 }
 
-function DateRow({ d, canManage, canEdit, rideId, usualMiles, hasUsual, patterned = true, onCancel, onChange, onRestore, onCount }: {
-  d: DetailDate; canManage: boolean; canEdit: boolean; rideId: string; usualMiles: number | null; hasUsual: boolean; patterned?: boolean
+function DateRow({ d, canManage, canEdit, rideId, usualMiles, usualOptions, usualPlace, hasUsual, patterned = true, onCancel, onChange, onRestore, onCount }: {
+  d: DetailDate; canManage: boolean; canEdit: boolean; rideId: string; usualMiles: number | null; usualOptions?: RouteOption[] | null
+  usualPlace?: string | null; hasUsual: boolean; patterned?: boolean
   onCancel: () => void; onChange: () => void; onRestore: () => void; onCount?: () => void
 }) {
   const off = d.status === 'canceled'
@@ -89,7 +97,10 @@ function DateRow({ d, canManage, canEdit, rideId, usualMiles, hasUsual, patterne
         {d.title && <p className="text-[15px] font-semibold text-(--ev-ink-85)">{d.title}</p>}
         <p className="text-[14px] text-(--ev-ink-75)">
           {clock(d.start_time)}{d.time_moved && patterned ? ' (moved)' : ''}
-          {d.place_moved && d.meetup_name ? ` · ${d.meetup_name}${patterned ? ' (moved)' : ''}` : ''}
+          {patterned
+            ? (d.place_moved && d.meetup_name ? ` · ${d.meetup_name} (moved)` : '')
+            // Each date picked on its own: show where each one meets, so a group that moves town to town sees it at a glance.
+            : (d.meetup_name ?? usualPlace) ? ` · ${d.meetup_name ?? usualPlace}` : ''}
         </p>
       </div>
       <div className="flex flex-1 flex-wrap items-center gap-1.5">
@@ -102,7 +113,7 @@ function DateRow({ d, canManage, canEdit, rideId, usualMiles, hasUsual, patterne
               {!past && d.maybe > 0 ? ` · ${d.maybe} maybe` : ''}
               {!past && d.cant > 0 ? ` · ${d.cant} can't` : ''}
             </span>
-            {d.own_route && <RouteChip d={d} usualMiles={usualMiles} hasUsual={hasUsual} patterned={patterned} />}
+            {(d.own_route || (!patterned && hasUsual)) && <RouteChip d={d} usualMiles={usualMiles} usualOptions={usualOptions} hasUsual={hasUsual} patterned={patterned} />}
             {!past && d.confirmed && <Badge tone="good">It&rsquo;s on</Badge>}
             {d.requests > 0 && <Badge tone="warn">{plural(d.requests, 'request')}</Badge>}
           </>
@@ -112,7 +123,7 @@ function DateRow({ d, canManage, canEdit, rideId, usualMiles, hasUsual, patterne
           date, with tighter padding so all four fit on one line at phone width. */}
       <div className="-ml-2 flex flex-wrap">
         {!off && (
-          <Link href={`/organizers/rides/${rideId}/roster?date=${d.id}`} className="inline-flex min-h-[36px] items-center rounded-[10px] px-2 text-[14px] font-semibold text-(--ev-ink-85) hover:bg-(--ev-panel)">
+          <Link href={`/organizers/rides/${rideId}/roster?date=${d.id}`} aria-label={`${past ? 'Who came' : "Who's coming"}, ${dateLabel(d.date)}`} className="inline-flex min-h-[36px] items-center rounded-[10px] px-2 text-[14px] font-semibold text-(--ev-ink-85) hover:bg-(--ev-panel)">
             {past ? 'Who came' : "Who's coming"}
           </Link>
         )}
@@ -120,12 +131,12 @@ function DateRow({ d, canManage, canEdit, rideId, usualMiles, hasUsual, patterne
           <Button size="sm" variant="ghost" className="px-2!" onClick={onCount}>{d.headcount == null ? 'Add head count' : 'Change count'}</Button>
         )}
         {canEdit && !past && !off && (
-          <Link href={`/organizers/rides/${rideId}/dates/${d.id}`} className="inline-flex min-h-[36px] items-center rounded-[10px] px-2 text-[14px] font-semibold text-(--ev-ink-85) hover:bg-(--ev-panel)">
+          <Link href={`/organizers/rides/${rideId}/dates/${d.id}`} aria-label={`Plan ${dateLabel(d.date)}`} className="inline-flex min-h-[36px] items-center rounded-[10px] px-2 text-[14px] font-semibold text-(--ev-ink-85) hover:bg-(--ev-panel)">
             Plan
           </Link>
         )}
-        {canManage && !past && !off && <Button size="sm" variant="ghost" className="px-2!" onClick={onChange}>Change</Button>}
-        {canManage && !past && !off && <Button size="sm" variant="ghost" className="px-2!" onClick={onCancel}>Cancel</Button>}
+        {canManage && !past && !off && <Button size="sm" variant="ghost" className="px-2!" onClick={onChange} aria-label={`Change ${dateLabel(d.date)}`}>Change</Button>}
+        {canManage && !past && !off && <Button size="sm" variant="ghost" className="px-2!" onClick={onCancel} aria-label={`Cancel ${dateLabel(d.date)}`}>Cancel</Button>}
         {canManage && !past && off && !d.canceled_by_stop && <Button size="sm" variant="ghost" className="px-2!" onClick={onRestore}>Bring back</Button>}
       </div>
     </li>
@@ -267,7 +278,7 @@ export default function RideOverview() {
               {nextDate.time_moved && patterned && <p className="text-[14px] font-semibold text-(--ev-ink-75)">Time changed for this date</p>}
               {nextDate.title && <p className="mt-0.5 text-[17px] font-bold text-(--ev-ink)">{nextDate.title}</p>}
               <p className="mt-0.5 text-[15px] text-(--ev-ink-80)">{nextDate.meetup_name ?? r.meetup_name}{nextDate.place_moved && patterned ? ' (changed for this date)' : ''}</p>
-              <span className="mt-2 inline-block"><RouteChip d={nextDate} usualMiles={r.route_miles} hasUsual={hasUsual} patterned={patterned} /></span>
+              <span className="mt-2 inline-block"><RouteChip d={nextDate} usualMiles={r.route_miles} usualOptions={r.route_options} hasUsual={hasUsual} patterned={patterned} /></span>
               {nextForecast && <p className="mt-0.5 text-[15px] text-(--ev-ink-80)">Forecast: {nextForecast}</p>}
               {nextDate.confirmed && <span className="mt-2 inline-block"><Badge tone="good">It&rsquo;s on</Badge></span>}
             </div>
@@ -372,7 +383,8 @@ export default function RideOverview() {
               ) : (
                 <ul>
                   {later.map((d) => (
-                    <DateRow key={d.id} d={d} canManage={detail.can_manage} canEdit={detail.can_edit} rideId={r.id} usualMiles={r.route_miles} hasUsual={hasUsual} patterned={patterned}
+                    <DateRow key={d.id} d={d} canManage={detail.can_manage} canEdit={detail.can_edit} rideId={r.id} usualMiles={r.route_miles} usualOptions={r.route_options}
+                      usualPlace={r.meetup_name} hasUsual={hasUsual} patterned={patterned}
                       onCancel={() => setCancelling(d)} onChange={() => setChanging(d)} onRestore={() => void restore(d)} />
                   ))}
                 </ul>
@@ -383,7 +395,7 @@ export default function RideOverview() {
           {shownTab === 'past' && (
             <>
               <p className="mb-1 text-[14px] text-(--ev-ink-75)">Add a head count to include people who aren&rsquo;t on Shift, like those who answered on Partiful or just showed up.</p>
-              <ul>{past.map((d) => <DateRow key={d.id} d={d} canManage={false} canEdit={false} rideId={r.id} usualMiles={r.route_miles} hasUsual={hasUsual} patterned={patterned} onCancel={() => {}} onChange={() => {}} onRestore={() => {}} onCount={() => setCounting(d)} />)}</ul>
+              <ul>{past.map((d) => <DateRow key={d.id} d={d} canManage={false} canEdit={false} rideId={r.id} usualMiles={r.route_miles} usualOptions={r.route_options} usualPlace={r.meetup_name} hasUsual={hasUsual} patterned={patterned} onCancel={() => {}} onChange={() => {}} onRestore={() => {}} onCount={() => setCounting(d)} />)}</ul>
             </>
           )}
 

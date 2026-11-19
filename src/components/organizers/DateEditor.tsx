@@ -215,6 +215,9 @@ export default function DateEditor({ ride, date, dates, onSaved }: {
   const meetAddress = f.place?.address ?? (f.usualPlace ? ride.meetup_address : date.meetup_address ?? ride.meetup_address)
   const meetup = meetLat != null && meetLng != null ? { lat: meetLat, lng: meetLng, label: meetName || undefined } : null
   const usual = draftOf(ride)
+  const noun = ride.activity === 'walk' ? 'walk' : 'ride'
+  // The usual route's distances when the ride offers more than one (01868).
+  const usualMiles = [ride.route_miles, ...(ride.route_options ?? []).map((o) => o.route_miles)].filter((m): m is number => m != null && m > 0)
 
   return (
     <div className="pb-28">
@@ -223,7 +226,7 @@ export default function DateEditor({ ride, date, dates, onSaved }: {
       </Link>
       <h1 className="font-display text-[clamp(28px,3.6vw,38px)] font-extrabold leading-tight">Plan {dateLabel(date.date)}</h1>
       <p className="mt-1 text-[15px] text-(--ev-ink-80)">
-        {clock(date.start_time)}{meetName ? ` · ${meetName}` : ''}. Anything left empty uses the ride&rsquo;s usual details.
+        {clock(date.start_time)}{meetName ? ` · ${meetName}` : ''}. Anything left empty uses the {noun}&rsquo;s usual details.
       </p>
 
       {restored && (
@@ -273,36 +276,6 @@ export default function DateEditor({ ride, date, dates, onSaved }: {
         </Card>
 
         <Card>
-          <SectionTitle>This date</SectionTitle>
-          <div className="grid gap-4">
-            <Field label="Name" htmlFor="date-title" optional hint={`Empty uses “${ride.name}”.`}>
-              <Input id="date-title" value={f.title} maxLength={120} onChange={(e) => set('title', e.target.value)} placeholder={ride.name} />
-            </Field>
-            <Field label="What this ride is about" htmlFor="date-desc" optional hint="Empty uses the ride's usual description.">
-              <Textarea id="date-desc" rows={5} value={f.description} maxLength={4000} onChange={(e) => set('description', e.target.value)}
-                placeholder="Where you're headed, the coffee stop, anything new this time." />
-            </Field>
-            <Field label="Flyer" optional hint={ride.flyer_url ? 'Empty uses the ride’s usual flyer.' : 'Shows on the ride page and the calendar.'}>
-              {f.flyer_url ? (
-                <div className="flex items-center gap-3">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={f.flyer_url} alt="Flyer for this date" className="h-28 w-28 rounded-lg border border-(--ev-line-mid) object-cover" />
-                  <Button size="sm" variant="ghost" onClick={() => set('flyer_url', null)}><Trash2 className="h-4 w-4" aria-hidden />Remove</Button>
-                </div>
-              ) : (
-                <div>
-                  <input id="date-flyer" type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="sr-only"
-                    onChange={(e) => { const file = e.target.files?.[0]; if (file) void onFlyer(file); e.target.value = '' }} />
-                  <label htmlFor="date-flyer" className={cx('inline-flex min-h-[44px] cursor-pointer items-center gap-1.5 rounded-[10px] border border-(--ev-line-strong) bg-white px-4 text-[15px] font-semibold text-(--ev-ink) hover:bg-(--ev-panel)', flyerBusy && 'pointer-events-none opacity-60')}>
-                    <ImagePlus className="h-4 w-4" aria-hidden />{flyerBusy ? 'Uploading…' : 'Add a flyer'}
-                  </label>
-                </div>
-              )}
-            </Field>
-          </div>
-        </Card>
-
-        <Card>
           <SectionTitle hint="People see how far and how hilly it is, and which streets have bike lanes, before they come.">Route</SectionTitle>
           <div className="flex flex-wrap gap-2" role="group" aria-label="Which route">
             <Toggle on={!f.own} onClick={() => set('own', false)}>{usual || ride.route_google_maps_url ? 'The usual route' : 'No route'}</Toggle>
@@ -312,7 +285,11 @@ export default function DateEditor({ ride, date, dates, onSaved }: {
           {!f.own && usual && (
             <div className="mt-4 grid gap-2">
               <RouteMap line={usual.waypoints} stops={[]} meetup={meetup} pick={false} className="h-[240px] w-full overflow-hidden rounded-xl border border-(--ev-line-mid)" label="The usual route" />
-              {ride.route_miles != null && <p className="text-[15px] font-semibold text-(--ev-ink-85)">{ride.route_miles.toFixed(1)} mi</p>}
+              {usualMiles.length > 0 && (
+                <p className="text-[15px] font-semibold text-(--ev-ink-85)">
+                  {usualMiles.length > 1 ? `${usualMiles.length} routes: ${usualMiles.map((m) => m.toFixed(1)).join(', ')} mi` : `${usualMiles[0].toFixed(1)} mi`}
+                </p>
+              )}
             </div>
           )}
 
@@ -338,6 +315,36 @@ export default function DateEditor({ ride, date, dates, onSaved }: {
                 options={f.route_options} onOptions={(o) => set('route_options', o)} meetup={meetup} pace={ride.pace ?? null} activity={ride.activity === 'walk' ? 'walk' : 'bike'} />
             </div>
           )}
+        </Card>
+
+        <Card>
+          <SectionTitle>Name, description and flyer</SectionTitle>
+          <div className="grid gap-4">
+            <Field label="Name" htmlFor="date-title" optional hint={`Empty uses “${ride.name}”.`}>
+              <Input id="date-title" value={f.title} maxLength={120} onChange={(e) => set('title', e.target.value)} placeholder={ride.name} />
+            </Field>
+            <Field label={`What this ${noun} is about`} htmlFor="date-desc" optional hint={`Empty uses the ${noun}’s usual description.`}>
+              <Textarea id="date-desc" rows={5} value={f.description} maxLength={4000} onChange={(e) => set('description', e.target.value)}
+                placeholder="Where you're headed, the coffee stop, anything new this time." />
+            </Field>
+            <Field label="Flyer" optional hint={ride.flyer_url ? `Empty uses the ${noun}’s usual flyer.` : `Shows on the ${noun} page and the calendar.`}>
+              {f.flyer_url ? (
+                <div className="flex items-center gap-3">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={f.flyer_url} alt="Flyer for this date" className="h-28 w-28 rounded-lg border border-(--ev-line-mid) object-cover" />
+                  <Button size="sm" variant="ghost" onClick={() => set('flyer_url', null)}><Trash2 className="h-4 w-4" aria-hidden />Remove</Button>
+                </div>
+              ) : (
+                <div>
+                  <input id="date-flyer" type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="sr-only"
+                    onChange={(e) => { const file = e.target.files?.[0]; if (file) void onFlyer(file); e.target.value = '' }} />
+                  <label htmlFor="date-flyer" className={cx('inline-flex min-h-[44px] cursor-pointer items-center gap-1.5 rounded-[10px] border border-(--ev-line-strong) bg-white px-4 text-[15px] font-semibold text-(--ev-ink) hover:bg-(--ev-panel)', flyerBusy && 'pointer-events-none opacity-60')}>
+                    <ImagePlus className="h-4 w-4" aria-hidden />{flyerBusy ? 'Uploading…' : 'Add a flyer'}
+                  </label>
+                </div>
+              )}
+            </Field>
+          </div>
         </Card>
       </div>
 

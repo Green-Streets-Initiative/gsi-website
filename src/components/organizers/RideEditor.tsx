@@ -301,6 +301,8 @@ function Preview({ f, route, hostName }: { f: Form; route: RouteDraft | null; ho
     : f.schedule === 'one_time' || f.schedule === 'dates'
     ? ((f.schedule === 'dates' ? f.extra_dates[0] : f.ride_date)
       ? scheduleText({ ride_date: (f.schedule === 'dates' ? f.extra_dates[0] : f.ride_date)!, frequency: null, days: null, week_of_month: null, start_time: f.start_time || null })
+        // Picking each date: the first one, and how many more follow it.
+        + (f.schedule === 'dates' && f.extra_dates.length > 1 ? ` + ${f.extra_dates.length - 1} more date${f.extra_dates.length > 2 ? 's' : ''}` : '')
       : null)
     : (f.frequency === 'daily' || f.days.length
       ? scheduleText({ ride_date: null, frequency: f.frequency, days: f.days, week_of_month: f.week_of_month, start_time: f.start_time || null })
@@ -908,7 +910,7 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
 
             {f.schedule === 'dates' ? (
               <AddedDates id="ride-dates" label="Add a date" dates={f.extra_dates} onChange={(d) => set('extra_dates', d)}
-                hint={`For a group that rides on different days. Add each date now, or more later from the ${noun} page.`}
+                hint={`For a group that ${f.activity === 'walk' ? 'walks' : 'rides'} on different days. Add each date now, or more later from the ${noun} page.`}
                 error={tried && f.extra_dates.length === 0 ? 'Add at least one date' : null} />
             ) : f.schedule === 'undated' ? (
               <p className="text-[17px] text-(--ev-ink-85)">
@@ -1003,7 +1005,9 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
 
         {step === 'where' && (
         <Card id="sec-where">
-          <SectionTitle hint="Where people gather before you set off.">Meeting point</SectionTitle>
+          <SectionTitle hint={f.schedule === 'dates' && f.extra_dates.length > 1
+            ? 'Where the first date meets. Once it’s saved, open any date to give it its own meeting place and route.'
+            : 'Where people gather before you set off.'}>Meeting point</SectionTitle>
           <div className="grid gap-4 lg:grid-cols-[1fr_1fr]">
             <div className="grid content-start gap-4">
               <Field label="Search for the place" error={tried && !meetup ? 'Pick a meeting point' : null}>
@@ -1074,7 +1078,7 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
                 onChange={(e) => set('live_sharing', e.target.checked ? 'members' : 'off')}
                 className="mt-1 h-5 w-5 accent-(--ev-accent-fill)" />
               <span>
-                <span className="block text-[15px] font-semibold text-(--ev-ink)">Share where the group is on {noun} day</span>
+                <span className="block text-[15px] font-semibold text-(--ev-ink)">Share where the group is during the {noun}</span>
                 <span className="block text-[14px] text-(--ev-ink-75)">Anyone running late can find the group on the map.</span>
               </span>
             </label>
