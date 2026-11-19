@@ -400,7 +400,7 @@ export default function RideOverview() {
           )}
 
           {shownTab === 'updates' && (detail.updates.length === 0 ? (
-            <p className="text-[15px] text-(--ev-ink-80)">Nothing posted yet. Updates show here, on the ride page and in the app.</p>
+            <p className="text-[15px] text-(--ev-ink-80)">Nothing posted yet. Updates show here, on the {r.activity === 'walk' ? 'walk' : 'ride'} page and in the app.</p>
           ) : (
             <ul className="space-y-3">
               {detail.updates.map((u) => {

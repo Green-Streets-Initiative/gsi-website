@@ -89,9 +89,9 @@ export function CancelDateDialog({ date, onClose, onDone }: { date: DetailDate |
         <Button variant="danger" onClick={() => void go()} busy={busy}>Cancel this date</Button>
       </>}>
       <p className="text-[15px] leading-relaxed text-(--ev-ink-85)">
-        {reachLine(reach, "it's cancelled")} The ride page and calendar will say so.
+        {reachLine(reach, "it's cancelled")} Its page and the calendar will say so.
       </p>
-      <p className="mt-3 text-[14px] text-(--ev-ink-75)">The rest of the ride carries on as planned. You can bring a cancelled date back.</p>
+      <p className="mt-3 text-[14px] text-(--ev-ink-75)">The other dates carry on as planned. You can bring a cancelled date back.</p>
       {err && <div className="mt-3"><Notice tone="off">{err}</Notice></div>}
     </Dialog>
   )

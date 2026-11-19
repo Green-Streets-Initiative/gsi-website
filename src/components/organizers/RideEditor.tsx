@@ -785,7 +785,7 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
       {(ride || step === STEPS[0].id) && (
         <p className="mt-1 max-w-2xl text-[15px] leading-snug text-(--ev-ink-80)">
           {ride
-            ? 'Changes show on the ride page and in the app right away. To change one date only, open that date from Dates & updates.'
+            ? `Changes show on the ${noun} page and in the app right away. To change one date only, open that date from Dates & updates.`
             : `A ${noun} you set up here shows up in the Shift app too, with a page you can share anywhere.`}
         </p>
       )}

@@ -167,7 +167,9 @@ export default function DateEditor({ ride, date, dates, onSaved }: {
     setDirty(true)
   }
 
-  const reason = f.own && !f.route && !f.link.trim() ? 'Add a route or a link for this date, or pick the usual route'
+  const patterned = !!ride.ride_date || ride.frequency === 'daily' || (ride.days ?? []).length > 0
+  const noun = ride.activity === 'walk' ? 'walk' : 'ride'
+  const reason = f.own && !f.route && !f.link.trim() ? `Add a route or a link for this date, or pick ${patterned ? 'the usual route' : `the ${noun}’s route`}`
     : f.own && f.route ? optionsProblem(f.route_options) : null
   const linkErr = !LINK_OK(f.link) || !LINK_OK(f.flyer_url ?? '')
 
@@ -208,7 +210,6 @@ export default function DateEditor({ ride, date, dates, onSaved }: {
 
   // The ride repeats on a pattern, so a different start is a change for this date; a ride
   // whose organizer picks each date (Shift 01868) just has each date's own start.
-  const patterned = !!ride.ride_date || ride.frequency === 'daily' || (ride.days ?? []).length > 0
   const usualSpot = ride.meetup_name || ride.meetup_address || 'the usual spot'
   const meetLat = f.place?.lat ?? (f.usualPlace ? ride.meetup_lat : date.meetup_lat ?? ride.meetup_lat)
   const meetLng = f.place?.lng ?? (f.usualPlace ? ride.meetup_lng : date.meetup_lng ?? ride.meetup_lng)
@@ -216,7 +217,6 @@ export default function DateEditor({ ride, date, dates, onSaved }: {
   const meetAddress = f.place?.address ?? (f.usualPlace ? ride.meetup_address : date.meetup_address ?? ride.meetup_address)
   const meetup = meetLat != null && meetLng != null ? { lat: meetLat, lng: meetLng, label: meetName || undefined } : null
   const usual = draftOf(ride)
-  const noun = ride.activity === 'walk' ? 'walk' : 'ride'
   // The usual route's distances when the ride offers more than one (01868).
   // A new meeting place with the usual route still starting at the old one (a walk that moves town to town).
   const usualStartsElsewhere = !f.own && !!usual && usual.waypoints.length > 0 && !!meetup && haversineM(usual.waypoints[0], meetup) > 400
