@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Menu</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Overpass:wght@600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap">
+
+<style>
+:root{--ink:#191A2E;--ink85:#2F3150;--ink75:#4A4D68;--line:#E3E6DD;--forest:#2D6A4F;--deep:#1B4332;--pale:#F4F8EE;--warm:#9A4A12;--warmbg:#F8F1EC;--warmline:#EAD8C8}
+*{box-sizing:border-box}
+body{margin:0;background:#fff;color:var(--ink);font:16px/1.45 "DM Sans",sans-serif}
+h1,h2,h3,.ov{font-family:Overpass,sans-serif;font-weight:800;letter-spacing:-.01em;margin:0}
+a{color:inherit;text-decoration:none;cursor:pointer}
+p{margin:0}
+.wrap{max-width:1200px;margin:0 auto;padding:0 16px}
+@media(min-width:900px){.wrap{padding:0 32px}}
+[data-lucide]{width:18px;height:18px;stroke-width:2}
+/* nav */
+.top{border-bottom:1px solid var(--line);background:#fff;position:relative;z-index:5}
+.bar{display:flex;align-items:center;gap:28px;height:64px}
+.brand img{height:22px;display:block}
+.nav{display:none;gap:4px;font:700 15px Overpass}
+.nav a{display:flex;align-items:center;gap:3px;padding:8px 10px;border-radius:8px}
+.nav a [data-lucide]{width:15px;height:15px;opacity:.7}
+.nav a.on{background:var(--pale);color:var(--deep)}
+.right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.donate{display:none;font:700 15px Overpass;padding:8px 12px;border:1px solid var(--line);border-radius:999px}
+.get{background:var(--forest);color:#fff;padding:9px 16px;border-radius:999px;font:800 15px Overpass}
+.burger{border:0;background:none;padding:6px;display:flex}
+.burger [data-lucide]{width:26px;height:26px}
+@media(min-width:1024px){.nav{display:flex}.donate{display:inline-block}.burger{display:none}}
+/* bits */
+.dt{position:absolute;left:6px;top:6px;background:#fff;border-radius:8px;padding:3px 7px 2px;text-align:center;line-height:1.05;box-shadow:0 1px 3px #0003;font-family:Overpass}
+.dt small{display:block;font-size:12px;font-weight:800;color:var(--forest)}.dt b{font-size:18px;font-weight:800}
+.mapsq{position:relative;overflow:hidden;background:#EEF0EA}
+.pin{position:absolute;left:50%;top:50%;width:16px;height:16px;margin:-8px 0 0 -8px;border-radius:50%;background:var(--forest);border:3px solid #fff;box-shadow:0 1px 4px #0005}
+.logo{width:100%;height:100%;background:#fff;display:flex;align-items:center;justify-content:center;padding:14%}
+.logo img{max-width:100%;max-height:100%;object-fit:contain}
+img.fill{width:100%;height:100%;object-fit:cover;display:block}
+.stop{display:inline-flex;align-items:center;gap:6px;font-size:14px;color:var(--ink85)}
+.stop i{width:10px;height:10px;display:inline-block}
+.lvl{display:inline-flex;align-items:flex-end;gap:2px;font-size:14px;color:var(--ink85);margin-right:8px}
+.lvl b{width:4px;height:8px;background:#D5D9CF;border-radius:1px}.lvl b:nth-child(2){height:11px}.lvl b:nth-child(3){height:14px;margin-right:5px}.lvl b.m1{background:var(--forest)}
+.chip{display:inline-block;font-size:13px;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--pale);color:var(--deep)}
+.meta{font-size:14px;color:var(--ink75);margin-top:3px}
+.under{margin-top:6px}
+.credit{font-size:13px;color:var(--ink75);margin-top:4px}
+.rowh{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:14px}
+.rowh h2{font-size:22px}.rowh a{font:700 15px Overpass;color:var(--forest);white-space:nowrap}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:46px;padding:0 18px;border-radius:10px;font:800 16px Overpass;background:var(--forest);color:#fff}
+.btn.ghost{background:#fff;color:var(--ink);border:1px solid var(--line)}
+/* photo card */
+.pc{display:block;min-width:0}
+.pc .pic{position:relative;aspect-ratio:4/3;border-radius:14px;overflow:hidden;background:var(--pale);border:1px solid var(--line)}
+.pc h3{font-size:17px;line-height:1.25;margin-top:10px}
+/* row card */
+.rc{display:flex;gap:12px;align-items:flex-start;min-width:0}
+.rc .sq{position:relative;flex:0 0 auto;border-radius:12px;overflow:hidden;border:1px solid var(--line);background:var(--pale)}
+.rc .sq .dt{left:4px;top:4px;padding:2px 5px 1px}.rc .sq .dt small{font-size:11px}.rc .sq .dt b{font-size:15px}
+.rc .tx{min-width:0}.rc h3{font-size:16px;line-height:1.25}
+/* spotlight strip */
+.spot{display:flex;align-items:center;gap:14px;border:1px solid var(--warmline);background:var(--warmbg);border-radius:16px;padding:12px 14px}
+.spot .st{flex:0 0 auto;width:96px;height:66px;background:#fff;border:1px solid var(--warmline);border-radius:10px;padding:5px}
+.spot .lab{font-size:14px;font-weight:600;color:var(--warm);display:flex;gap:6px;align-items:center}
+.spot h3{font-size:17px;margin-top:2px}
+.spot .bar2{height:7px;border-radius:4px;background:rgba(154,74,18,.15);margin-top:7px;max-width:300px}.spot .bar2 i{display:block;height:100%;width:63%;background:var(--warm);border-radius:4px}
+.spot .mt{display:flex;justify-content:space-between;max-width:300px;font-size:14px;color:var(--ink85);margin-top:3px}
+.spot .go{margin-left:auto;background:var(--warm);color:#fff;font:800 15px Overpass;border-radius:10px;padding:11px 14px;white-space:nowrap}
+@media(max-width:640px){.spot{flex-wrap:wrap}.spot .go{width:100%;text-align:center;margin:0}.spot>div:nth-child(2){flex:1;min-width:0}}
+/* footer */
+.foot{border-top:1px solid var(--line);margin-top:28px;padding:22px 0 30px;font-size:14px;color:var(--ink75)}
+.foot .wrap{display:flex;flex-wrap:wrap;gap:8px 20px}
+.foot b{color:var(--ink)}
+.mh{font-size:18px;margin:26px 0 10px;color:var(--ink75)}
+.frame{position:relative;border:1px solid var(--line);border-radius:14px;overflow:hidden;height:470px;background:#fafbf8}
+.frame .wrap.bar{max-width:none}
+.frame .nav{display:flex}.frame .donate{display:inline-block}.frame .burger{display:none}
+.mega{position:relative;z-index:4;background:#fff;border-bottom:1px solid var(--line);box-shadow:0 12px 24px rgba(25,26,46,.08)}
+.mg{display:grid;grid-template-columns:1fr 360px;gap:32px;padding-top:22px;padding-bottom:24px;max-width:none}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:6px 20px;align-content:start}.cols.two{grid-template-columns:1fr 1fr}
+.mi{display:flex;gap:12px;padding:10px;border-radius:12px}.mi:hover,.mi:first-child{background:var(--pale)}
+.mi [data-lucide]{width:22px;height:22px;color:var(--forest);flex:0 0 auto;margin-top:1px}.mi b{display:block;font:800 16px Overpass}.mi small{display:block;font-size:14px;color:var(--ink75)}
+.live2{border-left:1px solid var(--line);padding-left:28px;display:grid;gap:12px;align-content:start}.lab2{font:800 15px Overpass;color:var(--ink75)}
+.all{font:700 15px Overpass;color:var(--forest)}
+.dim{position:absolute;inset:64px 0 0;background:rgba(25,26,46,.18);z-index:1}
+.phones{display:flex;gap:24px;flex-wrap:wrap;margin-bottom:40px}
+.phone{width:375px;max-width:100%;height:760px;border:1px solid var(--line);border-radius:24px;overflow:hidden;background:#fff}
+.phone .burger{display:flex}.phone .bar{height:60px}
+.sheet{padding:12px 16px}
+.search{display:flex;gap:8px;align-items:center;border:1px solid var(--line);border-radius:12px;padding:11px 12px;font-size:16px;color:var(--ink75);margin-bottom:6px}
+details{border-bottom:1px solid var(--line)}summary{list-style:none;display:flex;justify-content:space-between;align-items:center;padding:14px 2px;font:800 19px Overpass}
+summary::-webkit-details-marker{display:none}
+.pg{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 0 14px}.pg a{display:flex;gap:8px;align-items:center;background:var(--pale);border-radius:10px;padding:10px;font:700 15px Overpass;min-height:48px}
+.pg [data-lucide]{width:18px;height:18px;color:var(--forest);flex:0 0 auto}
+.pfoot{display:flex;gap:10px;margin-top:16px}.plinks{font-size:14px;color:var(--ink75);margin-top:14px}
+@media(max-width:700px){.mg{grid-template-columns:1fr}.live2{border:0;padding:0}.frame{height:auto}.frame .nav{display:none}}</style></head><body>
+<main class="wrap" style="padding-top:20px">
+<h1 class="mh">Menu: desktop, "What's on" open</h1>
+<div class="frame"><header class="top"><div class="wrap bar">
+<a class="brand"><img src="../img/gsi-wordmark.png" alt="Green Streets Initiative"></a>
+<nav class="nav"><a class="on">What's on<i data-lucide=chevron-down></i></a><a class="">Places<i data-lucide=chevron-down></i></a><a class="">Get there<i data-lucide=chevron-down></i></a><a class="">Learn to ride<i data-lucide=chevron-down></i></a><a class="">For organizations<i data-lucide=chevron-down></i></a></nav>
+<div class="right"><a class="donate">Donate</a><a class="get">Get Shift</a><button class="burger" aria-label="Menu"><i data-lucide="menu"></i></button></div>
+</div></header>
+<div class="mega"><div class="wrap mg"><div class="cols"><a class="mi"><i data-lucide="calendar-days"></i><span><b>All events</b><small>277 rides, walks, classes and talks</small></span></a><a class="mi"><i data-lucide="sun"></i><span><b>This weekend</b><small>21 near you</small></span></a><a class="mi"><i data-lucide="trophy"></i><span><b>Challenges</b><small>Beat the Bay State, Walk/Ride Day</small></span></a><a class="mi"><i data-lucide="users"></i><span><b>Go with someone</b><small>A neighbor for your first trip</small></span></a><a class="mi"><i data-lucide="plus-circle"></i><span><b>Add your event</b><small>Free, listed statewide</small></span></a></div>
+<div class="live2"><p class="lab2">Saturday near Somerville</p><a class="rc"><div class="sq" style="width:56px;height:56px"><div class="logo"><img src="https://xyqcpgwbqrhykpgpqbdi.supabase.co/storage/v1/object/public/ride-flyers/organizer-logos/boston-cafe-bikers-1792790264.png" alt="Boston Cafe Bikers logo"></div></div>
+<div class="tx"><h3>Butternut Bake House Ride</h3><p class="meta">Sat 10 AM · Boston Cafe Bikers</p><p class="under"><span class="lvl"><b class="m1"></b><b></b><b></b>Easy</span><span class="chip">No-drop</span></p></div></a><a class="rc"><div class="sq" style="width:56px;height:56px"><img class="fill" src="https://xyqcpgwbqrhykpgpqbdi.supabase.co/storage/v1/object/public/community-event-images/flyer_boston-pedals-fall-bike-picnic_2026-11-21.jpg" alt=""></div>
+<div class="tx"><h3>Fall Bike Picnic, Social and Food Drive</h3><p class="meta">Sat 11 AM · Boston Pedals</p><p class="under"><span class="stop"><i style="background:#ED8B00;border-radius:50%"></i>Back Bay</span></p></div></a><a class="rc"><div class="sq" style="width:56px;height:56px"><div class="logo"><img src="https://xyqcpgwbqrhykpgpqbdi.supabase.co/storage/v1/object/public/ride-flyers/organizer-logos/boston-cafe-bikers-1792790264.png" alt="Boston Cafe Bikers logo"></div></div>
+<div class="tx"><h3>Thankful for Coffee</h3><p class="meta">Sun 10 AM · Boston Cafe Bikers</p><p class="under"><span class="lvl"><b class="m1"></b><b></b><b></b>Easy</span><span class="chip">No-drop</span></p></div></a><a class="all">See all 21 →</a></div></div></div>
+<div class="dim"></div></div>
+
+<h1 class="mh">Menu: desktop, "For organizations" open</h1>
+<div class="frame"><header class="top"><div class="wrap bar">
+<a class="brand"><img src="../img/gsi-wordmark.png" alt="Green Streets Initiative"></a>
+<nav class="nav"><a class="">What's on<i data-lucide=chevron-down></i></a><a class="">Places<i data-lucide=chevron-down></i></a><a class="">Get there<i data-lucide=chevron-down></i></a><a class="">Learn to ride<i data-lucide=chevron-down></i></a><a class="on">For organizations<i data-lucide=chevron-down></i></a></nav>
+<div class="right"><a class="donate">Donate</a><a class="get">Get Shift</a><button class="burger" aria-label="Menu"><i data-lucide="menu"></i></button></div>
+</div></header>
+<div class="mega"><div class="wrap mg"><div class="cols two"><a class="mi"><i data-lucide="briefcase"></i><span><b>Employers</b><small>A team challenge, free to start</small></span></a><a class="mi"><i data-lucide="school"></i><span><b>Schools</b><small>Walk and bike to school, counted</small></span></a><a class="mi"><i data-lucide="landmark"></i><span><b>Towns and cities</b><small>A spring town challenge</small></span></a><a class="mi"><i data-lucide="megaphone"></i><span><b>Event hosts</b><small>List your rides and walks</small></span></a><a class="mi"><i data-lucide="store"></i><span><b>Local businesses</b><small>Become a rewards partner</small></span></a><a class="mi"><i data-lucide="home"></i><span><b>Property managers</b><small>A welcome page for new residents</small></span></a></div>
+<div class="live2 org2"><p class="lab2">Not sure where to start?</p><p style="font-size:16px">Tell us what you have in mind and we'll suggest a fit.</p><a class="btn" style="margin-top:12px">Book a call</a><a class="all" style="margin-top:14px">Employer login →</a></div></div></div>
+<div class="dim"></div></div>
+
+<h1 class="mh">Menu: phone</h1>
+<div class="phones">
+<div class="phone"><header class="top"><div class="bar" style="padding:0 16px"><a class="brand"><img src="../img/gsi-wordmark.png" alt=""></a><div class="right"><a class="get">Get Shift</a><button class="burger"><i data-lucide="x"></i></button></div></div></header>
+<div class="sheet"><div class="search"><i data-lucide="search"></i>Search events, towns, trails</div><details open><summary>What's on<i data-lucide="chevron-down"></i></summary><div class="pg"><a><i data-lucide="calendar-days"></i>All events</a><a><i data-lucide="sun"></i>This weekend</a><a><i data-lucide="trophy"></i>Challenges</a><a><i data-lucide="users"></i>Go with someone</a><a><i data-lucide="plus-circle"></i>Add your event</a></div></details><details><summary>Places<i data-lucide="chevron-down"></i></summary><div class="pg"><a><i data-lucide="map"></i>Your town</a><a><i data-lucide="trees"></i>Trails</a><a><i data-lucide="flag"></i>Roams</a><a><i data-lucide="ticket"></i>Game days</a></div></details><details><summary>Get there<i data-lucide="chevron-down"></i></summary><div class="pg"><a><i data-lucide="route"></i>Plan a trip</a><a><i data-lucide="locate"></i>What's near you</a><a><i data-lucide="briefcase"></i>Commute Advisor</a><a><i data-lucide="book-open"></i>Guides</a></div></details><details><summary>Learn to ride<i data-lucide="chevron-down"></i></summary><div class="pg"><a><i data-lucide="bike"></i>Free bike lessons</a><a><i data-lucide="users"></i>Go with someone</a><a><i data-lucide="book-open"></i>First-ride guides</a></div></details><details><summary>For organizations<i data-lucide="chevron-down"></i></summary><div class="pg"><a><i data-lucide="briefcase"></i>Employers</a><a><i data-lucide="school"></i>Schools</a><a><i data-lucide="landmark"></i>Towns and cities</a><a><i data-lucide="megaphone"></i>Event hosts</a><a><i data-lucide="store"></i>Local businesses</a><a><i data-lucide="home"></i>Property managers</a></div></details>
+<div class="pfoot"><a class="btn" style="flex:1">Get Shift</a><a class="btn ghost" style="flex:1">Donate</a></div><p class="plinks">About · Volunteer · Contact · Help · Español · Português · 中文</p></div></div>
+</div>
+</main>
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script><script>lucide.createIcons()</script>
+</body></html>
