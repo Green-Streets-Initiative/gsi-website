@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { timingSafeEqual } from 'node:crypto'
 import {
-  AirplaneTilt, ArrowClockwise, Bicycle, Buildings, CalendarCheck, ChatCircleText, Compass, Gift, Handshake, MapPin, Star, UserPlus, UsersThree,
+  AirplaneTilt, ArrowClockwise, Bicycle, Buildings, CalendarCheck, ChatCircleText, Compass, Flag, Gift, Handshake, MapPin, Star, UserPlus, UsersThree,
 } from '@phosphor-icons/react/dist/ssr'
 import type { Icon } from '@phosphor-icons/react'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
@@ -53,6 +53,10 @@ const GROUPS: Record<string, [string, Icon]> = {
   logan_asked: ['Logan', AirplaneTilt],
   logan_matched: ['Logan', AirplaneTilt],
   logan_booked: ['Logan', AirplaneTilt],
+  org_opened: ['Organizer', Flag],
+  org_first_ride: ['Organizer', Flag],
+  org_three_going: ['Organizer', Flag],
+  org_feedback: ['Organizer', Flag],
   parking_trip_planned: ['Parking page', MapPin],
   parking_get_shift: ['Parking page', MapPin],
   around_you_used: ['Around You', Compass],
@@ -166,6 +170,8 @@ export default async function GsiTodayPage({ params }: { params: Promise<{ key: 
   add(s.lessons_booked_yesterday, 'free bike lesson booked with an instructor', 'free bike lessons booked with an instructor')
   add(s.logan_flights_yesterday, 'flight added to Logan together', 'flights added to Logan together')
   add(s.logan_matched_yesterday, 'Logan match', 'Logan matches')
+  add(s.org_opened_yesterday, 'organizer link opened', 'organizer links opened')
+  add(s.org_rides_yesterday, "organizer's first ride saved", "organizers' first rides saved")
   if (Number(s.ay_opened) > 0) {
     did.push(`${people(s.ay_opened)} opened Around You` + (Number(s.ay_used) > 0 ? ` and ${n(s.ay_used)} used it to find a way to go` : ''))
   }
@@ -198,12 +204,15 @@ export default async function GsiTodayPage({ params }: { params: Promise<{ key: 
   const showLessons = Number(s.lessons_asked) > 0
   // Logan shows once someone has added a flight; a block of zeros reads as a verdict on a new launch.
   const showLogan = Number(s.logan_flights) > 0
+  // Organizer tools show once an organizer has opened their link (Shift 01864).
+  const showOrg = Number(s.org_opened) > 0
   const showParking = s.parking_visitors !== undefined
   const sections: [string, string][] = [
     [`wins-${today}`, 'Today'],
     ['yesterday', 'Numbers'],
     ...(showLessons ? [['lessons', 'Bike lessons'] as [string, string]] : []),
     ...(showLogan ? [['logan', 'Logan'] as [string, string]] : []),
+    ...(showOrg ? [['organizers', 'Organizers'] as [string, string]] : []),
     ...(showParking ? [['parking', 'Parking pages'] as [string, string]] : []),
     ...(leads.length ? [['look-into', 'To look into'] as [string, string]] : []),
     ...(earlier.length ? [['earlier', 'Earlier'] as [string, string]] : []),
@@ -299,6 +308,21 @@ export default async function GsiTodayPage({ params }: { params: Promise<{ key: 
             {Number(s.logan_waiting) > 0 && (
               <p className="mt-4 text-[1rem] leading-relaxed text-ink">
                 {people(s.logan_waiting)} with a flight still ahead {Number(s.logan_waiting) === 1 ? 'is' : 'are'} waiting for a match.
+              </p>
+            )}
+          </Section>
+        )}
+
+        {showOrg && (
+          <Section id="organizers" label="Since the invitations" title="Organizer tools">
+            <Stats items={[
+              { value: s.org_opened, label: `of ${n(s.org_links)} organizer links opened` },
+              { value: s.org_first_rides, label: 'first rides saved' },
+              { value: s.org_three_going, label: 'with 3 or more coming' },
+            ]} />
+            {Number(s.org_feedback) > 0 && (
+              <p className="mt-4 text-[1rem] leading-relaxed text-ink">
+                {n(s.org_feedback)} {Number(s.org_feedback) === 1 ? 'organizer has' : 'organizers have'} sent feedback.
               </p>
             )}
           </Section>
