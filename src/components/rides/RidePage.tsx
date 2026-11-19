@@ -684,7 +684,7 @@ export default function RidePage({ ride, host = null, hostPerson = null, organiz
               <RideFacts ride={ride} miles={factMiles} ascentFt={factClimb} hillShape={factShape} profile={own || picked ? null : profile} comfort={picked ? null : comfortHere} className="" locale={locale} />
               {/* What the streets look like, right after "On calm streets" (polish 11-13: in the
                   map card it pushed what the ride is like a screen and a half down on a phone). */}
-              {calmOption && rawPieces.length > 0 && (
+              {calmOption && rawPieces.length > 0 && !picked && (
                 <div className="overflow-hidden rounded-2xl border border-(--ev-line-mid) bg-(--ev-card) shadow-(--ev-shadow)">
                   <RideStreets option={calmOption} pieces={rawPieces} selected={street} onSelect={setStreet} locale={locale} />
                 </div>
