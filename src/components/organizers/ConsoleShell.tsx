@@ -153,9 +153,11 @@ function SignIn() {
   }
 
   return (
-    <div className="mx-auto grid max-w-[980px] gap-8 pt-2 md:grid-cols-[1.1fr_1fr] md:items-center md:pt-10">
-      {/* Someone with a personal link came to sign in: on a phone the form leads. */}
-      <div className={cx(linkToken && 'order-2 md:order-none')}>
+    <div className="mx-auto grid max-w-[980px] gap-6 pt-2 md:grid-cols-[1.1fr_1fr] md:gap-x-8 md:gap-y-5 md:pt-10">
+      {/* On a phone: the headline, then the form (the job here is signing in),
+          then the picture. With a personal link the form leads. On wide
+          screens the headline and picture sit left and the form right. */}
+      <div className={cx('md:col-start-1 md:row-start-1 md:self-end', linkToken && 'order-2 md:order-none')}>
         <p className="text-[15px] font-semibold text-(--ev-accent)">{linkToken ? 'You\u2019re invited' : 'Shift for ride organizers'}</p>
         <h1 className="mt-2 font-display text-[clamp(30px,4.2vw,44px)] font-extrabold leading-[1.05] text-(--ev-ink)">
           Plan and run your group&rsquo;s rides and walks
@@ -165,11 +167,15 @@ function SignIn() {
         <p className="mt-4 text-[17px] leading-snug text-(--ev-ink-85)">
           Get more people to your rides and spend less time setting them up.
         </p>
-        <figure className="mt-5 overflow-hidden rounded-2xl border border-(--ev-line-mid) bg-white">
+      </div>
+
+      <div className="order-3 md:order-none md:col-start-1 md:row-start-2 md:self-start">
+        <figure className="overflow-hidden rounded-2xl border border-(--ev-line-mid) bg-white">
           <img
-            src="/organizer-kit/ride-page.jpg"
+            src="/organizer-kit/ride-page-wide.jpg"
             alt="A ride page on a phone: the route on a map colored by kind of bike lane, the dates to pick from with the weather, and street photos along the route"
-            className="h-[240px] w-full object-cover object-[50%_36%] md:h-[280px]"
+            width={1000} height={460}
+            className="block h-auto w-full"
           />
           <figcaption className="border-t border-(--ev-line) px-4 py-2.5 text-[15px] leading-snug text-(--ev-ink-80)">
             Your ride&rsquo;s page. People say they&rsquo;re coming here, in any browser.
@@ -180,7 +186,7 @@ function SignIn() {
         </p>
       </div>
 
-      <Card className="shadow-(--ev-shadow)">
+      <Card className={cx('shadow-(--ev-shadow) md:col-start-2 md:row-span-2 md:row-start-1 md:self-center', linkToken && 'order-1 md:order-none')}>
         {sent ? (
           <div>
             <MailCheck className="h-8 w-8 text-(--ev-accent)" aria-hidden />
