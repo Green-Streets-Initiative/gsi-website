@@ -381,7 +381,7 @@ function sketchOf(line: LatLng[], meetup: LatLng | null): { box: string; points:
   const ys = all.map((p) => p[1])
   const w = Math.max(...xs) - Math.min(...xs) || 0.001
   const h = Math.max(...ys) - Math.min(...ys) || 0.001
-  const pad = Math.max(w, h) * 0.14
+  const pad = Math.max(w, h) * 0.3
   return {
     box: `${Math.min(...xs) - pad} ${Math.min(...ys) - pad} ${w + pad * 2} ${h + pad * 2}`,
     points: pts.map((p) => `${p[0]},${p[1]}`).join(' '),
