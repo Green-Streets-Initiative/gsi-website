@@ -12,7 +12,7 @@ import { useConsole } from './ConsoleContext'
 import PhotoNudge from './PhotoNudge'
 import RideThumb from './RideThumb'
 import { FeedbackDueCard, FeedbackLink } from './Feedback'
-import { GroupsClaimedNotice, HandoffsForMe } from './HandoffsForMe'
+import { GroupsClaimedNotice, HandoffsForMe, SteppedDownNotice } from './HandoffsForMe'
 import type { GroupClaimed } from '@/lib/organizers/group'
 import { NoMeetupHint, RideDayRiders, useRideDay, useRideTime } from './RideDay'
 import { Badge, Card, Empty, Notice, Spinner, Tabs, cx, tabPanel, type Tone } from './ui'
@@ -362,6 +362,7 @@ export default function Dashboard() {
       )}
 
       <GroupsClaimedNotice groups={(me as { groups_claimed?: GroupClaimed[] } | null)?.groups_claimed ?? []} />
+      <SteppedDownNotice />
       <HandoffsForMe onAnswered={() => void load()} />
 
       {err && (

@@ -8,6 +8,7 @@ import { TAG_OPTIONS } from '@/lib/organizers/ride-words'
 import type { OrgClaim } from '@/lib/organizers/types'
 import { useConsole } from './ConsoleContext'
 import GroupTeam from './GroupTeam'
+import { rememberSteppedDown } from './HandoffsForMe'
 import { Button, Card, Empty, Field, Input, Notice, SectionTitle, Select, Textarea, Toggle, cx } from './ui'
 
 // The channels a ride page shows as "Follow" buttons (OrganizerChannels),
@@ -206,7 +207,7 @@ export default function HostPage() {
               const others = verified.length > 1
               setOrgId('')
               void refreshMe()
-              if (!others) router.push('/organizers')
+              if (!others) { rememberSteppedDown(org.name); router.push('/organizers') }
             }} />
             <Editor key={org.id} org={org} onSaved={() => void refreshMe()} />
           </div>

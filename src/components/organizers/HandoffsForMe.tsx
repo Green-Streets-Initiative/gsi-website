@@ -75,3 +75,29 @@ export function GroupsClaimedNotice({ groups }: { groups: GroupClaimed[] }) {
     </div>
   )
 }
+
+const STEPPED_KEY = 'organizers.steppedDown'
+
+/** Remembered across the move to Your rides after stepping down from a group. */
+export function rememberSteppedDown(group: string) {
+  try { sessionStorage.setItem(STEPPED_KEY, group) } catch { /* the notice is a nicety */ }
+}
+
+/** "You stepped down from …" on Your rides, once. */
+export function SteppedDownNotice() {
+  const [group, setGroup] = useState<string | null>(null)
+  useEffect(() => {
+    try {
+      const g = sessionStorage.getItem(STEPPED_KEY)
+      if (g) { setGroup(g); sessionStorage.removeItem(STEPPED_KEY) }
+    } catch { /* storage blocked */ }
+  }, [])
+  if (!group) return null
+  return (
+    <div className="mb-5">
+      <Notice tone="good" onClose={() => setGroup(null)}>
+        You stepped down from {group}. Rides you set up are still yours, below.
+      </Notice>
+    </div>
+  )
+}
