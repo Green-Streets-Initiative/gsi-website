@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import Image from 'next/image'
 import Link from 'next/link'
 import QRCode from 'qrcode'
 import { Check, Clock, Copy, Download, ExternalLink, ImageIcon, Minus, Printer } from 'lucide-react'
@@ -193,6 +194,8 @@ export default function PromoteView() {
   }, [hostId])
   const groupLinkFor = (m: GroupMsg | 'qr'): string => hostUrl ?? promoLink(code, m === 'chat' ? 'wa' : m === 'listing' ? 'partiful' : m)
   const groupQrLink = groupLinkFor('qr')
+  /** The link people see and paste: the plain page address (the messages and QR keep their tracked links for Results). */
+  const groupCleanLink = hostUrl ?? `https://www.gogreenstreets.org/rides/${code}`
   useEffect(() => {
     let live = true
     QRCode.toDataURL(groupQrLink, { width: 1024, margin: 2, errorCorrectionLevel: 'M' })
@@ -269,6 +272,16 @@ export default function PromoteView() {
     r.live_sharing === 'members' && `A live map on ${one} day, from your reminder email, so you can find the group if you're running late`,
     `One album where everyone adds their photos after the ${one}`,
   ].filter((x): x is string => typeof x === 'string')
+  /** What members see, from the kit's screens of made-up rides (public/organizer-kit). */
+  const groupShots = [
+    { src: '/organizer-kit/ride-page.jpg', pos: '50% 0%', label: `Say you're coming, in any browser`, alt: `A ${one} page: pick a date, then Going, Maybe or Can’t go` },
+    hasRoute && !walkRide
+      ? { src: '/organizer-kit/route.jpg', pos: '50% 58%', label: 'The route, by kind of bike lane', alt: 'A route map, each stretch colored by its kind of bike lane' }
+      : null,
+    r.live_sharing !== 'off'
+      ? { src: '/organizer-kit/live-group.jpg', pos: '50% 30%', label: `Find the group on ${one} day`, alt: 'The live map: the group’s marker on the route, marked Live' }
+      : null,
+  ].filter((x): x is { src: string; pos: string; label: string; alt: string } => !!x)
   const groupText = (m: GroupMsg): string => {
     const link = groupLinkFor(m)
     const where = hostUrl ? `All our ${many} are here` : facts.repeats ? `Our ${many} are here` : `Our next ${one} is here`
@@ -290,14 +303,14 @@ export default function PromoteView() {
           '',
           ...gets.map((g) => `- ${g}`),
           '',
-          `Saying you're coming takes your name and email, in any web browser. Only the ${one} leader uses the Shift app.`,
+          `Saying you're coming takes your name and email, in any web browser. ${r.live_sharing === 'off' ? 'No app needed.' : `The Shift app is optional: the ${one} leader uses it to share the live map.`}`,
           '',
           `${where}: ${link}`,
           '',
           'See you there!',
         ].join('\n')
       case 'listing':
-        return `We use Shift for the route and ${one}-day updates. Say you're coming there too, from any web browser: ${link}`
+        return `We use Shift ${hasRoute ? 'for the route and ' : ''}to send updates if plans change. Say you're coming there too, from any web browser: ${link}`
     }
   }
   const groupCopy = groupEdits[groupMsg] ?? groupText(groupMsg)
@@ -414,6 +427,16 @@ export default function PromoteView() {
         <SectionTitle hint={`Let your regulars know you're using Shift, and what they get from it. Send it once, where your group already talks.`}>
           <StepTitle n={1}>Tell your group</StepTitle>
         </SectionTitle>
+        <ul className="mb-4 grid grid-cols-3 gap-3" aria-label="What your group sees">
+          {groupShots.map((s) => (
+            <li key={s.src} className="flex flex-col gap-2">
+              <div className="relative h-[120px] overflow-hidden rounded-xl border border-(--ev-line) bg-white sm:h-[160px]">
+                <Image src={s.src} alt={s.alt} fill sizes="(min-width: 640px) 220px, 30vw" className="object-cover" style={{ objectPosition: s.pos }} />
+              </div>
+              <span className="text-[14px] font-semibold leading-snug text-(--ev-ink-85)">{s.label}</span>
+            </li>
+          ))}
+        </ul>
         <div className="flex flex-wrap items-center gap-4 rounded-xl bg-(--ev-panel-faint) p-4">
           <div className="h-[112px] w-[112px] shrink-0 overflow-hidden rounded-xl border border-(--ev-line) bg-white">
             {groupQr ? <img src={groupQr} alt={hostUrl ? `QR code for your group's page` : `QR code for ${r.name}`} className="h-full w-full" /> : null}
@@ -423,9 +446,9 @@ export default function PromoteView() {
               {hostUrl ? `Your group's page, with all your upcoming ${many}`
                 : facts.repeats ? `Your ${one}'s page, with every date` : `Your ${one}'s page`}
             </p>
-            <span className="max-w-full break-all text-[14px] text-(--ev-ink-75)">{groupLinkFor('chat').replace('https://www.', '')}</span>
+            <span className="max-w-full break-all text-[14px] text-(--ev-ink-75)">{groupCleanLink.replace('https://www.', '')}</span>
             <div className="flex flex-wrap gap-2">
-              <CopyButton id="group-link" text={groupLinkFor('chat')} copied={copied} copy={copy} label="Copy link" />
+              <CopyButton id="group-link" text={groupCleanLink} copied={copied} copy={copy} label="Copy link" />
               <Button size="sm" disabled={!groupQr} onClick={() => { if (!groupQr) return; saveFile(`${fileSlug(hostUrl ? (detail.event_organizer?.name ?? r.name) : r.name)}-group-qr.png`, groupQr); track('organizer_group_qr_downloaded', { ride_id: r.id, page: hostUrl ? 'group' : 'ride' }) }}>
                 <Download className="h-4 w-4" aria-hidden />Download QR code
               </Button>
@@ -457,7 +480,7 @@ export default function PromoteView() {
         <p className="mt-4 text-[14px] text-(--ev-ink-75)">
           {r.live_sharing === 'off'
             ? <>The live map is off for this {one}. To add it, <Link href={`/organizers/rides/${r.id}/edit`} className="font-semibold text-(--ev-ink) underline">choose who sees it</Link>.</>
-            : <>Only the leader needs the Shift app: it shows where the group is on the live map. Everyone else uses a web browser.</>}
+            : <>Your group needs only a web browser. The Shift app is optional: the leader uses it to share the live map.</>}
         </p>
       </Card>}
       {tab === 'flyer' && <Card id="flyer">
