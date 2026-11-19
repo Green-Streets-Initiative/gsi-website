@@ -543,7 +543,7 @@ export default async function OrganizerKitPage({ searchParams }: { searchParams:
             {/* The thing they post everywhere: the ride page their link opens. */}
             <figure className="overflow-hidden rounded-[18px] border border-navy/10 bg-white">
               <div className="relative h-[260px] lg:h-[380px]">
-                <Image src="/organizer-kit/ride-page.jpg" alt="A ride page: pick a date, then Going, Maybe or Can’t go, with distance, pace, hills and level" fill className="object-cover object-top" sizes="(min-width: 1024px) 280px, 90vw" />
+                <Image src="/organizer-kit/ride-page.jpg" alt="A ride page on a phone: the route on a map colored by kind of bike lane, the dates to pick from with the weather, and street photos along the route" fill className="object-cover object-[50%_30%]" sizes="(min-width: 1024px) 280px, 90vw" />
               </div>
               <figcaption className="border-t border-navy/10 px-4 py-3 text-[16px] leading-snug text-navy/85">
                 The page your link opens. People RSVP here, in any browser.
