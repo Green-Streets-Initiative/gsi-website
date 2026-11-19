@@ -6,6 +6,8 @@
  *   claim          the request: the function picks the code and asks one instructor
  *   offer_get / offer_answer   the instructor's Yes / Can't page (/bike-lessons/offer/[token])
  *   teacher_get / teacher_save the instructor's usual hours (/bike-lessons/teach/[token])
+ *   offer_report   the instructor's "We had the lesson" on the offer page (Shift 01870)
+ *   after_get / after_answer   the learner's page after the lesson (/bike-lessons/after/[token])
  */
 const FN = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/free-lessons`
 
@@ -16,6 +18,9 @@ const FIELDS: Record<string, string[]> = {
   offer_answer: ['token', 'answer'],
   teacher_get: ['token'],
   teacher_save: ['token', 'hours', 'calls_first', 'paused'],
+  offer_report: ['token', 'day', 'next'],
+  after_get: ['token'],
+  after_answer: ['token', 'had', 'feeling', 'rode', 'words', 'share'],
 }
 
 export async function POST(req: Request) {

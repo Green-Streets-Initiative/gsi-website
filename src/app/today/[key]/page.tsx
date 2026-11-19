@@ -50,6 +50,9 @@ const GROUPS: Record<string, [string, Icon]> = {
   lesson_asked: ['Bike lesson', Bicycle],
   lesson_booked: ['Bike lesson', Bicycle],
   lesson_given: ['Bike lesson', Bicycle],
+  lesson_felt: ['Bike lesson', Bicycle],
+  lesson_words: ['Bike lesson', Bicycle],
+  lesson_rode: ['Bike lesson', Bicycle],
   logan_asked: ['Logan', AirplaneTilt],
   logan_matched: ['Logan', AirplaneTilt],
   logan_booked: ['Logan', AirplaneTilt],
@@ -81,7 +84,7 @@ function dayLabel(key: string, today: string, yesterday: string): string {
 
 function Stats({ items }: { items: { value: unknown; label: string }[] }) {
   return (
-    <div className="grid grid-cols-3 gap-3">
+    <div className={`grid gap-3 ${items.length === 4 ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-3'}`}>
       {items.map((s) => (
         <div key={s.label}>
           <div className={`${HEAD} text-[1.875rem] text-forest`}>{n(s.value)}</div>
@@ -286,12 +289,17 @@ export default async function GsiTodayPage({ params }: { params: Promise<{ key: 
             <Stats items={[
               { value: s.lessons_asked, label: 'asked' },
               { value: s.lessons_booked, label: 'booked with an instructor' },
-              { value: s.lessons_given, label: 'lessons on an invoice' },
+              { value: s.lessons_given, label: 'had their lesson' },
+              { value: s.lessons_rode_alone ?? 0, label: 'biked on their own since' },
             ]} />
             <p className="mt-4 text-[1rem] leading-relaxed text-ink">
               {[
                 Number(s.lessons_waiting) > 0 ? `${n(s.lessons_waiting)} ${Number(s.lessons_waiting) === 1 ? 'is' : 'are'} waiting for an instructor's answer.` : '',
                 Number(s.lessons_direct_to_school) > 0 ? `The first ${n(s.lessons_direct_to_school)} went straight to the Bicycle Riding School, before we matched instructors.` : '',
+                Number(s.lessons_great) > 0 || Number(s.lessons_ok_or_rough) > 0
+                  ? `${n(s.lessons_great ?? 0)} said it went great` + (Number(s.lessons_ok_or_rough) > 0 ? `, ${n(s.lessons_ok_or_rough)} said OK or rough.` : '.')
+                  : '',
+                Number(s.lessons_words_to_share) > 0 ? `${people(s.lessons_words_to_share)} said we can share what they wrote.` : '',
                 s.lessons_cap ? `${n(s.lessons_left)} of ${n(s.lessons_cap)} free lessons left.` : '',
               ].filter(Boolean).join(' ')}
             </p>
