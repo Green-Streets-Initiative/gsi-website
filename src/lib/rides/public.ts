@@ -20,6 +20,7 @@ export interface PublicRouteOption {
   name: string | null
   route_waypoints: { lat: number; lng: number }[]
   route_miles: number | null
+  route_elevation?: { ascent_ft?: number; descent_ft?: number; max_grade_pct?: number } | null
   route_google_maps_url?: string | null
 }
 

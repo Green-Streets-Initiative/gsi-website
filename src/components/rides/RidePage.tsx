@@ -543,16 +543,22 @@ export default function RidePage({ ride, host = null, hostPerson = null, organiz
       return named === dist ? dist : `${named} · ${dist}`
     }
     return [
-      { label: label(optSrc?.route_name, miles), line: route },
+      { label: label(optSrc?.route_name, miles), line: route, mi: miles, elev: null },
       ...others.map((o) => {
         const mi = o.route_miles ?? routeMiles(o.route_waypoints)
-        return { label: label(o.name, mi), line: o.route_waypoints }
+        return { label: label(o.name, mi), line: o.route_waypoints, mi, elev: o.route_elevation ?? null }
       }),
     ]
   })()
   const [routePickRaw, setRoutePick] = useState(0)
   const routePick = routeOpts[routePickRaw] ? routePickRaw : 0
   const mapLine = routePick > 0 ? routeOpts[routePick].line : route
+  // Distance and hills follow the route picked; the hills chart and street
+  // comfort describe the main route only, so they step aside for another one.
+  const picked = routePick > 0 ? routeOpts[routePick] : null
+  const factMiles = picked ? picked.mi : miles
+  const factClimb = picked ? (typeof picked.elev?.ascent_ft === 'number' ? Math.round(picked.elev.ascent_ft) : null) : climb
+  const factShape: HillShape | null = picked ? { downFt: picked.elev?.descent_ft ?? null, steepestPct: picked.elev?.max_grade_pct ?? null } : shape
   // The page leads with a picture: a photo from the last ride when there is one, else the map.
   const heroPhoto = photos?.album.photos.find((p) => p.kind === 'photo' && p.status === 'ok' && p.url && (p.width ?? 1) >= (p.height ?? 1)) ?? null
   const mapCard = hasMap && place ? (
@@ -675,7 +681,7 @@ export default function RidePage({ ride, host = null, hostPerson = null, organiz
                   )}
                 </div>
               )}
-              <RideFacts ride={ride} miles={miles} ascentFt={climb} hillShape={shape} profile={own ? null : profile} comfort={comfortHere} className="" locale={locale} />
+              <RideFacts ride={ride} miles={factMiles} ascentFt={factClimb} hillShape={factShape} profile={own || picked ? null : profile} comfort={picked ? null : comfortHere} className="" locale={locale} />
               {/* What the streets look like, right after "On calm streets" (polish 11-13: in the
                   map card it pushed what the ride is like a screen and a half down on a phone). */}
               {calmOption && rawPieces.length > 0 && (
