@@ -116,6 +116,10 @@
     {
       "date": "2026-11-19",
       "what": "Claude, on Keith's 'Signed in, go' (marketing plan approved 'Yes to all three', interactive chat, Claude in Chrome). Shift Together - Start Biking (24469296673): upload ad-grants-nov19-together-start.csv added 3 phrase keywords to 'Start biking to work' (how to start biking to work, bike commuting for beginners, bike route to work boston) and one RSA per group landing on gogreenstreets.org/together/start (the one-minute sign-up, utm_source=grant, utm_content=route); 2 traffic-hook RSAs failed on the 3-RSA limit. Paused the 4 older RSAs (landing on /together/bike-to-work and /together/bike-buddy; 0 impressions since Nov 13; said 'calm streets'). Second upload ad-grants-nov19-together-start-traffic.csv added the 2 traffic-hook RSAs (utm_content=traffic), 0 errors. Locations: added Everett and Malden (now Arlington, Boston, Cambridge, Everett, Malden, Medford, Somerville). Each group now runs 2 enabled RSAs, both on /together/start."
+    },
+    {
+      "date": "2026-11-20",
+      "what": "Claude, on Keith's 'Yes, all of it' (the /logan rewrite around splitting the fare; interactive chat, Claude in Chrome). Venue Parking / 'Logan: share a ride' (ad group 205263130514): added 5 phrase keywords (share a ride to logan, split a cab to logan, shared ride to logan airport, logan airport rideshare, logan airport carpool; 4 show 'Not eligible: low search volume', 1 under review) and 2 RSAs with 11 headlines and 4 descriptions about splitting the fare, ad 1 pinning 'Split Your Ride to Logan' and ad 2 'Coming Home? Split That Too' in position 1, display path logan/split-the-fare, final URL /logan?from=grant&utm_source=grant&utm_medium=cpc&utm_campaign=logan. Both saved with no policy issues (Eligible). Cleared Google's prefilled AI headlines first. Paused the older RSA 'Going to Logan? Share a Ride' (display path logan/share-a-ride). Copy in Shift docs/programs/launches/logan-together/plan.md."
     }
   ],
   "open_items": [
@@ -245,7 +249,7 @@
     {
       "id": "logan-adgroup-2-ads",
       "what": "Venue Parking / 'Logan: share a ride' ad group has 1 RSA (Pending) and no keywords seen; breaks the 2-ads-per-ad-group rule.",
-      "status": "OPEN 2026-11-18: recommended as weekly item 2 with a drafted second RSA (shared ride first, T second) and 5 phrase keywords on the report page. Emailed Keith. Added ~11-17 by another session; add its change entry when the group is finished."
+      "status": "CLOSED 2026-11-20: 2 new RSAs + 5 phrase keywords added, old RSA paused (see changes 2026-11-20). Was: OPEN 2026-11-18: recommended as weekly item 2 with a drafted second RSA (shared ride first, T second) and 5 phrase keywords on the report page. Emailed Keith. Added ~11-17 by another session; add its change entry when the group is finished."
     },
     {
       "id": "together-start-first-read",

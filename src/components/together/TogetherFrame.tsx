@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import type { ReactNode } from 'react'
+import type { CSSProperties, ReactNode } from 'react'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
 import HtmlLang from '@/components/HtmlLang'
@@ -22,7 +22,12 @@ export default function TogetherFrame({ locale, variant = 'together', audience, 
     <>
       <HtmlLang locale={locale} />
       <Nav variant="light" locale={locale} />
-      <main className="bg-cream" style={{ paddingTop: '60px' }}>
+      {/* /logan wears the website's look (Design Lead 2026-11-20; Keith the same day: "can we address this now"): Trebuchet text
+          via .street, and Overpass for the headings, which say font-display here. /together keeps the app's type for now. */}
+      <main
+        className={variant === 'logan' ? 'street bg-cream' : 'bg-cream'}
+        style={variant === 'logan' ? ({ paddingTop: '60px', '--font-display': 'var(--font-headline)' } as CSSProperties) : { paddingTop: '60px' }}
+      >
         <TogetherShell locale={locale} variant={variant} audience={audience}>{children}</TogetherShell>
       </main>
       <Footer variant="light" locale={locale} />

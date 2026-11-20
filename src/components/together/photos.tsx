@@ -20,6 +20,10 @@ import { cx } from '@/components/organizers/ui'
  * - parkRide: "Park and Ride lot, Framingham MA, 2025-11-19" (cropped to the parked cars),
  *   https://commons.wikimedia.org/wiki/File:Park_and_Ride_lot,_Framingham_MA,_2025-11-19.jpg
  *   Peter Cooper Jr., CC0.
+ * - loganCurb: "Terminal A, Logan International Airport, Boston" (the departures curb, the Boston
+ *   skyline behind; cropped to the curb and skyline, 1600 wide, public/images/logan),
+ *   https://commons.wikimedia.org/wiki/File:Terminal_A,_Logan_International_Airport,_Boston.jpg
+ *   CaribDigita, public domain. The top of /logan (Design Lead 2026-11-20).
  */
 export type TogetherPhoto = { src: string; width: number; height: number; credit: string; url: string }
 
@@ -43,6 +47,11 @@ export const PHOTOS = {
     src: '/images/together/framingham-park-and-ride.jpg', width: 800, height: 487,
     credit: 'Peter Cooper Jr. / Wikimedia Commons, CC0',
     url: 'https://commons.wikimedia.org/wiki/File:Park_and_Ride_lot,_Framingham_MA,_2025-11-19.jpg',
+  },
+  loganCurb: {
+    src: '/images/logan/terminal-a-curb.jpg', width: 1600, height: 641,
+    credit: 'CaribDigita / Wikimedia Commons, public domain',
+    url: 'https://commons.wikimedia.org/wiki/File:Terminal_A,_Logan_International_Airport,_Boston.jpg',
   },
 } satisfies Record<string, TogetherPhoto>
 

@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
-import { Bike, Car, Eye, Handshake, LogOut, MailCheck, MapPinned, Plane, ShieldCheck, Sprout, TrainFront, UsersRound, type LucideIcon } from 'lucide-react'
+import { Bike, Car, Clock, Eye, Handshake, LogOut, MailCheck, MapPinned, Plane, ShieldCheck, Sprout, UsersRound, type LucideIcon } from 'lucide-react'
 import { toneClass } from '@/components/events/EventsTone'
 import { Button, Card, Field, Input, Notice, Spinner, cx } from '@/components/organizers/ui'
 import HowItWorks from '@/components/together/HowItWorks'
@@ -278,9 +278,10 @@ function Gate({ children }: { children: ReactNode }) {
 }
 
 const LOGAN_POINTS: { label: LoganKey; Icon: LucideIcon }[] = [
+  // What sharing gets you, not "find someone to go with" (Keith 2026-11-20: nobody is looking for a companion; they might want to save).
   { label: 'logan.point_split', Icon: Car },
-  { label: 'logan.point_transit', Icon: TrainFront },
-  { label: 'logan.point_both', Icon: Plane },
+  { label: 'logan.point_home', Icon: Plane },
+  { label: 'logan.point_late', Icon: Clock },
 ]
 
 /** Keith's three steps and drawings (approved 2026-11-08; public/images/logan, also in the launch email). */
@@ -404,7 +405,11 @@ function SignIn() {
       {/* Phone: a photo band, what this is, then the sign-in, then how it works. Wide: the band, then heading and ways left, sign-in right.
           The band stays short on phones so the email field is still on the first screen (390x844). */}
       <div className="grid grid-cols-1 gap-5 md:gap-8">
-      {logan ? null : (
+      {logan ? (
+        // The Terminal A departures curb with Boston behind it: the place this page is about (Design Lead 2026-11-20).
+        <PhotoBand photo={PHOTOS.loganCurb} alt={tl('logan.photo_alt')} place={tl('logan.photo_place')} creditLabel={t('photo.by', { who: PHOTOS.loganCurb.credit })}
+          className="h-[136px] sm:h-[220px] md:h-[280px]" imgClassName="object-[50%_25%]" priority />
+      ) : (
         guide ? (
           // The Charles River path by the Weeks Bridge: the calm kind of ride a guide offers (Gilman stays in step 3).
           <PhotoBand photo={PHOTOS.river} alt={t('practice.photo_alt')} place={t('practice.photo_place')} creditLabel={t('photo.by', { who: PHOTOS.river.credit })}
@@ -416,12 +421,11 @@ function SignIn() {
       )}
       <div className="grid grid-cols-1 gap-6 md:grid-cols-[1.15fr_1fr] md:items-start md:gap-x-10">
         <div className="md:col-start-1 md:row-start-1">
-          {/* No line above the heading on Shift Together (no eyebrows, enrich pass 2026-11-09); Logan keeps its own. */}
-          {logan ? <p className="mb-2 text-[15px] font-semibold text-(--ev-accent)">{tl('logan.eyebrow')}</p> : null}
+          {/* No line above the heading (no eyebrows: enrich pass 2026-11-09; Logan too, Design Lead 2026-11-20). */}
           <h1 className="font-display text-[clamp(30px,4.2vw,44px)] font-extrabold leading-[1.05] text-balance">
             {logan ? tl('logan.signin_title') : t(guide ? 'guide.title' : 'signin.title')}
           </h1>
-          {logan ? null : <p className="mt-3 text-[clamp(18px,2vw,21px)] font-semibold leading-snug text-(--ev-ink-85)">{t(guide ? 'guide.lead' : 'signin.lead')}</p>}
+          <p className="mt-3 text-[clamp(18px,2vw,21px)] font-semibold leading-snug text-(--ev-ink-85)">{logan ? tl('logan.lead') : t(guide ? 'guide.lead' : 'signin.lead')}</p>
         </div>
         {card}
         <div className="grid gap-3 md:col-start-1 md:row-start-2">
@@ -457,10 +461,13 @@ function SignIn() {
               <li key={st.title} className="grid content-start gap-3 rounded-2xl border border-(--ev-line) bg-white p-4">
                 {/* eslint-disable-next-line @next/next/no-img-element -- a small static SVG */}
                 <img src={st.img} alt={tl(st.alt)} width={240} height={170} className="h-auto w-full max-w-[360px]" />
-                <span className="min-w-0">
-                  <span className="block font-display text-[13px] font-extrabold tracking-[0.08em] text-(--ev-accent)">{tl('logan.step_n', { n: i + 1 })}</span>
-                  <span className="mt-1 block text-[17px] font-bold leading-snug">{tl(st.title)}</span>
-                  <span className="mt-1 block text-[15px] leading-snug text-(--ev-ink-80)">{tl(st.hint)}</span>
+                {/* The number in a forest circle beside the title, as /bike-lessons numbers its steps (the <ol> says it to screen readers). */}
+                <span className="flex min-w-0 items-start gap-3">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-forest font-display text-[18px] font-extrabold text-white" aria-hidden>{i + 1}</span>
+                  <span className="min-w-0">
+                    <span className="block text-[18px] font-bold leading-snug">{tl(st.title)}</span>
+                    <span className="mt-1 block text-[16px] leading-snug text-(--ev-ink-80)">{tl(st.hint)}</span>
+                  </span>
                 </span>
                 {st.chips.length ? (
                   <span className="flex flex-wrap gap-2">
