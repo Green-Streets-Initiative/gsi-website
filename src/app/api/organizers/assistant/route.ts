@@ -8,6 +8,8 @@
 //      {type:'thread', id} {type:'text', delta} {type:'tool', id, label}
 //      {type:'tool_done', id, ok, link?} {type:'choices', options}
 //      {type:'approval', tool_use_id, card} {type:'long'} {type:'error', message} {type:'done'}
+//      {type:'retract'}: drop the text just streamed; the message it was in calls a tool, and the prompt
+//      promises the organizer never sees words written before a tool call.
 // DELETE ?thread_id= | ?all=1   forget your conversations
 //
 // Stored exactly as the model saw it (Shift 01376), private to the
@@ -172,7 +174,10 @@ function transcript(messages: { id?: number; role: string; content: unknown }[],
   const byId = new Map<string, Extract<Item, { kind: 'tool' }>>()
   for (const m of messages) {
     const blocks = (Array.isArray(m.content) ? m.content : [{ type: 'text', text: String(m.content) }]) as Record<string, unknown>[]
+    // Words the model wrote on its way to a tool call are its own notes ("Need occurrence id."); the prompt says they're hidden.
+    const callsTool = m.role === 'assistant' && blocks.some((b) => b.type === 'tool_use')
     for (const b of blocks) {
+      if (callsTool && b.type === 'text') continue
       if (b.type === 'image' && m.role === 'user') {
         const src = b.source as { url?: string } | undefined
         if (src?.url) items.push({ kind: 'user_image', url: src.url })
@@ -491,11 +496,19 @@ export async function POST(request: Request) {
             cache_control: { type: 'ephemeral' },
             messages: history.map(({ role, content }) => ({ role, content })) as Anthropic.Beta.BetaMessageParam[],
           } as Anthropic.Beta.MessageCreateParamsStreaming)
-          const visible = choicesFilter((delta) => emit({ type: 'text', delta }))
+          let shown = false
+          let visible = choicesFilter((delta) => { shown = true; emit({ type: 'text', delta }) })
           s.on('text', (delta) => visible.push(delta))
+          s.on('streamEvent', (ev) => {
+            if (ev.type !== 'content_block_start' || ev.content_block.type !== 'tool_use') return
+            if (shown) emit({ type: 'retract' })
+            shown = false
+            visible = choicesFilter(() => {})
+          })
           const msg = await s.finalMessage()
           visible.flush()
-          const options = splitChoices(msg.content.filter((b): b is Anthropic.Beta.BetaTextBlock => b.type === 'text').map((b) => b.text).join('')).options
+          const callsTool = msg.content.some((b) => b.type === 'tool_use')
+          const options = callsTool ? [] : splitChoices(msg.content.filter((b): b is Anthropic.Beta.BetaTextBlock => b.type === 'text').map((b) => b.text).join('')).options
           if (options.length) emit({ type: 'choices', options })
           if (msg.content.length === 0) break
           await append('assistant', msg.content, { model: msg.model, usage: msg.usage })

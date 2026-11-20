@@ -258,6 +258,7 @@ function AssistantPanel({ seed, onSeedUsed, onClose }: { seed: { prompt: string 
       const reader = res.body.getReader()
       const dec = new TextDecoder()
       let buf = ''
+      let streaming = false
       for (;;) {
         const { value, done } = await reader.read()
         if (done) break
@@ -268,7 +269,12 @@ function AssistantPanel({ seed, onSeedUsed, onClose }: { seed: { prompt: string 
           buf = buf.slice(nl + 1)
           if (!line.trim()) continue
           const e = JSON.parse(line) as Record<string, unknown>
-          if (e.type === 'thread') {
+          const wasStreaming = streaming
+          streaming = e.type === 'text'
+          if (e.type === 'retract') {
+            // The words just shown led up to a tool call: take them back.
+            if (wasStreaming) setItems((p) => (p[p.length - 1]?.kind === 'assistant' ? p.slice(0, -1) : p))
+          } else if (e.type === 'thread') {
             current = String(e.id)
             setThreadId(current)
           } else if (e.type === 'text') {
