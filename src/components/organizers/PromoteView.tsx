@@ -134,7 +134,6 @@ export default function PromoteView() {
   const [qr, setQr] = useState<string | null>(null)
   const [stats, setStats] = useState<PromoStats | null>(null)
   const [statsErr, setStatsErr] = useState<string | null>(null)
-  const [done, setDone] = useState<Record<string, boolean>>({})
   const [making, setMaking] = useState(false)
   const [tab, setTab] = useState<PromoTab>('group')
   const [groupMsg, setGroupMsg] = useState<GroupMsg>('chat')
@@ -148,18 +147,6 @@ export default function PromoteView() {
     const t = (['group', 'posts', 'flyer', 'calendars', 'results'] as const).find((x) => x === h)
     if (t) setTab(t)
   }, [])
-
-  const doneKey = `promote-calendars-${r.id}`
-  useEffect(() => {
-    try { setDone(JSON.parse(localStorage.getItem(doneKey) ?? '{}')) } catch { /* private mode */ }
-  }, [doneKey])
-  const tick = (k: string) => {
-    setDone((d) => {
-      const next = { ...d, [k]: !d[k] }
-      try { localStorage.setItem(doneKey, JSON.stringify(next)) } catch { /* private mode */ }
-      return next
-    })
-  }
 
   useEffect(() => {
     let live = true
@@ -369,7 +356,7 @@ export default function PromoteView() {
 
 
   const listed = r.visibility === 'public' && r.calendar_status === 'approved'
-  const calsDone = CALENDARS.filter((c) => done[c.key]).length + (listed ? 1 : 0)
+  const ourCalendar = r.visibility !== 'public' ? 'Invite only' : listed ? 'Listed' : r.calendar_status === 'pending' ? 'Pending' : 'Not listed'
   const visits = (stats?.channels ?? []).reduce((a, c) => a + c.visits, 0)
   const people = (stats?.channels ?? []).reduce((a, c) => a + c.people, 0)
   // Posts first: it's what most organizers came for (the flyer is a one-time job).
@@ -378,7 +365,7 @@ export default function PromoteView() {
     { id: 'group', n: 1, label: 'Tell your group', value: `${GROUP_MSGS.length} messages` },
     { id: 'posts', n: 2, label: 'Social posts', value: `${POSTS.length} captions` },
     { id: 'flyer', n: 3, label: 'Flyer', value: r.flyer_url ? 'Yours is up' : 'QR ready' },
-    { id: 'calendars', n: 4, label: 'Calendars', value: `${calsDone} of ${CALENDARS.length + 1}` },
+    { id: 'calendars', n: 4, label: 'Calendars', value: `Ours: ${ourCalendar}` },
     { id: 'results', label: 'Results', value: stats ? `${visits} visits, ${people} yes` : '–' },
   ]
 
@@ -566,50 +553,45 @@ export default function PromoteView() {
       </Card>}
 
       {tab === 'calendars' && <Card id="calendars">
-        <SectionTitle
-          hint="Copy the listing once, then paste it into each calendar."
-          action={<CopyButton id="cal" text={calendarText} copied={copied} copy={copy} label="Copy listing" primary />}
-        >
+        <SectionTitle hint="Where people can find this ride besides your own posts.">
           <StepTitle n={4}>Event calendars</StepTitle>
         </SectionTitle>
-        <ul className="grid grid-cols-[minmax(0,1fr)] gap-1 sm:grid-cols-2">
-          <li className="flex items-start gap-3 rounded-xl bg-(--ev-panel-faint) px-3 py-3">
-            <span className={cx('mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full',
-              listed ? 'bg-(--ev-accent-fill) text-(--ev-on-accent-fill)' : 'bg-white text-(--ev-ink-75)')}>
-              {listed ? <Check className="h-4 w-4" aria-hidden />
-                : r.visibility === 'public' && r.calendar_status === 'pending' ? <Clock className="h-4 w-4" aria-hidden />
-                : <Minus className="h-4 w-4" aria-hidden />}
-            </span>
-            <div className="min-w-0">
-              <p className="text-[15px] font-semibold text-(--ev-ink)">Green Streets events calendar</p>
-              <p className="text-[14px] text-(--ev-ink-75)">
-                {r.visibility !== 'public' ? 'Invite-only rides stay off the calendar.'
-                  : listed ? 'Listed for you, and updated when the ride changes.'
-                  : r.calendar_status === 'pending' ? 'Off the calendar for now.'
-                  : "Not listed. Write to info@gogreenstreets.org if that's a mistake."}
-              </p>
-            </div>
-          </li>
+        <div className="flex items-start gap-3 rounded-xl bg-(--ev-panel-faint) px-3 py-3">
+          <span className={cx('mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full',
+            listed ? 'bg-(--ev-accent-fill) text-(--ev-on-accent-fill)' : 'bg-white text-(--ev-ink-75)')}>
+            {listed ? <Check className="h-4 w-4" aria-hidden />
+              : r.visibility === 'public' && r.calendar_status === 'pending' ? <Clock className="h-4 w-4" aria-hidden />
+              : <Minus className="h-4 w-4" aria-hidden />}
+          </span>
+          <div className="min-w-0">
+            <p className="text-[15px] font-semibold text-(--ev-ink)">Green Streets events calendar</p>
+            <p className="text-[14px] text-(--ev-ink-75)">
+              {r.visibility !== 'public' ? 'Invite-only rides stay off the calendar. Make it Public in Edit ride to list it.'
+                : listed ? 'Listed for you, and updated when the ride changes.'
+                : r.calendar_status === 'pending' ? 'Waiting for our check, then it goes on the calendar.'
+                : "Not listed. Write to info@gogreenstreets.org if that's a mistake."}
+            </p>
+          </div>
+        </div>
+        <div className="mt-6 flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-[15px] font-semibold text-(--ev-ink)">Add it to other calendars yourself</p>
+            <p className="text-[14px] text-(--ev-ink-75)">Copy the listing, then paste it into each site&apos;s own form.</p>
+          </div>
+          <CopyButton id="cal" text={calendarText} copied={copied} copy={copy} label="Copy listing" primary />
+        </div>
+        <ul className="mt-3 grid grid-cols-[minmax(0,1fr)] gap-1 sm:grid-cols-2">
           {CALENDARS.map((c) => (
-            <li key={c.key} className="flex items-start gap-3 rounded-xl px-3 py-3 hover:bg-(--ev-panel-faint)">
-              <button
-                type="button"
-                onClick={() => tick(c.key)}
-                aria-pressed={!!done[c.key]}
-                aria-label={`Mark ${c.name} ${done[c.key] ? 'not done' : 'done'}`}
-                className="-m-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-full"
-              >
-                <span className={cx('flex h-7 w-7 items-center justify-center rounded-full',
-                  done[c.key] ? 'bg-(--ev-accent-fill) text-(--ev-on-accent-fill)' : 'border-2 border-(--ev-line-strong) bg-white')}>
-                  {done[c.key] && <Check className="h-4 w-4" aria-hidden />}
+            <li key={c.key}>
+              <a href={c.url} target="_blank" rel="noopener noreferrer"
+                className="group flex items-start gap-3 rounded-xl px-3 py-3 hover:bg-(--ev-panel-faint)">
+                <span className="min-w-0 flex-1">
+                  <span className="inline-flex items-center gap-1 text-[15px] font-semibold text-(--ev-ink) group-hover:underline">
+                    {c.name}<ExternalLink className="h-3.5 w-3.5" aria-hidden />
+                  </span>
+                  <span className="block text-[14px] text-(--ev-ink-75)">{c.how}</span>
                 </span>
-              </button>
-              <div className="min-w-0 flex-1">
-                <a href={c.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-[15px] font-semibold text-(--ev-ink) underline-offset-2 hover:underline">
-                  {c.name}<ExternalLink className="h-3.5 w-3.5" aria-hidden />
-                </a>
-                <p className="text-[14px] text-(--ev-ink-75)">{c.how}</p>
-              </div>
+              </a>
             </li>
           ))}
         </ul>
