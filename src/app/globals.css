@@ -284,3 +284,9 @@
   --nb-promo-bg: linear-gradient(135deg, rgba(41, 102, 229, 0.08), rgba(45, 106, 79, 0.1));
   --nb-logo-plate: #191A2E;
 }
+
+/* Thumbnail-sized maps (the organizer console's ride header on phones):
+   MapLibre opens its map credit on load and on every resize, which covers the
+   whole map. Keep the text folded behind the (i) until it's pointed at or tapped. */
+.map-tiny .maplibregl-ctrl-attrib:not(:hover):not(:focus-within) .maplibregl-ctrl-attrib-inner { display: none; }
+.map-tiny .maplibregl-ctrl-attrib:not(:hover):not(:focus-within) { background: transparent; }

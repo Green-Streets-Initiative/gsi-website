@@ -183,7 +183,7 @@ export default function RouteMap({
       // the map credit stays folded into its (i) button instead of covering it.
       const tiny = box.current.clientWidth < 220
       if (!tiny) map.addControl(new ml.NavigationControl({ showCompass: false }), 'top-right')
-      else map.once('idle', () => box.current?.querySelector('.maplibregl-ctrl-attrib')?.classList.remove('maplibregl-compact-show'))
+      else box.current.classList.add('map-tiny') // globals.css keeps the credit folded until the (i) is pointed at or tapped
       map.on('load', () => {
         // Bike lanes first, so they sit under the route: paths green, protected
         // lanes teal, painted lanes dashed blue, all faint (Nearby's colors,
