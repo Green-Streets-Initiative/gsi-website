@@ -86,7 +86,7 @@ function RideHero({ detail, faces }: { detail: RideDetail; faces: Record<string,
         )}
         <p className="min-w-0 text-[15px] text-(--ev-ink-85)">
           {shown ? (
-            <><span className="font-semibold text-(--ev-ink)">{next ? `Next: ${dayLabel(next.date)}` : `Last: ${dayLabel(last!.date)}`}</span>
+            <><span className="font-semibold text-(--ev-ink)">{next ? `Next: ${dayLabel(next.date)}` : last!.date < today ? `Last: ${dayLabel(last!.date)}` : `Ended before ${dayLabel(last!.date)}`}</span>
               {' · '}{count === 0 ? (next ? 'nobody yet' : 'no count yet') : `${count} ${next ? 'going' : 'came'}`}</>
           ) : r.status === 'draft' ? 'No date yet' : 'No dates yet'}
         </p>
