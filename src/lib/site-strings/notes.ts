@@ -53,7 +53,7 @@ export const notesStrings = defineStrings(
     "notes.placeholder_fast_traffic": "For example: cars pass close and fast on the downhill.",
     "notes.placeholder_rough_pavement": "For example: deep cracks in the lane by the bus stop.",
     "notes.placeholder_construction": "For example: the lane is fenced off for a building site.",
-    "notes.placeholder_nice_here": "For example: a wide protected lane, calm even at rush hour.",
+    "notes.placeholder_nice_here": "For example: a wide protected lane, low-stress even at rush hour.",
     "notes.placeholder_note_other": "For example: a good place to lock up by the library.",
     "notes.photo_added": "Photo added. License plates and faces get blurred before anyone else sees it.",
     "notes.photo_hint": "A photo can show which lane and what's in it. License plates and faces get blurred before it shows.",

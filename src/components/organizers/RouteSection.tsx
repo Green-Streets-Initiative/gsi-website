@@ -524,7 +524,7 @@ export default function RouteSection({ route, onRoute, meetup, pace, activity = 
               <span>
                 Re-planned from {original.current.sourceName ?? 'the route you brought in'}
                 {route.comfortSegments?.length && original.current.comfortSegments?.length
-                  ? `: ${calmPct(route.comfortSegments)}% on calm streets, was ${calmPct(original.current.comfortSegments)}%.` : '.'}
+                  ? `: ${calmPct(route.comfortSegments)}% bike-friendly, was ${calmPct(original.current.comfortSegments)}%.` : '.'}
               </span>
               <Button size="sm" onClick={restoreImported}>Go back to my original route</Button>
             </div>

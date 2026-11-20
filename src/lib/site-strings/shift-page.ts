@@ -25,7 +25,7 @@ export const shiftPageStrings = /* @__PURE__ */ defineStrings(
     'shiftp.hero_eyebrow': 'The Shift app · now on iOS & Android',
     'shiftp.hero_title_a': 'Find better ways',
     'shiftp.hero_title_b': 'to get around.',
-    'shiftp.hero_lede': 'Get rewarded when you try them. Shift shows when the next bus or train is coming, where the nearest bike share is and the calm way to ride, and it counts your trips on its own.',
+    'shiftp.hero_lede': 'Get rewarded when you try them. Shift shows when the next bus or train is coming, where the nearest bike share is and a low-stress way to ride, and it counts your trips on its own.',
     'shiftp.coming_soon': 'Coming soon to iOS and Android',
     'shiftp.free_download': 'Free to download',
     'shiftp.trips_worth_link': 'See what your trips are worth',

@@ -288,7 +288,7 @@ export const TOOLS: Anthropic.Tool[] = [
   },
   {
     name: 'compare_ways',
-    description: 'The Commute Advisor for a regular trip between two places: each way (walk, bike, transit, drive, and two-part trips like bike to the train or park and ride) with door-to-door minutes, monthly cost, when to leave, and which way it recommends; plus the transit route, nearby Bluebikes, and how calm the bike route is. Use for a commute or any trip they make often.',
+    description: 'The Commute Advisor for a regular trip between two places: each way (walk, bike, transit, drive, and two-part trips like bike to the train or park and ride) with door-to-door minutes, monthly cost, when to leave, and which way it recommends; plus the transit route, nearby Bluebikes, and how bike-friendly the bike route is. Use for a commute or any trip they make often.',
     input_schema: {
       type: 'object',
       properties: {
@@ -301,7 +301,7 @@ export const TOOLS: Anthropic.Tool[] = [
   },
   {
     name: 'check_trip',
-    description: 'One trip to one place, the way Around You answers it: walking minutes and miles (for a walk up to about an hour, or whenever they ask about walking), transit minutes, how much of it is walking, the lines and where to change, the fare, bike minutes, and how calm the bike route is street by street (paths, protected lanes, painted lanes, shared roads), with a calmer option when there is one. Transit is planned for when they leave: now, unless you pass a day and time. Use for a one-off trip (a Saturday errand, a new place).',
+    description: 'One trip to one place, the way Around You answers it: walking minutes and miles (for a walk up to about an hour, or whenever they ask about walking), transit minutes, how much of it is walking, the lines and where to change, the fare, bike minutes, and how bike-friendly the bike route is street by street (paths, protected lanes, painted lanes, shared roads), with a safer option when there is one. Transit is planned for when they leave: now, unless you pass a day and time. Use for a one-off trip (a Saturday errand, a new place).',
     input_schema: {
       type: 'object',
       properties: {
@@ -316,7 +316,7 @@ export const TOOLS: Anthropic.Tool[] = [
   },
   {
     name: 'check_route_link',
-    description: 'Read a Ride with GPS route link they pasted (from a club, a friend, a ride listing): its name, distance, climbing, how much is on calm streets, paths and protected lanes, spots to take carefully, new lanes on it, and where it starts and ends. To get them to the start, pass start to check_trip.',
+    description: 'Read a Ride with GPS route link they pasted (from a club, a friend, a ride listing): its name, distance, climbing, how much is on quiet streets, paths and protected lanes, spots to take carefully, new lanes on it, and where it starts and ends. To get them to the start, pass start to check_trip.',
     input_schema: {
       type: 'object',
       properties: { url: { type: 'string', description: 'The ridewithgps.com/routes/… or /trips/… link, as pasted.' } },
@@ -393,7 +393,7 @@ export const TOOLS: Anthropic.Tool[] = [
   },
   {
     name: 'get_my_drives',
-    description: "The trips they drive regularly (from their recorded trips), each with what the drive costs a month in gas, wear and parking, and the walk, bike, Bluebikes, bus or train trip that Shift found competes with it: minutes against driving and parking, cost, how calm the bike route is, the line and stop. Also what their car costs to own and run a month (the app's full-picture estimate) and their driving miles this month. Use for \"what could I bike instead\", \"how much does driving cost me\", \"is it worth keeping the car\", or when they mention driving somewhere they go often.",
+    description: "The trips they drive regularly (from their recorded trips), each with what the drive costs a month in gas, wear and parking, and the walk, bike, Bluebikes, bus or train trip that Shift found competes with it: minutes against driving and parking, cost, how bike-friendly the bike route is, the line and stop. Also what their car costs to own and run a month (the app's full-picture estimate) and their driving miles this month. Use for \"what could I bike instead\", \"how much does driving cost me\", \"is it worth keeping the car\", or when they mention driving somewhere they go often.",
     input_schema: { type: 'object', properties: {} },
   },
   {
@@ -548,9 +548,9 @@ export const TOOLS: Anthropic.Tool[] = [
         carpool_role: nullable('string', 'carpool only: driver, rider or either.'),
         arrive_by: nullable('string', 'carpool only: HH:MM, 24-hour, when they need to get there.'),
         leave_at: nullable('string', 'carpool only: HH:MM, 24-hour, when they head home.'),
-        note: nullable('string', "A short note their match sees, in their words (\"Back on a bike after years, I'd like a calm route\")."),
+        note: nullable('string', "A short note their match sees, in their words (\"Back on a bike after years, I'd like a low-stress route\")."),
         contact_email: nullable('string', "Only when the result told you their sign-in email is Apple's Hide My Email: an email they gave you that their match can write to."),
-        other_times: { type: ['array', 'null'], items: { type: 'string', enum: PRACTICE_SLOTS }, description: "newcomer: quieter times they'd also do the first trip (a calm weekend or evening run-through). guide: other times they're free, which also offers easy practice rides near home when they bike. Only what they said." },
+        other_times: { type: ['array', 'null'], items: { type: 'string', enum: PRACTICE_SLOTS }, description: "newcomer: quieter times they'd also do the first trip (a low-stress weekend or evening practice run). guide: other times they're free, which also offers easy practice rides near home when they bike. Only what they said." },
         max_miles: { type: ['number', 'null'], enum: [2, 3, 5, 8, null], description: 'guide only: the longest trip they would go on with someone. Empty means 5.' },
       },
       required: ['kind'],
@@ -1217,7 +1217,7 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
         // Older builds draw only the ride: no card when it would lead with another way.
         const showCard = newCards || lead === 'bike'
         const CARD_NOTE = {
-          bike: 'A route card shows under your reply: a small map of the bike route, its minutes and miles, a strip of how calm each stretch is, and buttons to open it in Google Maps or see the full trip. Write at most two short sentences with no minutes, miles or percentages (the card shows them) and no street list: which way you would go and why, and anything worth knowing (a busy stretch, a train or bus that also works).',
+          bike: 'A route card shows under your reply: a small map of the bike route, its minutes and miles, a strip showing the kind of street on each stretch, and buttons to open it in Google Maps or see the full trip. Write at most two short sentences with no minutes, miles or percentages (the card shows them) and no street list: which way you would go and why, and anything worth knowing (a busy stretch, a train or bus that also works).',
           walk: 'A route card shows under your reply: a small map of the walking route, its minutes and miles, the bike and transit minutes beside it, and buttons for directions and the full trip. Write at most two short sentences with no minutes or miles (the card shows them): anything worth knowing on the way, or when biking or transit would serve them better.',
           transit: 'A route card shows under your reply: a small map of the transit trip in its line colors, the lines, the total minutes, and buttons for directions and the full trip. Write at most two short sentences with no minutes (the card shows them): where to get on and where to change. Add a service change only when it touches their trip on the day they go, and an elevator outage only when they may need one; say nothing about either otherwise.',
         }[lead]
@@ -1672,7 +1672,7 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
           name: r.name,
           miles: r.distance_mi,
           climbing_ft: r.elevation?.ascent_ft != null ? Math.round(r.elevation.ascent_ft) : null,
-          ...(rides ?? { note: "Couldn't check how calm the streets are just now." }),
+          ...(rides ?? { note: "Couldn't check the streets on this route just now." }),
           start: at(first, 'Start of the route'),
           ...(loop ? { loop: true } : { end: at(last, 'End of the route') }),
         })

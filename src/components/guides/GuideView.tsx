@@ -163,7 +163,7 @@ const appStrip: Record<string, { headline: string; line: string }> = {
     line: 'Shift shows live arrivals at the stops near you. Find better ways to get around, and get rewarded when you try them. Free.',
   },
   cycling: {
-    headline: 'Find the calm way to ride there.',
+    headline: 'Find a low-stress way to ride there.',
     line: 'Shift maps low-stress bike routes and the nearest Bluebikes. Find better ways to get around, and get rewarded when you try them. Free.',
   },
   walking: {
@@ -183,7 +183,7 @@ const appStripBySlug: Record<string, { headline: string; line: string }> = {
   },
   'boston-traffic': {
     headline: 'See when the next train or bus is coming.',
-    line: 'Shift shows live arrivals at the stops near you and the calmest bike routes, so you can plan around the traffic. Find better ways to get around, and get rewarded when you try them. Free.',
+    line: 'Shift shows live arrivals at the stops near you and the safest bike routes, so you can plan around the traffic. Find better ways to get around, and get rewarded when you try them. Free.',
   },
   'boston-parking-costs': {
     headline: 'Find the station and bike route nearest you.',

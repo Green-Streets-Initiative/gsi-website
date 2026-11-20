@@ -6,7 +6,7 @@ import TripPlanPage from '@/components/trip/TripPlanPage'
 
 const TITLE = 'Plan a trip in Greater Boston: walk, bike, transit or drive'
 const DESCRIPTION =
-  'Compare every way there side by side: a walking route, the calmest bike route with its share of protected lanes, transit leaving now, and the drive, with weekly costs and help for your first try.'
+  'Compare every way there side by side: a walking route, the safest bike route with its share of protected lanes, transit leaving now, and the drive, with weekly costs and help for your first try.'
 const URL = 'https://www.gogreenstreets.org/trip'
 
 // What assistants and search engines read about the tool itself.

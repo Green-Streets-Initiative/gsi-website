@@ -23,7 +23,7 @@ const en = {
   'mode.multimodal': 'Getting around',
   'tryIt.heading': 'Try it',
   'tryIt.body':
-    "Shift finds the calmest way to wherever you're headed, by bike, on foot or on transit, and gives you credit for every trip you shift.",
+    "Shift finds a low-stress way to wherever you're headed, by bike, on foot or on transit, and gives you credit for every trip you shift.",
   'tryIt.notReady': 'Not ready for the app?',
   'tryIt.nearbyLink': 'Plan a route on the Nearby page',
   'tryIt.inBrowser': 'in your browser.',

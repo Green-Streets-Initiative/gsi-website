@@ -23,7 +23,7 @@ export default function NoteGone() {
                 href="/commute-advisor"
                 className="inline-flex min-h-[44px] items-center rounded-full bg-forest px-5 text-[0.9375rem] font-semibold text-white hover:bg-[#1F4D3A]"
               >
-                Plan a calm bike route
+                Plan a safe bike route
               </Link>
               <Link
                 href="/nearby"

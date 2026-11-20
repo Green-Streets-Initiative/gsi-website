@@ -17,7 +17,7 @@ export const homeStrings = defineStrings(
     'home.hero_top_rest': 'since 2006',
     'home.hero_title_1': 'Find better ways',
     'home.hero_title_2': 'to get around.',
-    'home.hero_lede': 'Get rewarded when you try them. Shift, our free app, shows the next bus or train near you, where the nearest bike share is and the calm way to ride.',
+    'home.hero_lede': 'Get rewarded when you try them. Shift, our free app, shows the next bus or train near you, where the nearest bike share is and a low-stress way to ride.',
     'home.hero_facts': 'Free · iOS and Android · Built in Somerville, MA ·',
     'home.hero_link': 'What Shift does →',
     'home.ledger_trips_month': 'Active trips this month',

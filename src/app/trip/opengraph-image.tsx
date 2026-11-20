@@ -23,7 +23,7 @@ export default async function OGImage() {
   }
   return trailCard({
     kicker: 'Plan a trip',
-    title: 'Every way there, side by side, with calmer bike routes',
+    title: 'Every way there, side by side, with safer bike routes',
     chips: ['Walk', 'Bike', 'Transit', 'Drive'],
     lines,
     network: true,

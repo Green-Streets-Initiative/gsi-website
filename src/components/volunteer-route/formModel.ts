@@ -182,7 +182,7 @@ export const SECTIONS: SectionDef[] = [
       { key: 'bike_protected', label: 'Bike lane or separated path' },
       {
         key: 'bike_low_speed',
-        label: 'Road calm enough for a child to ride',
+        label: 'Road safe enough for a child to ride',
         appliesTo: (f) => f.bike_protected === 'none',
       },
       { key: 'bike_overall_rating', label: 'Overall biking safety' },
