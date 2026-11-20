@@ -1,5 +1,6 @@
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { Resend } from 'resend'
+import { passesHumanCheck } from '@/lib/server/human-check'
 
 const resend = new Resend(process.env.RESEND_API_KEY!)
 
@@ -16,6 +17,7 @@ interface ContactBody {
   neighborhood?: string
   source?: string // which page the form was on (contact, employers)
   website?: string // honeypot
+  turnstile?: string // Cloudflare Turnstile token (lib/server/human-check)
 }
 
 function buildEmailHtml(body: ContactBody): string {
@@ -53,6 +55,10 @@ export async function POST(req: Request) {
   // Honeypot check — bots fill this in, real users don't see it
   if (body.website) {
     return Response.json({ success: true })
+  }
+
+  if (!(await passesHumanCheck(req, body.turnstile, 'contact'))) {
+    return Response.json({ error: 'verify' }, { status: 400 })
   }
 
   // Server-side validation
@@ -148,7 +154,9 @@ export async function POST(req: Request) {
           neighborhood: body.neighborhood?.trim() || null,
           organization_id: orgId,
           classification_status: 'unclassified',
-          loops_subscribed: true,
+          // Asking a question isn't signing up for the newsletter (2026-11-20:
+          // every pitch through this form was landing on the mailing list).
+          loops_subscribed: false,
           source: 'manual',
           notes: `Website form inquiry: ${body.inquiryType}`,
         })

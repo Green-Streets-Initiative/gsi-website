@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { gaEvent } from '@/lib/ga'
+import { useTurnstile } from '@/lib/useTurnstile'
 
 const INQUIRY_TYPES = [
   'Employer partnership',
@@ -70,6 +71,7 @@ export default function ContactForm({ defaultInquiryType, source = 'contact' }: 
   const [businessName, setBusinessName] = useState('')
   const [neighborhood, setNeighborhood] = useState('')
   const [honeypot, setHoneypot] = useState('')
+  const { boxRef: turnstileRef, prime: primeTurnstile, token: turnstileToken } = useTurnstile()
 
   const [errors, setErrors] = useState<FormErrors>({})
   const [submitting, setSubmitting] = useState(false)
@@ -145,6 +147,7 @@ export default function ContactForm({ defaultInquiryType, source = 'contact' }: 
           neighborhood: inquiryType === 'Rewards partner (local business)' ? neighborhood.trim() || undefined : undefined,
           source,
           website: honeypot,
+          turnstile: await turnstileToken(),
         }),
       })
 
@@ -192,7 +195,7 @@ export default function ContactForm({ defaultInquiryType, source = 'contact' }: 
   }
 
   return (
-    <form onSubmit={handleSubmit} className="rounded-[14px] border border-navy/10 bg-white p-6 sm:p-10" noValidate>
+    <form onSubmit={handleSubmit} onFocus={primeTurnstile} className="rounded-[14px] border border-navy/10 bg-white p-6 sm:p-10" noValidate>
       {/* Honeypot — hidden from real users */}
       <input
         type="text"
@@ -351,6 +354,9 @@ export default function ContactForm({ defaultInquiryType, source = 'contact' }: 
             className="block w-full rounded-[10px] border border-navy/20 bg-white px-3.5 py-2.5 text-sm text-navy outline-none transition-colors placeholder:text-ink-soft/70 focus:border-forest disabled:cursor-not-allowed disabled:opacity-50 resize-y"
           />
         </Field>
+
+        {/* Cloudflare's person check: invisible unless it needs a click */}
+        <div ref={turnstileRef} />
 
         {/* Submit */}
         <div className="flex justify-end">

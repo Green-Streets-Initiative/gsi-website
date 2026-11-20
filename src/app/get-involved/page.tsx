@@ -5,6 +5,7 @@ import Footer from '@/components/Footer'
 import Link from 'next/link'
 import { PILL } from '@/components/org/Section'
 import { useRef, useState } from 'react'
+import { useTurnstile } from '@/lib/useTurnstile'
 
 /* ── Role data ── */
 
@@ -129,6 +130,7 @@ export default function GetInvolvedPage() {
   const [about, setAbout] = useState('')
   const [referral, setReferral] = useState('')
   const [honeypot, setHoneypot] = useState('')
+  const { boxRef: turnstileRef, prime: primeTurnstile, token: turnstileToken } = useTurnstile()
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState('')
@@ -187,6 +189,7 @@ export default function GetInvolvedPage() {
           about: about.trim() || undefined,
           referral: referral.trim() || undefined,
           website: honeypot || undefined,
+          turnstile: await turnstileToken(),
         }),
       })
 
@@ -307,7 +310,7 @@ export default function GetInvolvedPage() {
                   next steps.
                 </p>
 
-                <form onSubmit={handleSubmit} className="mt-10 space-y-6">
+                <form onSubmit={handleSubmit} onFocus={primeTurnstile} className="mt-10 space-y-6">
                   {/* Honeypot */}
                   <div className="absolute -left-[9999px]" aria-hidden="true">
                     <input
@@ -409,6 +412,9 @@ export default function GetInvolvedPage() {
                   {error && (
                     <p className="text-sm font-medium text-[#B3361F]">{error}</p>
                   )}
+
+                  {/* Cloudflare's person check: invisible unless it needs a click */}
+                  <div ref={turnstileRef} />
 
                   {/* Submit */}
                   <div className="flex justify-end">

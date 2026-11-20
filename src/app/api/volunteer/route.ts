@@ -1,5 +1,6 @@
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { Resend } from 'resend'
+import { passesHumanCheck } from '@/lib/server/human-check'
 
 const resend = new Resend(process.env.RESEND_API_KEY!)
 
@@ -10,6 +11,7 @@ interface VolunteerBody {
   about?: string
   referral?: string
   website?: string // honeypot
+  turnstile?: string // Cloudflare Turnstile token (lib/server/human-check)
 }
 
 function buildEmailHtml(body: VolunteerBody): string {
@@ -49,6 +51,13 @@ export async function POST(req: Request) {
   // Honeypot check — bots fill this in, real users don't see it
   if (body.website) {
     return Response.json({ success: true })
+  }
+
+  if (!(await passesHumanCheck(req, body.turnstile, 'volunteer'))) {
+    return Response.json(
+      { error: 'We couldn’t confirm you’re a person. Please try again, or email us at info@gogreenstreets.org.' },
+      { status: 400 },
+    )
   }
 
   // Server-side validation
