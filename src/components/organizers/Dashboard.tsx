@@ -387,7 +387,7 @@ export default function Dashboard() {
       {assistant && rides && <AskBox rides={groups.mine} canCreate={!!me?.can_create} />}
 
       {nothingAtAll && (
-        <Empty title={me?.can_create ? 'Set up your first ride' : 'No rides yet'} action={newRide}>
+        <Empty title={me?.can_create ? 'Set up your first ride' : 'No rides yet'} action={newRide} picture={<CalendarPage />}>
           {me?.can_create
             ? 'A one-off ride or a regular one, with a meeting point and a route. You get a ride page to share, and everyone who answers lands on your list.'
             : 'When an organizer adds you as a co-organizer, their ride shows up here.'}
@@ -402,7 +402,7 @@ export default function Dashboard() {
             {list.length > 0 ? (
               <ul className="space-y-3">{list.map((r) => <RideRow key={r.id} r={r} goingTo={goingTo[r.id]} canCopy={!!me?.can_create} />)}</ul>
             ) : (
-              <Empty title="Nothing coming up" action={newRide}>
+              <Empty title="Nothing coming up" action={newRide} picture={<CalendarPage />}>
                 {me?.can_create ? 'Set up the next one: a one-off or a regular ride, with its own page to share.' : 'When an organizer adds you as a co-organizer, their ride shows up here.'}
               </Empty>
             )}
@@ -413,5 +413,24 @@ export default function Dashboard() {
       {rides && <div className="mt-8"><FeedbackDueCard /></div>}
       {rides && <FeedbackLink />}
     </div>
+  )
+}
+
+/** A drawn month with one date picked: the picture on the empty states (design pass 2026-11-20). */
+function CalendarPage() {
+  return (
+    <svg viewBox="0 0 168 120" className="w-[168px]" aria-hidden>
+      <rect x="4" y="10" width="160" height="106" rx="10" fill="#fff" stroke="var(--ev-line-strong)" strokeWidth="1.5" />
+      <path d="M4 20a10 10 0 0 1 10-10h140a10 10 0 0 1 10 10v12H4z" fill="var(--ev-accent-fill)" opacity="0.55" />
+      <rect x="40" y="2" width="6" height="16" rx="3" fill="var(--ev-line-strong)" />
+      <rect x="122" y="2" width="6" height="16" rx="3" fill="var(--ev-line-strong)" />
+      {Array.from({ length: 21 }, (_, i) => {
+        const x = 16 + (i % 7) * 21
+        const y = 44 + Math.floor(i / 7) * 23
+        return i === 12
+          ? <circle key={i} cx={x + 6} cy={y + 6} r="10" fill="var(--ev-accent-fill)" />
+          : <rect key={i} x={x} y={y} width="12" height="12" rx="3" fill="var(--ev-line-mid)" />
+      })}
+    </svg>
   )
 }
