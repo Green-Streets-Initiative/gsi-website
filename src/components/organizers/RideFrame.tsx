@@ -55,27 +55,30 @@ function RideHero({ detail, faces }: { detail: RideDetail; faces: Record<string,
   const flyer = shown?.flyer_url ?? r.flyer_url
   const people = shown ? faces[shown.id] ?? [] : []
   const count = next ? next.going : last ? last.attended : 0
+  // A one-off's date is already in the title line; don't say it twice.
+  const oneDate = !!r.ride_date && dates.length <= 1
   return (
-    <div className="overflow-hidden rounded-2xl border border-(--ev-line-mid) bg-white shadow-sm">
-      <div className="relative">
+    // Phones: a square picture beside the line, so the tab's own content stays on the first screen.
+    <div className="flex items-center overflow-hidden rounded-2xl border border-(--ev-line-mid) bg-white shadow-sm lg:block">
+      <div className="relative w-[112px] shrink-0 self-stretch lg:w-auto">
         {line.length || pin ? (
           <RouteMap line={line} stops={[]} meetup={pin} pick={false} fitKey={`${r.id}-${line.length}`}
-            className="h-[150px] w-full lg:h-[190px]" label={`Map of ${r.name}`} />
+            className="h-full min-h-[112px] w-full lg:h-[190px]" label={`Map of ${r.name}`} />
         ) : flyer ? null : (
           <Link href={`/organizers/rides/${r.id}/edit`}
-            className="flex h-[120px] flex-col items-center justify-center gap-1.5 bg-(--ev-panel-faint) px-6 text-center text-[14px] text-(--ev-ink-75) hover:text-(--ev-ink)">
-            <MapPin className="h-5 w-5" aria-hidden />Add a meeting point or a route to see the map here
+            className="flex h-full min-h-[112px] flex-col items-center justify-center gap-1.5 bg-(--ev-panel-faint) px-3 text-center text-[14px] text-(--ev-ink-75) hover:text-(--ev-ink) lg:h-[120px] lg:px-6">
+            <MapPin className="h-5 w-5" aria-hidden /><span className="hidden lg:inline">Add a meeting point or a route to see the map here</span><span className="lg:hidden">Add a map</span>
           </Link>
         )}
         {flyer && (line.length || pin) ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={flyer} alt="Flyer" className="absolute bottom-2 left-2 z-[500] h-[72px] w-[56px] rounded-md border-2 border-white bg-white object-cover shadow-md" />
+          <img src={flyer} alt="Flyer" className="absolute bottom-2 left-2 z-[500] hidden h-[72px] w-[56px] rounded-md border-2 border-white bg-white object-cover shadow-md lg:block" />
         ) : flyer ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={flyer} alt="Flyer" className="h-[190px] w-full bg-(--ev-panel-faint) object-contain" />
+          <img src={flyer} alt="Flyer" className="h-full min-h-[112px] w-full bg-(--ev-panel-faint) object-cover lg:h-[190px] lg:object-contain" />
         ) : null}
       </div>
-      <div className="flex items-center gap-3 px-4 py-3">
+      <div className="flex min-w-0 flex-wrap items-center gap-3 px-4 py-3">
         {people.length > 0 && (
           <div className="flex -space-x-2" aria-hidden>
             {people.slice(0, 5).map((p, i) => p.avatar
@@ -86,8 +89,9 @@ function RideHero({ detail, faces }: { detail: RideDetail; faces: Record<string,
         )}
         <p className="min-w-0 text-[15px] text-(--ev-ink-85)">
           {shown ? (
+            next && oneDate ? <span className="font-semibold text-(--ev-ink)">{count === 0 ? 'Nobody going yet' : `${count} going`}</span> : (
             <><span className="font-semibold text-(--ev-ink)">{next ? `Next: ${dayLabel(next.date)}` : last!.date < today ? `Last: ${dayLabel(last!.date)}` : `Ended before ${dayLabel(last!.date)}`}</span>
-              {next || last!.date < today ? <>{' · '}{count === 0 ? (next ? 'nobody yet' : 'no count yet') : `${count} ${next ? 'going' : 'came'}`}</> : null}</>
+              {next || last!.date < today ? <>{' · '}{count === 0 ? (next ? 'nobody yet' : 'no count yet') : `${count} ${next ? 'going' : 'came'}`}</> : null}</>)
           ) : r.status === 'draft' ? 'No date yet' : 'No dates yet'}
         </p>
       </div>

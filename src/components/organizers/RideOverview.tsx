@@ -52,7 +52,7 @@ function LiveMapLink({ code, date, members, walk, editHref }: { code: string; da
         <p className="flex items-center gap-2 text-[15px] font-semibold text-(--ev-ink)"><Radio className="h-4 w-4 text-[#2E9F4F]" aria-hidden />Live map for followers</p>
         <p className="text-[14px] text-(--ev-ink-75)">
           {members
-            ? <>While you lead in the Shift app, people on the {noun} can follow the group on a map from their reminder email. To share it in a group chat, set who sees it to anyone with the link in <Link href={editHref} className="font-semibold text-(--ev-ink) underline">Edit</Link>.</>
+            ? <>While you lead in the Shift app, people on the {noun} can follow the group on a map. <Link href={editHref} className="font-semibold text-(--ev-ink) underline">Let anyone with the link follow</Link></>
             : <>While you lead in the Shift app, anyone with this link can follow the group on a map in their browser.</>}
         </p>
       </div>
@@ -355,7 +355,7 @@ export default function RideOverview() {
             <>
               {detail.can_manage && (
                 <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                  <p className="text-[14px] text-(--ev-ink-75)">{ended ? 'This ride has ended.' : 'Plan, change or cancel one date; the rest stays as it is.'}</p>
+                  <p className="text-[14px] text-(--ev-ink-75)">{ended ? 'This ride has ended.' : r.ride_date ? 'A one-off ride: one date.' : 'Plan, change or cancel one date; the rest stays as it is.'}</p>
                   {!ended ? (
                     <div className="flex flex-wrap gap-1.5">
                       {/* Skip dates beyond the ones listed: writes the ride itself, so its organizer only. */}
@@ -376,7 +376,7 @@ export default function RideOverview() {
               )}
               {onBreak && <div className="mb-3"><Notice tone="warn">On a break until {dateLabel(r.break_until!)}.{r.stopped_note ? ` “${r.stopped_note}”` : ''}</Notice></div>}
               {heroShown && later.length === 0 ? (
-                <p className="text-[15px] text-(--ev-ink-85)">No later dates yet.</p>
+                <p className="text-[15px] text-(--ev-ink-85)">{r.ride_date ? 'To run it again, use Copy this ride at the top.' : 'No later dates yet.'}</p>
               ) : later.length === 0 ? (
                 <Empty title={ended ? 'This ride has ended' : 'No upcoming dates'}>
                   {ended ? 'Its history and turnout are under Past dates.' : r.ride_date ? 'This one-off ride has happened. Set up a new ride for the next one.' : (r.frequency === 'daily' || (r.days ?? []).length > 0 ? 'No upcoming dates. Check When and the season dates in Edit ride, or add a date.' : 'No upcoming dates. Add the next one with Add a date.')}
