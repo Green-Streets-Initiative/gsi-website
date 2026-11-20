@@ -2,13 +2,13 @@
 
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Check, MessageCircle, X } from 'lucide-react'
+import { Check, Copy, MessageCircle, X } from 'lucide-react'
 import { clock } from '@/lib/rides/public'
 import { errorText, getChatAccess, getCreditRequests, getRoster, setChatAccess, settleCredit } from '@/lib/organizers/api'
 import { dateLabel, plural, todayKey } from '@/lib/organizers/ride-words'
 import type { CreditRequest, RosterRow } from '@/lib/organizers/types'
-import { useRide } from './RideFrame'
-import { Badge, Button, Card, Empty, Field, Notice, SectionTitle, Select, Spinner, cx } from './ui'
+import { ridePageUrl, useRide } from './RideFrame'
+import { Badge, Button, Card, Empty, Field, Notice, SectionTitle, Select, Spinner, copyText, cx } from './ui'
 
 const GROUPS: { key: 'going' | 'maybe' | 'none' | 'not_going'; label: string }[] = [
   { key: 'going', label: 'Going' },
@@ -179,6 +179,8 @@ export default function Roster() {
     return g
   }, [rows])
   const came = (rows ?? []).filter((p) => p.attended)
+  const listed = GROUPS.reduce((n, g) => n + grouped[g.key].length, 0)
+  const [linkCopied, setLinkCopied] = useState(false)
 
   if (dates.length === 0) {
     return <Empty title="No dates yet">Dates appear here as soon as the ride is saved. If none show, check When in Edit ride.</Empty>
@@ -188,7 +190,9 @@ export default function Roster() {
     <div className="grid grid-cols-[minmax(0,1fr)] gap-5">
       <Card>
         <div className="flex flex-wrap items-end justify-between gap-4">
-          <Field label="Date" htmlFor="roster-date">
+          {dates.length === 1 && date ? (
+            <p className="font-display text-[20px] font-extrabold text-(--ev-ink)">{dateLabel(date.date)} · {clock(date.start_time)}</p>
+          ) : <Field label="Date" htmlFor="roster-date">
             <Select id="roster-date" value={dateId} onChange={(e) => pick(e.target.value)} className="min-w-[240px]">
               {dates.map((d) => (
                 <option key={d.id} value={d.id}>
@@ -196,7 +200,7 @@ export default function Roster() {
                 </option>
               ))}
             </Select>
-          </Field>
+          </Field>}
           {date && (
             <dl className="flex flex-wrap gap-x-6 gap-y-2">
               {(past ? [['Came', came.length]] : [['Going', date.going], ['Maybe', date.maybe], ["Can't go", date.cant]]).map(([k, v]) => (
@@ -255,8 +259,18 @@ export default function Roster() {
         </SectionTitle>
         {err && <Notice tone="off">{err} <button type="button" className="font-semibold underline" onClick={() => void load()}>Try again</button></Notice>}
         {!rows && !err && <Spinner label="Loading the list" />}
-        {rows && rows.length === 0 && <p className="text-[14px] text-(--ev-ink-75)">Nobody is on this ride yet. Share the ride page to get the first answers.</p>}
-        {rows && rows.length > 0 && (
+        {/* Organizers with no answer aren't listed, so count what shows (a list with only you used to come out blank). */}
+        {rows && listed === 0 && (
+          <div className="flex flex-col items-start gap-3 rounded-xl bg-(--ev-panel-faint) p-4">
+            <p className="text-[15px] text-(--ev-ink-85)">{past ? 'Nobody answered for this date.' : 'Nobody has answered yet. Send people the ride page: they can say Going there, with or without the app.'}</p>
+            {!past && (
+              <Button size="sm" onClick={async () => { if (await copyText(ridePageUrl(detail.ride.invite_code))) { setLinkCopied(true); setTimeout(() => setLinkCopied(false), 2200) } }}>
+                {linkCopied ? <Check className="h-4 w-4" aria-hidden /> : <Copy className="h-4 w-4" aria-hidden />}{linkCopied ? 'Copied' : 'Copy the ride page link'}
+              </Button>
+            )}
+          </div>
+        )}
+        {rows && listed > 0 && (
           <div className="grid gap-6 md:grid-cols-2">
             {GROUPS.map((g) => grouped[g.key].length > 0 && (
               <section key={g.key} className={cx(g.key === 'none' || g.key === 'not_going' ? 'md:col-span-1' : '')}>
