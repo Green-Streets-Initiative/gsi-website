@@ -36,6 +36,8 @@ export const ridesStrings = defineStrings(
     // header
     'kind.ride': 'Group ride',
     'kind.walk': 'Group walk',
+    'kind.bike_bus': 'Bike bus',
+    'kind.walk_bus': 'Walking school bus',
     'hosted_by': 'Hosted by',
     'ended.ride': 'This ride has ended',
     'ended.walk': 'This walk has ended',
@@ -440,6 +442,8 @@ export const ridesStrings = defineStrings(
 
       'kind.ride': 'Paseo en grupo',
       'kind.walk': 'Caminata en grupo',
+      'kind.bike_bus': 'Bike bus',
+      'kind.walk_bus': 'Autobús escolar a pie',
       'hosted_by': 'Organiza',
       'ended.ride': 'Este paseo terminó',
       'ended.walk': 'Esta caminata terminó',
@@ -834,6 +838,8 @@ export const ridesStrings = defineStrings(
 
       'kind.ride': 'Passeio em grupo',
       'kind.walk': 'Caminhada em grupo',
+      'kind.bike_bus': 'Bike bus',
+      'kind.walk_bus': 'Grupo de ida a pé para a escola',
       'hosted_by': 'Organizado por',
       'ended.ride': 'Este passeio terminou',
       'ended.walk': 'Esta caminhada terminou',
@@ -1228,6 +1234,8 @@ export const ridesStrings = defineStrings(
 
       'kind.ride': '团体骑行',
       'kind.walk': '集体步行',
+      'kind.bike_bus': '骑车上学队',
+      'kind.walk_bus': '步行上学队',
       'hosted_by': '组织者：',
       'ended.ride': '这个骑行活动已结束',
       'ended.walk': '这个步行活动已结束',
