@@ -23,8 +23,10 @@ export function whenText(r: Parameters<typeof scheduleText>[0] & { status: Dashb
   return scheduleText(r)
 }
 
-export function rideStateBadges(r: Pick<DashboardRide, 'status' | 'visibility' | 'calendar_status' | 'break_until' | 'my_role'>) {
+export function rideStateBadges(r: Pick<DashboardRide, 'status' | 'visibility' | 'calendar_status' | 'break_until' | 'my_role'> & { kind?: DashboardRide['kind'] }) {
   const out: { tone: Tone; text: string }[] = []
+  if (r.kind === 'bike_bus') out.push({ tone: 'plain', text: 'Bike bus' })
+  else if (r.kind === 'walk_bus') out.push({ tone: 'plain', text: 'Walking school bus' })
   if (r.status === 'archived') out.push({ tone: 'plain', text: 'Ended' })
   else if (r.status === 'draft') out.push({ tone: 'warn', text: 'Not shared yet' })
   else if (r.break_until) out.push({ tone: 'warn', text: `On a break until ${dateLabel(r.break_until)}` })
