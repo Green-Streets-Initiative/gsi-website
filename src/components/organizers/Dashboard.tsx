@@ -246,12 +246,9 @@ function AskBox({ rides, canCreate }: { rides: DashboardRide[]; canCreate: boole
   const go = (t: string) => { if (t.trim()) { openAssistant(t.trim()); setText('') } }
   return (
     <Card className="mb-6 border-(--ev-accent-line-30) bg-white !p-4 sm:!p-5">
-      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
-        <h2 className="inline-flex items-center gap-2 font-display text-[17px] font-extrabold leading-tight">
-          <MessageSquareText className="h-5 w-5 text-(--ev-accent)" aria-hidden />What do you want to get done?
-        </h2>
-        <p className="text-[14px] text-(--ev-ink-75)">Nothing people see changes without your OK.</p>
-      </div>
+      <h2 className="inline-flex items-center gap-2 font-display text-[17px] font-extrabold leading-tight">
+        <MessageSquareText className="h-5 w-5 text-(--ev-accent)" aria-hidden />What do you want to get done?
+      </h2>
       <form className="mt-3 flex items-end gap-2" onSubmit={(e) => { e.preventDefault(); go(text) }}>
         <label htmlFor="ask" className="sr-only">Ask the assistant</label>
         <input id="ask" value={text} onChange={(e) => setText(e.target.value)} autoComplete="off"
