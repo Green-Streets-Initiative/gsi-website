@@ -32,7 +32,7 @@ function MyRides({ rides }: { rides: Team['my_rides'] }) {
   return (
     <div className="mt-4">
       <p className="text-[15px] leading-snug text-(--ev-ink-85)">
-        Rides you set up stay yours, and you keep running them. To pass one on too, open its Team tab, add a co-organizer, then hand the ride to them:
+        Rides you set up stay yours, and you keep running them. To pass one on too, open its Organizers tab, add a co-organizer, then hand the ride to them:
       </p>
       <ul className="mt-2 grid gap-1">
         {rides.map((r) => (
