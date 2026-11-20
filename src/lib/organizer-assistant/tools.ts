@@ -442,8 +442,8 @@ export const TOOLS: Anthropic.Tool[] = [
   },
   {
     name: 'get_my_group',
-    description: "The groups this person runs on Shift (their host pages): each one's description, website, follow links, ride tags, no-drop, whether it has a logo, its organizers and open invites. Use before update_host_page, invite_group_organizer, withdraw_group_invite or step_down_from_group, and for a ride's group_id.",
-    input_schema: { type: 'object', properties: {} },
+    description: "The groups this person runs on Shift (their host pages): each one's description, website, follow links, ride tags, no-drop, whether it has a logo, its organizers and open invites. Use before update_host_page, invite_group_organizer, withdraw_group_invite or step_down_from_group, and for a ride's group_id. With search, also the groups on Shift whose name matches, to claim one with claim_group.",
+    input_schema: { type: 'object', properties: { search: nullable('string', "Part of a group's name, when they want to say they run one.") } },
   },
   {
     name: 'find_coffee_stops',
@@ -560,13 +560,25 @@ export const TOOLS: Anthropic.Tool[] = [
     description: "Step down as an organizer of a group. Their rides stay theirs. Card first.",
     input_schema: { type: 'object', properties: { group_id: { type: 'string' } }, required: ['group_id'] },
   },
+  {
+    name: 'claim_group',
+    description: "Say they run a group, as the ride form's \"Your organization\" does: claim one already on Shift (group_id from get_my_group with search), or add theirs with name and website. It's confirmed right away when their sign-in email is at the group's website; otherwise Green Streets checks it first. Card first.",
+    input_schema: {
+      type: 'object',
+      properties: {
+        group_id: nullable('string', 'A group already on Shift, from get_my_group with search.'),
+        name: nullable('string', 'A group not on Shift yet: its name.'),
+        website: nullable('string', "Its website, when adding one. It's how the claim can be confirmed right away."),
+      },
+    },
+  },
 ]
 
 /** The 2026-11-20 parity pass: every change the console makes that the assistant didn't. */
 const MORE_CHANGES = [
   'add_date', 'skip_dates', 'restore_date', 'copy_ride', 'delete_ride', 'set_co_organizer', 'withdraw_invite', 'hand_off_ride',
   'answer_handoff', 'new_join_link', 'set_coffee_stop', 'set_going_to', 'update_host_page', 'invite_group_organizer',
-  'withdraw_group_invite', 'step_down_from_group',
+  'withdraw_group_invite', 'step_down_from_group', 'claim_group',
 ]
 
 export const NEEDS_APPROVAL = new Set([
@@ -625,6 +637,7 @@ export const ACTIVITY: Record<string, string> = {
   invite_group_organizer: 'Sending the invite',
   withdraw_group_invite: 'Withdrawing the invite',
   step_down_from_group: 'Stepping down',
+  claim_group: 'Saving your group',
 }
 
 /** Labels whose completion means a screen should reload. */
@@ -868,6 +881,17 @@ async function myOrgs(ctx: ToolCtx): Promise<OrgClaim[]> {
   return me.orgs ?? []
 }
 
+/** Groups on Shift by name, as the ride form's search finds them (searchOrgs). */
+async function findGroups(ctx: ToolCtx, text: unknown): Promise<{ id: string; name: string; url: string | null }[] | null> {
+  const q = typeof text === 'string' ? text.trim().replace(/[%_,()]/g, ' ') : ''
+  if (q.length < 2) return null
+  const { data, error } = await ctx.user.from('event_organizers').select('id, name, url').ilike('name', `%${q}%`).limit(6)
+  if (error) throw new Error(error.message)
+  return (data ?? []) as { id: string; name: string; url: string | null }[]
+}
+
+const CLAIM_CHECK = "It's confirmed right away when your sign-in email is at the group's website. Otherwise Green Streets checks it first, and you can run rides meanwhile."
+
 /** Where a ride ends: its route's last point, else its meeting point. */
 function rideEnd(r: RideRow): { lat: number; lng: number } | null {
   const w = r.route_waypoints ?? []
@@ -1014,8 +1038,9 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
         }, { href: `/organizers/rides/${r.id}/promote`, label: 'Open Promote' })
       }
       case 'get_my_group': {
-        const orgs = await myOrgs(ctx)
-        if (!orgs.length) return ok({ groups: [], note: 'They run no group on Shift yet. They can pick or add theirs under The ride in the ride form, then fill in its host page.' }, { href: '/organizers/host', label: 'Open your host page' })
+        const [orgs, found] = await Promise.all([myOrgs(ctx), findGroups(ctx, input.search)])
+        const matches = found ? { matches_on_shift: found.map((g) => ({ group_id: g.id, name: g.name, website: g.url })), note_on_matches: 'Claim one with claim_group, or add theirs with claim_group and no group_id if none is it.' } : {}
+        if (!orgs.length) return ok({ groups: [], note: 'They run no group on Shift yet. claim_group says they run one (find it with search first) or adds theirs.', ...matches }, { href: '/organizers/host', label: 'Open your host page' })
         const shown = orgs.slice(0, 5)
         const teams = await Promise.all(shown.map((o) => rpc<GroupTeam>(ctx, 'organizer_group_team', { p_organizer_id: o.id }).catch(() => null)))
         return ok({
@@ -1026,6 +1051,7 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
             organizers: teams[i]?.organizers.map((x) => (x.is_you ? `${x.name} (you)` : x.name)),
             open_invites: teams[i]?.invites.map((x) => ({ email: x.email, hand_over: x.handoff })),
           })),
+          ...matches,
         }, { href: '/organizers/host', label: 'Open your host page' })
       }
       case 'find_coffee_stops': {
@@ -2015,6 +2041,29 @@ export async function approvalCard(ctx: ToolCtx, name: string, input: Record<str
           input: { group_id: org.id },
         }
       }
+      case 'claim_group': {
+        const mine = await myOrgs(ctx)
+        if (typeof input.group_id === 'string' && input.group_id) {
+          const { data: g } = await ctx.user.from('event_organizers').select('id, name').eq('id', input.group_id).maybeSingle()
+          if (!g) return { result: fail('No group with that id. Use get_my_group with search.') }
+          const had = mine.find((o) => o.id === g.id)
+          if (had) return { result: ok({ already: true, confirmed: had.claim === 'verified', note: had.claim === 'verified' ? 'They already run it.' : 'They already said so; Green Streets is checking it.' }) }
+          return { card: { title: `Say you run ${g.name}?`, lines: [CLAIM_CHECK], cta: 'Yes, I run it', tone: 'primary' }, input: { group_id: g.id, name: g.name } }
+        }
+        const nm = typeof input.name === 'string' ? input.name.trim() : ''
+        if (!nm) return { result: fail('Give the group_id of a group on Shift, or the name of one to add.') }
+        const same = (await findGroups(ctx, nm))?.find((g) => g.name.trim().toLowerCase() === nm.toLowerCase())
+        if (same) return { result: fail(`${same.name} is already on Shift (group_id ${same.id}). Claim it with that group_id.`) }
+        const site = typeof input.website === 'string' && input.website.trim() ? input.website.trim() : null
+        return {
+          card: {
+            title: `Add ${nm} to Shift?`,
+            lines: [site ? `Website: ${site}` : 'No website', 'It gets its own host page, and your rides can show it.', CLAIM_CHECK],
+            cta: 'Add it', tone: 'primary',
+          },
+          input: { name: nm, website: site },
+        }
+      }
     }
     return { result: fail(`Unknown action ${name}`) }
   } catch (e) {
@@ -2238,6 +2287,32 @@ async function runMore(ctx: ToolCtx, name: string, input: Record<string, unknown
     case 'step_down_from_group': {
       await rpc(ctx, 'organizer_group_step_down', { p_organizer_id: input.group_id })
       return ok({ stepped_down: true }, { href: '/organizers', label: 'See your rides' })
+    }
+    case 'claim_group': {
+      // As the ride form saves it (claimOrg / createOrg in lib/organizers/api.ts), as the organizer.
+      let id = typeof input.group_id === 'string' ? input.group_id : ''
+      if (!id) {
+        const nm = String(input.name ?? '').trim()
+        id = nm.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 80)
+        if (!id) return fail('Give the group a name.')
+        const { error } = await ctx.user.from('event_organizers')
+          .insert({ id, name: nm, url: (input.website as string | null) || null, created_by: ctx.userId, status: 'pending_review' })
+        if (error) return fail(error.code === '23505' ? `${nm} is already on Shift. Find it with get_my_group search and claim it.` : error.message)
+      }
+      const { data: had } = await ctx.user.from('event_organizer_admins').select('status').eq('organizer_id', id).eq('user_id', ctx.userId).maybeSingle()
+      let status = (had as { status: string } | null)?.status ?? null
+      if (!status) {
+        const { data, error } = await ctx.user.from('event_organizer_admins')
+          .insert({ organizer_id: id, user_id: ctx.userId, status: 'pending' }).select('status').single()
+        if (error && error.code !== '23505') return fail(error.message)
+        status = (data as { status: string } | null)?.status ?? 'pending'
+      }
+      const confirmed = status === 'verified'
+      return ok({
+        group_id: id, confirmed,
+        note: confirmed ? 'Confirmed. Offer to fill in its host page (update_host_page) and put it on their rides (update_ride group_id).'
+          : 'Green Streets checks it first. They can still run rides; offer to fill in its host page.',
+      }, { href: '/organizers/host', label: 'See your host page' })
     }
   }
   return null
