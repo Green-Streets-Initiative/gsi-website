@@ -445,8 +445,9 @@ function NextStep({ next, rides, teacher }: { next: 'alone' | 'company'; rides: 
 function GetShift() {
   return (
     <div className={CARD}>
-      <div className="flex items-start gap-4 sm:gap-6">
-        <div className="min-w-0 flex-1">
+      {/* Phone: words beside the picture, sign-up and badges full width under both. Desktop: all of it beside the picture. */}
+      <div className="grid grid-cols-[1fr_96px] items-start gap-x-4 sm:grid-cols-[1fr_128px] sm:gap-x-6">
+        <div className="min-w-0">
           <h2 className={`${HEAD} text-[1.5rem]`}>Keep riding with Shift, our free app</h2>
           <p className={`${BODY} mt-2`}>
             It plans calm routes, shows group rides near you, and rewards your trips with gift cards from local shops.
@@ -458,13 +459,15 @@ function GetShift() {
           alt="Shift's Rewards screen with discounts at Remnant Brewing, Marlon's Barbers, Melt in Your Mouth and Bagel Guild"
           width={640}
           height={1387}
-          className="h-[168px] w-[96px] shrink-0 rounded-[14px] border-2 border-navy/10 object-cover object-top sm:h-[220px] sm:w-[128px]"
+          className="h-[168px] w-[96px] rounded-[14px] border-2 border-navy/10 object-cover object-top sm:row-span-2 sm:h-[220px] sm:w-[128px]"
         />
+        <div className="col-span-2 sm:col-span-1">
+          <p className="mt-4 text-[0.9375rem] leading-relaxed text-navy">
+            Sign up with the email address you gave us, and the app will help with your first ride.
+          </p>
+          <StoreBadges className="mt-4" placement="lesson_after" />
+        </div>
       </div>
-      <p className="mt-4 text-[0.9375rem] leading-relaxed text-navy">
-        Sign up with the email address you gave us, and the app will help with your first ride.
-      </p>
-      <StoreBadges className="mt-4" placement="lesson_after" />
     </div>
   )
 }
