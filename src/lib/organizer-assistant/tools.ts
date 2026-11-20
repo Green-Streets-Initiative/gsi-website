@@ -515,7 +515,7 @@ export const TOOLS: Anthropic.Tool[] = [
   },
   {
     name: 'new_join_link',
-    description: "Make a new join link and code for a ride (when the old one was shared too widely). The old link and code stop working; people already on the ride stay on it. The ride page link stays the same. Card first.",
+    description: "Make a new join link and code for a ride (when the old one was shared too widely). The old join link, code and ride page link (gogreenstreets.org/rides/<old code>) stop working, including on printed flyers and in posts; people already on the ride stay on it. Card first.",
     input_schema: { type: 'object', properties: { series_id: uuid }, required: ['series_id'] },
   },
   {
@@ -1844,7 +1844,7 @@ export async function approvalCard(ctx: ToolCtx, name: string, input: Record<str
         return {
           card: {
             title: `Make a new link for “${d.ride.name}”?`,
-            lines: ['The old link and code stop working right away, including on printed flyers. People already on the ride stay on it.'],
+            lines: ['The old link and code stop working right away, including the ride page link in posts and on printed flyers. People already on the ride stay on it.'],
             cta: 'Make a new link', tone: 'danger',
           },
           input: { series_id: d.ride.id },
@@ -2203,7 +2203,10 @@ async function runMore(ctx: ToolCtx, name: string, input: Record<string, unknown
     }
     case 'new_join_link': {
       const r = await rpc<{ invite_code: string }>(ctx, 'rotate_ride_invite_code', { p_series_id: input.series_id })
-      return ok({ code: r.invite_code, join_link: JOIN_LINK(r.invite_code), ride_page: rideLink(r.invite_code) }, { href: `/organizers/rides/${input.series_id}/promote`, label: 'Open Promote' })
+      return ok({
+        code: r.invite_code, join_link: JOIN_LINK(r.invite_code), ride_page: rideLink(r.invite_code),
+        note: 'The old ride page link stopped working too. Offer fresh posts with the new links (get_promote) and a new flyer from Promote.',
+      }, { href: `/organizers/rides/${input.series_id}/promote`, label: 'Open Promote' })
     }
     case 'set_coffee_stop': {
       await rpc(ctx, 'set_ride_end_shop', { p_series_id: input.series_id, p_location_id: input.location_id ?? null })
