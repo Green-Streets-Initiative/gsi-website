@@ -170,7 +170,7 @@ export const shiftPageStrings = /* @__PURE__ */ defineStrings(
     'shiftp.rw_b2_b': 'Or a brand gift card.',
     'shiftp.rw_b2': 'Pick a gift card from a brand you like, and it shows up in the app.',
     'shiftp.rw_b3_b': 'Plus prize drawings.',
-    'shiftp.rw_b3': 'Prize drawings from GSI, your employer and partners.',
+    'shiftp.rw_b3': 'From GSI, your employer and partners.',
 
     // Teams & schools
     'shiftp.teams_eyebrow': 'Beyond the individual',
@@ -341,7 +341,7 @@ export const shiftPageStrings = /* @__PURE__ */ defineStrings(
       'shiftp.rw_b2_b': 'O una tarjeta de regalo de marca.',
       'shiftp.rw_b2': 'Elige una tarjeta de regalo de una marca que te guste y aparece en la app.',
       'shiftp.rw_b3_b': 'Además, sorteos de premios.',
-      'shiftp.rw_b3': 'Sorteos de premios de GSI, tu empleador y nuestros aliados.',
+      'shiftp.rw_b3': 'De GSI, tu empleador y nuestros aliados.',
 
       'shiftp.teams_eyebrow': 'Más allá de cada persona',
       'shiftp.teams_title': 'Shift también funciona para grupos.',
@@ -509,7 +509,7 @@ export const shiftPageStrings = /* @__PURE__ */ defineStrings(
       'shiftp.rw_b2_b': 'Ou um vale-presente de marca.',
       'shiftp.rw_b2': 'Escolha um vale-presente de uma marca de que goste, e ele aparece no app.',
       'shiftp.rw_b3_b': 'E ainda sorteios de prêmios.',
-      'shiftp.rw_b3': 'Sorteios de prêmios da GSI, do seu empregador e de parceiros.',
+      'shiftp.rw_b3': 'Da GSI, do seu empregador e de parceiros.',
 
       'shiftp.teams_eyebrow': 'Além do individual',
       'shiftp.teams_title': 'O Shift também funciona para grupos.',
@@ -677,7 +677,7 @@ export const shiftPageStrings = /* @__PURE__ */ defineStrings(
       'shiftp.rw_b2_b': '或者品牌礼品卡。',
       'shiftp.rw_b2': '选一张你喜欢的品牌礼品卡，它会出现在 app 里。',
       'shiftp.rw_b3_b': '还有抽奖。',
-      'shiftp.rw_b3': '来自 GSI、你的雇主和合作伙伴的抽奖。',
+      'shiftp.rw_b3': '来自 GSI、你的雇主和合作伙伴。',
 
       'shiftp.teams_eyebrow': '不只是个人',
       'shiftp.teams_title': 'Shift 也适合团体。',
