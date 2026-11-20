@@ -134,7 +134,8 @@ function RideRow({ r, goingTo, canCopy }: { r: DashboardRide; goingTo?: FeedTarg
         </p>
       ) : !over && (
         r.next_dates.length > 0 ? (
-          <div className="mt-3 flex flex-wrap gap-2">
+          // A one-date ride already shows its date above; the chip would repeat it.
+          r.ride_date && r.next_dates.length === 1 ? null : <div className="mt-3 flex flex-wrap gap-2">
             {r.next_dates.map((d, i) => <DateChip key={d.id} d={d} rideId={r.id} phoneHidden={i > 1} />)}
           </div>
         ) : (
@@ -380,9 +381,9 @@ export default function Dashboard() {
       {!rides && !err && <Spinner label="Loading your rides" />}
 
       {/* Initials beside "Hosted by" on every ride page until there's a photo (Keith 2026-11-12). */}
-      {rides && groups.mine.some((r) => r.my_role === 'organizer') && <PhotoNudge />}
-
       {groups.next && <NextUp r={groups.next.r} d={groups.next.d} />}
+
+      {rides && groups.mine.some((r) => r.my_role === 'organizer') && <PhotoNudge />}
 
       {assistant && rides && <AskBox rides={groups.mine} canCreate={!!me?.can_create} />}
 
