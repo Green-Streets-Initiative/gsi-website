@@ -296,7 +296,7 @@ function PreviewRow({ icon: Icon, children, empty }: { icon: typeof CalendarDays
   )
 }
 
-function Preview({ f, route, hostName }: { f: Form; route: RouteDraft | null; hostName: string | null }) {
+function Preview({ f, route, hostName, logo }: { f: Form; route: RouteDraft | null; hostName: string | null; logo: string | null }) {
   const walk = f.activity === 'walk'
   const sched = f.schedule === 'undated'
     ? `No date yet${f.start_time ? ` · ${clock(f.start_time)}` : ''}`
@@ -313,14 +313,29 @@ function Preview({ f, route, hostName }: { f: Form; route: RouteDraft | null; ho
   const calm = route?.comfortSegments?.length ? Math.round(comfortableShare(route.comfortSegments) * 100) : null
   const mph = travelMph(f.pace || null, f.activity)
   const pace = paceOptionsFor(f.activity).find((p) => p.key === f.pace)
+  const line = route && route.waypoints.length >= 2 ? route.waypoints : []
+  const pin = f.meetup_lat != null && f.meetup_lng != null ? { lat: f.meetup_lat, lng: f.meetup_lng } : null
   const initials = (hostName ?? '').split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]?.toUpperCase()).join('')
   return (
     <aside className="hidden lg:block lg:sticky lg:top-[84px] lg:self-start" aria-label="Preview">
       <p className="mb-2 text-[14px] font-semibold text-(--ev-ink-75)">On your {walk ? 'walk' : 'ride'} page</p>
       <div className="overflow-hidden rounded-2xl border border-(--ev-line-mid) bg-white shadow-sm">
+        {/* The map people see first on the ride page: the route, or at least the meeting pin. */}
+        {line.length >= 2 || pin ? (
+          <RouteMap line={line} stops={[]} meetup={pin} pick={false} fitKey={`${line.length}-${pin?.lat ?? ''}-${pin?.lng ?? ''}`}
+            className="h-[200px] w-full" label={`Map of the ${walk ? 'walk' : 'ride'}`} />
+        ) : (
+          <div className="flex h-[120px] flex-col items-center justify-center gap-1.5 bg-(--ev-panel-faint) px-6 text-center">
+            <MapPin className="h-5 w-5 text-(--ev-ink-75)" aria-hidden />
+            <p className="text-[14px] text-(--ev-ink-75)">Add a meeting point or a route and the map shows here.</p>
+          </div>
+        )}
         <div className="bg-(--ev-panel) px-4 pb-4 pt-4">
           <div className="flex items-center gap-2.5">
-            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-(--ev-ink) text-[13px] font-bold text-white">{initials || (walk ? <Footprints className="h-4 w-4" aria-hidden /> : <Bike className="h-4 w-4" aria-hidden />)}</span>
+            {logo
+              // eslint-disable-next-line @next/next/no-img-element
+              ? <img src={logo} alt="" className="h-9 w-9 shrink-0 rounded-full border border-(--ev-line-mid) bg-white object-contain" />
+              : <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-(--ev-ink) text-[13px] font-bold text-white">{initials || (walk ? <Footprints className="h-4 w-4" aria-hidden /> : <Bike className="h-4 w-4" aria-hidden />)}</span>}
             <span className="text-[14px] font-semibold text-(--ev-ink-80)">{f.kind === 'bike_bus' ? 'Bike bus' : f.kind === 'walk_bus' ? 'Walking school bus' : walk ? 'Group walk' : 'Group ride'}{hostName ? ` · ${hostName}` : ''}</span>
           </div>
           <p className={cx('mt-3 font-display text-[22px] font-extrabold leading-tight', f.name.trim() ? 'text-(--ev-ink)' : 'text-(--ev-ink-75)')}>
@@ -346,6 +361,10 @@ function Preview({ f, route, hostName }: { f: Form; route: RouteDraft | null; ho
         </dl>
         {!walk && mph && miles && (
           <p className="border-t border-(--ev-line) px-4 py-2.5 text-[14px] text-(--ev-ink-80)">About {Math.round((miles / mph) * 60)} min of riding, plus stops</p>
+        )}
+        {f.flyer_url && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={f.flyer_url} alt="Your flyer" className="max-h-[220px] w-full border-t border-(--ev-line) bg-(--ev-panel-faint) object-contain" />
         )}
       </div>
       <p className="mt-2 text-[14px] text-(--ev-ink-75)">
@@ -1198,7 +1217,7 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
         </Card>
         )}
       </div>
-      <Preview f={f} route={f.route} hostName={hostPreview} />
+      <Preview f={f} route={f.route} hostName={hostPreview} logo={f.event_organizer_id ? (orgs.find((o) => o.id === f.event_organizer_id)?.logo_url ?? null) : null} />
       </div>
       </div>
 
