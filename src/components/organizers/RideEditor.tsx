@@ -28,6 +28,8 @@ import RouteSection from './RouteSection'
 import { Button, Card, Field, Input, Notice, Select, SectionTitle, Spinner, Textarea, Toggle, cx } from './ui'
 
 interface Form {
+  /** Group ride, or a walk or bike bus being edited or copied (Shift 01871). */
+  kind: RideRow['kind']
   name: string
   description: string
   flyer_url: string | null
@@ -78,7 +80,7 @@ const hhmm = (t: string | null | undefined) => (t ? t.slice(0, 5) : '')
 
 function blank(): Form {
   return {
-    name: '', description: '', flyer_url: null,
+    kind: 'group_ride', name: '', description: '', flyer_url: null,
     schedule: 'recurring', ride_date: '', extra_dates: [], frequency: 'weekly', days: [6], week_of_month: 1,
     season_start: '', season_end: '', start_time: '10:00', end_time: '',
     meetup_name: '', meetup_address: '', meetup_lat: null, meetup_lng: null,
@@ -92,7 +94,7 @@ function blank(): Form {
 
 function fromRow(r: RideRow): Form {
   return {
-    name: r.name, description: r.description ?? '', flyer_url: r.flyer_url,
+    kind: r.kind ?? 'group_ride', name: r.name, description: r.description ?? '', flyer_url: r.flyer_url,
     schedule: r.ride_date ? 'one_time' : r.status === 'draft' ? 'undated'
       : r.frequency !== 'daily' && !(r.days ?? []).length ? 'dates' : 'recurring',
     ride_date: r.ride_date ?? '',
@@ -161,7 +163,7 @@ function shownLanguages(languages: PartnerLanguage[]): PartnerLanguage[] {
 
 function toPayload(f: Form): Record<string, unknown> {
   return {
-    name: f.name, description: f.description, flyer_url: f.flyer_url,
+    kind: f.kind, name: f.name, description: f.description, flyer_url: f.flyer_url,
     schedule: f.schedule === 'undated' ? 'one_time' : f.schedule, ride_date: f.schedule === 'undated' ? null : f.ride_date || null, frequency: f.frequency,
     days: f.frequency === 'daily' || f.schedule === 'dates' ? [] : f.days, week_of_month: f.frequency === 'monthly' ? f.week_of_month : null,
     extra_dates: f.schedule === 'recurring' || f.schedule === 'dates' ? f.extra_dates : [],
@@ -319,7 +321,7 @@ function Preview({ f, route, hostName }: { f: Form; route: RouteDraft | null; ho
         <div className="bg-(--ev-panel) px-4 pb-4 pt-4">
           <div className="flex items-center gap-2.5">
             <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-(--ev-ink) text-[13px] font-bold text-white">{initials || (walk ? <Footprints className="h-4 w-4" aria-hidden /> : <Bike className="h-4 w-4" aria-hidden />)}</span>
-            <span className="text-[14px] font-semibold text-(--ev-ink-80)">{walk ? 'Group walk' : 'Group ride'}{hostName ? ` · ${hostName}` : ''}</span>
+            <span className="text-[14px] font-semibold text-(--ev-ink-80)">{f.kind === 'bike_bus' ? 'Bike bus' : f.kind === 'walk_bus' ? 'Walking school bus' : walk ? 'Group walk' : 'Group ride'}{hostName ? ` · ${hostName}` : ''}</span>
           </div>
           <p className={cx('mt-3 font-display text-[22px] font-extrabold leading-tight', f.name.trim() ? 'text-(--ev-ink)' : 'text-(--ev-ink-75)')}>
             {f.name.trim() || (walk ? 'Your walk’s name' : 'Your ride’s name')}
@@ -1082,7 +1084,8 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
                 <span className="block text-[14px] text-(--ev-ink-75)">Anyone running late can find the group on the map.</span>
               </span>
             </label>
-            {f.live_sharing !== 'off' && (
+            {/* A bus's live location stays in the Shift app (Keith 2026-11-11): no web link option. */}
+            {f.live_sharing !== 'off' && f.kind === 'group_ride' && (
               <div className="mt-3 pl-8">
                 <Field label="Who sees it" htmlFor="live">
                   <Select id="live" value={f.live_sharing} onChange={(e) => set('live_sharing', e.target.value as Form['live_sharing'])} className="max-w-[320px]">
