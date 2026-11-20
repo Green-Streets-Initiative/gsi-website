@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import PhotoCredit from '@/components/PhotoCredit'
+import StoreBadges from '@/components/StoreBadges'
 
 /*
  * The learner's page after their free street lesson (Shift 01870). One tap in
@@ -10,6 +11,8 @@ import PhotoCredit from '@/components/PhotoCredit'
  * scanner that fetches the page without running it saves nothing), then asks
  * one thing and shows one next step. Answers go to Green Streets only; words
  * are shared only when the learner says so, and named as they choose.
+ * Learners without Shift see the free app under their next step (Keith
+ * 2026-11-20); its Home card finds the lesson by their email.
  */
 
 export type Ride = {
@@ -37,6 +40,8 @@ type View = {
   words?: string | null
   words_share?: 'name_town' | 'anonymous' | null
   rode?: 'yes' | 'not_yet' | null
+  /** They have a Shift account under this email: the app's Home card takes it from here. */
+  on_shift?: boolean
 }
 
 /** Someone riding a city bike lane on their own, the lesson's whole point (Adam Coppola, CC0; also on What's new). */
@@ -181,6 +186,7 @@ export default function AfterLesson({ token, tapped, rides }: { token: string; t
             <p className={`${BODY} mt-2`}>You’ve biked on your own since your lesson{withTeacher}.</p>
           </div>
           {!view.words && <Words kind="share" busy={busy} onSend={answer} saved={null} />}
+          {!view.on_shift && <GetShift />}
           <ShareLessons />
         </>,
       )
@@ -194,6 +200,7 @@ export default function AfterLesson({ token, tapped, rides }: { token: string; t
           </p>
         </div>
         <NextStep next="company" rides={rides} />
+        {!view.on_shift && <GetShift />}
       </>,
     )
   }
@@ -261,6 +268,7 @@ export default function AfterLesson({ token, tapped, rides }: { token: string; t
       </div>
       <Words kind={great ? 'share' : 'private'} busy={busy} onSend={answer} saved={view.words ? view.words_share ?? 'private' : null} />
       <NextStep next={next} rides={rides} teacher={view.next ? view.teacher ?? 'Your instructor' : null} />
+      {!view.on_shift && <GetShift />}
       {/* Once their words are in, the one more thing: a friend who'd like a lesson. */}
       {great && view.words && <ShareLessons />}
     </>,
@@ -430,6 +438,34 @@ function NextStep({ next, rides, teacher }: { next: 'alone' | 'company'; rides: 
         </div>
       )}
     </>
+  )
+}
+
+/** The free app, for learners who don't have it: their rides, rewards and group rides in one place. */
+function GetShift() {
+  return (
+    <div className={CARD}>
+      <div className="flex items-start gap-4 sm:gap-6">
+        <div className="min-w-0 flex-1">
+          <h2 className={`${HEAD} text-[1.5rem]`}>Keep riding with Shift, our free app</h2>
+          <p className={`${BODY} mt-2`}>
+            It plans calm routes, shows group rides near you, and rewards your trips with gift cards from local shops.
+          </p>
+        </div>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/images/shift-app/rewards-perks-current.png"
+          alt="Shift's Rewards screen with discounts at Remnant Brewing, Marlon's Barbers, Melt in Your Mouth and Bagel Guild"
+          width={640}
+          height={1387}
+          className="h-[168px] w-[96px] shrink-0 rounded-[14px] border-2 border-navy/10 object-cover object-top sm:h-[220px] sm:w-[128px]"
+        />
+      </div>
+      <p className="mt-4 text-[0.9375rem] leading-relaxed text-navy">
+        Sign up with the email address you gave us, and the app will help with your first ride.
+      </p>
+      <StoreBadges className="mt-4" placement="lesson_after" />
+    </div>
   )
 }
 
