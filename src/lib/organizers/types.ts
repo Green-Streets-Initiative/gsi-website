@@ -56,6 +56,8 @@ export interface LatestUpdate {
 export interface DashboardRide {
   id: string
   name: string
+  /** Walk and bike buses show here too (Shift 01871); older servers leave it out. */
+  kind?: 'group_ride' | 'bike_bus' | 'walk_bus'
   status: 'draft' | 'active' | 'paused' | 'archived'
   visibility: 'public' | 'invite' | 'school'
   calendar_status: 'pending' | 'approved' | 'rejected'
@@ -85,7 +87,7 @@ export interface DashboardRide {
 export interface RideRow {
   id: string
   slug: string
-  kind: 'group_ride'
+  kind: 'group_ride' | 'bike_bus' | 'walk_bus'
   /** A bike ride or a group walk (Shift 01660); older rows read as a bike ride. */
   activity?: 'bike' | 'walk'
   name: string
