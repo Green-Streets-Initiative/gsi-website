@@ -12,6 +12,12 @@ import { forecastLine, rideForecast } from '@/lib/rides/forecast'
 import { newInfraNear, newInfraOnRoute } from '@/lib/server/new-infra'
 import { searchPlaces } from '@/lib/server/places'
 import { newInfraForAssistant } from '@/lib/new-infra'
+import { inviteGroupOrganizer } from '@/lib/organizers/group-invite'
+import type { GroupTeam, HandoffForMe } from '@/lib/organizers/group'
+import { scheduleDates } from '@/lib/organizers/schedule'
+import { PROMO_CHANNELS, promoLink } from '@/lib/rides/promo'
+import { LANGUAGES, languageList, type PartnerLanguage } from '@/lib/languages'
+import type { OrgClaim, PromoStats } from '@/lib/organizers/types'
 
 // The organizer assistant's tools (Keith 2026-10-22). Same shape as the
 // employer assistant's: reads run straight away as the organizer; anything
@@ -45,6 +51,17 @@ export type ApprovalCard = {
   staffNote?: string
   cta: string
   tone: 'primary' | 'danger'
+}
+
+type Member = { member_id: string; user_id: string | null; role: string; display_name: string; is_you: boolean }
+type EndShopRow = { location_id: string; name: string; kind: string | null; street: string | null; city: string | null; distance_m: number }
+type BigEventRow = { id: string; title: string; starts_at: string; time_known: boolean; venue_name: string; miles?: number | null }
+type FeedRow = { id: string; title: string; event_date: string; event_time?: string | null; location_name?: string | null; miles?: number | null }
+
+const bigWhen = (b: BigEventRow) => {
+  const day = new Date(b.starts_at).toLocaleDateString('en-CA', { timeZone: 'America/New_York' })
+  const time = new Date(b.starts_at).toLocaleTimeString('en-US', { timeZone: 'America/New_York', hour: 'numeric', minute: '2-digit' })
+  return b.time_known ? `${dateLabel(day)}, ${time}` : dateLabel(day)
 }
 
 const FUNCTIONS = `${(process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').replace(/\/$/, '')}/functions/v1`
@@ -108,8 +125,10 @@ function readCourse(v: unknown): RouteCourse | null {
 const rideFields = {
   name: { type: 'string', description: 'Short and welcoming, at most 120 characters.' },
   description: nullable('string', 'What the ride is like, where it goes, what to bring. Only what the organizer said.'),
-  schedule: { type: 'string', enum: ['one_time', 'recurring'] },
+  schedule: { type: 'string', enum: ['one_time', 'recurring', 'dates'], description: 'one_time: one date. recurring: a pattern (weekly, every other week, monthly, daily). dates: no pattern, only the dates in extra_dates ("Pick each date").' },
   ride_date: nullable('string', 'YYYY-MM-DD, for a one-time ride.'),
+  no_date_yet: { type: 'boolean', description: 'A one-time ride saved before its date is set (Shift 01833): it stays on their rides, off the calendar, with no page, until it gets a date. Only for a new ride or one still waiting for its date.' },
+  extra_dates: { type: 'array', items: { type: 'string' }, description: 'YYYY-MM-DD. With schedule dates: every date it runs. With recurring: dates added off the pattern (a Sunday for a Saturday group). The whole list: send every date that should stay.' },
   frequency: { type: 'string', enum: ['weekly', 'biweekly', 'monthly', 'daily'], description: 'For a repeating ride.' },
   days: { type: 'array', items: { type: 'integer', minimum: 1, maximum: 7 }, description: 'ISO weekdays: 1 Monday … 7 Sunday. One day for monthly.' },
   week_of_month: nullable('integer', 'For monthly: 1 to 5, or -1 for the last.'),
@@ -126,6 +145,10 @@ const rideFields = {
   registration_url: nullable('string', 'Only if people must sign up or sign a waiver elsewhere.'),
   contact_url: nullable('string', 'A WhatsApp or Discord group, or a mailto: link.'),
   flyer_url: nullable('string', "An image the organizer attached in this conversation (its URL from the [Attached image] note), to show as the ride's flyer. Only when they say to use it."),
+  live_sharing: { type: 'string', enum: ['off', 'members', 'link'], description: "Where the group is during the ride, on a live map from the organizer's phone: members (people on the ride, the default), link (anyone with the ride link) or off." },
+  languages: { type: 'array', items: { type: 'string', enum: LANGUAGES.map((l) => l.id) }, description: 'Every language the ride is led in. English only: [].' },
+  group_id: nullable('string', 'The group it is from (an id from get_my_group), shown on the ride page with its logo; null: from the organizer personally.'),
+  replies_to_me: { type: 'boolean', description: "Replies to the ride's update emails go to the organizer's sign-in email (people see that address)." },
 } as const
 
 export const TOOLS: Anthropic.Tool[] = [
@@ -178,11 +201,11 @@ export const TOOLS: Anthropic.Tool[] = [
   },
   {
     name: 'open_page',
-    description: 'A button to a screen of the organizer tools, for things done there: the route, adding a flyer, the full edit form, one date\'s plan page (plan_date, with occurrence_id: its own name, description, flyer and route), Promote (captions per channel, short links that count visits, the flyer QR code, event calendars), the turnout download, the host page.',
+    description: 'A button to a screen of the organizer tools, for things done there: drawing or editing a route and its other route options, the full edit form, one date\'s plan page (plan_date, with occurrence_id: its own name, description, flyer and route), Promote (the printable flyer with its QR code, a ready-made post image), the turnout download, the host page (its logo), a date\'s photos (photos: see them, take one down).',
     input_schema: {
       type: 'object',
       properties: {
-        page: { type: 'string', enum: ['rides', 'new_ride', 'ride', 'edit', 'plan_date', 'roster', 'promote', 'turnout', 'team', 'host'] },
+        page: { type: 'string', enum: ['rides', 'new_ride', 'ride', 'edit', 'plan_date', 'roster', 'promote', 'turnout', 'team', 'host', 'photos'] },
         series_id: nullable('string'),
         occurrence_id: nullable('string'),
         import_id: nullable('string', 'With edit, plan_date or new_ride: a GPX route the organizer attached (the import id in its [Attached route] note), to load into the route section.'),
@@ -263,7 +286,7 @@ export const TOOLS: Anthropic.Tool[] = [
   },
   {
     name: 'update_ride',
-    description: "Change a ride's details (name, description, schedule, time, meeting point, pace, no-drop, tags, visibility, links). Send only what changes. Card first. For a single date use change_date (time, meeting point) or plan_date (its name, description, route).",
+    description: "Change a ride's details (name, description, schedule and added dates, time, meeting point, pace, no-drop, tags, languages, visibility, links, the group it's from, the live map, where email replies go, its flyer). Send only what changes. Card first. For a single date use change_date (time, meeting point), plan_date (its name, description, flyer, route), add_date or skip_dates.",
     input_schema: { type: 'object', properties: { series_id: uuid, changes: { type: 'object', properties: rideFields } }, required: ['series_id', 'changes'] },
   },
   {
@@ -287,22 +310,27 @@ export const TOOLS: Anthropic.Tool[] = [
   },
   {
     name: 'change_date',
-    description: 'Change one date\'s start time or meeting point and tell everyone on it. Omit what stays the same.',
+    description: 'Change one date\'s start time or meeting point, or put either back to the ride\'s usual, and tell everyone on it. Omit what stays the same.',
     input_schema: {
       type: 'object',
-      properties: { series_id: uuid, occurrence_id: uuid, start_time: nullable('string', 'HH:MM, 24-hour.'), meetup: { ...placeSchema } },
+      properties: {
+        series_id: uuid, occurrence_id: uuid, start_time: nullable('string', 'HH:MM, 24-hour.'), meetup: { ...placeSchema },
+        usual_time: { type: 'boolean', description: "true: back to the ride's usual start time." },
+        usual_place: { type: 'boolean', description: "true: back to the ride's usual meeting point." },
+      },
       required: ['series_id', 'occurrence_id'],
     },
   },
   {
     name: 'plan_date',
-    description: "Give one date its own name and description, since most groups ride somewhere new each time (\"Fall colors to Concord\"). Send only what changes; null puts that part back to the ride's usual. usual_route true makes the date ride the ride's usual route again. A date's own route is drawn with plan_route or check_route_link (with occurrence_id). Card first. Nobody is notified; post_update tells people.",
+    description: "Give one date its own name, description and flyer, since most groups ride somewhere new each time (\"Fall colors to Concord\"). Send only what changes; null puts that part back to the ride's usual. usual_route true makes the date ride the ride's usual route again. A date's own route is drawn with plan_route or check_route_link (with occurrence_id). Card first. Nobody is notified; post_update tells people.",
     input_schema: {
       type: 'object',
       properties: {
         series_id: uuid, occurrence_id: uuid,
         title: nullable('string', 'Up to 120 characters.'),
         description: nullable('string', 'Up to 4,000 characters, in the organizer\'s words.'),
+        flyer_url: nullable('string', "This date's own flyer: an image attached in this conversation (its URL from the [Attached image] note), only when they say to use it. null: back to the ride's flyer."),
         usual_route: { type: 'boolean' },
       },
       required: ['series_id', 'occurrence_id'],
@@ -401,11 +429,150 @@ export const TOOLS: Anthropic.Tool[] = [
       required: ['series_id', 'occurrence_id', 'name', 'job'],
     },
   },
+  // ── The rest of the console (2026-11-20 parity pass) ──
+  {
+    name: 'get_organizers',
+    description: "Who runs one ride, as its Organizers tab shows: the organizer, co-organizers, open invites, people on the ride who could be made co-organizers or asked to take it over, a hand-off waiting for an answer, and the ride's join link and code.",
+    input_schema: { type: 'object', properties: { series_id: uuid }, required: ['series_id'] },
+  },
+  {
+    name: 'get_promote',
+    description: "What the Promote tab has for one ride: a short link for each place they post (Instagram, Facebook, group chats, Partiful, Strava, Nextdoor, Reddit, email, event calendars, the printed flyer's QR code) and how many visits and sign-ups each brought in, the ride page, and whether it is on the Green Streets events calendar. Use these links in any post you write for them, one per channel.",
+    input_schema: { type: 'object', properties: { series_id: uuid }, required: ['series_id'] },
+  },
+  {
+    name: 'get_my_group',
+    description: "The groups this person runs on Shift (their host pages): each one's description, website, follow links, ride tags, no-drop, whether it has a logo, its organizers and open invites. Use before update_host_page, invite_group_organizer, withdraw_group_invite or step_down_from_group, and for a ride's group_id.",
+    input_schema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'find_coffee_stops',
+    description: "Where a ride can end for coffee (Shift 01596): shops from Shift's gift-card list near where the ride ends, nearest first, the Ride Fund season there if there is one (it buys the group's coffee), and the shop the ride ends at now.",
+    input_schema: { type: 'object', properties: { series_id: uuid }, required: ['series_id'] },
+  },
+  {
+    name: 'find_events_to_ride_to',
+    description: 'Events a ride could go to together (Go Together, Shift 01460/01691): games, concerts and events-calendar listings on its next date near where it ends, or by name with query (the next 60 days), and the one it goes to now.',
+    input_schema: { type: 'object', properties: { series_id: uuid, query: nullable('string', 'Part of the event name.') }, required: ['series_id'] },
+  },
+  {
+    name: 'add_date',
+    description: "Add one date to a repeating ride or a \"Pick each date\" ride (Shift 01868), such as a Sunday for a Saturday group. It opens for sign-ups and goes on the calendar right away. Card first.",
+    input_schema: { type: 'object', properties: { series_id: uuid, date: { type: 'string', description: 'YYYY-MM-DD, from today to a year out.' } }, required: ['series_id', 'date'] },
+  },
+  {
+    name: 'skip_dates',
+    description: "Skip dates of a repeating ride that are further out than the dates already listed (a holiday weekend, a race on the route), so they never open for sign-ups; or un-skip them with skip false. A date already listed is cancelled with cancel_date instead, which tells the people on it. Card first.",
+    input_schema: {
+      type: 'object',
+      properties: { series_id: uuid, dates: { type: 'array', items: { type: 'string' }, description: 'YYYY-MM-DD dates on the ride\'s pattern.' }, skip: { type: 'boolean', description: 'false: un-skip them. Default true.' } },
+      required: ['series_id', 'dates'],
+    },
+  },
+  {
+    name: 'restore_date',
+    description: 'Bring back a date that was cancelled (not one cancelled by a break), and tell the people who heard it was off that it is back on. Card first.',
+    input_schema: { type: 'object', properties: { series_id: uuid, occurrence_id: uuid }, required: ['series_id', 'occurrence_id'] },
+  },
+  {
+    name: 'copy_ride',
+    description: "Copy this ride to a new one (\"Copy this ride\", \"Run it again\"): everything but its dates (name, description, meeting point, route and route options, pace, tags, links, group). Give the new date for a one-time ride, or no_date_yet. changes overrides anything else, as in create_ride. Co-organizers are not copied. Card first.",
+    input_schema: {
+      type: 'object',
+      properties: {
+        series_id: uuid,
+        ride_date: nullable('string', 'YYYY-MM-DD: the new date for a one-time ride.'),
+        no_date_yet: { type: 'boolean' },
+        changes: { type: 'object', properties: rideFields, description: 'Anything that differs from the original.' },
+      },
+      required: ['series_id'],
+    },
+  },
+  {
+    name: 'delete_ride',
+    description: "Delete a ride nobody has joined or ridden yet, such as a test or a duplicate. A ride people joined can only be ended (stop_ride). Card first, and the organizer types the ride's name to confirm.",
+    input_schema: { type: 'object', properties: { series_id: uuid }, required: ['series_id'] },
+  },
+  {
+    name: 'set_co_organizer',
+    description: 'Make someone already on the ride a co-organizer, or with co_organizer false take that off them (they stay on the ride). Names as get_organizers shows them. To add someone not on the ride, use invite_co_organizer. Card first.',
+    input_schema: { type: 'object', properties: { series_id: uuid, name: { type: 'string' }, co_organizer: { type: 'boolean' } }, required: ['series_id', 'name', 'co_organizer'] },
+  },
+  {
+    name: 'withdraw_invite',
+    description: 'Withdraw an open co-organizer invite (the email address from get_organizers or get_ride). Card first.',
+    input_schema: { type: 'object', properties: { series_id: uuid, email: { type: 'string' } }, required: ['series_id', 'email'] },
+  },
+  {
+    name: 'hand_off_ride',
+    description: "Ask someone on the ride with a Shift account to take it over (they get a notice and must say yes; until then the organizer still runs it), or with name null cancel a hand-off waiting for an answer. Names as get_organizers shows them. Card first.",
+    input_schema: { type: 'object', properties: { series_id: uuid, name: nullable('string') }, required: ['series_id', 'name'] },
+  },
+  {
+    name: 'answer_handoff',
+    description: 'Answer when someone asked this person to take over a ride (get_my_rides lists them under asked_to_take_over): accept true runs it from now on, false says no thanks. The organizer who asked hears either way. Card first.',
+    input_schema: { type: 'object', properties: { series_id: uuid, accept: { type: 'boolean' } }, required: ['series_id', 'accept'] },
+  },
+  {
+    name: 'new_join_link',
+    description: "Make a new join link and code for a ride (when the old one was shared too widely). The old link and code stop working; people already on the ride stay on it. The ride page link stays the same. Card first.",
+    input_schema: { type: 'object', properties: { series_id: uuid }, required: ['series_id'] },
+  },
+  {
+    name: 'set_coffee_stop',
+    description: 'Set the shop a ride ends at (a location_id from find_coffee_stops), or null to clear it. When a Ride Fund season covers it, the fund buys the coffee there. Card first.',
+    input_schema: { type: 'object', properties: { series_id: uuid, location_id: nullable('string') }, required: ['series_id', 'location_id'] },
+  },
+  {
+    name: 'set_going_to',
+    description: 'Link a ride to the event it goes to (an id from find_events_to_ride_to, with big true for a game or concert), or event_id null to clear it. The ride shows on that event and the event on the ride. Card first.',
+    input_schema: { type: 'object', properties: { series_id: uuid, event_id: nullable('string'), big: { type: 'boolean' } }, required: ['series_id', 'event_id'] },
+  },
+  {
+    name: 'update_host_page',
+    description: "Change a group's host page (its public page on Shift and the events calendar): description (up to 1,500 characters, in their words), website, follow links, ride tags, no-drop, or its logo (an image attached in this conversation). Send only what changes; an empty string removes a link. Card first.",
+    input_schema: {
+      type: 'object',
+      properties: {
+        group_id: { type: 'string', description: 'An id from get_my_group.' },
+        description: { type: 'string' },
+        website: { type: 'string' },
+        links: { type: 'object', description: 'Keys: whatsapp, partiful, instagram, strava, facebook, discord, meetup, bluesky, tiktok, youtube, linktree. Values: https:// links, or "" to remove.', additionalProperties: { type: 'string' } },
+        ride_tags: { type: 'array', items: { type: 'string', enum: TAG_OPTIONS.map((t) => t.key) } },
+        rides_no_drop: { type: 'boolean' },
+        logo_url: nullable('string', 'An image attached in this conversation, or null to remove the logo.'),
+      },
+      required: ['group_id'],
+    },
+  },
+  {
+    name: 'invite_group_organizer',
+    description: "Add someone by email as an organizer of a group, or with hand_over true hand the group to them (they run it, and this person steps down, once they sign in). They get an email. Only on the person's own request, naming the address. Card first.",
+    input_schema: { type: 'object', properties: { group_id: { type: 'string' }, email: { type: 'string' }, hand_over: { type: 'boolean' } }, required: ['group_id', 'email'] },
+  },
+  {
+    name: 'withdraw_group_invite',
+    description: "Withdraw an open invite to help run a group, or to take it over (the email from get_my_group). Card first.",
+    input_schema: { type: 'object', properties: { group_id: { type: 'string' }, email: { type: 'string' } }, required: ['group_id', 'email'] },
+  },
+  {
+    name: 'step_down_from_group',
+    description: "Step down as an organizer of a group. Their rides stay theirs. Card first.",
+    input_schema: { type: 'object', properties: { group_id: { type: 'string' } }, required: ['group_id'] },
+  },
+]
+
+/** The 2026-11-20 parity pass: every change the console makes that the assistant didn't. */
+const MORE_CHANGES = [
+  'add_date', 'skip_dates', 'restore_date', 'copy_ride', 'delete_ride', 'set_co_organizer', 'withdraw_invite', 'hand_off_ride',
+  'answer_handoff', 'new_join_link', 'set_coffee_stop', 'set_going_to', 'update_host_page', 'invite_group_organizer',
+  'withdraw_group_invite', 'step_down_from_group',
 ]
 
 export const NEEDS_APPROVAL = new Set([
   'create_ride', 'update_ride', 'post_update', 'cancel_date', 'change_date', 'plan_date', 'stop_ride', 'resume_ride', 'invite_co_organizer', 'settle_credit', 'set_chat_access', 'set_headcount',
   'set_helper_jobs', 'give_helper_job',
+  ...MORE_CHANGES,
 ])
 
 /** What the panel shows while a tool runs. */
@@ -437,10 +604,31 @@ export const ACTIVITY: Record<string, string> = {
   get_helpers_and_stops: 'Checking co-leaders and stops',
   set_helper_jobs: 'Saving the helper jobs',
   give_helper_job: 'Updating the co-leaders',
+  get_organizers: 'Checking who runs the ride',
+  get_promote: 'Reading the promote links',
+  get_my_group: 'Reading your group',
+  find_coffee_stops: 'Looking for coffee stops',
+  find_events_to_ride_to: 'Looking for events',
+  add_date: 'Adding the date',
+  skip_dates: 'Saving skipped dates',
+  restore_date: 'Bringing the date back',
+  copy_ride: 'Copying the ride',
+  delete_ride: 'Deleting the ride',
+  set_co_organizer: 'Updating co-organizers',
+  withdraw_invite: 'Withdrawing the invite',
+  hand_off_ride: 'Updating the hand-off',
+  answer_handoff: 'Answering the hand-off',
+  new_join_link: 'Making a new join link',
+  set_coffee_stop: 'Saving the coffee stop',
+  set_going_to: 'Saving the event',
+  update_host_page: 'Saving the host page',
+  invite_group_organizer: 'Sending the invite',
+  withdraw_group_invite: 'Withdrawing the invite',
+  step_down_from_group: 'Stepping down',
 }
 
 /** Labels whose completion means a screen should reload. */
-export const CHANGES = new Set(['create_ride', 'update_ride', 'post_update', 'cancel_date', 'change_date', 'plan_date', 'stop_ride', 'resume_ride', 'invite_co_organizer', 'settle_credit', 'set_chat_access', 'set_headcount', 'set_helper_jobs', 'give_helper_job'].map((n) => ACTIVITY[n]))
+export const CHANGES = new Set(['create_ride', 'update_ride', 'post_update', 'cancel_date', 'change_date', 'plan_date', 'stop_ride', 'resume_ride', 'invite_co_organizer', 'settle_credit', 'set_chat_access', 'set_headcount', 'set_helper_jobs', 'give_helper_job', ...MORE_CHANGES].map((n) => ACTIVITY[n]))
 
 /** Who on the ride has the group chat invite (Shift 01686); null when there's nothing to share. */
 async function chatAccess(ctx: ToolCtx, seriesId: string): Promise<Map<string, { chat_ok: boolean }> | null> {
@@ -547,8 +735,11 @@ function trimDetail(d: RideDetail) {
 function rowPayload(r: RideRow): Record<string, unknown> {
   return {
     name: r.name, description: r.description, flyer_url: r.flyer_url,
-    // A draft (Shift 01833) is a one-off still waiting for its date.
-    schedule: r.ride_date || r.status === 'draft' ? 'one_time' : 'recurring', ride_date: r.ride_date, frequency: r.frequency, days: r.days,
+    // A draft (Shift 01833) is a one-off still waiting for its date; no
+    // pattern but added dates is "Pick each date" (Shift 01868).
+    schedule: r.ride_date || r.status === 'draft' ? 'one_time'
+      : !r.days?.length && r.frequency !== 'daily' && (r.extra_dates ?? []).length ? 'dates' : 'recurring',
+    ride_date: r.ride_date, frequency: r.frequency, days: r.days, extra_dates: r.extra_dates ?? [],
     week_of_month: r.week_of_month, season_start: r.season_start, season_end: r.season_end,
     start_time: r.start_time?.slice(0, 5), end_time: r.end_time?.slice(0, 5) ?? null,
     meetup_name: r.meetup_name, meetup_address: r.meetup_address, meetup_lat: r.meetup_lat, meetup_lng: r.meetup_lng,
@@ -568,14 +759,20 @@ type RideInput = Partial<{
   start_time: string; end_time: string | null; meetup: { name: string; address?: string; lat: number; lng: number }
   activity: 'bike' | 'walk'; pace: string | null; no_drop: boolean | null; tags: string[]; visibility: 'public' | 'invite'
   registration_url: string | null; contact_url: string | null; flyer_url: string | null
+  no_date_yet: boolean; extra_dates: string[]; live_sharing: 'off' | 'members' | 'link'; languages: string[]
+  group_id: string | null; replies_to_me: boolean
 }>
 
 /** The model's ride fields in the save function's shape. */
 function inputPayload(i: RideInput): Record<string, unknown> {
   const out: Record<string, unknown> = {}
   const copy = ['name', 'description', 'schedule', 'ride_date', 'frequency', 'days', 'week_of_month', 'season_start', 'season_end',
-    'start_time', 'end_time', 'activity', 'pace', 'no_drop', 'tags', 'visibility', 'registration_url', 'contact_url', 'flyer_url'] as const
+    'start_time', 'end_time', 'activity', 'pace', 'no_drop', 'tags', 'visibility', 'registration_url', 'contact_url', 'flyer_url',
+    'extra_dates', 'live_sharing'] as const
   for (const k of copy) if (i[k] !== undefined) out[k] = i[k]
+  if (i.no_date_yet) { out.schedule = 'one_time'; out.ride_date = null }
+  if (Array.isArray(i.languages)) out.languages = LANGUAGES.map((l) => l.id).filter((id) => i.languages!.includes(id))
+  if (i.group_id !== undefined) out.event_organizer_id = i.group_id || null
   if (i.meetup) {
     out.meetup_name = i.meetup.name
     out.meetup_address = i.meetup.address ?? null
@@ -592,7 +789,10 @@ function scheduleLine(p: Record<string, unknown>): string {
 
 function scheduleBase(p: Record<string, unknown>): string {
   const time = clock(String(p.start_time ?? ''))
-  if (p.schedule === 'one_time') return p.ride_date ? `${dateLabel(String(p.ride_date))} at ${time}` : `One date at ${time}`
+  if (p.schedule === 'one_time') return p.ride_date ? `${dateLabel(String(p.ride_date))} at ${time}` : `No date yet, at ${time}`
+  const added = ((p.extra_dates as string[] | undefined) ?? []).filter((d) => d >= todayKey())
+  const addedText = added.length ? `${added.slice(0, 6).map(dateLabel).join(', ')}${added.length > 6 ? ` and ${added.length - 6} more` : ''}` : ''
+  if (p.schedule === 'dates' || (!((p.days as number[] | undefined)?.length) && p.frequency !== 'daily')) return `${addedText || 'No dates yet'} at ${time}`
   const s = scheduleText({
     ride_date: null, frequency: String(p.frequency ?? 'weekly'), days: (p.days as number[]) ?? [],
     week_of_month: (p.week_of_month as number | null) ?? null, start_time: String(p.start_time ?? ''),
@@ -600,7 +800,7 @@ function scheduleBase(p: Record<string, unknown>): string {
   const season = p.season_start || p.season_end
     ? `, ${p.season_start ? `from ${dateLabel(String(p.season_start))}` : ''}${p.season_start && p.season_end ? ' ' : ''}${p.season_end ? `through ${dateLabel(String(p.season_end))}` : ''}`
     : ''
-  return s + season
+  return s + season + (addedText ? `, plus ${addedText}` : '')
 }
 
 function paceLine(p: Record<string, unknown>): string | null {
@@ -627,11 +827,67 @@ function findDate(d: RideDetail, occurrenceId: unknown) {
 const missingForRide = (p: Record<string, unknown>): string | null => {
   if (!String(p.name ?? '').trim()) return 'a name'
   if (p.schedule === 'one_time' && !p.ride_date) return 'the date'
-  if (p.schedule !== 'one_time' && p.frequency !== 'daily' && !((p.days as number[] | undefined)?.length)) return 'which day it runs'
+  const added = ((p.extra_dates as string[] | undefined) ?? []).length
+  if (p.schedule === 'dates' && !added) return 'at least one date'
+  if (p.schedule === 'recurring' && p.frequency !== 'daily' && !((p.days as number[] | undefined)?.length) && !added) return 'which day it runs'
   if (!/^\d{1,2}:\d{2}/.test(String(p.start_time ?? ''))) return 'the start time'
   if (typeof p.meetup_lat !== 'number' || typeof p.meetup_lng !== 'number') return 'the meeting point (use find_place)'
   return null
 }
+
+/** The Spanish and Bilingual tags installed apps show, kept in step with the languages (as the ride form does). */
+function languageTags(tags: string[], languages: string[]): string[] {
+  const rest = tags.filter((t) => t !== 'spanish' && t !== 'bilingual')
+  return [...rest, ...(languages.includes('es') ? ['spanish'] : []), ...(languages.length > 1 ? ['bilingual'] : [])]
+}
+
+const LIVE_TEXT: Record<string, string> = {
+  off: 'No live map of where the group is',
+  members: 'Live map of where the group is, for people on the ride',
+  link: 'Live map of where the group is, for anyone with the ride link',
+}
+
+/** The card lines both create and update add for the newer form fields. */
+function extraLines(p: Record<string, unknown>, keys: Set<string>, orgs: OrgClaim[]): string[] {
+  const out: string[] = []
+  if (keys.has('live_sharing') && LIVE_TEXT[String(p.live_sharing)]) out.push(LIVE_TEXT[String(p.live_sharing)])
+  if (keys.has('languages')) {
+    const langs = (p.languages as string[]) ?? []
+    out.push(langs.length ? `Led in ${languageList(langs as PartnerLanguage[])}` : 'Led in English')
+  }
+  if (keys.has('event_organizer_id')) {
+    const org = orgs.find((o) => o.id === p.event_organizer_id)
+    out.push(org ? `From ${org.name}, with its logo` : 'From you, not a group')
+  }
+  return out
+}
+
+/** A group this person runs, checked against organizer_console_me. */
+async function myOrgs(ctx: ToolCtx): Promise<OrgClaim[]> {
+  const me = await rpc<{ orgs?: OrgClaim[] }>(ctx, 'organizer_console_me')
+  return me.orgs ?? []
+}
+
+/** Where a ride ends: its route's last point, else its meeting point. */
+function rideEnd(r: RideRow): { lat: number; lng: number } | null {
+  const w = r.route_waypoints ?? []
+  const last = w.length >= 2 ? (w[w.length - 1] as { lat?: number; lng?: number }) : null
+  if (last && typeof last.lat === 'number' && typeof last.lng === 'number') return { lat: last.lat, lng: last.lng }
+  return r.meetup_lat != null && r.meetup_lng != null ? { lat: r.meetup_lat, lng: r.meetup_lng } : null
+}
+
+/** One person on the ride by name, as the screens show it: exact first, else the start of it. */
+function byName<T extends { display_name: string }>(rows: T[], name: unknown): T | string {
+  const want = String(name ?? '').trim().toLowerCase()
+  if (!want) return 'Say who.'
+  const hits = rows.filter((r) => r.display_name.toLowerCase() === want)
+  const match = hits.length ? hits : rows.filter((r) => r.display_name.toLowerCase().startsWith(want))
+  if (match.length === 1) return match[0]
+  return match.length ? `More than one person matches ${name}: ${match.map((r) => r.display_name).join(', ')}.` : `No one called ${name} is on this ride.`
+}
+
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
+const JOIN_LINK = (code: string) => `https://shift.gogreenstreets.org/join/${code}`
 
 // ── Reads and free writes ──
 
@@ -639,9 +895,10 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
   try {
     switch (name) {
       case 'get_my_rides': {
-        const [rides, me] = await Promise.all([
+        const [rides, me, asked] = await Promise.all([
           rpc<DashboardRide[]>(ctx, 'organizer_console_rides'),
           rpc<{ can_create?: boolean }>(ctx, 'organizer_console_me'),
+          rpc<HandoffForMe[] | null>(ctx, 'organizer_handoffs_for_me').then((r) => r ?? []).catch(() => [] as HandoffForMe[]),
         ])
         const today = todayKey()
         const live = rides.filter((r) => r.status !== 'archived' && !(r.ride_date && r.ride_date < today && r.next_dates.length === 0))
@@ -649,6 +906,7 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
           can_create_rides: !!me.can_create,
           rides: live.map(trimDashboard),
           past_or_ended: rides.filter((r) => !live.includes(r)).map((r) => ({ id: r.id, name: r.name, schedule: scheduleText(r) })),
+          ...(asked.length ? { asked_to_take_over: asked.map((h) => ({ series_id: h.id, name: h.name, asked_by: h.from, note: 'Answer with answer_handoff.' })) } : {}),
         })
       }
       case 'get_ride':
@@ -716,6 +974,103 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
         const d = await loadDetail(ctx, input.series_id)
         const o = findDate(d, input.occurrence_id)
         return ok(await forecast(o.meetup_lat, o.meetup_lng, o.date, o.start_time))
+      }
+      case 'get_organizers': {
+        const d = await loadDetail(ctx, input.series_id)
+        const [members, ho] = await Promise.all([
+          rpc<Member[] | null>(ctx, 'get_ride_roster', { p_series_id: d.ride.id }).then((r) => r ?? []).catch(() => [] as Member[]),
+          ctx.user.from('ride_series').select('handoff_to_user_id').eq('id', d.ride.id).maybeSingle(),
+        ])
+        const to = (ho.data as { handoff_to_user_id: string | null } | null)?.handoff_to_user_id ?? null
+        const others = members.filter((m) => m.role === 'rider' && m.user_id && !m.is_you).map((m) => m.display_name)
+        return ok({
+          organizer: d.organizer_person,
+          your_role: d.my_role,
+          co_organizers: d.leaders.filter((l) => l.role === 'leader').map((l) => l.name),
+          open_invites: d.leader_invites.map((i) => i.email),
+          others_on_the_ride: others.slice(0, 40),
+          ...(others.length > 40 ? { and_more: others.length - 40 } : {}),
+          hand_off_waiting_on: to ? (to === ctx.userId ? 'you (answer with answer_handoff)' : members.find((m) => m.user_id === to)?.display_name ?? 'someone on the ride') : null,
+          join_link: d.ride.invite_code ? JOIN_LINK(d.ride.invite_code) : null,
+          code: d.ride.invite_code,
+        }, { href: `/organizers/rides/${d.ride.id}/team`, label: 'Open Organizers' })
+      }
+      case 'get_promote': {
+        const d = await loadDetail(ctx, input.series_id)
+        const r = d.ride
+        if (r.status === 'draft') return ok({ no_page_yet: true, note: 'It has no date yet, so there is no page to promote. Give it a date first (update_ride).' })
+        const stats = await rpc<PromoStats>(ctx, 'organizer_ride_promo', { p_series_id: r.id }).catch(() => null)
+        const by = new Map((stats?.channels ?? []).map((c) => [c.channel, c]))
+        return ok({
+          ride_page: rideLink(r.invite_code),
+          links: PROMO_CHANNELS.map((c) => ({
+            channel: c.label, link: promoLink(r.invite_code, c.key),
+            visits: by.get(c.key)?.visits ?? 0, sign_ups: by.get(c.key)?.people ?? 0,
+            visits_this_week: by.get(c.key)?.visits_week ?? 0, sign_ups_this_week: by.get(c.key)?.people_week ?? 0,
+          })),
+          sign_ups_from_the_plain_page_link: stats?.direct_people ?? 0,
+          events_calendar: r.visibility !== 'public' ? 'invite only, so not listed' : r.calendar_status === 'approved' ? 'listed' : r.calendar_status === 'pending' ? 'waiting for our check' : 'not listed',
+          note: 'Each link counts its own visits and sign-ups, so use the one for the channel the post is for.',
+        }, { href: `/organizers/rides/${r.id}/promote`, label: 'Open Promote' })
+      }
+      case 'get_my_group': {
+        const orgs = await myOrgs(ctx)
+        if (!orgs.length) return ok({ groups: [], note: 'They run no group on Shift yet. They can pick or add theirs under The ride in the ride form, then fill in its host page.' }, { href: '/organizers/host', label: 'Open your host page' })
+        const shown = orgs.slice(0, 5)
+        const teams = await Promise.all(shown.map((o) => rpc<GroupTeam>(ctx, 'organizer_group_team', { p_organizer_id: o.id }).catch(() => null)))
+        return ok({
+          groups: shown.map((o, i) => ({
+            group_id: o.id, name: o.name, confirmed: o.claim === 'verified', description: o.description, website: o.url,
+            links: Object.fromEntries(Object.entries(o.social_links ?? {}).filter(([, v]) => !!v)),
+            ride_tags: o.ride_tags, rides_no_drop: o.rides_no_drop, has_logo: !!o.logo_url,
+            organizers: teams[i]?.organizers.map((x) => (x.is_you ? `${x.name} (you)` : x.name)),
+            open_invites: teams[i]?.invites.map((x) => ({ email: x.email, hand_over: x.handoff })),
+          })),
+        }, { href: '/organizers/host', label: 'Open your host page' })
+      }
+      case 'find_coffee_stops': {
+        const d = await loadDetail(ctx, input.series_id)
+        const at = rideEnd(d.ride)
+        if (!at) return fail('This ride has no meeting point or route yet.')
+        const [fund, shops] = await Promise.all([
+          rpc<{ funder_name: string; coffee_cents: number; starts_on: string; ends_on: string } | null>(ctx, 'ride_fund_for_point', { p_lat: at.lat, p_lng: at.lng }).catch(() => null),
+          rpc<EndShopRow[] | null>(ctx, 'get_ride_end_shops', { p_lat: at.lat, p_lng: at.lng }).then((r) => r ?? []),
+        ])
+        const now = d.ride.end_location_id ?? null
+        return ok({
+          ride_fund: fund ? { funder: fund.funder_name, buys_coffee_up_to: `$${(fund.coffee_cents / 100).toFixed(2)} a person`, from: fund.starts_on, through: fund.ends_on } : null,
+          ends_at_now: now ? shops.find((x) => x.location_id === now)?.name ?? 'a shop is set' : null,
+          shops: shops.slice(0, 8).map((x) => ({
+            location_id: x.location_id, name: x.name, kind: x.kind, street: [x.street, x.city].filter(Boolean).join(', '),
+            miles_from_the_end: Math.round((x.distance_m / 1609.34) * 10) / 10,
+          })),
+        })
+      }
+      case 'find_events_to_ride_to': {
+        const d = await loadDetail(ctx, input.series_id)
+        const today = todayKey()
+        const next = d.occurrences.find((o) => o.date >= today && o.status === 'scheduled')
+        const query = typeof input.query === 'string' && input.query.trim() ? input.query.trim() : null
+        const date = next?.date ?? d.ride.ride_date ?? null
+        if (!date && !query) return fail("This ride has no upcoming date. Search by the event's name with query.")
+        const at = rideEnd(d.ride)
+        const args = { p_date: date ?? today, p_lat: at?.lat ?? null, p_lng: at?.lng ?? null, p_query: query }
+        const [big, cal, curBig, curFeed] = await Promise.all([
+          rpc<BigEventRow[] | null>(ctx, 'big_event_candidates', args).then((r) => r ?? []).catch(() => [] as BigEventRow[]),
+          rpc<FeedRow[] | null>(ctx, 'feed_target_candidates', { ...args, p_series_id: d.ride.id }).then((r) => r ?? []).catch(() => [] as FeedRow[]),
+          rpc<BigEventRow | null>(ctx, 'get_series_big_event', { p_series_id: d.ride.id }).catch(() => null),
+          rpc<FeedRow | null>(ctx, 'get_series_feeds_to', { p_series_id: d.ride.id }).catch(() => null),
+        ])
+        const miles = (m: number | null | undefined) => (m == null ? null : Math.round(Number(m) * 10) / 10)
+        return ok({
+          for_date: query ? null : date,
+          goes_to_now: curBig ? { title: curBig.title, big: true } : curFeed ? { title: curFeed.title, big: false } : null,
+          games_and_concerts: big.slice(0, 6).map((b) => ({ event_id: b.id, big: true, title: b.title, when: bigWhen(b), place: b.venue_name, miles_from_the_end: miles(b.miles) })),
+          calendar_events: cal.slice(0, 6).map((c) => ({
+            event_id: c.id, big: false, title: c.title, date: c.event_date, time: c.event_time ? clock(c.event_time) : null,
+            place: c.location_name, miles_from_the_end: miles(c.miles),
+          })),
+        })
       }
       case 'find_place':
         return ok(await findPlace(String(input.query ?? '')))
@@ -912,24 +1267,39 @@ export async function approvalCard(ctx: ToolCtx, name: string, input: Record<str
       case 'create_ride': {
         const me = await rpc<{ can_create?: boolean }>(ctx, 'organizer_console_me')
         if (!me.can_create) return { result: fail('This person can post updates on rides they help run, but setting up new rides is for invited organizers.') }
-        const p = inputPayload((input.ride ?? {}) as RideInput)
+        const ride = (input.ride ?? {}) as RideInput
+        const p = inputPayload(ride)
         if (p.flyer_url != null && !ownFlyer(ctx, p.flyer_url)) return { result: fail('A flyer has to be an image attached in this conversation.') }
+        const orgs = await myOrgs(ctx)
+        if (p.event_organizer_id && !orgs.some((o) => o.id === p.event_organizer_id)) return { result: fail('That group is not one this person runs. Use get_my_group.') }
+        if (Array.isArray(p.languages)) p.tags = languageTags((p.tags as string[]) ?? [], p.languages as string[])
         const missing = missingForRide(p)
-        if (missing) return { result: fail(`Still needed before it can be created: ${missing}. Ask for it.`) }
+        if (missing && !(missing === 'the date' && ride.no_date_yet)) return { result: fail(`Still needed before it can be created: ${missing}. Ask for it.`) }
         const lines = [
           scheduleLine(p),
+          ride.no_date_yet ? 'No date yet: it stays on your rides, off the calendar and with no page to share, until you give it a date' : null,
           `Meet at ${p.meetup_name}${p.meetup_address ? `, ${p.meetup_address}` : ''}`,
           paceLine(p),
           p.visibility === 'invite' ? 'Invite only: people with the ride link or code can find it' : 'Public: on the Green Streets events calendar straight away',
           p.description ? `“${String(p.description).slice(0, 160)}${String(p.description).length > 160 ? '…' : ''}”` : null,
+          ...extraLines(p, new Set(Object.keys(p)), orgs),
+          ride.replies_to_me ? 'Replies to update emails come to you, and people see your sign-in email' : null,
         ].filter(Boolean) as string[]
-        return { card: { title: `Create “${String(p.name).trim()}”?`, lines, mapUrl: mapsUrl(p.meetup_lat, p.meetup_lng), cta: 'Create the ride', tone: 'primary' }, input: { payload: p } }
+        return { card: { title: `Create “${String(p.name).trim()}”?`, lines, mapUrl: mapsUrl(p.meetup_lat, p.meetup_lng), cta: 'Create the ride', tone: 'primary' }, input: { payload: p, replies: ride.replies_to_me ?? null } }
       }
       case 'update_ride': {
         const d = await loadDetail(ctx, input.series_id)
         if (!d.can_edit) return { result: fail("Only the ride's organizer can change its details.") }
         const before = rowPayload(d.ride)
-        const change = inputPayload((input.changes ?? {}) as RideInput)
+        const changes = (input.changes ?? {}) as RideInput
+        const change = inputPayload(changes)
+        const orgs = 'event_organizer_id' in change ? await myOrgs(ctx) : []
+        if (change.event_organizer_id && !orgs.some((o) => o.id === change.event_organizer_id) && change.event_organizer_id !== d.ride.event_organizer_id) {
+          return { result: fail('That group is not one this person runs. Use get_my_group.') }
+        }
+        if ('event_organizer_id' in change && d.event_organizer && !orgs.some((o) => o.id === d.event_organizer!.id)) orgs.push({ id: d.event_organizer.id, name: d.event_organizer.name } as OrgClaim)
+        if (Array.isArray(change.languages)) change.tags = languageTags((change.tags as string[] | undefined) ?? (before.tags as string[]) ?? [], change.languages as string[])
+        const replies = typeof changes.replies_to_me === 'boolean' && changes.replies_to_me !== !!d.ride.replies_to_organizer ? changes.replies_to_me : null
         if (change.flyer_url != null && !ownFlyer(ctx, change.flyer_url)) return { result: fail('A flyer has to be an image attached in this conversation.') }
         if (change.schedule === 'one_time' && !change.ride_date && !before.ride_date) return { result: fail('A one-time ride needs its date.') }
         const after = { ...before, ...change }
@@ -948,6 +1318,9 @@ export async function approvalCard(ctx: ToolCtx, name: string, input: Record<str
         if ('registration_url' in change) lines.push(after.registration_url ? `Registration link: ${after.registration_url}` : 'No registration link')
         if ('contact_url' in change) lines.push(after.contact_url ? `Contact link: ${after.contact_url}` : 'No contact link')
         if ('flyer_url' in change) lines.push(after.flyer_url ? 'Flyer: the image you attached, on the ride page and in the app' : 'No flyer')
+        if ('extra_dates' in change && !lines.some((l) => l.startsWith('When:'))) lines.push(`When: ${scheduleLine(after)}`)
+        lines.push(...extraLines(after, new Set(Object.keys(change)), orgs))
+        if (replies != null) lines.push(replies ? 'Replies to update emails come to you, and people see your sign-in email' : 'Replies to update emails no longer come to you')
         if (!lines.length) return { result: fail('Nothing would change.') }
         lines.push('Shows on the ride page and in the app right away. Cancelled dates stay cancelled.')
         return {
@@ -956,7 +1329,7 @@ export async function approvalCard(ctx: ToolCtx, name: string, input: Record<str
             mapUrl: 'meetup_lat' in change ? mapsUrl(after.meetup_lat, after.meetup_lng) : undefined,
             staffNote: d.my_role === 'admin' ? `You're changing ${d.organizer_person ?? 'another organizer'}'s ride as GSI staff.` : undefined,
           },
-          input: { series_id: d.ride.id, payload: after },
+          input: { series_id: d.ride.id, payload: after, replies },
         }
       }
       case 'post_update': {
@@ -1010,7 +1383,11 @@ export async function approvalCard(ctx: ToolCtx, name: string, input: Record<str
         const time = typeof input.start_time === 'string' && /^\d{1,2}:\d{2}/.test(input.start_time) ? input.start_time.slice(0, 5) : null
         const m = input.meetup as { name?: string; address?: string; lat?: number; lng?: number } | undefined
         const place = m && typeof m.lat === 'number' && typeof m.lng === 'number' ? { name: m.name ?? null, address: m.address ?? null, lat: m.lat, lng: m.lng } : null
-        if (!time && !place) return { result: fail('Say the new start time or meeting point.') }
+        const usualTime = input.usual_time === true && !time && o.time_moved
+        const usualPlace = input.usual_place === true && !place && o.place_moved
+        if (!time && !place && !usualTime && !usualPlace) {
+          return { result: fail(input.usual_time || input.usual_place ? 'That date already has the usual time and meeting point.' : 'Say the new start time or meeting point.') }
+        }
         const told = o.going + o.maybe
         return {
           card: {
@@ -1018,13 +1395,15 @@ export async function approvalCard(ctx: ToolCtx, name: string, input: Record<str
             lines: [
               time ? `Starts at ${clock(time)} instead of ${clock(o.start_time)}` : null,
               place ? `Meet at ${place.name ?? place.address} instead of ${o.meetup_name ?? 'the usual spot'}` : null,
+              usualTime ? `Back to the usual start, ${clock(d.ride.start_time)}` : null,
+              usualPlace ? `Back to the usual meeting point, ${d.ride.meetup_name ?? d.ride.meetup_address ?? 'the usual spot'}` : null,
               told > 0 ? `${told} ${told === 1 ? 'person' : 'people'} who said Going or Maybe will hear about it.` : 'Nobody has answered for this date yet.',
               'Just this date; the rest of the ride stays as it is.',
             ].filter(Boolean) as string[],
             mapUrl: place ? mapsUrl(place.lat, place.lng) : undefined,
             cta: 'Change it and tell people', tone: 'primary',
           },
-          input: { occurrence_id: o.id, start_time: time, place },
+          input: { occurrence_id: o.id, start_time: time, place, reset_time: !!usualTime, reset_meetup: !!usualPlace },
         }
       }
       case 'plan_date': {
@@ -1037,7 +1416,11 @@ export async function approvalCard(ctx: ToolCtx, name: string, input: Record<str
         if (input.title !== undefined) details.title = text(input.title)
         if (input.description !== undefined) details.description = text(input.description)
         if (input.usual_route === true && o.own_route) details.route = null
-        if (Object.keys(details).length === 0) return { result: fail('Say the new name or description, or usual_route.') }
+        if (input.flyer_url !== undefined) {
+          if (input.flyer_url !== null && !ownFlyer(ctx, input.flyer_url)) return { result: fail('A flyer has to be an image attached in this conversation.') }
+          details.flyer_url = input.flyer_url
+        }
+        if (Object.keys(details).length === 0) return { result: fail('Say the new name, description or flyer, or usual_route.') }
         const short = (t: string) => (t.length > 160 ? `${t.slice(0, 157)}…` : t)
         return {
           card: {
@@ -1046,6 +1429,7 @@ export async function approvalCard(ctx: ToolCtx, name: string, input: Record<str
               'title' in details ? (details.title ? `Name: “${details.title}”` : `Name: back to “${d.ride.name}”`) : null,
               'description' in details ? (details.description ? `About: “${short(String(details.description))}”` : 'About: back to the ride\'s usual description') : null,
               'route' in details ? 'Rides the usual route' : null,
+              'flyer_url' in details ? (details.flyer_url ? 'Flyer: the image you attached, for this date' : "Flyer: back to the ride's flyer") : null,
               `Just this date. It shows on the ride page${d.ride.visibility === 'public' ? ' and the calendar' : ''}; nobody is notified.`,
             ].filter(Boolean) as string[],
             cta: 'Save this date', tone: 'primary',
@@ -1227,6 +1611,409 @@ export async function approvalCard(ctx: ToolCtx, name: string, input: Record<str
           input: { occurrence_id: o.id, member_id: q.member_id, approve, name: q.display_name },
         }
       }
+      // ── The rest of the console (2026-11-20 parity pass) ──
+      case 'add_date': {
+        const d = await loadDetail(ctx, input.series_id)
+        const date = String(input.date ?? '')
+        if (!DATE_RE.test(date)) return { result: fail('Give the date as YYYY-MM-DD.') }
+        if (date < todayKey()) return { result: fail('Pick a date from today on.') }
+        if (d.ride.ride_date || d.ride.status === 'draft') return { result: fail('A one-time ride has one date. For another date, copy it (copy_ride), or make it "Pick each date" with update_ride.') }
+        if (d.occurrences.some((o) => o.date === date && o.status === 'scheduled')) return { result: fail(`${dateLabel(date)} is already on this ride.`) }
+        const where = d.ride.meetup_name ?? d.ride.meetup_address
+        return {
+          card: {
+            title: `Add ${dateLabel(date)} to “${d.ride.name}”?`,
+            lines: [
+              `Starts at ${clock(d.ride.start_time)}${where ? ` at ${where}` : ''}, like the other dates. You can change just this date after.`,
+              `It opens for sign-ups${d.ride.visibility === 'public' ? ' and goes on the events calendar' : ''} right away. Nobody is told; post an update when you're ready.`,
+            ],
+            cta: 'Add the date', tone: 'primary',
+          },
+          input: { series_id: d.ride.id, date },
+        }
+      }
+      case 'skip_dates': {
+        const d = await loadDetail(ctx, input.series_id)
+        if (!d.can_edit) return { result: fail("Only the ride's organizer can skip dates.") }
+        if (d.ride.ride_date || d.ride.status === 'draft') return { result: fail('A one-time ride has only its own date. To call it off, cancel it (cancel_date).') }
+        const skip = input.skip !== false
+        const today = todayKey()
+        const dates = [...new Set((Array.isArray(input.dates) ? input.dates : []).map(String).filter((x) => DATE_RE.test(x)))].sort()
+        if (!dates.length) return { result: fail('Give the dates as YYYY-MM-DD.') }
+        const current = d.ride.skip_dates ?? []
+        let next: string[]
+        if (skip) {
+          const listed = dates.filter((x) => d.occurrences.some((o) => o.date === x))
+          if (listed.length) return { result: fail(`${listed.map(dateLabel).join(', ')} ${listed.length === 1 ? 'is' : 'are'} already on the ride, so people may have signed up. Cancel ${listed.length === 1 ? 'it' : 'each'} with cancel_date, which tells them.`) }
+          const last = d.occurrences.reduce((m, o) => (o.date > m ? o.date : m), today)
+          const pattern = scheduleDates(d.ride, last, { limit: 120, horizonDays: 370, includeSkipped: true, today })
+          const off = dates.filter((x) => x <= today || !pattern.includes(x))
+          if (off.length) return { result: fail(`${off.map(dateLabel).join(', ')} ${off.length === 1 ? "isn't a date" : "aren't dates"} this ride runs on. Check the day and the season.`) }
+          next = [...new Set([...current, ...dates])].sort()
+        } else {
+          const notSkipped = dates.filter((x) => !current.includes(x))
+          if (notSkipped.length) return { result: fail(`${notSkipped.map(dateLabel).join(', ')} ${notSkipped.length === 1 ? "isn't" : "aren't"} skipped.`) }
+          next = current.filter((x) => !dates.includes(x))
+        }
+        const list = dates.map(dateLabel).join(', ')
+        return {
+          card: skip ? {
+            title: `Skip ${list}?`,
+            lines: [`“${d.ride.name}” won't run ${dates.length === 1 ? 'that day' : 'those days'}, and ${dates.length === 1 ? 'it never opens' : 'they never open'} for sign-ups. Nobody needs telling yet.`],
+            cta: dates.length === 1 ? 'Skip it' : 'Skip them', tone: 'primary',
+          } : {
+            title: `Put ${list} back on “${d.ride.name}”?`,
+            lines: [`${dates.length === 1 ? 'It opens' : 'They open'} for sign-ups like the other dates.`],
+            cta: 'Put back', tone: 'primary',
+          },
+          input: { series_id: d.ride.id, skip_dates: next },
+        }
+      }
+      case 'restore_date': {
+        const d = await loadDetail(ctx, input.series_id)
+        if (!d.can_manage) return { result: fail("Only the ride's organizer can bring a date back.") }
+        const o = findDate(d, input.occurrence_id)
+        if (o.status !== 'canceled') return { result: fail("That date isn't cancelled.") }
+        if (o.date < todayKey()) return { result: fail('That date has passed.') }
+        if (o.canceled_by_stop) return { result: fail('That date was cancelled by the break. End the break early with resume_ride.') }
+        return {
+          card: {
+            title: `Bring back ${dateLabel(o.date)}?`,
+            lines: [
+              'It opens for sign-ups again.',
+              'Anyone who heard it was off hears it’s back on, by app or email.',
+            ],
+            cta: 'Bring it back', tone: 'primary',
+          },
+          input: { series_id: d.ride.id, occurrence_id: o.id },
+        }
+      }
+      case 'copy_ride': {
+        const me = await rpc<{ can_create?: boolean }>(ctx, 'organizer_console_me')
+        if (!me.can_create) return { result: fail('Setting up new rides is for invited organizers.') }
+        const d = await loadDetail(ctx, input.series_id)
+        if (d.ride.kind !== 'group_ride') return { result: fail('Walk and bike buses are run in the Shift app.') }
+        const today = todayKey()
+        const base: Record<string, unknown> = {
+          ...rowPayload(d.ride), extra_dates: [], languages: d.ride.languages ?? [],
+          route_name: d.ride.route_name ?? null, route_options: d.ride.route_options ?? [],
+        }
+        const changes = (input.changes ?? {}) as RideInput
+        const change = inputPayload(changes)
+        if (change.flyer_url != null && !ownFlyer(ctx, change.flyer_url)) return { result: fail('A flyer has to be an image attached in this conversation.') }
+        const p: Record<string, unknown> = { ...base, ...change }
+        const noDate = input.no_date_yet === true || changes.no_date_yet === true
+        if (p.schedule === 'one_time') p.ride_date = noDate ? null : (typeof input.ride_date === 'string' ? input.ride_date : (change.ride_date as string | undefined) ?? null)
+        if (p.schedule === 'one_time' && !p.ride_date && !noDate) return { result: fail('Which date is the new one? Or save it with no date yet.') }
+        if (typeof p.ride_date === 'string' && (!DATE_RE.test(p.ride_date) || p.ride_date < today)) return { result: fail('Pick a date from today on, as YYYY-MM-DD.') }
+        let seasonCleared = false
+        if (p.schedule !== 'one_time' && p.season_end && String(p.season_end) < today && !('season_end' in change)) {
+          p.season_start = null
+          p.season_end = null
+          seasonCleared = true
+        }
+        const orgs = await myOrgs(ctx)
+        if (p.event_organizer_id && !orgs.some((o) => o.id === p.event_organizer_id)) {
+          if ('event_organizer_id' in change) return { result: fail('That group is not one this person runs. Use get_my_group.') }
+          p.event_organizer_id = null // someone else's group stays theirs
+        }
+        if (Array.isArray(change.languages)) p.tags = languageTags((p.tags as string[]) ?? [], change.languages as string[])
+        const missing = missingForRide(p)
+        if (missing && !(missing === 'the date' && noDate)) return { result: fail(`Still needed before it can be created: ${missing}. Ask for it.`) }
+        const others = d.leaders.filter((l) => l.role === 'leader').map((l) => l.name)
+        return {
+          card: {
+            title: p.name === d.ride.name ? `Copy “${d.ride.name}” to a new ride?` : `Create “${String(p.name)}”, copied from “${d.ride.name}”?`,
+            lines: [
+              scheduleLine(p),
+              noDate ? 'No date yet: it stays on your rides, off the calendar and with no page to share, until you give it a date' : null,
+              `Meet at ${p.meetup_name ?? p.meetup_address}`,
+              `Copies the description, ${(p.route_waypoints as unknown[]).length >= 2 ? 'route, ' : ''}flyer, pace and links. Not the dates or who signed up.`,
+              seasonCleared ? "The old season had ended, so it runs from now on with no end date. Say if it needs one." : null,
+              others.length ? `Co-organizers aren't copied: add ${others.join(', ')} again once it's made.` : null,
+              p.visibility === 'invite' ? 'Invite only: people with the ride link or code can find it' : 'Public: on the Green Streets events calendar straight away',
+            ].filter(Boolean) as string[],
+            mapUrl: mapsUrl(p.meetup_lat, p.meetup_lng), cta: 'Create the copy', tone: 'primary',
+          },
+          input: { payload: p },
+        }
+      }
+      case 'delete_ride': {
+        const d = await loadDetail(ctx, input.series_id)
+        if (!d.can_manage) return { result: fail("Only the ride's organizer can delete it.") }
+        const preview = await rpc<{ can_delete: boolean }>(ctx, 'get_ride_stop_preview', { p_series_id: d.ride.id, p_until: null })
+        if (!preview.can_delete) return { result: fail('People have joined or ridden it, so it can only be ended (stop_ride). Its history and turnout stay.') }
+        return {
+          card: {
+            title: `Delete “${d.ride.name}”?`,
+            lines: ['Nobody has joined it yet. The ride, its page and its dates go away for good.'],
+            confirmText: d.ride.name, cta: 'Delete the ride', tone: 'danger',
+          },
+          input: { series_id: d.ride.id },
+        }
+      }
+      case 'set_co_organizer': {
+        const d = await loadDetail(ctx, input.series_id)
+        if (!(d.my_role === 'organizer' || d.my_role === 'admin')) return { result: fail("Only the ride's organizer can choose co-organizers.") }
+        const members = ((await rpc<Member[] | null>(ctx, 'get_ride_roster', { p_series_id: d.ride.id })) ?? []).filter((m) => m.user_id && m.role !== 'organizer')
+        const who = byName(members, input.name)
+        if (typeof who === 'string') return { result: fail(`${who} Only people on the ride with the Shift app can be co-organizers; invite anyone else by email (invite_co_organizer).`) }
+        const make = input.co_organizer !== false
+        if (make && who.role === 'leader') return { result: fail(`${who.display_name} is already a co-organizer.`) }
+        if (!make && who.role !== 'leader') return { result: fail(`${who.display_name} isn't a co-organizer.`) }
+        return {
+          card: make ? {
+            title: `Make ${who.display_name} a co-organizer of “${d.ride.name}”?`,
+            lines: ["Co-organizers see who's coming and post updates, here or in the app."],
+            cta: 'Make co-organizer', tone: 'primary',
+          } : {
+            title: `Take ${who.display_name} off as co-organizer?`,
+            lines: ['They stay on the ride.'],
+            cta: 'Take it off', tone: 'danger',
+          },
+          input: { series_id: d.ride.id, user_id: who.user_id, role: make ? 'leader' : 'rider', name: who.display_name },
+        }
+      }
+      case 'withdraw_invite': {
+        const d = await loadDetail(ctx, input.series_id)
+        if (d.my_role === 'leader') return { result: fail("Only the ride's organizer can withdraw invites.") }
+        const email = String(input.email ?? '').trim().toLowerCase()
+        const inv = d.leader_invites.find((i) => i.email.toLowerCase() === email)
+        if (!inv) return { result: fail(`There's no open invite to ${email}. Open invites: ${d.leader_invites.map((i) => i.email).join(', ') || 'none'}.`) }
+        return {
+          card: {
+            title: `Withdraw the invite to ${inv.email}?`,
+            lines: ["If they sign in with that address later, they won't become a co-organizer."],
+            cta: 'Withdraw it', tone: 'danger',
+          },
+          input: { series_id: d.ride.id, invite_id: inv.id },
+        }
+      }
+      case 'hand_off_ride': {
+        const d = await loadDetail(ctx, input.series_id)
+        if (!(d.my_role === 'organizer' || d.my_role === 'admin')) return { result: fail('Only the organizer can hand the ride on.') }
+        const [members, ho] = await Promise.all([
+          rpc<Member[] | null>(ctx, 'get_ride_roster', { p_series_id: d.ride.id }).then((r) => r ?? []),
+          ctx.user.from('ride_series').select('handoff_to_user_id').eq('id', d.ride.id).maybeSingle(),
+        ])
+        const waiting = (ho.data as { handoff_to_user_id: string | null } | null)?.handoff_to_user_id ?? null
+        const waitingName = waiting ? members.find((m) => m.user_id === waiting)?.display_name ?? 'someone' : null
+        if (input.name == null || String(input.name).trim() === '') {
+          if (!waiting) return { result: fail('No hand-off is waiting for an answer.') }
+          return {
+            card: { title: `Stop asking ${waitingName} to take over “${d.ride.name}”?`, lines: ['You keep running it.'], cta: 'Stop asking', tone: 'primary' },
+            input: { series_id: d.ride.id, cancel: true },
+          }
+        }
+        const takers = members.filter((m) => m.role !== 'organizer' && m.user_id && !m.is_you)
+        const who = byName(takers, input.name)
+        if (typeof who === 'string') return { result: fail(`${who} The ride can go to someone on it who has the Shift app.`) }
+        return {
+          card: {
+            title: `Ask ${who.display_name} to take over “${d.ride.name}”?`,
+            lines: [
+              'They get a notice and choose yes or no. You run it until they say yes, and you hear their answer.',
+              waiting && waiting !== who.user_id ? `This replaces the ask waiting on ${waitingName}.` : null,
+            ].filter(Boolean) as string[],
+            cta: 'Ask them', tone: 'primary',
+          },
+          input: { series_id: d.ride.id, user_id: who.user_id },
+        }
+      }
+      case 'answer_handoff': {
+        const asked = (await rpc<HandoffForMe[] | null>(ctx, 'organizer_handoffs_for_me')) ?? []
+        const h = asked.find((x) => x.id === input.series_id)
+        if (!h) return { result: fail('Nobody has asked this person to take over that ride. get_my_rides lists any asks under asked_to_take_over.') }
+        const accept = input.accept === true
+        return {
+          card: accept ? {
+            title: `Take over “${h.name}” from ${h.from}?`,
+            lines: [`You run it from now on: its details, dates and updates. ${h.from} hears your answer.`],
+            cta: "Yes, I'll run it", tone: 'primary',
+          } : {
+            title: `Say no thanks to running “${h.name}”?`,
+            lines: [`${h.from} keeps running it and hears your answer.`],
+            cta: 'No thanks', tone: 'primary',
+          },
+          input: { series_id: h.id, accept, name: h.name },
+        }
+      }
+      case 'new_join_link': {
+        const d = await loadDetail(ctx, input.series_id)
+        if (d.ride.status === 'archived') return { result: fail('The ride has ended.') }
+        return {
+          card: {
+            title: `Make a new link for “${d.ride.name}”?`,
+            lines: ['The old link and code stop working right away, including on printed flyers. People already on the ride stay on it.'],
+            cta: 'Make a new link', tone: 'danger',
+          },
+          input: { series_id: d.ride.id },
+        }
+      }
+      case 'set_coffee_stop': {
+        const d = await loadDetail(ctx, input.series_id)
+        if (!d.can_edit) return { result: fail("Only the ride's organizer can change where it ends.") }
+        const id = input.location_id == null || input.location_id === '' ? null : String(input.location_id)
+        if (!id) {
+          if (!d.ride.end_location_id) return { result: fail("The ride doesn't end at a shop now.") }
+          return { card: { title: `Stop ending “${d.ride.name}” at its coffee shop?`, lines: ['The ride page stops naming the shop.'], cta: 'Clear it', tone: 'primary' }, input: { series_id: d.ride.id, location_id: null } }
+        }
+        const at = rideEnd(d.ride)
+        if (!at) return { result: fail('This ride has no meeting point or route yet.') }
+        const [shops, fund] = await Promise.all([
+          rpc<EndShopRow[] | null>(ctx, 'get_ride_end_shops', { p_lat: at.lat, p_lng: at.lng }).then((r) => r ?? []),
+          rpc<{ funder_name: string } | null>(ctx, 'ride_fund_for_point', { p_lat: at.lat, p_lng: at.lng }).catch(() => null),
+        ])
+        const shop = shops.find((x) => x.location_id === id)
+        if (!shop) return { result: fail('That shop is not near where the ride ends. Use find_coffee_stops.') }
+        return {
+          card: {
+            title: `End “${d.ride.name}” at ${shop.name}?`,
+            lines: [
+              [shop.street, shop.city].filter(Boolean).join(', '),
+              fund ? `${fund.funder_name}'s Ride Fund buys the group's coffee there.` : 'The ride page names it as the stop at the end.',
+            ].filter(Boolean),
+            cta: 'Save the stop', tone: 'primary',
+          },
+          input: { series_id: d.ride.id, location_id: id },
+        }
+      }
+      case 'set_going_to': {
+        const d = await loadDetail(ctx, input.series_id)
+        if (!d.can_edit) return { result: fail("Only the ride's organizer can change where it goes.") }
+        const [curBig, curFeed] = await Promise.all([
+          rpc<BigEventRow | null>(ctx, 'get_series_big_event', { p_series_id: d.ride.id }).catch(() => null),
+          rpc<FeedRow | null>(ctx, 'get_series_feeds_to', { p_series_id: d.ride.id }).catch(() => null),
+        ])
+        const id = input.event_id == null || input.event_id === '' ? null : String(input.event_id)
+        const big = input.big === true
+        if (!id) {
+          const cur = curBig ?? curFeed
+          if (!cur) return { result: fail("The ride isn't linked to an event.") }
+          return {
+            card: { title: `Unlink “${d.ride.name}” from ${cur.title}?`, lines: ["The ride and the event stop showing each other."], cta: 'Unlink it', tone: 'primary' },
+            input: { series_id: d.ride.id, event_id: null, big: false, had_big: !!curBig },
+          }
+        }
+        const today = todayKey()
+        const next = d.occurrences.find((o) => o.date >= today && o.status === 'scheduled')
+        const at = rideEnd(d.ride)
+        const args = { p_date: next?.date ?? d.ride.ride_date ?? today, p_lat: at?.lat ?? null, p_lng: at?.lng ?? null, p_query: null }
+        const pool = big
+          ? ((await rpc<BigEventRow[] | null>(ctx, 'big_event_candidates', args).catch(() => null)) ?? [])
+          : ((await rpc<FeedRow[] | null>(ctx, 'feed_target_candidates', { ...args, p_series_id: d.ride.id }).catch(() => null)) ?? [])
+        const hit = (pool as { id: string; title: string }[]).find((x) => x.id === id)
+        const title = typeof input.title === 'string' ? input.title : null
+        return {
+          card: {
+            title: `Link “${d.ride.name}” to ${hit?.title ?? title ?? 'that event'}?`,
+            lines: [
+              'The ride shows on the event, and the event on the ride page, so people heading there can go together.',
+              curBig || curFeed ? `It replaces ${(curBig ?? curFeed)!.title}.` : null,
+            ].filter(Boolean) as string[],
+            cta: 'Link it', tone: 'primary',
+          },
+          input: { series_id: d.ride.id, event_id: id, big, had_big: !!curBig },
+        }
+      }
+      case 'update_host_page': {
+        const orgs = await myOrgs(ctx)
+        const org = orgs.find((o) => o.id === input.group_id)
+        if (!org) return { result: fail("That's not a group this person runs. Use get_my_group.") }
+        const LINK_KEYS = ['whatsapp', 'partiful', 'instagram', 'strava', 'facebook', 'discord', 'meetup', 'bluesky', 'tiktok', 'youtube', 'linktree']
+        const isLink = (v: string) => !v.trim() || /^https?:\/\/\S+$/i.test(v.trim())
+        const lines: string[] = []
+        const description = typeof input.description === 'string' ? input.description.trim() : null
+        if (description != null) {
+          if (description.length > 1500) return { result: fail('Keep the description to 1,500 characters.') }
+          lines.push(`About: “${description.length > 160 ? `${description.slice(0, 157)}…` : description}”`)
+        }
+        const website = typeof input.website === 'string' ? input.website.trim() : null
+        if (website != null) {
+          if (!isLink(website)) return { result: fail('Links start with https://') }
+          lines.push(website ? `Website: ${website}` : 'No website')
+        }
+        const links: Record<string, string> = Object.fromEntries(LINK_KEYS.map((k) => [k, (org.social_links ?? {})[k] ?? '']))
+        const asked = input.links && typeof input.links === 'object' ? input.links as Record<string, unknown> : {}
+        for (const [k, v] of Object.entries(asked)) {
+          if (!LINK_KEYS.includes(k)) return { result: fail(`Unknown link ${k}. Use one of: ${LINK_KEYS.join(', ')}.`) }
+          const url = String(v ?? '').trim()
+          if (!isLink(url)) return { result: fail('Links start with https://') }
+          links[k] = url
+          lines.push(url ? `${k[0].toUpperCase()}${k.slice(1)}: ${url}` : `No ${k} link`)
+        }
+        const tags = Array.isArray(input.ride_tags) ? input.ride_tags.map(String).filter((t) => TAG_OPTIONS.some((o) => o.key === t)) : null
+        if (tags) lines.push(`Ride tags: ${tags.map((t) => TAG_OPTIONS.find((o) => o.key === t)?.label ?? t).join(', ') || 'none'}`)
+        const noDrop = typeof input.rides_no_drop === 'boolean' ? input.rides_no_drop : null
+        if (noDrop != null) lines.push(noDrop ? 'Nobody gets dropped on its rides' : 'No no-drop promise')
+        let logo: string | null | undefined
+        if (input.logo_url !== undefined) {
+          if (input.logo_url !== null && !ownFlyer(ctx, input.logo_url)) return { result: fail('A logo has to be an image attached in this conversation.') }
+          logo = input.logo_url as string | null
+          lines.push(logo ? 'Logo: the image you attached. Ride pages, flyers and share cards use it and its colors.' : 'No logo')
+        }
+        if (!lines.length) return { result: fail('Nothing would change.') }
+        lines.push('Shows on your group page, your ride pages and the events calendar right away.')
+        return {
+          card: { title: `Save ${org.name}'s host page?`, lines, cta: 'Save host page', tone: 'primary' },
+          input: {
+            group_id: org.id,
+            profile: {
+              description: description ?? org.description ?? '', url: website ?? org.url ?? '', social_links: links,
+              ride_tags: tags ?? org.ride_tags ?? [], rides_no_drop: noDrop ?? org.rides_no_drop, logo_url: (logo === undefined ? org.logo_url : logo) ?? '',
+            },
+          },
+        }
+      }
+      case 'invite_group_organizer': {
+        const orgs = await myOrgs(ctx)
+        const org = orgs.find((o) => o.id === input.group_id)
+        if (!org) return { result: fail("That's not a group this person runs. Use get_my_group.") }
+        const email = String(input.email ?? '').trim().toLowerCase()
+        if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return { result: fail("That email address doesn't look right.") }
+        const handOver = input.hand_over === true
+        return {
+          card: handOver ? {
+            title: `Hand ${org.name} to ${email}?`,
+            lines: [`We email them. When they sign in with that address, they run ${org.name} and you step down as its organizer. Until then, you still run it, and you can take the invite back.`, 'Rides you set up stay yours.'],
+            cta: 'Hand it over', tone: 'danger',
+          } : {
+            title: `Add ${email} as an organizer of ${org.name}?`,
+            lines: [`We email them. When they sign in with that address, they help run ${org.name}: its rides, its page and its organizers.`],
+            cta: 'Send the invite', tone: 'primary',
+          },
+          input: { group_id: org.id, email, hand_over: handOver },
+        }
+      }
+      case 'withdraw_group_invite': {
+        const orgs = await myOrgs(ctx)
+        const org = orgs.find((o) => o.id === input.group_id)
+        if (!org) return { result: fail("That's not a group this person runs. Use get_my_group.") }
+        const team = await rpc<GroupTeam>(ctx, 'organizer_group_team', { p_organizer_id: org.id })
+        const email = String(input.email ?? '').trim().toLowerCase()
+        const inv = team.invites.find((i) => i.email.toLowerCase() === email)
+        if (!inv) return { result: fail(`There's no open invite to ${email} for ${org.name}.`) }
+        return {
+          card: { title: `Withdraw the invite to ${inv.email}?`, lines: [`If they sign in with that address later, they won't ${inv.handoff ? `take over ${org.name}` : `become an organizer of ${org.name}`}.`], cta: 'Withdraw it', tone: 'danger' },
+          input: { group_id: org.id, invite_id: inv.id },
+        }
+      }
+      case 'step_down_from_group': {
+        const orgs = await myOrgs(ctx)
+        const org = orgs.find((o) => o.id === input.group_id)
+        if (!org) return { result: fail("That's not a group this person runs. Use get_my_group.") }
+        const team = await rpc<GroupTeam>(ctx, 'organizer_group_team', { p_organizer_id: org.id })
+        const others = team.organizers.filter((o) => !o.is_you)
+        if (!others.length) return { result: fail(`They're the only organizer for ${org.name}. Add someone first (invite_group_organizer), or hand the group to them.`) }
+        return {
+          card: {
+            title: `Step down from ${org.name}?`,
+            lines: [`${others.map((o) => o.name).join(', ')} ${others.length === 1 ? 'keeps' : 'keep'} running it.`, 'Rides you set up stay yours, and you keep running them.'],
+            cta: 'Step down', tone: 'danger',
+          },
+          input: { group_id: org.id },
+        }
+      }
     }
     return { result: fail(`Unknown action ${name}`) }
   } catch (e) {
@@ -1237,30 +2024,51 @@ export async function approvalCard(ctx: ToolCtx, name: string, input: Record<str
 type Sent = { notified?: number; sent?: number; emailed?: number; guests_not_answered?: number }
 // The count the screens show ("sent to N"): everyone it went out to. Web
 // sign-ups hear about one date only once they've said Going or Maybe for it.
-const sentText = (s: Sent | null) => ({
+const sentText = (s: Sent | null | 'failed') => s === 'failed' ? {
+  sent_to: 0, notice_failed: true,
+  note: 'The change stands, but the notice did not go out. Say so plainly; they can send it again from the Dates & updates tab.',
+} : ({
   sent_to: s?.notified ?? 0,
   ...(s?.guests_not_answered ? { web_signups_not_told: s.guests_not_answered, why: 'Web sign-ups hear about a date only after they say Going or Maybe for it.' } : {}),
 })
+
+/** notify-ride-canceled, as the console sends it; 'failed' when it didn't go (the change itself stands). */
+const notice = (ctx: ToolCtx, body: Record<string, unknown>): Promise<Sent | 'failed'> =>
+  shiftFn<Sent>(ctx, 'notify-ride-canceled', body).catch((e) => {
+    console.error('[organizer-assistant] notice failed', e)
+    return 'failed' as const
+  })
 
 /** Runs exactly what the card showed, as the organizer. */
 export async function runApproved(ctx: ToolCtx, name: string, input: Record<string, unknown>): Promise<ToolResult> {
   try {
     switch (name) {
       case 'create_ride':
+      case 'copy_ride':
       case 'update_ride': {
         const r = await rpc<{ id: string; invite_code: string; calendar_status: string; route_risk: string | null }>(
           ctx, 'save_ride_series_web', {
             p_series_id: name === 'update_ride' ? input.series_id : null,
             // A new ride shares where the group is on ride day unless the organizer said otherwise (Keith 2026-11-07).
-            p_ride: name === 'create_ride'
+            p_ride: name !== 'update_ride'
               ? { live_sharing: 'members', ...(input.payload as Record<string, unknown>) }
               : input.payload,
           },
         )
         await shiftFn(ctx, 'materialize-ride-occurrences', { series_id: r.id }).catch(() => null)
+        // Replies-to is its own column, saved the way the form saves it (Shift 01598).
+        let repliesSaved: boolean | undefined
+        if (typeof input.replies === 'boolean') {
+          const { error } = await ctx.user.from('ride_series').update({ replies_to_organizer: input.replies }).eq('id', r.id)
+          repliesSaved = !error
+        }
+        const draft = (r as { status?: string }).status === 'draft'
         return ok(
-          { id: r.id, ride_page: rideLink(r.invite_code), code: r.invite_code, calendar: r.calendar_status, route_needed: name === 'create_ride' },
-          { href: `/organizers/rides/${r.id}${name === 'create_ride' ? '?created=1' : ''}`, label: name === 'create_ride' ? 'Open the ride' : 'See the ride' },
+          {
+            id: r.id, ride_page: draft ? null : rideLink(r.invite_code), code: r.invite_code, calendar: draft ? 'not listed until it has a date' : r.calendar_status,
+            route_needed: name !== 'update_ride', ...(repliesSaved === false ? { replies_setting_not_saved: true } : {}),
+          },
+          { href: `/organizers/rides/${r.id}${name !== 'update_ride' ? '?created=1' : ''}`, label: name !== 'update_ride' ? 'Open the ride' : 'See the ride' },
         )
       }
       case 'post_update': {
@@ -1269,7 +2077,7 @@ export async function runApproved(ctx: ToolCtx, name: string, input: Record<stri
       }
       case 'cancel_date': {
         await rpc(ctx, 'set_ride_occurrence_canceled', { p_occurrence_id: input.occurrence_id, p_canceled: true })
-        const s = await shiftFn<Sent>(ctx, 'notify-ride-canceled', { occurrence_id: input.occurrence_id }).catch(() => null)
+        const s = await notice(ctx, { occurrence_id: input.occurrence_id })
         return ok({ cancelled: true, ...sentText(s) })
       }
       case 'change_date': {
@@ -1277,10 +2085,10 @@ export async function runApproved(ctx: ToolCtx, name: string, input: Record<stri
         const r = await rpc<{ changed?: boolean }>(ctx, 'change_ride_occurrence', {
           p_occurrence_id: input.occurrence_id, p_start_time: input.start_time ?? null,
           p_meetup_name: place?.name ?? null, p_meetup_address: place?.address ?? null, p_meetup_lat: place?.lat ?? null, p_meetup_lng: place?.lng ?? null,
-          p_reset_time: false, p_reset_meetup: false,
+          p_reset_time: input.reset_time === true, p_reset_meetup: input.reset_meetup === true,
         })
         if (!r?.changed) return ok({ changed: false })
-        const s = await shiftFn<Sent>(ctx, 'notify-ride-canceled', { occurrence_id: input.occurrence_id, change: true }).catch(() => null)
+        const s = await notice(ctx, { occurrence_id: input.occurrence_id, change: true })
         return ok({ changed: true, ...sentText(s) })
       }
       case 'plan_date': {
@@ -1290,7 +2098,7 @@ export async function runApproved(ctx: ToolCtx, name: string, input: Record<stri
       case 'stop_ride': {
         await rpc(ctx, 'stop_ride_series', { p_series_id: input.series_id, p_mode: input.mode, p_until: input.mode === 'break' ? input.until : null, p_note: input.note || null })
         const s = input.notify
-          ? await shiftFn<Sent>(ctx, 'notify-ride-canceled', { series_id: input.series_id, stop: input.mode === 'end' ? 'ended' : 'break' }).catch(() => null)
+          ? await notice(ctx, { series_id: input.series_id, stop: input.mode === 'end' ? 'ended' : 'break' })
           : null
         return ok({ done: true, ...sentText(s) })
       }
@@ -1330,8 +2138,104 @@ export async function runApproved(ctx: ToolCtx, name: string, input: Record<stri
         return ok({ ok: r.ok, state: r.state, still_waiting: r.remaining })
       }
     }
+    const more = await runMore(ctx, name, input)
+    if (more) return more
     return fail(`Unknown action ${name}`)
   } catch (e) {
     return fail(e instanceof Error ? e.message : String(e))
   }
 }
+
+// The 2026-11-20 parity pass: each runs the console's own call, as the organizer.
+async function runMore(ctx: ToolCtx, name: string, input: Record<string, unknown>): Promise<ToolResult | null> {
+  const ride = (label = 'See the ride') => ({ href: `/organizers/rides/${input.series_id}`, label })
+  switch (name) {
+    case 'add_date': {
+      const r = await rpc<{ ok: boolean; reason?: string }>(ctx, 'set_ride_extra_date', { p_series_id: input.series_id, p_date: input.date, p_add: true })
+      if (!r?.ok) {
+        if (r?.reason === 'already') return ok({ added: false, already_on_the_ride: true })
+        return fail(r?.reason === 'past_date' ? 'Pick a date from today on.' : r?.reason === 'too_far' ? 'Pick a date within the next year.'
+          : r?.reason === 'not_allowed' ? "Only the ride's organizers can add a date." : "That date couldn't be added. Try again.")
+      }
+      await shiftFn(ctx, 'materialize-ride-occurrences', { series_id: input.series_id }).catch(() => null)
+      return ok({ added: true, note: 'It is open for sign-ups. Nobody was told; offer post_update.' }, ride())
+    }
+    case 'skip_dates': {
+      const { error } = await ctx.user.from('ride_series').update({ skip_dates: input.skip_dates }).eq('id', String(input.series_id))
+      if (error) return fail(error.message)
+      await shiftFn(ctx, 'materialize-ride-occurrences', { series_id: input.series_id }).catch(() => null)
+      return ok({ saved: true, skipped_dates: input.skip_dates }, ride())
+    }
+    case 'restore_date': {
+      await rpc(ctx, 'set_ride_occurrence_canceled', { p_occurrence_id: input.occurrence_id, p_canceled: false })
+      const s = await notice(ctx, { occurrence_id: input.occurrence_id, back_on: true })
+      return ok({ back: true, ...sentText(s) }, ride())
+    }
+    case 'delete_ride': {
+      await rpc(ctx, 'delete_ride_series', { p_series_id: input.series_id })
+      return ok({ deleted: true }, { href: '/organizers', label: 'See your rides' })
+    }
+    case 'set_co_organizer': {
+      await rpc(ctx, 'set_ride_member_role', { p_series_id: input.series_id, p_user_id: input.user_id, p_role: input.role })
+      return ok({ done: true, co_organizer: input.role === 'leader', name: input.name }, { href: `/organizers/rides/${input.series_id}/team`, label: 'See organizers' })
+    }
+    case 'withdraw_invite': {
+      await rpc(ctx, 'revoke_ride_leader_invite', { p_invite_id: input.invite_id })
+      return ok({ withdrawn: true }, { href: `/organizers/rides/${input.series_id}/team`, label: 'See organizers' })
+    }
+    case 'hand_off_ride': {
+      if (input.cancel) {
+        await rpc(ctx, 'cancel_ride_handoff', { p_series_id: input.series_id })
+        return ok({ cancelled: true, note: 'They still run the ride.' }, { href: `/organizers/rides/${input.series_id}/team`, label: 'See organizers' })
+      }
+      await rpc(ctx, 'request_ride_handoff', { p_series_id: input.series_id, p_user_id: input.user_id })
+      const s = await notice(ctx, { series_id: input.series_id, handoff: 'request' })
+      return ok({ asked: true, ...(s === 'failed' ? { notice_failed: true, note: 'The ask is saved, but their notice did not go out. They will see it when they open organizer tools.' } : {}) },
+        { href: `/organizers/rides/${input.series_id}/team`, label: 'See organizers' })
+    }
+    case 'answer_handoff': {
+      const r = await rpc<{ accepted: boolean; previous_organizer?: string }>(ctx, 'respond_ride_handoff', { p_series_id: input.series_id, p_accept: input.accept })
+      await notice(ctx, {
+        series_id: input.series_id, handoff: input.accept ? 'accepted' : 'declined',
+        ...(input.accept && r?.previous_organizer ? { previous_organizer: r.previous_organizer } : {}),
+      })
+      return ok({ accepted: !!r?.accepted }, input.accept ? ride('Open the ride') : { href: '/organizers', label: 'See your rides' })
+    }
+    case 'new_join_link': {
+      const r = await rpc<{ invite_code: string }>(ctx, 'rotate_ride_invite_code', { p_series_id: input.series_id })
+      return ok({ code: r.invite_code, join_link: JOIN_LINK(r.invite_code), ride_page: rideLink(r.invite_code) }, { href: `/organizers/rides/${input.series_id}/promote`, label: 'Open Promote' })
+    }
+    case 'set_coffee_stop': {
+      await rpc(ctx, 'set_ride_end_shop', { p_series_id: input.series_id, p_location_id: input.location_id ?? null })
+      return ok({ saved: true }, ride())
+    }
+    case 'set_going_to': {
+      // As the ride form saves it (saveRideDestination): a game or concert, else a calendar event, clearing the other.
+      if (input.big) await rpc(ctx, 'set_ride_big_event', { p_series_id: input.series_id, p_id: input.event_id })
+      else {
+        if (input.had_big) await rpc(ctx, 'set_ride_big_event', { p_series_id: input.series_id, p_id: null })
+        await rpc(ctx, 'set_ride_feeds', { p_series_id: input.series_id, p_target: input.event_id ?? null })
+      }
+      return ok({ saved: true, linked: input.event_id != null }, ride())
+    }
+    case 'update_host_page': {
+      await rpc(ctx, 'update_event_organizer_profile', { p_organizer_id: input.group_id, p_profile: input.profile })
+      return ok({ saved: true }, { href: '/organizers/host', label: 'See your host page' })
+    }
+    case 'invite_group_organizer': {
+      const r = await inviteGroupOrganizer(ctx.user, { organizerId: String(input.group_id), email: String(input.email), handoff: input.hand_over === true, organizerEmail: ctx.email })
+      if (!r.ok) return fail(r.error)
+      return ok({ status: r.status, emailed: r.emailed, already_emailed_today: r.alreadyEmailed }, { href: '/organizers/host', label: 'See your host page' })
+    }
+    case 'withdraw_group_invite': {
+      await rpc(ctx, 'organizer_group_revoke_invite', { p_invite_id: input.invite_id })
+      return ok({ withdrawn: true }, { href: '/organizers/host', label: 'See your host page' })
+    }
+    case 'step_down_from_group': {
+      await rpc(ctx, 'organizer_group_step_down', { p_organizer_id: input.group_id })
+      return ok({ stepped_down: true }, { href: '/organizers', label: 'See your rides' })
+    }
+  }
+  return null
+}
+
