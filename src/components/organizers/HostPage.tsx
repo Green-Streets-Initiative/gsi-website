@@ -80,8 +80,37 @@ function Editor({ org, onSaved }: { org: OrgClaim; onSaved: () => void }) {
 
   const touch = <T,>(fn: (v: T) => void) => (v: T) => { fn(v); setDirty(true) }
 
+  const chips = [noDrop ? 'No-drop' : null, ...tags.filter((k) => k !== 'no_drop').map((k) => TAG_OPTIONS.find((o) => o.key === k)?.label ?? null)].filter(Boolean) as string[]
+  const site = domainOf(url)
+
   return (
     <div className="grid grid-cols-[minmax(0,1fr)] gap-5 pb-6">
+      {/* The thing being made, first (design system: tool screens show it on their first screen). Mirrors /events/organizers/<id>. */}
+      <section aria-label="How people see your group" className="overflow-hidden rounded-2xl border border-(--ev-line) bg-[#FAF6EE]">
+        <p className="border-b border-(--ev-line) bg-white px-5 py-2.5 text-[14px] font-semibold text-(--ev-ink-75)">How people see your group</p>
+        <div className="flex flex-wrap items-start gap-5 p-5 sm:p-6">
+          {logo ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={logo} alt="" className="h-20 w-auto max-w-[200px] shrink-0 rounded-lg object-contain" />
+          ) : (
+            <span className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl bg-[#2D6A4F] font-display text-[28px] font-extrabold text-white" aria-hidden>
+              {org.name.split(/\s+/).slice(0, 2).map((w) => w[0]).join('').toUpperCase()}
+            </span>
+          )}
+          <div className="min-w-0 flex-1 basis-[280px]">
+            <p className="font-display text-[clamp(24px,3vw,30px)] font-extrabold leading-tight text-(--ev-ink)">{org.name}</p>
+            {chips.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-2">
+                {chips.map((c) => <span key={c} className="rounded-full bg-(--ev-accent-tint-15) px-3 py-1 text-[14px] font-semibold text-(--ev-accent)">{c}</span>)}
+              </div>
+            )}
+            <p className={cx('mt-2 line-clamp-4 max-w-[640px] text-[15px] leading-relaxed', description ? 'text-(--ev-ink-80)' : 'text-(--ev-ink-75)')}>
+              {description || 'Your description shows here: who you are and what your rides are like.'}
+            </p>
+            {site && <p className="mt-2 text-[14px] font-semibold text-(--ev-accent)">{site}</p>}
+          </div>
+        </div>
+      </section>
       <Card>
         <SectionTitle hint="Who you are and what your rides are like. People read this before their first ride with you.">About {org.name}</SectionTitle>
         <div className="grid gap-4">
@@ -203,13 +232,13 @@ export default function HostPage() {
       <div className="mt-6">
         {org ? (
           <div className="grid grid-cols-[minmax(0,1fr)] gap-5">
+            <Editor key={org.id} org={org} onSaved={() => void refreshMe()} />
             <GroupTeam key={`team-${org.id}`} org={org} onSteppedDown={() => {
               const others = verified.length > 1
               setOrgId('')
               void refreshMe()
               if (!others) { rememberSteppedDown(org.name); router.push('/organizers') }
             }} />
-            <Editor key={org.id} org={org} onSaved={() => void refreshMe()} />
           </div>
         ) : (
           <Empty title="No verified organization yet">
