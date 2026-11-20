@@ -16,20 +16,19 @@ import type { DashboardRide } from '@/lib/organizers/types'
 const Z = 16
 /** z16 tiles drawn at half size: z15 framing that stays sharp on 2x screens. */
 const T = 128
-/** Half the 64px box plus a margin, in drawn pixels. */
-const REACH = 40
+/** Half the box plus a margin, in drawn pixels (64px box: 40; 112px hero: 64). */
 
 /** A whole-pixel offset from the box's center. */
 const off = (d: number) => { const r = Math.round(d); return r < 0 ? `calc(50% - ${-r}px)` : `calc(50% + ${r}px)` }
 
-function MapSquare({ lat, lng }: { lat: number; lng: number }) {
+function MapSquare({ lat, lng, reach }: { lat: number; lng: number; reach: number }) {
   const n = 2 ** Z
   const px = ((lng + 180) / 360) * n * T
   const r = (lat * Math.PI) / 180
   const py = ((1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2) * n * T
   const tiles: { x: number; y: number }[] = []
-  for (let x = Math.floor((px - REACH) / T); x <= Math.floor((px + REACH) / T); x++)
-    for (let y = Math.floor((py - REACH) / T); y <= Math.floor((py + REACH) / T); y++) tiles.push({ x, y })
+  for (let x = Math.floor((px - reach) / T); x <= Math.floor((px + reach) / T); x++)
+    for (let y = Math.floor((py - reach) / T); y <= Math.floor((py + reach) / T); y++) tiles.push({ x, y })
   return (
     <>
       {tiles.map(({ x, y }) => (
@@ -48,8 +47,11 @@ function MapSquare({ lat, lng }: { lat: number; lng: number }) {
 }
 
 const BOX = 'relative h-16 w-16 shrink-0 overflow-hidden rounded-[12px] border border-(--ev-line)'
+/** The Next up hero's bigger picture, on navy (design pass 2026-11-20). */
+const BIG = 'relative h-24 w-24 shrink-0 overflow-hidden rounded-[14px] border border-white/15 sm:h-28 sm:w-28'
 
-export default function RideThumb({ r }: { r: DashboardRide }) {
+export default function RideThumb({ r, big = false }: { r: DashboardRide; big?: boolean }) {
+  const box = big ? BIG : BOX
   const [flyerOk, setFlyerOk] = useState(true)
   // It may have failed before the page hydrated, when onError wasn't listening yet.
   const flyerRef = (img: HTMLImageElement | null) => {
@@ -57,7 +59,7 @@ export default function RideThumb({ r }: { r: DashboardRide }) {
   }
   if (r.flyer_url && flyerOk) {
     return (
-      <div className={BOX}>
+      <div className={box}>
         <img ref={flyerRef} src={r.flyer_url} alt="" className="h-full w-full object-cover" loading="lazy" onError={() => setFlyerOk(false)} />
       </div>
     )
@@ -66,8 +68,8 @@ export default function RideThumb({ r }: { r: DashboardRide }) {
   const lng = Number(r.meetup_lng)
   if (r.meetup_lat == null || r.meetup_lng == null || !Number.isFinite(lat) || !Number.isFinite(lng)) return null
   return (
-    <div className={`${BOX} bg-[#EEF0EA]`}>
-      <MapSquare lat={lat} lng={lng} />
+    <div className={`${box} bg-[#EEF0EA]`}>
+      <MapSquare lat={lat} lng={lng} reach={big ? 64 : 40} />
     </div>
   )
 }

@@ -180,7 +180,9 @@ function NextUp({ r, d }: { r: DashboardRide; d: NextDate }) {
   return (
     <section aria-labelledby="next-up" className="mb-6 overflow-hidden rounded-2xl bg-[#191A2E] text-white">
       <div className="grid gap-5 p-5 sm:p-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,380px)] lg:items-center">
-        <div className="min-w-0">
+        <div className="flex min-w-0 items-start gap-4">
+          <RideThumb r={r} big />
+          <div className="min-w-0">
           <p id="next-up" className="text-[14px] font-bold text-[#BAF14D]">Next up · {when}</p>
           <Link href={`/organizers/rides/${r.id}`} className="mt-1 block font-display text-[clamp(24px,3vw,30px)] font-extrabold leading-tight hover:underline">
             {r.name}
@@ -189,6 +191,7 @@ function NextUp({ r, d }: { r: DashboardRide; d: NextDate }) {
             <span className="inline-flex items-center gap-1.5"><CalendarDays className="h-4 w-4" aria-hidden />{days <= 1 ? `${dateLabel(d.date)}, ` : ''}{clock(d.start_time)}{d.moved ? ' (changed for this date)' : ''}</span>
             {r.meetup_name && <span className="inline-flex items-center gap-1.5"><MapPin className="h-4 w-4" aria-hidden />{r.meetup_name}</span>}
           </p>
+          </div>
         </div>
         <dl className="grid grid-cols-3 gap-2">
           {dayOn ? dayOn.tiles.map((x) => (
