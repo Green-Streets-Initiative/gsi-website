@@ -40,7 +40,8 @@ export type ToolCtx = {
 export type ToolResult = {
   content: Record<string, unknown>
   isError?: boolean
-  link?: { href: string; label: string; external?: boolean }
+  /** ride: the ride's name, for the panel to tell two rides' buttons apart in one answer. */
+  link?: { href: string; label: string; external?: boolean; ride?: string }
 }
 
 export type ApprovalCard = {
@@ -828,7 +829,23 @@ function mapsUrl(lat: unknown, lng: unknown): string | undefined {
 
 async function loadDetail(ctx: ToolCtx, seriesId: unknown): Promise<RideDetail> {
   if (typeof seriesId !== 'string' || !/^[0-9a-f-]{36}$/i.test(seriesId)) throw new Error('That ride id is not valid. Use get_my_rides.')
-  return rpc<RideDetail>(ctx, 'organizer_ride_detail', { p_series_id: seriesId })
+  const d = await rpc<RideDetail>(ctx, 'organizer_ride_detail', { p_series_id: seriesId })
+  noteRide(ctx, d.ride.id, d.ride.name)
+  return d
+}
+
+/** Ride names seen in this request, so a ride's button can say which ride it opens. */
+const rideNames = new WeakMap<ToolCtx, Map<string, string>>()
+function noteRide(ctx: ToolCtx, id: string, name: string | null | undefined) {
+  if (!name) return
+  const m = rideNames.get(ctx) ?? new Map<string, string>()
+  m.set(id, name)
+  rideNames.set(ctx, m)
+}
+function withRideName(ctx: ToolCtx, r: ToolResult): ToolResult {
+  const id = r.link && !r.link.ride ? r.link.href.match(/^\/organizers\/rides\/([0-9a-f-]{36})/i)?.[1] : undefined
+  const ride = id ? rideNames.get(ctx)?.get(id) : undefined
+  return ride && r.link ? { ...r, link: { ...r.link, ride } } : r
 }
 
 function findDate(d: RideDetail, occurrenceId: unknown) {
@@ -916,6 +933,10 @@ const JOIN_LINK = (code: string) => `https://shift.gogreenstreets.org/join/${cod
 // ── Reads and free writes ──
 
 export async function runTool(ctx: ToolCtx, name: string, input: Record<string, unknown>): Promise<ToolResult> {
+  return withRideName(ctx, await readTool(ctx, name, input))
+}
+
+async function readTool(ctx: ToolCtx, name: string, input: Record<string, unknown>): Promise<ToolResult> {
   try {
     switch (name) {
       case 'get_my_rides': {
@@ -925,6 +946,7 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
           rpc<HandoffForMe[] | null>(ctx, 'organizer_handoffs_for_me').then((r) => r ?? []).catch(() => [] as HandoffForMe[]),
         ])
         const today = todayKey()
+        for (const r of rides) noteRide(ctx, r.id, r.name)
         const live = rides.filter((r) => r.status !== 'archived' && !(r.ride_date && r.ride_date < today && r.next_dates.length === 0))
         return ok({
           can_create_rides: !!me.can_create,
@@ -2091,6 +2113,10 @@ const notice = (ctx: ToolCtx, body: Record<string, unknown>): Promise<Sent | 'fa
 
 /** Runs exactly what the card showed, as the organizer. */
 export async function runApproved(ctx: ToolCtx, name: string, input: Record<string, unknown>): Promise<ToolResult> {
+  return withRideName(ctx, await changeTool(ctx, name, input))
+}
+
+async function changeTool(ctx: ToolCtx, name: string, input: Record<string, unknown>): Promise<ToolResult> {
   try {
     switch (name) {
       case 'create_ride':

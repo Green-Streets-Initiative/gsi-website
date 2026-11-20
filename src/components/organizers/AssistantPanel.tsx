@@ -28,7 +28,14 @@ export function openAssistant(prompt?: string) {
 const CHANGE_LABELS = new Set(['Creating the ride', 'Saving the changes', 'Posting the update', 'Cancelling the date', 'Changing the date', 'Updating the ride', 'Starting it again', 'Sending the invite', 'Settling the request'])
 
 type Card = { title: string; lines: string[]; cta: string; tone: 'primary' | 'danger'; mapUrl?: string; confirmText?: string; staffNote?: string }
-type LinkT = { href: string; label: string; external?: boolean }
+type LinkT = { href: string; label: string; external?: boolean; ride?: string }
+
+/** Two buttons that would read the same (two rides' turnout) each say which ride they open. */
+function named(links: LinkT[]): LinkT[] {
+  const seen = new Map<string, number>()
+  for (const l of links) seen.set(l.label, (seen.get(l.label) ?? 0) + 1)
+  return links.map((l) => ((seen.get(l.label) ?? 0) > 1 && l.ride ? { ...l, label: `${l.label}: ${l.ride.length > 40 ? `${l.ride.slice(0, 38).trimEnd()}…` : l.ride}` } : l))
+}
 type ThreadSummary = { id: string; title: string; updated_at: string; waiting: boolean }
 type Item =
   | { kind: 'user'; text: string }
@@ -506,8 +513,8 @@ function AssistantPanel({ seed, onSeedUsed, onClose }: { seed: { prompt: string 
               let turnStart = i - 1
               while (turnStart >= 0 && !isUser(items[turnStart])) turnStart--
               const links = endOfTurn
-                ? items.slice(turnStart + 1, i).flatMap((x) => (x.kind === 'tool' && x.link ? [x.link] : []))
-                  .filter((l, k, all) => all.findIndex((m) => m.href === l.href) === k)
+                ? named(items.slice(turnStart + 1, i).flatMap((x) => (x.kind === 'tool' && x.link ? [x.link] : []))
+                  .filter((l, k, all) => all.findIndex((m) => m.href === l.href) === k))
                 : []
               return (
                 <div key={i} className="mr-4 text-[15px] leading-[1.55] text-(--ev-ink)">
