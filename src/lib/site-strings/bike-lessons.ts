@@ -32,7 +32,7 @@ export const bikeLessonsStrings = defineStrings(
     'lessons.form_title': 'Ask for your free lesson',
     'lessons.form_area': 'Type your ZIP code, then tap the times you’re free.',
     'lessons.form_after':
-      'While you wait, Shift, our free app, can help you plan a calm route for your first rides.',
+      'While you wait, Shift, our free app, can help you plan a low-stress route for your first rides.',
     'lessons.league_body':
       'Live farther away? A League-certified instructor can teach the same skills, one-on-one or in a group, anywhere in Massachusetts.',
     'lessons.league_link': 'Find an instructor near you',

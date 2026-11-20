@@ -377,7 +377,7 @@ function NextStep({ next, rides, teacher }: { next: 'alone' | 'company'; rides: 
       <div className={CARD}>
         <h2 className={`${HEAD} text-[1.5rem]`}>Plan your first ride on your own</h2>
         <p className={`${BODY} mt-2`}>
-          {said ? `${said} ` : ''}Put in where you’re going, and the planner shows the calmest way there.
+          {said ? `${said} ` : ''}Put in where you’re going, and the planner shows a low-stress way there.
         </p>
         <Link href="/trip" className={`${BTN} mt-5 bg-forest text-white`}>
           Plan a ride
@@ -446,20 +446,20 @@ function GetShift() {
   return (
     <div className={CARD}>
       {/* Phone: words beside the picture, sign-up and badges full width under both. Desktop: all of it beside the picture. */}
-      <div className="grid grid-cols-[1fr_96px] items-start gap-x-4 sm:grid-cols-[1fr_128px] sm:gap-x-6">
+      <div className="grid grid-cols-[1fr_112px] items-start gap-x-4 sm:grid-cols-[1fr_150px] sm:gap-x-6">
         <div className="min-w-0">
           <h2 className={`${HEAD} text-[1.5rem]`}>Keep riding with Shift, our free app</h2>
           <p className={`${BODY} mt-2`}>
-            It plans calm routes, shows group rides near you, and rewards your trips with gift cards from local shops.
+            It plans low-stress bike routes, shows group rides near you, and rewards your trips with gift cards from local shops.
           </p>
         </div>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src="/images/shift-app/rewards-perks-current.png"
-          alt="Shift's Rewards screen with discounts at Remnant Brewing, Marlon's Barbers, Melt in Your Mouth and Bagel Guild"
+          src="/images/shift-app/reward-catalog-local-shops.png"
+          alt="Shift's reward catalog: gift cards from local shops like Gracie's Ice Cream, Cleenland and Flour Bakery"
           width={640}
-          height={1387}
-          className="h-[168px] w-[96px] rounded-[14px] border-2 border-navy/10 object-cover object-top sm:row-span-2 sm:h-[220px] sm:w-[128px]"
+          height={810}
+          className="h-[142px] w-[112px] rounded-[14px] border-2 border-navy/10 object-cover object-top sm:row-span-2 sm:h-[190px] sm:w-[150px]"
         />
         <div className="col-span-2 sm:col-span-1">
           <p className="mt-4 text-[0.9375rem] leading-relaxed text-navy">
