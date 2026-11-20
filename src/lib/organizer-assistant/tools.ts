@@ -1278,7 +1278,7 @@ export async function approvalCard(ctx: ToolCtx, name: string, input: Record<str
         if (missing && !(missing === 'the date' && ride.no_date_yet)) return { result: fail(`Still needed before it can be created: ${missing}. Ask for it.`) }
         const lines = [
           scheduleLine(p),
-          ride.no_date_yet ? 'No date yet: it stays on your rides, off the calendar and with no page to share, until you give it a date' : null,
+          ride.no_date_yet ? 'It stays on your rides, off the calendar and with no page to share, until you give it a date' : null,
           `Meet at ${p.meetup_name}${p.meetup_address ? `, ${p.meetup_address}` : ''}`,
           paceLine(p),
           p.visibility === 'invite' ? 'Invite only: people with the ride link or code can find it' : 'Public: on the Green Streets events calendar straight away',
@@ -1727,7 +1727,7 @@ export async function approvalCard(ctx: ToolCtx, name: string, input: Record<str
             title: p.name === d.ride.name ? `Copy “${d.ride.name}” to a new ride?` : `Create “${String(p.name)}”, copied from “${d.ride.name}”?`,
             lines: [
               scheduleLine(p),
-              noDate ? 'No date yet: it stays on your rides, off the calendar and with no page to share, until you give it a date' : null,
+              noDate ? 'It stays on your rides, off the calendar and with no page to share, until you give it a date' : null,
               `Meet at ${p.meetup_name ?? p.meetup_address}`,
               `Copies the description, ${(p.route_waypoints as unknown[]).length >= 2 ? 'route, ' : ''}flyer, pace and links. Not the dates or who signed up.`,
               seasonCleared ? "The old season had ended, so it runs from now on with no end date. Say if it needs one." : null,
