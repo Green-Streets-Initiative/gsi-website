@@ -179,7 +179,7 @@ export default async function ShiftPage({ searchParams }: { searchParams: Search
               </div>
               {/* Right phone */}
               <div className="absolute left-1/2 top-1/2 z-[1] hidden w-[268px] -translate-x-[8%] -translate-y-[46%] rotate-[9deg] scale-[0.82] brightness-[0.86] transition-transform duration-500 ease-[cubic-bezier(0.2,0.8,0.2,1)] group-hover:-translate-x-[-4%] group-hover:rotate-[12deg] group-hover:scale-[0.83] md:block">
-                <PhoneFrame src="/images/shift-app/rewards-perks-current.png" alt={t('shiftp.alt_hero_perks')} />
+                <PhoneFrame src="/images/shift-app/reward-catalog-phone.png" alt={t('shiftp.alt_hero_perks')} />
               </div>
               {/* Center phone */}
               <div className="absolute left-1/2 top-1/2 z-[3] w-[268px] -translate-x-1/2 -translate-y-1/2 scale-[0.98] transition-transform duration-500">
@@ -524,7 +524,7 @@ export default async function ShiftPage({ searchParams }: { searchParams: Search
               reverse
               media={
                 <PhoneFrame
-                  src="/images/shift-app/rewards-perks-current.png"
+                  src="/images/shift-app/reward-catalog-phone.png"
                   alt={t('shiftp.rw_alt')}
                   className="w-[268px]"
                   glow

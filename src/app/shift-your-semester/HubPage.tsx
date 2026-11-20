@@ -36,7 +36,7 @@ const STEPS_PRE = [
 ]
 
 /**
- * The real Rewards tab, in the site's phone bezel, scaled with a reserved box
+ * The app's real "Choose your reward" list, in the site's phone bezel, scaled with a reserved box
  * so layout never jumps (same trick as ShiftHomeMockup). The screenshot is
  * 640×1387; at the bezel's native 402px width that is 871px tall.
  */
@@ -47,14 +47,14 @@ function RewardsPhone() {
   return (
     <figure
       role="img"
-      aria-label="The Shift Rewards tab: local perks near you, from ice cream to coffee to bagels."
+      aria-label="Choosing a reward in Shift: gift cards from local shops near you, nearest first, or a gift card from a brand you like."
       className="relative m-0 overflow-hidden [--mockup-scale:0.62] md:[--mockup-scale:0.72] lg:[--mockup-scale:0.78]"
       style={{ width: `calc(${w}px * var(--mockup-scale))`, height: `calc(${h}px * var(--mockup-scale))` }}
     >
       <div aria-hidden className="pointer-events-none origin-top-left select-none" style={{ width: w, transform: 'scale(var(--mockup-scale))' }}>
         <PhoneShell>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/images/shift-app/rewards-screen.png" alt="" width={SCREEN_WIDTH} height={SHOT_H} className="block" />
+          <img src="/images/shift-app/reward-catalog-phone.png" alt="" width={SCREEN_WIDTH} height={SHOT_H} className="block" />
         </PhoneShell>
       </div>
     </figure>
