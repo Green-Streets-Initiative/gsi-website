@@ -134,6 +134,7 @@ export default function Team() {
           {detail.leaders.map((l) => (
             <li key={l.member_id} className="flex flex-wrap items-center justify-between gap-3 py-3">
               <div className="flex items-center gap-2">
+                <Initial name={l.name} />
                 <span className="text-[15px] font-semibold text-(--ev-ink)">{l.name}{l.is_you ? ' (you)' : ''}</span>
                 <Badge tone={l.role === 'organizer' ? 'good' : 'plain'}>{l.role === 'organizer' ? 'Organizer' : 'Co-organizer'}</Badge>
               </div>
@@ -214,7 +215,7 @@ export default function Team() {
           <ul className="divide-y divide-(--ev-line)">
             {(allRiders ? riders : riders.slice(0, 6)).map((m) => (
               <li key={m.member_id} className="flex flex-wrap items-center justify-between gap-3 py-2.5">
-                <span className="text-[15px] text-(--ev-ink)">{m.display_name}</span>
+                <span className="flex items-center gap-2 text-[15px] text-(--ev-ink)"><Initial name={m.display_name} />{m.display_name}</span>
                 <Button size="sm" busy={busy === m.member_id}
                   onClick={() => void act(m.member_id, () => setMemberRole(r.id, m.user_id!, 'leader'), `${m.display_name} is now a co-organizer.`)}>
                   Make a co-organizer
@@ -279,5 +280,14 @@ export default function Team() {
         </p>
       </Dialog>
     </div>
+  )
+}
+
+/** A person's first letter in a circle, as on Who's coming (design pass 2026-11-20: no faceless lists of people). */
+function Initial({ name }: { name: string }) {
+  return (
+    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-(--ev-panel) text-[14px] font-bold text-(--ev-ink-85)" aria-hidden>
+      {(name || '?').slice(0, 1).toUpperCase()}
+    </span>
   )
 }
