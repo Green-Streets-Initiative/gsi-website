@@ -198,9 +198,11 @@ export function Spinner({ label = 'Loading' }: { label?: string }) {
   )
 }
 
-export function Empty({ title, children, action }: { title: string; children?: ReactNode; action?: ReactNode }) {
+export function Empty({ title, children, action, picture }: { title: string; children?: ReactNode; action?: ReactNode; picture?: ReactNode }) {
   return (
     <div className="rounded-2xl border border-dashed border-(--ev-line-strong) bg-(--ev-panel-faint) px-5 py-8 text-center">
+      {/* What will fill this space, drawn (design pass 2026-11-20: no text-only empty states). */}
+      {picture && <div className="mx-auto mb-4 flex justify-center">{picture}</div>}
       <p className="font-display text-[17px] font-extrabold text-(--ev-ink)">{title}</p>
       {children && <div className="mx-auto mt-1.5 max-w-md text-[14px] leading-snug text-(--ev-ink-75)">{children}</div>}
       {action && <div className="mt-4 flex justify-center">{action}</div>}

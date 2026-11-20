@@ -44,8 +44,9 @@ function RideHero({ detail, faces }: { detail: RideDetail; faces: Record<string,
   const r = detail.ride
   const today = todayKey()
   const dates = [...detail.occurrences].sort((a, b) => a.date.localeCompare(b.date))
-  const next = dates.find((d) => d.status === 'scheduled' && d.date >= today) ?? null
-  const last = [...dates].reverse().find((d) => d.date < today && d.status !== 'canceled') ?? null
+  // An ended ride has no next date, even if one was left on the list.
+  const next = r.status === 'archived' ? null : dates.find((d) => d.status === 'scheduled' && d.date >= today) ?? null
+  const last = [...dates].reverse().find((d) => (d.date < today || r.status === 'archived') && d.status !== 'canceled') ?? null
   const shown = next ?? last
   const line = (r.route_waypoints ?? []).length >= 2 ? r.route_waypoints : []
   const lat = shown?.meetup_lat ?? r.meetup_lat

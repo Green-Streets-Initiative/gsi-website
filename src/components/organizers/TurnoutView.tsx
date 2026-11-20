@@ -53,7 +53,16 @@ export default function TurnoutView() {
   if (err) return <Notice tone="off">{err} <button type="button" className="font-semibold underline" onClick={() => void load()}>Try again</button></Notice>
   if (!t) return <Spinner label="Adding up turnout" />
   if (t.months.length === 0) {
-    return <Empty title="No rides run yet">Once a date has happened, its turnout shows here month by month, ready to download for funders.</Empty>
+    return (
+      <Empty title="No rides run yet" picture={
+        <svg viewBox="0 0 220 110" className="w-[220px]" aria-hidden>
+          {[34, 48, 42, 66, 58, 84].map((h, i) => (
+            <rect key={i} x={12 + i * 34} y={100 - h} width="24" height={h} rx="4" fill={i === 5 ? 'var(--ev-accent-fill)' : 'var(--ev-line-mid)'} opacity={i === 5 ? 0.55 : 1} />
+          ))}
+          <line x1="4" y1="100.5" x2="216" y2="100.5" stroke="var(--ev-line-strong)" strokeWidth="1.5" />
+        </svg>
+      }>Once a date has happened, how many came shows here month by month, ready to download for funders.</Empty>
+    )
   }
 
   const file = slug(r.name)
