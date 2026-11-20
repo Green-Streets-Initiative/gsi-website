@@ -452,8 +452,8 @@ export const TOOLS: Anthropic.Tool[] = [
   },
   {
     name: 'find_events_to_ride_to',
-    description: 'Events a ride could go to together (Go Together, Shift 01460/01691): games, concerts and events-calendar listings on its next date near where it ends, or by name with query (the next 60 days), and the one it goes to now.',
-    input_schema: { type: 'object', properties: { series_id: uuid, query: nullable('string', 'Part of the event name.') }, required: ['series_id'] },
+    description: 'Events a ride could go to together (Go Together, Shift 01460/01691): games, concerts and events-calendar listings on one of its dates (the next one unless date is given) near where it ends, or by name with query (the next 60 days), and the one it goes to now.',
+    input_schema: { type: 'object', properties: { series_id: uuid, date: nullable('string', 'YYYY-MM-DD: one of the ride\'s dates, when not the next one.'), query: nullable('string', 'Part of the event name.') }, required: ['series_id'] },
   },
   {
     name: 'add_date',
@@ -1051,7 +1051,8 @@ export async function runTool(ctx: ToolCtx, name: string, input: Record<string, 
         const today = todayKey()
         const next = d.occurrences.find((o) => o.date >= today && o.status === 'scheduled')
         const query = typeof input.query === 'string' && input.query.trim() ? input.query.trim() : null
-        const date = next?.date ?? d.ride.ride_date ?? null
+        const asked = typeof input.date === 'string' && DATE_RE.test(input.date) && input.date >= today ? input.date : null
+        const date = asked ?? next?.date ?? d.ride.ride_date ?? null
         if (!date && !query) return fail("This ride has no upcoming date. Search by the event's name with query.")
         const at = rideEnd(d.ride)
         const args = { p_date: date ?? today, p_lat: at?.lat ?? null, p_lng: at?.lng ?? null, p_query: query }
