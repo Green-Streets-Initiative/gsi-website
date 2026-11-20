@@ -853,13 +853,13 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
 
       <div className="mt-6">
       {/* Phones: the preview column is hidden, so the ride's picture and name sit above the steps. */}
-      <div className="mb-4 flex items-center gap-3 rounded-2xl border border-(--ev-line) bg-white p-3 lg:hidden">
+      {(f.flyer_url || f.meetup_lat != null) && <div className="mb-4 flex items-center gap-3 rounded-2xl border border-(--ev-line) bg-white p-3 lg:hidden">
         <RideThumb r={{ flyer_url: f.flyer_url, meetup_lat: f.meetup_lat, meetup_lng: f.meetup_lng }} />
         <div className="min-w-0">
           <p className="truncate font-display text-[17px] font-extrabold text-(--ev-ink)">{f.name || (walk ? 'Your walk' : 'Your ride')}</p>
           <p className="truncate text-[14px] text-(--ev-ink-75)">{f.meetup_name || f.meetup_address || 'Add where people meet'}</p>
         </div>
-      </div>
+      </div>}
       <StepNav step={step} onStep={setStep} editing={!!ride} walk={walk} done={(s) => stepDone(s)} />
       <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_320px] lg:gap-8">
       <div className="grid grid-cols-[minmax(0,1fr)] content-start gap-5">
