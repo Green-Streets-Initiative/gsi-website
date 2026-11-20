@@ -322,11 +322,11 @@ export async function noticeReach(occurrenceId: string, kind: 'cancel' | 'change
   return r?.would_notify ?? null
 }
 
-/** Cancel or bring back one date; a cancel tells everyone on it. */
+/** Cancel or bring back one date; either way, everyone on it hears (as the app and the assistant do). */
 export async function setDateCanceled(occurrenceId: string, canceled: boolean): Promise<Sent> {
   await rpc('set_ride_occurrence_canceled', { p_occurrence_id: occurrenceId, p_canceled: canceled })
   track(canceled ? 'organizer_date_canceled' : 'organizer_date_restored', { occurrence_id: occurrenceId })
-  if (!canceled) return { sent: null, noticeFailed: false }
+  if (!canceled) return notice({ occurrence_id: occurrenceId, back_on: true })
   return sendCancelNotice(occurrenceId)
 }
 

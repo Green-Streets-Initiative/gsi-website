@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { CalendarPlus, CalendarX, Check, Copy, PauseCircle, PlayCircle, Radio, Route as RouteIcon } from 'lucide-react'
 import { ago, clock } from '@/lib/rides/public'
 import { errorText, setDateCanceled } from '@/lib/organizers/api'
+import { sentLine } from './PostUpdate'
 import { UPDATE_KIND_LABEL, dateLabel, plural, todayKey } from '@/lib/organizers/ride-words'
 import type { DetailDate, RouteOption } from '@/lib/organizers/types'
 import { CancelDateDialog, ChangeDateDialog } from './DateDialogs'
@@ -204,8 +205,8 @@ export default function RideOverview() {
 
   async function restore(d: DetailDate) {
     try {
-      await setDateCanceled(d.id, false)
-      done(`${dateLabel(d.date)} is back on the schedule.`)
+      const r = await setDateCanceled(d.id, false)
+      done(`${dateLabel(d.date)} is back on the schedule. ${r.noticeFailed ? 'The notice didn\u2019t go out; post an update to tell people.' : sentLine(r.sent)}`.trim())
     } catch (e) {
       setMsg({ tone: 'off', text: errorText(e) })
     }
