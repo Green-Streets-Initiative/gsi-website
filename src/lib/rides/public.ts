@@ -121,7 +121,8 @@ export interface PublicRide {
   id: string
   code: string
   slug: string | null
-  kind: 'group_ride'
+  /** Walk and bike buses get the full page too (Shift 01871). */
+  kind: 'group_ride' | 'bike_bus' | 'walk_bus'
   /** A bike ride or a group walk (Shift 01660); older servers leave it out. */
   activity?: 'bike' | 'walk'
   name: string
@@ -168,6 +169,13 @@ export interface AppOnlyRide {
   kind: 'walk_bus' | 'bike_bus'
   name: string
   status: string
+}
+
+/** The label key for a ride's kind: a bus by its own name, else ride or walk. */
+export function rideKindKey(r: { kind: string; activity?: string }): 'kind.bike_bus' | 'kind.walk_bus' | 'kind.walk' | 'kind.ride' {
+  if (r.kind === 'bike_bus') return 'kind.bike_bus'
+  if (r.kind === 'walk_bus') return 'kind.walk_bus'
+  return r.activity === 'walk' ? 'kind.walk' : 'kind.ride'
 }
 
 export type RideLookup = PublicRide | AppOnlyRide
