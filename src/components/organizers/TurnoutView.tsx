@@ -57,7 +57,7 @@ export default function TurnoutView() {
       <Empty title="No rides run yet" picture={
         <svg viewBox="0 0 220 110" className="w-[220px]" aria-hidden>
           {[34, 48, 42, 66, 58, 84].map((h, i) => (
-            <rect key={i} x={12 + i * 34} y={100 - h} width="24" height={h} rx="4" fill={i === 5 ? 'var(--ev-accent-fill)' : 'var(--ev-line-mid)'} opacity={i === 5 ? 0.55 : 1} />
+            <rect key={i} x={12 + i * 34} y={100 - h} width="24" height={h} rx="4" fill={i === 5 ? '#2D6A4F' : 'var(--ev-line-mid)'} />
           ))}
           <line x1="4" y1="100.5" x2="216" y2="100.5" stroke="var(--ev-line-strong)" strokeWidth="1.5" />
         </svg>

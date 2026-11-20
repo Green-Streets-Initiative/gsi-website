@@ -421,14 +421,14 @@ function CalendarPage() {
   return (
     <svg viewBox="0 0 168 120" className="w-[168px]" aria-hidden>
       <rect x="4" y="10" width="160" height="106" rx="10" fill="#fff" stroke="var(--ev-line-strong)" strokeWidth="1.5" />
-      <path d="M4 20a10 10 0 0 1 10-10h140a10 10 0 0 1 10 10v12H4z" fill="var(--ev-accent-fill)" opacity="0.55" />
+      <path d="M4 20a10 10 0 0 1 10-10h140a10 10 0 0 1 10 10v12H4z" fill="#BAF14D" />
       <rect x="40" y="2" width="6" height="16" rx="3" fill="var(--ev-line-strong)" />
       <rect x="122" y="2" width="6" height="16" rx="3" fill="var(--ev-line-strong)" />
       {Array.from({ length: 21 }, (_, i) => {
         const x = 16 + (i % 7) * 21
         const y = 44 + Math.floor(i / 7) * 23
         return i === 12
-          ? <circle key={i} cx={x + 6} cy={y + 6} r="10" fill="var(--ev-accent-fill)" />
+          ? <circle key={i} cx={x + 6} cy={y + 6} r="10" fill="#2D6A4F" />
           : <rect key={i} x={x} y={y} width="12" height="12" rx="3" fill="var(--ev-line-mid)" />
       })}
     </svg>
