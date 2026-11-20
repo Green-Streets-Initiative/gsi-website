@@ -42,6 +42,7 @@ import {
   type RideStop,
   type RsvpStatus,
 } from '@/lib/rides/public'
+import { rideKindKey } from '@/lib/rides/public'
 import '@/components/events/events-tone.css'
 import { translator, withLang, type SiteLocale } from '@/lib/site-i18n'
 import { ridesStrings, type RideKey } from '@/lib/site-strings/rides'
@@ -108,7 +109,7 @@ function calendarEvent(ride: PublicRide, d: RideDate, hostName: string | null, m
   const about = (d.description || ride.description || '').trim()
   const notes = [
     // "Keith A." already ends the sentence.
-    (hostName ? t('cal.kind_hosted', { kind: t(walk ? 'kind.walk' : 'kind.ride'), host: hostName }) : t(walk ? 'kind.walk' : 'kind.ride'))
+    (hostName ? t('cal.kind_hosted', { kind: t(rideKindKey(ride)), host: hostName }) : t(rideKindKey(ride)))
       .replace(/([^.。])$/, locale === 'zh-Hans' ? '$1。' : '$1.'),
     t('cal.say_coming', { url: page }),
     ride.registration_url ? t('cal.signup', { url: ride.registration_url }) : null,
@@ -307,6 +308,8 @@ export default function RidePage({ ride, host = null, hostPerson = null, organiz
   }, [ride.code, selected])
   const ended = ride.status === 'archived'
   const walk = ride.activity === 'walk'
+  // Walk and bike buses (Shift 01871): the full page, without the web live map.
+  const bus = ride.kind !== 'group_ride'
   const noun = walk ? 'walk' : 'ride'
   const nk = <K extends string>(base: K) => `${base}.${noun}` as RideKey
   // A break ends on its own when its date comes: the banner goes with it.
@@ -616,7 +619,7 @@ export default function RidePage({ ride, host = null, hostPerson = null, organiz
         <div className="flex items-center gap-3">
           <HostFace name={hostName} logo={hostPhoto} photo={!host?.logo_url && !!person?.avatar_url} walk={walk} />
           <p className="min-w-0 text-[15px] leading-snug text-(--ev-ink-80)">
-            <span className="block font-semibold text-(--ev-accent)">{t(walk ? 'kind.walk' : 'kind.ride')}</span>
+            <span className="block font-semibold text-(--ev-accent)">{t(rideKindKey(ride))}</span>
             {hostName && (
               <span className="block">
                 {t('hosted_by')}{' '}
@@ -778,10 +781,10 @@ export default function RidePage({ ride, host = null, hostPerson = null, organiz
                               </p>
                             )}
                             {/* The group is sharing where it is (Shift 01747): follow it without the app. */}
-                            {selected.live && ride.live_sharing !== 'link' && (
+                            {selected.live && !bus && ride.live_sharing !== 'link' && (
                               <p className="mt-1 text-[14px] font-medium">{t('live.from_email')}</p>
                             )}
-                            {selected.live && ride.live_sharing === 'link' && (
+                            {selected.live && !bus && ride.live_sharing === 'link' && (
                               <a href={withLang(`/rides/${ride.code}/live?date=${selected.date}`, locale)}
                                 className="mt-2 inline-flex min-h-[44px] items-center gap-1.5 rounded-[10px] bg-(--ev-ink) px-4 py-2 text-[15px] font-semibold text-white">
                                 <Radio size={15} aria-hidden /> {t('live.see')}
@@ -805,7 +808,7 @@ export default function RidePage({ ride, host = null, hostPerson = null, organiz
                           <p className="flex gap-2"><MapPin size={17} className="mt-0.5 shrink-0 text-(--ev-ink-60)" />{selected.meetup_name || selected.meetup_address}</p>
                         )}
                         {/* Running late, or living along the route: a place to meet the group on the way (Keith 2026-11-13). */}
-                        {selected.date === todayKey() && selected.status === 'scheduled' && !ended && route.length >= 2 && (
+                        {selected.date === todayKey() && selected.status === 'scheduled' && !ended && !bus && route.length >= 2 && (
                           <p className="flex gap-2">
                             <RouteIcon size={17} className="mt-0.5 shrink-0 text-(--ev-ink-60)" />
                             <a href={withLang(`/rides/${ride.code}/live?date=${selected.date}&catch=1`, locale)}
