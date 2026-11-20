@@ -99,8 +99,7 @@ export default function OrgPicker({ value, onPick }: {
         {justClaimed?.status === 'verified' && <Notice tone="good">You&rsquo;re verified for {justClaimed.name}. The ride shows its name, logo and links.</Notice>}
         {picked?.claim === 'pending' && (
           <Notice tone="info">
-            Until {picked.name} is verified, the ride shows as yours. It&rsquo;s verified automatically when your sign-in email is at
-            {pendingDomain ? <> {pendingDomain}</> : <> its website&rsquo;s domain</>}.
+            {`Until ${picked.name} is verified, the ride shows as yours. It’s verified automatically when your sign-in email is at ${pendingDomain || 'its website’s domain'}.`}
           </Notice>
         )}
 
