@@ -241,12 +241,33 @@ export default function HostPage() {
             }} />
           </div>
         ) : (
-          <Empty title="No verified organization yet">
+          <Empty
+            title="No verified organization yet"
+            picture={<HostCardSketch name={pending[0]?.name} />}
+            action={pending.length === 0 ? <a href="/organizers/rides/new" className="inline-flex min-h-11 items-center rounded-xl bg-(--ev-ink) px-5 text-[15px] font-semibold text-white hover:opacity-90">Set up a ride</a> : undefined}
+          >
             {pending.length > 0
               ? `${pending.map((p) => p.name).join(' and ')} ${pending.length > 1 ? 'are' : 'is'} verified automatically when your sign-in email is at ${pending.length > 1 ? 'their websites\u2019 domains' : (domainOf(pending[0].url) ?? 'its website\u2019s domain')}. Then its host page is yours to edit here.`
               : 'Set up a ride under your organization. It\u2019s verified automatically when your sign-in email is at its website\u2019s domain, and then its host page is yours to edit here.'}
           </Empty>
         )}
+      </div>
+    </div>
+  )
+}
+
+/** The host card drawn small: the group's initials tile and its name, the way its page shows it once verified. */
+function HostCardSketch({ name }: { name?: string }) {
+  const initials = (name ?? 'Your group').split(/\s+/).slice(0, 2).map((w) => w[0]).join('').toUpperCase()
+  return (
+    <div className="flex w-[240px] items-center gap-3 rounded-xl border border-(--ev-line) bg-[#FAF6EE] p-3 text-left" aria-hidden>
+      <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#2D6A4F] font-display text-[18px] font-extrabold text-white">{initials}</span>
+      <div className="min-w-0 flex-1">
+        <p className="truncate font-display text-[15px] font-extrabold text-(--ev-ink)">{name ?? 'Your group'}</p>
+        <div className="mt-1.5 flex gap-1.5">
+          <span className="h-2.5 w-12 rounded-full bg-(--ev-accent-tint-15)" />
+          <span className="h-2.5 w-9 rounded-full bg-(--ev-accent-tint-15)" />
+        </div>
       </div>
     </div>
   )
