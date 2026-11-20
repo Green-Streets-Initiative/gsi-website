@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { CalendarPlus, CalendarX, Check, Copy, PauseCircle, PlayCircle, Radio, Route as RouteIcon } from 'lucide-react'
+import { CalendarPlus, CalendarX, Check, Copy, PauseCircle, PlayCircle, Route as RouteIcon } from 'lucide-react'
 import { ago, clock } from '@/lib/rides/public'
 import { errorText, setDateCanceled, setLiveSharing } from '@/lib/organizers/api'
 import { sentLine } from './PostUpdate'
