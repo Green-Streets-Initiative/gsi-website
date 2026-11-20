@@ -97,24 +97,30 @@ function LiveMapCard({ rideId, code, date, value, walk, bus, canChange, onSaved 
   }
 
   return (
-    <div className="mt-4 flex items-start gap-4 rounded-xl border border-(--ev-line-mid) bg-white p-4">
-      <LiveMapPicture on={shown !== 'off'} />
-      <div className="min-w-0 flex-1">
-        <p className="flex items-center gap-2 text-[17px] font-bold text-(--ev-ink)"><Radio className="h-4 w-4 text-[#2E9F4F]" aria-hidden />Live map on {noun} day</p>
-        <p className="mt-0.5 text-[15px] text-(--ev-ink-85)">{LIVE_LINE[shown](noun, bus)}</p>
-        {canChange && (
-          <div role="radiogroup" aria-label="Who sees the live map" className="mt-3 flex flex-wrap gap-2">
-            {options.map((o) => (
-              <Toggle key={o.v} on={shown === o.v} role="radio" aria-checked={shown === o.v} disabled={saving} onClick={() => void pick(o.v)} className="min-h-[44px]">{o.label}</Toggle>
-            ))}
-          </div>
-        )}
-        {shown === 'link' && !bus && (
-          <Button size="sm" className="mt-3" onClick={async () => { if (await copyText(url)) { setCopied(true); setTimeout(() => setCopied(false), 2200) } }}>
-            {copied ? <Check className="h-4 w-4" aria-hidden /> : <Copy className="h-4 w-4" aria-hidden />}{copied ? 'Copied' : 'Copy map link'}
-          </Button>
-        )}
+    <div className="mt-4 rounded-xl border border-(--ev-line-mid) bg-white p-4">
+      <div className="flex items-center gap-4">
+        <LiveMapPicture on={shown !== 'off'} />
+        <div className="min-w-0 flex-1">
+          <p className="text-[17px] font-bold text-(--ev-ink)">Live map on {noun} day</p>
+          <p className="mt-0.5 text-[15px] text-(--ev-ink-85)">{LIVE_LINE[shown](noun, bus)}</p>
+        </div>
       </div>
+      {(canChange || (shown === 'link' && !bus)) && (
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          {canChange && (
+            <div role="radiogroup" aria-label="Who sees the live map" className="flex flex-wrap gap-2">
+              {options.map((o) => (
+                <Toggle key={o.v} on={shown === o.v} role="radio" aria-checked={shown === o.v} disabled={saving} onClick={() => void pick(o.v)} className="min-h-[44px]">{o.label}</Toggle>
+              ))}
+            </div>
+          )}
+          {shown === 'link' && !bus && (
+            <Button onClick={async () => { if (await copyText(url)) { setCopied(true); setTimeout(() => setCopied(false), 2200) } }}>
+              {copied ? <Check className="h-4 w-4" aria-hidden /> : <Copy className="h-4 w-4" aria-hidden />}{copied ? 'Copied' : 'Copy map link'}
+            </Button>
+          )}
+        </div>
+      )}
     </div>
   )
 }
