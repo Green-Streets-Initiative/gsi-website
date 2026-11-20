@@ -3,7 +3,9 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
-import { ArrowLeft, CopyPlus, ExternalLink, MessageSquareText } from 'lucide-react'
+import { ArrowLeft, CopyPlus, ExternalLink, MapPin, MessageSquareText } from 'lucide-react'
+import { supabase } from '@/lib/supabase'
+import { todayKey } from '@/lib/organizers/ride-words'
 import { errorText, getRide } from '@/lib/organizers/api'
 import { loadDatePhotos, photoDates } from '@/lib/organizers/photos'
 import type { RideDetail } from '@/lib/organizers/types'
@@ -11,6 +13,7 @@ import { ASSISTANT_CHANGED_EVENT, openAssistant } from './AssistantPanel'
 import { useConsole } from './ConsoleContext'
 import { rideStateBadges, whenText } from './Dashboard'
 import { Badge, Button, Card, Spinner, cx } from './ui'
+import RouteMap from './RouteMap'
 
 interface RideCtx {
   detail: RideDetail
@@ -27,6 +30,68 @@ export function useRide(): RideCtx {
 
 export function ridePageUrl(code: string): string {
   return `https://www.gogreenstreets.org/rides/${code}`
+}
+
+type Face = { name: string; avatar: string | null }
+
+function dayLabel(d: string): string {
+  return new Date(`${d}T12:00:00`).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+}
+
+/** The ride itself, at the top of every ride tab: its map (route, or the meeting pin), its flyer,
+ * and the faces of who's going next (Keith 2026-11-20: the console was all text). */
+function RideHero({ detail, faces }: { detail: RideDetail; faces: Record<string, Face[]> }) {
+  const r = detail.ride
+  const today = todayKey()
+  const dates = [...detail.occurrences].sort((a, b) => a.date.localeCompare(b.date))
+  const next = dates.find((d) => d.status === 'scheduled' && d.date >= today) ?? null
+  const last = [...dates].reverse().find((d) => d.date < today && d.status !== 'canceled') ?? null
+  const shown = next ?? last
+  const line = (r.route_waypoints ?? []).length >= 2 ? r.route_waypoints : []
+  const lat = shown?.meetup_lat ?? r.meetup_lat
+  const lng = shown?.meetup_lng ?? r.meetup_lng
+  const pin = lat != null && lng != null ? { lat, lng } : null
+  const flyer = shown?.flyer_url ?? r.flyer_url
+  const people = shown ? faces[shown.id] ?? [] : []
+  const count = next ? next.going : last ? last.attended : 0
+  return (
+    <div className="overflow-hidden rounded-2xl border border-(--ev-line-mid) bg-white shadow-sm">
+      <div className="relative">
+        {line.length || pin ? (
+          <RouteMap line={line} stops={[]} meetup={pin} pick={false} fitKey={`${r.id}-${line.length}`}
+            className="h-[150px] w-full lg:h-[190px]" label={`Map of ${r.name}`} />
+        ) : flyer ? null : (
+          <Link href={`/organizers/rides/${r.id}/edit`}
+            className="flex h-[120px] flex-col items-center justify-center gap-1.5 bg-(--ev-panel-faint) px-6 text-center text-[14px] text-(--ev-ink-75) hover:text-(--ev-ink)">
+            <MapPin className="h-5 w-5" aria-hidden />Add a meeting point or a route to see the map here
+          </Link>
+        )}
+        {flyer && (line.length || pin) ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={flyer} alt="Flyer" className="absolute bottom-2 left-2 z-[500] h-[72px] w-[56px] rounded-md border-2 border-white bg-white object-cover shadow-md" />
+        ) : flyer ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={flyer} alt="Flyer" className="h-[190px] w-full bg-(--ev-panel-faint) object-contain" />
+        ) : null}
+      </div>
+      <div className="flex items-center gap-3 px-4 py-3">
+        {people.length > 0 && (
+          <div className="flex -space-x-2" aria-hidden>
+            {people.slice(0, 5).map((p, i) => p.avatar
+              // eslint-disable-next-line @next/next/no-img-element
+              ? <img key={i} src={p.avatar} alt="" className="h-8 w-8 rounded-full border-2 border-white object-cover" />
+              : <span key={i} className="grid h-8 w-8 place-items-center rounded-full border-2 border-white bg-(--ev-ink) text-[12px] font-bold text-white">{p.name.slice(0, 1).toUpperCase()}</span>)}
+          </div>
+        )}
+        <p className="min-w-0 text-[15px] text-(--ev-ink-85)">
+          {shown ? (
+            <><span className="font-semibold text-(--ev-ink)">{next ? `Next: ${dayLabel(next.date)}` : `Last: ${dayLabel(last!.date)}`}</span>
+              {' · '}{count === 0 ? (next ? 'nobody yet' : 'no count yet') : `${count} ${next ? 'going' : 'came'}`}</>
+          ) : r.status === 'draft' ? 'No date yet' : 'No dates yet'}
+        </p>
+      </div>
+    </div>
+  )
 }
 
 export default function RideFrame({ id, children }: { id: string; children: ReactNode }) {
@@ -57,6 +122,16 @@ export default function RideFrame({ id, children }: { id: string; children: Reac
   // The Photos tab, once there's an album to look at: the newest date that
   // has started answers for the whole ride (404 while the event_photos
   // switch is off for this person, and for kids' rides, which have none).
+  const [faces, setFaces] = useState<Record<string, Face[]>>({})
+  const code = detail?.ride.invite_code ?? null
+  useEffect(() => {
+    if (!code) return
+    let gone = false
+    supabase.rpc('get_ride_going_faces', { p_code: code })
+      .then(({ data, error }) => { if (!gone && !error && data) setFaces(data as Record<string, Face[]>) })
+    return () => { gone = true }
+  }, [code])
+
   const [hasPhotos, setHasPhotos] = useState(false)
   const newestStarted = detail ? photoDates(detail.occurrences)[0]?.id ?? null : null
   useEffect(() => {
@@ -101,6 +176,7 @@ export default function RideFrame({ id, children }: { id: string; children: Reac
           <Link href="/organizers" className="mb-3 inline-flex items-center gap-1.5 text-[14px] font-semibold text-(--ev-ink-80) hover:text-(--ev-ink)">
             <ArrowLeft className="h-4 w-4" aria-hidden />Your rides
           </Link>
+          <div className="grid grid-cols-[minmax(0,1fr)] gap-5 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="min-w-0">
               <h1 className="font-display text-[clamp(26px,3.4vw,36px)] font-extrabold leading-tight">{r.name}</h1>
@@ -135,6 +211,8 @@ export default function RideFrame({ id, children }: { id: string; children: Reac
                 </a>
               )}
             </div>
+          </div>
+          <RideHero detail={detail} faces={faces} />
           </div>
 
           {/* Phones get every tab as a pill in a three-across grid (two rows, short
