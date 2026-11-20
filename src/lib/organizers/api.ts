@@ -117,8 +117,15 @@ export const sendFeedback = (f: {
   p_quote: f.quote, p_may_quote: f.mayQuote, p_shown_name: f.shownName,
 })
 export const getRide = (seriesId: string) => rpc<RideDetail>('organizer_ride_detail', { p_series_id: seriesId })
-export const getRoster = async (occurrenceId: string) =>
-  (await rpc<RosterRow[] | null>('organizer_date_roster', { p_occurrence_id: occurrenceId })) ?? []
+export const getRoster = async (occurrenceId: string) => {
+  // Photos come from a separate read (Shift 01872); a roster without them still shows.
+  const [rows, faces] = await Promise.all([
+    rpc<RosterRow[] | null>('organizer_date_roster', { p_occurrence_id: occurrenceId }),
+    rpc<{ member_id: string; avatar_url: string }[] | null>('organizer_date_roster_faces', { p_occurrence_id: occurrenceId }).catch(() => null),
+  ])
+  const photo = new Map((faces ?? []).map((f) => [f.member_id, f.avatar_url]))
+  return (rows ?? []).map((r) => ({ ...r, avatar_url: photo.get(r.member_id) ?? null }))
+}
 /** Everyone on the ride (the app's roster): for naming co-organizers. */
 export const getMembers = async (seriesId: string) =>
   (await rpc<{ member_id: string; user_id: string | null; role: string; display_name: string; is_you: boolean }[] | null>(

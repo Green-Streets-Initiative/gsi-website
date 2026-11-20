@@ -273,6 +273,8 @@ export interface RideDetail {
 
 export interface RosterRow {
   member_id: string
+  /** Their profile photo, unless their profile is private (Shift 01872). */
+  avatar_url?: string | null
   is_guest: boolean
   role: 'organizer' | 'leader' | 'rider'
   display_name: string

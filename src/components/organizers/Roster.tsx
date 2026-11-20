@@ -35,9 +35,11 @@ function openedLabel(iso: string): string {
 function Person({ p, past, chat }: { p: RosterRow; past: boolean; chat: Chat }) {
   return (
     <li className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2.5">
-      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-(--ev-panel) text-[14px] font-bold text-(--ev-ink-85)" aria-hidden>
-        {p.display_name.slice(0, 1).toUpperCase()}
-      </span>
+      {p.avatar_url
+        ? <img src={p.avatar_url} alt="" className="h-9 w-9 shrink-0 rounded-full object-cover" loading="lazy" />
+        : <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-(--ev-panel) text-[14px] font-bold text-(--ev-ink-85)" aria-hidden>
+            {p.display_name.slice(0, 1).toUpperCase()}
+          </span>}
       <span className="text-[15px] font-semibold text-(--ev-ink)">{p.display_name}{p.is_you ? ' (you)' : ''}</span>
       <span className="flex flex-wrap gap-1">
         {p.role === 'organizer' && <Badge>Organizer</Badge>}
