@@ -1697,14 +1697,48 @@
         "conversions": 48
       },
       "by_campaign": {
-        "How-to Guides": {"impressions": 3715, "clicks": 307, "ctr_pct": 8.26, "conversions": 42},
-        "Venue Parking": {"impressions": 1250, "clicks": 49, "ctr_pct": 3.93, "conversions": 3, "note": "Rewritten 11-11; judge 11-25."},
-        "Town Walking & Biking": {"impressions": 625, "clicks": 79, "ctr_pct": 12.56, "conversions": 0},
-        "Shift App — Massachusetts": {"impressions": 22, "clicks": 0},
-        "GSI — Brand": {"impressions": 10, "clicks": 2, "conversions": 3},
-        "Shift Your Semester — Students": {"impressions": 1, "clicks": 1},
-        "Shift Together - Start Biking": {"impressions": 0, "clicks": 0, "note": "Day 6 at 0 impr, status now plain 'Eligible'. Already in the 11-18 weekly (judge 11-27), and changed today (new keywords, /together/start ads Pending review, Everett + Malden added), so no alert."},
-        "New Routes — Movers": {"impressions": 0, "clicks": 0, "note": "Paused 11-04"}
+        "How-to Guides": {
+          "impressions": 3715,
+          "clicks": 307,
+          "ctr_pct": 8.26,
+          "conversions": 42
+        },
+        "Venue Parking": {
+          "impressions": 1250,
+          "clicks": 49,
+          "ctr_pct": 3.93,
+          "conversions": 3,
+          "note": "Rewritten 11-11; judge 11-25."
+        },
+        "Town Walking & Biking": {
+          "impressions": 625,
+          "clicks": 79,
+          "ctr_pct": 12.56,
+          "conversions": 0
+        },
+        "Shift App — Massachusetts": {
+          "impressions": 22,
+          "clicks": 0
+        },
+        "GSI — Brand": {
+          "impressions": 10,
+          "clicks": 2,
+          "conversions": 3
+        },
+        "Shift Your Semester — Students": {
+          "impressions": 1,
+          "clicks": 1
+        },
+        "Shift Together - Start Biking": {
+          "impressions": 0,
+          "clicks": 0,
+          "note": "Day 6 at 0 impr, status now plain 'Eligible'. Already in the 11-18 weekly (judge 11-27), and changed today (new keywords, /together/start ads Pending review, Everett + Malden added), so no alert."
+        },
+        "New Routes — Movers": {
+          "impressions": 0,
+          "clicks": 0,
+          "note": "Paused 11-04"
+        }
       },
       "campaign_status": "How-to Guides, Town, Venue Parking and Brand Eligible (Limited) Limited by search volume; Semester, Shift App, Shift Together Eligible; New Routes Paused. Account budget $415.00/day.",
       "banners": "Known 'Apply for healthcare certification' and 'Protect your account from unauthorized activity' notices; 'Add broad match keywords' recommendation card (not applied). Nothing new.",
@@ -1717,6 +1751,75 @@
       },
       "search_terms": "1,146 term rows; top ~26 by impressions read. All on target: Paying for the T (boston public transportation 10/73 1 conv, boston transit 2/37, charlie card 2/37, mbta monthly pass 4/33, charliecard 5/31 1 conv), Venue Parking (north station garage 4/47, gillette stadium parking 1/46, parking near td garden 0/22, td garden parking 0/19, fenway parking 0/16), Trails (bruce freeman rail trail 8/34), 'green line closure' 0/31 (T closures; weekly item 3), 'bradford rail trail' 0/23 (pre-Trails). Zero-click terms with 3+ impr are all venue parking, T fares or closures, i.e. on target. No negatives proposed.",
       "month_end_math": "7.78% on 5,594 impr after 19 days; well above 5%. Venue Parking kill line (account MTD < 6.5%) not triggered.",
+      "alerts": [],
+      "emailed": false
+    },
+    {
+      "date": "2026-11-20",
+      "source": "scheduled quick check (ad-grants-pulse), ~10:05 ET, live account via authuser=walkrideday%40gmail.com (resolved to 5). This month = Nov 1-20.",
+      "mtd": {
+        "window": "2026-11-01..2026-11-20",
+        "impressions": 6045,
+        "clicks": 463,
+        "ctr_pct": 7.66,
+        "cost": 2100.14,
+        "conversions": 51
+      },
+      "by_campaign": {
+        "How-to Guides": {
+          "impressions": 4060,
+          "clicks": 326,
+          "ctr_pct": 8.03,
+          "conversions": 45
+        },
+        "Venue Parking": {
+          "impressions": 1317,
+          "clicks": 51,
+          "ctr_pct": 3.89,
+          "conversions": 3,
+          "note": "Rewritten 11-11; judge 11-25."
+        },
+        "Town Walking & Biking": {
+          "impressions": 661,
+          "clicks": 87,
+          "ctr_pct": 12.82,
+          "conversions": 0
+        },
+        "Shift App — Massachusetts": {
+          "impressions": 22,
+          "clicks": 0
+        },
+        "GSI — Brand": {
+          "impressions": 10,
+          "clicks": 2,
+          "conversions": 3
+        },
+        "Shift Your Semester — Students": {
+          "impressions": 1,
+          "clicks": 1
+        },
+        "Shift Together - Start Biking": {
+          "impressions": 0,
+          "clicks": 0,
+          "note": "Day 7 at 0 impr, Eligible. Already in the 11-18 weekly (judge 11-27); rebuilt 11-19 (new keywords, /together/start ads now Eligible, Everett + Malden), so no alert."
+        },
+        "New Routes — Movers": {
+          "impressions": 0,
+          "clicks": 0,
+          "note": "Paused 11-04"
+        }
+      },
+      "campaign_status": "How-to Guides, Town, Venue Parking and Brand Eligible (Limited) Limited by search volume; Semester, Shift App, Shift Together Eligible; New Routes Paused. Account budget $415.00/day.",
+      "banners": "Known 'Apply for healthcare certification' and 'Protect your account from unauthorized activity' notices; 'Add broad match keywords' card (not applied); Google tip 'How-to Guides saw a 52.71% decrease in clicks this week' (week-over-week; +19 clicks since 11-19, CTR still 8.03%). Nothing serving-related.",
+      "ads": {
+        "total": 66,
+        "status": "51 Eligible, 11 Paused, 4 Not eligible (Movers campaign paused)",
+        "disapproved_seen": 0,
+        "limited_by_policy": 0,
+        "poor": "2 active, both known with 0 impr (Walk More Win More, Walking School Bus Ideas). The 2 Shift Together /together/start ads pending yesterday are now Eligible."
+      },
+      "search_terms": "1,210 term rows; top 30 by impressions read. All on target: Paying for the T (boston public transportation 11/79 2 conv, charlie card, boston transit, mbta monthly pass, boston subway, mbta passes, boston metro), Venue Parking (north station garage 4/49, gillette stadium parking 1/47, parking near td garden 0/22, td garden parking 0/20, fenway parking 0/16), Trails (bruce freeman rail trail 8/34, somerville community path 1/14), 'green line closure' 0/31 (T closures, already in the weekly), 'bradford rail trail' 0/23 (pre-Trails). No negatives proposed.",
+      "month_end_math": "7.66% on 6,045 impr after 20 days; well above 5%. Venue Parking kill line (account MTD < 6.5%) not triggered.",
       "alerts": [],
       "emailed": false
     }
