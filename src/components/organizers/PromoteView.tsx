@@ -466,7 +466,7 @@ export default function PromoteView() {
         </div>
         <p className="mt-4 text-[14px] text-(--ev-ink-75)">
           {r.live_sharing === 'off'
-            ? <>The live map is off for this {one}. To add it, <Link href={`/organizers/rides/${r.id}/edit`} className="font-semibold text-(--ev-ink) underline">choose who sees it</Link>.</>
+            ? <>The live map is off for this {one}. <Link href={`/organizers/rides/${r.id}`} className="font-semibold text-(--ev-ink) underline">Turn it on</Link> on the next {one}&rsquo;s card.</>
             : <>Your group needs only a web browser. The Shift app is optional: the leader uses it to share the live map.</>}
         </p>
       </Card>}

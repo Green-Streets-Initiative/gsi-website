@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { CalendarPlus, CalendarX, Check, Copy, PauseCircle, PlayCircle, Radio, Route as RouteIcon } from 'lucide-react'
 import { ago, clock } from '@/lib/rides/public'
-import { errorText, setDateCanceled } from '@/lib/organizers/api'
+import { errorText, setDateCanceled, setLiveSharing } from '@/lib/organizers/api'
 import { sentLine } from './PostUpdate'
 import { UPDATE_KIND_LABEL, dateLabel, plural, todayKey } from '@/lib/organizers/ride-words'
 import type { DetailDate, RouteOption } from '@/lib/organizers/types'
@@ -18,7 +18,7 @@ import { ridePageUrl, useRide } from './RideFrame'
 import { SkipDatesDialog } from './SkipDates'
 import { AddDateDialog } from './AddedDates'
 import { StopRideDialog, resume } from './StopRide'
-import { Badge, Button, Card, Empty, Notice, SectionTitle, Tabs, Toast, copyText, cx, tabPanel } from './ui'
+import { Badge, Button, Card, Empty, Notice, SectionTitle, Tabs, Toast, Toggle, copyText, cx, tabPanel } from './ui'
 
 function ShareCard({ code, fresh, rideId, walk = false }: { code: string; fresh: boolean; rideId: string; walk?: boolean }) {
   const url = ridePageUrl(code)
@@ -41,26 +41,80 @@ function ShareCard({ code, fresh, rideId, walk = false }: { code: string; fresh:
   )
 }
 
-/** The follow-along map for people without the app (Shift 01747), ready to paste in the group chat. */
-function LiveMapLink({ code, date, members, walk, editHref }: { code: string; date: string; members: boolean; walk: boolean; editHref: string }) {
-  const url = `https://gogreenstreets.org/rides/${code}/live?date=${date}`
-  const [copied, setCopied] = useState(false)
-  const noun = walk ? 'walk' : 'ride'
+/** What a follower sees on ride day, drawn: the route, where the group started and the group's dot. */
+function LiveMapPicture({ on }: { on: boolean }) {
   return (
-    <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-(--ev-line-mid) bg-(--ev-panel) px-4 py-3">
+    <svg viewBox="0 0 96 96" className={cx('h-20 w-20 shrink-0 rounded-xl border border-(--ev-line-mid) sm:h-24 sm:w-24', !on && 'opacity-40 grayscale')} aria-hidden>
+      <rect width="96" height="96" fill="#EEF4EC" />
+      <path d="M0 30H96M0 66H96M28 0V96M64 0V96" stroke="#fff" strokeWidth="6" />
+      <path d="M16 80 C 22 60, 30 58, 40 50 S 58 30, 78 16" fill="none" stroke="#191A2E" strokeWidth="3.5" strokeLinecap="round" strokeDasharray="1 7" />
+      <path d="M16 80 C 22 60, 30 58, 40 50" fill="none" stroke="#191A2E" strokeWidth="3.5" strokeLinecap="round" />
+      <circle cx="16" cy="80" r="4.5" fill="#fff" stroke="#191A2E" strokeWidth="2.5" />
+      {on && <circle cx="40" cy="50" r="13" fill="#2E9F4F" opacity="0.22"><animate attributeName="r" values="8;15;8" dur="2.4s" repeatCount="indefinite" /></circle>}
+      <circle cx="40" cy="50" r="7" fill="#2E9F4F" stroke="#fff" strokeWidth="2.5" />
+    </svg>
+  )
+}
+
+const LIVE_LINE: Record<'off' | 'members' | 'link', (noun: string, bus: boolean) => string> = {
+  members: (noun, bus) => bus ? `Families on the ${noun} see where it is in the Shift app while you lead it.` : `People going can follow the group on a map while you lead in the Shift app.`,
+  link: () => 'Anyone with the link can follow the group on a map while you lead in the Shift app.',
+  off: () => 'Off. Nobody sees where the group is.',
+}
+
+/**
+ * The live map on ride day (Shift 01747): a picture of what followers see,
+ * who sees it, and the switch to change that right here (Keith 2026-11-20:
+ * the setting was described here and changed three clicks away in Edit).
+ * A bus's location stays in the Shift app (Keith 2026-11-11), so a bus has on or off.
+ */
+function LiveMapCard({ rideId, code, date, value, walk, bus, canChange, onSaved }: {
+  rideId: string; code: string; date: string; value: 'off' | 'members' | 'link'; walk: boolean; bus: boolean; canChange: boolean
+  onSaved: (text: string, tone?: 'good' | 'off') => void
+}) {
+  const url = `https://gogreenstreets.org/rides/${code}/live?date=${date}`
+  const [shown, setShown] = useState(value)
+  const [saving, setSaving] = useState(false)
+  const [copied, setCopied] = useState(false)
+  useEffect(() => { setShown(value) }, [value])
+  const noun = bus ? (walk ? 'walking bus' : 'bike bus') : walk ? 'walk' : 'ride'
+  const options: { v: 'off' | 'members' | 'link'; label: string }[] = bus
+    ? [{ v: 'members', label: 'On' }, { v: 'off', label: 'Off' }]
+    : [{ v: 'members', label: 'People going' }, { v: 'link', label: 'Anyone with the link' }, { v: 'off', label: 'Off' }]
+
+  async function pick(v: 'off' | 'members' | 'link') {
+    if (v === shown || saving) return
+    const before = shown
+    setShown(v)
+    setSaving(true)
+    try {
+      await setLiveSharing(rideId, v)
+      onSaved(v === 'off' ? 'Live map off.' : v === 'link' ? 'Anyone with the link can follow the group now.' : bus ? 'Live map on.' : 'Only people going can follow the group now.')
+    } catch (e) {
+      setShown(before)
+      onSaved(errorText(e), 'off')
+    } finally { setSaving(false) }
+  }
+
+  return (
+    <div className="mt-4 flex items-start gap-4 rounded-xl border border-(--ev-line-mid) bg-white p-4">
+      <LiveMapPicture on={shown !== 'off'} />
       <div className="min-w-0 flex-1">
-        <p className="flex items-center gap-2 text-[15px] font-semibold text-(--ev-ink)"><Radio className="h-4 w-4 text-[#2E9F4F]" aria-hidden />Live map for followers</p>
-        <p className="text-[14px] text-(--ev-ink-75)">
-          {members
-            ? <>While you lead in the Shift app, people on the {noun} can follow the group on a map. <Link href={editHref} className="font-semibold text-(--ev-ink) underline">Let anyone with the link follow</Link></>
-            : <>While you lead in the Shift app, anyone with this link can follow the group on a map in their browser.</>}
-        </p>
+        <p className="flex items-center gap-2 text-[17px] font-bold text-(--ev-ink)"><Radio className="h-4 w-4 text-[#2E9F4F]" aria-hidden />Live map on {noun} day</p>
+        <p className="mt-0.5 text-[15px] text-(--ev-ink-85)">{LIVE_LINE[shown](noun, bus)}</p>
+        {canChange && (
+          <div role="radiogroup" aria-label="Who sees the live map" className="mt-3 flex flex-wrap gap-2">
+            {options.map((o) => (
+              <Toggle key={o.v} on={shown === o.v} role="radio" aria-checked={shown === o.v} disabled={saving} onClick={() => void pick(o.v)} className="min-h-[44px]">{o.label}</Toggle>
+            ))}
+          </div>
+        )}
+        {shown === 'link' && !bus && (
+          <Button size="sm" className="mt-3" onClick={async () => { if (await copyText(url)) { setCopied(true); setTimeout(() => setCopied(false), 2200) } }}>
+            {copied ? <Check className="h-4 w-4" aria-hidden /> : <Copy className="h-4 w-4" aria-hidden />}{copied ? 'Copied' : 'Copy map link'}
+          </Button>
+        )}
       </div>
-      {!members && (
-        <Button size="sm" onClick={async () => { if (await copyText(url)) { setCopied(true); setTimeout(() => setCopied(false), 2200) } }}>
-          {copied ? <Check className="h-4 w-4" aria-hidden /> : <Copy className="h-4 w-4" aria-hidden />}{copied ? 'Copied' : 'Copy map link'}
-        </Button>
-      )}
     </div>
   )
 }
@@ -298,7 +352,11 @@ export default function RideOverview() {
           <HelpersStops occurrenceId={nextDate.id} dateWords={rideTime ? 'today' : `on ${dateLabel(nextDate.date)}`} walk={r.activity === 'walk'} canManage={detail.can_manage}
             helpUrl={`https://gogreenstreets.org/rides/${r.invite_code}?date=${nextDate.date}&help=1`}
             onAsk={(note) => { setAskNote(note); setPosting(true); setTimeout(() => document.getElementById('post-update')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50) }} />
-          {r.live_sharing !== 'off' && <LiveMapLink code={r.invite_code} date={nextDate.date} members={r.live_sharing === 'members'} walk={r.activity === 'walk'} editHref={`/organizers/rides/${r.id}/edit`} />}
+          {(r.live_sharing !== 'off' || detail.can_edit) && (
+            <LiveMapCard rideId={r.id} code={r.invite_code} date={nextDate.date} value={r.live_sharing} walk={r.activity === 'walk'}
+              bus={r.kind !== 'group_ride'} canChange={detail.can_edit}
+              onSaved={(text, tone = 'good') => { setMsg({ tone, text }); if (tone === 'good') void reload() }} />
+          )}
           <div className="mt-4 flex flex-wrap gap-2">
             {detail.can_edit && (
               <Link href={`/organizers/rides/${r.id}/dates/${nextDate.id}`} className="inline-flex min-h-[44px] items-center gap-1.5 rounded-[10px] border border-(--ev-line-strong) bg-white px-4 text-[15px] font-semibold text-(--ev-ink) hover:bg-(--ev-panel)">

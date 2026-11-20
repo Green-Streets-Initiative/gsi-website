@@ -428,6 +428,14 @@ export async function setRepliesToOrganizer(seriesId: string, on: boolean) {
   track('organizer_replies_set', { ride_id: seriesId, on })
 }
 
+/** Who sees the live map on ride day, changed from the ride's own card (Keith 2026-11-20). Organizer only, as the form. */
+export async function setLiveSharing(seriesId: string, value: 'off' | 'members' | 'link') {
+  const { data, error } = await supabase.from('ride_series').update({ live_sharing: value }).eq('id', seriesId).select('live_sharing')
+  if (error) throw new Error(error.message)
+  if (!data?.length) throw new Error('Only the ride\u2019s organizer can change this.')
+  track('organizer_live_sharing_set', { ride_id: seriesId, value })
+}
+
 export async function resumeRide(seriesId: string) {
   const r = await rpc<{ reinstated: number }>('resume_ride_series', { p_series_id: seriesId })
   track('organizer_ride_resumed', { ride_id: seriesId, reinstated: r?.reinstated ?? null })
