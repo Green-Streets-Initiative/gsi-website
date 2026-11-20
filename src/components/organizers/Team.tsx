@@ -183,7 +183,7 @@ export default function Team() {
 
       {manage && !ended && r.invite_code && (
         <Card>
-          <SectionTitle hint="Once they join in the Shift app, make them a co-organizer below.">
+          <SectionTitle hint={canRename && riders.length > 0 ? "Once they join in the Shift app, make them a co-organizer below." : "Once they join in the Shift app, they show up on this page with a button to make them a co-organizer."}>
             Or send the ride&apos;s link
           </SectionTitle>
           <p className="break-all text-[15px] text-(--ev-ink-85)">{rideJoinUrl(r.invite_code)}</p>
