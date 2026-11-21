@@ -42,14 +42,16 @@ jobs:
         id: extract
         run: |
           base=https://download.geofabrik.de/north-america/us
+          # Geofabrik keeps each state's file in its own folder (moved 2026-11-20);
+          # the updates/state.txt file stayed at the old path.
           ts=$(curl -sfL "$base/massachusetts-updates/state.txt" | sed -n 's/^timestamp=//p' | tr -d '\\')
           [ -n "$ts" ] || { echo "No Geofabrik state"; exit 1; }
           echo "ts=$ts" >> "$GITHUB_OUTPUT"
-          curl -sfL --retry 3 -o ma.osm.pbf "$base/massachusetts-latest.osm.pbf"
+          curl -sfL --retry 3 -o ma.osm.pbf "$base/massachusetts/massachusetts-latest.osm.pbf"
           # Neighbours, read only for the car-free paths near the state line
           # (the trip classifier's area reaches into each of them).
           for s in new-hampshire rhode-island connecticut new-york vermont; do
-            curl -sfL --retry 3 -o "$s.osm.pbf" "$base/$s-latest.osm.pbf" &
+            curl -sfL --retry 3 -o "$s.osm.pbf" "$base/$s/$s-latest.osm.pbf" &
           done
           wait
           ls -la *.osm.pbf
