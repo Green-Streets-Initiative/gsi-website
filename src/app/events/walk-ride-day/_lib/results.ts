@@ -17,6 +17,10 @@ export type CompetitionResults = {
   trips: number
   /** False for drawings whose rules carried no publicity line: winners read "Winner in <town>". */
   names_shown: boolean
+  /** Trips that day by type (01582). Older drawings may lack it. */
+  modes?: { walk: number; bike: number; transit: number; carpool: number; other: number } | null
+  /** The shops winners picked for their gift cards, with their logos. */
+  shops?: { name: string; logo_url: string | null }[] | null
   prizes: {
     prize_id: string
     description: string

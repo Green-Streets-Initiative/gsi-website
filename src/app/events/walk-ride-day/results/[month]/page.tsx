@@ -1,5 +1,8 @@
 import type { Metadata } from 'next'
+import Image from 'next/image'
 import Link from 'next/link'
+import { Bicycle, Car, PersonSimpleWalk, Train } from '@phosphor-icons/react/dist/ssr'
+import type { Icon } from '@phosphor-icons/react'
 import { notFound } from 'next/navigation'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
@@ -51,6 +54,9 @@ export default async function WalkRideDayResultsPage({ params }: Props) {
   const name = shortName(results.name)
   const drawnCount = results.prizes.reduce((s, p) => s + p.drawn, 0)
   const others = found.months.filter(m => m.drawn && m.month !== month).slice(0, 6)
+  const modeRows = modesToRows(results.modes)
+  const modeMax = Math.max(1, ...modeRows.map(r => r.n))
+  const shops = results.shops ?? []
 
   return (
     <>
@@ -87,9 +93,30 @@ export default async function WalkRideDayResultsPage({ params }: Props) {
 
           <dl className="mt-8 grid grid-cols-3 gap-4 text-center">
             <Stat value={results.people.toLocaleString('en-US')} label="people took part" />
-            <Stat value={results.trips.toLocaleString('en-US')} label="walks, bike rides, transit trips and carpools" />
+            <Stat value={results.trips.toLocaleString('en-US')} label={modeRows.length > 0 ? 'trips' : 'walks, bike rides, transit trips and carpools'} />
             <Stat value={String(results.prizes.reduce((s, p) => s + p.quantity, 0))} label="gift cards" />
           </dl>
+
+          {modeRows.length > 0 && (
+            <figure className="mt-6 rounded-[12px] border border-navy/10 bg-white p-5">
+              <figcaption className="mb-4 text-[1.0625rem] font-semibold text-navy">The trips, by type</figcaption>
+              <ul className="space-y-4">
+                {modeRows.map(({ key, n, label, Icon: ModeIcon }) => (
+                  <li key={key} className="flex items-center gap-3">
+                    <ModeIcon size={26} weight="regular" className="shrink-0 text-forest" aria-hidden />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[15px] text-navy">
+                        <strong className="font-semibold">{n.toLocaleString('en-US')}</strong> {label}
+                      </p>
+                      <div className="mt-1.5 h-2.5 rounded-full bg-navy/[0.07]">
+                        <div className="h-full rounded-full bg-forest" style={{ width: `${Math.max(3, (n / modeMax) * 100)}%` }} />
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </figure>
+          )}
 
           {results.drawn && (
             <section className="mt-10">
@@ -116,6 +143,25 @@ export default async function WalkRideDayResultsPage({ params }: Props) {
                   ? 'Winners are listed by first name, last initial and home town, or by town only when their Shift profile is private or they ask. Gift cards are the winner’s choice of a local shop or a brand.'
                   : 'Winners of drawings before November 2026 are listed by town. Gift cards are the winner’s choice of a local shop or a brand.'}
               </p>
+              {shops.length > 0 && (
+                <div className="mt-8">
+                  <h3 className="text-[1.0625rem] font-semibold text-navy">Shops winners picked for their gift cards</h3>
+                  <ul className="mt-4 grid grid-cols-3 gap-x-3 gap-y-5 sm:grid-cols-4">
+                    {shops.map(shop => (
+                      <li key={shop.name} className="flex flex-col items-center text-center">
+                        <span className="flex h-[72px] w-[72px] items-center justify-center overflow-hidden rounded-full border border-navy/10 bg-white">
+                          {shop.logo_url ? (
+                            <Image src={shop.logo_url} alt="" width={52} height={52} className="h-[52px] w-[52px] object-contain" />
+                          ) : (
+                            <span className="font-serif text-[1.5rem] text-forest">{shop.name.charAt(0)}</span>
+                          )}
+                        </span>
+                        <span className="mt-2 text-[14px] leading-[1.3] text-navy">{shop.name}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </section>
           )}
 
@@ -160,9 +206,23 @@ export default async function WalkRideDayResultsPage({ params }: Props) {
 
 function Stat({ value, label }: { value: string; label: string }) {
   return (
-    <div className="flex flex-col-reverse">
+    <div className="flex flex-col-reverse justify-end">
       <dt className="mt-1.5 text-[14px] leading-[1.35] text-ink-soft">{label}</dt>
       <dd className="font-serif text-[2rem] leading-none text-forest">{value}</dd>
     </div>
   )
+}
+
+const MODES: { key: 'walk' | 'bike' | 'transit' | 'carpool'; one: string; other: string; Icon: Icon }[] = [
+  { key: 'walk', one: 'walk', other: 'walks', Icon: PersonSimpleWalk },
+  { key: 'bike', one: 'bike ride', other: 'bike rides', Icon: Bicycle },
+  { key: 'transit', one: 'bus or train ride', other: 'bus and train rides', Icon: Train },
+  { key: 'carpool', one: 'carpool', other: 'carpools', Icon: Car },
+]
+
+/** The app's "What everyone did" bars (ChallengeResults.tsx): one row per kind of trip that day. */
+function modesToRows(modes: { walk: number; bike: number; transit: number; carpool: number } | null | undefined) {
+  if (!modes) return []
+  return MODES.map(m => ({ key: m.key, n: modes[m.key] ?? 0, label: (modes[m.key] ?? 0) === 1 ? m.one : m.other, Icon: m.Icon }))
+    .filter(r => r.n > 0)
 }
