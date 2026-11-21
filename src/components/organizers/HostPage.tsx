@@ -1,12 +1,15 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ExternalLink, ImagePlus, Trash2 } from 'lucide-react'
 import { errorText, saveHostPage, uploadLogo } from '@/lib/organizers/api'
 import { TAG_OPTIONS } from '@/lib/organizers/ride-words'
 import type { OrgClaim } from '@/lib/organizers/types'
+import { ASSISTANT_CHANGED_EVENT } from './AssistantPanel'
 import { useConsole } from './ConsoleContext'
+import GroupCheck from './GroupCheck'
 import GroupTeam from './GroupTeam'
 import { rememberSteppedDown } from './HandoffsForMe'
 import { Button, Card, Empty, Field, Input, Notice, SectionTitle, Select, Textarea, Toggle, cx } from './ui'
@@ -191,8 +194,21 @@ export default function HostPage() {
   const verified = useMemo(() => (me?.orgs ?? []).filter((o) => o.claim === 'verified'), [me])
   const pending = (me?.orgs ?? []).filter((o) => o.claim === 'pending')
   const [picked, setOrgId] = useState('')
+  const [justVerified, setJustVerified] = useState<{ name: string; told: string | null } | null>(null)
+  const verifiedNow = (p: { id: string; name: string }) => (told?: string | null) => {
+    setOrgId(p.id)
+    setJustVerified({ name: p.name, told: told ?? null })
+    void refreshMe()
+  }
   const orgId = picked || verified[0]?.id || ''
   const org = verified.find((o) => o.id === orgId) ?? null
+
+  // A group the assistant confirmed or saved shows here without a reload.
+  useEffect(() => {
+    const changed = () => { void refreshMe() }
+    window.addEventListener(ASSISTANT_CHANGED_EVENT, changed)
+    return () => window.removeEventListener(ASSISTANT_CHANGED_EVENT, changed)
+  }, [refreshMe])
 
   // The public page exists once a group runs often enough (lib/hosts.ts);
   // link to it only when it's there.
@@ -230,6 +246,15 @@ export default function HostPage() {
         </div>
       )}
       <div className="mt-6">
+        {justVerified && org?.name === justVerified.name && (
+          <div className="mb-5">
+            <Notice tone="good" onClose={() => setJustVerified(null)}>
+              {justVerified.told
+                ? `${justVerified.name} is yours to run on Shift. We emailed ${justVerified.told}, the address on its website, to let the group know.`
+                : `You’re verified for ${justVerified.name}. If you put a code on your page, you can take it off now.`}
+            </Notice>
+          </div>
+        )}
         {org ? (
           <div className="grid grid-cols-[minmax(0,1fr)] gap-5">
             <Editor key={org.id} org={org} onSaved={() => void refreshMe()} />
@@ -240,16 +265,27 @@ export default function HostPage() {
               if (!others) { rememberSteppedDown(org.name); router.push('/organizers') }
             }} />
           </div>
+        ) : pending.length > 0 ? (
+          <div className="grid grid-cols-[minmax(0,1fr)] gap-5">
+            {pending.map((p) => (
+              <GroupCheck key={p.id} organizerId={p.id} name={p.name} url={p.url} onVerified={verifiedNow(p)} />
+            ))}
+          </div>
         ) : (
           <Empty
-            title="No verified organization yet"
-            picture={<HostCardSketch name={pending[0]?.name} />}
-            action={pending.length === 0 ? <a href="/organizers/rides/new" className="inline-flex min-h-11 items-center rounded-xl bg-(--ev-ink) px-5 text-[15px] font-semibold text-white hover:opacity-90">Set up a ride</a> : undefined}
+            title="No group yet"
+            picture={<HostCardSketch />}
+            action={<Link href="/organizers/rides/new" className="inline-flex min-h-11 items-center rounded-xl bg-(--ev-ink) px-5 text-[15px] font-semibold text-white hover:opacity-90">Set up a ride</Link>}
           >
-            {pending.length > 0
-              ? `${pending.map((p) => p.name).join(' and ')} ${pending.length > 1 ? 'are' : 'is'} verified automatically when your sign-in email is at ${pending.length > 1 ? 'their websites\u2019 domains' : (domainOf(pending[0].url) ?? 'its website\u2019s domain')}. Then its host page is yours to edit here.`
-              : 'Set up a ride under your organization. It\u2019s verified automatically when your sign-in email is at its website\u2019s domain, and then its host page is yours to edit here.'}
+            Set up a ride and pick your group under Organization. Then its host page is yours to edit here.
           </Empty>
+        )}
+        {org && pending.length > 0 && (
+          <div className="mt-5 grid grid-cols-[minmax(0,1fr)] gap-5">
+            {pending.map((p) => (
+              <GroupCheck key={p.id} organizerId={p.id} name={p.name} url={p.url} onVerified={verifiedNow(p)} />
+            ))}
+          </div>
         )}
       </div>
     </div>

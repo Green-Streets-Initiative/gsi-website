@@ -12,7 +12,7 @@ import { supabase } from '@/lib/supabase'
 import { track } from './track'
 import type { FirstRideStart, LinkProblem } from './first-ride'
 import type {
-  ConsoleMe, CreditRequest, DashboardRide, PromoStats, RideDetail, RosterRow, Turnout,
+  ConsoleMe, CreditRequest, ClaimOutcome, DashboardRide, GroupCheck, GroupCheckResult, PromoStats, RideDetail, RosterRow, Turnout,
 } from './types'
 
 const FUNCTIONS = `${(process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').replace(/\/$/, '')}/functions/v1`
@@ -525,23 +525,40 @@ export async function searchOrgs(text: string): Promise<OrgMatch[]> {
 }
 
 /**
- * Say you run an organization. The server verifies the claim on the spot
- * when your sign-in email is at its website's domain (Shift 01563);
- * otherwise it stays pending. Returns the claim's status. An existing claim
- * keeps its status.
+ * Say you run an organization; returns whether the claim is verified now
+ * (see claimOrgFull for when). An existing claim keeps its status.
  */
 export async function claimOrg(organizerId: string): Promise<'verified' | 'pending'> {
+  return (await claimOrgFull(organizerId)).status
+}
+
+/**
+ * Say you run a group, and settle it: verified on the spot when your sign-in
+ * email is at its website (Shift 01563), or when nobody runs it yet and its
+ * public email can be told (lib/organizers/group-claim.ts). Otherwise it
+ * waits for the code on the Host page.
+ */
+export async function claimOrgFull(organizerId: string): Promise<ClaimOutcome> {
   const { data: s } = await supabase.auth.getSession()
   const uid = s.session?.user.id
   if (!uid) throw new Error('Not signed in')
   const { data: had } = await supabase.from('event_organizer_admins').select('status').eq('organizer_id', organizerId).eq('user_id', uid).maybeSingle()
-  if (had) return had.status === 'verified' ? 'verified' : 'pending'
-  const { data, error } = await supabase.from('event_organizer_admins')
-    .insert({ organizer_id: organizerId, user_id: uid, status: 'pending' }).select('status').single()
-  if (error && error.code !== '23505') throw new Error(error.message)
-  track('organizer_org_claimed', { organizer_id: organizerId, status: data?.status ?? 'pending' })
-  return data?.status === 'verified' ? 'verified' : 'pending'
+  if (!had) {
+    const { error } = await supabase.from('event_organizer_admins')
+      .insert({ organizer_id: organizerId, user_id: uid, status: 'pending' })
+    if (error && error.code !== '23505') throw new Error(error.message)
+  } else if (had.status === 'verified') {
+    return { status: 'verified', how: 'already', told: null }
+  }
+  const r = await settleClaimNow(organizerId)
+  track('organizer_org_claimed', { organizer_id: organizerId, status: r.status, how: r.status === 'verified' ? r.how : r.why })
+  return r
 }
+
+/** Verify a waiting claim now when the group's rules allow (safe to repeat). */
+export const settleClaimNow = (organizerId: string) =>
+  siteApi<ClaimOutcome>('/api/organizers/group-check', { organizer_id: organizerId, action: 'claim' })
+    .catch((): ClaimOutcome => ({ status: 'pending', why: 'no_claim' }))
 
 /** Add an organization that isn't on the calendar yet, and claim it. */
 export async function createOrg(name: string, url: string): Promise<{ id: string; status: 'verified' | 'pending' }> {
@@ -558,6 +575,22 @@ export async function createOrg(name: string, url: string): Promise<{ id: string
   }
   track('organizer_org_created', { organizer_id: id })
   return { id, status: await claimOrg(id) }
+}
+
+/** My code for a group I said I run, and where it can go (lib/organizers/group-check.ts). */
+export async function getGroupCheck(organizerId: string): Promise<GroupCheck> {
+  const token = await accessToken()
+  const res = await fetch(`/api/organizers/group-check?organizer_id=${encodeURIComponent(organizerId)}`, { headers: { Authorization: `Bearer ${token}` } })
+  const json = await res.json().catch(() => ({}))
+  if (!res.ok) throw new Error((json as { error?: string }).error ?? `group-check ${res.status}`)
+  return json as GroupCheck
+}
+
+/** Look for the code on the group's pages; verifies the claim when it's there. */
+export async function runGroupCheck(organizerId: string, opts: { page?: string; addLink?: string } = {}): Promise<GroupCheckResult> {
+  const r = await siteApi<GroupCheckResult>('/api/organizers/group-check', { organizer_id: organizerId, page: opts.page || null, add_link: opts.addLink || null })
+  track('organizer_group_code_checked', { organizer_id: organizerId, verified: r.verified })
+  return r
 }
 
 export async function saveHostPage(organizerId: string, profile: Record<string, unknown>) {

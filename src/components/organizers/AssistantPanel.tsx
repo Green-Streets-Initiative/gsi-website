@@ -25,7 +25,7 @@ export function openAssistant(prompt?: string) {
   window.dispatchEvent(new CustomEvent(OPEN_EVENT, { detail: { prompt } }))
 }
 
-const CHANGE_LABELS = new Set(['Creating the ride', 'Saving the changes', 'Posting the update', 'Cancelling the date', 'Changing the date', 'Updating the ride', 'Starting it again', 'Sending the invite', 'Settling the request'])
+const CHANGE_LABELS = new Set(['Creating the ride', 'Saving the changes', 'Posting the update', 'Cancelling the date', 'Changing the date', 'Updating the ride', 'Starting it again', 'Sending the invite', 'Settling the request', 'Looking for your code', 'Saving your group', 'Saving the host page', 'Stepping down'])
 
 type Card = { title: string; lines: string[]; cta: string; tone: 'primary' | 'danger'; mapUrl?: string; confirmText?: string; staffNote?: string }
 type LinkT = { href: string; label: string; external?: boolean; ride?: string }

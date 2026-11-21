@@ -18,6 +18,8 @@ import { scheduleDates } from '@/lib/organizers/schedule'
 import { PROMO_CHANNELS, promoLink } from '@/lib/rides/promo'
 import { LANGUAGES, languageList, type PartnerLanguage } from '@/lib/languages'
 import type { OrgClaim, PromoStats } from '@/lib/organizers/types'
+import { checkGroupCode, groupCheckState } from '@/lib/organizers/group-check'
+import { settleClaim } from '@/lib/organizers/group-claim'
 
 // The organizer assistant's tools (Keith 2026-10-22). Same shape as the
 // employer assistant's: reads run straight away as the organizer; anything
@@ -563,7 +565,7 @@ export const TOOLS: Anthropic.Tool[] = [
   },
   {
     name: 'claim_group',
-    description: "Say they run a group, as the ride form's \"Your organization\" does: claim one already on Shift (group_id from get_my_group with search), or add theirs with name and website. It's confirmed right away when their sign-in email is at the group's website; otherwise Green Streets checks it first. Card first.",
+    description: "Say they run a group, as the ride form's \"Your organization\" does: claim one already on Shift (group_id from get_my_group with search), or add theirs with name and website. It's confirmed right away when their sign-in email is at the group's website, or when nobody runs it yet (then the group's public email is told, with a way to undo it); otherwise they confirm it with a code (get_my_group gives it, check_group_code checks it). Card first.",
     input_schema: {
       type: 'object',
       properties: {
@@ -571,6 +573,19 @@ export const TOOLS: Anthropic.Tool[] = [
         name: nullable('string', 'A group not on Shift yet: its name.'),
         website: nullable('string', "Its website, when adding one. It's how the claim can be confirmed right away."),
       },
+    },
+  },
+  {
+    name: 'check_group_code',
+    description: "Confirm they run a group they claimed but that isn't confirmed yet (confirmed false in get_my_group). They put their code (get_my_group gives it, with the pages it can go on) on the group's website or in the bio of its Instagram, Facebook or Linktree; this reads those pages and confirms them right away when the code is there. Nobody at Green Streets approves it. Runs straight away, no card.",
+    input_schema: {
+      type: 'object',
+      properties: {
+        group_id: { type: 'string', description: 'An id from get_my_group.' },
+        page: nullable('string', "A page on the group's own website where they put the code, when it isn't the home page."),
+        add_link: nullable('string', "Only for a group they added themself that has no website or profile on Shift (can_add_link true): its website, Instagram, Facebook or Linktree, which they've put the code on. It becomes the group's link."),
+      },
+      required: ['group_id'],
     },
   },
 ]
@@ -639,6 +654,7 @@ export const ACTIVITY: Record<string, string> = {
   withdraw_group_invite: 'Withdrawing the invite',
   step_down_from_group: 'Stepping down',
   claim_group: 'Saving your group',
+  check_group_code: 'Looking for your code',
 }
 
 /** Labels whose completion means a screen should reload. */
@@ -907,7 +923,7 @@ async function findGroups(ctx: ToolCtx, text: unknown): Promise<{ id: string; na
   return (data ?? []) as { id: string; name: string; url: string | null }[]
 }
 
-const CLAIM_CHECK = "It's confirmed right away when your sign-in email is at the group's website. Otherwise Green Streets checks it first, and you can run rides meanwhile."
+const CLAIM_CHECK = "When nobody runs the group on Shift yet, it's yours right away, and we email the address on the group's website to let them know. Otherwise you get a short code to put on the group's website or Instagram. You can run rides meanwhile."
 
 /** Where a ride ends: its route's last point, else its meeting point. */
 function rideEnd(r: RideRow): { lat: number; lng: number } | null {
@@ -1059,12 +1075,39 @@ async function readTool(ctx: ToolCtx, name: string, input: Record<string, unknow
           note: 'Each link counts its own visits and sign-ups, so use the one for the channel the post is for.',
         }, { href: `/organizers/rides/${r.id}/promote`, label: 'Open Promote' })
       }
+      case 'check_group_code': {
+        const id = typeof input.group_id === 'string' ? input.group_id : ''
+        if (!id) return fail('Give the group_id from get_my_group.')
+        const r = await checkGroupCode(ctx.admin, ctx.userId, id, {
+          page: typeof input.page === 'string' ? input.page : null,
+          addLink: typeof input.add_link === 'string' ? input.add_link : null,
+        })
+        if (!r.ok) return fail(r.error)
+        if (r.verified) {
+          return ok({ confirmed: true, found_at: r.found_at || undefined, note: `They run ${r.name} on Shift now. They can take the code out. Offer to fill in its host page (update_host_page) and put it on their rides (update_ride group_id).` },
+            { href: '/organizers/host', label: 'Open your host page' })
+        }
+        return ok({
+          confirmed: false, code: r.code,
+          looked_at: r.results.map((x) => ({ where: x.label, url: x.url, result: x.problem === 'unreadable' ? "couldn't read it (often Instagram or Facebook hiding it from outside sites)" : 'code not there yet' })),
+          note: r.results.length ? 'Say where you looked. Sites can take a minute to show a change; suggest checking again shortly, or the website or Linktree if Instagram or Facebook could not be read.' : 'No page to look at. See to_confirm in get_my_group.',
+        })
+      }
       case 'get_my_group': {
         const [orgs, found] = await Promise.all([myOrgs(ctx), findGroups(ctx, input.search)])
         const matches = found ? { matches_on_shift: found.map((g) => ({ group_id: g.id, name: g.name, website: g.url })), note_on_matches: 'Claim one with claim_group, or add theirs with claim_group and no group_id if none is it.' } : {}
         if (!orgs.length) return ok({ groups: [], note: 'They run no group on Shift yet. claim_group says they run one (find it with search first) or adds theirs.', ...matches }, { href: '/organizers/host', label: 'Open your host page' })
         const shown = orgs.slice(0, 5)
-        const teams = await Promise.all(shown.map((o) => rpc<GroupTeam>(ctx, 'organizer_group_team', { p_organizer_id: o.id }).catch(() => null)))
+        const [teams, checks] = await Promise.all([
+          Promise.all(shown.map((o) => rpc<GroupTeam>(ctx, 'organizer_group_team', { p_organizer_id: o.id }).catch(() => null))),
+          // A waiting claim on a group nobody runs is confirmed here, as on the Host page.
+          Promise.all(shown.map(async (o) => {
+            if (o.claim === 'verified') return null
+            const r = await settleClaim(ctx.admin, ctx.userId, o.id).catch(() => null)
+            if (r?.status === 'verified') { o.claim = 'verified'; return null }
+            return groupCheckState(ctx.admin, ctx.userId, o.id).catch(() => null)
+          })),
+        ])
         return ok({
           groups: shown.map((o, i) => ({
             group_id: o.id, name: o.name, confirmed: o.claim === 'verified', description: o.description, website: o.url,
@@ -1072,6 +1115,18 @@ async function readTool(ctx: ToolCtx, name: string, input: Record<string, unknow
             ride_tags: o.ride_tags, rides_no_drop: o.rides_no_drop, has_logo: !!o.logo_url,
             organizers: teams[i]?.organizers.map((x) => (x.is_you ? `${x.name} (you)` : x.name)),
             open_invites: teams[i]?.invites.map((x) => ({ email: x.email, hand_over: x.handoff })),
+            ...(checks[i] ? {
+              to_confirm: {
+                code: checks[i]!.code,
+                put_it_on: checks[i]!.places.map((p) => ({ where: p.label, url: p.url, how: p.where.replace('CODE', checks[i]!.code ?? '') })),
+                can_add_link: checks[i]!.can_add_link,
+                note: checks[i]!.places.length
+                  ? 'Give them the code to copy and the one place that is easiest (usually the Instagram bio or the website). When they say it is there, call check_group_code. They can take it out afterwards.'
+                  : checks[i]!.can_add_link
+                    ? 'No website or profile on Shift yet. Ask for theirs; once the code is on it, check_group_code with add_link.'
+                    : 'No website or profile on Shift to check. Someone who already runs it on Shift can add them from the Host page.',
+              },
+            } : {}),
           })),
           ...matches,
         }, { href: '/organizers/host', label: 'Open your host page' })
@@ -2077,7 +2132,7 @@ export async function approvalCard(ctx: ToolCtx, name: string, input: Record<str
           const { data: g } = await ctx.user.from('event_organizers').select('id, name').eq('id', input.group_id).maybeSingle()
           if (!g) return { result: fail('No group with that id. Use get_my_group with search.') }
           const had = mine.find((o) => o.id === g.id)
-          if (had) return { result: ok({ already: true, confirmed: had.claim === 'verified', note: had.claim === 'verified' ? 'They already run it.' : 'They already said so; Green Streets is checking it.' }) }
+          if (had) return { result: ok({ already: true, confirmed: had.claim === 'verified', note: had.claim === 'verified' ? 'They already run it.' : 'They already said so, and it is not confirmed yet. get_my_group gives their code (to_confirm); walk them through it, then check_group_code.' }) }
           return { card: { title: `Say you run ${g.name}?`, lines: [CLAIM_CHECK], cta: 'Yes, I run it', tone: 'primary' }, input: { group_id: g.id, name: g.name } }
         }
         const nm = typeof input.name === 'string' ? input.name.trim() : ''
@@ -2341,11 +2396,15 @@ async function runMore(ctx: ToolCtx, name: string, input: Record<string, unknown
         if (error && error.code !== '23505') return fail(error.message)
         status = (data as { status: string } | null)?.status ?? 'pending'
       }
-      const confirmed = status === 'verified'
+      const settled = status === 'verified' ? null : await settleClaim(ctx.admin, ctx.userId, id).catch(() => null)
+      const confirmed = status === 'verified' || settled?.status === 'verified'
+      const told = settled?.status === 'verified' ? settled.told : null
       return ok({
         group_id: id, confirmed,
-        note: confirmed ? 'Confirmed. Offer to fill in its host page (update_host_page) and put it on their rides (update_ride group_id).'
-          : 'Green Streets checks it first. They can still run rides; offer to fill in its host page.',
+        ...(told ? { group_email_told: told } : {}),
+        ...(settled?.status === 'pending' && settled.why === 'someone_runs_it' ? { someone_runs_it: true } : {}),
+        note: confirmed ? `Confirmed.${told ? ` Say we emailed ${told}, the address on the group's website, to let them know.` : ''} Offer to fill in its host page (update_host_page) and put it on their rides (update_ride group_id).`
+          : 'Not confirmed yet. Call get_my_group: it gives their code and the pages it can go on. Walk them through it, then check_group_code. They can run rides meanwhile.',
       }, { href: '/organizers/host', label: 'See your host page' })
     }
   }

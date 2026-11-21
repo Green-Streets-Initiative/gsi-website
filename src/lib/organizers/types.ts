@@ -23,6 +23,25 @@ export interface OrgClaim {
   logo_url: string | null
 }
 
+/** Proving a group is yours with a code (api/organizers/group-check). */
+export interface GroupCheckPlace { kind: 'website' | 'instagram' | 'facebook' | 'linktree' | 'other'; label: string; url: string; where: string }
+export interface GroupCheck {
+  organizer_id: string
+  name: string
+  status: 'pending' | 'verified'
+  code: string | null
+  places: GroupCheckPlace[]
+  can_add_link: boolean
+}
+/** Right after saying you run a group (lib/organizers/group-claim.ts). */
+export type ClaimOutcome =
+  | { status: 'verified'; how: 'already' | 'own_group' | 'first_claim'; told: string | null }
+  | { status: 'pending'; why: 'someone_runs_it' | 'no_public_email' | 'said_not_us' | 'no_claim' }
+
+export type GroupCheckResult =
+  | { verified: true; name: string; found_at: string; already?: boolean }
+  | { verified: false; name: string; code: string; places: GroupCheckPlace[]; results: { url: string; label: string; found: boolean; problem?: 'not_found' | 'unreadable' }[] }
+
 export interface ConsoleMe {
   signed_in: boolean
   allowed: boolean

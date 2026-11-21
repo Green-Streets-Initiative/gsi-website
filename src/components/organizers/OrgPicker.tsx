@@ -1,8 +1,9 @@
 'use client'
 
+import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { Plus, Search } from 'lucide-react'
-import { claimOrg, createOrg, errorText, searchOrgs, type OrgMatch } from '@/lib/organizers/api'
+import { claimOrgFull, createOrg, errorText, searchOrgs, type OrgMatch } from '@/lib/organizers/api'
 import type { OrgClaim } from '@/lib/organizers/types'
 import { useConsole } from './ConsoleContext'
 import { Button, Field, Input, Notice, Select } from './ui'
@@ -36,7 +37,7 @@ export default function OrgPicker({ value, onPick }: {
   const [url, setUrl] = useState('')
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
-  const [justClaimed, setJustClaimed] = useState<{ name: string; status: 'verified' | 'pending' } | null>(null)
+  const [justClaimed, setJustClaimed] = useState<{ name: string; status: 'verified' | 'pending'; told?: string | null } | null>(null)
 
   useEffect(() => {
     if (!finding || q.trim().length < 2) { setHits(null); return }
@@ -51,10 +52,13 @@ export default function OrgPicker({ value, onPick }: {
     setBusy(true)
     setErr(null)
     try {
-      const status = orgs.some((o) => o.id === org.id) ? (orgs.find((o) => o.id === org.id)!.claim) : await claimOrg(org.id)
+      const had = orgs.find((o) => o.id === org.id)
+      const r = had ? null : await claimOrgFull(org.id)
+      const status = had ? had.claim : r!.status
+      const told = r?.status === 'verified' ? r.told : null
       await refreshMe()
       onPick(org)
-      setJustClaimed({ name: org.name, status })
+      setJustClaimed({ name: org.name, status, told })
       setFinding(false)
       setQ('')
     } catch (e) {
@@ -96,10 +100,11 @@ export default function OrgPicker({ value, onPick }: {
           {orgs.map((o) => <option key={o.id} value={o.id}>{o.name}{o.claim === 'pending' ? ' (not verified yet)' : ''}</option>)}
         </Select>
 
-        {justClaimed?.status === 'verified' && <Notice tone="good">You&rsquo;re verified for {justClaimed.name}. The ride shows its name, logo and links.</Notice>}
+        {justClaimed?.status === 'verified' && <Notice tone="good">You&rsquo;re verified for {justClaimed.name}. The ride shows its name, logo and links.{justClaimed.told ? ` We emailed ${justClaimed.told}, the address on its website, to let the group know.` : ''}</Notice>}
         {picked?.claim === 'pending' && (
           <Notice tone="info">
-            {`Until ${picked.name} is verified, the ride shows as yours. It’s verified automatically when your sign-in email is at ${pendingDomain || 'its website’s domain'}.`}
+            {`Until ${picked.name} is verified, the ride shows as yours. Sign in with an email at ${pendingDomain || 'its website’s domain'}, or put a short code on its website or Instagram: `}
+            <Link href="/organizers/host" className="font-semibold underline">get your code on the Host page</Link>.
           </Notice>
         )}
 
