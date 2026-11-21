@@ -307,7 +307,8 @@ async function notice(body: Record<string, unknown>): Promise<Sent> {
 }
 
 /** The "date is off" notice; also how the console sends it again. */
-export const sendCancelNotice = (occurrenceId: string) => notice({ occurrence_id: occurrenceId })
+/** `note`: the organizer's own words in the notice (the function keeps 200 characters). */
+export const sendCancelNotice = (occurrenceId: string, note?: string) => notice({ occurrence_id: occurrenceId, ...(note?.trim() ? { note: note.trim() } : {}) })
 /** The "date has changed" notice; also how the console sends it again. */
 export const sendChangeNotice = (occurrenceId: string) => notice({ occurrence_id: occurrenceId, change: true })
 /** The "ride has ended / is on a break" notice; also how the console sends it again. */
@@ -323,11 +324,11 @@ export async function noticeReach(occurrenceId: string, kind: 'cancel' | 'change
 }
 
 /** Cancel or bring back one date; either way, everyone on it hears (as the app and the assistant do). */
-export async function setDateCanceled(occurrenceId: string, canceled: boolean): Promise<Sent> {
+export async function setDateCanceled(occurrenceId: string, canceled: boolean, note?: string): Promise<Sent> {
   await rpc('set_ride_occurrence_canceled', { p_occurrence_id: occurrenceId, p_canceled: canceled })
   track(canceled ? 'organizer_date_canceled' : 'organizer_date_restored', { occurrence_id: occurrenceId })
   if (!canceled) return notice({ occurrence_id: occurrenceId, back_on: true })
-  return sendCancelNotice(occurrenceId)
+  return sendCancelNotice(occurrenceId, note)
 }
 
 /** Move one date's time or meeting point; tells everyone on it if it changed. */

@@ -105,7 +105,7 @@ export default function HelpersStops({ occurrenceId, dateWords, walk, canManage,
             {(['front', 'sweep', 'corner'] as HelperJob[]).flatMap((j) => Array.from({ length: help.open[j] }, (_, i) => (
               <li key={`${j}-${i}`} className="flex flex-wrap items-center gap-2 text-[15px]">
                 <span className="w-[116px] shrink-0 text-[14px] font-semibold text-(--ev-ink-75)">{JOB_NAME[j]}</span>
-                <span className="rounded-full bg-[#FFF4D6] px-2.5 py-0.5 text-[13px] font-bold text-[#7A4B00]">Open</span>
+                <span className="rounded-full bg-[#FFF4D6] px-2.5 py-0.5 text-[13px] font-bold text-[#7A4B00]">Needs someone</span>
                 {j === 'corner' && unguarded[i] && <span className="basis-full text-[14px] text-(--ev-ink-75) sm:order-last sm:pl-[124px]">{unguarded[i].label}</span>}
                 {canManage && free.length > 0 && (
                   <Select aria-label={`Give ${JOB_NAME[j].toLowerCase()} to someone going`} value="" disabled={busy}

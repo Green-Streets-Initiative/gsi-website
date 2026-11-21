@@ -7,7 +7,7 @@ import { changeDate, errorText, noticeReach, sendCancelNotice, sendChangeNotice,
 import { dateLabel, plural } from '@/lib/organizers/ride-words'
 import type { DetailDate, RideRow } from '@/lib/organizers/types'
 import { sentLine } from './PostUpdate'
-import { Button, Dialog, Field, Input, Notice } from './ui'
+import { Button, Dialog, Field, Input, Notice, Textarea } from './ui'
 
 /** Who a notice for this date reaches, from the notice function's dry run. */
 function useReach(occurrenceId: string | undefined, kind: 'cancel' | 'change'): number | null {
@@ -45,6 +45,8 @@ export function CancelDateDialog({ date, onClose, onDone }: { date: DetailDate |
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
   const [failed, setFailed] = useState(false)
+  // Why it's off, in the organizer's words (Keith 2026-11-21: the notice said only "cancelled").
+  const [note, setNote] = useState('')
   const reach = useReach(date?.id, 'cancel')
   if (!date) return null
   const label = dateLabel(date.date)
@@ -59,7 +61,7 @@ export function CancelDateDialog({ date, onClose, onDone }: { date: DetailDate |
     setBusy(true)
     setErr(null)
     try {
-      finish(await setDateCanceled(date.id, true), false)
+      finish(await setDateCanceled(date.id, true, note), false)
     } catch (e) {
       setErr(errorText(e))
       setBusy(false)
@@ -69,7 +71,7 @@ export function CancelDateDialog({ date, onClose, onDone }: { date: DetailDate |
     if (!date) return
     setBusy(true)
     setErr(null)
-    finish(await sendCancelNotice(date.id), true)
+    finish(await sendCancelNotice(date.id, note), true)
   }
   if (failed) {
     return (
@@ -91,6 +93,13 @@ export function CancelDateDialog({ date, onClose, onDone }: { date: DetailDate |
       <p className="text-[15px] leading-relaxed text-(--ev-ink-85)">
         {reachLine(reach, "it's cancelled")} Its page and the calendar will say so.
       </p>
+      {reach !== 0 && (
+        <div className="mt-4">
+          <Field label="Why (optional)" htmlFor="cancel-note" hint="Goes in the notice.">
+            <Textarea id="cancel-note" value={note} maxLength={200} rows={2} onChange={(e) => setNote(e.target.value)} placeholder="Thunderstorms forecast. See you next week." />
+          </Field>
+        </div>
+      )}
       <p className="mt-3 text-[14px] text-(--ev-ink-75)">The other dates carry on as planned. You can bring a cancelled date back.</p>
       {err && <div className="mt-3"><Notice tone="off">{err}</Notice></div>}
     </Dialog>
@@ -160,7 +169,7 @@ export function ChangeDateDialog({ date, ride, onClose, onDone }: {
     <Dialog open onClose={onClose} title={`Change ${label}`}
       footer={<>
         <Button variant="ghost" onClick={onClose}>Close</Button>
-        <Button variant="primary" onClick={() => void go()} busy={busy} disabled={!anyChange}>Save and tell people</Button>
+        <Button variant="primary" onClick={() => void go()} busy={busy} disabled={!anyChange}>{reach === 0 ? 'Save' : 'Save and tell people'}</Button>
       </>}>
       <p className="text-[14px] leading-snug text-(--ev-ink-80)">
         Just this date. {reachLine(reach, 'about it')}

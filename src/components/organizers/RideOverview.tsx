@@ -401,7 +401,7 @@ export default function RideOverview() {
       {!ended && !backOffer && (posting || (!nextDate && detail.members > 0)) && (
         <Card id="post-update">
           <SectionTitle hint="One message to everyone on the ride, by app or email.">Post an update</SectionTitle>
-          <PostUpdate key={askNote ?? 'plain'} seriesId={r.id} dates={detail.occurrences} onPosted={() => { setAskNote(null); void reload() }} autoFocus={posting}
+          <PostUpdate key={askNote ?? 'plain'} seriesId={r.id} dates={detail.occurrences} onPosted={(line) => { setAskNote(null); setPosting(false); setMsg({ tone: 'good', text: line || 'Posted.' }); void reload() }} autoFocus={posting}
             {...(askNote ? { initialKind: 'note' as const, initialNote: askNote } : {})} />
         </Card>
       )}

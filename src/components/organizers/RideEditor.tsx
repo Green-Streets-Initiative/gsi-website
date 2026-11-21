@@ -530,6 +530,8 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
             name: d.ride.name, flyer: d.ride.flyer_url, last: d.ride.ride_date,
             others: d.leaders.filter((l) => !l.is_you).map((l) => l.name),
           })
+          // The date is the one thing a copy needs (Keith 2026-11-21): open on When.
+          setStepRaw('when')
         }, (e) => setCopyErr(errorText(e, "We couldn't copy that ride. Fill this one in, or go back to Your rides and try again.")))
           .finally(() => setCopying(false))
         return
@@ -828,7 +830,7 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
         </div>
       )}
 
-      {copied && step === STEPS[0].id && (
+      {copied && (step === 'when' || step === STEPS[0].id) && (
         <div className="mt-4">
           <Notice tone="good">
             Copied from {copied.name}: everything but its dates. Pick the new date, check each part, then save.

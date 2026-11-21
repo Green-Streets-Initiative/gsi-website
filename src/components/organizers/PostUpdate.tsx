@@ -28,7 +28,8 @@ export function sentLine(r: SendResult | null | undefined): string {
 export default function PostUpdate({ seriesId, dates, onPosted, autoFocus, initialKind, initialNote = '' }: {
   seriesId: string
   dates: DetailDate[]
-  onPosted: () => void
+  /** Called with the sent line, so a parent that closes the form can say it. */
+  onPosted: (sent: string) => void
   autoFocus?: boolean
   /** A ready-made message, as after a break ends ("Tell everyone it's back?"). */
   initialKind?: Kind
@@ -72,9 +73,10 @@ export default function PostUpdate({ seriesId, dates, onPosted, autoFocus, initi
     setErr(null)
     try {
       const r = await postUpdate({ seriesId, occurrenceId: occurrenceId || null, kind, note })
-      setDone(sentLine(r))
+      const line = sentLine(r)
+      setDone(line)
       setNote('')
-      onPosted()
+      onPosted(line)
     } catch (e) {
       setErr(errorText(e))
     } finally {

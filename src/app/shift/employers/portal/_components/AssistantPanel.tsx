@@ -541,12 +541,23 @@ function AssistantPanel({ groupId, seed, onSeedUsed, onClose }: { groupId: strin
     void send({ attachments: [{ url, name: file.name }], message: message || undefined })
   }
 
+  // A message sent while the assistant is still answering waits and goes
+  // next (Keith 2026-11-21: it used to clear the box and send nothing).
+  const [queued, setQueued] = useState(false)
   const submit = () => {
     const t = draft.trim()
     if (!t) return
+    if (busy) { setQueued(true); return }
     setDraft('')
     void send({ message: t })
   }
+  useEffect(() => {
+    if (busy || !queued) return
+    setQueued(false)
+    const t = draft.trim()
+    if (t) { setDraft(''); void send({ message: t }) }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [busy, queued])
 
   const empty = loaded && items.length === 0
 
@@ -905,13 +916,14 @@ function AssistantPanel({ groupId, seed, onSeedUsed, onClose }: { groupId: strin
           />
           <button
             type="submit"
-            disabled={busy || !draft.trim()}
+            disabled={!draft.trim() || queued}
             aria-label="Send"
             className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-accent text-white disabled:opacity-40"
           >
             <ArrowUp size={16} />
           </button>
         </div>
+        {queued && <p className="mt-2 text-[14px] text-ink-muted">Sends when the assistant finishes.</p>}
         {/* The same footer on every assistant (Keith 2026-10-27): the app's, the
             organizer tools' and this one. Each links its own data note and terms. */}
         <p className="mt-2 text-center text-[14px] leading-[1.45] text-ink-muted">

@@ -353,12 +353,23 @@ function AssistantPanel({ seed, onSeedUsed, onClose }: { seed: { prompt: string 
     if (t.id === threadId) { setThreadId(null); setItems([]); setFresh(true) }
   }
 
+  // A message sent while the assistant is still answering waits and goes
+  // next (Keith 2026-11-21: it used to clear the box and send nothing).
+  const [queued, setQueued] = useState(false)
   const submit = () => {
     const t = draft.trim()
     if (!t) return
+    if (busy) { setQueued(true); return }
     setDraft('')
     void send({ message: t })
   }
+  useEffect(() => {
+    if (busy || !queued) return
+    setQueued(false)
+    const t = draft.trim()
+    if (t) { setDraft(''); void send({ message: t }) }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [busy, queued])
 
   // Attachments, like the employer assistant's: an image (a flyer, a
   // screenshot of an event or a route) goes to the ride-flyers bucket and the
@@ -635,11 +646,12 @@ function AssistantPanel({ seed, onSeedUsed, onClose }: { seed: { prompt: string 
             }}
             placeholder="Ask, or attach a screenshot or GPX route" aria-label="Message the assistant"
             className="min-h-[48px] flex-1 resize-none bg-transparent text-[15px] leading-[1.45] text-(--ev-ink) outline-none placeholder:text-(--ev-ink-60)" />
-          <button type="submit" disabled={busy || !draft.trim()} aria-label="Send"
+          <button type="submit" disabled={!draft.trim() || queued} aria-label="Send"
             className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-(--ev-accent-fill) text-(--ev-on-accent-fill) disabled:opacity-40">
             <ArrowUp size={17} />
           </button>
         </div>
+        {queued && <p className="mt-2 text-[14px] text-(--ev-ink-75)">Sends when the assistant finishes.</p>}
         {/* The same footer on every assistant (Keith 2026-10-27): the app's, the
             employer portal's and this one. Each links its own data note and terms. */}
         <p className="mt-2 text-center text-[14px] leading-[1.45] text-(--ev-ink-75)">
