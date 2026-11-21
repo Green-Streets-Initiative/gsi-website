@@ -34,6 +34,22 @@ export const CODE_PREFIX = 'shift-verify-'
 const ALPHABET = 'abcdefghjkmnpqrstuvwxyz23456789'
 
 /** The claim's code: stable for the claim, unguessable without the server secret. */
+/**
+ * Rides a person posted under a group while their claim waited start showing
+ * the group once it's verified, and go back to waiting if the claim is undone.
+ * The admin approval used to do this by hand (shift-school PunchlistPage); the
+ * calendar copy follows on the nightly materialize-ride-occurrences run.
+ */
+export async function setClaimRides(admin: SupabaseClient, userIds: string[], organizerId: string, to: 'verified' | 'pending_verification'): Promise<void> {
+  if (!userIds.length) return
+  const { error } = await admin.from('ride_series')
+    .update({ org_verification_status: to })
+    .in('organizer_user_id', userIds)
+    .eq('event_organizer_id', organizerId)
+    .eq('org_verification_status', to === 'verified' ? 'pending_verification' : 'verified')
+  if (error) console.error('[organizers] claim rides not updated:', error.message)
+}
+
 export function claimCode(claimId: string): string {
   const secret = process.env.ORGANIZER_CLAIM_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY || ''
   if (!secret) throw new Error('Group check is not set up on this server')
@@ -298,6 +314,7 @@ export async function checkGroupCode(admin: SupabaseClient, userId: string, orga
     .eq('id', l.claim.id).eq('status', 'pending').select('id').maybeSingle()
   if (error) return { ok: false, error: error.message }
   if (done) {
+    await setClaimRides(admin, [userId], org.id, 'verified')
     // A record of how, for anyone who later asks why this person runs the group.
     await admin.from('admin_notifications').insert({
       level: 'info',

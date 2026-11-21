@@ -2,7 +2,7 @@ import 'server-only'
 import { createHmac, timingSafeEqual } from 'node:crypto'
 import { Resend } from 'resend'
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { SHARED_HOST, hostOf, readText } from './group-check'
+import { SHARED_HOST, hostOf, readText, setClaimRides } from './group-check'
 
 /**
  * Claiming a group nobody runs yet, in one step (Keith 2026-11-21: "yes,
@@ -113,6 +113,7 @@ export async function settleClaim(admin: SupabaseClient, userId: string, organiz
   if (error) throw new Error(error.message)
   if (!done) return { status: 'verified', how: 'already', told: await recentlyTold(admin, claim.id) }
 
+  await setClaimRides(admin, [userId], o.id, 'verified')
   const tell = contact && contact !== email ? contact : null
   const before = Object.fromEntries(PROFILE.split(', ').map((k) => [k, o[k] ?? null]))
   const { data: note } = await admin.from('admin_notifications').insert({
@@ -195,9 +196,10 @@ export async function undoClaim(admin: SupabaseClient, noticeId: string, token: 
   const info = await undoInfo(admin, noticeId, token)
   if (!info.ok || info.undone) return info
   await admin.from('event_organizer_admins').update({ status: 'pending', verified_at: null }).eq('id', c.claim_id!)
-  // Anyone they made an organizer of the group goes with them.
-  await admin.from('event_organizer_admins').update({ status: 'pending', verified_at: null, verified_by: null })
-    .eq('organizer_id', c.organizer_id!).eq('verified_by', c.user_id!)
+  // Anyone they made an organizer of the group goes with them, and so do their rides' group name.
+  const { data: added } = await admin.from('event_organizer_admins').update({ status: 'pending', verified_at: null, verified_by: null })
+    .eq('organizer_id', c.organizer_id!).eq('verified_by', c.user_id!).select('user_id')
+  await setClaimRides(admin, [c.user_id!, ...((added ?? []) as { user_id: string }[]).map((a) => a.user_id)], c.organizer_id!, 'pending_verification')
   if (c.before) await admin.from('event_organizers').update(c.before).eq('id', c.organizer_id!)
   await admin.from('admin_notifications').insert({
     level: 'warning',
