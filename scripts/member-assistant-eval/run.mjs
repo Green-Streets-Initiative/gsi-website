@@ -69,12 +69,16 @@ const w = {
 }
 
 // ── One question, read as a stream of events ───────────────────────────────
+const APP_SCREENS = ['trip', 'trip_history', 'my_rewards', 'notifications', 'vacation', 'partner_request', 'partner_matches', 'bike_confidence', 'roam', 'card_ways', 'trail_card', 'plans', 'closure_plan', 'memories', 'save_trip', 'partner_practice', 'guide',
+  'settings', 'tracking', 'language', 'car', 'privacy', 'assistant_settings', 'account', 'places', 'go_together', 'invite', 'help']
+
 async function ask(body) {
   const res = await fetch(`${BASE}/api/shift/assistant`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${TOKEN}` },
-    // The screens a current app build can open (Shift lib/assistant.ts).
-    body: JSON.stringify({ here: HERE, screens: ['trip', 'trip_history', 'my_rewards', 'notifications', 'vacation'], ...body }),
+    // The screens a current app build can open: a copy of NEWER_SCREENS in
+    // Shift lib/assistant.ts (update it when that list grows).
+    body: JSON.stringify({ here: HERE, screens: APP_SCREENS, ...body }),
   })
   if (!res.ok) return { status: res.status, error: (await res.json().catch(() => ({}))).error ?? res.statusText, events: [] }
   const raw = await res.text()
