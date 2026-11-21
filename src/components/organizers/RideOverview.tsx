@@ -101,7 +101,7 @@ function LiveMapCard({ rideId, code, date, value, walk, bus, canChange, onSaved 
       <div className="flex items-center gap-4">
         <LiveMapPicture on={shown !== 'off'} />
         <div className="min-w-0 flex-1">
-          <p className="text-[17px] font-bold text-(--ev-ink)">Live map on {noun} day</p>
+          <p className="text-[17px] font-bold text-(--ev-ink)">{bus ? `Live map of the ${noun}` : `Live map on ${noun} day`}</p>
           <p className="mt-0.5 text-[15px] text-(--ev-ink-85)">{LIVE_LINE[shown](noun, bus)}</p>
         </div>
       </div>
