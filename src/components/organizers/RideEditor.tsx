@@ -869,18 +869,48 @@ export default function RideEditor({ ride, onSaved }: { ride: RideRow | null; on
         <Card id="sec-ride">
           <SectionTitle hint={ride ? undefined : `What it is and who it's from. Only the name is needed.`}>{walk ? 'The walk' : 'The ride'}</SectionTitle>
           <div className="grid gap-4">
-            <Field label="Bike ride or walk">
-              <div className="flex flex-wrap gap-2">
-                <Toggle on={f.activity === 'bike'} onClick={() => set('activity', 'bike')}>Bike ride</Toggle>
-                <Toggle on={f.activity === 'walk'} onClick={() => {
-                  // Walks have no "fast" pace; brisk is the closest.
-                  setF((prev) => ({ ...prev, activity: 'walk', pace: prev.pace === 'fast' ? 'brisk' : prev.pace }))
-                  setDirty(true)
-                }}>Walk</Toggle>
-              </div>
-            </Field>
+            {/* A new ride can be a bike bus or walking school bus too (Keith 2026-11-21:
+                the website had no way to start one; save_ride_series_web takes the kind since 01871). */}
+            {!ride ? (
+              <Field label="What kind">
+                <div className="flex flex-wrap gap-2">
+                  {([
+                    ['group_ride', 'bike', 'Group ride'], ['group_ride', 'walk', 'Group walk'],
+                    ['bike_bus', 'bike', 'Bike bus'], ['walk_bus', 'walk', 'Walking school bus'],
+                  ] as const).map(([kind, activity, label]) => (
+                    <Toggle key={label} on={f.kind === kind && f.activity === activity} onClick={() => {
+                      setF((prev) => {
+                        const bus = kind !== 'group_ride'
+                        // A bus goes on school mornings: start it there unless they already picked a schedule.
+                        const untouched = prev.days.length === 1 && prev.days[0] === 6 && prev.start_time === '10:00'
+                        return {
+                          ...prev, kind, activity,
+                          pace: activity === 'walk' && prev.pace === 'fast' ? 'brisk' : prev.pace,
+                          ...(bus && untouched ? { days: [1, 2, 3, 4, 5], start_time: '07:45' } : {}),
+                          ...(!bus && prev.kind !== 'group_ride' && prev.days.join() === '1,2,3,4,5' && prev.start_time === '07:45' ? { days: [6], start_time: '10:00' } : {}),
+                          ...(bus && prev.live_sharing === 'link' ? { live_sharing: 'members' as const } : {}),
+                        }
+                      })
+                      setDirty(true)
+                    }}>{label}</Toggle>
+                  ))}
+                </div>
+                {f.kind !== 'group_ride' && <p className="mt-2 text-[14px] text-(--ev-ink-75)">Kids and grown-ups {f.kind === 'walk_bus' ? 'walk' : 'ride'} to school together on school days. It starts on weekdays at 7:45 AM; change it in When.</p>}
+              </Field>
+            ) : f.kind === 'group_ride' && (
+              <Field label="Bike ride or walk">
+                <div className="flex flex-wrap gap-2">
+                  <Toggle on={f.activity === 'bike'} onClick={() => set('activity', 'bike')}>Bike ride</Toggle>
+                  <Toggle on={f.activity === 'walk'} onClick={() => {
+                    // Walks have no "fast" pace; brisk is the closest.
+                    setF((prev) => ({ ...prev, activity: 'walk', pace: prev.pace === 'fast' ? 'brisk' : prev.pace }))
+                    setDirty(true)
+                  }}>Walk</Toggle>
+                </div>
+              </Field>
+            )}
             <Field label="Name" htmlFor="ride-name" error={tried && !f.name.trim() ? `Give the ${noun} a name` : null}>
-              <Input id="ride-name" value={f.name} maxLength={120} onChange={(e) => set('name', e.target.value)} placeholder={walk ? 'Saturday Morning Walk' : 'Saturday Coffee Ride'} />
+              <Input id="ride-name" value={f.name} maxLength={120} onChange={(e) => set('name', e.target.value)} placeholder={f.kind === 'bike_bus' ? 'Prospect Hill Bike Bus' : f.kind === 'walk_bus' ? 'Lincoln School Walking Bus' : walk ? 'Saturday Morning Walk' : 'Saturday Coffee Ride'} />
             </Field>
             <OrgPicker value={f.event_organizer_id} onPick={pickOrg} />
             <Field label="Description" htmlFor="ride-desc" optional hint="What it's like, where it goes, what to bring.">
