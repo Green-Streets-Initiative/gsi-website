@@ -65,7 +65,7 @@ export default function ConsoleTracking() {
       return
     }
     let cancelled = false
-    import('posthog-js/dist/recorder').then(() => {
+    import('posthog-js/dist/posthog-recorder').then(() => {
       if (cancelled || posthog.sessionRecordingStarted()) return
       posthog.set_config({ session_recording: { maskAllInputs: true, maskTextSelector: '*', maskTextFn: maskContact } })
       posthog.startSessionRecording(true)
