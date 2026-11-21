@@ -282,8 +282,8 @@ export const TOOLS: Anthropic.Tool[] = [
   // ── Approval needed ──
   {
     name: 'create_ride',
-    description: 'Set up a new group ride. Shows a card; created only when the organizer approves. Afterwards the ride has a page to share and its dates appear.',
-    input_schema: { type: 'object', properties: { ride: { type: 'object', properties: rideFields, required: ['name', 'schedule', 'start_time', 'meetup', 'visibility'] } }, required: ['ride'] },
+    description: 'Set up a new group ride, group walk, bike bus or walking school bus. Shows a card; created only when the organizer approves. Afterwards the ride has a page to share and its dates appear.',
+    input_schema: { type: 'object', properties: { ride: { type: 'object', properties: { ...rideFields, kind: { type: 'string', enum: ['group_ride', 'bike_bus', 'walk_bus'], description: "group_ride (the default; a group walk is a group_ride with activity walk). bike_bus or walk_bus: kids and grown-ups going to school together on school days, usually weekdays around 7:45 AM. A bus live map is members or off, never link." } }, required: ['name', 'schedule', 'start_time', 'meetup', 'visibility'] } }, required: ['ride'] },
   },
   {
     name: 'update_ride',
@@ -1318,6 +1318,12 @@ export async function approvalCard(ctx: ToolCtx, name: string, input: Record<str
         if (!me.can_create) return { result: fail('This person can post updates on rides they help run, but setting up new rides is for invited organizers.') }
         const ride = (input.ride ?? {}) as RideInput
         const p = inputPayload(ride)
+        const kind = String((input.ride as { kind?: string } | undefined)?.kind ?? 'group_ride')
+        if (kind === 'bike_bus' || kind === 'walk_bus') {
+          p.kind = kind
+          p.activity = kind === 'walk_bus' ? 'walk' : 'bike'
+          if (p.live_sharing === 'link') p.live_sharing = 'members'
+        }
         if (p.flyer_url != null && !ownFlyer(ctx, p.flyer_url)) return { result: fail('A flyer has to be an image attached in this conversation.') }
         const orgs = await myOrgs(ctx)
         if (p.event_organizer_id && !orgs.some((o) => o.id === p.event_organizer_id)) return { result: fail('That group is not one this person runs. Use get_my_group.') }
@@ -1325,6 +1331,7 @@ export async function approvalCard(ctx: ToolCtx, name: string, input: Record<str
         const missing = missingForRide(p)
         if (missing && !(missing === 'the date' && ride.no_date_yet)) return { result: fail(`Still needed before it can be created: ${missing}. Ask for it.`) }
         const lines = [
+          p.kind === 'bike_bus' ? 'A bike bus: kids and grown-ups ride to school together' : p.kind === 'walk_bus' ? 'A walking school bus: kids and grown-ups walk to school together' : null,
           scheduleLine(p),
           ride.no_date_yet ? 'It stays on your rides, off the calendar and with no page to share, until you give it a date' : null,
           `Meet at ${p.meetup_name}${p.meetup_address ? `, ${p.meetup_address}` : ''}`,
@@ -1342,6 +1349,7 @@ export async function approvalCard(ctx: ToolCtx, name: string, input: Record<str
         const before = rowPayload(d.ride)
         const changes = (input.changes ?? {}) as RideInput
         const change = inputPayload(changes)
+        if (d.ride.kind !== 'group_ride' && change.live_sharing === 'link') return { result: fail('A bus live map is for the families on it: members or off.') }
         const orgs = 'event_organizer_id' in change ? await myOrgs(ctx) : []
         if (change.event_organizer_id && !orgs.some((o) => o.id === change.event_organizer_id) && change.event_organizer_id !== d.ride.event_organizer_id) {
           return { result: fail('That group is not one this person runs. Use get_my_group.') }
@@ -1741,7 +1749,7 @@ export async function approvalCard(ctx: ToolCtx, name: string, input: Record<str
         const me = await rpc<{ can_create?: boolean }>(ctx, 'organizer_console_me')
         if (!me.can_create) return { result: fail('Setting up new rides is for invited organizers.') }
         const d = await loadDetail(ctx, input.series_id)
-        if (d.ride.kind !== 'group_ride') return { result: fail('Walk and bike buses are run in the Shift app.') }
+        if (d.ride.kind !== 'group_ride') return { result: fail('A bus copies from its own page with Copy this ride, or start a new one with create_ride and kind bike_bus or walk_bus.') }
         const today = todayKey()
         const base: Record<string, unknown> = {
           ...rowPayload(d.ride), extra_dates: [], languages: d.ride.languages ?? [],
