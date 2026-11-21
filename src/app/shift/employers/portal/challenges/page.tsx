@@ -58,6 +58,7 @@ import { useChallengeTemplates, type SeasonalOption } from '../_lib/use-challeng
 import YearPlanCard from './YearPlanCard'
 import { ASSISTANT_CHANGED_EVENT, assistantAvailable, openAssistant } from '../_components/AssistantPanel'
 import AwardsRecap from './AwardsRecap'
+import WorkplaceResults from './WorkplaceResults'
 import TeamHearsPanel from './TeamHearsPanel'
 import { useYearPlan, runRange, templatePrizeLine } from '../_lib/use-year-plan'
 import { rulesPageUrl } from './TellYourTeam'
@@ -207,6 +208,9 @@ export default function ChallengesPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- on load and each time the builder closes
   }, [group, builderOpen, canManage])
   const [tellTeamFor, setTellTeamFor] = useState<string | null>(null)
+  // Ended challenges whose results block is showing: the awards recap then
+  // leaves out its own totals line, so each number appears once.
+  const [resultsShown, setResultsShown] = useState<Record<string, boolean>>({})
   // Rows start collapsed (Keith 2026-09-30: "a TON of info that's tough to
   // parse"). Active challenges, and a lone visible row, open by default;
   // a click on a row's header flips it. `null` = nobody has touched a row.
@@ -1223,7 +1227,7 @@ export default function ChallengesPage() {
                       outside it so a click on them never flips the row. */}
                   <button
                     type="button"
-                    className="min-w-0 flex-1 rounded-lg text-left outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:cursor-default"
+                    className="min-w-0 flex-1 basis-64 rounded-lg text-left outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:cursor-default"
                     aria-expanded={hasBody ? open : undefined}
                     aria-controls={hasBody && open ? bodyId : undefined}
                     disabled={!hasBody}
@@ -1330,6 +1334,13 @@ export default function ChallengesPage() {
                 {/* Prize list, only while the row is open. A collapsed row
                     also skips the progress fetch its goal prize would make. */}
                 {open && hasBody && <div id={bodyId} className="contents">
+                {/* Results the way the team sees them in the app, once every drawing has run (Keith 2026-11-21) */}
+                {st.label === 'Ended' && (
+                  <WorkplaceResults
+                    challenge={c}
+                    onShown={() => !resultsShown[c.id] && setResultsShown((r) => ({ ...r, [c.id]: true }))}
+                  />
+                )}
                 {hasGoalPrize && (
                   <div className="mt-5 border-t border-line-2 pt-5">
                     <GuaranteedChallengeSection
@@ -1389,7 +1400,7 @@ export default function ChallengesPage() {
                     )}
                   </div>
                 )}
-                {st.label === 'Ended' && <AwardsRecap challenge={c} />}
+                {st.label === 'Ended' && <AwardsRecap challenge={c} hideTotals={!!resultsShown[c.id]} />}
                 </div>}
               </Card>
             )

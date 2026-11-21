@@ -120,7 +120,8 @@ export function recapText(challenge: Challenge, r: Recap): string {
   return lines.join('\n')
 }
 
-export default function AwardsRecap({ challenge }: { challenge: Challenge }) {
+/** hideTotals: the results block above already shows who took part and the trips. */
+export default function AwardsRecap({ challenge, hideTotals = false }: { challenge: Challenge; hideTotals?: boolean }) {
   const toast = useToast()
   const [status, setStatus] = useState<Status>('loading')
   const [recap, setRecap] = useState<Recap | null>(null)
@@ -225,7 +226,7 @@ export default function AwardsRecap({ challenge }: { challenge: Challenge }) {
         </blockquote>
       )}
 
-      {totals && <p className="mt-3 text-[15px] leading-[1.5] text-ink-muted">{totals}</p>}
+      {totals && !hideTotals && <p className="mt-3 text-[15px] leading-[1.5] text-ink-muted">{totals}</p>}
 
       {headlines.length > 0 && (
         <div className="mt-5">
