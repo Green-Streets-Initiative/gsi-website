@@ -20,6 +20,15 @@ export function pageOf(pathname: string): { page: string; ride_id: string | null
   return { page: parts[2] ?? 'ride_overview', ride_id: parts[1] ?? null }
 }
 
+const PEOPLE_PAGES = new Set(['roster', 'team', 'turnout', 'photos', 'dates'])
+
+/** Emails and phone numbers never reach a recording. */
+function maskContact(text: string): string {
+  return text
+    .replace(/[^\s@]+@[^\s@]+\.[^\s@]+/g, (m) => '*'.repeat(m.length))
+    .replace(/\+?\d[\d\s().-]{8,}\d/g, (m) => '*'.repeat(m.length))
+}
+
 export default function ConsoleTracking() {
   const { phase, me } = useConsole()
   const pathname = usePathname()
@@ -41,6 +50,32 @@ export default function ConsoleTracking() {
     posthog.register_for_session(props)
     posthog.capture('organizer_page_viewed', { ...props, ...pageOf(pathname) })
   }, [phase, isGsiAdmin, pathname])
+
+  // Session recording, console only (Keith 2026-11-21: watch real organizers
+  // use it from launch). The rest of the website records nothing. The
+  // recorder comes from our own bundle, since the site loads no PostHog
+  // scripts (PostHogProvider). Typed fields are masked, and pages that list
+  // other people (who's coming, turnout, organizers, photos, one date's
+  // plan) pause it. Every text passes maskContact, so emails and phone
+  // numbers never reach a recording.
+  useEffect(() => {
+    if (phase !== 'ready' || !pathname) return
+    if (PEOPLE_PAGES.has(pageOf(pathname).page)) {
+      if (posthog.sessionRecordingStarted()) posthog.stopSessionRecording()
+      return
+    }
+    let cancelled = false
+    import('posthog-js/dist/recorder').then(() => {
+      if (cancelled || posthog.sessionRecordingStarted()) return
+      posthog.set_config({ session_recording: { maskAllInputs: true, maskTextSelector: '*', maskTextFn: maskContact } })
+      posthog.startSessionRecording(true)
+    }).catch(() => { /* recording never blocks the console */ })
+    return () => { cancelled = true }
+  }, [phase, pathname])
+
+  useEffect(() => () => {
+    if (posthog.sessionRecordingStarted()) posthog.stopSessionRecording()
+  }, [])
 
   return null
 }
