@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { timingSafeEqual } from 'node:crypto'
 import {
-  AirplaneTilt, ArrowClockwise, Bicycle, Buildings, CalendarCheck, ChatCircleText, Compass, Flag, Gift, Handshake, MapPin, Star, UserPlus, UsersThree,
+  AirplaneTilt, ArrowClockwise, Bicycle, Buildings, CalendarCheck, ChatCircleText, ChatsCircle, Compass, Flag, Gift, Handshake, MapPin, Star, UserPlus, UsersThree,
 } from '@phosphor-icons/react/dist/ssr'
 import type { Icon } from '@phosphor-icons/react'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
@@ -64,6 +64,10 @@ const GROUPS: Record<string, [string, Icon]> = {
   parking_trip_planned: ['Parking page', MapPin],
   parking_get_shift: ['Parking page', MapPin],
   around_you_used: ['Around You', Compass],
+  // Shift 2026-11-21: who asked an assistant, in their words (gsi-today/assistant.ts).
+  assistant_app: ['Assistant', ChatsCircle],
+  assistant_organizer: ['Organizer assistant', ChatsCircle],
+  assistant_employer: ['Employer assistant', ChatsCircle],
 }
 
 function sameKey(a: string, b: string): boolean {
