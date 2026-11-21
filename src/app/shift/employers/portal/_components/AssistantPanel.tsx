@@ -215,6 +215,9 @@ function AssistantPanel({ groupId, seed, onSeedUsed, onClose }: { groupId: strin
   const [long, setLong] = useState(false)
   const [loaded, setLoaded] = useState(false)
   const [busy, setBusy] = useState(false)
+  // Set the moment a send starts, before the sign-in check, so a second
+  // message typed in that gap waits instead of racing the first.
+  const sending = useRef(false)
   const [draft, setDraft] = useState('')
   const [fresh, setFresh] = useState(false)
   const [view, setView] = useState<'chat' | 'history'>('chat')
@@ -333,9 +336,11 @@ function AssistantPanel({ groupId, seed, onSeedUsed, onClose }: { groupId: strin
       new_thread?: boolean
       thread_id?: null
     }) => {
-      if (busy) return
+      if (busy || sending.current) return
+      sending.current = true
       const h = await authHeader()
       if (!h) {
+        sending.current = false
         setItems((p) => [...p, { kind: 'error', text: 'Sign in again to continue.' }])
         return
       }
@@ -414,9 +419,10 @@ function AssistantPanel({ groupId, seed, onSeedUsed, onClose }: { groupId: strin
       } catch {
         setItems((p) => [...p, { kind: 'error', text: 'The connection dropped. Your conversation is saved; try again.' }])
       } finally {
-        setBusy(false)
         if (changed || payload.decision) window.dispatchEvent(new CustomEvent(ASSISTANT_CHANGED_EVENT))
-        await load(currentThread)
+        try { await load(currentThread) } catch { /* the next open reloads it */ }
+        sending.current = false
+        setBusy(false)
         input.current?.focus()
       }
     },
@@ -547,12 +553,12 @@ function AssistantPanel({ groupId, seed, onSeedUsed, onClose }: { groupId: strin
   const submit = () => {
     const t = draft.trim()
     if (!t) return
-    if (busy) { setQueued(true); return }
+    if (busy || sending.current) { setQueued(true); return }
     setDraft('')
     void send({ message: t })
   }
   useEffect(() => {
-    if (busy || !queued) return
+    if (busy || sending.current || !queued) return
     setQueued(false)
     const t = draft.trim()
     if (t) { setDraft(''); void send({ message: t }) }
