@@ -29,6 +29,34 @@ export type BioLink = {
 export const BIO_LINKS: BioLink[] = [
   // ── This week (dated) ──
   {
+    slug: 'dec18',
+    label: 'Walk/Ride Day: Fri Dec 18',
+    sublabel: 'One trip on foot, by bike or on transit. November had 447',
+    url: 'https://www.gogreenstreets.org/programs/walk-ride-days',
+    until: '2026-12-18T23:59:00-05:00',
+  },
+  {
+    slug: 'thanksgiving',
+    label: 'The T on Thanksgiving week',
+    sublabel: 'Thu Nov 26: subway and bus on a Sunday schedule, Commuter Rail on a weekend schedule, no ferries',
+    url: 'https://www.mbta.com/holidays',
+    until: '2026-11-27T23:59:00-05:00',
+  },
+  {
+    slug: 'concordwalk',
+    label: "Walk 'N Mass group walk in Concord",
+    sublabel: 'Sat Nov 28, 9:45 AM, 71 Lowell Rd. 5K or 10K past the Old North Bridge, $4 cash',
+    url: 'https://www.meetup.com/walk-n-mass/events/317312601/',
+    until: '2026-11-28T10:00:00-05:00',
+  },
+  {
+    slug: 'amalfiride',
+    label: "Boston Cafe Bikers' ride to Cafe Amalfi",
+    sublabel: 'Sun Nov 29, 11 AM. A social ride along the waterfront to Battery Wharf. RSVP on Partiful',
+    url: 'https://partiful.com/e/glsMhcGCWNton1GhrKrb',
+    until: '2026-11-29T11:00:00-05:00',
+  },
+  {
     slug: 'walkma',
     label: 'Join Team Green Streets',
     sublabel: "Walk with us in WalkMassachusetts's Beat the Bay State, Nov 1 to 30. Your $20 entry supports WalkMassachusetts.",
