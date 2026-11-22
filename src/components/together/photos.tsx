@@ -24,6 +24,10 @@ import { cx } from '@/components/organizers/ui'
  *   skyline behind; cropped to the curb and skyline, 1600 wide, public/images/logan),
  *   https://commons.wikimedia.org/wiki/File:Terminal_A,_Logan_International_Airport,_Boston.jpg
  *   CaribDigita, public domain. The top of /logan (Design Lead 2026-11-20).
+ * - commonWalk: "Walking Through the Boston Common" (2013-11-02, people on a path in the fall,
+ *   the skyline behind; 1920 wide), the top of /together/walk before sign-in (2026-11-22),
+ *   https://commons.wikimedia.org/wiki/File:Walking_Through_the_Boston_Common_(10648507956).jpg
+ *   Sarah Nichols, CC BY-SA 2.0.
  */
 export type TogetherPhoto = { src: string; width: number; height: number; credit: string; url: string }
 
@@ -52,6 +56,11 @@ export const PHOTOS = {
     src: '/images/logan/terminal-a-curb.jpg', width: 1600, height: 641,
     credit: 'CaribDigita / Wikimedia Commons, public domain',
     url: 'https://commons.wikimedia.org/wiki/File:Terminal_A,_Logan_International_Airport,_Boston.jpg',
+  },
+  commonWalk: {
+    src: '/images/together/boston-common-walk.jpg', width: 1920, height: 1275,
+    credit: 'Sarah Nichols / Wikimedia Commons, CC BY-SA 2.0',
+    url: 'https://commons.wikimedia.org/wiki/File:Walking_Through_the_Boston_Common_(10648507956).jpg',
   },
 } satisfies Record<string, TogetherPhoto>
 

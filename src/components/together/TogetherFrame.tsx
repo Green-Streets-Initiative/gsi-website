@@ -4,9 +4,10 @@ import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
 import HtmlLang from '@/components/HtmlLang'
 import TogetherShell, { type ShellAudience, type ShellVariant } from '@/components/together/TogetherShell'
-import { SHARE_IMAGE } from '@/components/together/photos'
+import { PHOTOS, SHARE_IMAGE } from '@/components/together/photos'
 import { translator, type SiteLocale } from '@/lib/site-i18n'
 import { togetherStrings } from '@/lib/site-strings/together'
+import { togetherMoreStrings } from '@/lib/site-strings/together-more'
 
 /**
  * Shift Together's page frame in the page's language: the site's own header
@@ -38,18 +39,22 @@ export default function TogetherFrame({ locale, variant = 'together', audience, 
 export function togetherMetadata(locale: SiteLocale, audience?: ShellAudience): Metadata {
   const t = translator(togetherStrings, locale)
   const guide = audience === 'guide'
+  const walk = audience === 'walk'
   // A shared link (the newsletter, texts, social) shows the page's own photo: two riders taking their
   // bikes on the commuter rail at Concord, cropped to 1200x630 (credited on the page; see together/photos.tsx).
-  const share = `Shift Together: ${t(guide ? 'guide.title' : 'signin.title')}`
-  const description = t(guide ? 'guide.meta_description' : 'meta.description')
-  const image = { url: SHARE_IMAGE, width: 1200, height: 630, alt: t('hero.alt') }
+  // /together/walk shows its own: people walking across Boston Common.
+  const share = walk ? `Shift Together: ${translator(togetherMoreStrings, locale)('walk.title')}` : `Shift Together: ${t(guide ? 'guide.title' : 'signin.title')}`
+  const description = t(walk ? 'walk_signin.meta_description' : guide ? 'guide.meta_description' : 'meta.description')
+  const image = walk
+    ? { url: PHOTOS.commonWalk.src, width: PHOTOS.commonWalk.width, height: PHOTOS.commonWalk.height, alt: t('walk_signin.photo_alt') }
+    : { url: SHARE_IMAGE, width: 1200, height: 630, alt: t('hero.alt') }
   return {
-    title: t(guide ? 'guide.meta_title' : 'meta.title'),
+    title: t(walk ? 'walk_signin.meta_title' : guide ? 'guide.meta_title' : 'meta.title'),
     description,
     openGraph: {
       title: share,
       description,
-      url: 'https://www.gogreenstreets.org/together',
+      url: walk ? 'https://www.gogreenstreets.org/together/walk' : 'https://www.gogreenstreets.org/together',
       siteName: 'Green Streets Initiative',
       type: 'website',
       images: [image],
