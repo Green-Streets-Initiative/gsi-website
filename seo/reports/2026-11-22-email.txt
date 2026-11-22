@@ -1,0 +1,49 @@
+Searches made in the US grew 23% in a week, carried by the guides and the new trail pages. The Logan parking page went from unseen to 227 impressions in the week after you asked Google to index it, so play 1 does the same for the pages Google still hasn't found.
+
+SCOREBOARD (each vs the 4-week average)
+- North star: 8 app-intent sessions in the week of Nov 9 (average 20, down 60%). Most paid visits now come from the bike lesson and calendar ads, and lesson requests start counting from the week of Nov 16. Next week's number is the first fair read.
+- Search (Nov 14 to 20): 125 clicks (average 126, level) and 13,088 impressions (average 9,880, up 32%, a record). Searches made in the US: 9,813 impressions and 114 clicks, both up 23% on last week.
+- Visits by channel (week of Nov 9): search 151, Ad Grants 171, other paid 748, AI assistants 0. Share that went toward the app: 0.7%, 2.3%, 0.4%.
+- Ad Grants Nov 1-18 (snapshot from Nov 18): 7.91% click rate (the floor is 5%), 45 conversions.
+- Searches that weren't for GSI by name: 829 impressions (last week 692). The 4-week average is down 28%, but Google now shows the search words for only 6% of impressions, so this number misses the growth. I'll propose a better measure in the December deep-dive.
+
+PLAYS, RANKED
+1. Ask Google to index the "How to pay for the T" guide, the trails page and the trail pages it hasn't found. Recommendation: ship.
+   Why: the guide has had no Google impressions in 28 days. It works, it's in the sitemap, and its Spanish, Portuguese and Chinese versions do show up. Its subject is what Ad Grants pays for most ("charliecard", "mbta monthly pass", "boston public transportation"). Only 9 of the 32 trail pages appear in Google. Bruce Freeman Rail Trail gets ad clicks but doesn't show up in Google search. Asking Google by hand worked twice now: Logan parking went from 0 to 227 impressions, and group rides from 0 to 55.
+   How: in Search Console, request indexing for /guides/how-to-pay-for-the-t, /trails, /trails/bruce-freeman-rail-trail, plus up to seven more trail pages. About ten minutes in the browser.
+   Cost of waiting: we keep paying about $4 a click for T questions this page could answer for free, and the trail pages miss the last good riding weeks of the year.
+2. Retitle the bike lessons page "Free adult bike lessons in Boston and nearby towns." Recommendation: ship.
+   Why: the page sits just off Google's first page for "bike lessons near me" searches and at 31 for "adult bike lessons". The title says Massachusetts and never says free or Boston. The Meta lesson ads are paying for this same audience right now.
+   Cost of waiting: small each week, but it's a two-line change. I didn't build it because another session has unsaved edits to that same file.
+To ship both: open Claude Code and say "ship SEO items 1-2" (or "ship SEO item N" / "decline SEO item N").
+
+EXPERIMENT BOARD (12 running)
+- Verdict this week: the new "How to pay for the T" title lost. It got no impressions in six weeks. What we learned: a title only helps a page Google already shows, so first check the page shows up at all. That check is play 1.
+- Logan parking page (Dec 20): now in Google, 227 impressions and 1 click. People search Massport garage names.
+- Events by kind (Dec 20): group rides page 55 impressions and 3 clicks. "boston group rides" is now at position 10 (was 24).
+- Guides end on "Plan your trip" (Dec 20): 5.8% of Ad Grants visitors took a next step (was 2.8%). Leaning toward a win.
+- Boston winter biking guide (Dec 14): about 75 impressions a week, above the 50 goal. Many are people searching for r/bikeboston, which the guide points to.
+- Venue parking pages (Dec 30): 1,110 impressions and 4 clicks (last week 1,315 and 7).
+- Boston in the translated guides' titles (Dec 20): 0.32% click rate, below the 0.55% start. Leaning toward a loss.
+- Parking-costs title (Dec 20): 676 impressions, 0 clicks.
+- Drive-time guide description (Dec 13): 1,442 impressions, 2 clicks. Leaning toward a loss.
+- Brandeis Thanksgiving answer (Dec 6): 259 impressions, 1 click. Behind its goal of 3 a week.
+- Event pages link to the town page (Dec 13): 4 more next-step clicks, no new app clicks.
+- Shift Together titles (Dec 21) and one page per repeating ride (Dec 27): too early to read.
+
+CONSIDERED, NOT PROPOSED
+- Short answers for each named lot on the venue pages: same pages as a running test. Wait for Dec 30.
+- A new title for the English drive-time guide: same page as a running test. Wait for Dec 13.
+- The December Green Line closure in the T backup-plans guide: no MBTA dates yet.
+- "getting around salem" keeps showing up at position 10: I'll add it to what we track in the December deep-dive.
+- BU Cycle Kitchen hours in the BU page title, and a public events feed for AI assistants: both small.
+- Listing Open Streets days the day cities announce them: no 2027 dates yet.
+- A page for the Bradford Rail Trail (23 ad impressions): we have no trail page for it. I've left it to the Ad Grants routine.
+- A better "is search growing" measure: December deep-dive, now that there are four weeks of US numbers.
+
+HEALTH
+All fine. The sitemap lists 491 pages, and the translated guides are back (29 per language). The change to robots.txt only keeps your private Today page out of Google. Bing got the full sitemap. GSI didn't appear in any of the 6 live searches I checked.
+Full report: https://github.com/Green-Streets-Initiative/gsi-website/blob/main/seo/reports/2026-11-22.md
+
+Skipped: live page lookups with inspect.mjs. They were refused again, the third week in a row, so I used other lookups.
+Skipped: git pull in your main gsi-website folder. Its main is 39 commits ahead and 134 behind GitHub, with another session's unsaved work in it. I committed this run from a separate copy instead.

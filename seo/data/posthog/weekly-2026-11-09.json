@@ -1,0 +1,936 @@
+{
+  "pulled_at": "2026-11-22T12:06:40.816Z",
+  "project_id": 436603,
+  "host": "https://us.posthog.com",
+  "definition": "Organic = distinct $session_id on $pageview where $referring_domain matches google/bing/duckduckgo/ecosia/yahoo/brave, excluding mail-security link-scanner paths (%/1/0100% and /preferences/%). Monday-start weeks.",
+  "partial_week": {
+    "week_start": "2026-11-16",
+    "sessions": 334
+  },
+  "weeks": [
+    {
+      "week_start": "2026-11-09",
+      "sessions": 315
+    },
+    {
+      "week_start": "2026-11-02",
+      "sessions": 277
+    },
+    {
+      "week_start": "2026-10-26",
+      "sessions": 318
+    },
+    {
+      "week_start": "2026-10-19",
+      "sessions": 287
+    },
+    {
+      "week_start": "2026-10-12",
+      "sessions": 219
+    },
+    {
+      "week_start": "2026-10-05",
+      "sessions": 142
+    },
+    {
+      "week_start": "2026-09-28",
+      "sessions": 156
+    },
+    {
+      "week_start": "2026-09-21",
+      "sessions": 55
+    },
+    {
+      "week_start": "2026-09-14",
+      "sessions": 71
+    },
+    {
+      "week_start": "2026-09-07",
+      "sessions": 29
+    },
+    {
+      "week_start": "2026-08-31",
+      "sessions": 35
+    },
+    {
+      "week_start": "2026-08-24",
+      "sessions": 29
+    }
+  ],
+  "organic_sessions_last_complete_week": 315,
+  "organic_sessions_4wk_mean": 299.25,
+  "organic_sessions_12wk_mean": 161.08,
+  "top_organic_landing_pages": [
+    {
+      "path": "/guides/how-to-pay-for-the-t",
+      "sessions": 97
+    },
+    {
+      "path": "/trails",
+      "sessions": 24
+    },
+    {
+      "path": "/parking/gillette-stadium",
+      "sessions": 16
+    },
+    {
+      "path": "/trails/somerville-community-path",
+      "sessions": 15
+    },
+    {
+      "path": "/trip",
+      "sessions": 14
+    },
+    {
+      "path": "/",
+      "sessions": 12
+    },
+    {
+      "path": "/guides/boston-traffic",
+      "sessions": 10
+    },
+    {
+      "path": "/guides/how-far-is-a-ten-minute-drive-on-foot",
+      "sessions": 7
+    },
+    {
+      "path": "/events",
+      "sessions": 7
+    },
+    {
+      "path": "/shift/towns/boston-ma",
+      "sessions": 7
+    },
+    {
+      "path": "/trails/bruce-freeman-rail-trail",
+      "sessions": 7
+    },
+    {
+      "path": "/shift",
+      "sessions": 6
+    },
+    {
+      "path": "/about",
+      "sessions": 6
+    },
+    {
+      "path": "/trails/northern-strand-trail",
+      "sessions": 6
+    },
+    {
+      "path": "/trails/boston-harborwalk",
+      "sessions": 6
+    },
+    {
+      "path": "/trails/shining-sea-bikeway",
+      "sessions": 6
+    },
+    {
+      "path": "/events/streetwise-2nd-annual-transportation-trivia-2026-11-23",
+      "sessions": 5
+    },
+    {
+      "path": "/trails/battle-road-trail",
+      "sessions": 5
+    },
+    {
+      "path": "/trails/mass-central-rail-trail",
+      "sessions": 5
+    },
+    {
+      "path": "/trails/minuteman-bikeway",
+      "sessions": 5
+    },
+    {
+      "path": "/guides",
+      "sessions": 5
+    },
+    {
+      "path": "/events/tuesday-morning-walk-2026-11-24",
+      "sessions": 4
+    },
+    {
+      "path": "/parking/logan-airport",
+      "sessions": 4
+    },
+    {
+      "path": "/events/mushroom-hunt-2026-11-15",
+      "sessions": 4
+    },
+    {
+      "path": "/parking/td-garden",
+      "sessions": 4
+    }
+  ],
+  "answer_engine_referrals_7d": [],
+  "answer_engine_referral_sessions_7d": 0,
+  "channels_definition": "Per session, first match wins: paid_search (gclid/wbraid/gbraid or utm_medium cpc|ppc|paid), organic_search (search-engine referrer), answer_engine (answer-engine referrer). Web events only. activated = 'advisor_results_shown', 'snapshot_viewed', 'event_outbound_click', 'event_town_click', 'venue_trip_planned', 'guide_plan_click', 'free_lesson_code_requested', or email_signup with topic event_alerts; app_intent = 'shift_store_click', 'snapshot_app_cta_clicked', 'advisor_app_cta_clicked'. Weeks keyed by the session's first event. NOTE organic_search here EXCLUDES paid; the older `weeks` series above does not, and diverges once Ad Grants traffic grows.",
+  "channels_by_week": {
+    "2026-11-16": {
+      "organic_search": {
+        "sessions": 183,
+        "activated": 7,
+        "app_intent": 3
+      },
+      "paid_other": {
+        "sessions": 590,
+        "activated": 12,
+        "app_intent": 9
+      },
+      "paid_search": {
+        "sessions": 158,
+        "activated": 8,
+        "app_intent": 3
+      }
+    },
+    "2026-11-09": {
+      "organic_search": {
+        "sessions": 151,
+        "activated": 11,
+        "app_intent": 1
+      },
+      "paid_other": {
+        "sessions": 748,
+        "activated": 11,
+        "app_intent": 3
+      },
+      "paid_search": {
+        "sessions": 171,
+        "activated": 10,
+        "app_intent": 4
+      }
+    },
+    "2026-11-02": {
+      "organic_search": {
+        "sessions": 151,
+        "activated": 6,
+        "app_intent": 3
+      },
+      "paid_other": {
+        "sessions": 497,
+        "activated": 6,
+        "app_intent": 9
+      },
+      "paid_search": {
+        "sessions": 152,
+        "activated": 10,
+        "app_intent": 4
+      }
+    },
+    "2026-10-26": {
+      "organic_search": {
+        "sessions": 218,
+        "activated": 16,
+        "app_intent": 1
+      },
+      "paid_other": {
+        "sessions": 578,
+        "activated": 1,
+        "app_intent": 27
+      },
+      "paid_search": {
+        "sessions": 108,
+        "activated": 3,
+        "app_intent": 1
+      }
+    },
+    "2026-10-19": {
+      "organic_search": {
+        "sessions": 173,
+        "activated": 19,
+        "app_intent": 3
+      },
+      "paid_other": {
+        "sessions": 402,
+        "activated": 26,
+        "app_intent": 18
+      },
+      "paid_search": {
+        "sessions": 121,
+        "activated": 4,
+        "app_intent": 2
+      }
+    },
+    "2026-10-12": {
+      "organic_search": {
+        "sessions": 142,
+        "activated": 15,
+        "app_intent": 2
+      },
+      "paid_other": {
+        "sessions": 387,
+        "activated": 136,
+        "app_intent": 10
+      },
+      "paid_search": {
+        "sessions": 85,
+        "activated": 7,
+        "app_intent": 0
+      }
+    },
+    "2026-10-05": {
+      "organic_search": {
+        "sessions": 96,
+        "activated": 10,
+        "app_intent": 4
+      },
+      "paid_other": {
+        "sessions": 633,
+        "activated": 423,
+        "app_intent": 17
+      },
+      "paid_search": {
+        "sessions": 55,
+        "activated": 1,
+        "app_intent": 0
+      }
+    },
+    "2026-09-28": {
+      "organic_search": {
+        "sessions": 151,
+        "activated": 6,
+        "app_intent": 3
+      },
+      "paid_other": {
+        "sessions": 205,
+        "activated": 1,
+        "app_intent": 5
+      },
+      "paid_search": {
+        "sessions": 10,
+        "activated": 0,
+        "app_intent": 0
+      }
+    },
+    "2026-09-21": {
+      "answer_engine": {
+        "sessions": 5,
+        "activated": 0,
+        "app_intent": 0
+      },
+      "organic_search": {
+        "sessions": 54,
+        "activated": 1,
+        "app_intent": 1
+      },
+      "paid_other": {
+        "sessions": 381,
+        "activated": 13,
+        "app_intent": 26
+      },
+      "paid_search": {
+        "sessions": 11,
+        "activated": 1,
+        "app_intent": 0
+      }
+    },
+    "2026-09-14": {
+      "answer_engine": {
+        "sessions": 1,
+        "activated": 0,
+        "app_intent": 0
+      },
+      "organic_search": {
+        "sessions": 71,
+        "activated": 0,
+        "app_intent": 2
+      },
+      "paid_other": {
+        "sessions": 69,
+        "activated": 1,
+        "app_intent": 6
+      },
+      "paid_search": {
+        "sessions": 3,
+        "activated": 0,
+        "app_intent": 0
+      }
+    },
+    "2026-09-07": {
+      "organic_search": {
+        "sessions": 29,
+        "activated": 0,
+        "app_intent": 0
+      },
+      "paid_other": {
+        "sessions": 1,
+        "activated": 0,
+        "app_intent": 0
+      },
+      "paid_search": {
+        "sessions": 11,
+        "activated": 0,
+        "app_intent": 0
+      }
+    },
+    "2026-08-31": {
+      "organic_search": {
+        "sessions": 35,
+        "activated": 1,
+        "app_intent": 0
+      },
+      "paid_other": {
+        "sessions": 2,
+        "activated": 0,
+        "app_intent": 0
+      },
+      "paid_search": {
+        "sessions": 14,
+        "activated": 2,
+        "app_intent": 0
+      }
+    },
+    "2026-08-24": {
+      "answer_engine": {
+        "sessions": 2,
+        "activated": 0,
+        "app_intent": 0
+      },
+      "organic_search": {
+        "sessions": 29,
+        "activated": 0,
+        "app_intent": 0
+      },
+      "paid_other": {
+        "sessions": 7,
+        "activated": 3,
+        "app_intent": 0
+      },
+      "paid_search": {
+        "sessions": 5,
+        "activated": 1,
+        "app_intent": 0
+      }
+    }
+  },
+  "channels_last_complete_week": {
+    "organic_search": {
+      "sessions": 151,
+      "activated": 11,
+      "app_intent": 1
+    },
+    "paid_other": {
+      "sessions": 748,
+      "activated": 11,
+      "app_intent": 3
+    },
+    "paid_search": {
+      "sessions": 171,
+      "activated": 10,
+      "app_intent": 4
+    }
+  },
+  "outcome_tracking_start": "2026-09-14",
+  "landing_outcomes_8wk": [
+    {
+      "channel": "answer_engine",
+      "landing_class": "/programs",
+      "sessions": 3,
+      "activated": 0,
+      "app_intent": 0
+    },
+    {
+      "channel": "organic_search",
+      "landing_class": "/events",
+      "sessions": 682,
+      "activated": 73,
+      "app_intent": 3
+    },
+    {
+      "channel": "organic_search",
+      "landing_class": "/(home)",
+      "sessions": 129,
+      "activated": 7,
+      "app_intent": 9
+    },
+    {
+      "channel": "organic_search",
+      "landing_class": "/shift/towns",
+      "sessions": 84,
+      "activated": 3,
+      "app_intent": 4
+    },
+    {
+      "channel": "organic_search",
+      "landing_class": "/guides",
+      "sessions": 82,
+      "activated": 3,
+      "app_intent": 1
+    },
+    {
+      "channel": "organic_search",
+      "landing_class": "/shift/roams",
+      "sessions": 62,
+      "activated": 1,
+      "app_intent": 0
+    },
+    {
+      "channel": "organic_search",
+      "landing_class": "/trails",
+      "sessions": 56,
+      "activated": 1,
+      "app_intent": 0
+    },
+    {
+      "channel": "organic_search",
+      "landing_class": "/shift/employers",
+      "sessions": 40,
+      "activated": 0,
+      "app_intent": 0
+    },
+    {
+      "channel": "organic_search",
+      "landing_class": "/shift-your-semester",
+      "sessions": 32,
+      "activated": 0,
+      "app_intent": 1
+    },
+    {
+      "channel": "organic_search",
+      "landing_class": "/parking",
+      "sessions": 27,
+      "activated": 1,
+      "app_intent": 0
+    },
+    {
+      "channel": "organic_search",
+      "landing_class": "/about",
+      "sessions": 19,
+      "activated": 0,
+      "app_intent": 0
+    },
+    {
+      "channel": "organic_search",
+      "landing_class": "/es",
+      "sessions": 18,
+      "activated": 0,
+      "app_intent": 0
+    },
+    {
+      "channel": "organic_search",
+      "landing_class": "/programs",
+      "sessions": 13,
+      "activated": 0,
+      "app_intent": 0
+    },
+    {
+      "channel": "organic_search",
+      "landing_class": "/zh-Hans",
+      "sessions": 10,
+      "activated": 0,
+      "app_intent": 1
+    },
+    {
+      "channel": "organic_search",
+      "landing_class": "/shift",
+      "sessions": 8,
+      "activated": 0,
+      "app_intent": 2
+    },
+    {
+      "channel": "organic_search",
+      "landing_class": "/pt-BR",
+      "sessions": 8,
+      "activated": 0,
+      "app_intent": 0
+    },
+    {
+      "channel": "organic_search",
+      "landing_class": "/commute-advisor",
+      "sessions": 7,
+      "activated": 1,
+      "app_intent": 0
+    },
+    {
+      "channel": "organic_search",
+      "landing_class": "/get-involved",
+      "sessions": 7,
+      "activated": 0,
+      "app_intent": 0
+    },
+    {
+      "channel": "organic_search",
+      "landing_class": "/bike-lessons",
+      "sessions": 6,
+      "activated": 0,
+      "app_intent": 0
+    },
+    {
+      "channel": "organic_search",
+      "landing_class": "/together",
+      "sessions": 5,
+      "activated": 0,
+      "app_intent": 0
+    },
+    {
+      "channel": "organic_search",
+      "landing_class": "/email",
+      "sessions": 4,
+      "activated": 0,
+      "app_intent": 0
+    },
+    {
+      "channel": "organic_search",
+      "landing_class": "/contact",
+      "sessions": 3,
+      "activated": 0,
+      "app_intent": 0
+    },
+    {
+      "channel": "organic_search",
+      "landing_class": "/blog",
+      "sessions": 3,
+      "activated": 0,
+      "app_intent": 0
+    },
+    {
+      "channel": "paid_other",
+      "landing_class": "/shift",
+      "sessions": 1180,
+      "activated": 4,
+      "app_intent": 61
+    },
+    {
+      "channel": "paid_other",
+      "landing_class": "/shift-your-semester",
+      "sessions": 1065,
+      "activated": 5,
+      "app_intent": 52
+    },
+    {
+      "channel": "paid_other",
+      "landing_class": "/events",
+      "sessions": 668,
+      "activated": 24,
+      "app_intent": 0
+    },
+    {
+      "channel": "paid_other",
+      "landing_class": "/bike-lessons",
+      "sessions": 615,
+      "activated": 4,
+      "app_intent": 1
+    },
+    {
+      "channel": "paid_other",
+      "landing_class": "/nearby",
+      "sessions": 591,
+      "activated": 591,
+      "app_intent": 9
+    },
+    {
+      "channel": "paid_other",
+      "landing_class": "/shift/employers",
+      "sessions": 184,
+      "activated": 0,
+      "app_intent": 0
+    },
+    {
+      "channel": "paid_other",
+      "landing_class": "/links",
+      "sessions": 31,
+      "activated": 1,
+      "app_intent": 0
+    },
+    {
+      "channel": "paid_other",
+      "landing_class": "/logan",
+      "sessions": 30,
+      "activated": 0,
+      "app_intent": 0
+    },
+    {
+      "channel": "paid_other",
+      "landing_class": "/programs",
+      "sessions": 14,
+      "activated": 0,
+      "app_intent": 0
+    },
+    {
+      "channel": "paid_other",
+      "landing_class": "/(home)",
+      "sessions": 10,
+      "activated": 0,
+      "app_intent": 0
+    },
+    {
+      "channel": "paid_other",
+      "landing_class": "/shift/towns",
+      "sessions": 10,
+      "activated": 0,
+      "app_intent": 1
+    },
+    {
+      "channel": "paid_other",
+      "landing_class": "/together",
+      "sessions": 9,
+      "activated": 0,
+      "app_intent": 0
+    },
+    {
+      "channel": "paid_other",
+      "landing_class": "/challenges",
+      "sessions": 6,
+      "activated": 0,
+      "app_intent": 0
+    },
+    {
+      "channel": "paid_other",
+      "landing_class": "/walkma",
+      "sessions": 3,
+      "activated": 0,
+      "app_intent": 0
+    },
+    {
+      "channel": "paid_search",
+      "landing_class": "/guides",
+      "sessions": 629,
+      "activated": 37,
+      "app_intent": 13
+    },
+    {
+      "channel": "paid_search",
+      "landing_class": "/trails",
+      "sessions": 74,
+      "activated": 0,
+      "app_intent": 0
+    },
+    {
+      "channel": "paid_search",
+      "landing_class": "/parking",
+      "sessions": 57,
+      "activated": 3,
+      "app_intent": 0
+    },
+    {
+      "channel": "paid_search",
+      "landing_class": "/shift/towns",
+      "sessions": 44,
+      "activated": 1,
+      "app_intent": 0
+    },
+    {
+      "channel": "paid_search",
+      "landing_class": "/(home)",
+      "sessions": 40,
+      "activated": 0,
+      "app_intent": 0
+    },
+    {
+      "channel": "paid_search",
+      "landing_class": "/shift",
+      "sessions": 16,
+      "activated": 0,
+      "app_intent": 0
+    },
+    {
+      "channel": "paid_search",
+      "landing_class": "/programs",
+      "sessions": 3,
+      "activated": 0,
+      "app_intent": 0
+    }
+  ],
+  "paid_landings_7d": [
+    {
+      "click_id": "fbclid",
+      "utm_source": "meta",
+      "utm_medium": "paid_social",
+      "utm_campaign": "shift-downloads",
+      "path": "/shift",
+      "sessions": 198
+    },
+    {
+      "click_id": "fbclid",
+      "utm_source": "meta",
+      "utm_medium": "paid_social",
+      "utm_campaign": "lessons-nov",
+      "path": "/bike-lessons",
+      "sessions": 188
+    },
+    {
+      "click_id": "fbclid",
+      "utm_source": "meta",
+      "utm_medium": "paid",
+      "utm_campaign": "calendar-test",
+      "path": "/events",
+      "sessions": 129
+    },
+    {
+      "click_id": "gclid",
+      "utm_source": null,
+      "utm_medium": null,
+      "utm_campaign": null,
+      "path": "/guides/how-to-pay-for-the-t",
+      "sessions": 94
+    },
+    {
+      "click_id": "fbclid",
+      "utm_source": "meta",
+      "utm_medium": "paid",
+      "utm_campaign": "lessons-boston",
+      "path": "/bike-lessons",
+      "sessions": 55
+    },
+    {
+      "click_id": "gclid",
+      "utm_source": null,
+      "utm_medium": null,
+      "utm_campaign": null,
+      "path": "/trails",
+      "sessions": 24
+    },
+    {
+      "click_id": "rdt_cid",
+      "utm_source": "reddit",
+      "utm_medium": "cpc",
+      "utm_campaign": "logan",
+      "path": "/logan",
+      "sessions": 24
+    },
+    {
+      "click_id": "fbclid",
+      "utm_source": "meta",
+      "utm_medium": null,
+      "utm_campaign": "lessons-boston",
+      "path": "/bike-lessons",
+      "sessions": 19
+    },
+    {
+      "click_id": "gclid",
+      "utm_source": null,
+      "utm_medium": null,
+      "utm_campaign": null,
+      "path": "/parking/gillette-stadium",
+      "sessions": 14
+    },
+    {
+      "click_id": "gclid",
+      "utm_source": null,
+      "utm_medium": null,
+      "utm_campaign": null,
+      "path": "/trip",
+      "sessions": 11
+    },
+    {
+      "click_id": "gclid",
+      "utm_source": null,
+      "utm_medium": null,
+      "utm_campaign": null,
+      "path": "/trails/bruce-freeman-rail-trail",
+      "sessions": 9
+    },
+    {
+      "click_id": "fbclid",
+      "utm_source": "ig",
+      "utm_medium": "social",
+      "utm_campaign": null,
+      "path": "/links",
+      "sessions": 7
+    },
+    {
+      "click_id": "gclid",
+      "utm_source": null,
+      "utm_medium": null,
+      "utm_campaign": null,
+      "path": "/trails/boston-harborwalk",
+      "sessions": 6
+    },
+    {
+      "click_id": "fbclid",
+      "utm_source": "meta",
+      "utm_medium": "paid",
+      "utm_campaign": "calendar-test",
+      "path": "/events/somerville-cycle-social-final-weekly-ride-esplanade-loop-and-2026-11-17",
+      "sessions": 4
+    },
+    {
+      "click_id": "gclid",
+      "utm_source": null,
+      "utm_medium": null,
+      "utm_campaign": null,
+      "path": "/trails/shining-sea-bikeway",
+      "sessions": 4
+    },
+    {
+      "click_id": "fbclid",
+      "utm_source": null,
+      "utm_medium": null,
+      "utm_campaign": null,
+      "path": "/shift",
+      "sessions": 4
+    },
+    {
+      "click_id": "fbclid",
+      "utm_source": null,
+      "utm_medium": null,
+      "utm_campaign": null,
+      "path": "/logan",
+      "sessions": 4
+    },
+    {
+      "click_id": "gclid",
+      "utm_source": null,
+      "utm_medium": null,
+      "utm_campaign": null,
+      "path": "/trails/mass-central-rail-trail",
+      "sessions": 4
+    },
+    {
+      "click_id": "fbclid",
+      "utm_source": "social",
+      "utm_medium": "facebook",
+      "utm_campaign": "55bus",
+      "path": "/events/the-55-bus-coalition-celebrate-the-new-55-bus-hours-2026-11-18",
+      "sessions": 4
+    },
+    {
+      "click_id": "gclid",
+      "utm_source": null,
+      "utm_medium": null,
+      "utm_campaign": null,
+      "path": "/trails/cape-cod-rail-trail",
+      "sessions": 3
+    },
+    {
+      "click_id": "gclid",
+      "utm_source": null,
+      "utm_medium": null,
+      "utm_campaign": null,
+      "path": "/guides",
+      "sessions": 3
+    },
+    {
+      "click_id": "gclid",
+      "utm_source": null,
+      "utm_medium": null,
+      "utm_campaign": null,
+      "path": "/challenges",
+      "sessions": 3
+    },
+    {
+      "click_id": "gclid",
+      "utm_source": null,
+      "utm_medium": null,
+      "utm_campaign": null,
+      "path": "/parking/td-garden",
+      "sessions": 3
+    },
+    {
+      "click_id": "fbclid",
+      "utm_source": "social",
+      "utm_medium": "facebook",
+      "utm_campaign": "walk-ride-day-nov",
+      "path": "/programs/walk-ride-days",
+      "sessions": 3
+    },
+    {
+      "click_id": "fbclid",
+      "utm_source": "social",
+      "utm_medium": "facebook",
+      "utm_campaign": "weekend",
+      "path": "/events",
+      "sessions": 3
+    }
+  ]
+}

@@ -129,6 +129,14 @@ bed.
 One line per verdict or hard-won observation, newest first. Next hypotheses
 come from here.
 
+- 2026-11-22 (verdict, "How to pay for the T" search title, lost): six weeks
+  at 0 impressions while the page was live, in the sitemap, and its
+  translations ranked. A title only works on a page Google already shows;
+  check that a page earns impressions at all before testing its wording.
+- 2026-11-22 (observed): the hand indexing request worked again. Logan parking
+  went from 0 to 227 impressions in the week after it; the group rides page
+  from 0 to 55. US impressions rose 23% (7,982 → 9,813) in the same week.
+
 - 2026-11-15 (observed): a quarter of impressions come from outside the US
   (Brazil: 1,092 on one Portuguese guide, 0 clicks). US impressions were level
   (8,005 → 7,982) in a week the site total read as a record. Read reach on US
