@@ -1826,6 +1826,13 @@
       "month_end_math": "7.66% on 6,045 impr after 20 days; well above 5%. Venue Parking kill line (account MTD < 6.5%) not triggered.",
       "alerts": [],
       "emailed": false
+    },
+    {
+      "date": "2026-11-23",
+      "source": "scheduled quick check (ad-grants-pulse), ~10:05 ET. Account did NOT load: both authuser=walkrideday%40gmail.com and authuser=9 went to Google's 'Choose an account' page, and walkrideday@gmail.com is not among the 11 logins in this Chrome. Stopped quietly per the task (no email, nothing read). Keith needs to sign walkrideday@gmail.com back in to Chrome for the next pulse and Wednesday's weekly review.",
+      "mtd": null,
+      "alerts": ["account not reachable: walkrideday@gmail.com not signed in to Chrome"],
+      "emailed": false
     }
   ],
   "snapshots": [
