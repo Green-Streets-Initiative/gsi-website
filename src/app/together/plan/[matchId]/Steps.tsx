@@ -465,9 +465,11 @@ type Route = NonNullable<RidePlan['route']>
 type Trip = TransitTrip & { key: string; route: Route; spots: Spot[] }
 const GOALS = ['calmest', 'flattest', 'shortest'] as const
 
-export function GuidePlan({ plan, match, matchId, name, locale, t, onSent, onProblem }: {
+export function GuidePlan({ plan, match, matchId, lesson = false, name, locale, t, onSent, onProblem }: {
   plan: RidePlan
   match: Match | null
+  /** A free street lesson's plan: titled as the lesson. */
+  lesson?: boolean
   matchId: string
   name: string
   locale: SiteLocale
@@ -633,7 +635,7 @@ export function GuidePlan({ plan, match, matchId, name, locale, t, onSent, onPro
   }
 
   const back = step > 0 ? () => setStep(step - 1) : undefined
-  const title = t(k(way === 'bike' ? 'share.guide_title' : `share.guide_title_${way}`), { name })
+  const title = lesson ? t('lesson.guide_title', { name }) : t(k(way === 'bike' ? 'share.guide_title' : `share.guide_title_${way}`), { name })
 
   if (step === 0) {
     const line = route?.waypoints && route.waypoints.length > 1 ? route.waypoints : undefined

@@ -157,10 +157,11 @@ export default function Plan({ matchId, locale, lessonKey }: { matchId: string; 
     stage === 'share' ? t('plan.share_title', { name })
     : stage === 'wait_guide' ? t('plan.waiting_guide', { name })
     : stage === 'wait_learner' ? t('plan.waiting_learner', { name })
+    : stage === 'guide_turn' && lessonKey ? t('lesson.guide_title', { name })
     : stage === 'guide_turn' ? t(way === 'bike' ? 'share.guide_title' : way === 'walk' ? 'share.guide_title_walk' : 'share.guide_title_transit', { name })
     : stage === 'after' ? t('plan.after_title')
-    : stage === 'decide' ? t(TITLE_PLANNED[way], { name })
-    : t(TITLE[way], { name })
+    : stage === 'decide' ? t(lessonKey ? 'lesson.title_planned' : TITLE_PLANNED[way], { name })
+    : t(lessonKey ? 'lesson.title' : TITLE[way], { name })
   const status =
     stage === 'ridden' ? t('plan.ridden')
     : !p || pending || (stage !== 'ready' && stage !== 'decide') ? null
@@ -173,7 +174,7 @@ export default function Plan({ matchId, locale, lessonKey }: { matchId: string; 
 
   const emailLink = email ? (
     <a
-      href={`mailto:${email}?subject=${encodeURIComponent(t('plan.subject'))}`}
+      href={`mailto:${email}?subject=${encodeURIComponent(t(lessonKey ? 'lesson.subject' : 'plan.subject'))}`}
       onClick={() => track('together_email_tapped', { kind: 'guide', source: 'plan' })}
       className={SECONDARY}
     >
@@ -250,6 +251,7 @@ export default function Plan({ matchId, locale, lessonKey }: { matchId: string; 
             plan={p}
             match={match}
             matchId={matchId}
+            lesson={!!lessonKey}
             name={name}
             locale={locale}
             t={t}
