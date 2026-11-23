@@ -64,6 +64,7 @@ export default function PinMap({ pins, line, width = 480, height = 300, title, c
     }
   }
 
+  const placed: { x: number; y: number }[] = []
   return (
     <figure className={className ?? 'm-0'}>
       <div className={boxClassName}>
@@ -85,7 +86,14 @@ export default function PinMap({ pins, line, width = 480, height = 300, title, c
           />
         ) : null}
         {pins.map((p, i) => {
-          const { x, y } = toPixel(vp, p.lat, p.lng)
+          const at = toPixel(vp, p.lat, p.lng)
+          let { x } = at
+          const { y } = at
+          // Numbered pins at the same corner sit side by side, to the left, so each number and the pin under it stay visible.
+          if (p.kind === 'num') {
+            while (placed.some((q) => Math.hypot(q.x - x, q.y - y) < 20)) x -= 24
+          }
+          placed.push({ x, y })
           const r = R[p.kind]
           // Labels go right of the pin unless that runs off the map.
           const w = 10 + (p.label?.length ?? 0) * FONT * 0.58
