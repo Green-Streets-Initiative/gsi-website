@@ -161,7 +161,7 @@ export default function RideStreets({ option, pieces, selected, onSelect, locale
           })}
         </div>
       )}
-      <p className="mt-1 text-[14px] text-(--ev-ink-75)">{t('streets.hint')}</p>
+      <p className="mt-1 text-[14px] text-(--ev-ink-75)">{t(rows.length > 1 ? 'streets.hint' : 'streets.credit')}</p>
     </div>
   )
 }
