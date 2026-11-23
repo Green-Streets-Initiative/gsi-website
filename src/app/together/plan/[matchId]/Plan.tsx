@@ -566,7 +566,7 @@ function RouteCard({ plan, way, locale, t }: { plan: RidePlan; way: TripWay; loc
             <div key={st.key} ref={(el) => { rows.current[st.i + 1] = el }} className="flex w-[72px] shrink-0 flex-col items-center gap-1">
               <SpotThumb spot={spots[st.i]} line={line} alt={t('spot.photo_alt', { what: spotWords(t, spots[st.i], null).title })} badge={st.i + 1}
                 open={open === st.key} onToggle={() => chooseSpot(st.i + 1, 'list')} iconClass="bg-(--ev-panel) text-(--ev-ink-85)" />
-              <button type="button" onClick={() => chooseSpot(st.i + 1, 'list')} className="w-full truncate text-center text-[13px] font-semibold leading-tight">
+              <button type="button" onClick={() => chooseSpot(st.i + 1, 'list')} className="line-clamp-2 w-full text-center text-[13px] font-semibold leading-tight">
                 {spotWords(t, spots[st.i], null).title}
               </button>
             </div>
