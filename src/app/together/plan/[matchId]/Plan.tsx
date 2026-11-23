@@ -577,7 +577,7 @@ function RouteCard({ plan, way, locale, t }: { plan: RidePlan; way: TripWay; loc
           ))}
         </div>
         {shown?.kind === 'spot' ? (
-          <div ref={panel} className="grid grid-cols-1 gap-2 rounded-lg bg-(--ev-panel) p-3">
+          <div ref={panel} className="grid w-full max-w-[520px] grid-cols-1 gap-2 rounded-lg bg-(--ev-panel) p-3">
             <SpotPhotoBig spot={spots[shown.i]} line={line} alt={t('spot.photo_alt', { what: spotWords(t, spots[shown.i], null).title })} credit={t('spot.photo_credit')} />
             <p className="flex items-start gap-2">
               <span aria-hidden className="mt-0.5 flex h-[22px] min-w-[22px] items-center justify-center rounded-full bg-[#9A5B00] px-1 text-[13px] font-extrabold text-white">{shown.i + 1}</span>
@@ -589,7 +589,7 @@ function RouteCard({ plan, way, locale, t }: { plan: RidePlan; way: TripWay; loc
             </p>
           </div>
         ) : shown?.kind === 'view' ? (
-          <figure className="m-0 grid grid-cols-1 gap-1">
+          <figure className="m-0 grid w-full max-w-[520px] grid-cols-1 gap-1">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={viewUrl(shown)} alt={t('spot.photo_alt', { what: name })} className="aspect-[16/9] w-full rounded-lg object-cover" />
             <figcaption className="text-[14px] text-(--ev-ink-75)">{t('plan.view_at', { street: name, miles: formatStretchMiles(shown.miles, locale) })}</figcaption>
