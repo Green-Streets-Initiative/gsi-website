@@ -6,7 +6,9 @@ import { createServerSupabaseClient } from '@/lib/supabase-server'
 // Shared seasonal leaderboard (Shift 01026): every employer on the public
 // leaderboard that ran this season's challenge, ranked by the share of its
 // team that took part, within size classes so small employers can win.
-// Totals only. Private employers never appear.
+// Totals only. Private employers never appear. People who joined near the
+// end and didn't take part are left out of the team's count, and "+N new"
+// counts those who joined after the start and took part (Shift 01887, L-26).
 
 export const revalidate = 600
 
@@ -19,6 +21,8 @@ type Row = {
   members: number
   participants: number
   pct: number | null
+  /** Joined after the challenge started and took part (Shift 01887, L-26). */
+  new_members?: number
 }
 type Board = {
   run: { id: string; label: string; title: string; slug: string; starts_on: string; ends_on: string }
@@ -64,7 +68,8 @@ export default async function SeasonalBoardPage({ params }: { params: Promise<{ 
         </p>
         <p className="mt-2 text-[15px] text-gray-700">
           {day(b.run.starts_on)} to {day(b.run.ends_on)}. Workplaces are ranked by the share of their team who logged at
-          least one trip that counts, and grouped by size so a small office can top its group.
+          least one trip that counts, and grouped by size so a small office can top its group. People who join partway
+          count from their first trip.
         </p>
 
         {b.employers.length === 0 ? (
@@ -88,6 +93,11 @@ export default async function SeasonalBoardPage({ params }: { params: Promise<{ 
                       <span className="flex-1 text-[15px] font-semibold text-gray-900">{e.name}</span>
                       <span className="text-right text-[14px] tabular-nums text-gray-700">
                         <strong className="text-gray-900">{Math.round(e.pct ?? 0)}%</strong> took part
+                        {(e.new_members ?? 0) > 0 && (
+                          <span className="block text-[13px] font-semibold text-emerald-700">
+                            +{e.new_members} new
+                          </span>
+                        )}
                       </span>
                     </li>
                   ))}
