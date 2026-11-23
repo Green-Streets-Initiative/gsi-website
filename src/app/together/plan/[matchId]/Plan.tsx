@@ -6,7 +6,8 @@ import { ArrowLeft, CalendarDays, CheckCircle2, Flag, Hourglass, Mail, MapPin, N
 import FindEachOther from '@/components/together/FindEachOther'
 import RouteMap from '@/components/organizers/RouteMap'
 import RideStreets from '@/components/rides/RideStreets'
-import { comfortPieces, type CalmOption, type CalmSegment } from '@/components/commute/calm-route'
+import { MAP_COMFORT_COLORS, comfortLabel, comfortPieces, formatStretchMiles, type CalmOption, type CalmSegment } from '@/components/commute/calm-route'
+import { streetName, streetRows } from '@/components/organizers/RouteReview'
 import { comfortColor } from '@/lib/comfort-colors'
 import { Avatar } from '@/components/together/bits'
 import { Button, Card, Field, Input, Notice, Spinner, cx } from '@/components/organizers/ui'
@@ -15,7 +16,7 @@ import { planStrings, type PlanKey } from '@/lib/site-strings/together-plan'
 import { togetherStrings } from '@/lib/site-strings/together'
 import { myMatches, track, type Match } from '@/lib/together'
 import { useTogetherMaybe } from '@/components/together/TogetherShell'
-import { GuidePlan, LearnerShare, LessonEndPick, SpotPhotoBig, SpotThumb, spotWords } from './Steps'
+import { GuidePlan, LearnerShare, LessonEndPick, SpotPhotoBig, SpotThumb, meetCorner, spotWords } from './Steps'
 import {
   UUID, answerRideTime, appPlanLink, confirmRidePlan, getRidePlan, hasOpenProposal, planDirectionsUrl, plannedTimePassed, proposeRideTime, setLessonPlanByEmail,
   type Result, type RidePlan, type RidePlanView, type TripWay,
@@ -374,6 +375,11 @@ function WhenWhere({ plan, at, way, locale, t }: { plan: RidePlan; at: Date | nu
   const end = plan.end_label ?? ''
   const transitMin = way === 'transit' ? plan.route?.transit?.minutes ?? plan.route?.minutes : null
   const miles = plan.route?.distanceMiles
+  // Where exactly: the guide's words, else the corner where the route starts (01894), with its Street View photo.
+  const start = plan.route?.waypoints?.[0] ?? (plan.meet_lat != null && plan.meet_lng != null ? { lat: plan.meet_lat, lng: plan.meet_lng } : null)
+  const corner = meetCorner(plan.spots, start)
+  const exact = plan.meet_spot?.trim() || (corner ? t('meet.corner', { a: corner[0], b: corner[1] }) : null)
+  const [photo, setPhoto] = useState(false)
   return (
     <div className="grid grid-cols-1 gap-2 text-[16px]">
       {at ? (
@@ -381,9 +387,21 @@ function WhenWhere({ plan, at, way, locale, t }: { plan: RidePlan; at: Date | nu
           <CalendarDays className="h-5 w-5 shrink-0 text-(--ev-accent)" aria-hidden /> {when(at, locale)}
         </p>
       ) : null}
-      <p className="flex items-center gap-2">
-        <MapPin className="h-5 w-5 shrink-0 text-(--ev-accent)" aria-hidden /> {t('plan.meet_at', { place: plan.meet_label ?? '' })}
-      </p>
+      <div className="flex items-start gap-2">
+        <MapPin className="mt-0.5 h-5 w-5 shrink-0 text-(--ev-accent)" aria-hidden />
+        <span className="min-w-0 flex-1">
+          <span className="block">{t('plan.meet_at', { place: plan.meet_label ?? '' })}</span>
+          {exact ? <span className="block text-[15px] text-(--ev-ink-80)">{exact}</span> : null}
+        </span>
+        {start ? (
+          <SpotThumb spot={{ id: 'meet', kind: 'your_stop', lat: start.lat, lng: start.lng, streets: [], on: true }} line={plan.route?.waypoints}
+            alt={t('meet.photo_alt')} open={photo} onToggle={() => setPhoto((v) => !v)} iconClass="bg-(--ev-panel) text-(--ev-ink-80)" />
+        ) : null}
+      </div>
+      {photo && start ? (
+        <SpotPhotoBig spot={{ id: 'meet', kind: 'your_stop', lat: start.lat, lng: start.lng, streets: [], on: true }} line={plan.route?.waypoints}
+          alt={t('meet.photo_alt')} credit={t('meet.photo_credit')} />
+      ) : null}
       <p className="flex items-center gap-2">
         <Flag className="h-5 w-5 shrink-0 text-(--ev-accent)" aria-hidden />
         {transitMin ? t('plan.minutes_to', { minutes: transitMin, place: end })
@@ -433,6 +451,42 @@ function RouteCard({ plan, way, locale, t }: { plan: RidePlan; way: TripWay; loc
   const endPin = useMemo(() => ({ ...end, label: plan.end_label ?? undefined }), [end, plan.end_label])
   const mapLine = useMemo(() => line ?? [meet, end], [line, meet, end])
   const pickStreet = (i: number | null) => { setSpotOn(null); setStreet(i) }
+  // The streets in order (back-to-back pieces of one street are one row), and which street each spot is on.
+  const streets = useMemo(() => streetRows(pieces), [pieces])
+  const spotsOn = useMemo(() => {
+    const byRow: number[][] = streets.map(() => [])
+    if (!streets.length) return byRow
+    spots.forEach((sp, i) => {
+      let best = { piece: pieces[0]?.index, d: Infinity }
+      for (const p of pieces) for (const [lng, lat] of p.coords) {
+        const d = (lat - sp.lat) ** 2 + ((lng - sp.lng) * Math.cos((lat * Math.PI) / 180)) ** 2
+        if (d < best.d) best = { piece: p.index, d }
+      }
+      const ri = Math.max(0, streets.findIndex((r) => r.members.includes(best.piece)))
+      byRow[ri].push(i)
+    })
+    return byRow
+  }, [streets, spots, pieces])
+  const spotItem = (s: (typeof spots)[number], i: number) => {
+    const words = spotWords(t, s, null)
+    return (
+      <li key={s.id} ref={(el) => { rows.current[i + 1] = el }}
+        className={cx('-mx-2 grid grid-cols-1 gap-2 rounded-lg border-b border-(--ev-line) px-2 py-3 transition-colors last:border-b-0', spotOn === i + 1 && 'bg-(--ev-panel)')}>
+        <div className="flex items-start gap-3">
+          <SpotThumb spot={s} line={line} alt={t('spot.photo_alt', { what: words.title })} badge={i + 1}
+            open={spotOn === i + 1} onToggle={() => chooseSpot(i + 1, 'list')}
+            iconClass="bg-(--ev-panel) text-(--ev-ink-85)" />
+          <button type="button" onClick={() => chooseSpot(i + 1, 'list')} aria-expanded={spotOn === i + 1}
+            className="min-h-[44px] min-w-0 flex-1 text-left">
+            <span className="block text-[16px] font-bold">{words.title}</span>
+            {words.sub ? <span className="block text-[15px] text-(--ev-ink-80)">{words.sub}</span> : null}
+            {s.note ? <span className="mt-1 block text-[16px]">{s.note}</span> : null}
+          </button>
+        </div>
+        {spotOn === i + 1 ? <SpotPhotoBig spot={s} line={line} alt={t('spot.photo_alt', { what: words.title })} credit={t('spot.photo_credit')} /> : null}
+      </li>
+    )
+  }
   return (
     <Card className="grid grid-cols-1 gap-4">
       <div className="overflow-hidden rounded-xl border border-(--ev-line)">
@@ -484,31 +538,39 @@ function RouteCard({ plan, way, locale, t }: { plan: RidePlan; way: TripWay; loc
           </ol>
         </div>
       ) : null}
-      {spots.length ? (
+      {streets.length ? (
+        <div className="grid grid-cols-1 gap-2">
+          <h2 className="text-[17px] font-bold">{t('plan.route_steps')}</h2>
+          {/* The route in order, the way Commute Advisor and the console list it: start, each street with its spots, finish. */}
+          <ol className="relative grid grid-cols-1">
+            <span aria-hidden className="absolute bottom-5 left-[7px] top-5 w-0.5 bg-(--ev-line-strong)" />
+            <li className="relative flex items-start gap-3 py-2">
+              <span aria-hidden className="relative mt-1 h-4 w-4 shrink-0 rounded-full border-[3px] border-white bg-[#191A2E] shadow-[0_0_0_1px_var(--ev-line-strong)]" />
+              <span className="block text-[16px] font-bold">{t('plan.route_start', { place: plan.meet_label ?? '' })}</span>
+            </li>
+            {streets.map((r, ri) => (
+              <li key={r.index} className="relative grid grid-cols-1">
+                <button type="button" onClick={() => pickStreet(street === r.index ? null : r.index)} aria-pressed={street === r.index}
+                  className={cx('-mx-2 flex min-h-[44px] items-start gap-3 rounded-lg px-2 py-2 text-left', street === r.index ? 'bg-(--ev-panel)' : 'hover:bg-(--ev-panel-faint)')}>
+                  <span aria-hidden className="relative mt-1 h-4 w-4 shrink-0 rounded-full border-[3px] border-white shadow-[0_0_0_1px_var(--ev-line-strong)]" style={{ background: MAP_COMFORT_COLORS[r.rating] ?? MAP_COMFORT_COLORS.shared_road }} />
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[16px] font-bold">{streetName(r.label)}</span>
+                    <span className="block text-[15px] text-(--ev-ink-80)">{comfortLabel(r.rating, locale)} · {formatStretchMiles(r.miles, locale)}</span>
+                  </span>
+                </button>
+                {spotsOn[ri]?.length ? <ol className="grid grid-cols-1 pl-7">{spotsOn[ri].map((i) => spotItem(spots[i], i))}</ol> : null}
+              </li>
+            ))}
+            <li className="relative flex items-start gap-3 py-2">
+              <span aria-hidden className="relative mt-1 h-4 w-4 shrink-0 rounded-full border-[3px] border-white bg-[#191A2E] shadow-[0_0_0_1px_var(--ev-line-strong)]" />
+              <span className="block text-[16px] font-bold">{t('plan.route_finish', { place: plan.end_label ?? '' })}</span>
+            </li>
+          </ol>
+        </div>
+      ) : spots.length ? (
         <div className="grid grid-cols-1 gap-2">
           <h2 className="text-[17px] font-bold">{t('plan.on_the_way')}</h2>
-          <ol className="grid grid-cols-1">
-            {spots.map((s, i) => {
-              const words = spotWords(t, s, null)
-              return (
-                <li key={s.id} ref={(el) => { rows.current[i + 1] = el }}
-                  className={cx('-mx-2 grid grid-cols-1 gap-2 rounded-lg border-b border-(--ev-line) px-2 py-3 transition-colors last:border-b-0', spotOn === i + 1 && 'bg-(--ev-panel)')}>
-                  <div className="flex items-start gap-3">
-                    <SpotThumb spot={s} line={line} alt={t('spot.photo_alt', { what: words.title })} badge={i + 1}
-                      open={spotOn === i + 1} onToggle={() => chooseSpot(i + 1, 'list')}
-                      iconClass="bg-(--ev-panel) text-(--ev-ink-85)" />
-                    <button type="button" onClick={() => chooseSpot(i + 1, 'list')} aria-expanded={spotOn === i + 1}
-                      className="min-h-[44px] min-w-0 flex-1 text-left">
-                      <span className="block text-[16px] font-bold">{words.title}</span>
-                      {words.sub ? <span className="block text-[15px] text-(--ev-ink-80)">{words.sub}</span> : null}
-                      {s.note ? <span className="mt-1 block text-[16px]">{s.note}</span> : null}
-                    </button>
-                  </div>
-                  {spotOn === i + 1 ? <SpotPhotoBig spot={s} line={line} alt={t('spot.photo_alt', { what: words.title })} credit={t('spot.photo_credit')} /> : null}
-                </li>
-              )
-            })}
-          </ol>
+          <ol className="grid grid-cols-1">{spots.map((s, i) => spotItem(s, i))}</ol>
         </div>
       ) : null}
       <a

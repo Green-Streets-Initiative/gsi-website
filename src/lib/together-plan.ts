@@ -58,6 +58,8 @@ export type RidePlan = {
   bike?: 'own' | 'share' | null
   bike_system?: string | null
   meet_lat: number | null; meet_lng: number | null; meet_label: string | null
+  /** Where exactly at meet_label, in the guide's words (01894). */
+  meet_spot?: string | null
   end_lat: number | null; end_lng: number | null; end_label: string | null
   route: {
     waypoints?: LatLng[]
@@ -227,6 +229,12 @@ export async function setLessonPlanEnd(matchId: string, end: Place): Promise<Res
 }
 
 /** A lesson's instructor sets it up by email instead of the plan, or plans it here after all (01893). */
+/** The guide says exactly where to meet at the meeting place (01894). */
+export async function setRidePlanMeetSpot(matchId: string, spot: string): Promise<Result> {
+  const { data, error } = await db.rpc('set_ride_plan_meet_spot', { p_match_id: matchId, p_spot: spot })
+  return asResult(data, error)
+}
+
 export async function setLessonPlanByEmail(matchId: string, on: boolean): Promise<Result> {
   const { data, error } = await db.rpc('set_lesson_plan_by_email', { p_match_id: matchId, p_on: on })
   return asResult(data, error)

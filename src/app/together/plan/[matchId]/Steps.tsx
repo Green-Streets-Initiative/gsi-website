@@ -20,7 +20,7 @@ import { fetchNearbyTransit, isRegionalStopId } from '@/lib/nearby/live-data'
 import { bikeShareDocksNear, getBikeShareSystems } from '@/lib/nearby/bike-share-systems'
 import { myRequests, track, type Match, type PartnerDay, type PartnerTime } from '@/lib/together'
 import {
-  MAX_NOTES, SKILLS, WORRIES, bikePassLeft, designRoute, lineKey, planAnchors, saveRidePlanRoute, setLessonPlanEnd, setRidePlanBike, setRidePlanWorriesOther,
+  MAX_NOTES, SKILLS, WORRIES, bikePassLeft, designRoute, lineKey, planAnchors, saveRidePlanRoute, setLessonPlanEnd, setRidePlanBike, setRidePlanMeetSpot, setRidePlanWorriesOther,
   shareRidePlan, sharedWays, type LatLng, type Place, type Result, type RidePlan, type RidePlanView, type Spot, type TransitTrip, type TripWay,
 } from '@/lib/together-plan'
 
@@ -492,6 +492,23 @@ export function spotPhotoUrl(spot: LL, line: LL[] | undefined): string {
 }
 
 /**
+ * The corner where the route starts, from the spots the route passes (each
+ * names its streets): the nearest one within about 120 m of the start. The
+ * plan's meeting spot when the guide hasn't said one (01894).
+ */
+export function meetCorner(spots: Pick<Spot, 'lat' | 'lng' | 'streets'>[] | null | undefined, at: LL | null): [string, string] | null {
+  if (!at) return null
+  let best: [string, string] | null = null
+  let bestM = 120
+  for (const s of spots ?? []) {
+    if ((s.streets?.length ?? 0) < 2 || s.streets[0] === s.streets[1]) continue
+    const m = metres(s, at)
+    if (m < bestM) { bestM = m; best = [s.streets[0], s.streets[1]] }
+  }
+  return best
+}
+
+/**
  * A spot's photo in a list: a thumbnail with the spot's icon (or number) on
  * its corner; tapping it opens it full width under the row. With no Street
  * View there, just the icon, as before.
@@ -746,6 +763,10 @@ export function GuidePlan({ plan, match, matchId, lesson = false, free, name, lo
   const [editing, setEditing] = useState<string | null>(null)
   // The spot whose Street View photo is open full width.
   const [photoOpen, setPhotoOpen] = useState<string | null>(null)
+  // Where exactly at the meeting place (01894): the guide's words, else the corner where the route starts.
+  const [meetSpot, setMeetSpot] = useState<string | null>(plan.meet_spot ?? null)
+  const startCorner = meetCorner(spots, route?.waypoints?.[0] ?? (plan.meet_lat != null && plan.meet_lng != null ? { lat: plan.meet_lat, lng: plan.meet_lng } : null))
+  const meetSpotShown = meetSpot ?? (startCorner ? t('meet.corner', { a: startCorner[0], b: startCorner[1] }) : '')
   const [noteDraft, setNoteDraft] = useState('')
   // A route and time the assistant put on the plan, not sent yet (01611): the plan opens on them.
   const draftAt = plan.status === 'learner_shared' && plan.route && plan.ride_at ? new Date(plan.ride_at) : null
@@ -881,6 +902,9 @@ export function GuidePlan({ plan, match, matchId, lesson = false, free, name, lo
       })
     }
     setBusy(true)
+    // The exact spot first, so the plan arrives with it.
+    const spotRes = await setRidePlanMeetSpot(matchId, meetSpotShown)
+    if (!spotRes.ok) { setBusy(false); return onProblem(spotRes) }
     const res = await saveRidePlanRoute(matchId, r, sending, at)
     setBusy(false)
     if (!res.ok) {
@@ -912,6 +936,12 @@ export function GuidePlan({ plan, match, matchId, lesson = false, free, name, lo
         <LearnerSaid plan={plan} name={name} systemName={systemName} t={t} />
         <div className="grid grid-cols-1 gap-2 text-[16px]">
           <p className="flex items-center gap-2"><MapPin className="h-5 w-5 shrink-0 text-(--ev-accent)" aria-hidden />{plan.meet_label}</p>
+          <div className="pl-7">
+            <Field label={t('meet.where_q', { place: plan.meet_label ?? '' })} htmlFor="plan-meet-spot" hint={t('meet.where_hint', { name })}>
+              <Input id="plan-meet-spot" value={meetSpotShown} maxLength={120} placeholder={t('meet.where_placeholder')}
+                onChange={(e) => setMeetSpot(e.target.value)} />
+            </Field>
+          </div>
           <p className="flex items-center gap-2"><Flag className="h-5 w-5 shrink-0 text-(--ev-accent)" aria-hidden />{plan.end_label}</p>
         </div>
 
