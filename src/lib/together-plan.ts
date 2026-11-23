@@ -49,6 +49,8 @@ export type RidePlan = {
   way: TripWay | null
   skill: string | null
   worries: string[]
+  /** A lesson learner's own words for what else they want help with (01892). */
+  worries_other?: string | null
   spots: Spot[] | null
   /** 01680: their own bike or the bike share (bike_system: bluebikes, valleybike...). */
   bike?: 'own' | 'share' | null
@@ -209,6 +211,12 @@ export async function shareRidePlan(matchId: string, v: { way: TripWay; skill: s
   return asResult(data, error)
 }
 
+/** A lesson learner's "Other" answer, saved right after their answers (01892). Empty clears it. */
+export async function setRidePlanWorriesOther(matchId: string, text: string | null): Promise<Result> {
+  const { data, error } = await db.rpc('set_ride_plan_worries_other', { p_match_id: matchId, p_text: text })
+  return asResult(data, error)
+}
+
 /** A lesson's instructor picks where it goes when the learner had no place in mind (01891). */
 export async function setLessonPlanEnd(matchId: string, end: Place): Promise<Result> {
   const { data, error } = await db.rpc('set_lesson_plan_end', { p_match_id: matchId, p_lat: end.lat, p_lng: end.lng, p_label: end.label })
@@ -277,7 +285,7 @@ export async function saveRidePlanRoute(matchId: string, route: RidePlan['route'
   return asResult(data, error)
 }
 
-/** Basic streetscape (lights, stop signs, left turns, walk signals) shows only with a note (isNotableSpot). */
+/** Basic streetscape (lights, stop signs, left turns, walk signals): starts off; the guide can turn any on (isNotableSpot = starts shown). */
 const BASIC = new Set(['signal', 'stop', 'left_turn', 'walk_signal'])
 export const isNotableSpot = (s: Pick<Spot, 'kind' | 'note'>) => !BASIC.has(s.kind) || !!s.note?.trim()
 

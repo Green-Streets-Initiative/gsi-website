@@ -19,7 +19,7 @@ import { fetchNearbyTransit, isRegionalStopId } from '@/lib/nearby/live-data'
 import { bikeShareDocksNear, getBikeShareSystems } from '@/lib/nearby/bike-share-systems'
 import { myRequests, track, type Match, type PartnerDay, type PartnerTime } from '@/lib/together'
 import {
-  MAX_NOTES, SKILLS, WORRIES, bikePassLeft, designRoute, isNotableSpot, lineKey, planAnchors, saveRidePlanRoute, setLessonPlanEnd, setRidePlanBike,
+  MAX_NOTES, SKILLS, WORRIES, bikePassLeft, designRoute, lineKey, planAnchors, saveRidePlanRoute, setLessonPlanEnd, setRidePlanBike, setRidePlanWorriesOther,
   shareRidePlan, sharedWays, type LatLng, type Place, type Result, type RidePlan, type RidePlanView, type Spot, type TransitTrip, type TripWay,
 } from '@/lib/together-plan'
 
@@ -137,7 +137,16 @@ const same = (a: LatLng | null, b: LatLng) => !!a && Math.abs(a.lat - b.lat) < 1
  * website's place search for any other public place. Also where a walk pair
  * meets (WalkMeetSpot) and a carpool's pickup (PickupCard).
  */
-export function PlacePick({ anchor, value, onPick, choices, sub, t }: { anchor: LatLng | null; value: Place | null; onPick: (p: Place) => void; choices?: Choice[]; sub?: (c: Choice) => string | null; t: T<PlanKey> }) {
+export function PlacePick({ anchor, near, value, onPick, choices, sub, t }: {
+  anchor: LatLng | null
+  /** Where the search ranks places from (the meeting spot for the end); the anchor when left out. */
+  near?: LatLng | null
+  value: Place | null
+  onPick: (p: Place) => void
+  choices?: Choice[]
+  sub?: (c: Choice) => string | null
+  t: T<PlanKey>
+}) {
   const [found, setFound] = useState<Choice[] | null>(null)
   const [q, setQ] = useState('')
   useEffect(() => {
@@ -185,6 +194,7 @@ export function PlacePick({ anchor, value, onPick, choices, sub, t }: { anchor: 
         hideLabel
         placeholder={t('share.search_place')}
         includeAreas
+        near={near ?? anchor}
         onPlaceSelected={(p) => {
           setQ('')
           onPick({ lat: p.lat, lng: p.lng, label: (p.address.split(',')[0] || p.address).trim().slice(0, 80) })
@@ -219,6 +229,9 @@ export function LearnerShare({ view, matchId, userId, name, t, onShared, onProbl
   const [work, setWork] = useState<LatLng | null>(null)
   const [skill, setSkill] = useState<string | null>(view.plan?.skill ?? null)
   const [worries, setWorries] = useState<string[]>(view.plan?.worries ?? [])
+  // A lesson's learner can say what else, in their own words (01892).
+  const [otherOn, setOtherOn] = useState(!!view.plan?.worries_other)
+  const [other, setOther] = useState(view.plan?.worries_other ?? '')
   const [meet, setMeet] = useState<Place | null>(null)
   const [end, setEnd] = useState<Place | null>(null)
   // A lesson's learner may leave the place to the instructor (01891).
@@ -292,6 +305,7 @@ export function LearnerShare({ view, matchId, userId, name, t, onShared, onProbl
       if (nextBike !== (view.plan?.bike ?? null) || nextBike === 'share') {
         await setRidePlanBike(matchId, nextBike, nextBike === 'share' ? docks!.system : null).catch(() => null)
       }
+      if (lesson) await setRidePlanWorriesOther(matchId, otherOn ? other : null).catch(() => null)
     }
     setBusy(false)
     if (!r.ok) return onProblem(r)
@@ -365,7 +379,7 @@ export function LearnerShare({ view, matchId, userId, name, t, onShared, onProbl
         onBack={back}
         title={t('share.worries_q')}
         t={t}
-        action={<Button variant="primary" onClick={() => setStep(step + 1)}>{t(worries.length ? 'share.next' : 'share.skip')}</Button>}
+        action={<Button variant="primary" onClick={() => setStep(step + 1)}>{t(worries.length || (otherOn && other.trim()) ? 'share.next' : 'share.skip')}</Button>}
       >
         <p className="text-[15px] text-(--ev-ink-80)">{t('share.pick_any')}</p>
         <div className="flex flex-wrap gap-2">
@@ -374,7 +388,18 @@ export function LearnerShare({ view, matchId, userId, name, t, onShared, onProbl
               {t(k(`share.worry_${w}`))}
             </ChipToggle>
           ))}
+          {lesson ? <ChipToggle on={otherOn} onClick={() => setOtherOn((v) => !v)}>{t('share.worry_other')}</ChipToggle> : null}
         </div>
+        {lesson && otherOn ? (
+          <Input
+            value={other}
+            onChange={(e) => setOther(e.target.value)}
+            maxLength={120}
+            placeholder={t('share.worry_other_placeholder')}
+            aria-label={t('share.worry_other_placeholder')}
+            autoFocus
+          />
+        ) : null}
       </Step>
     )
   }
@@ -404,7 +429,7 @@ export function LearnerShare({ view, matchId, userId, name, t, onShared, onProbl
       action={<Button variant="primary" busy={busy} disabled={!end && !(lesson && noEnd)} onClick={() => void send()}>{t('share.share_send', { name })}</Button>}
     >
       <p className="text-[15px] text-(--ev-ink-80)">{share ? t('share.end_hint_share', { system: docks!.systemName }) : lesson ? t('lesson.end_hint', { name }) : t(k(`share.end_hint${hintWay}`))}</p>
-      <PlacePick key="end" anchor={work} value={noEnd ? null : end} onPick={(p) => { setEnd(p); setNoEnd(false) }} choices={share ? docks!.work : undefined} t={t} />
+      <PlacePick key="end" anchor={work} near={work ?? meet} value={noEnd ? null : end} onPick={(p) => { setEnd(p); setNoEnd(false) }} choices={share ? docks!.work : undefined} t={t} />
       {lesson ? <Tile on={noEnd} Icon={Compass} label={t('lesson.no_end')} sub={t('lesson.no_end_sub', { name })} onClick={() => { setNoEnd(true); setNeed(false) }} /> : null}
       {need ? <p className="text-[15px] font-semibold">{t('share.need_spots')}</p> : null}
     </Step>
@@ -488,13 +513,16 @@ export function LearnerSaid({ plan, name, systemName, t }: { plan: RidePlan; nam
       {way === 'bike' && plan.bike === 'share' ? (
         <p className="flex items-center gap-2 text-[15px]"><LockOpen className="h-4 w-4 shrink-0 text-(--ev-accent)" aria-hidden />{t('share.told_share', { name, system: systemName ?? t('share.bike_share') })}</p>
       ) : null}
-      {plan.worries?.length ? (
+      {plan.worries?.length || plan.worries_other ? (
         <>
           <p className="text-[16px]">{t('share.told_worries', { name })}</p>
           <div className="flex flex-wrap gap-2">
-            {plan.worries.map((w) => (
+            {(plan.worries ?? []).map((w) => (
               <span key={w} className="inline-flex min-h-[32px] items-center rounded-full border border-(--ev-line-strong) bg-white px-3 text-[14px] font-semibold">{t(k(`share.worry_${w}`))}</span>
             ))}
+            {plan.worries_other ? (
+              <span className="inline-flex min-h-[32px] items-center rounded-full border border-(--ev-line-strong) bg-white px-3 py-1 text-[14px] font-semibold">{plan.worries_other}</span>
+            ) : null}
           </div>
         </>
       ) : null}
@@ -698,7 +726,8 @@ export function GuidePlan({ plan, match, matchId, lesson = false, name, locale, 
   }, [transit, day, time, route?.transit]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const notes = spots.filter((s) => s.note).length
-  const pickable = spots.filter((s) => isNotableSpot(s) && s.kind !== 'lock_up')
+  // Every spot on the route: traffic lights, stop signs and left turns start off, under "More spots", for the guide to turn on.
+  const pickable = spots.filter((s) => s.kind !== 'lock_up')
   const first = pickable.filter((s) => primary.has(s.id))
   const more = pickable.filter((s) => !primary.has(s.id))
 

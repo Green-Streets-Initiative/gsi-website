@@ -661,7 +661,7 @@ export async function runApprovedRidePlan(ctx: Ctx, name: string, input: Record<
 // design_ride_plan_route; the page shows them, the guide picks and turns
 // spots on and off, and the page sends with set_ride_plan_route, as the app.
 
-/** Basic streetscape the app shows only with a guide's note (lib/ride-plan.ts BASIC_SPOT_KINDS). */
+/** Basic streetscape that starts off; the guide can turn any on (lib/ride-plan.ts BASIC_SPOT_KINDS). */
 const BASIC = new Set(['signal', 'stop', 'left_turn', 'walk_signal'])
 const WORRY_SPOTS: Record<string, string[]> = {
   traffic: ['signal', 'door_zone', 'bus_stop', 'wrong_way'], left_turns: ['left_turn', 'bike_box'],
@@ -670,7 +670,8 @@ const WORRY_SPOTS: Record<string, string[]> = {
 }
 const SPOT_RISK = ['left_turn', 'crossing_open', 'crossing', 'wrong_way', 'no_sidewalk', 'bike_box', 'door_zone',
   'tracks', 'walk_signal', 'dark', 'signal', 'steep', 'steps', 'stop', 'path', 'lock_up', 'bus_stop']
-/** The app's defaultSpotsOn on top of spotsFor: basics off, at most 6 shown, the learner's worries first. */
+/** The app's defaultSpotsOn on top of spotsFor: basics start off (the guide can turn any on), at most 6 shown, the
+ *  learner's worries first. */
 function appSpotsOn(spots: Spot[], worries: string[]): Spot[] {
   const off = spots.map((s) => (BASIC.has(s.kind) && !s.note ? { ...s, on: false } : s))
   const worried = new Set(worries.flatMap((w) => WORRY_SPOTS[w] ?? []))

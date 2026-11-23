@@ -14,7 +14,7 @@ import { myMatches, track, type Match } from '@/lib/together'
 import { useTogetherMaybe } from '@/components/together/TogetherShell'
 import { GuidePlan, LearnerShare, LessonEndPick, SPOT_ICON, spotWords } from './Steps'
 import {
-  UUID, answerRideTime, appPlanLink, confirmRidePlan, getRidePlan, hasOpenProposal, isNotableSpot, planDirectionsUrl, plannedTimePassed, proposeRideTime,
+  UUID, answerRideTime, appPlanLink, confirmRidePlan, getRidePlan, hasOpenProposal, planDirectionsUrl, plannedTimePassed, proposeRideTime,
   type Result, type RidePlan, type RidePlanView, type TripWay,
 } from '@/lib/together-plan'
 
@@ -377,7 +377,7 @@ function RouteCard({ plan, way, locale, t }: { plan: RidePlan; way: TripWay; loc
   const line = plan.route?.waypoints && plan.route.waypoints.length > 1 ? plan.route.waypoints : undefined
   const legs = way === 'transit' ? plan.route?.transit?.legs ?? [] : []
   // The spots the guide chose to show, in route order, with their notes (the app's "Before your ride").
-  const spots = way === 'transit' ? [] : (plan.spots ?? []).filter((s) => s.on && isNotableSpot(s))
+  const spots = way === 'transit' ? [] : (plan.spots ?? []).filter((s) => s.on && s.kind !== 'lock_up')
   return (
     <Card className="grid grid-cols-1 gap-4">
       <PinMap
