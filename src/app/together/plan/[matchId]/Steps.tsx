@@ -604,17 +604,27 @@ const CELL_DAY: Record<string, number> = { sun: 0, mon: 1, tue: 2, wed: 3, thu: 
 const CELL_TIME: Record<string, string> = { am: '10:00', pm: '14:00', eve: '17:30' }
 const SLOT_ORDER = ['am', 'pm', 'eve']
 
-/** The next time the learner said they're free, two days out or later (a day's notice for both), within two weeks. */
+/**
+ * The next time the learner said they're free, two days out or later (a day's notice for both), within two weeks.
+ * A first lesson goes in daylight when the learner offered a daytime slot: from September to April it's dark
+ * by 5:30 PM in Boston, so an evening only wins when they offered nothing else in that fortnight
+ * (Keith 2026-11-23 review: Dan's first lesson defaulted to 5:30 PM on a November Wednesday).
+ */
 function nextFreeTime(cells: string[], from: Date): { day: string; time: string } | null {
   const ok = cells.map((c) => c.split('-')).filter(([d, s]) => d in CELL_DAY && s in CELL_TIME)
   if (!ok.length) return null
-  for (let i = 2; i <= 15; i++) {
-    const d = new Date(from.getFullYear(), from.getMonth(), from.getDate() + i)
-    const slots = ok.filter(([cd]) => CELL_DAY[cd] === d.getDay()).map(([, s]) => s)
-    const slot = SLOT_ORDER.find((s) => slots.includes(s))
-    if (slot) return { day: ymd(d), time: CELL_TIME[slot] }
+  const find = (slotsOk: (s: string, d: Date) => boolean) => {
+    for (let i = 2; i <= 15; i++) {
+      const d = new Date(from.getFullYear(), from.getMonth(), from.getDate() + i)
+      const slots = ok.filter(([cd, s]) => CELL_DAY[cd] === d.getDay() && slotsOk(s, d)).map(([, s]) => s)
+      const slot = SLOT_ORDER.find((s) => slots.includes(s))
+      if (slot) return { day: ymd(d), time: CELL_TIME[slot] }
+    }
+    return null
   }
-  return null
+  // May to August, an evening at 5:30 is still light.
+  const light = (s: string, d: Date) => s !== 'eve' || (d.getMonth() >= 4 && d.getMonth() <= 7)
+  return find(light) ?? find(() => true)
 }
 
 /** A start time from the newcomer's usual time of day: morning 8:00, midday 12:00, evening 17:30, weekends 10:00 (usualStart). */

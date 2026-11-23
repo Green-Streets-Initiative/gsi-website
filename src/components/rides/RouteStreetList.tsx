@@ -142,10 +142,11 @@ export default function RouteStreetList({
     })
   }, [rows, pieces, spots])
 
-  // Safest and busiest get a label, when the route has both kinds.
+  // Safest and busiest get a label only when part of the route is shared with traffic: on an all-calm route
+  // a quiet street isn't "busy" (Keith 2026-11-23 review: a nervous learner saw "Busiest part" on Willow Ave).
   const calmest = [...rows].sort((a, b) => tier(a.rating) - tier(b.rating) || b.miles - a.miles)[0]
   const busiest = [...rows].sort((a, b) => tier(b.rating) - tier(a.rating) || b.miles - a.miles)[0]
-  const mixed = !!calmest && !!busiest && tier(busiest.rating) > tier(calmest.rating)
+  const mixed = !!calmest && !!busiest && busiest.rating === 'shared_road' && tier(calmest.rating) < tier('shared_road')
 
   if (!rows.length) return null
   const toggleSpot = (i: number) => (onSpot ? onSpot(i) : setOpen(open === `s-${i}` ? null : `s-${i}`))
