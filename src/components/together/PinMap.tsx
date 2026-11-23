@@ -87,11 +87,11 @@ export default function PinMap({ pins, line, width = 480, height = 300, title, c
         ) : null}
         {pins.map((p, i) => {
           const at = toPixel(vp, p.lat, p.lng)
-          let { x } = at
-          const { y } = at
-          // Numbered pins at the same corner sit side by side, to the left, so each number and the pin under it stay visible.
+          const { x } = at
+          let { y } = at
+          // Numbered pins at the same corner stack downward in order, so each number and the pin under it stay visible.
           if (p.kind === 'num') {
-            while (placed.some((q) => Math.hypot(q.x - x, q.y - y) < 20)) x -= 24
+            while (placed.some((q) => Math.hypot(q.x - x, q.y - y) < 20)) y += 24
           }
           placed.push({ x, y })
           const r = R[p.kind]
