@@ -5,8 +5,9 @@ import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } fro
 import { ArrowLeft, CalendarDays, CheckCircle2, Flag, Hourglass, Mail, MapPin, Navigation, Smartphone } from 'lucide-react'
 import FindEachOther from '@/components/together/FindEachOther'
 import RouteMap from '@/components/organizers/RouteMap'
-import { MAP_COMFORT_COLORS, comfortLabel, comfortPieces, formatStretchMiles, type CalmOption, type CalmSegment } from '@/components/commute/calm-route'
-import { streetName, streetRows } from '@/components/organizers/RouteReview'
+import RouteStreetList from '@/components/rides/RouteStreetList'
+import { comfortPieces, type CalmOption, type CalmSegment } from '@/components/commute/calm-route'
+import { streetRows } from '@/components/organizers/RouteReview'
 import { comfortColor } from '@/lib/comfort-colors'
 import { Avatar } from '@/components/together/bits'
 import { Button, Card, Field, Input, Notice, Spinner, cx } from '@/components/organizers/ui'
@@ -15,7 +16,7 @@ import { planStrings, type PlanKey } from '@/lib/site-strings/together-plan'
 import { togetherStrings } from '@/lib/site-strings/together'
 import { myMatches, track, type Match } from '@/lib/together'
 import { useTogetherMaybe } from '@/components/together/TogetherShell'
-import { GuidePlan, LearnerShare, LessonEndPick, SpotPhotoBig, SpotThumb, bearing, meetCorner, metres, spotWords } from './Steps'
+import { GuidePlan, LearnerShare, LessonEndPick, SpotPhotoBig, SpotThumb, meetCorner, spotWords } from './Steps'
 import {
   UUID, answerRideTime, appPlanLink, confirmRidePlan, getRidePlan, hasOpenProposal, planDirectionsUrl, plannedTimePassed, proposeRideTime, setLessonPlanByEmail,
   type Result, type RidePlan, type RidePlanView, type TripWay,
@@ -411,22 +412,6 @@ function WhenWhere({ plan, at, way, locale, t }: { plan: RidePlan; at: Date | nu
   )
 }
 
-/** A Street View photo along a street in the route list: a thumbnail with how far along it is under it. Hidden when there's no photo there. */
-function ViewThumb({ src, alt, label, on, onToggle }: { src: string; alt: string; label: string; on: boolean; onToggle: () => void }) {
-  const [failed, setFailed] = useState(false)
-  if (failed) return null
-  return (
-    <div className="flex w-[72px] shrink-0 flex-col items-center gap-1">
-      <button type="button" onClick={onToggle} aria-expanded={on} aria-label={alt}
-        className={cx('relative h-12 w-[72px] shrink-0 rounded-lg bg-(--ev-panel) p-0', on && 'ring-2 ring-[#191A2E] ring-offset-1')}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={src} alt="" loading="lazy" onError={() => setFailed(true)} className="h-full w-full rounded-lg object-cover" />
-      </button>
-      <span className="text-[13px] leading-tight text-(--ev-ink-75)">{label}</span>
-    </div>
-  )
-}
-
 /** The route on a map (or the trip's lines for transit), and the route in Google Maps. */
 function RouteCard({ plan, way, locale, t }: { plan: RidePlan; way: TripWay; locale: SiteLocale; t: T<PlanKey> }) {
   const meet = useMemo(() => ({ lat: plan.meet_lat!, lng: plan.meet_lng! }), [plan.meet_lat, plan.meet_lng])
@@ -489,51 +474,6 @@ function RouteCard({ plan, way, locale, t }: { plan: RidePlan; way: TripWay; loc
   const pickStreet = (i: number | null) => { setOpen(null); setStreet(i) }
   // The streets in order (back-to-back pieces of one street are one row), and which street each spot is on.
   const streets = useMemo(() => streetRows(pieces), [pieces])
-  const spotsOn = useMemo(() => {
-    const byRow: number[][] = streets.map(() => [])
-    if (!streets.length) return byRow
-    placed.forEach((x, i) => {
-      byRow[Math.max(0, streets.findIndex((r) => r.members.includes(x.piece as number)))].push(i)
-    })
-    return byRow
-  }, [streets, placed])
-  // Each street's photos in route order (Keith 2026-11-23: the big carousel didn't follow the route): Street View
-  // along the street, about one every 0.7 mi (one to four), with the street's spots in their places among them.
-  // A street photo within 80 m of a spot is left out (the spot's photo shows that corner).
-  type Stop = { key: string; at: number } & ({ kind: 'view'; lat: number; lng: number; heading?: number; miles: number } | { kind: 'spot'; i: number })
-  const stretches = useMemo(() => streets.map((r, ri) => {
-    const coords = pieces.filter((p) => r.members.includes(p.index)).flatMap((p) => p.coords.map(([lng, lat]) => ({ lat, lng })))
-    const cum = [0]
-    for (let k = 1; k < coords.length; k++) cum.push(cum[k - 1] + metres(coords[k - 1], coords[k]))
-    const len = cum[cum.length - 1] ?? 0
-    const placedSpots: Stop[] = (spotsOn[ri] ?? []).map((i) => {
-      let best = 0
-      let bestD = Infinity
-      coords.forEach((c, k) => { const d = metres(c, spots[i]); if (d < bestD) { bestD = d; best = k } })
-      return { kind: 'spot' as const, key: `s-${i}`, at: cum[best] ?? 0, i }
-    })
-    const views: Stop[] = []
-    if (coords.length > 1 && len > 0) {
-      const n = Math.min(4, Math.max(1, Math.round(r.miles / 0.7)))
-      for (let v = 0; v < n; v++) {
-        const target = (len * (v + 0.5)) / n
-        let k = cum.findIndex((c) => c >= target)
-        if (k < 0) k = coords.length - 1
-        let a = k
-        let b = k
-        while (a > 0 && cum[k] - cum[a] < 20) a--
-        while (b < coords.length - 1 && cum[b] - cum[k] < 20) b++
-        if (placedSpots.some((sp) => Math.abs(sp.at - cum[k]) < 80)) continue
-        views.push({ kind: 'view', key: `v-${ri}-${v}`, at: cum[k], lat: coords[k].lat, lng: coords[k].lng, heading: a !== b ? bearing(coords[a], coords[b]) : undefined, miles: cum[k] / 1609.34 })
-      }
-    }
-    return [...views, ...placedSpots].sort((x, y) => x.at - y.at)
-  }), [streets, pieces, spotsOn, spots])
-  const viewUrl = (v: { lat: number; lng: number; heading?: number }) => {
-    const q = new URLSearchParams({ lat: v.lat.toFixed(5), lng: v.lng.toFixed(5) })
-    if (v.heading !== undefined) q.set('heading', String(Math.round(v.heading)))
-    return `/api/nearby/corridor-photo?${q}`
-  }
   const spotItem = (s: (typeof spots)[number], i: number) => {
     const words = spotWords(t, s, null)
     return (
@@ -552,57 +492,6 @@ function RouteCard({ plan, way, locale, t }: { plan: RidePlan; way: TripWay; loc
         </div>
         {spotOn === i + 1 ? <SpotPhotoBig spot={s} line={line} alt={t('spot.photo_alt', { what: words.title })} credit={t('spot.photo_credit')} /> : null}
       </li>
-    )
-  }
-  // One street's photos as a row of thumbnails, and the one that's open, full width under them.
-  const stretch = (stops: Stop[], name: string, rowIndex: number) => {
-    if (!stops.length) return null
-    const shown = stops.find((st) => st.key === open)
-    const noted = stops.filter((st): st is Stop & { kind: 'spot' } => st.kind === 'spot' && !!spots[st.i].note)
-    return (
-      <div key={rowIndex} className="grid grid-cols-1 gap-2 pb-2 pl-7">
-        <div className="-mx-1 flex gap-2 overflow-x-auto p-1 [scrollbar-width:none]">
-          {stops.map((st) => st.kind === 'spot' ? (
-            <div key={st.key} ref={(el) => { rows.current[st.i + 1] = el }} className="flex w-[72px] shrink-0 flex-col items-center gap-1">
-              <SpotThumb spot={spots[st.i]} line={line} alt={t('spot.photo_alt', { what: spotWords(t, spots[st.i], null).title })} badge={st.i + 1}
-                open={open === st.key} onToggle={() => chooseSpot(st.i + 1, 'list')} iconClass="bg-(--ev-panel) text-(--ev-ink-85)" />
-              <button type="button" onClick={() => chooseSpot(st.i + 1, 'list')} className="line-clamp-2 w-full text-center text-[13px] font-semibold leading-tight">
-                {spotWords(t, spots[st.i], null).title}
-              </button>
-            </div>
-          ) : (
-            <ViewThumb key={st.key} src={viewUrl(st)} alt={t('spot.photo_alt', { what: name })} on={open === st.key}
-              label={formatStretchMiles(st.miles, locale)}
-              onToggle={() => { const next = open === st.key ? null : st.key; setOpen(next); setStreet(next ? rowIndex : null) }} />
-          ))}
-        </div>
-        {shown?.kind === 'spot' ? (
-          <div ref={panel} className="grid w-full max-w-[520px] grid-cols-1 gap-2 rounded-lg bg-(--ev-panel) p-3">
-            <SpotPhotoBig spot={spots[shown.i]} line={line} alt={t('spot.photo_alt', { what: spotWords(t, spots[shown.i], null).title })} credit={t('spot.photo_credit')} />
-            <p className="flex items-start gap-2">
-              <span aria-hidden className="mt-0.5 flex h-[22px] min-w-[22px] items-center justify-center rounded-full bg-[#9A5B00] px-1 text-[13px] font-extrabold text-white">{shown.i + 1}</span>
-              <span className="min-w-0">
-                <span className="block text-[16px] font-bold">{spotWords(t, spots[shown.i], null).title}</span>
-                {spotWords(t, spots[shown.i], null).sub ? <span className="block text-[15px] text-(--ev-ink-80)">{spotWords(t, spots[shown.i], null).sub}</span> : null}
-                {spots[shown.i].note ? <span className="mt-1 block text-[16px]">{spots[shown.i].note}</span> : null}
-              </span>
-            </p>
-          </div>
-        ) : shown?.kind === 'view' ? (
-          <figure className="m-0 grid w-full max-w-[520px] grid-cols-1 gap-1">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={viewUrl(shown)} alt={t('spot.photo_alt', { what: name })} className="aspect-[16/9] w-full rounded-lg object-cover" />
-            <figcaption className="text-[14px] text-(--ev-ink-75)">{t('plan.view_at', { street: name, miles: formatStretchMiles(shown.miles, locale) })}</figcaption>
-          </figure>
-        ) : null}
-        {/* The guide's notes stay in words: they're written for the rider. */}
-        {noted.filter((st) => st.key !== open).map((st) => (
-          <p key={st.key} className="flex items-start gap-2 text-[15px]">
-            <span aria-hidden className="mt-0.5 flex h-[20px] min-w-[20px] items-center justify-center rounded-full bg-[#9A5B00] px-1 text-[12px] font-extrabold text-white">{st.i + 1}</span>
-            <span className="min-w-0">{spots[st.i].note}</span>
-          </p>
-        ))}
-      </div>
     )
   }
   return (
@@ -652,35 +541,43 @@ function RouteCard({ plan, way, locale, t }: { plan: RidePlan; way: TripWay; loc
         </div>
       ) : null}
       {streets.length ? (
-        <div className="grid grid-cols-1 gap-2">
-          <h2 className="text-[17px] font-bold">{t('plan.route_steps')}</h2>
-          {/* The route in order, the way Commute Advisor and the console list it: start, each street with its spots, finish. */}
-          <ol className="relative grid grid-cols-1">
-            <span aria-hidden className="absolute bottom-5 left-[7px] top-5 w-0.5 bg-(--ev-line-strong)" />
-            <li className="relative flex items-start gap-3 py-2">
-              <span aria-hidden className="relative mt-1 h-4 w-4 shrink-0 rounded-full border-[3px] border-white bg-[#191A2E] shadow-[0_0_0_1px_var(--ev-line-strong)]" />
-              <span className="block text-[16px] font-bold">{t('plan.route_start', { place: plan.meet_label ?? '' })}</span>
-            </li>
-            {streets.map((r, ri) => (
-              <li key={r.index} className="relative grid grid-cols-1">
-                <button type="button" onClick={() => pickStreet(street === r.index ? null : r.index)} aria-pressed={street === r.index}
-                  className={cx('-mx-2 flex min-h-[44px] items-start gap-3 rounded-lg px-2 py-2 text-left', street === r.index ? 'bg-(--ev-panel)' : 'hover:bg-(--ev-panel-faint)')}>
-                  <span aria-hidden className="relative mt-1 h-4 w-4 shrink-0 rounded-full border-[3px] border-white shadow-[0_0_0_1px_var(--ev-line-strong)]" style={{ background: MAP_COMFORT_COLORS[r.rating] ?? MAP_COMFORT_COLORS.shared_road }} />
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-[16px] font-bold">{streetName(r.label)}</span>
-                    <span className="block text-[15px] text-(--ev-ink-80)">{comfortLabel(r.rating, locale)} · {formatStretchMiles(r.miles, locale)}</span>
+        <RouteStreetList
+          pieces={pieces}
+          locale={locale}
+          title={t('plan.route_steps')}
+          start={t('plan.route_start', { place: plan.meet_label ?? '' })}
+          finish={t('plan.route_finish', { place: plan.end_label ?? '' })}
+          selected={street}
+          onSelect={setStreet}
+          open={open}
+          onOpen={setOpen}
+          spots={spots}
+          onSpot={(i) => chooseSpot(i + 1, 'list')}
+          panelRef={panel}
+          spotRef={(i, el) => { rows.current[i + 1] = el }}
+          spotThumb={(i, on, toggle) => (
+            <SpotThumb spot={spots[i]} line={line} alt={t('spot.photo_alt', { what: spotWords(t, spots[i], null).title })} badge={i + 1}
+              open={on} onToggle={toggle} iconClass="bg-(--ev-panel) text-(--ev-ink-85)" />
+          )}
+          spotCaption={(i) => spotWords(t, spots[i], null).title}
+          spotNote={(i) => spots[i].note}
+          spotPanel={(i) => {
+            const words = spotWords(t, spots[i], null)
+            return (
+              <div className="grid grid-cols-1 gap-2 rounded-lg bg-(--ev-panel) p-3">
+                <SpotPhotoBig spot={spots[i]} line={line} alt={t('spot.photo_alt', { what: words.title })} credit={t('spot.photo_credit')} />
+                <p className="flex items-start gap-2">
+                  <span aria-hidden className="mt-0.5 flex h-[22px] min-w-[22px] items-center justify-center rounded-full bg-[#9A5B00] px-1 text-[13px] font-extrabold text-white">{i + 1}</span>
+                  <span className="min-w-0">
+                    <span className="block text-[16px] font-bold">{words.title}</span>
+                    {words.sub ? <span className="block text-[15px] text-(--ev-ink-80)">{words.sub}</span> : null}
+                    {spots[i].note ? <span className="mt-1 block text-[16px]">{spots[i].note}</span> : null}
                   </span>
-                </button>
-                {stretch(stretches[ri], streetName(r.label), r.index)}
-              </li>
-            ))}
-            <li className="relative flex items-start gap-3 py-2">
-              <span aria-hidden className="relative mt-1 h-4 w-4 shrink-0 rounded-full border-[3px] border-white bg-[#191A2E] shadow-[0_0_0_1px_var(--ev-line-strong)]" />
-              <span className="block text-[16px] font-bold">{t('plan.route_finish', { place: plan.end_label ?? '' })}</span>
-            </li>
-          </ol>
-          <p className="text-[14px] text-(--ev-ink-75)">{t('plan.route_photos_hint')}</p>
-        </div>
+                </p>
+              </div>
+            )
+          }}
+        />
       ) : spots.length ? (
         <div className="grid grid-cols-1 gap-2">
           <h2 className="text-[17px] font-bold">{t('plan.on_the_way')}</h2>

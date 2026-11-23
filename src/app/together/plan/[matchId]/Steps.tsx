@@ -9,7 +9,7 @@ import {
 } from '@phosphor-icons/react'
 import AddressAutocomplete from '@/components/AddressAutocomplete'
 import RouteMap from '@/components/organizers/RouteMap'
-import RideStreets from '@/components/rides/RideStreets'
+import RouteStreetList from '@/components/rides/RouteStreetList'
 import { comfortPieces, type CalmOption, type CalmSegment } from '@/components/commute/calm-route'
 import { comfortColor } from '@/lib/comfort-colors'
 import { WAY_ICON } from '@/components/together/bits'
@@ -34,7 +34,7 @@ import {
  * (lib/nearby), the route planner and spots (the Shift assistant's
  * ride-plan tools, through /api/together/plan-route), the route map in
  * comfort colours (RouteMap, comfort-colors.ts) and the street-by-street
- * photos (RideStreets).
+ * photos (RouteStreetList).
  */
 
 const SECONDARY_LINK = 'min-h-[44px] text-left text-[15px] font-semibold text-(--ev-accent) underline underline-offset-2'
@@ -1011,14 +1011,20 @@ export function GuidePlan({ plan, match, matchId, lesson = false, free, name, lo
                         label={t('plan.map_title', { from: plan.meet_label ?? '', to: plan.end_label ?? '' })}
                       />
                     </div>
-                    {calmOption && rawPieces.length ? (
-                      <div className="border-t border-(--ev-line)">
-                        <RideStreets option={calmOption} pieces={rawPieces} selected={street} onSelect={setStreet} locale={locale} />
-                      </div>
-                    ) : null}
                   </div>
                   {route.distanceMiles ? (
                     <p className="text-[16px] font-semibold">{t('step.route_line', { miles: Math.round(route.distanceMiles * 10) / 10, minutes: Math.round(route.minutes ?? (route.distanceMiles / (way === 'walk' ? 3 : 10)) * 60) })}</p>
+                  ) : null}
+                  {calmOption && rawPieces.length ? (
+                    <RouteStreetList
+                      pieces={rawPieces}
+                      locale={locale}
+                      title={t('plan.route_steps')}
+                      start={t('plan.route_start', { place: plan.meet_label ?? '' })}
+                      finish={t('plan.route_finish', { place: plan.end_label ?? '' })}
+                      selected={street}
+                      onSelect={setStreet}
+                    />
                   ) : null}
                 </>
               ) : null}

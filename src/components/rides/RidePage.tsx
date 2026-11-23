@@ -17,7 +17,7 @@ import RidePerks from '@/components/rides/RidePerks'
 import RideCoffee, { type RideCoffeeInfo } from '@/components/rides/RideCoffee'
 import RideNewInfra from '@/components/rides/RideNewInfra'
 import RidePhotos from '@/components/rides/RidePhotos'
-import RideStreets from '@/components/rides/RideStreets'
+import RouteStreetList from '@/components/rides/RouteStreetList'
 import type { AlbumResponse } from '@/app/events/[id]/photos/photo-api'
 import { hasNewInfra, newInfraKey, type NewInfraFor } from '@/lib/new-infra'
 import { perksAlong, type BikePerk } from '@/lib/bike-perks'
@@ -530,6 +530,8 @@ export default function RidePage({ ride, host = null, hostPerson = null, organiz
     ? ({ waypoints: route, comfort_segments: comfortHere as CalmSegment[], comfort_rating: 'mixed', summary: '' } as unknown as CalmOption)
     : null, [comfortHere, route])
   const rawPieces = useMemo(() => (calmOption ? comfortPieces(calmOption, locale) : []), [calmOption, locale])
+  // A loop ends where it started (within about 200 m): the route list says "Back at <the start>".
+  const loop = route.length >= 2 && Math.hypot((route[0].lat - route[route.length - 1].lat) * 111000, (route[0].lng - route[route.length - 1].lng) * 82000) < 200
   const pieces = useMemo(() => rawPieces.length
     ? rawPieces.map((p) => ({ coords: p.coords, color: MAP_COMFORT_COLORS[p.rating] ?? MAP_COMFORT_COLORS.shared_road, index: p.index }))
     : undefined, [rawPieces])
@@ -692,8 +694,16 @@ export default function RidePage({ ride, host = null, hostPerson = null, organiz
               {/* What the streets look like, right after "On calm streets" (polish 11-13: in the
                   map card it pushed what the ride is like a screen and a half down on a phone). */}
               {calmOption && rawPieces.length > 0 && !picked && (
-                <div className="overflow-hidden rounded-2xl border border-(--ev-line-mid) bg-(--ev-card) shadow-(--ev-shadow)">
-                  <RideStreets option={calmOption} pieces={rawPieces} selected={street} onSelect={setStreet} locale={locale} />
+                <div className="rounded-2xl border border-(--ev-line-mid) bg-(--ev-card) p-4 shadow-(--ev-shadow)">
+                  <RouteStreetList
+                    pieces={rawPieces}
+                    locale={locale}
+                    title={t('streets.route_title')}
+                    start={place?.meetup_name ? t('streets.start', { place: place.meetup_name }) : t('streets.start_plain')}
+                    finish={loop && place?.meetup_name ? t('streets.back_at', { place: place.meetup_name }) : t('streets.finish_plain')}
+                    selected={street}
+                    onSelect={setStreet}
+                  />
                 </div>
               )}
               {ride.registration_url && (
