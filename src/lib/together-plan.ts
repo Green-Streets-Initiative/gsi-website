@@ -85,7 +85,7 @@ export type RidePlanView = {
   shared_modes?: string[] | null
   /** A free street lesson's plan (01889): the learner's area anchors the meeting spot; the instructor also sees how to reach them. */
   /** free: when the learner said they're free, 'sat-am', 'wed-eve' and the like (01893). */
-  lesson?: { anchor: LatLng | null; place: string | null; org: string | null; email: string | null; phone: string | null; free?: string[] } | null
+  lesson?: { anchor: LatLng | null; place: string | null; org: string | null; email: string | null; phone: string | null; free?: string[]; note?: string | null } | null
   plan: RidePlan | null
 }
 

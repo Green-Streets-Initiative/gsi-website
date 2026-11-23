@@ -54,9 +54,16 @@ function Step({ n, total, onBack, title, intro, children, action, t }: {
   action?: ReactNode
   t: T<PlanKey>
 }) {
+  // A new step starts at its question: when Next leaves the page scrolled past the step's top
+  // (under the site's bar), bring the top back into view.
+  const box = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    const top = box.current?.getBoundingClientRect().top
+    if (top != null && top < 72) window.scrollBy({ top: top - 88, behavior: 'smooth' })
+  }, [n, title])
   return (
-    <div className="grid grid-cols-1 gap-4">
-      <div className="flex min-h-[44px] items-center gap-3">
+    <div ref={box} className="grid grid-cols-1 gap-4">
+      {onBack || (n != null && total) ? <div className="flex min-h-[44px] items-center gap-3">
         {onBack ? (
           <button type="button" onClick={onBack} className="inline-flex min-h-[44px] items-center gap-1 text-[15px] font-semibold text-(--ev-ink-80)">
             <ChevronLeft className="h-4 w-4" aria-hidden /> {t('step.back')}
@@ -72,7 +79,7 @@ function Step({ n, total, onBack, title, intro, children, action, t }: {
             </span>
           </>
         ) : null}
-      </div>
+      </div> : null}
       <h2 className="font-display text-[22px] font-extrabold leading-tight">{title}</h2>
       {intro ? <p className="text-[16px] text-(--ev-ink-85)">{intro}</p> : null}
       {children}
@@ -382,7 +389,13 @@ export function LearnerShare({ view, matchId, userId, name, t, onShared, onProbl
         t={t}
         action={<Button variant="primary" onClick={() => setStep(step + 1)}>{t(worries.length || (otherOn && other.trim()) ? 'share.next' : 'share.skip')}</Button>}
       >
-        <p className="text-[15px] text-(--ev-ink-80)">{t('share.pick_any')}</p>
+        {view.lesson?.note ? (
+          <div className="grid grid-cols-1 gap-1 rounded-xl bg-(--ev-panel) p-4">
+            <p className="text-[14px] font-bold text-(--ev-ink-80)">{t('share.your_note', { name })}</p>
+            <blockquote className="m-0 border-l-[3px] border-(--ev-accent) pl-3 text-[16px]">&ldquo;{view.lesson.note}&rdquo;</blockquote>
+          </div>
+        ) : null}
+        <p className="text-[15px] text-(--ev-ink-80)">{t(view.lesson?.note ? 'share.pick_any_more' : 'share.pick_any')}</p>
         <div className="flex flex-wrap gap-2">
           {options.map((w) => (
             <ChipToggle key={w} on={worries.includes(w)} onClick={() => setWorries((list) => (list.includes(w) ? list.filter((x) => x !== w) : [...list, w]))}>
@@ -639,11 +652,12 @@ const GOALS = ['calmest', 'flattest', 'shortest'] as const
  * own words (Keith 2026-11-23: "shorthand that you understand but the reader
  * won't").
  */
-export function LearnerSaid({ plan, name, systemName, t }: { plan: RidePlan; name: string; systemName?: string | null; t: T<PlanKey> }) {
+export function LearnerSaid({ plan, name, systemName, note, t }: { plan: RidePlan; name: string; systemName?: string | null; /** A lesson learner's own words from the sign-up form (01895). */ note?: string | null; t: T<PlanKey> }) {
   const way = plan.way ?? 'bike'
   return (
     <div className="grid grid-cols-1 gap-2 rounded-xl bg-(--ev-panel) p-4">
       <p className="text-[14px] font-bold text-(--ev-ink-80)">{t('share.told_heading', { name })}</p>
+      {note ? <blockquote className="m-0 border-l-[3px] border-(--ev-accent) pl-3 text-[16px]">&ldquo;{note}&rdquo;</blockquote> : null}
       {plan.skill ? <p className="text-[16px] font-semibold">{t(k(`share.told_${plan.skill}`), { name })}</p> : null}
       {way === 'bike' && plan.bike === 'share' ? (
         <p className="flex items-center gap-2 text-[15px]"><LockOpen className="h-4 w-4 shrink-0 text-(--ev-accent)" aria-hidden />{t('share.told_share', { name, system: systemName ?? t('share.bike_share') })}</p>
@@ -670,10 +684,11 @@ export function LearnerSaid({ plan, name, systemName, t }: { plan: RidePlan; nam
  * the lesson goes first, from rail stations 0.3 to 2 miles from the meeting
  * spot or the place search, then plans the route as usual.
  */
-export function LessonEndPick({ plan, matchId, name, t, onSet, onProblem }: {
+export function LessonEndPick({ plan, matchId, name, note, t, onSet, onProblem }: {
   plan: RidePlan
   matchId: string
   name: string
+  note?: string | null
   t: T<PlanKey>
   onSet: () => void
   onProblem: (r: Result) => void
@@ -722,7 +737,7 @@ export function LessonEndPick({ plan, matchId, name, t, onSet, onProblem }: {
       t={t}
       action={<Button variant="primary" busy={busy} disabled={!end} onClick={() => void save()}>{t('share.next')}</Button>}
     >
-      <LearnerSaid plan={plan} name={name} t={t} />
+      <LearnerSaid plan={plan} name={name} note={note} t={t} />
       <p className="text-[16px]">{t('lesson.pick_end_hint', { name, meet: meetLabel })}</p>
       {choices === null ? <Spinner /> : null}
       {choices !== null ? (
@@ -732,8 +747,10 @@ export function LessonEndPick({ plan, matchId, name, t, onSet, onProblem }: {
   )
 }
 
-export function GuidePlan({ plan, match, matchId, lesson = false, free, name, locale, t, onSent, onProblem }: {
+export function GuidePlan({ plan, match, matchId, lesson = false, free, note, name, locale, t, onSent, onProblem }: {
   plan: RidePlan
+  /** A lesson learner's own words from the sign-up form (01895). */
+  note?: string | null
   match: Match | null
   /** A free street lesson's plan: titled as the lesson. */
   lesson?: boolean
@@ -933,7 +950,7 @@ export function GuidePlan({ plan, match, matchId, lesson = false, free, name, lo
             {t('share.draft_banner', { when: draftAt.toLocaleString(SITE_LOCALE_TAG[locale], { weekday: 'long', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }), name })}
           </p>
         ) : null}
-        <LearnerSaid plan={plan} name={name} systemName={systemName} t={t} />
+        <LearnerSaid plan={plan} name={name} systemName={systemName} note={note} t={t} />
         <div className="grid grid-cols-1 gap-2 text-[16px]">
           <p className="flex items-center gap-2"><MapPin className="h-5 w-5 shrink-0 text-(--ev-accent)" aria-hidden />{plan.meet_label}</p>
           <div className="pl-7">

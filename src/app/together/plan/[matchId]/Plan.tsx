@@ -254,7 +254,7 @@ export default function Plan({ matchId, locale, lessonKey }: { matchId: string; 
             onShared={() => { setNotice(t('step.shared_done', { name })); void load() }}
           />
         ) : stage === 'guide_turn' && p && lessonKey && !hasPlace && p.meet_lat != null ? (
-          <LessonEndPick plan={p} matchId={matchId} name={name} t={t} onProblem={onFail} onSet={() => void load()} />
+          <LessonEndPick plan={p} matchId={matchId} name={name} note={view?.lesson?.note} t={t} onProblem={onFail} onSet={() => void load()} />
         ) : stage === 'guide_turn' && p && hasPlace ? (
           <GuidePlan
             plan={p}
@@ -262,6 +262,7 @@ export default function Plan({ matchId, locale, lessonKey }: { matchId: string; 
             matchId={matchId}
             lesson={!!lessonKey}
             free={view.lesson?.free}
+            note={view.lesson?.note}
             name={name}
             locale={locale}
             t={t}
