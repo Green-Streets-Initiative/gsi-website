@@ -28,6 +28,8 @@ interface Props {
   /** When given, the route is drawn in these coloured stretches instead of one blue line. */
   pieces?: MapPiece[]
   spots?: MapSpot[]
+  /** Spots show their number (the trip plan's numbered "On the way" list) instead of "!". */
+  spotNumbers?: boolean
   focus?: MapFocus
   onPieceClick?: (index: number) => void
   onSpotClick?: (n: number) => void
@@ -35,6 +37,10 @@ interface Props {
   /** Busy crossings where a crossing guard waits (Shift 01745): a stop paddle, solid once someone has it. */
   guards?: (LatLng & { label: string; guarded: boolean })[]
   meetup: LatLng | null
+  /** The meeting point's name, beside its pin. */
+  meetupLabel?: string
+  /** Where the route ends (a trip plan): a navy dot with the place's name. */
+  end?: (LatLng & { label?: string }) | null
   /** Where the group is right now (Shift 01747), with the path it took; `fresh` pulses the dot. */
   group?: { lat: number; lng: number; trail: LatLng[]; fresh: boolean; walk?: boolean; label: string } | null
   /** A place to meet the group along the route (Catch the group, Keith 2026-11-13): a blue pin. */
@@ -49,17 +55,44 @@ interface Props {
   label?: string
 }
 
-function spotEl(n: number, on: boolean): HTMLElement {
+function spotEl(n: number, on: boolean, numbered = false): HTMLElement {
   const el = document.createElement('button')
   el.type = 'button'
-  el.setAttribute('aria-label', `Spot ${n} to take carefully`)
-  el.textContent = '!'
+  el.setAttribute('aria-label', numbered ? `Spot ${n} on the way` : `Spot ${n} to take carefully`)
+  el.textContent = numbered ? String(n) : '!'
+  // Numbered: the plan list's brown badge (white on #9A5B00 is 5.4:1).
+  const fill = numbered ? '#9A5B00' : '#E8833A'
+  const glow = numbered ? 'rgba(154,91,0,.3)' : 'rgba(232,131,58,.35)'
   Object.assign(el.style, {
-    width: on ? '28px' : '22px', height: on ? '28px' : '22px', borderRadius: '999px', background: '#E8833A', color: '#fff',
+    width: on ? '28px' : '24px', height: on ? '28px' : '24px', borderRadius: '999px', background: fill, color: '#fff',
     font: `800 ${on ? 15 : 13}px/1 system-ui, sans-serif`, border: '2px solid #fff', cursor: 'pointer',
-    boxShadow: on ? '0 0 0 4px rgba(232,131,58,.35)' : '0 1px 4px rgba(0,0,0,.3)', padding: '0',
+    boxShadow: on ? `0 0 0 4px ${glow}` : '0 1px 4px rgba(0,0,0,.3)', padding: '0',
   })
   return el
+}
+
+/** A place name beside a pin, with a white halo so it reads over the map. */
+function withLabel(el: HTMLElement, label: string | undefined, left: number): HTMLElement {
+  if (!label) return el
+  el.style.position = 'relative'
+  const tag = document.createElement('span')
+  tag.textContent = label
+  Object.assign(tag.style, {
+    position: 'absolute', left: `${left}px`, top: '50%', transform: 'translateY(-50%)', whiteSpace: 'nowrap', pointerEvents: 'none',
+    font: '700 14px/1.2 system-ui, sans-serif', color: '#191A2E',
+    textShadow: '0 0 3px #fff, 0 0 3px #fff, 0 0 3px #fff, 0 0 3px #fff',
+  })
+  el.appendChild(tag)
+  return el
+}
+
+/** Where a trip plan's route ends: a navy dot in a white ring. */
+function endEl(label?: string): HTMLElement {
+  const el = document.createElement('div')
+  el.setAttribute('role', 'img')
+  el.setAttribute('aria-label', label ?? 'Where the route ends')
+  Object.assign(el.style, { width: '20px', height: '20px', borderRadius: '999px', background: '#191A2E', border: '3px solid #fff', boxShadow: '0 1px 4px rgba(0,0,0,.35)', boxSizing: 'border-box' })
+  return withLabel(el, label, 24)
 }
 
 /** A crossing guard's stop paddle on its handle; the handle's tip is the crossing. */
@@ -135,7 +168,7 @@ function pinEl(kind: 'meetup' | 'stop', n?: number): HTMLElement {
 }
 
 export default function RouteMap({
-  line, lanes = null, pieces, spots, focus = null, onPieceClick, onSpotClick, stops, guards, meetup, group = null, meet = null, me = null, pick, onPick, fitKey = 0, className, label = 'Route map',
+  line, lanes = null, pieces, spots, spotNumbers = false, focus = null, onPieceClick, onSpotClick, stops, guards, meetup, meetupLabel, end = null, group = null, meet = null, me = null, pick, onPick, fitKey = 0, className, label = 'Route map',
 }: Props) {
   const groupMarker = useRef<import('maplibre-gl').Marker | null>(null)
   // Until the first tiles and the route are drawn, the route's outline shows in
@@ -164,7 +197,7 @@ export default function RouteMap({
       libRef.current = ml
       // Open already framed on the whole route, so the first tiles drawn are the
       // right ones and the map does not zoom out after it loads.
-      const first: LatLng[] = meet ? [] : [...line, ...(stops ?? []), ...(meetup ? [meetup] : [])]
+      const first: LatLng[] = meet ? [] : [...line, ...(stops ?? []), ...(meetup ? [meetup] : []), ...(end ? [end] : [])]
       const lngs = first.map((p) => p.lng)
       const lats = first.map((p) => p.lat)
       const map = new ml.Map({
@@ -258,13 +291,17 @@ export default function RouteMap({
       for (const g of guards ?? []) {
         markers.current.push(new ml.Marker({ element: guardEl(g.label, g.guarded), anchor: 'bottom' }).setLngLat([g.lng, g.lat]).addTo(map))
       }
+      if (end) markers.current.push(new ml.Marker({ element: endEl(end.label) }).setLngLat([end.lng, end.lat]).addTo(map))
       if (meetup) {
-        markers.current.push(new ml.Marker({ element: pinEl('meetup'), anchor: 'bottom' }).setLngLat([meetup.lng, meetup.lat]).addTo(map))
+        const pin = pinEl('meetup')
+        const tag = withLabel(pin, meetupLabel, 34).lastElementChild as HTMLElement | null
+        if (meetupLabel && tag) tag.style.top = '14px' // beside the pin's head, not its tip
+        markers.current.push(new ml.Marker({ element: pin, anchor: 'bottom' }).setLngLat([meetup.lng, meetup.lat]).addTo(map))
       }
       if (me) markers.current.push(new ml.Marker({ element: meEl(me.label) }).setLngLat([me.lng, me.lat]).addTo(map))
       if (meet) markers.current.push(new ml.Marker({ element: meetEl(meet.label) }).setLngLat([meet.lng, meet.lat]).addTo(map))
       for (const sp of spots ?? []) {
-        const el = spotEl(sp.n, focus?.kind === 'spot' && focus.n === sp.n)
+        const el = spotEl(sp.n, focus?.kind === 'spot' && focus.n === sp.n, spotNumbers)
         el.addEventListener('click', (ev) => { ev.stopPropagation(); onSpotRef.current?.(sp.n) })
         markers.current.push(new ml.Marker({ element: el }).setLngLat([sp.lng, sp.lat]).addTo(map))
       }
@@ -274,7 +311,7 @@ export default function RouteMap({
       const t = setInterval(() => { if (mapRef.current) { clearInterval(t); draw() } }, 120)
       return () => clearInterval(t)
     }
-  }, [line, pieces, spots, focus, stops, guards, meetup, meet, me])
+  }, [line, pieces, spots, spotNumbers, focus, stops, guards, meetup, meetupLabel, end, meet, me])
 
   // The group's dot and trail, moved in place on every update rather than redrawn.
   useEffect(() => {
@@ -340,7 +377,7 @@ export default function RouteMap({
       // With a meeting spot, fit to it, the person and the group rather than the whole route.
       const pts: LatLng[] = meet
         ? [meet, ...(me ? [me] : []), ...(group ? [group] : [])]
-        : [...line, ...stops, ...(meetup ? [meetup] : [])]
+        : [...line, ...stops, ...(meetup ? [meetup] : []), ...(end ? [end] : [])]
       if (pts.length === 0) return
       if (pts.length === 1) { map.easeTo({ center: [pts[0].lng, pts[0].lat], zoom: 13.5 }); return }
       const b = new ml.LngLatBounds([pts[0].lng, pts[0].lat], [pts[0].lng, pts[0].lat])

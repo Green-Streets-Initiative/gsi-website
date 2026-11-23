@@ -4,9 +4,10 @@ import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
 import { ArrowLeft, CalendarDays, CheckCircle2, Flag, Hourglass, Mail, MapPin, Navigation, Smartphone } from 'lucide-react'
 import FindEachOther from '@/components/together/FindEachOther'
-import PinMap from '@/components/together/PinMap'
+import RouteMap from '@/components/organizers/RouteMap'
 import RideStreets from '@/components/rides/RideStreets'
 import { comfortPieces, type CalmOption, type CalmSegment } from '@/components/commute/calm-route'
+import { comfortColor } from '@/lib/comfort-colors'
 import { Avatar } from '@/components/together/bits'
 import { Button, Card, Field, Input, Notice, Spinner, cx } from '@/components/organizers/ui'
 import { SITE_LOCALE_TAG, translator, withLang, type SiteLocale, type T } from '@/lib/site-i18n'
@@ -395,12 +396,12 @@ function WhenWhere({ plan, at, way, locale, t }: { plan: RidePlan; at: Date | nu
 
 /** The route on a map (or the trip's lines for transit), and the route in Google Maps. */
 function RouteCard({ plan, way, locale, t }: { plan: RidePlan; way: TripWay; locale: SiteLocale; t: T<PlanKey> }) {
-  const meet = { lat: plan.meet_lat!, lng: plan.meet_lng! }
-  const end = { lat: plan.end_lat!, lng: plan.end_lng! }
+  const meet = useMemo(() => ({ lat: plan.meet_lat!, lng: plan.meet_lng! }), [plan.meet_lat, plan.meet_lng])
+  const end = useMemo(() => ({ lat: plan.end_lat!, lng: plan.end_lng! }), [plan.end_lat, plan.end_lng])
   const line = plan.route?.waypoints && plan.route.waypoints.length > 1 ? plan.route.waypoints : undefined
   const legs = way === 'transit' ? plan.route?.transit?.legs ?? [] : []
   // The spots the guide chose to show, in route order, with their notes (the app's "Before your ride").
-  const spots = way === 'transit' ? [] : (plan.spots ?? []).filter((s) => s.on && s.kind !== 'lock_up')
+  const spots = useMemo(() => (way === 'transit' ? [] : (plan.spots ?? []).filter((s) => s.on && s.kind !== 'lock_up')), [way, plan.spots])
   // What each street looks like, as the guide saw it when planning (bike routes: the comfort scale is the bike's).
   const route = plan.route
   const calmOption = useMemo(() => (way === 'bike' && route?.waypoints && route.waypoints.length > 1 && route.comfortSegments?.length
@@ -408,18 +409,40 @@ function RouteCard({ plan, way, locale, t }: { plan: RidePlan; way: TripWay; loc
     : null), [way, route])
   const pieces = useMemo(() => (calmOption ? comfortPieces(calmOption, locale) : []), [calmOption, locale])
   const [street, setStreet] = useState<number | null>(null)
+  const [spotOn, setSpotOn] = useState<number | null>(null)
+  // The same map as the guide's route step (vector tiles, sharp at any size): the route coloured street by street, the spots numbered as in the list.
+  const mapPieces = useMemo(() => pieces.map((p) => ({ coords: p.coords, color: comfortColor(p.rating, true), index: p.index })), [pieces])
+  const mapSpots = useMemo(() => spots.map((s, i) => ({ lat: s.lat, lng: s.lng, n: i + 1 })), [spots])
+  const endPin = useMemo(() => ({ ...end, label: plan.end_label ?? undefined }), [end, plan.end_label])
+  const mapLine = useMemo(() => line ?? [meet, end], [line, meet, end])
+  const pickStreet = (i: number | null) => { setSpotOn(null); setStreet(i) }
   return (
     <Card className="grid grid-cols-1 gap-4">
-      <PinMap
-        pins={[
-          { ...meet, kind: 'match', label: plan.meet_label ?? undefined },
-          { ...end, kind: 'home', label: plan.end_label ?? undefined },
-          ...spots.map((s, i) => ({ lat: s.lat, lng: s.lng, kind: 'num' as const, num: i + 1 })),
-        ]}
-        line={line}
-        maxZoom={16}
-        title={t('plan.map_title', { from: plan.meet_label ?? '', to: plan.end_label ?? '' })}
-      />
+      <div className="overflow-hidden rounded-xl border border-(--ev-line)">
+        <div className="h-[280px] sm:h-[360px]">
+          <RouteMap
+            line={mapLine}
+            pieces={mapPieces.length ? mapPieces : undefined}
+            spots={mapSpots}
+            spotNumbers
+            focus={spotOn != null ? { kind: 'spot', n: spotOn } : street != null ? { kind: 'piece', index: street } : null}
+            onPieceClick={(i) => pickStreet(street === i ? null : i)}
+            onSpotClick={(n) => { setStreet(null); setSpotOn((cur) => (cur === n ? null : n)) }}
+            stops={[]}
+            meetup={meet}
+            meetupLabel={plan.meet_label ?? undefined}
+            end={endPin}
+            pick={false}
+            className="h-full w-full"
+            label={t('plan.map_title', { from: plan.meet_label ?? '', to: plan.end_label ?? '' })}
+          />
+        </div>
+        {calmOption && pieces.length ? (
+          <div className="border-t border-(--ev-line)">
+            <RideStreets option={calmOption} pieces={pieces} selected={street} onSelect={pickStreet} locale={locale} />
+          </div>
+        ) : null}
+      </div>
       {legs.length ? (
         <div className="grid grid-cols-1 gap-2">
           <h2 className="text-[17px] font-bold">{t('plan.transit_title')}</h2>
@@ -465,11 +488,6 @@ function RouteCard({ plan, way, locale, t }: { plan: RidePlan; way: TripWay; loc
               )
             })}
           </ol>
-        </div>
-      ) : null}
-      {calmOption && pieces.length ? (
-        <div className="overflow-hidden rounded-xl border border-(--ev-line)">
-          <RideStreets option={calmOption} pieces={pieces} selected={street} onSelect={setStreet} locale={locale} />
         </div>
       ) : null}
       <a

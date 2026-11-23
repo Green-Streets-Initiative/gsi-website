@@ -876,8 +876,10 @@ export function GuidePlan({ plan, match, matchId, lesson = false, free, name, lo
                         pieces={mapPieces}
                         focus={street != null ? { kind: 'piece', index: street } : null}
                         onPieceClick={(i) => setStreet((cur) => (cur === i ? null : i))}
-                        stops={[...(through ? [through] : []), { ...end, label: plan.end_label ?? undefined }]}
+                        stops={through ? [through] : []}
                         meetup={meet}
+                        meetupLabel={plan.meet_label ?? undefined}
+                        end={{ ...end, label: plan.end_label ?? undefined }}
                         pick={stopOpen}
                         onPick={(p) => chooseStop({ ...p, label: t('step.map_spot') })}
                         fitKey={`${line?.length ?? 0}-${through?.lat ?? ''}`}
