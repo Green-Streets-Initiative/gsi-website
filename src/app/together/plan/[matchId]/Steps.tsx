@@ -170,7 +170,7 @@ export function PlacePick({ anchor, near, value, onPick, choices, sub, t }: {
         for (const s of [...(rail.length ? rail : stops)].sort((a, b) => a.distance_miles - b.distance_miles)) {
           if (seen.has(s.name)) continue
           seen.add(s.name)
-          out.push({ lat: s.lat, lng: s.lng, label: s.name, walkMin: walkMin(s.distance_miles), icon: 'station' })
+          out.push({ lat: s.lat, lng: s.lng, label: s.name, walkMin: walkMin(s.distance_miles), miles: s.distance_miles, icon: 'station' })
           if (out.length === 3) break
         }
         setFound(out)
@@ -234,6 +234,8 @@ export function LearnerShare({ view, matchId, userId, name, t, onShared, onProbl
   // A lesson (no account): stops near where the learner asked for the lesson; the end is a search.
   const lesson = view.lesson ?? null
   const [home, setHome] = useState<LatLng | null>(lesson?.anchor ?? null)
+  // A lesson learner who gave only a ZIP code: distances are from its middle, not their door, so no walk times.
+  const zip = lesson?.place && /^\d{5}$/.test(lesson.place.trim()) ? lesson.place.trim() : null
   const [work, setWork] = useState<LatLng | null>(null)
   const [skill, setSkill] = useState<string | null>(view.plan?.skill ?? null)
   const [worries, setWorries] = useState<string[]>(view.plan?.worries ?? [])
@@ -429,7 +431,8 @@ export function LearnerShare({ view, matchId, userId, name, t, onShared, onProbl
         action={<Button variant="primary" disabled={!meet} onClick={() => setStep(step + 1)}>{t('share.next')}</Button>}
       >
         <p className="text-[15px] text-(--ev-ink-80)">{share ? t('share.meet_hint_share', { system: docks!.systemName }) : t(k(`share.meet_hint${hintWay}`))}</p>
-        <PlacePick key="meet" anchor={home} value={meet} onPick={setMeet} choices={share ? docks!.home : undefined} t={t} />
+        <PlacePick key="meet" anchor={home} value={meet} onPick={setMeet} choices={share ? docks!.home : undefined}
+          sub={zip ? (c) => (c.miles != null ? t('share.from_zip', { miles: c.miles.toFixed(1), zip }) : null) : undefined} t={t} />
       </Step>
     )
   }
