@@ -227,13 +227,12 @@ async function spotsFor(ctx: Ctx, route: { waypoints: LatLng[]; flags: unknown[]
     found = j.spots ?? []
     complete = res.ok && j.ok === true
   } catch { /* the planner's own flags still give the riskiest spots */ }
-  ;(route.flags as { type?: string; kind?: string; description?: string; lat?: number; lng?: number }[])
+  ;(route.flags as { type?: string; kind?: string; description?: string; lat?: number; lng?: number; crash?: { streets?: string[] } }[])
     .filter((f) => f.type === 'concern' && f.lat != null && f.lng != null)
     .forEach((f, i) => {
       const kind = f.kind === 'steep' ? 'steep' : f.kind === 'wrong_way' ? 'wrong_way'
         : way === 'walk' && f.kind === 'sidewalks' ? 'no_sidewalk' : way === 'walk' && f.kind === 'lighting' ? 'dark' : 'crossing'
-      const after = f.description?.includes(':') ? f.description.split(':').slice(1).join(':') : ''
-      const streets = after.split(/\s*&\s*|\s+near\s+/).map((x) => x.trim()).filter(Boolean).slice(0, 2)
+      const streets = flagStreets(f)
       found.push({ id: `${kind}-flag-${i}`, kind, lat: f.lat!, lng: f.lng!, streets })
     })
   const limit: Record<string, number> = way === 'walk'
@@ -375,6 +374,18 @@ const clock = (t: string | null | undefined) => {
   if (!t) return null
   const [h, m] = t.split(':').map(Number)
   return new Date(Date.UTC(2000, 0, 1, h, m || 0)).toLocaleTimeString('en-US', { timeZone: 'UTC', hour: 'numeric', minute: '2-digit' })
+}
+
+/**
+ * The corner a planner flag names: the crash record's streets, else the text
+ * ("Busy crossing: A St & B St", "Crosses A St & B St (11 crashes)",
+ * "12 crashes reported at A St & B St").
+ */
+function flagStreets(f: { description?: string; crash?: { streets?: string[] } }): string[] {
+  if (f.crash?.streets?.length) return f.crash.streets.slice(0, 2)
+  const d = (f.description ?? '').replace(/\s*\(.*$/, '')
+  const at = d.includes(':') ? d.split(':').slice(1).join(':') : (d.match(/(?:^crosses\s+|\s+at\s+)(.+)$/i)?.[1] ?? '')
+  return at.split(/\s*&\s*|\s+near\s+/).map((x) => x.trim()).filter(Boolean).slice(0, 2)
 }
 
 /** get_my_go_together and get_my_carpool_pickup: reads as the person, through Shift's own functions. */
