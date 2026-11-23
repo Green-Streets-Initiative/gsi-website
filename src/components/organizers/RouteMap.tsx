@@ -71,14 +71,18 @@ function spotEl(n: number, on: boolean, numbered = false): HTMLElement {
   return el
 }
 
-/** A place name beside a pin (on whichever side has more room), with a white halo so it reads over the map. */
-function withLabel(el: HTMLElement, label: string | undefined, gap: number, side: 'left' | 'right' = 'right'): HTMLElement {
+/**
+ * A place name centred above or below a pin, with a white halo so it reads
+ * over the map. placeLabels() nudges it sideways to stay inside the map.
+ */
+function withLabel(el: HTMLElement, label: string | undefined, at: 'above' | 'below', gap: number): HTMLElement {
   if (!label) return el
   el.style.position = 'relative'
   const tag = document.createElement('span')
   tag.textContent = label
+  tag.dataset.mapLabel = ''
   Object.assign(tag.style, {
-    position: 'absolute', [side]: `${gap}px`, top: '50%', transform: 'translateY(-50%)', whiteSpace: 'nowrap', pointerEvents: 'none',
+    position: 'absolute', left: '50%', [at === 'above' ? 'bottom' : 'top']: `${gap}px`, transform: 'translateX(-50%)', whiteSpace: 'nowrap', pointerEvents: 'none',
     font: '700 14px/1.2 system-ui, sans-serif', color: '#191A2E',
     textShadow: '0 0 3px #fff, 0 0 3px #fff, 0 0 3px #fff, 0 0 3px #fff',
   })
@@ -86,13 +90,24 @@ function withLabel(el: HTMLElement, label: string | undefined, gap: number, side
   return el
 }
 
+/** Keep every place name inside the map: shift it sideways when it would run off an edge. */
+function placeLabels(map: import('maplibre-gl').Map) {
+  const box = map.getContainer().getBoundingClientRect()
+  map.getContainer().querySelectorAll<HTMLElement>('[data-map-label]').forEach((tag) => {
+    tag.style.transform = 'translateX(-50%)'
+    const r = tag.getBoundingClientRect()
+    const shift = r.left < box.left + 6 ? box.left + 6 - r.left : r.right > box.right - 6 ? box.right - 6 - r.right : 0
+    if (shift) tag.style.transform = `translateX(calc(-50% + ${Math.round(shift)}px))`
+  })
+}
+
 /** Where a trip plan's route ends: a navy dot in a white ring. */
-function endEl(label: string | undefined, side: 'left' | 'right'): HTMLElement {
+function endEl(label: string | undefined): HTMLElement {
   const el = document.createElement('div')
   el.setAttribute('role', 'img')
   el.setAttribute('aria-label', label ?? 'Where the route ends')
   Object.assign(el.style, { width: '20px', height: '20px', borderRadius: '999px', background: '#191A2E', border: '3px solid #fff', boxShadow: '0 1px 4px rgba(0,0,0,.35)', boxSizing: 'border-box' })
-  return withLabel(el, label, 24, side)
+  return withLabel(el, label, 'below', 22)
 }
 
 /** A crossing guard's stop paddle on its handle; the handle's tip is the crossing. */
@@ -245,7 +260,9 @@ export default function RouteMap({
         map.on('mouseenter', 'route-hit', () => { if (!pickRef.current && onPieceRef.current) map.getCanvas().style.cursor = 'pointer' })
         map.on('mouseleave', 'route-hit', () => { if (!pickRef.current) map.getCanvas().style.cursor = '' })
         mapRef.current = map
-        map.once('idle', () => setDrawn(true))
+        map.on('resize', () => placeLabels(map))
+        map.on('moveend', () => placeLabels(map))
+        map.once('idle', () => { setDrawn(true); placeLabels(map) })
         map.fire('organizer:ready')
         // A map created before its box has its final size (a lazy-loaded page) draws a corner only.
         map.resize()
@@ -291,23 +308,19 @@ export default function RouteMap({
         el.addEventListener('click', (ev) => { ev.stopPropagation(); onSpotRef.current?.(sp.n) })
         markers.current.push(new ml.Marker({ element: el }).setLngLat([sp.lng, sp.lat]).addTo(map))
       }
-      // A name goes on the side of its pin with more of the map, so it never runs off the edge.
-      const sideOf = (p: LatLng): 'left' | 'right' => (map.project([p.lng, p.lat]).x > map.getContainer().clientWidth / 2 ? 'left' : 'right')
       stops.forEach((s, i) => {
         markers.current.push(new ml.Marker({ element: pinEl('stop', i + 1) }).setLngLat([s.lng, s.lat]).addTo(map))
       })
       for (const g of guards ?? []) {
         markers.current.push(new ml.Marker({ element: guardEl(g.label, g.guarded), anchor: 'bottom' }).setLngLat([g.lng, g.lat]).addTo(map))
       }
-      if (end) markers.current.push(new ml.Marker({ element: endEl(end.label, sideOf(end)) }).setLngLat([end.lng, end.lat]).addTo(map))
+      if (end) markers.current.push(new ml.Marker({ element: endEl(end.label) }).setLngLat([end.lng, end.lat]).addTo(map))
       if (meetup) {
-        const pin = pinEl('meetup')
-        const tag = withLabel(pin, meetupLabel, 34, sideOf(meetup)).lastElementChild as HTMLElement | null
-        if (meetupLabel && tag) tag.style.top = '14px' // beside the pin's head, not its tip
-        markers.current.push(new ml.Marker({ element: pin, anchor: 'bottom' }).setLngLat([meetup.lng, meetup.lat]).addTo(map))
+        markers.current.push(new ml.Marker({ element: withLabel(pinEl('meetup'), meetupLabel, 'above', 40), anchor: 'bottom' }).setLngLat([meetup.lng, meetup.lat]).addTo(map))
       }
       if (me) markers.current.push(new ml.Marker({ element: meEl(me.label) }).setLngLat([me.lng, me.lat]).addTo(map))
       if (meet) markers.current.push(new ml.Marker({ element: meetEl(meet.label) }).setLngLat([meet.lng, meet.lat]).addTo(map))
+      requestAnimationFrame(() => placeLabels(map))
     }
     if (mapRef.current) draw()
     else {
