@@ -43,8 +43,9 @@ const k = (key: string) => key as PlanKey
 
 /** Step n of total, Back, the question, and the one action at the bottom. */
 function Step({ n, total, onBack, title, intro, children, action, t }: {
-  n: number
-  total: number
+  /** Leave out for a step before the numbered ones (the lesson's place pick). */
+  n?: number
+  total?: number
   onBack?: () => void
   title: string
   intro?: string | null
@@ -60,12 +61,16 @@ function Step({ n, total, onBack, title, intro, children, action, t }: {
             <ChevronLeft className="h-4 w-4" aria-hidden /> {t('step.back')}
           </button>
         ) : null}
-        <span className="text-[14px] font-semibold text-(--ev-ink-80)">{t('step.of', { n, total })}</span>
-        <span className="flex flex-1 gap-1" aria-hidden>
-          {Array.from({ length: total }, (_, i) => (
-            <span key={i} className={cx('h-1 flex-1 rounded-full', i < n ? 'bg-(--ev-accent)' : 'bg-(--ev-line-strong)')} />
-          ))}
-        </span>
+        {n != null && total ? (
+          <>
+            <span className="text-[14px] font-semibold text-(--ev-ink-80)">{t('step.of', { n, total })}</span>
+            <span className="flex flex-1 gap-1" aria-hidden>
+              {Array.from({ length: total }, (_, i) => (
+                <span key={i} className={cx('h-1 flex-1 rounded-full', i < n ? 'bg-(--ev-accent)' : 'bg-(--ev-line-strong)')} />
+              ))}
+            </span>
+          </>
+        ) : null}
       </div>
       <h2 className="font-display text-[22px] font-extrabold leading-tight">{title}</h2>
       {intro ? <p className="text-[16px] text-(--ev-ink-85)">{intro}</p> : null}
@@ -408,7 +413,7 @@ export function LearnerShare({ view, matchId, userId, name, t, onShared, onProbl
 
 // ── The guide plans the route ────────────────────────────────────────────
 
-const SPOT_ICON: Record<string, LucideIcon> = {
+export const SPOT_ICON: Record<string, LucideIcon> = {
   signal: TrafficCone, stop: Octagon, left_turn: CornerUpLeft, bike_box: Bike, door_zone: Car, tracks: TrainTrack, bus_stop: Bus,
   crossing: TriangleAlert, crossing_open: TriangleAlert, steep: Mountain, wrong_way: ArrowLeftRight, walk_signal: Footprints,
   path: Trees, steps: Footprints, no_sidewalk: TriangleAlert, dark: Moon, lock_up: Lock,
@@ -417,7 +422,7 @@ const SPOT_ICON: Record<string, LucideIcon> = {
 const stopName = (n: string | null | undefined) => (n ?? '').replace(/\s+@\s+/g, ' & ')
 
 /** What a spot says in the guide's list (the app's spotWords, title and the line under it). */
-function spotWords(t: T<PlanKey>, s: Spot, trip: TransitTrip | null | undefined): { title: string; sub: string | null } {
+export function spotWords(t: T<PlanKey>, s: Spot, trip: TransitTrip | null | undefined): { title: string; sub: string | null } {
   const streets = s.streets.length ? s.streets.join(' & ') : null
   const leg = s.leg != null ? trip?.legs[s.leg] : undefined
   const line = leg ? leg.line ?? leg.short ?? '' : ''
@@ -550,8 +555,6 @@ export function LessonEndPick({ plan, matchId, name, t, onSet, onProblem }: {
 
   return (
     <Step
-      n={1}
-      total={3}
       title={t('lesson.pick_end_title')}
       t={t}
       action={<Button variant="primary" busy={busy} disabled={!end} onClick={() => void save()}>{t('share.next')}</Button>}
@@ -920,7 +923,7 @@ export function GuidePlan({ plan, match, matchId, lesson = false, name, locale, 
         {incomplete ? <p className="text-[15px] text-(--ev-ink-80)">{t('share.spots_incomplete')}</p> : null}
         {pickable.length ? (
           <>
-            <p className="text-[15px] text-(--ev-ink-80)">{t('share.spots_hint', { max: MAX_NOTES, name })}</p>
+            <p className="text-[15px] text-(--ev-ink-80)">{t(lesson ? 'lesson.spots_hint' : 'share.spots_hint', { max: MAX_NOTES, name })}</p>
             <ul className="grid grid-cols-1">
               {first.map(row)}
               {showMore ? more.map(row) : null}

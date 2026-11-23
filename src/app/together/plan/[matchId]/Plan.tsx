@@ -12,9 +12,9 @@ import { planStrings, type PlanKey } from '@/lib/site-strings/together-plan'
 import { togetherStrings } from '@/lib/site-strings/together'
 import { myMatches, track, type Match } from '@/lib/together'
 import { useTogetherMaybe } from '@/components/together/TogetherShell'
-import { GuidePlan, LearnerShare, LessonEndPick } from './Steps'
+import { GuidePlan, LearnerShare, LessonEndPick, SPOT_ICON, spotWords } from './Steps'
 import {
-  UUID, answerRideTime, appPlanLink, confirmRidePlan, getRidePlan, hasOpenProposal, planDirectionsUrl, plannedTimePassed, proposeRideTime,
+  UUID, answerRideTime, appPlanLink, confirmRidePlan, getRidePlan, hasOpenProposal, isNotableSpot, planDirectionsUrl, plannedTimePassed, proposeRideTime,
   type Result, type RidePlan, type RidePlanView, type TripWay,
 } from '@/lib/together-plan'
 
@@ -363,7 +363,7 @@ function WhenWhere({ plan, at, way, locale, t }: { plan: RidePlan; at: Date | nu
       <p className="flex items-center gap-2">
         <Flag className="h-5 w-5 shrink-0 text-(--ev-accent)" aria-hidden />
         {transitMin ? t('plan.minutes_to', { minutes: transitMin, place: end })
-          : miles ? t('plan.miles_to', { miles: Math.round(miles * 10) / 10, place: end })
+          : miles ? (Math.round(miles * 10) / 10 === 1 ? t('plan.one_mile_to', { place: end }) : t('plan.miles_to', { miles: Math.round(miles * 10) / 10, place: end }))
           : end}
       </p>
     </div>
@@ -376,6 +376,8 @@ function RouteCard({ plan, way, locale, t }: { plan: RidePlan; way: TripWay; loc
   const end = { lat: plan.end_lat!, lng: plan.end_lng! }
   const line = plan.route?.waypoints && plan.route.waypoints.length > 1 ? plan.route.waypoints : undefined
   const legs = way === 'transit' ? plan.route?.transit?.legs ?? [] : []
+  // The spots the guide chose to show, in route order, with their notes (the app's "Before your ride").
+  const spots = way === 'transit' ? [] : (plan.spots ?? []).filter((s) => s.on && isNotableSpot(s))
   return (
     <Card className="grid grid-cols-1 gap-4">
       <PinMap
@@ -408,6 +410,29 @@ function RouteCard({ plan, way, locale, t }: { plan: RidePlan; way: TripWay; loc
             ) : l.kind === 'walk' && l.minutes >= 1 ? (
               <li key={i} className="text-[15px] text-(--ev-ink-80)">{t('plan.transit_walk', { n: Math.round(l.minutes) })}</li>
             ) : null)}
+          </ol>
+        </div>
+      ) : null}
+      {spots.length ? (
+        <div className="grid grid-cols-1 gap-2">
+          <h2 className="text-[17px] font-bold">{t('plan.on_the_way')}</h2>
+          <ol className="grid grid-cols-1">
+            {spots.map((s) => {
+              const words = spotWords(t, s, null)
+              const Icon = SPOT_ICON[s.kind] ?? MapPin
+              return (
+                <li key={s.id} className="flex items-start gap-3 border-b border-(--ev-line) py-3 last:border-b-0">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-(--ev-panel) text-(--ev-ink-85)">
+                    <Icon className="h-[18px] w-[18px]" aria-hidden />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[16px] font-bold">{words.title}</span>
+                    {words.sub ? <span className="block text-[15px] text-(--ev-ink-80)">{words.sub}</span> : null}
+                    {s.note ? <span className="mt-1 block text-[16px]">{s.note}</span> : null}
+                  </span>
+                </li>
+              )
+            })}
           </ol>
         </div>
       ) : null}
