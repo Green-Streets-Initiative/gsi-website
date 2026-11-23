@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { ArrowLeft, CalendarDays, CheckCircle2, Flag, Hourglass, Mail, MapPin, Navigation, Smartphone } from 'lucide-react'
 import FindEachOther from '@/components/together/FindEachOther'
 import RouteMap from '@/components/organizers/RouteMap'
@@ -409,8 +409,24 @@ function RouteCard({ plan, way, locale, t }: { plan: RidePlan; way: TripWay; loc
     : null), [way, route])
   const pieces = useMemo(() => (calmOption ? comfortPieces(calmOption, locale) : []), [calmOption, locale])
   const [street, setStreet] = useState<number | null>(null)
+  // The spot being looked at, by its number: lit on the map and open (with its photo) in the list.
   const [spotOn, setSpotOn] = useState<number | null>(null)
-  const [photoOpen, setPhotoOpen] = useState<string | null>(null)
+  const mapBox = useRef<HTMLDivElement>(null)
+  const rows = useRef<Record<number, HTMLLIElement | null>>({})
+  // Tapping a spot on the map opens it in the list; tapping it in the list shows it on the map.
+  // Whichever half is off screen scrolls into view.
+  const chooseSpot = (n: number, from: 'map' | 'list') => {
+    setStreet(null)
+    const next = spotOn === n ? null : n
+    setSpotOn(next)
+    if (next == null) return
+    setTimeout(() => {
+      const el = from === 'map' ? rows.current[n] : mapBox.current
+      if (!el) return
+      const r = el.getBoundingClientRect()
+      if (r.top < 72 || r.bottom > window.innerHeight) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }, 60)
+  }
   // The same map as the guide's route step (vector tiles, sharp at any size): the route coloured street by street, the spots numbered as in the list.
   const mapPieces = useMemo(() => pieces.map((p) => ({ coords: p.coords, color: comfortColor(p.rating, true), index: p.index })), [pieces])
   const mapSpots = useMemo(() => spots.map((s, i) => ({ lat: s.lat, lng: s.lng, n: i + 1 })), [spots])
@@ -420,7 +436,7 @@ function RouteCard({ plan, way, locale, t }: { plan: RidePlan; way: TripWay; loc
   return (
     <Card className="grid grid-cols-1 gap-4">
       <div className="overflow-hidden rounded-xl border border-(--ev-line)">
-        <div className="h-[280px] sm:h-[360px]">
+        <div ref={mapBox} className="h-[280px] sm:h-[360px]">
           <RouteMap
             line={mapLine}
             pieces={mapPieces.length ? mapPieces : undefined}
@@ -428,7 +444,7 @@ function RouteCard({ plan, way, locale, t }: { plan: RidePlan; way: TripWay; loc
             spotNumbers
             focus={spotOn != null ? { kind: 'spot', n: spotOn } : street != null ? { kind: 'piece', index: street } : null}
             onPieceClick={(i) => pickStreet(street === i ? null : i)}
-            onSpotClick={(n) => { setStreet(null); setSpotOn((cur) => (cur === n ? null : n)) }}
+            onSpotClick={(n) => chooseSpot(n, 'map')}
             stops={[]}
             meetup={meet}
             meetupLabel={plan.meet_label ?? undefined}
@@ -475,18 +491,20 @@ function RouteCard({ plan, way, locale, t }: { plan: RidePlan; way: TripWay; loc
             {spots.map((s, i) => {
               const words = spotWords(t, s, null)
               return (
-                <li key={s.id} className="grid grid-cols-1 gap-2 border-b border-(--ev-line) py-3 last:border-b-0">
+                <li key={s.id} ref={(el) => { rows.current[i + 1] = el }}
+                  className={cx('-mx-2 grid grid-cols-1 gap-2 rounded-lg border-b border-(--ev-line) px-2 py-3 transition-colors last:border-b-0', spotOn === i + 1 && 'bg-(--ev-panel)')}>
                   <div className="flex items-start gap-3">
                     <SpotThumb spot={s} line={line} alt={t('spot.photo_alt', { what: words.title })} badge={i + 1}
-                      open={photoOpen === s.id} onToggle={() => setPhotoOpen(photoOpen === s.id ? null : s.id)}
+                      open={spotOn === i + 1} onToggle={() => chooseSpot(i + 1, 'list')}
                       iconClass="bg-(--ev-panel) text-(--ev-ink-85)" />
-                    <span className="min-w-0 flex-1">
+                    <button type="button" onClick={() => chooseSpot(i + 1, 'list')} aria-expanded={spotOn === i + 1}
+                      className="min-h-[44px] min-w-0 flex-1 text-left">
                       <span className="block text-[16px] font-bold">{words.title}</span>
                       {words.sub ? <span className="block text-[15px] text-(--ev-ink-80)">{words.sub}</span> : null}
                       {s.note ? <span className="mt-1 block text-[16px]">{s.note}</span> : null}
-                    </span>
+                    </button>
                   </div>
-                  {photoOpen === s.id ? <SpotPhotoBig spot={s} line={line} alt={t('spot.photo_alt', { what: words.title })} credit={t('spot.photo_credit')} /> : null}
+                  {spotOn === i + 1 ? <SpotPhotoBig spot={s} line={line} alt={t('spot.photo_alt', { what: words.title })} credit={t('spot.photo_credit')} /> : null}
                 </li>
               )
             })}

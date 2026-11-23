@@ -534,10 +534,12 @@ export function SpotThumb({ spot, line, alt, badge, open, onToggle, iconClass }:
 
 /** The open photo, full width under its row, with the Street View credit. */
 export function SpotPhotoBig({ spot, line, alt, credit }: { spot: Spot; line: LL[] | undefined; alt: string; credit: string }) {
+  const [failed, setFailed] = useState(false)
+  if (failed) return null
   return (
     <figure className="m-0 grid grid-cols-1 gap-1">
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={spotPhotoUrl(spot, line)} alt={alt} className="aspect-[16/9] w-full rounded-lg object-cover" />
+      <img src={spotPhotoUrl(spot, line)} alt={alt} onError={() => setFailed(true)} className="aspect-[16/9] w-full rounded-lg object-cover" />
       <figcaption className="text-[13px] text-(--ev-ink-75)">{credit}</figcaption>
     </figure>
   )
