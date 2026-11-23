@@ -3,7 +3,7 @@ import 'server-only'
 import { createHash } from 'node:crypto'
 import { decodePolyline, encodePolyline } from '@/lib/geo/polyline'
 import { orderWays } from '@/lib/nearby/bike-ways'
-import { canonicalStreetKey } from '@/lib/nearby/street-names'
+import { canonicalStreetKey, fixStreetSpelling, fullPathKeys } from '@/lib/nearby/street-names'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 
 /**
@@ -165,7 +165,7 @@ export function toAroundYouComfort(points: [number, number][], raw: RawSegment[]
     const b = Math.max(a, Math.min(last, Math.round(Number(s.endIdx ?? last))))
     const miles = Number(s.distance_mi) || 0
     if (b <= a || miles <= 0) continue
-    const label = unnamed(s.label) ? null : s.label!.trim()
+    const label = unnamed(s.label) ? null : fixStreetSpelling(s.label!.trim())
     segments.push({
       rating: tierOf(s.rating, label),
       distance_mi: Math.round(miles * 100) / 100,
@@ -176,6 +176,24 @@ export function toAroundYouComfort(points: [number, number][], raw: RawSegment[]
     })
   }
   if (segments.length === 0) return null
+
+  // One path, one row (Keith 2026-11-23): "Community Path" next to
+  // "Somerville Community Path" is the same path. The planner folds these
+  // too; this also covers answers it cached before it did.
+  const keyMiles = new Map<string, number>()
+  for (const s of segments) if (s.street) keyMiles.set(s.street_keys[0], (keyMiles.get(s.street_keys[0]) ?? 0) + s.distance_mi)
+  const fuller = fullPathKeys(keyMiles.keys(), k => keyMiles.get(k) ?? 0)
+  if (fuller.size > 0) {
+    const labelOf = new Map<string, string>()
+    for (const s of segments) if (s.street && !fuller.has(s.street_keys[0]) && !labelOf.has(s.street_keys[0])) labelOf.set(s.street_keys[0], s.street)
+    for (const s of segments) {
+      const to = s.street ? fuller.get(s.street_keys[0]) : undefined
+      if (to) {
+        s.street_keys = [to]
+        s.street = labelOf.get(to) ?? s.street
+      }
+    }
+  }
 
   // Which streets get a row: by miles, at least a block, ten at most
   const byStreet = new Map<string, { label: string; miles: number }>()
