@@ -15,7 +15,7 @@ import { planStrings, type PlanKey } from '@/lib/site-strings/together-plan'
 import { togetherStrings } from '@/lib/site-strings/together'
 import { myMatches, track, type Match } from '@/lib/together'
 import { useTogetherMaybe } from '@/components/together/TogetherShell'
-import { GuidePlan, LearnerShare, LessonEndPick, SpotIcon, spotWords } from './Steps'
+import { GuidePlan, LearnerShare, LessonEndPick, SpotPhotoBig, SpotThumb, spotWords } from './Steps'
 import {
   UUID, answerRideTime, appPlanLink, confirmRidePlan, getRidePlan, hasOpenProposal, planDirectionsUrl, plannedTimePassed, proposeRideTime, setLessonPlanByEmail,
   type Result, type RidePlan, type RidePlanView, type TripWay,
@@ -410,6 +410,7 @@ function RouteCard({ plan, way, locale, t }: { plan: RidePlan; way: TripWay; loc
   const pieces = useMemo(() => (calmOption ? comfortPieces(calmOption, locale) : []), [calmOption, locale])
   const [street, setStreet] = useState<number | null>(null)
   const [spotOn, setSpotOn] = useState<number | null>(null)
+  const [photoOpen, setPhotoOpen] = useState<string | null>(null)
   // The same map as the guide's route step (vector tiles, sharp at any size): the route coloured street by street, the spots numbered as in the list.
   const mapPieces = useMemo(() => pieces.map((p) => ({ coords: p.coords, color: comfortColor(p.rating, true), index: p.index })), [pieces])
   const mapSpots = useMemo(() => spots.map((s, i) => ({ lat: s.lat, lng: s.lng, n: i + 1 })), [spots])
@@ -474,16 +475,18 @@ function RouteCard({ plan, way, locale, t }: { plan: RidePlan; way: TripWay; loc
             {spots.map((s, i) => {
               const words = spotWords(t, s, null)
               return (
-                <li key={s.id} className="flex items-start gap-3 border-b border-(--ev-line) py-3 last:border-b-0">
-                  <span className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-(--ev-panel) text-(--ev-ink-85)">
-                    <SpotIcon kind={s.kind} className="h-[18px] w-[18px]" />
-                    <span aria-hidden className="absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#9A5B00] px-1 text-[12px] font-extrabold leading-none text-white">{i + 1}</span>
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-[16px] font-bold">{words.title}</span>
-                    {words.sub ? <span className="block text-[15px] text-(--ev-ink-80)">{words.sub}</span> : null}
-                    {s.note ? <span className="mt-1 block text-[16px]">{s.note}</span> : null}
-                  </span>
+                <li key={s.id} className="grid grid-cols-1 gap-2 border-b border-(--ev-line) py-3 last:border-b-0">
+                  <div className="flex items-start gap-3">
+                    <SpotThumb spot={s} line={line} alt={t('spot.photo_alt', { what: words.title })} badge={i + 1}
+                      open={photoOpen === s.id} onToggle={() => setPhotoOpen(photoOpen === s.id ? null : s.id)}
+                      iconClass="bg-(--ev-panel) text-(--ev-ink-85)" />
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-[16px] font-bold">{words.title}</span>
+                      {words.sub ? <span className="block text-[15px] text-(--ev-ink-80)">{words.sub}</span> : null}
+                      {s.note ? <span className="mt-1 block text-[16px]">{s.note}</span> : null}
+                    </span>
+                  </div>
+                  {photoOpen === s.id ? <SpotPhotoBig spot={s} line={line} alt={t('spot.photo_alt', { what: words.title })} credit={t('spot.photo_credit')} /> : null}
                 </li>
               )
             })}

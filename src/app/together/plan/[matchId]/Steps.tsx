@@ -452,6 +452,96 @@ export function SpotIcon({ kind, className }: { kind: string; className?: string
   const [Glyph, weight] = SPOT_GLYPH[kind] ?? [ChatText, 'fill' as IconWeight]
   return <Glyph className={className} weight={weight} aria-hidden />
 }
+/**
+ * A spot's Street View photo, as the rider comes up to it: taken about 35 m
+ * back along the route, facing the spot (/api/nearby/corridor-photo, the same
+ * source as the street photos). At the very start of the route there is no
+ * "back", so it stands at the spot and faces along the route.
+ */
+type LL = { lat: number; lng: number }
+const metres = (a: LL, b: LL) => {
+  const k = Math.PI / 180
+  const x = (b.lng - a.lng) * k * Math.cos(((a.lat + b.lat) / 2) * k)
+  return Math.hypot(x, (b.lat - a.lat) * k) * 6371000
+}
+const bearing = (a: LL, b: LL) => {
+  const k = Math.PI / 180
+  const dLng = (b.lng - a.lng) * k
+  const y = Math.sin(dLng) * Math.cos(b.lat * k)
+  const x = Math.cos(a.lat * k) * Math.sin(b.lat * k) - Math.sin(a.lat * k) * Math.cos(b.lat * k) * Math.cos(dLng)
+  return ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360
+}
+export function spotPhotoUrl(spot: LL, line: LL[] | undefined): string {
+  let view: LL & { heading?: number } = { lat: spot.lat, lng: spot.lng }
+  if (line && line.length > 1) {
+    let i = 0
+    line.forEach((p, n) => { if (metres(p, spot) < metres(line[i], spot)) i = n })
+    let j = i
+    let back = 0
+    while (j > 0 && back < 35) { back += metres(line[j - 1], line[j]); j-- }
+    if (back >= 15) view = { lat: line[j].lat, lng: line[j].lng, heading: bearing(line[j], spot) }
+    else {
+      let k = i
+      while (k < line.length - 1 && metres(line[i], line[k]) < 20) k++
+      if (k > i) view = { ...view, heading: bearing(line[i], line[k]) }
+    }
+  }
+  const q = new URLSearchParams({ lat: view.lat.toFixed(5), lng: view.lng.toFixed(5) })
+  if (view.heading !== undefined) q.set('heading', String(Math.round(view.heading)))
+  return `/api/nearby/corridor-photo?${q}`
+}
+
+/**
+ * A spot's photo in a list: a thumbnail with the spot's icon (or number) on
+ * its corner; tapping it opens it full width under the row. With no Street
+ * View there, just the icon, as before.
+ */
+export function SpotThumb({ spot, line, alt, badge, open, onToggle, iconClass }: {
+  spot: Spot
+  line: LL[] | undefined
+  alt: string
+  /** The number from the map, on the corner (the learner's list). */
+  badge?: number
+  open: boolean
+  onToggle: () => void
+  /** The icon circle's colours when there is no photo. */
+  iconClass: string
+}) {
+  const [failed, setFailed] = useState(false)
+  const num = badge != null ? (
+    <span aria-hidden className="absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#9A5B00] px-1 text-[12px] font-extrabold leading-none text-white">{badge}</span>
+  ) : null
+  if (failed) {
+    return (
+      <span className={cx('relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full', iconClass)}>
+        <SpotIcon kind={spot.kind} className="h-5 w-5" />
+        {num}
+      </span>
+    )
+  }
+  return (
+    <button type="button" onClick={onToggle} aria-expanded={open} aria-label={alt}
+      className={cx('relative h-12 w-[72px] shrink-0 rounded-lg bg-(--ev-panel) p-0', open && 'ring-2 ring-[#191A2E] ring-offset-1')}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={spotPhotoUrl(spot, line)} alt="" loading="lazy" onError={() => setFailed(true)} className="h-full w-full rounded-lg object-cover" />
+      <span aria-hidden className="absolute -bottom-1 -left-1 flex h-6 w-6 items-center justify-center rounded-full border-2 border-white bg-white text-(--ev-ink-85) shadow-sm">
+        <SpotIcon kind={spot.kind} className="h-3.5 w-3.5" />
+      </span>
+      {num}
+    </button>
+  )
+}
+
+/** The open photo, full width under its row, with the Street View credit. */
+export function SpotPhotoBig({ spot, line, alt, credit }: { spot: Spot; line: LL[] | undefined; alt: string; credit: string }) {
+  return (
+    <figure className="m-0 grid grid-cols-1 gap-1">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={spotPhotoUrl(spot, line)} alt={alt} className="aspect-[16/9] w-full rounded-lg object-cover" />
+      <figcaption className="text-[13px] text-(--ev-ink-75)">{credit}</figcaption>
+    </figure>
+  )
+}
 const stopName = (n: string | null | undefined) => (n ?? '').replace(/\s+@\s+/g, ' & ')
 
 /** What a spot says in the guide's list (the app's spotWords, title and the line under it). */
@@ -652,6 +742,8 @@ export function GuidePlan({ plan, match, matchId, lesson = false, free, name, lo
   const [trips, setTrips] = useState<Trip[] | null>(null)
   const [showMore, setShowMore] = useState(false)
   const [editing, setEditing] = useState<string | null>(null)
+  // The spot whose Street View photo is open full width.
+  const [photoOpen, setPhotoOpen] = useState<string | null>(null)
   const [noteDraft, setNoteDraft] = useState('')
   // A route and time the assistant put on the plan, not sent yet (01611): the plan opens on them.
   const draftAt = plan.status === 'learner_shared' && plan.route && plan.ride_at ? new Date(plan.ride_at) : null
@@ -932,6 +1024,15 @@ export function GuidePlan({ plan, match, matchId, lesson = false, free, name, lo
       return (
         <li key={s.id} className="grid grid-cols-1 gap-2 border-b border-(--ev-line) py-3 last:border-b-0">
           <div className="flex items-center gap-3">
+            {transit ? (
+              <span className={cx('flex h-9 w-9 shrink-0 items-center justify-center rounded-full', s.on ? 'bg-(--ev-accent-fill) text-(--ev-on-accent-fill)' : 'bg-(--ev-panel) text-(--ev-ink-80)')}>
+                <SpotIcon kind={s.kind} className="h-5 w-5" />
+              </span>
+            ) : (
+              <SpotThumb spot={s} line={route?.waypoints} alt={t('spot.photo_alt', { what: words.title })}
+                open={photoOpen === s.id} onToggle={() => setPhotoOpen(photoOpen === s.id ? null : s.id)}
+                iconClass={s.on ? 'bg-(--ev-accent-fill) text-(--ev-on-accent-fill)' : 'bg-(--ev-panel) text-(--ev-ink-80)'} />
+            )}
             <button
               type="button"
               role="switch"
@@ -939,9 +1040,6 @@ export function GuidePlan({ plan, match, matchId, lesson = false, free, name, lo
               onClick={() => setSpots((all) => all.map((x) => (x.id === s.id ? { ...x, on: !x.on } : x)))}
               className="flex min-h-[44px] min-w-0 flex-1 items-center gap-3 text-left"
             >
-              <span className={cx('flex h-9 w-9 shrink-0 items-center justify-center rounded-full', s.on ? 'bg-(--ev-accent-fill) text-(--ev-on-accent-fill)' : 'bg-(--ev-panel) text-(--ev-ink-80)')}>
-                <SpotIcon kind={s.kind} className="h-5 w-5" />
-              </span>
               <span className="min-w-0 flex-1">
                 <span className={cx('block text-[16px] font-bold', !s.on && 'text-(--ev-ink-80)')}>{words.title}</span>
                 {words.sub ? <span className="block truncate text-[14px] text-(--ev-ink-80)">{words.sub}</span> : null}
@@ -960,6 +1058,7 @@ export function GuidePlan({ plan, match, matchId, lesson = false, free, name, lo
               <Pencil className="h-4 w-4" aria-hidden />
             </button>
           </div>
+          {photoOpen === s.id && !transit ? <SpotPhotoBig spot={s} line={route?.waypoints} alt={t('spot.photo_alt', { what: words.title })} credit={t('spot.photo_credit')} /> : null}
           {editing === s.id ? (
             <div className="grid grid-cols-1 gap-2 rounded-xl bg-(--ev-panel) p-3">
               <Input value={noteDraft} onChange={(e) => setNoteDraft(e.target.value)} maxLength={80} placeholder={t('share.note_placeholder')} aria-label={t('share.add_note')} autoFocus />
