@@ -458,13 +458,13 @@ export function SpotIcon({ kind, className }: { kind: string; className?: string
  * source as the street photos). At the very start of the route there is no
  * "back", so it stands at the spot and faces along the route.
  */
-type LL = { lat: number; lng: number }
-const metres = (a: LL, b: LL) => {
+export type LL = { lat: number; lng: number }
+export const metres = (a: LL, b: LL) => {
   const k = Math.PI / 180
   const x = (b.lng - a.lng) * k * Math.cos(((a.lat + b.lat) / 2) * k)
   return Math.hypot(x, (b.lat - a.lat) * k) * 6371000
 }
-const bearing = (a: LL, b: LL) => {
+export const bearing = (a: LL, b: LL) => {
   const k = Math.PI / 180
   const dLng = (b.lng - a.lng) * k
   const y = Math.sin(dLng) * Math.cos(b.lat * k)
