@@ -140,7 +140,7 @@ export default function RideStreets({ option, pieces, selected, onSelect, locale
       {/* Every street as a small photo, in route order, with its comfort colour under it: tap one to see it
           (Keith 2026-11-23: the street photos are one of the most helpful parts of the plan, so show them all). */}
       {rows.length > 1 && (
-        <div ref={strip} className="relative -mx-1 mt-3 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none]" role="group" aria-label={t('streets.bar')}>
+        <div ref={strip} className="relative -mx-1 mt-2 flex gap-2 overflow-x-auto p-1 [scrollbar-width:none]" role="group" aria-label={t('streets.bar')}>
           {rows.map((r, i) => {
             const thumb = photoUrl(option, r.index)
             return (
