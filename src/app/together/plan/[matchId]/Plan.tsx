@@ -418,29 +418,32 @@ function RouteCard({ plan, way, locale, t }: { plan: RidePlan; way: TripWay; loc
   const end = useMemo(() => ({ lat: plan.end_lat!, lng: plan.end_lng! }), [plan.end_lat, plan.end_lng])
   const line = plan.route?.waypoints && plan.route.waypoints.length > 1 ? plan.route.waypoints : undefined
   const legs = way === 'transit' ? plan.route?.transit?.legs ?? [] : []
-  // The spots the guide chose to show, in route order, with their notes (the app's "Before your ride").
-  // Numbered from the start: each spot's place along the route (its nearest point on the line), so the map, the list and the numbers count the same way.
-  const spots = useMemo(() => {
-    const shown = way === 'transit' ? [] : (plan.spots ?? []).filter((s) => s.on && s.kind !== 'lock_up')
-    const pts = plan.route?.waypoints
-    if (!pts || pts.length < 2) return shown
-    const along = (s: { lat: number; lng: number }) => {
-      let best = 0
-      let bestD = Infinity
-      pts.forEach((p, i) => {
-        const d = (p.lat - s.lat) ** 2 + ((p.lng - s.lng) * Math.cos((p.lat * Math.PI) / 180)) ** 2
-        if (d < bestD) { bestD = d; best = i }
-      })
-      return best
-    }
-    return shown.map((s) => ({ s, at: along(s) })).sort((a, b) => a.at - b.at).map((x) => x.s)
-  }, [way, plan.spots, plan.route?.waypoints])
   // What each street looks like, as the guide saw it when planning (bike routes: the comfort scale is the bike's).
   const route = plan.route
   const calmOption = useMemo(() => (way === 'bike' && route?.waypoints && route.waypoints.length > 1 && route.comfortSegments?.length
     ? ({ waypoints: route.waypoints, comfort_segments: route.comfortSegments as CalmSegment[], comfort_rating: route.comfortRating ?? 'mixed', summary: '' } as unknown as CalmOption)
     : null), [way, route])
   const pieces = useMemo(() => (calmOption ? comfortPieces(calmOption, locale) : []), [calmOption, locale])
+  // The spots the guide chose to show, in route order, with their notes (the app's "Before your ride").
+  // Numbered from the start by each spot's nearest point on the route. With the street list, that point is on the
+  // coloured pieces, so a spot's number and the street it sits under come from the same point and count the same way.
+  const placed = useMemo(() => {
+    const shown = way === 'transit' ? [] : (plan.spots ?? []).filter((s) => s.on && s.kind !== 'lock_up')
+    const pts: { lat: number; lng: number; piece?: number }[] = pieces.length
+      ? pieces.flatMap((p) => p.coords.map(([lng, lat]) => ({ lat, lng, piece: p.index })))
+      : plan.route?.waypoints ?? []
+    if (pts.length < 2) return shown.map((s) => ({ s, piece: undefined as number | undefined }))
+    return shown.map((s) => {
+      let at = 0
+      let bestD = Infinity
+      pts.forEach((p, i) => {
+        const d = (p.lat - s.lat) ** 2 + ((p.lng - s.lng) * Math.cos((p.lat * Math.PI) / 180)) ** 2
+        if (d < bestD) { bestD = d; at = i }
+      })
+      return { s, at, piece: pts[at].piece }
+    }).sort((a, b) => a.at - b.at)
+  }, [way, plan.spots, plan.route?.waypoints, pieces])
+  const spots = useMemo(() => placed.map((x) => x.s), [placed])
   const [street, setStreet] = useState<number | null>(null)
   // The spot being looked at, by its number: lit on the map and open (with its photo) in the list.
   const [spotOn, setSpotOn] = useState<number | null>(null)
@@ -471,17 +474,11 @@ function RouteCard({ plan, way, locale, t }: { plan: RidePlan; way: TripWay; loc
   const spotsOn = useMemo(() => {
     const byRow: number[][] = streets.map(() => [])
     if (!streets.length) return byRow
-    spots.forEach((sp, i) => {
-      let best = { piece: pieces[0]?.index, d: Infinity }
-      for (const p of pieces) for (const [lng, lat] of p.coords) {
-        const d = (lat - sp.lat) ** 2 + ((lng - sp.lng) * Math.cos((lat * Math.PI) / 180)) ** 2
-        if (d < best.d) best = { piece: p.index, d }
-      }
-      const ri = Math.max(0, streets.findIndex((r) => r.members.includes(best.piece)))
-      byRow[ri].push(i)
+    placed.forEach((x, i) => {
+      byRow[Math.max(0, streets.findIndex((r) => r.members.includes(x.piece as number)))].push(i)
     })
     return byRow
-  }, [streets, spots, pieces])
+  }, [streets, placed])
   const spotItem = (s: (typeof spots)[number], i: number) => {
     const words = spotWords(t, s, null)
     return (
