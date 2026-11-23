@@ -154,7 +154,7 @@ export default function Plan({ matchId, locale, lessonKey }: { matchId: string; 
   const shownAt = pending && rideAt && rideAt.getTime() < now ? null : rideAt
   const email = match?.other.email ?? view.lesson?.email ?? null
   const title =
-    stage === 'share' ? t('plan.share_title', { name })
+    stage === 'share' ? t(lessonKey ? 'lesson.share_title' : 'plan.share_title', { name })
     : stage === 'wait_guide' ? t('plan.waiting_guide', { name })
     : stage === 'wait_learner' ? t('plan.waiting_learner', { name })
     : stage === 'guide_turn' && lessonKey ? t('lesson.guide_title', { name })
