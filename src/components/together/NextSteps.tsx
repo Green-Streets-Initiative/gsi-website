@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useEffect, useState, type ReactNode } from 'react'
 import { Bike, Check, Link2, MapPinned, Smartphone, type LucideIcon } from 'lucide-react'
-import { Badge, Card } from '@/components/organizers/ui'
+import { Card } from '@/components/organizers/ui'
 import { translator, withLang, type SiteLocale, type T } from '@/lib/site-i18n'
 import { togetherStrings, waysWords, type TogetherKey } from '@/lib/site-strings/together'
 import { lessonOffer, track, type LessonOffer, type PartnerKind, type PartnerWay } from '@/lib/together'
@@ -137,7 +137,6 @@ export function LessonCard({ locale = 'en' }: { locale?: SiteLocale } = {}) {
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
           <h3 className="font-display text-[22px] font-extrabold">{t('lesson.book')}</h3>
-          {offer.left != null && <Badge tone="good">{t('lesson.left', { n: offer.left })}</Badge>}
         </div>
         <p className="mt-1 text-[16px] text-(--ev-ink-85)">{t('lesson.offer_body', { school: offer.school })}</p>
       </div>

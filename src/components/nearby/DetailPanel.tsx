@@ -86,7 +86,7 @@ export function corridorPhotoSpec(c: TransitCorridor | BikeCorridor): PhotoSpec 
   return { kind: 'resolve', name: c.name, photoKind: 'line', lat: c.access.lat, lng: c.access.lng, sv }
 }
 
-function svProxyUrl(sv: SvSpec): string {
+export function svProxyUrl(sv: SvSpec): string {
   const params = new URLSearchParams({ lat: String(sv.lat), lng: String(sv.lng) })
   if (sv.heading !== undefined) params.set('heading', String(Math.round(sv.heading)))
   return `/api/nearby/corridor-photo?${params}`

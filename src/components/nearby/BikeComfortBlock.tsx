@@ -1,10 +1,10 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import ComfortBar from '@/components/commute/ComfortBar'
 import { useNearbyT } from './NearbyI18n'
 import { useNearbyTone } from './NearbyTone'
-import { PanelPhoto } from './DetailPanel'
+import { PanelPhoto, svProxyUrl, type SvSpec } from './DetailPanel'
 import { decodePolyline, bearingDegrees } from '@/lib/geo/polyline'
 import { OTHER_OWNER } from '@/lib/nearby/route-lines'
 import { COMFORT_COLORS } from '@/lib/comfort-colors'
@@ -119,6 +119,63 @@ export function AvoidChanges({ avoid, scrollMargin = 'scroll-mt-4' }: {
   )
 }
 
+/**
+ * A small Street View picture at the start of each street row (Keith
+ * 2026-11-23: nothing said a street could be opened, and the photos are one
+ * of the most helpful parts of the plan). Same URL as the big photo, so
+ * opening the row shows it already loaded. No imagery: a pin in the frame.
+ */
+function StreetThumb({ spec }: { spec: SvSpec | null }) {
+  const [failed, setFailed] = useState(false)
+  return (
+    <span className="flex h-12 w-16 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-(--nb-panel-raised)" aria-hidden="true">
+      {spec && !failed ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={svProxyUrl(spec)} alt="" loading="lazy" className="h-full w-full object-cover" onError={() => setFailed(true)} />
+      ) : (
+        <svg width="20" height="20" viewBox="0 0 256 256" fill="currentColor" className="text-(--nb-ink-70)">
+          <path d="M128,64a40,40,0,1,0,40,40A40,40,0,0,0,128,64Zm0,64a24,24,0,1,1,24-24A24,24,0,0,1,128,128Zm0-112a88.1,88.1,0,0,0-88,88c0,31.4,14.51,64.68,42,96.25a254.19,254.19,0,0,0,41.45,38.3,8,8,0,0,0,9.18,0A254.19,254.19,0,0,0,174,200.25c27.45-31.57,42-64.85,42-96.25A88.1,88.1,0,0,0,128,16Zm0,206c-16.53-13-72-60.75-72-118a72,72,0,0,1,144,0C200,161.23,144.53,209,128,222Z" />
+        </svg>
+      )}
+    </span>
+  )
+}
+
+/** Thumbnail, name over distance, and a caret that says the row opens. */
+function PhotoRow({ on, spec, dots, name, meta, label, onClick }: {
+  on: boolean
+  spec: SvSpec | null
+  dots: ReactNode
+  name: string
+  meta: string
+  label?: string
+  onClick: () => void
+}) {
+  return (
+    <button
+      onClick={onClick}
+      aria-expanded={on}
+      aria-label={label}
+      className={`flex min-h-[56px] w-full items-center gap-3 rounded-lg px-1 py-1 text-left transition-colors ${
+        on ? 'bg-(--nb-panel-raised) text-(--nb-ink)' : 'text-(--nb-ink-80) hover:bg-(--nb-panel)'
+      }`}
+    >
+      <StreetThumb key={spec ? `${spec.lat},${spec.lng}` : 'none'} spec={spec} />
+      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <span className="flex min-w-0 items-center gap-1.5 text-[0.9375rem] font-medium">
+          {dots}
+          <span className="line-clamp-2">{name}</span>
+        </span>
+        <span className="text-[0.875rem] tabular-nums text-(--nb-ink-70)">{meta}</span>
+      </span>
+      <svg width="16" height="16" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"
+        className={`shrink-0 text-(--nb-accent) transition-transform ${on ? 'rotate-180' : ''}`}>
+        <path d="M213.66,101.66l-80,80a8,8,0,0,1-11.32,0l-80-80A8,8,0,0,1,53.66,90.34L128,164.69l74.34-74.35a8,8,0,0,1,11.32,11.32Z" />
+      </svg>
+    </button>
+  )
+}
+
 export default function BikeComfortBlock({ comfort, highlightedStreetKey, onHighlightStreet, avoid, streetsOnly = false }: {
   comfort: BikeComfortData
   /** The street currently lit on the map, if any. */
@@ -145,7 +202,6 @@ export default function BikeComfortBlock({ comfort, highlightedStreetKey, onHigh
   }
   const av = avoid?.state
   // v1 sizes are unchanged; v2's rows meet the 14px floor
-  const rowText = streetsOnly ? 'py-1 text-[14px]' : 'py-0.5 text-[0.78rem]'
   const inertText = streetsOnly ? 'py-1 text-[14px]' : 'text-[0.78rem]'
   return (
     <div className={streetsOnly ? 'mt-1.5 space-y-2' : 'mt-2.5 space-y-2'}>
@@ -192,18 +248,21 @@ export default function BikeComfortBlock({ comfort, highlightedStreetKey, onHigh
                   </span>
                 </>
               )
-              const photo = on && s.key ? streetPhotoSpec(comfort.segments, s.key) : null
+              const spec = s.key && onHighlightStreet ? streetPhotoSpec(comfort.segments, s.key) : null
+              const photo = on ? spec : null
+              const meta = `${s.distance_mi} ${tr('bike.unit_mi')} ${
+                s.mixed ? tr('bike.mostly_tier', { tier: labels[s.rating].toLowerCase() }) : labels[s.rating].toLowerCase()
+              }`
               return s.key && onHighlightStreet ? (
-                <div key={s.key}>
-                  <button
+                <div key={s.key} className={on ? 'pb-4' : undefined}>
+                  <PhotoRow
+                    on={on}
+                    spec={spec}
+                    dots={<span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: NEARBY_COMFORT_COLORS[s.rating] }} aria-hidden="true" />}
+                    name={s.label}
+                    meta={meta}
                     onClick={() => onHighlightStreet(on ? null : s.key!)}
-                    aria-pressed={on}
-                    className={`flex w-full items-baseline justify-between gap-2 rounded px-1 ${rowText} text-left transition-colors ${
-                      on ? 'bg-(--nb-panel-raised) text-(--nb-ink)' : 'text-(--nb-ink-80) hover:bg-(--nb-panel)'
-                    }`}
-                  >
-                    {body}
-                  </button>
+                  />
                   {/* Seeing the road is what turns "0.6 mi protected lane"
                       from a claim into something you can judge. Street View
                       looks along the street from the middle of its longest
@@ -275,19 +334,25 @@ export default function BikeComfortBlock({ comfort, highlightedStreetKey, onHigh
                   </span>
                 </>
               )
-              const photo = on ? streetPhotoSpec(comfort.segments, OTHER_OWNER) : null
+              const spec = onHighlightStreet ? streetPhotoSpec(comfort.segments, OTHER_OWNER) : null
+              const photo = on ? spec : null
               return onHighlightStreet ? (
-                <div key="other">
-                  <button
+                <div key="other" className={on ? 'pb-4' : undefined}>
+                  <PhotoRow
+                    on={on}
+                    spec={spec}
+                    dots={
+                      <span className="flex shrink-0 gap-[2px]" aria-hidden="true">
+                        {(otherTiers.length > 0 ? otherTiers : [{ rating: 'shared_road' as BikeComfortTier, distance_mi: 0 }]).map(t => (
+                          <span key={t.rating} className="h-2 w-2 rounded-full" style={{ backgroundColor: NEARBY_COMFORT_COLORS[t.rating] }} />
+                        ))}
+                      </span>
+                    }
+                    name={tr('bike.connecting_stretches')}
+                    meta={made || `${otherMi} ${tr('bike.unit_mi')}`}
+                    label={tr('bike.connecting_stretches_a11y', { miles: otherMi })}
                     onClick={() => onHighlightStreet(on ? null : OTHER_OWNER)}
-                    aria-pressed={on}
-                    aria-label={tr('bike.connecting_stretches_a11y', { miles: otherMi })}
-                    className={`flex w-full items-baseline justify-between gap-2 rounded px-1 ${rowText} text-left transition-colors ${
-                      on ? 'bg-(--nb-panel-raised) text-(--nb-ink)' : 'text-(--nb-ink-80) hover:bg-(--nb-panel)'
-                    }`}
-                  >
-                    {body}
-                  </button>
+                  />
                   {photo && <PanelPhoto spec={{ kind: 'sv', ...photo }} alt={tr('bike.connecting_stretches')} />}
                 </div>
               ) : (

@@ -274,7 +274,6 @@ export const togetherStrings = defineStrings(
     'lesson.code_body': 'Tell the {school} when you’re usually free, and an instructor will email you to pick a time. Green Streets is covering the cost.',
     'lesson.send': 'Send my request',
     'lesson.book': 'Book a free 1:1 lesson',
-    'lesson.left': '{n} left',
     'lesson.offer_body': 'Ride in traffic with an instructor from the {school}. Green Streets is covering the cost.',
     'lesson.ask': 'Ask for your free lesson',
 
@@ -675,7 +674,6 @@ export const togetherStrings = defineStrings(
       'lesson.code_body': 'Dile a {school} cuándo sueles tener tiempo, y un instructor te escribirá para elegir una hora. Green Streets cubre el costo.',
       'lesson.send': 'Enviar mi solicitud',
       'lesson.book': 'Reserva una clase 1:1 gratis',
-      'lesson.left': 'Quedan {n}',
       'lesson.offer_body': 'Anda en bici entre el tráfico con un instructor de {school}. Green Streets cubre el costo.',
       'lesson.ask': 'Pide tu clase gratis',
 
@@ -1073,7 +1071,6 @@ export const togetherStrings = defineStrings(
       'lesson.code_body': 'Diga a {school} quando você costuma estar livre, e um instrutor vai te mandar um e-mail para escolher um horário. A Green Streets cobre o custo.',
       'lesson.send': 'Enviar meu pedido',
       'lesson.book': 'Reserve uma aula 1:1 grátis',
-      'lesson.left': 'Restam {n}',
       'lesson.offer_body': 'Pedale no trânsito com um instrutor de {school}. A Green Streets cobre o custo.',
       'lesson.ask': 'Pedir sua aula grátis',
 
@@ -1471,7 +1468,6 @@ export const togetherStrings = defineStrings(
       'lesson.code_body': '告诉{school}你通常什么时候有空，教练会发邮件和你约时间。费用由 Green Streets 承担。',
       'lesson.send': '发送我的申请',
       'lesson.book': '预约免费一对一课程',
-      'lesson.left': '还剩 {n} 个名额',
       'lesson.offer_body': '和{school}的教练一起在车流中骑行。费用由 Green Streets 承担。',
       'lesson.ask': '申请免费课程',
 

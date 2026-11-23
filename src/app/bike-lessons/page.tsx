@@ -80,24 +80,19 @@ type Loaded = {
   lessons: Ev[]
   rides: Ev[]
   instructors: Instructor[]
-  left: number | null
   slugs: [string, string | null][]
   extras: [string, RideExtra][]
 }
 
 async function readLessons(): Promise<Loaded> {
   // Slugs travel as pairs: the cache stores JSON, which has no Map.
-  const empty: Loaded = { lessons: [], rides: [], instructors: [], left: null, slugs: [], extras: [] }
+  const empty: Loaded = { lessons: [], rides: [], instructors: [], slugs: [], extras: [] }
   try {
     const supabase = createServerSupabaseClient()
-    const [{ data, error }, { data: program }, { count: used }] = await Promise.all([
-      supabase.rpc('get_bike_lessons'),
-      // Codes left, counted as the free-lessons function counts them (codesLeft).
-      supabase.from('free_lesson_programs').select('max_codes').eq('id', 'brs_road').maybeSingle(),
-      supabase.from('free_lesson_codes').select('id', { count: 'exact', head: true }).eq('program_id', 'brs_road'),
-    ])
-    const left = program?.max_codes != null ? Math.max(Number(program.max_codes) - (used ?? 0), 0) : null
-    if (error || !data) return { ...empty, left }
+    // No count of free lessons left on the page (Keith 2026-11-23): the form
+    // says when they are all taken.
+    const { data, error } = await supabase.rpc('get_bike_lessons')
+    if (error || !data) return empty
     const lessons = (data.lessons ?? []) as Ev[]
     const rides = (data.easy_rides ?? []) as Ev[]
     const instructors = (data.instructors ?? []) as Instructor[]
@@ -127,7 +122,7 @@ async function readLessons(): Promise<Loaded> {
         })
       }
     }
-    return { lessons, rides, instructors, left, slugs: [...slugs], extras: [...extras] }
+    return { lessons, rides, instructors, slugs: [...slugs], extras: [...extras] }
   } catch {
     return empty
   }
@@ -179,7 +174,7 @@ export default async function BikeLessonsPage({ searchParams }: { searchParams: 
   const sp = await searchParams
   const locale = await siteLocale(sp.lang)
   const t = translator(bikeLessonsStrings, locale)
-  const { lessons, rides, instructors, left, slugs, extras } = await load()
+  const { lessons, rides, instructors, slugs, extras } = await load()
   const rideCards: RideCard[] = rides.slice(0, 6).map((e) => ({
     event_type: 'group_ride', image_url: null, location_address: null, location_lat: null, location_lng: null,
     tags: [], pace: null, distance_text: null, no_drop: null, body: null,
@@ -263,11 +258,6 @@ export default async function BikeLessonsPage({ searchParams }: { searchParams: 
               <div className="mt-6 max-w-[600px] rounded-[20px] bg-cream p-6 sm:p-7">
                 <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
                   <h2 className={H3}>{t('lessons.form_title')}</h2>
-                  {left != null && left > 0 && (
-                    <span className="rounded-full border-2 border-forest px-3 py-1 text-[0.875rem] font-bold leading-snug text-[#1F4D3A]">
-                      {t('lessons.fact_left', { n: left })}
-                    </span>
-                  )}
                 </div>
                 <p className="mt-2 mb-4 text-[0.9375rem] leading-relaxed text-navy/80">{t('lessons.form_area')}</p>
                 <FreeLessonForm
