@@ -1,3 +1,4 @@
+import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
 
 /**
@@ -76,16 +77,44 @@ export type RidePlanView = {
   learner_modes: string[] | null
   /** The ways both people put on their sign-ups. */
   shared_modes?: string[] | null
+  /** A free street lesson's plan (01889): the learner's area anchors the meeting spot; the instructor also sees how to reach them. */
+  lesson?: { anchor: LatLng | null; place: string | null; org: string | null; email: string | null; phone: string | null } | null
   plan: RidePlan | null
 }
 
 export type Result = { ok: boolean; reason?: string }
 
+/**
+ * A free street lesson's plan (Shift 01889): the same plan and steps, opened
+ * from the lesson email's private link with no Shift account. Every plan call
+ * then carries that key (x-lesson-token), which ride_plan_role reads in place
+ * of a sign-in. Signed-in Shift Together plans keep the site's own client.
+ */
+let db: SupabaseClient = supabase
+let lessonKey: string | null = null
+export const LESSON_KEY = /^[0-9a-f]{32,64}$/
+
+export function openWithLessonKey(key: string): void {
+  if (lessonKey === key) return
+  lessonKey = key
+  db = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
+    global: { headers: { 'x-lesson-token': key } },
+    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false, storageKey: 'gsi-lesson-plan' },
+  })
+}
+
+/** The plan a lesson link opens: its id and whether this is the learner or the instructor; null before anyone said yes. Throws on a network error. */
+export async function openLessonPlan(key: string): Promise<{ id: string; role: 'learner' | 'guide' } | null> {
+  const { data, error } = await supabase.rpc('lesson_plan_open', { p_token: key })
+  if (error) throw new Error(error.message || 'lesson_plan_open failed')
+  return (data ?? null) as { id: string; role: 'learner' | 'guide' } | null
+}
+
 export const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 /** The plan as this person sees it; null when it isn't theirs or the match ended. Throws on a network error. */
 export async function getRidePlan(matchId: string): Promise<RidePlanView | null> {
-  const { data, error } = await supabase.rpc('get_ride_plan', { p_match_id: matchId })
+  const { data, error } = await db.rpc('get_ride_plan', { p_match_id: matchId })
   if (error) throw new Error(error.message || 'get_ride_plan failed')
   return (data ?? null) as RidePlanView | null
 }
@@ -95,18 +124,18 @@ const asResult = (data: unknown, error: unknown): Result =>
 
 /** The newcomer says the day and time work. */
 export async function confirmRidePlan(matchId: string): Promise<Result> {
-  const { data, error } = await supabase.rpc('confirm_ride_plan', { p_match_id: matchId })
+  const { data, error } = await db.rpc('confirm_ride_plan', { p_match_id: matchId })
   return asResult(data, error)
 }
 
 /** Either of them asks to move the trip; the other gets a notice and answers. */
 export async function proposeRideTime(matchId: string, at: Date): Promise<Result> {
-  const { data, error } = await supabase.rpc('propose_ride_plan_time', { p_match_id: matchId, p_ride_at: at.toISOString() })
+  const { data, error } = await db.rpc('propose_ride_plan_time', { p_match_id: matchId, p_ride_at: at.toISOString() })
   return asResult(data, error)
 }
 
 export async function answerRideTime(matchId: string, yes: boolean): Promise<Result> {
-  const { data, error } = await supabase.rpc('answer_ride_plan_time', { p_match_id: matchId, p_yes: yes })
+  const { data, error } = await db.rpc('answer_ride_plan_time', { p_match_id: matchId, p_yes: yes })
   return asResult(data, error)
 }
 
@@ -171,7 +200,7 @@ export function sharedWays(view: RidePlanView): TripWay[] {
 }
 
 export async function shareRidePlan(matchId: string, v: { way: TripWay; skill: string | null; worries: string[]; meet: Place; end: Place }): Promise<Result> {
-  const { data, error } = await supabase.rpc('set_ride_plan_learner', {
+  const { data, error } = await db.rpc('set_ride_plan_learner', {
     p_match_id: matchId, p_way: v.way, p_skill: v.skill, p_worries: v.worries,
     p_meet_lat: v.meet.lat, p_meet_lng: v.meet.lng, p_meet_label: v.meet.label,
     p_end_lat: v.end.lat, p_end_lng: v.end.lng, p_end_label: v.end.label,
@@ -180,13 +209,13 @@ export async function shareRidePlan(matchId: string, v: { way: TripWay; skill: s
 }
 
 export async function setRidePlanBike(matchId: string, bike: 'own' | 'share' | null, system: string | null): Promise<Result> {
-  const { data, error } = await supabase.rpc('set_ride_plan_bike', { p_match_id: matchId, p_bike: bike, p_system: system })
+  const { data, error } = await db.rpc('set_ride_plan_bike', { p_match_id: matchId, p_bike: bike, p_system: system })
   return asResult(data, error)
 }
 
 /** Whether a free bike-share Day Pass is left for this first ride (claim false only asks). */
 export async function bikePassLeft(matchId: string, system: string): Promise<boolean> {
-  const { data, error } = await supabase.rpc('ride_plan_bike_pass', { p_match_id: matchId, p_system: system, p_claim: false })
+  const { data, error } = await db.rpc('ride_plan_bike_pass', { p_match_id: matchId, p_system: system, p_claim: false })
   if (error || !data || typeof data !== 'object') return false
   const d = data as Record<string, unknown>
   return d.available === true || (typeof d.code === 'string' && !!d.code)
@@ -214,12 +243,18 @@ export type RouteDesign =
 
 /** The route for a goal, or the transit trips (at departAt), from the website's route planner. */
 export async function designRoute(matchId: string, opts: { goal?: string; departAt?: Date; through?: Place | null } = {}): Promise<RouteDesign> {
-  const { data: { session } } = await supabase.auth.getSession()
-  if (!session) return { ok: false, reason: 'signed_out' }
+  let auth: Record<string, string>
+  if (lessonKey) {
+    auth = { 'x-lesson-token': lessonKey }
+  } else {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) return { ok: false, reason: 'signed_out' }
+    auth = { Authorization: `Bearer ${session.access_token}` }
+  }
   try {
     const res = await fetch('/api/together/plan-route', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+      headers: { 'Content-Type': 'application/json', ...auth },
       body: JSON.stringify({ matchId, goal: opts.goal, departAt: opts.departAt?.toISOString(), through: opts.through ?? undefined }),
     })
     return (await res.json()) as RouteDesign
@@ -229,7 +264,7 @@ export async function designRoute(matchId: string, opts: { goal?: string; depart
 }
 
 export async function saveRidePlanRoute(matchId: string, route: RidePlan['route'], spots: Spot[], rideAt: Date): Promise<Result> {
-  const { data, error } = await supabase.rpc('set_ride_plan_route', {
+  const { data, error } = await db.rpc('set_ride_plan_route', {
     p_match_id: matchId, p_route: route, p_spots: spots, p_ride_at: rideAt.toISOString(),
   })
   return asResult(data, error)

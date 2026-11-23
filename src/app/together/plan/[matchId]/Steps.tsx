@@ -208,7 +208,9 @@ export function LearnerShare({ view, matchId, userId, name, t, onShared, onProbl
   const [step, setStep] = useState(0)
   const [way, setWay] = useState<TripWay>(view.plan?.way ?? ways[0] ?? 'bike')
   const [wayChosen, setWayChosen] = useState(!!view.plan?.way)
-  const [home, setHome] = useState<LatLng | null>(null)
+  // A lesson (no account): stops near where the learner asked for the lesson; the end is a search.
+  const lesson = view.lesson ?? null
+  const [home, setHome] = useState<LatLng | null>(lesson?.anchor ?? null)
   const [work, setWork] = useState<LatLng | null>(null)
   const [skill, setSkill] = useState<string | null>(view.plan?.skill ?? null)
   const [worries, setWorries] = useState<string[]>(view.plan?.worries ?? [])
@@ -231,7 +233,7 @@ export function LearnerShare({ view, matchId, userId, name, t, onShared, onProbl
 
   // Anchor on the trip they asked for help with; Home and Work otherwise.
   useEffect(() => {
-    if (!userId) return
+    if (!userId || lesson) return
     let alive = true
     myRequests()
       .then((rs) => rs.find((r) => r.kind === 'newcomer' && r.status !== 'closed') ?? null)
@@ -240,7 +242,7 @@ export function LearnerShare({ view, matchId, userId, name, t, onShared, onProbl
       .then(({ home: h, work: w }) => { if (alive) { setHome(h); setWork(w) } })
       .catch(() => {})
     return () => { alive = false }
-  }, [userId])
+  }, [userId, lesson])
 
   useEffect(() => {
     if (!home || !work) return
@@ -390,11 +392,11 @@ export function LearnerShare({ view, matchId, userId, name, t, onShared, onProbl
       n={total}
       total={total}
       onBack={back}
-      title={t(way === 'bike' ? 'share.end_q' : 'share.end_q_trip')}
+      title={t(lesson ? 'lesson.end_q' : way === 'bike' ? 'share.end_q' : 'share.end_q_trip')}
       t={t}
       action={<Button variant="primary" busy={busy} disabled={!end} onClick={() => void send()}>{t('share.share_send', { name })}</Button>}
     >
-      <p className="text-[15px] text-(--ev-ink-80)">{share ? t('share.end_hint_share', { system: docks!.systemName }) : t(k(`share.end_hint${hintWay}`))}</p>
+      <p className="text-[15px] text-(--ev-ink-80)">{share ? t('share.end_hint_share', { system: docks!.systemName }) : lesson ? t('lesson.end_hint', { name }) : t(k(`share.end_hint${hintWay}`))}</p>
       <PlacePick key="end" anchor={work} value={end} onPick={setEnd} choices={share ? docks!.work : undefined} t={t} />
       {need ? <p className="text-[15px] font-semibold">{t('share.need_spots')}</p> : null}
     </Step>

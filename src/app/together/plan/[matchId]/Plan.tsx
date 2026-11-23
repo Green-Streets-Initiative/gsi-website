@@ -11,7 +11,7 @@ import { SITE_LOCALE_TAG, translator, withLang, type SiteLocale, type T } from '
 import { planStrings, type PlanKey } from '@/lib/site-strings/together-plan'
 import { togetherStrings } from '@/lib/site-strings/together'
 import { myMatches, track, type Match } from '@/lib/together'
-import { useTogether } from '@/components/together/TogetherShell'
+import { useTogetherMaybe } from '@/components/together/TogetherShell'
 import { GuidePlan, LearnerShare } from './Steps'
 import {
   UUID, answerRideTime, appPlanLink, confirmRidePlan, getRidePlan, hasOpenProposal, planDirectionsUrl, plannedTimePassed, proposeRideTime,
@@ -56,9 +56,14 @@ function failKey(r: Result): PlanKey {
   return 'plan.failed'
 }
 
-export default function Plan({ matchId, locale }: { matchId: string; locale: SiteLocale }) {
+/**
+ * `lessonKey`: a free street lesson's plan (Shift 01889), opened from the lesson email's link
+ * (/bike-lessons/plan/<key>) with no Shift account; the page leaves out what needs one
+ * (matches, the app, Find each other) and the after-step goes to the lesson's own check-in.
+ */
+export default function Plan({ matchId, locale, lessonKey }: { matchId: string; locale: SiteLocale; lessonKey?: string }) {
   const t = translator(planStrings, locale)
-  const { userId } = useTogether()
+  const userId = useTogetherMaybe()?.userId ?? null
   const dismiss = translator(togetherStrings, locale)('dismiss')
   const [view, setView] = useState<RidePlanView | null | undefined>(undefined)
   const [match, setMatch] = useState<Match | null>(null)
@@ -71,8 +76,8 @@ export default function Plan({ matchId, locale }: { matchId: string; locale: Sit
 
   const fetchAll = useCallback(async () => {
     if (!UUID.test(matchId)) return [null, null] as const
-    return Promise.all([getRidePlan(matchId), myMatches().then((ms) => ms.find((m) => m.id === matchId) ?? null).catch(() => null)])
-  }, [matchId])
+    return Promise.all([getRidePlan(matchId), lessonKey ? null : myMatches().then((ms) => ms.find((m) => m.id === matchId) ?? null).catch(() => null)])
+  }, [matchId, lessonKey])
   const load = useCallback(async () => {
     try {
       const [v, m] = await fetchAll()
@@ -122,6 +127,13 @@ export default function Plan({ matchId, locale }: { matchId: string; locale: Sit
     )
   }
   if (view === undefined) return <Spinner label={t('plan.opening')} />
+  if (!view && lessonKey) {
+    return (
+      <Card className="mx-auto max-w-lg">
+        <h1 className="font-display text-[24px] font-extrabold">{t('lesson.not_open')}</h1>
+      </Card>
+    )
+  }
   if (!view) {
     return (
       <Card className="mx-auto max-w-lg">
@@ -140,7 +152,7 @@ export default function Plan({ matchId, locale }: { matchId: string; locale: Sit
   const rideAt = p?.ride_at ? new Date(p.ride_at) : null
   // A planned time that passed while a new one waits on an answer isn't the plan any more.
   const shownAt = pending && rideAt && rideAt.getTime() < now ? null : rideAt
-  const email = match?.other.email ?? null
+  const email = match?.other.email ?? view.lesson?.email ?? null
   const title =
     stage === 'share' ? t('plan.share_title', { name })
     : stage === 'wait_guide' ? t('plan.waiting_guide', { name })
@@ -175,17 +187,21 @@ export default function Plan({ matchId, locale }: { matchId: string; locale: Sit
     </a>
   )
   const onFail = (r: Result) => setProblem(t(failKey(r)))
+  const lesson = !!lessonKey
+  const subtitle = lesson ? t(learner ? 'lesson.your_instructor' : 'lesson.your_learner') : t(learner ? 'plan.your_guide' : 'plan.your_newcomer')
 
   return (
     <div className="grid grid-cols-1 gap-6">
-      <Link href={withLang('/together/matches', locale)} className="inline-flex min-h-[44px] w-fit items-center gap-2 text-[15px] font-semibold text-(--ev-ink-80)">
-        <ArrowLeft className="h-4 w-4" aria-hidden /> {t('plan.back')}
-      </Link>
+      {lesson ? null : (
+        <Link href={withLang('/together/matches', locale)} className="inline-flex min-h-[44px] w-fit items-center gap-2 text-[15px] font-semibold text-(--ev-ink-80)">
+          <ArrowLeft className="h-4 w-4" aria-hidden /> {t('plan.back')}
+        </Link>
+      )}
       <div className="flex items-center gap-4">
         <Avatar name={name} url={match?.other.avatar_url ?? null} size={64} />
         <div className="min-w-0">
           <h1 className="font-display text-[clamp(26px,4vw,36px)] font-extrabold leading-tight text-balance">{title}</h1>
-          <p className="mt-1 text-[15px] text-(--ev-ink-80)">{learner ? t('plan.your_guide') : t('plan.your_newcomer')}</p>
+          <p className="mt-1 text-[15px] text-(--ev-ink-80)">{subtitle}</p>
         </div>
       </div>
       {notice ? <Notice tone="good" onClose={() => setNotice(null)} dismissLabel={dismiss}>{notice}</Notice> : null}
@@ -223,7 +239,7 @@ export default function Plan({ matchId, locale }: { matchId: string; locale: Sit
           <LearnerShare
             view={view}
             matchId={matchId}
-            userId={userId}
+            userId={lesson ? null : userId}
             name={name}
             t={t}
             onProblem={onFail}
@@ -246,6 +262,17 @@ export default function Plan({ matchId, locale }: { matchId: string; locale: Sit
           <p className="text-[16px] text-(--ev-ink-85)">{t('plan.waiting_learner_sub', { name })}</p>
         ) : stage === 'passed' ? (
           <p className="text-[16px] font-semibold">{t('plan.time_passed')}</p>
+        ) : stage === 'after' && lessonKey ? (
+          <>
+            <p className="text-[16px] text-(--ev-ink-85)">{t(learner ? 'lesson.after_learner' : 'lesson.after_guide', { name })}</p>
+            <a
+              href={learner ? `/bike-lessons/after/${lessonKey}` : `/bike-lessons/offer/${lessonKey}?a=after`}
+              onClick={() => track('together_lesson_after_tapped', { role: view.role })}
+              className={cx(PRIMARY, 'w-fit')}
+            >
+              {t(learner ? 'lesson.after_learner_open' : 'lesson.after_guide_open')}
+            </a>
+          </>
         ) : stage === 'after' ? (
           learner ? (
             <>
@@ -286,23 +313,25 @@ export default function Plan({ matchId, locale }: { matchId: string; locale: Sit
           />
         ) : null}
 
-        {emailLink || stage === 'share' || stage === 'guide_turn' ? (
+        {emailLink || (!lesson && (stage === 'share' || stage === 'guide_turn')) ? (
           <div className="flex flex-wrap items-center gap-3 border-t border-(--ev-line) pt-4">
             {emailLink}
-            {stage === 'share' || stage === 'guide_turn' ? appLink : null}
+            {!lesson && (stage === 'share' || stage === 'guide_turn') ? appLink : null}
           </div>
         ) : null}
       </Card>
 
       {/* On the day: share where you are with each other around the start (01627). Shows only that day. */}
-      {p && p.status === 'confirmed' && !pending ? (
+      {!lesson && p && p.status === 'confirmed' && !pending ? (
         <FindEachOther matchId={matchId} name={name} way={way === 'walk' || way === 'transit' ? way : 'bike'} locale={locale} />
       ) : null}
       {showPlan && p ? <RouteCard plan={p} way={way} locale={locale} t={t} /> : null}
 
-      <Link href={withLang('/together/matches', locale)} className="min-h-[44px] justify-self-start text-[15px] font-semibold text-(--ev-ink-80) underline">
-        {t('plan.something_wrong')}
-      </Link>
+      {lesson ? null : (
+        <Link href={withLang('/together/matches', locale)} className="min-h-[44px] justify-self-start text-[15px] font-semibold text-(--ev-ink-80) underline">
+          {t('plan.something_wrong')}
+        </Link>
+      )}
     </div>
   )
 }

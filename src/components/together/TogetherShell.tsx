@@ -60,6 +60,11 @@ const WAYS_TO_GO: { label: TogetherKey; Icon: LucideIcon }[] = [
   { label: 'kind.carpool', Icon: Car },
 ]
 
+/** The shell's state, or null on a page outside it (a free lesson's plan, /bike-lessons/plan, opens with no sign-in). */
+export function useTogetherMaybe(): State | null {
+  return useContext(Ctx)
+}
+
 export function useTogether(): State {
   const v = useContext(Ctx)
   if (!v) throw new Error('useTogether outside TogetherShell')

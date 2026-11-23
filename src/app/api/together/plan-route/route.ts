@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { designRouteForPage } from '@/lib/shift-assistant/ride-plan-tools'
+import { LESSON_KEY } from '@/lib/together-plan'
 
 /**
  * POST /api/together/plan-route { matchId, goal?, departAt? }: the route for
@@ -18,20 +19,38 @@ import { designRouteForPage } from '@/lib/shift-assistant/ride-plan-tools'
 export const maxDuration = 120
 
 export async function POST(request: Request) {
-  const token = request.headers.get('authorization')?.replace(/^Bearer\s+/i, '')
-  if (!token) return Response.json({ ok: false, reason: 'signed_out' }, { status: 401 })
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL!
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  const { data: { user } } = await createClient(url, anonKey, { auth: { persistSession: false } }).auth.getUser(token)
-  if (!user) return Response.json({ ok: false, reason: 'signed_out' }, { status: 401 })
   const body = (await request.json().catch(() => ({}))) as { matchId?: unknown; goal?: unknown; departAt?: unknown; through?: unknown }
   if (typeof body.matchId !== 'string') return Response.json({ ok: false, reason: 'not_found' }, { status: 400 })
-  const userClient = createClient(url, anonKey, {
-    global: { headers: { Authorization: `Bearer ${token}` } },
-    auth: { persistSession: false, autoRefreshToken: false },
-  })
+  // A free street lesson's instructor (Shift 01889): the key from their lesson email, no
+  // Shift account. get_ride_plan reads it, so the same "is this their plan, their turn"
+  // check applies. Routing and spots then run as our own server.
+  const lessonKey = request.headers.get('x-lesson-token')
+  let ctx: { user: ReturnType<typeof createClient>; token: string }
+  if (lessonKey && LESSON_KEY.test(lessonKey)) {
+    ctx = {
+      user: createClient(url, anonKey, {
+        global: { headers: { 'x-lesson-token': lessonKey } },
+        auth: { persistSession: false, autoRefreshToken: false },
+      }),
+      token: process.env.SUPABASE_SERVICE_ROLE_KEY || anonKey,
+    }
+  } else {
+    const token = request.headers.get('authorization')?.replace(/^Bearer\s+/i, '')
+    if (!token) return Response.json({ ok: false, reason: 'signed_out' }, { status: 401 })
+    const { data: { user } } = await createClient(url, anonKey, { auth: { persistSession: false } }).auth.getUser(token)
+    if (!user) return Response.json({ ok: false, reason: 'signed_out' }, { status: 401 })
+    ctx = {
+      user: createClient(url, anonKey, {
+        global: { headers: { Authorization: `Bearer ${token}` } },
+        auth: { persistSession: false, autoRefreshToken: false },
+      }),
+      token,
+    }
+  }
   try {
-    const out = await designRouteForPage({ user: userClient, token }, body.matchId, { goal: body.goal, departAt: body.departAt, through: body.through })
+    const out = await designRouteForPage(ctx, body.matchId, { goal: body.goal, departAt: body.departAt, through: body.through })
     return Response.json(out, { status: out.ok ? 200 : out.reason === 'no_route' ? 200 : 403 })
   } catch {
     return Response.json({ ok: false, reason: 'no_route' })
