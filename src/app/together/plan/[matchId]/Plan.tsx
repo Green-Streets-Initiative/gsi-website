@@ -419,7 +419,22 @@ function RouteCard({ plan, way, locale, t }: { plan: RidePlan; way: TripWay; loc
   const line = plan.route?.waypoints && plan.route.waypoints.length > 1 ? plan.route.waypoints : undefined
   const legs = way === 'transit' ? plan.route?.transit?.legs ?? [] : []
   // The spots the guide chose to show, in route order, with their notes (the app's "Before your ride").
-  const spots = useMemo(() => (way === 'transit' ? [] : (plan.spots ?? []).filter((s) => s.on && s.kind !== 'lock_up')), [way, plan.spots])
+  // Numbered from the start: each spot's place along the route (its nearest point on the line), so the map, the list and the numbers count the same way.
+  const spots = useMemo(() => {
+    const shown = way === 'transit' ? [] : (plan.spots ?? []).filter((s) => s.on && s.kind !== 'lock_up')
+    const pts = plan.route?.waypoints
+    if (!pts || pts.length < 2) return shown
+    const along = (s: { lat: number; lng: number }) => {
+      let best = 0
+      let bestD = Infinity
+      pts.forEach((p, i) => {
+        const d = (p.lat - s.lat) ** 2 + ((p.lng - s.lng) * Math.cos((p.lat * Math.PI) / 180)) ** 2
+        if (d < bestD) { bestD = d; best = i }
+      })
+      return best
+    }
+    return shown.map((s) => ({ s, at: along(s) })).sort((a, b) => a.at - b.at).map((x) => x.s)
+  }, [way, plan.spots, plan.route?.waypoints])
   // What each street looks like, as the guide saw it when planning (bike routes: the comfort scale is the bike's).
   const route = plan.route
   const calmOption = useMemo(() => (way === 'bike' && route?.waypoints && route.waypoints.length > 1 && route.comfortSegments?.length
