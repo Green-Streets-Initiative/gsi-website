@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Home 2 · Six doors</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Overpass:wght@600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap">
+
+<style>
+:root{--ink:#191A2E;--ink85:#2F3150;--ink75:#4A4D68;--line:#E3E6DD;--forest:#2D6A4F;--deep:#1B4332;--pale:#F4F8EE;--warm:#9A4A12;--warmbg:#F8F1EC;--warmline:#EAD8C8}
+*{box-sizing:border-box}
+body{margin:0;background:#fff;color:var(--ink);font:16px/1.45 "DM Sans",sans-serif}
+h1,h2,h3,.ov{font-family:Overpass,sans-serif;font-weight:800;letter-spacing:-.01em;margin:0}
+a{color:inherit;text-decoration:none;cursor:pointer}
+p{margin:0}
+.wrap{max-width:1200px;margin:0 auto;padding:0 16px}
+@media(min-width:900px){.wrap{padding:0 32px}}
+[data-lucide]{width:18px;height:18px;stroke-width:2}
+/* nav */
+.top{border-bottom:1px solid var(--line);background:#fff;position:relative;z-index:5}
+.bar{display:flex;align-items:center;gap:28px;height:64px}
+.brand img{height:22px;display:block}
+.nav{display:none;gap:4px;font:700 15px Overpass}
+.nav a{display:flex;align-items:center;gap:3px;padding:8px 10px;border-radius:8px}
+.nav a [data-lucide]{width:15px;height:15px;opacity:.7}
+.nav a.on{background:var(--pale);color:var(--deep)}
+.right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.donate{display:none;font:700 15px Overpass;padding:8px 12px;border:1px solid var(--line);border-radius:999px}
+.get{background:var(--forest);color:#fff;padding:9px 16px;border-radius:999px;font:800 15px Overpass}
+.burger{border:0;background:none;padding:6px;display:flex}
+.burger [data-lucide]{width:26px;height:26px}
+@media(min-width:1024px){.nav{display:flex}.donate{display:inline-block}.burger{display:none}}
+/* bits */
+.dt{position:absolute;left:6px;top:6px;background:#fff;border-radius:8px;padding:3px 7px 2px;text-align:center;line-height:1.05;box-shadow:0 1px 3px #0003;font-family:Overpass}
+.dt small{display:block;font-size:12px;font-weight:800;color:var(--forest)}.dt b{font-size:18px;font-weight:800}
+.mapsq{position:relative;overflow:hidden;background:#EEF0EA}
+.pin{position:absolute;left:50%;top:50%;width:16px;height:16px;margin:-8px 0 0 -8px;border-radius:50%;background:var(--forest);border:3px solid #fff;box-shadow:0 1px 4px #0005}
+.logo{width:100%;height:100%;background:#fff;display:flex;align-items:center;justify-content:center;padding:14%}
+.logo img{max-width:100%;max-height:100%;object-fit:contain}
+img.fill{width:100%;height:100%;object-fit:cover;display:block}
+.stop{display:inline-flex;align-items:center;gap:6px;font-size:14px;color:var(--ink85)}
+.stop i{width:10px;height:10px;display:inline-block}
+.lvl{display:inline-flex;align-items:flex-end;gap:2px;font-size:14px;color:var(--ink85);margin-right:8px}
+.lvl b{width:4px;height:8px;background:#D5D9CF;border-radius:1px}.lvl b:nth-child(2){height:11px}.lvl b:nth-child(3){height:14px;margin-right:5px}.lvl b.m1{background:var(--forest)}
+.chip{display:inline-block;font-size:13px;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--pale);color:var(--deep)}
+.meta{font-size:14px;color:var(--ink75);margin-top:3px}
+.under{margin-top:6px}
+.credit{font-size:13px;color:var(--ink75);margin-top:4px}
+.rowh{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:14px}
+.rowh h2{font-size:22px}.rowh a{font:700 15px Overpass;color:var(--forest);white-space:nowrap}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:46px;padding:0 18px;border-radius:10px;font:800 16px Overpass;background:var(--forest);color:#fff}
+.btn.ghost{background:#fff;color:var(--ink);border:1px solid var(--line)}
+/* photo card */
+.pc{display:block;min-width:0}
+.pc .pic{position:relative;aspect-ratio:4/3;border-radius:14px;overflow:hidden;background:var(--pale);border:1px solid var(--line)}
+.pc h3{font-size:17px;line-height:1.25;margin-top:10px}
+/* row card */
+.rc{display:flex;gap:12px;align-items:flex-start;min-width:0}
+.rc .sq{position:relative;flex:0 0 auto;border-radius:12px;overflow:hidden;border:1px solid var(--line);background:var(--pale)}
+.rc .sq .dt{left:4px;top:4px;padding:2px 5px 1px}.rc .sq .dt small{font-size:11px}.rc .sq .dt b{font-size:15px}
+.rc .tx{min-width:0}.rc h3{font-size:16px;line-height:1.25}
+/* spotlight strip */
+.spot{display:flex;align-items:center;gap:14px;border:1px solid var(--warmline);background:var(--warmbg);border-radius:16px;padding:12px 14px}
+.spot .st{flex:0 0 auto;width:96px;height:66px;background:#fff;border:1px solid var(--warmline);border-radius:10px;padding:5px}
+.spot .lab{font-size:14px;font-weight:600;color:var(--warm);display:flex;gap:6px;align-items:center}
+.spot h3{font-size:17px;margin-top:2px}
+.spot .bar2{height:7px;border-radius:4px;background:rgba(154,74,18,.15);margin-top:7px;max-width:300px}.spot .bar2 i{display:block;height:100%;width:63%;background:var(--warm);border-radius:4px}
+.spot .mt{display:flex;justify-content:space-between;max-width:300px;font-size:14px;color:var(--ink85);margin-top:3px}
+.spot .go{margin-left:auto;background:var(--warm);color:#fff;font:800 15px Overpass;border-radius:10px;padding:11px 14px;white-space:nowrap}
+@media(max-width:640px){.spot{flex-wrap:wrap}.spot .go{width:100%;text-align:center;margin:0}.spot>div:nth-child(2){flex:1;min-width:0}}
+/* footer */
+.foot{border-top:1px solid var(--line);margin-top:28px;padding:22px 0 30px;font-size:14px;color:var(--ink75)}
+.foot .wrap{display:flex;flex-wrap:wrap;gap:8px 20px}
+.foot b{color:var(--ink)}
+section{padding:16px 0}
+.hero2{display:grid;gap:18px;padding-top:24px}@media(min-width:900px){.hero2{grid-template-columns:1fr 1.1fr;align-items:center;gap:36px}}
+.hero2 h1{font-size:32px;line-height:1.08}@media(min-width:900px){.hero2 h1{font-size:48px}}
+.lede{font-size:17px;color:var(--ink75);margin-top:10px;max-width:460px}.cta{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+.hp{position:relative;margin:0;aspect-ratio:3/2;border-radius:18px;overflow:hidden}
+.hp figcaption{position:absolute;right:8px;bottom:8px;background:rgba(25,26,46,.65);color:#fff;font-size:13px;padding:2px 8px;border-radius:6px}
+.live{position:absolute;left:12px;top:12px;max-width:220px;background:#fff;border-radius:12px;padding:8px 12px;font-size:14px;line-height:1.3;box-shadow:0 2px 8px #0002}.live b{display:block;font:800 24px Overpass;color:var(--deep)}
+.doors{display:grid;gap:14px;grid-template-columns:1fr}
+@media(min-width:900px){.doors{grid-template-columns:1.25fr 1fr 1fr;grid-template-rows:auto auto;grid-template-areas:"on pl gt" "on lr or" "sh sh sh"}
+.d-on{grid-area:on}.d-pl{grid-area:pl}.d-gt{grid-area:gt}.d-lr{grid-area:lr}.d-or{grid-area:or}.d-sh{grid-area:sh}}
+.door{position:relative;border-radius:18px;overflow:hidden;border:1px solid var(--line);padding:18px;min-height:200px;display:block}
+.door h2{font-size:22px}
+.dh{display:flex;justify-content:space-between;align-items:baseline}.dh a{font:700 15px Overpass;color:var(--forest)}
+.d-on{background:var(--pale);border-color:transparent}.nx{display:grid;gap:14px;margin-top:14px}
+.d-pl,.d-lr{padding:0;min-height:220px}.d-pl img,.d-lr img{position:absolute;inset:0}
+.ov2{position:absolute;left:0;right:0;bottom:0;padding:40px 16px 14px;background:linear-gradient(transparent,rgba(25,26,46,.8));color:#fff}.ov2 p{font-size:15px;margin-top:2px}
+.cr{position:absolute;right:8px;top:8px;background:rgba(25,26,46,.65);color:#fff;font-size:13px;padding:2px 8px;border-radius:6px}
+.d-gt label{display:block;background:var(--pale);border-radius:10px;padding:7px 12px;margin:8px 0;font-size:16px}.d-gt label small{display:block;font-size:13px;color:var(--ink75)}
+.oc{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}.oc a{display:flex;gap:7px;align-items:center;font:700 15px Overpass;background:var(--pale);border-radius:10px;padding:10px}
+.oc [data-lucide]{width:18px;height:18px;color:var(--forest)}.more{display:inline-block;margin-top:12px;font:700 15px Overpass;color:var(--forest)}
+.d-sh{background:var(--ink);color:#fff;border:0;display:flex;flex-wrap:wrap;align-items:center;gap:8px 24px;min-height:0}.d-sh h2{width:100%}@media(min-width:900px){.d-sh h2{width:auto}}
+.d-sh p{font-size:16px;color:rgba(255,255,255,.85);flex:1;min-width:220px}.d-sh .big{flex:0 0 auto}.d-sh .big b{font:800 26px Overpass;color:#8FD3A8;margin-right:4px}
+.d-sh .btn{background:#fff;color:var(--ink)}</style></head><body>
+<header class="top"><div class="wrap bar">
+<a class="brand"><img src="../img/gsi-wordmark.png" alt="Green Streets Initiative"></a>
+<nav class="nav"><a class="">What's on<i data-lucide=chevron-down></i></a><a class="">Places<i data-lucide=chevron-down></i></a><a class="">Get there<i data-lucide=chevron-down></i></a><a class="">Learn to ride<i data-lucide=chevron-down></i></a><a class="">For organizations<i data-lucide=chevron-down></i></a></nav>
+<div class="right"><a class="donate">Donate</a><a class="get">Get Shift</a><button class="burger" aria-label="Menu"><i data-lucide="menu"></i></button></div>
+</div></header>
+<main class="wrap">
+<section class="hero2">
+<div class="ht"><h1>Try a new way around Massachusetts</h1>
+<p class="lede">Group rides and walks, maps of real trips, and free lessons, from a Somerville nonprofit.</p>
+<div class="cta"><a class="btn">See what's on</a><a class="btn ghost">Plan a trip</a></div></div>
+<figure class="hp"><img class="fill" src="../img/walk-ride-day-2014.jpg" alt="People with bikes on City Hall Plaza before a Walk/Ride Day ride">
+<span class="live"><b>7,972</b> trips on foot, bike or transit in Shift this month</span>
+<figcaption>Walk/Ride Day, Boston. Photo: MassDOT</figcaption></figure>
+</section>
+<section class="doors">
+<div class="door d-on"><div class="dh"><h2>What's on</h2><a>277 events →</a></div><div class="nx"><a class="rc"><div class="sq" style="width:64px;height:64px"><div class="logo"><img src="https://xyqcpgwbqrhykpgpqbdi.supabase.co/storage/v1/object/public/ride-flyers/organizer-logos/boston-cafe-bikers-1792790264.png" alt="Boston Cafe Bikers logo"></div></div>
+<div class="tx"><h3>Butternut Bake House Ride</h3><p class="meta">Sat 10 AM · Boston Cafe Bikers</p><p class="under"><span class="lvl"><b class="m1"></b><b></b><b></b>Easy</span><span class="chip">No-drop</span></p></div></a><a class="rc"><div class="sq" style="width:64px;height:64px"><img class="fill" src="https://xyqcpgwbqrhykpgpqbdi.supabase.co/storage/v1/object/public/community-event-images/flyer_boston-pedals-fall-bike-picnic_2026-11-21.jpg" alt=""></div>
+<div class="tx"><h3>Fall Bike Picnic, Social and Food Drive</h3><p class="meta">Sat 11 AM · Boston Pedals</p><p class="under"><span class="stop"><i style="background:#ED8B00;border-radius:50%"></i>Back Bay</span></p></div></a><a class="rc"><div class="sq" style="width:64px;height:64px"><div class="logo"><img src="https://xyqcpgwbqrhykpgpqbdi.supabase.co/storage/v1/object/public/ride-flyers/organizer-logos/turtle-books-26ec087127.png" alt="Turtle Books logo"></div></div>
+<div class="tx"><h3>Lizzie Learns to Ride: book launch</h3><p class="meta">Sat 1 PM · Turtle Books</p><p class="under"><span class="stop"><i style="background:#00843D;border-radius:50%"></i>Brookline Village</span></p></div></a><a class="rc"><div class="sq" style="width:64px;height:64px"><div class="logo"><img src="https://xyqcpgwbqrhykpgpqbdi.supabase.co/storage/v1/object/public/ride-flyers/organizer-logos/boston-cafe-bikers-1792790264.png" alt="Boston Cafe Bikers logo"></div></div>
+<div class="tx"><h3>Thankful for Coffee</h3><p class="meta">Sun 10 AM · Boston Cafe Bikers</p><p class="under"><span class="lvl"><b class="m1"></b><b></b><b></b>Easy</span><span class="chip">No-drop</span></p></div></a></div></div>
+<a class="door d-pl"><img class="fill" src="../img/minuteman-bikeway.jpg" alt=""><div class="ov2"><h2>Places</h2><p>28 trails · 90 towns</p></div><span class="cr">Photo: Daderot, public domain</span></a>
+<div class="door d-gt"><h2>Get there</h2><label><small>From</small>Union Square</label><label><small>To</small>Fenway Park</label><a class="btn" style="width:100%">Show me the ways</a></div>
+<a class="door d-lr"><img class="fill" src="../../../../public/bike-lessons/washington-st-somerville.jpg" alt=""><div class="ov2"><h2>Learn to ride</h2><p>Free lessons on your own streets</p></div><span class="cr">Photo: 4300streetcar, CC BY 4.0</span></a>
+<div class="door d-or"><h2>For organizations</h2><div class="oc"><a><i data-lucide="briefcase"></i>Employers</a><a><i data-lucide="school"></i>Schools</a><a><i data-lucide="landmark"></i>Towns and cities</a><a><i data-lucide="megaphone"></i>Event hosts</a></div><a class="more">Book a call →</a></div>
+<a class="door d-sh"><h2>Get Shift</h2><p>Live departures, bike share and every way to go, in one free app.</p><p class="big"><b>419</b> people use it</p><span class="btn">Get the app</span></a>
+</section>
+<section><div class="spot"><div class="st"><svg style="width:100%;height:100%" class="ma" viewBox="-6 -6 212 136.3" aria-hidden="true"><path d="M13.6,10.6 L58.6,12.1 L98.5,13.5 L123.8,14.3 L125.8,11.3 L130.0,11.3 L129.8,7.3 L132.8,4.9 L136.6,6.1 L138.4,2.1 L145.6,0.0 L148.6,1.9 L150.3,1.1 L150.7,5.8 L152.5,14.6 L157.5,17.6 L159.9,14.9 L162.7,17.1 L159.5,22.9 L154.9,23.4 L147.2,25.7 L149.6,28.9 L146.0,32.1 L144.6,31.6 L143.6,35.4 L142.8,32.7 L140.6,36.2 L142.8,41.0 L140.2,40.3 L139.2,42.1 L140.8,43.8 L139.8,45.6 L142.6,46.5 L143.8,44.1 L146.6,43.6 L148.4,46.7 L153.3,48.5 L155.7,51.2 L156.1,54.2 L160.3,60.2 L160.1,63.4 L158.7,66.0 L156.3,66.3 L156.9,67.9 L161.1,71.2 L163.5,70.6 L165.1,72.2 L166.7,77.6 L165.7,80.8 L168.3,83.9 L172.9,86.2 L179.7,87.0 L181.5,88.5 L185.4,85.6 L189.2,85.1 L194.6,83.0 L195.8,81.3 L195.6,76.2 L194.4,72.3 L191.8,74.3 L191.8,68.0 L190.8,64.4 L187.8,62.2 L186.0,62.7 L185.0,65.2 L182.7,61.4 L185.4,60.7 L189.6,61.8 L194.2,65.6 L197.8,73.6 L199.6,81.3 L200.0,90.2 L197.0,98.5 L196.6,101.4 L195.2,100.8 L197.6,93.5 L196.2,92.0 L191.0,92.4 L182.3,94.9 L176.3,94.4 L174.9,96.2 L171.5,96.7 L168.5,100.7 L161.9,101.4 L155.1,105.6 L151.9,108.7 L147.6,110.5 L143.0,111.5 L144.2,109.8 L151.3,107.6 L154.5,104.5 L159.3,101.4 L160.3,98.8 L159.9,91.2 L161.1,88.5 L155.9,86.8 L155.9,90.7 L154.5,89.8 L153.7,93.0 L150.9,92.8 L151.3,94.9 L145.0,95.6 L143.6,98.8 L144.0,101.6 L142.8,103.5 L137.8,105.0 L135.4,103.9 L133.4,104.8 L132.8,92.5 L129.2,91.4 L127.6,88.7 L125.6,85.6 L121.8,83.5 L120.8,79.8 L121.2,74.6 L118.8,75.0 L118.8,65.5 L95.5,66.3 L95.3,65.1 L54.8,64.3 L50.4,64.6 L41.9,64.2 L41.3,66.7 L38.5,67.1 L38.7,64.2 L27.9,64.0 L4.2,63.1 L1.2,63.1 L0.0,60.4 L6.8,34.8 L13.6,10.6 Z" fill="#F3E7DC" stroke="rgba(154,74,18,.35)" stroke-width="2" stroke-linejoin="round"/><path d="M149.4,115.7 L153.1,115.7 L156.9,109.9 L162.3,106.0 L164.5,106.9 L165.9,111.5 L168.9,113.2 L170.9,110.6 L170.7,116.1 L162.5,116.0 L156.3,116.6 L152.7,119.6 L149.4,115.7 Z" fill="#F3E7DC" stroke="rgba(154,74,18,.35)" stroke-width="1.5"/><path d="M180.5,118.9 L183.1,120.5 L189.0,120.2 L192.6,119.1 L195.0,114.5 L198.2,121.3 L198.0,123.3 L196.0,124.3 L189.4,124.0 L181.1,120.2 L180.5,118.9 Z" fill="#F3E7DC" stroke="rgba(154,74,18,.35)" stroke-width="1.5"/><path d="M13.6,10.6 L58.6,12.1 L98.5,13.5 L123.8,14.3 L125.8,11.3 L130,11.3 L129.8,7.3 L132.8,4.9 L136.6,6.1 L138.4,2.1 L145.6,0 L148.6,1.9 L150.3,1.1 L150.7,5.8 L152.5,14.6 L157.5,17.6 L159.9,14.9 L162.7,17.1 L159.5,22.9 L154.9,23.4 L147.2,25.7 L149.6,28.9 L146,32.1 L144.6,31.6 L143.6,35.4 L142.8,32.7 L140.6,36.2 L142.8,41 L140.2,40.3 L139.2,42.1 L140.8,43.8 L139.8,45.6 L142.6,46.5 L143.8,44.1 L146.6,43.6 L148.4,46.7 L153.3,48.5 L155.7,51.2 L156.1,54.2 L160.3,60.2 L160.1,63.4 L158.7,66 L156.3,66.3 L156.9,67.9 L161.1,71.2 L163.5,70.6 L165.1,72.2 L166.7,77.6 L165.7,80.8 L168.3,83.9 L172.9,86.2 L179.7,87 L181.5,88.5 L185.4,85.6 L189.2,85.1 L194.6,83 L195.8,81.3 L195.6,76.2 L194.4,72.3 L191.8,74.3 L191.8,68 L190.8,64.4 L187.8,62.2 L186,62.7 L185,65.2 L182.7,61.4 L185.4,60.7 L189.6,61.8 L194.2,65.6 L197.8,73.6 L199.6,81.3 L200,90.2 L197,98.5 L196.6,101.4 L195.2,100.8 L197.6,93.5 L196.2,92 L191,92.4 L182.3,94.9 L176.3,94.4 L174.9,96.2 L171.5,96.7 L168.5,100.7 L161.9,101.4 L155.1,105.6 L151.9,108.7 L147.6,110.5 L143,111.5 L144.2,109.8 L151.3,107.6 L154.5,104.5 L159.3,101.4 L160.3,98.8 L159.9,91.2 L161.1,88.5 L155.9,86.8 L155.9,90.7 L154.5,89.8 L153.7,93 L150.9,92.8 L151.3,94.9 L145,95.6 L143.6,98.8 L144,101.6 L142.8,103.5 L137.8,105 L135.4,103.9 L133.4,104.8 L132.8,92.5 L129.2,91.4 L127.6,88.7 L125.6,85.6 L121.8,83.5 L120.8,79.8 L121.2,74.6 L118.8,75 L118.8,65.5 L95.5,66.3 L95.3,65.1 L54.8,64.3 L50.4,64.6 L41.9,64.2 L41.3,66.7 L38.5,67.1 L38.7,64.2 L27.9,64 L4.2,63.1 L1.2,63.1 L0,60.4 L6.8,34.8 L13.6,10.6 Z" fill="none" stroke="#9A4A12" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" pathLength="100" stroke-dasharray="63 100"/></svg></div>
+<div><p class="lab"><i data-lucide="trophy" style="width:16px;height:16px"></i>Spotlight · Community Challenge</p>
+<h3>Beat the Bay State: walk with Team Green Streets</h3>
+<div class="bar2"><i></i></div><div class="mt"><span>Nov 1 to 30</span><b>11 days left</b></div></div>
+<a class="go">Join the team →</a></div></section>
+</main><footer class="foot"><div class="wrap"><b>Green Streets Initiative</b><span>519 Somerville Ave, Somerville</span><a>About</a><a>Programs</a><a>Volunteer</a><a>Contact</a><a>Press</a><a>Help</a><a>Español · Português · 中文</a></div></footer>
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script><script>lucide.createIcons()</script>
+</body></html>
