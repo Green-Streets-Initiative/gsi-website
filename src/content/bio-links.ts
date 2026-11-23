@@ -43,6 +43,20 @@ export const BIO_LINKS: BioLink[] = [
     until: '2026-11-27T09:00:00-05:00',
   },
   {
+    slug: 'criticalmass',
+    label: 'Critical Mass Boston',
+    sublabel: 'Fri Nov 27, 6:30 PM, Copley Square. A feeder ride leaves Adams Park at 5:45 PM',
+    url: 'https://www.gogreenstreets.org/events/critical-mass-boston-group-ride-2026-11-27',
+    until: '2026-11-27T18:30:00-05:00',
+  },
+  {
+    slug: 'chillride',
+    label: "Third Wheel Cycle Club's Post-Turkey Chill Ride",
+    sublabel: 'Sat Nov 28, meet 10:45 AM at the Salem Common gazebo, rolling at 11. 10 to 12 miles at party pace',
+    url: 'https://www.gogreenstreets.org/events/twcc-post-turkey-chill-ride-2026-11-28',
+    until: '2026-11-28T10:45:00-05:00',
+  },
+  {
     slug: 'gravywalk',
     label: 'Gratitude After Gravy walk, Turners Falls',
     sublabel: 'Fri Nov 27, 1 PM. 3 flat, paved miles on the Canalside Rail Trail, then hot chocolate',
@@ -149,8 +163,8 @@ export const BIO_LINKS: BioLink[] = [
   },
   {
     slug: 'logan',
-    label: 'Flying for Thanksgiving? Split the ride to Logan',
-    sublabel: 'Add your flight. We find someone near you flying around the same time, and you share a taxi or ride app. Same on the way home.',
+    label: 'Flying for Thanksgiving? Take the bus to Logan',
+    sublabel: "The Silver Line SL1 from South Station is free from the airport. Logan Express runs from Back Bay, Braintree, Danvers, Framingham and Woburn. Neither works? Add your flight and we'll find someone to share a taxi.",
     url: 'https://www.gogreenstreets.org/logan?from=social',
     until: '2026-11-30T23:59:00-05:00',
   },
