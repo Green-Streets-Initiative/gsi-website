@@ -9,20 +9,23 @@ import { BICYCLE_PATH, RASTER_TILE_ATTRIBUTION, glyphPath, rasterTileUrl } from 
  * example homes), for the person's own home and paths on /together/practice,
  * and with `line` for a first trip plan's route on /together/plan. A
  * 'spot' pin marks where a walk pair or a carpool meets (the pickup card,
- * Find each other).
+ * Find each other). A 'num' pin is a numbered stop on a plan's route,
+ * matching the numbered list beside the map (the plan's "On the way").
  */
 export type Pin = {
   lat: number
   lng: number
   /** 'spot': where two people meet or a pickup, a gold pin. */
-  kind: 'home' | 'match' | 'rail' | 'path' | 'spot'
+  kind: 'home' | 'match' | 'rail' | 'path' | 'spot' | 'num'
   label?: string
+  /** The number on a 'num' pin. */
+  num?: number
   /** Line color for a T stop (the Green Line's green). */
   color?: string
 }
 
-const R = { home: 9, match: 9, rail: 12, path: 11, spot: 11 } as const
-const FILL = { home: '#191A2E', match: '#2D6A4F', path: '#2D6A4F', spot: '#C77D0A' } as const
+const R = { home: 9, match: 9, rail: 12, path: 11, spot: 11, num: 11 } as const
+const FILL = { home: '#191A2E', match: '#2D6A4F', path: '#2D6A4F', spot: '#C77D0A', num: '#9A5B00' } as const
 const FONT = 14
 
 export default function PinMap({ pins, line, width = 480, height = 300, title, caption, className, boxClassName = 'aspect-[8/5]', minZoom = 12, maxZoom = 15, quiet = true }: {
@@ -98,6 +101,11 @@ export default function PinMap({ pins, line, width = 480, height = 300, title, c
                 <>
                   <circle r={r} fill={FILL.path} stroke="#ffffff" strokeWidth={2} />
                   <path d={BICYCLE_PATH} fill="#ffffff" transform={`translate(${-r * 0.65} ${-r * 0.65}) scale(${(r * 1.3) / 256})`} />
+                </>
+              ) : p.kind === 'num' ? (
+                <>
+                  <circle r={r} fill={FILL.num} stroke="#ffffff" strokeWidth={2.5} />
+                  <text y={4.5} textAnchor="middle" fontSize={13} fontWeight={800} fill="#ffffff">{p.num}</text>
                 </>
               ) : (
                 <>

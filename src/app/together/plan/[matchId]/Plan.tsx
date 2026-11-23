@@ -12,7 +12,7 @@ import { planStrings, type PlanKey } from '@/lib/site-strings/together-plan'
 import { togetherStrings } from '@/lib/site-strings/together'
 import { myMatches, track, type Match } from '@/lib/together'
 import { useTogetherMaybe } from '@/components/together/TogetherShell'
-import { GuidePlan, LearnerShare, LessonEndPick, SPOT_ICON, spotWords } from './Steps'
+import { GuidePlan, LearnerShare, LessonEndPick, SpotIcon, spotWords } from './Steps'
 import {
   UUID, answerRideTime, appPlanLink, confirmRidePlan, getRidePlan, hasOpenProposal, planDirectionsUrl, plannedTimePassed, proposeRideTime,
   type Result, type RidePlan, type RidePlanView, type TripWay,
@@ -384,6 +384,7 @@ function RouteCard({ plan, way, locale, t }: { plan: RidePlan; way: TripWay; loc
         pins={[
           { ...meet, kind: 'match', label: plan.meet_label ?? undefined },
           { ...end, kind: 'home', label: plan.end_label ?? undefined },
+          ...spots.map((s, i) => ({ lat: s.lat, lng: s.lng, kind: 'num' as const, num: i + 1 })),
         ]}
         line={line}
         maxZoom={16}
@@ -417,13 +418,13 @@ function RouteCard({ plan, way, locale, t }: { plan: RidePlan; way: TripWay; loc
         <div className="grid grid-cols-1 gap-2">
           <h2 className="text-[17px] font-bold">{t('plan.on_the_way')}</h2>
           <ol className="grid grid-cols-1">
-            {spots.map((s) => {
+            {spots.map((s, i) => {
               const words = spotWords(t, s, null)
-              const Icon = SPOT_ICON[s.kind] ?? MapPin
               return (
                 <li key={s.id} className="flex items-start gap-3 border-b border-(--ev-line) py-3 last:border-b-0">
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-(--ev-panel) text-(--ev-ink-85)">
-                    <Icon className="h-[18px] w-[18px]" aria-hidden />
+                  <span className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-(--ev-panel) text-(--ev-ink-85)">
+                    <SpotIcon kind={s.kind} className="h-[18px] w-[18px]" />
+                    <span aria-hidden className="absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#9A5B00] px-1 text-[12px] font-extrabold leading-none text-white">{i + 1}</span>
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="block text-[16px] font-bold">{words.title}</span>

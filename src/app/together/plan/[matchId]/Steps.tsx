@@ -1,11 +1,12 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { Bike, Bus, CheckCircle2, ChevronLeft, Clock, Compass, Flag, Footprints, LockOpen, MapPin, Pencil, Repeat, Signpost, TrainFront, Trees, type LucideIcon } from 'lucide-react'
 import {
-  ArrowLeftRight, Bike, Bus, Car, CheckCircle2, ChevronLeft, Clock, Compass, CornerUpLeft, DoorClosed, DoorOpen, Flag, Footprints,
-  Lock, LockOpen, MapPin, Moon, Mountain, Octagon, Pencil, Repeat, Signpost, Ticket, TrafficCone, TrainFront, TrainTrack,
-  Trees, TriangleAlert, type LucideIcon,
-} from 'lucide-react'
+  ArrowBendUpLeft, ArrowsLeftRight, Barricade, Bus as BusGlyph, Car as CarGlyph, ChatText, CreditCard, LockKey, MapPinLine,
+  Moon as MoonGlyph, Mountains, Octagon as OctagonGlyph, Path, PersonSimpleWalk, Prohibit, SignIn, SignOut, Signpost as SignpostGlyph,
+  Square, Stairs, TrafficSignal, Train, Warning, type Icon as PhosphorIcon, type IconWeight,
+} from '@phosphor-icons/react'
 import AddressAutocomplete from '@/components/AddressAutocomplete'
 import RouteMap from '@/components/organizers/RouteMap'
 import RideStreets from '@/components/rides/RideStreets'
@@ -438,11 +439,18 @@ export function LearnerShare({ view, matchId, userId, name, t, onShared, onProbl
 
 // ── The guide plans the route ────────────────────────────────────────────
 
-export const SPOT_ICON: Record<string, LucideIcon> = {
-  signal: TrafficCone, stop: Octagon, left_turn: CornerUpLeft, bike_box: Bike, door_zone: Car, tracks: TrainTrack, bus_stop: Bus,
-  crossing: TriangleAlert, crossing_open: TriangleAlert, steep: Mountain, wrong_way: ArrowLeftRight, walk_signal: Footprints,
-  path: Trees, steps: Footprints, no_sidewalk: TriangleAlert, dark: Moon, lock_up: Lock,
-  entrance: DoorOpen, pay: Ticket, platform: TrainFront, bus_board: Bus, transfer: Repeat, your_stop: Flag, exit: DoorClosed,
+/** The app's spot icons (components/partners/ride-plan/SpotIcon.tsx), so a spot looks the same in the app, here and on the map. */
+const SPOT_GLYPH: Record<string, [PhosphorIcon, IconWeight]> = {
+  signal: [TrafficSignal, 'bold'], stop: [OctagonGlyph, 'fill'], bike_box: [Square, 'bold'], door_zone: [CarGlyph, 'fill'],
+  tracks: [Train, 'bold'], bus_stop: [BusGlyph, 'fill'], left_turn: [ArrowBendUpLeft, 'bold'], lock_up: [LockKey, 'fill'],
+  steep: [Mountains, 'fill'], wrong_way: [Prohibit, 'bold'], crossing: [Warning, 'fill'], walk_signal: [PersonSimpleWalk, 'bold'],
+  crossing_open: [Warning, 'fill'], path: [Path, 'bold'], steps: [Stairs, 'bold'], no_sidewalk: [Barricade, 'fill'], dark: [MoonGlyph, 'fill'],
+  entrance: [SignIn, 'bold'], pay: [CreditCard, 'fill'], platform: [SignpostGlyph, 'fill'], transfer: [ArrowsLeftRight, 'bold'],
+  your_stop: [MapPinLine, 'fill'], bus_board: [BusGlyph, 'fill'], exit: [SignOut, 'bold'],
+}
+export function SpotIcon({ kind, className }: { kind: string; className?: string }) {
+  const [Glyph, weight] = SPOT_GLYPH[kind] ?? [ChatText, 'fill' as IconWeight]
+  return <Glyph className={className} weight={weight} aria-hidden />
 }
 const stopName = (n: string | null | undefined) => (n ?? '').replace(/\s+@\s+/g, ' & ')
 
@@ -768,7 +776,6 @@ export function GuidePlan({ plan, match, matchId, lesson = false, name, locale, 
   }
 
   const back = step > 0 ? () => setStep(step - 1) : undefined
-  const title = lesson ? t('lesson.guide_title', { name }) : t(k(way === 'bike' ? 'share.guide_title' : `share.guide_title_${way}`), { name })
 
   if (step === 0) {
     const line = route?.waypoints && route.waypoints.length > 1 ? route.waypoints : undefined
@@ -776,7 +783,7 @@ export function GuidePlan({ plan, match, matchId, lesson = false, name, locale, 
       <Step
         n={1}
         total={3}
-        title={title}
+        title={t(transit ? 'share.trip_q' : 'share.route_q')}
         t={t}
         action={<Button variant="primary" disabled={!route || finding} onClick={() => setStep(1)}>{t('share.next')}</Button>}
       >
@@ -898,7 +905,6 @@ export function GuidePlan({ plan, match, matchId, lesson = false, name, locale, 
   if (step === 1) {
     const row = (s: Spot) => {
       const words = spotWords(t, s, route?.transit)
-      const Icon = SPOT_ICON[s.kind] ?? MapPin
       return (
         <li key={s.id} className="grid grid-cols-1 gap-2 border-b border-(--ev-line) py-3 last:border-b-0">
           <div className="flex items-center gap-3">
@@ -910,7 +916,7 @@ export function GuidePlan({ plan, match, matchId, lesson = false, name, locale, 
               className="flex min-h-[44px] min-w-0 flex-1 items-center gap-3 text-left"
             >
               <span className={cx('flex h-9 w-9 shrink-0 items-center justify-center rounded-full', s.on ? 'bg-(--ev-accent-fill) text-(--ev-on-accent-fill)' : 'bg-(--ev-panel) text-(--ev-ink-80)')}>
-                <Icon className="h-5 w-5" aria-hidden />
+                <SpotIcon kind={s.kind} className="h-5 w-5" />
               </span>
               <span className="min-w-0 flex-1">
                 <span className={cx('block text-[16px] font-bold', !s.on && 'text-(--ev-ink-80)')}>{words.title}</span>
