@@ -477,6 +477,24 @@ const TIME_ORDER: PartnerTime[] = ['morning', 'midday', 'evening']
 const pad = (n: number) => String(n).padStart(2, '0')
 const ymd = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
 
+/** The lesson's free-time cells ('sat-am', 'wed-eve') to a start: morning 10:00, afternoon 2:00, evening 5:30. */
+const CELL_DAY: Record<string, number> = { sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 }
+const CELL_TIME: Record<string, string> = { am: '10:00', pm: '14:00', eve: '17:30' }
+const SLOT_ORDER = ['am', 'pm', 'eve']
+
+/** The next time the learner said they're free, two days out or later (a day's notice for both), within two weeks. */
+function nextFreeTime(cells: string[], from: Date): { day: string; time: string } | null {
+  const ok = cells.map((c) => c.split('-')).filter(([d, s]) => d in CELL_DAY && s in CELL_TIME)
+  if (!ok.length) return null
+  for (let i = 2; i <= 15; i++) {
+    const d = new Date(from.getFullYear(), from.getMonth(), from.getDate() + i)
+    const slots = ok.filter(([cd]) => CELL_DAY[cd] === d.getDay()).map(([, s]) => s)
+    const slot = SLOT_ORDER.find((s) => slots.includes(s))
+    if (slot) return { day: ymd(d), time: CELL_TIME[slot] }
+  }
+  return null
+}
+
 /** A start time from the newcomer's usual time of day: morning 8:00, midday 12:00, evening 17:30, weekends 10:00 (usualStart). */
 function usualStart(days: PartnerDay[], times: PartnerTime[]): string | null {
   const first = TIME_ORDER.find((x) => times.includes(x))
@@ -605,11 +623,13 @@ export function LessonEndPick({ plan, matchId, name, t, onSet, onProblem }: {
   )
 }
 
-export function GuidePlan({ plan, match, matchId, lesson = false, name, locale, t, onSent, onProblem }: {
+export function GuidePlan({ plan, match, matchId, lesson = false, free, name, locale, t, onSent, onProblem }: {
   plan: RidePlan
   match: Match | null
   /** A free street lesson's plan: titled as the lesson. */
   lesson?: boolean
+  /** A lesson learner's free times ('sat-am', 'wed-eve'), to fill in the day and time (01893). */
+  free?: string[]
   matchId: string
   name: string
   locale: SiteLocale
@@ -638,8 +658,10 @@ export function GuidePlan({ plan, match, matchId, lesson = false, name, locale, 
   const theirDays = match?.other.days ?? []
   const theirTimes = match?.other.time_of_day ?? []
   const usual = usualLine(t, name, theirDays, theirTimes)
-  const [day, setDay] = useState(() => (draftAt && draftAt.getTime() > Date.now() ? ymd(draftAt) : ''))
-  const [time, setTime] = useState(() => (draftAt ? `${pad(draftAt.getHours())}:${pad(draftAt.getMinutes())}` : usualStart(theirDays, theirTimes) ?? '08:00'))
+  // A lesson opens on the next time the learner said they're free (Keith 2026-11-23: "Next, Next, Send").
+  const [freeNext] = useState(() => (lesson && !draftAt ? nextFreeTime(free ?? [], new Date()) : null))
+  const [day, setDay] = useState(() => (draftAt && draftAt.getTime() > Date.now() ? ymd(draftAt) : freeNext?.day ?? ''))
+  const [time, setTime] = useState(() => (draftAt ? `${pad(draftAt.getHours())}:${pad(draftAt.getMinutes())}` : freeNext?.time ?? usualStart(theirDays, theirTimes) ?? '08:00'))
   // The chosen trip at the day and time picked, kept with what it was found for.
   const [timedFor, setTimedFor] = useState<{ stamp: string; trip: Trip | null } | null>(null)
   const [busy, setBusy] = useState(false)
@@ -988,6 +1010,7 @@ export function GuidePlan({ plan, match, matchId, lesson = false, name, locale, 
       action={<Button variant="primary" busy={busy} disabled={!day || !time} onClick={() => void send()}>{t('share.send_plan', { name })}</Button>}
     >
       {usual ? <p className="text-[15px] text-(--ev-ink-80)">{usual}</p> : null}
+      {freeNext && day === freeNext.day && time === freeNext.time ? <p className="text-[15px] text-(--ev-ink-80)">{t('lesson.free_then', { name })}</p> : null}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <Field label={t('plan.move_day')} htmlFor="plan-guide-day">
           <Input id="plan-guide-day" type="date" required min={ymd(today)} max={ymd(last)} value={day} onChange={(e) => setDay(e.target.value)} />

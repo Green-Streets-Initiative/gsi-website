@@ -42,7 +42,6 @@ export default function RideStreets({ option, pieces, selected, onSelect, locale
 }) {
   const t = translator(ridesStrings, locale)
   const rows = streetRows(pieces)
-  const total = rows.reduce((a, r) => a + r.miles, 0)
   // The street showing: the one holding the lit map piece, else the first.
   const found = selected == null ? -1 : rows.findIndex((r) => r.members.includes(selected))
   const cur = Math.max(0, found)
@@ -50,6 +49,16 @@ export default function RideStreets({ option, pieces, selected, onSelect, locale
   const [failed, setFailed] = useState<Set<number>>(() => new Set())
   const [loaded, setLoaded] = useState<string | null>(null)
   const touchX = useRef<number | null>(null)
+  const strip = useRef<HTMLDivElement>(null)
+
+  // Keep the street showing in view in the strip (scrolls the strip only, never the page).
+  useEffect(() => {
+    const box = strip.current
+    const el = box?.querySelector<HTMLElement>('[data-cur]')
+    if (!box || !el) return
+    const left = el.offsetLeft
+    if (left < box.scrollLeft || left + el.offsetWidth > box.scrollLeft + box.clientWidth) box.scrollTo({ left: left - 8, behavior: 'smooth' })
+  }, [cur])
 
   // Calmest and busiest get a label, when the route has both kinds.
   const calmest = [...rows].sort((a, b) => tier(a.rating) - tier(b.rating) || b.miles - a.miles)[0]
@@ -128,18 +137,28 @@ export default function RideStreets({ option, pieces, selected, onSelect, locale
         {rows.length > 1 && <p className="shrink-0 pt-0.5 text-[14px] font-semibold text-(--ev-ink-75)">{t('streets.of', { n: cur + 1, total: rows.length })}</p>}
       </div>
 
-      {/* The whole route as a bar of its streets: tap one to see it. */}
+      {/* Every street as a small photo, in route order, with its comfort colour under it: tap one to see it
+          (Keith 2026-11-23: the street photos are one of the most helpful parts of the plan, so show them all). */}
       {rows.length > 1 && (
-        <div className="mt-3 flex h-11 items-center gap-[3px]" role="group" aria-label={t('streets.bar')}>
-          {rows.map((r, i) => (
-            <button key={r.index} type="button" onClick={() => go(i)} aria-pressed={i === cur}
-              aria-label={`${streetName(r.label)}, ${comfortLabel(r.rating, locale)}, ${formatStretchMiles(r.miles, locale)}`}
-              style={{ flexGrow: Math.max(r.miles / (total || 1), 0.04), flexBasis: 0 }}
-              className="group flex h-full min-w-[10px] items-center">
-              <span className={`block w-full rounded-full transition-all ${i === cur ? 'h-4 ring-2 ring-[#191A2E] ring-offset-2 ring-offset-(--ev-card)' : 'h-2.5 group-hover:h-3.5'}`}
-                style={{ background: MAP_COMFORT_COLORS[r.rating] ?? MAP_COMFORT_COLORS.shared_road }} />
-            </button>
-          ))}
+        <div ref={strip} className="relative -mx-1 mt-3 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none]" role="group" aria-label={t('streets.bar')}>
+          {rows.map((r, i) => {
+            const thumb = photoUrl(option, r.index)
+            return (
+              <button key={r.index} type="button" onClick={() => go(i)} aria-pressed={i === cur} data-cur={i === cur ? '' : undefined}
+                aria-label={`${streetName(r.label)}, ${comfortLabel(r.rating, locale)}, ${formatStretchMiles(r.miles, locale)}`}
+                className={`flex w-[76px] shrink-0 flex-col gap-1 rounded-lg p-1 transition-colors ${i === cur ? 'bg-(--ev-panel) ring-2 ring-[#191A2E]' : 'hover:bg-(--ev-panel-faint)'}`}>
+                <span className="relative flex h-12 w-full items-center justify-center overflow-hidden rounded-md bg-(--ev-panel-faint)">
+                  {thumb && !failed.has(r.index) ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={thumb} alt="" loading="lazy" onError={() => setFailed((s) => new Set(s).add(r.index))} className="h-full w-full object-cover" />
+                  ) : (
+                    <Camera className="h-5 w-5 text-(--ev-ink-60)" aria-hidden />
+                  )}
+                </span>
+                <span className="block h-1.5 w-full rounded-full" style={{ background: MAP_COMFORT_COLORS[r.rating] ?? MAP_COMFORT_COLORS.shared_road }} />
+              </button>
+            )
+          })}
         </div>
       )}
       <p className="mt-1 text-[14px] text-(--ev-ink-75)">{t('streets.hint')}</p>

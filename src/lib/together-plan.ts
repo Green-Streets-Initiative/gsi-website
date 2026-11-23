@@ -51,6 +51,8 @@ export type RidePlan = {
   worries: string[]
   /** A lesson learner's own words for what else they want help with (01892). */
   worries_other?: string | null
+  /** A lesson's instructor chose to set it up by email (01893); counts only while it's still their turn. */
+  by_email_at?: string | null
   spots: Spot[] | null
   /** 01680: their own bike or the bike share (bike_system: bluebikes, valleybike...). */
   bike?: 'own' | 'share' | null
@@ -80,7 +82,8 @@ export type RidePlanView = {
   /** The ways both people put on their sign-ups. */
   shared_modes?: string[] | null
   /** A free street lesson's plan (01889): the learner's area anchors the meeting spot; the instructor also sees how to reach them. */
-  lesson?: { anchor: LatLng | null; place: string | null; org: string | null; email: string | null; phone: string | null } | null
+  /** free: when the learner said they're free, 'sat-am', 'wed-eve' and the like (01893). */
+  lesson?: { anchor: LatLng | null; place: string | null; org: string | null; email: string | null; phone: string | null; free?: string[] } | null
   plan: RidePlan | null
 }
 
@@ -220,6 +223,12 @@ export async function setRidePlanWorriesOther(matchId: string, text: string | nu
 /** A lesson's instructor picks where it goes when the learner had no place in mind (01891). */
 export async function setLessonPlanEnd(matchId: string, end: Place): Promise<Result> {
   const { data, error } = await db.rpc('set_lesson_plan_end', { p_match_id: matchId, p_lat: end.lat, p_lng: end.lng, p_label: end.label })
+  return asResult(data, error)
+}
+
+/** A lesson's instructor sets it up by email instead of the plan, or plans it here after all (01893). */
+export async function setLessonPlanByEmail(matchId: string, on: boolean): Promise<Result> {
+  const { data, error } = await db.rpc('set_lesson_plan_by_email', { p_match_id: matchId, p_on: on })
   return asResult(data, error)
 }
 

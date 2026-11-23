@@ -1,10 +1,12 @@
 'use client'
 
 import Link from 'next/link'
-import { useCallback, useEffect, useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
 import { ArrowLeft, CalendarDays, CheckCircle2, Flag, Hourglass, Mail, MapPin, Navigation, Smartphone } from 'lucide-react'
 import FindEachOther from '@/components/together/FindEachOther'
 import PinMap from '@/components/together/PinMap'
+import RideStreets from '@/components/rides/RideStreets'
+import { comfortPieces, type CalmOption, type CalmSegment } from '@/components/commute/calm-route'
 import { Avatar } from '@/components/together/bits'
 import { Button, Card, Field, Input, Notice, Spinner, cx } from '@/components/organizers/ui'
 import { SITE_LOCALE_TAG, translator, withLang, type SiteLocale, type T } from '@/lib/site-i18n'
@@ -14,7 +16,7 @@ import { myMatches, track, type Match } from '@/lib/together'
 import { useTogetherMaybe } from '@/components/together/TogetherShell'
 import { GuidePlan, LearnerShare, LessonEndPick, SpotIcon, spotWords } from './Steps'
 import {
-  UUID, answerRideTime, appPlanLink, confirmRidePlan, getRidePlan, hasOpenProposal, planDirectionsUrl, plannedTimePassed, proposeRideTime,
+  UUID, answerRideTime, appPlanLink, confirmRidePlan, getRidePlan, hasOpenProposal, planDirectionsUrl, plannedTimePassed, proposeRideTime, setLessonPlanByEmail,
   type Result, type RidePlan, type RidePlanView, type TripWay,
 } from '@/lib/together-plan'
 
@@ -29,7 +31,7 @@ import {
  * Laid out like /together/matches. In the page's language; page.tsx resolves it.
  */
 
-type Stage = 'share' | 'wait_guide' | 'wait_learner' | 'guide_turn' | 'passed' | 'decide' | 'ready' | 'after' | 'ridden'
+type Stage = 'share' | 'wait_guide' | 'wait_learner' | 'guide_turn' | 'by_email' | 'passed' | 'decide' | 'ready' | 'after' | 'ridden'
 
 const PRIMARY = 'inline-flex min-h-[44px] items-center gap-2 rounded-[10px] bg-(--ev-accent-fill) px-4 text-[15px] font-semibold text-(--ev-on-accent-fill)'
 const SECONDARY = 'inline-flex min-h-[44px] items-center gap-2 rounded-[10px] border border-(--ev-line-strong) bg-white px-4 text-[15px] font-semibold'
@@ -39,6 +41,8 @@ function stageOf(view: RidePlanView, now: number): Stage {
   const p = view.plan
   const learner = view.role === 'learner'
   if (!p) return learner ? 'share' : 'wait_learner'
+  // A lesson's instructor chose to set it up by email (01893).
+  if (p.status === 'learner_shared' && p.by_email_at) return 'by_email'
   if (p.status === 'learner_shared') return learner ? 'wait_guide' : 'guide_turn'
   if (p.status === 'ridden') return 'ridden'
   if (plannedTimePassed(p, now) && !hasOpenProposal(p, now)) return 'passed'
@@ -157,6 +161,7 @@ export default function Plan({ matchId, locale, lessonKey }: { matchId: string; 
     stage === 'share' ? t(lessonKey ? 'lesson.share_title' : 'plan.share_title', { name })
     : stage === 'wait_guide' ? t('plan.waiting_guide', { name })
     : stage === 'wait_learner' ? t('plan.waiting_learner', { name })
+    : stage === 'by_email' ? t(learner ? 'lesson.by_email_title_learner' : 'lesson.by_email_title_guide', { name })
     : stage === 'guide_turn' && lessonKey ? t('lesson.guide_title', { name })
     : stage === 'guide_turn' ? t(way === 'bike' ? 'share.guide_title' : way === 'walk' ? 'share.guide_title_walk' : 'share.guide_title_transit', { name })
     : stage === 'after' ? t('plan.after_title')
@@ -254,12 +259,23 @@ export default function Plan({ matchId, locale, lessonKey }: { matchId: string; 
             match={match}
             matchId={matchId}
             lesson={!!lessonKey}
+            free={view.lesson?.free}
             name={name}
             locale={locale}
             t={t}
             onProblem={onFail}
             onSent={() => { setNotice(t('step.plan_sent', { name })); void load() }}
           />
+        ) : stage === 'by_email' ? (
+          <>
+            <p className="text-[16px] text-(--ev-ink-85)">{t(learner ? 'lesson.by_email_sub_learner' : 'lesson.by_email_sub_guide', { name })}</p>
+            {learner ? null : (
+              <button type="button" className={LINK} disabled={busy}
+                onClick={() => void act(() => setLessonPlanByEmail(matchId, false), 'together_lesson_by_email', t('lesson.by_email_undone'), { on: false })}>
+                {t('lesson.by_email_undo')}
+              </button>
+            )}
+          </>
         ) : stage === 'wait_guide' ? (
           <p className="text-[16px] text-(--ev-ink-85)">{t('plan.waiting_guide_sub')}</p>
         ) : stage === 'wait_learner' ? (
@@ -320,6 +336,13 @@ export default function Plan({ matchId, locale, lessonKey }: { matchId: string; 
         {emailLink || (!lesson && (stage === 'share' || stage === 'guide_turn')) ? (
           <div className="flex flex-wrap items-center gap-3 border-t border-(--ev-line) pt-4">
             {emailLink}
+            {/* Keith 2026-11-23: an instructor who'd rather just write to the learner says so in one tap. */}
+            {lesson && stage === 'guide_turn' ? (
+              <button type="button" className={LINK} disabled={busy}
+                onClick={() => void act(() => setLessonPlanByEmail(matchId, true), 'together_lesson_by_email', t('lesson.by_email_done', { name }), { on: true })}>
+                {t('lesson.by_email', { name })}
+              </button>
+            ) : null}
             {!lesson && (stage === 'share' || stage === 'guide_turn') ? appLink : null}
           </div>
         ) : null}
@@ -378,6 +401,13 @@ function RouteCard({ plan, way, locale, t }: { plan: RidePlan; way: TripWay; loc
   const legs = way === 'transit' ? plan.route?.transit?.legs ?? [] : []
   // The spots the guide chose to show, in route order, with their notes (the app's "Before your ride").
   const spots = way === 'transit' ? [] : (plan.spots ?? []).filter((s) => s.on && s.kind !== 'lock_up')
+  // What each street looks like, as the guide saw it when planning (bike routes: the comfort scale is the bike's).
+  const route = plan.route
+  const calmOption = useMemo(() => (way === 'bike' && route?.waypoints && route.waypoints.length > 1 && route.comfortSegments?.length
+    ? ({ waypoints: route.waypoints, comfort_segments: route.comfortSegments as CalmSegment[], comfort_rating: route.comfortRating ?? 'mixed', summary: '' } as unknown as CalmOption)
+    : null), [way, route])
+  const pieces = useMemo(() => (calmOption ? comfortPieces(calmOption, locale) : []), [calmOption, locale])
+  const [street, setStreet] = useState<number | null>(null)
   return (
     <Card className="grid grid-cols-1 gap-4">
       <PinMap
@@ -435,6 +465,11 @@ function RouteCard({ plan, way, locale, t }: { plan: RidePlan; way: TripWay; loc
               )
             })}
           </ol>
+        </div>
+      ) : null}
+      {calmOption && pieces.length ? (
+        <div className="overflow-hidden rounded-xl border border-(--ev-line)">
+          <RideStreets option={calmOption} pieces={pieces} selected={street} onSelect={setStreet} locale={locale} />
         </div>
       ) : null}
       <a
