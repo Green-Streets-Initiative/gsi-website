@@ -3,7 +3,7 @@ import 'server-only'
 import { REACH_SKIP_WITHIN_MILES } from '@/lib/nearby/config'
 import { resolveRegion } from '@/lib/nearby/regions'
 import { getBikeNetwork, haversineMeters, type BikeNetworkResponse } from '@/lib/server/bike-network'
-import { canonicalStreetKey, displayStreetName } from '@/lib/nearby/street-names'
+import { canonicalStreetKey, displayStreetName, fullPathKeys } from '@/lib/nearby/street-names'
 import { decodePolyline, encodePolyline } from '@/lib/geo/polyline'
 import { avoidsAll, detourVias } from '@/lib/nearby/avoid-stretch'
 import { getCrashClusters, type CrashCluster } from './crash-clusters'
@@ -38,7 +38,7 @@ import { PRICES } from '@/lib/facts/prices'
  * while local testing (which deletes .next and varies coordinates) missed
  * both stale layers entirely. One constant, four call sites, no drift.
  */
-export const REACH_ROW_VERSION = 'v21' // v21: curated rows carry walk_minutes, a real walking route (the app's list matched the trip card)
+export const REACH_ROW_VERSION = 'v22' // v22: a path's misspelled or shortened names fold into one row (Keith 2026-11-23). v21: curated rows carry walk_minutes, a real walking route (the app's list matched the trip card)
 
 const GOOGLE_ROUTES_KEY = process.env.GOOGLE_ROUTES_API_KEY
 
@@ -932,6 +932,24 @@ function scoreBikeComfort(
     if (samples[prev].streetKey !== samples[next].streetKey) continue
     samples[s].streetKey = samples[prev].streetKey
     samples[s].streetDisplay = samples[prev].streetDisplay
+  }
+
+  // One path, one row (Keith 2026-11-23): the sources call the end of the
+  // Somerville Community Path just "Community Path", which listed it twice.
+  // A short path name takes the fuller one this route also rides.
+  const keyCount = new Map<string, number>()
+  for (const s of samples) if (s.streetKey) keyCount.set(s.streetKey, (keyCount.get(s.streetKey) ?? 0) + 1)
+  const fuller = fullPathKeys(keyCount.keys(), k => keyCount.get(k) ?? 0)
+  if (fuller.size > 0) {
+    const displayOf = new Map<string, string>()
+    for (const s of samples) if (s.streetKey && s.streetDisplay && !displayOf.has(s.streetKey)) displayOf.set(s.streetKey, s.streetDisplay)
+    for (const s of samples) {
+      const to = s.streetKey ? fuller.get(s.streetKey) : undefined
+      if (to) {
+        s.streetKey = to
+        s.streetDisplay = displayOf.get(to) ?? s.streetDisplay
+      }
+    }
   }
 
   /** Name a run of samples: the streets carrying a real share of it, in
