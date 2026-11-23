@@ -199,12 +199,19 @@ export function sharedWays(view: RidePlanView): TripWay[] {
   return (['bike', 'walk', 'transit'] as const).filter((w) => ways.has(w))
 }
 
-export async function shareRidePlan(matchId: string, v: { way: TripWay; skill: string | null; worries: string[]; meet: Place; end: Place }): Promise<Result> {
+/** `end` null: a lesson's learner has no place in mind yet, and the instructor picks it (01891). */
+export async function shareRidePlan(matchId: string, v: { way: TripWay; skill: string | null; worries: string[]; meet: Place; end: Place | null }): Promise<Result> {
   const { data, error } = await db.rpc('set_ride_plan_learner', {
     p_match_id: matchId, p_way: v.way, p_skill: v.skill, p_worries: v.worries,
     p_meet_lat: v.meet.lat, p_meet_lng: v.meet.lng, p_meet_label: v.meet.label,
-    p_end_lat: v.end.lat, p_end_lng: v.end.lng, p_end_label: v.end.label,
+    p_end_lat: v.end?.lat ?? null, p_end_lng: v.end?.lng ?? null, p_end_label: v.end?.label ?? null,
   })
+  return asResult(data, error)
+}
+
+/** A lesson's instructor picks where it goes when the learner had no place in mind (01891). */
+export async function setLessonPlanEnd(matchId: string, end: Place): Promise<Result> {
+  const { data, error } = await db.rpc('set_lesson_plan_end', { p_match_id: matchId, p_lat: end.lat, p_lng: end.lng, p_label: end.label })
   return asResult(data, error)
 }
 

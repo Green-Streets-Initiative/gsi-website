@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import {
-  ArrowLeftRight, Bike, Bus, Car, CheckCircle2, ChevronLeft, Clock, CornerUpLeft, DoorClosed, DoorOpen, Flag, Footprints,
+  ArrowLeftRight, Bike, Bus, Car, CheckCircle2, ChevronLeft, Clock, Compass, CornerUpLeft, DoorClosed, DoorOpen, Flag, Footprints,
   Lock, LockOpen, MapPin, Moon, Mountain, Octagon, Pencil, Repeat, Signpost, Ticket, TrafficCone, TrainFront, TrainTrack,
   Trees, TriangleAlert, type LucideIcon,
 } from 'lucide-react'
@@ -19,7 +19,7 @@ import { fetchNearbyTransit, isRegionalStopId } from '@/lib/nearby/live-data'
 import { bikeShareDocksNear, getBikeShareSystems } from '@/lib/nearby/bike-share-systems'
 import { myRequests, track, type Match, type PartnerDay, type PartnerTime } from '@/lib/together'
 import {
-  MAX_NOTES, SKILLS, WORRIES, bikePassLeft, designRoute, isNotableSpot, lineKey, planAnchors, saveRidePlanRoute, setRidePlanBike,
+  MAX_NOTES, SKILLS, WORRIES, bikePassLeft, designRoute, isNotableSpot, lineKey, planAnchors, saveRidePlanRoute, setLessonPlanEnd, setRidePlanBike,
   shareRidePlan, sharedWays, type LatLng, type Place, type Result, type RidePlan, type RidePlanView, type Spot, type TransitTrip, type TripWay,
 } from '@/lib/together-plan'
 
@@ -120,7 +120,7 @@ const SKILL_ICON: Record<string, LucideIcon> = {
   transit_new: TrainFront, transit_not_this: Bus, transit_changes: Repeat,
 }
 
-export type Choice = Place & { walkMin?: number; icon?: 'dock' | 'station' }
+export type Choice = Place & { walkMin?: number; miles?: number; icon?: 'dock' | 'station' }
 const DOCK_METERS = 805 // half a mile, the app's DOCK_MILES
 const walkMin = (miles: number) => Math.max(1, Math.round((miles / 3) * 60))
 const same = (a: LatLng | null, b: LatLng) => !!a && Math.abs(a.lat - b.lat) < 1e-5 && Math.abs(a.lng - b.lng) < 1e-5
@@ -132,7 +132,7 @@ const same = (a: LatLng | null, b: LatLng) => !!a && Math.abs(a.lat - b.lat) < 1
  * website's place search for any other public place. Also where a walk pair
  * meets (WalkMeetSpot) and a carpool's pickup (PickupCard).
  */
-export function PlacePick({ anchor, value, onPick, choices, t }: { anchor: LatLng | null; value: Place | null; onPick: (p: Place) => void; choices?: Choice[]; t: T<PlanKey> }) {
+export function PlacePick({ anchor, value, onPick, choices, sub, t }: { anchor: LatLng | null; value: Place | null; onPick: (p: Place) => void; choices?: Choice[]; sub?: (c: Choice) => string | null; t: T<PlanKey> }) {
   const [found, setFound] = useState<Choice[] | null>(null)
   const [q, setQ] = useState('')
   useEffect(() => {
@@ -169,7 +169,7 @@ export function PlacePick({ anchor, value, onPick, choices, t }: { anchor: LatLn
           onClick={() => onPick({ lat: c.lat, lng: c.lng, label: c.label })}
           Icon={c.icon === 'dock' ? Bike : TrainFront}
           label={c.label}
-          sub={c.walkMin ? pl(t, 'share.walk_min', c.walkMin) : null}
+          sub={sub ? sub(c) : c.walkMin ? pl(t, 'share.walk_min', c.walkMin) : null}
         />
       ))}
       {custom ? <Tile on onClick={() => {}} Icon={MapPin} label={custom.label} /> : null}
@@ -216,6 +216,8 @@ export function LearnerShare({ view, matchId, userId, name, t, onShared, onProbl
   const [worries, setWorries] = useState<string[]>(view.plan?.worries ?? [])
   const [meet, setMeet] = useState<Place | null>(null)
   const [end, setEnd] = useState<Place | null>(null)
+  // A lesson's learner may leave the place to the instructor (01891).
+  const [noEnd, setNoEnd] = useState(false)
   const [busy, setBusy] = useState(false)
   const [need, setNeed] = useState(false)
   // Bike-share stations near both ends: then ask which bike, and offer the stations (01680).
@@ -277,9 +279,9 @@ export function LearnerShare({ view, matchId, userId, name, t, onShared, onProbl
   const intro = t(askBike ? 'share.share_intro_few' : pickWay ? 'share.share_intro_five' : 'share.share_intro', { name })
 
   async function send() {
-    if (!meet || !end) { setNeed(true); return }
+    if (!meet || (!end && !(lesson && noEnd))) { setNeed(true); return }
     setBusy(true)
-    const r = await shareRidePlan(matchId, { way, skill, worries, meet, end })
+    const r = await shareRidePlan(matchId, { way, skill, worries, meet, end: noEnd ? null : end })
     if (r.ok) {
       const nextBike = askBike ? bike : null
       if (nextBike !== (view.plan?.bike ?? null) || nextBike === 'share') {
@@ -288,7 +290,7 @@ export function LearnerShare({ view, matchId, userId, name, t, onShared, onProbl
     }
     setBusy(false)
     if (!r.ok) return onProblem(r)
-    track('together_plan_shared', { way, skill, worries: worries.length, bike: askBike ? bike : null })
+    track('together_plan_shared', { way, skill, worries: worries.length, bike: askBike ? bike : null, no_end: noEnd })
     onShared()
   }
 
@@ -394,10 +396,11 @@ export function LearnerShare({ view, matchId, userId, name, t, onShared, onProbl
       onBack={back}
       title={t(lesson ? 'lesson.end_q' : way === 'bike' ? 'share.end_q' : 'share.end_q_trip')}
       t={t}
-      action={<Button variant="primary" busy={busy} disabled={!end} onClick={() => void send()}>{t('share.share_send', { name })}</Button>}
+      action={<Button variant="primary" busy={busy} disabled={!end && !(lesson && noEnd)} onClick={() => void send()}>{t('share.share_send', { name })}</Button>}
     >
       <p className="text-[15px] text-(--ev-ink-80)">{share ? t('share.end_hint_share', { system: docks!.systemName }) : lesson ? t('lesson.end_hint', { name }) : t(k(`share.end_hint${hintWay}`))}</p>
-      <PlacePick key="end" anchor={work} value={end} onPick={setEnd} choices={share ? docks!.work : undefined} t={t} />
+      <PlacePick key="end" anchor={work} value={noEnd ? null : end} onPick={(p) => { setEnd(p); setNoEnd(false) }} choices={share ? docks!.work : undefined} t={t} />
+      {lesson ? <Tile on={noEnd} Icon={Compass} label={t('lesson.no_end')} sub={t('lesson.no_end_sub', { name })} onClick={() => { setNoEnd(true); setNeed(false) }} /> : null}
       {need ? <p className="text-[15px] font-semibold">{t('share.need_spots')}</p> : null}
     </Step>
   )
@@ -464,6 +467,104 @@ function usualLine(t: T<PlanKey>, name: string, days: PartnerDay[], times: Partn
 type Route = NonNullable<RidePlan['route']>
 type Trip = TransitTrip & { key: string; route: Route; spots: Spot[] }
 const GOALS = ['calmest', 'flattest', 'shortest'] as const
+
+/**
+ * What the newcomer answered, for the guide, in sentences about them ("Robin
+ * can ride on streets, but gets nervous there."), never the answer buttons'
+ * own words (Keith 2026-11-23: "shorthand that you understand but the reader
+ * won't").
+ */
+export function LearnerSaid({ plan, name, systemName, t }: { plan: RidePlan; name: string; systemName?: string | null; t: T<PlanKey> }) {
+  const way = plan.way ?? 'bike'
+  return (
+    <div className="grid grid-cols-1 gap-2 rounded-xl bg-(--ev-panel) p-4">
+      <p className="text-[14px] font-bold text-(--ev-ink-80)">{t('share.told_heading', { name })}</p>
+      {plan.skill ? <p className="text-[16px] font-semibold">{t(k(`share.told_${plan.skill}`), { name })}</p> : null}
+      {way === 'bike' && plan.bike === 'share' ? (
+        <p className="flex items-center gap-2 text-[15px]"><LockOpen className="h-4 w-4 shrink-0 text-(--ev-accent)" aria-hidden />{t('share.told_share', { name, system: systemName ?? t('share.bike_share') })}</p>
+      ) : null}
+      {plan.worries?.length ? (
+        <>
+          <p className="text-[16px]">{t('share.told_worries', { name })}</p>
+          <div className="flex flex-wrap gap-2">
+            {plan.worries.map((w) => (
+              <span key={w} className="inline-flex min-h-[32px] items-center rounded-full border border-(--ev-line-strong) bg-white px-3 text-[14px] font-semibold">{t(k(`share.worry_${w}`))}</span>
+            ))}
+          </div>
+        </>
+      ) : null}
+    </div>
+  )
+}
+
+/**
+ * A lesson's learner had no place in mind (01891): the instructor picks where
+ * the lesson goes first, from rail stations 0.3 to 2 miles from the meeting
+ * spot or the place search, then plans the route as usual.
+ */
+export function LessonEndPick({ plan, matchId, name, t, onSet, onProblem }: {
+  plan: RidePlan
+  matchId: string
+  name: string
+  t: T<PlanKey>
+  onSet: () => void
+  onProblem: (r: Result) => void
+}) {
+  const meet = plan.meet_lat != null && plan.meet_lng != null ? { lat: plan.meet_lat, lng: plan.meet_lng } : null
+  const meetLabel = plan.meet_label ?? ''
+  const [choices, setChoices] = useState<Choice[] | null>(null)
+  const [end, setEnd] = useState<Place | null>(null)
+  const [busy, setBusy] = useState(false)
+  useEffect(() => {
+    if (!meet) return
+    let alive = true
+    fetchNearbyTransit(meet.lat, meet.lng)
+      .then((r) => {
+        if (!alive) return
+        const seen = new Set<string>([meetLabel])
+        const out: Choice[] = []
+        const rail = (r?.stops ?? [])
+          .filter((s) => s.distance_miles >= 0.3 && s.distance_miles <= 2 && s.routes.some((x) => x.route_type <= 2))
+          .sort((a, b) => a.distance_miles - b.distance_miles)
+        for (const s of rail) {
+          if (seen.has(s.name)) continue
+          seen.add(s.name)
+          out.push({ lat: s.lat, lng: s.lng, label: s.name, icon: 'station', miles: Math.round(s.distance_miles * 10) / 10 })
+          if (out.length === 3) break
+        }
+        setChoices(out)
+      })
+      .catch(() => { if (alive) setChoices([]) })
+    return () => { alive = false }
+  }, [meet?.lat, meet?.lng]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function save() {
+    if (!end) return
+    setBusy(true)
+    const r = await setLessonPlanEnd(matchId, end)
+    setBusy(false)
+    if (!r.ok) return onProblem(r)
+    track('together_lesson_end_picked', {})
+    onSet()
+  }
+
+  return (
+    <Step
+      n={1}
+      total={3}
+      title={t('lesson.pick_end_title')}
+      t={t}
+      action={<Button variant="primary" busy={busy} disabled={!end} onClick={() => void save()}>{t('share.next')}</Button>}
+    >
+      <LearnerSaid plan={plan} name={name} t={t} />
+      <p className="text-[16px]">{t('lesson.pick_end_hint', { name, meet: meetLabel })}</p>
+      {choices === null ? <Spinner /> : null}
+      {choices !== null ? (
+        <PlacePick anchor={meet} value={end} onPick={setEnd} choices={choices} t={t} sub={(c) => (c.miles ? t('lesson.miles', { n: String(c.miles), meet: meetLabel }) : null)} />
+      ) : null}
+    </Step>
+  )
+}
 
 export function GuidePlan({ plan, match, matchId, lesson = false, name, locale, t, onSent, onProblem }: {
   plan: RidePlan
@@ -653,20 +754,7 @@ export function GuidePlan({ plan, match, matchId, lesson = false, name, locale, 
             {t('share.draft_banner', { when: draftAt.toLocaleString(SITE_LOCALE_TAG[locale], { weekday: 'long', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }), name })}
           </p>
         ) : null}
-        <div className="grid grid-cols-1 gap-2 rounded-xl bg-(--ev-panel) p-4">
-          <p className="text-[14px] font-bold text-(--ev-ink-80)">{t('share.guide_said', { name })}</p>
-          {plan.skill ? <p className="text-[16px] font-semibold">{t(k(`share.skill_${plan.skill}`))}</p> : null}
-          {way === 'bike' && plan.bike === 'share' ? (
-            <p className="flex items-center gap-2 text-[15px]"><LockOpen className="h-4 w-4 shrink-0 text-(--ev-accent)" aria-hidden />{t('share.said_share', { system: systemName ?? t('share.bike_share') })}</p>
-          ) : null}
-          {plan.worries?.length ? (
-            <div className="flex flex-wrap gap-2">
-              {plan.worries.map((w) => (
-                <span key={w} className="inline-flex min-h-[32px] items-center rounded-full border border-(--ev-line-strong) bg-white px-3 text-[14px] font-semibold">{t(k(`share.worry_${w}`))}</span>
-              ))}
-            </div>
-          ) : null}
-        </div>
+        <LearnerSaid plan={plan} name={name} systemName={systemName} t={t} />
         <div className="grid grid-cols-1 gap-2 text-[16px]">
           <p className="flex items-center gap-2"><MapPin className="h-5 w-5 shrink-0 text-(--ev-accent)" aria-hidden />{plan.meet_label}</p>
           <p className="flex items-center gap-2"><Flag className="h-5 w-5 shrink-0 text-(--ev-accent)" aria-hidden />{plan.end_label}</p>

@@ -12,7 +12,7 @@ import { planStrings, type PlanKey } from '@/lib/site-strings/together-plan'
 import { togetherStrings } from '@/lib/site-strings/together'
 import { myMatches, track, type Match } from '@/lib/together'
 import { useTogetherMaybe } from '@/components/together/TogetherShell'
-import { GuidePlan, LearnerShare } from './Steps'
+import { GuidePlan, LearnerShare, LessonEndPick } from './Steps'
 import {
   UUID, answerRideTime, appPlanLink, confirmRidePlan, getRidePlan, hasOpenProposal, planDirectionsUrl, plannedTimePassed, proposeRideTime,
   type Result, type RidePlan, type RidePlanView, type TripWay,
@@ -246,6 +246,8 @@ export default function Plan({ matchId, locale, lessonKey }: { matchId: string; 
             onProblem={onFail}
             onShared={() => { setNotice(t('step.shared_done', { name })); void load() }}
           />
+        ) : stage === 'guide_turn' && p && lessonKey && !hasPlace && p.meet_lat != null ? (
+          <LessonEndPick plan={p} matchId={matchId} name={name} t={t} onProblem={onFail} onSet={() => void load()} />
         ) : stage === 'guide_turn' && p && hasPlace ? (
           <GuidePlan
             plan={p}
