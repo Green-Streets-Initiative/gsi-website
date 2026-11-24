@@ -230,7 +230,12 @@ export const SCENARIOS = [
   {
     id: 'list-survey',
     role: 'admin',
-    steps: [{ attach: 'staff-eval.csv', say: 'Add these people to our commute survey list.' }, { decline: true }],
+    // Its own draft a few weeks out: the test workplace's only other survey
+    // (week of Oct 19) has ended, and the assistant rightly won't add people to it.
+    setup: async (s) => {
+      await s.survey('EVAL commute survey')
+    },
+    steps: [{ attach: 'staff-eval.csv', say: 'Add these people to the EVAL commute survey list.' }, { decline: true }],
     checks: { requireCards: ['add_survey_people'], cardMentions: ['597'] },
     rubric: 'Shows one card adding the whole list (597) to the survey, notes what was left out, and after the decline says nothing changed.',
   },
