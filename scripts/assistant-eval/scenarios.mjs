@@ -61,7 +61,8 @@ export const SCENARIOS = [
     role: 'admin',
     steps: [{ say: 'What does the Premium plan cost and what does it add over Standard?' }],
     checks: { requireTools: ['get_plans'], forbidCards: ['ask_gsi'], forbidTools: ['note_feedback'] },
-    rubric: 'Answers directly: Premium is $5,000 a year and adds "Sponsored by [Company]" attribution on rewards they fund. Does not send the question to GSI.',
+    // Premium's list names nothing beyond Standard since 2026-10-31 (the survey moved into Standard).
+    rubric: 'Answers directly from get_plans: Premium is $5,000 a year, for employers who file a commute report; says plainly what its list adds over Standard (today nothing beyond "Everything in Standard" and the survey, which Standard also has). Invents no extras. Does not send the question to GSI or offer to.',
   },
   {
     id: 'survey-first-timer',
