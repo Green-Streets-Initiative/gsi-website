@@ -1833,6 +1833,13 @@
       "mtd": null,
       "alerts": ["account not reachable: walkrideday@gmail.com not signed in to Chrome"],
       "emailed": false
+    },
+    {
+      "date": "2026-11-24",
+      "source": "scheduled quick check (ad-grants-pulse), ~10:05 ET. Account did NOT load for the second day: authuser=walkrideday%40gmail.com went to Google's 'Choose an account' page, and walkrideday@gmail.com is still not among the logins in this Chrome. Stopped quietly per the task (no email, nothing read). Wednesday's weekly review (11-25, also the judge date for the Venue Parking and Town rewrites) needs walkrideday@gmail.com signed back in to Chrome.",
+      "mtd": null,
+      "alerts": ["account not reachable (day 2): walkrideday@gmail.com not signed in to Chrome"],
+      "emailed": false
     }
   ],
   "snapshots": [
