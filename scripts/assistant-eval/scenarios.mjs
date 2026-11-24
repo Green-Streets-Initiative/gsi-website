@@ -233,7 +233,7 @@ export const SCENARIOS = [
     // Its own draft a few weeks out: the test workplace's only other survey
     // (week of Oct 19) has ended, and the assistant rightly won't add people to it.
     setup: async (s) => {
-      await s.survey('EVAL commute survey')
+      await s.survey('EVAL commute survey', 6) // type-to-confirm takes the week 4 weeks out
     },
     steps: [{ attach: 'staff-eval.csv', say: 'Add these people to the EVAL commute survey list.' }, { decline: true }],
     checks: { requireCards: ['add_survey_people'], cardMentions: ['597'] },

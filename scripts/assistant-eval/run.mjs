@@ -120,10 +120,10 @@ function world(role) {
       const { count } = await admin.from('employer_activity_log').select('id', { count: 'exact', head: true }).eq('group_id', GROUP_ID).ilike('summary', `%${text}%`)
       return count ?? 0
     },
-    async survey(title) {
+    async survey(title, weeks = 4) {
       const { data, error } = await admin
         .from('employer_surveys')
-        .insert({ group_id: GROUP_ID, title, rule_set: 'massdep', rule_sets: ['massdep'], week_start: mondayIn(4), closes_on: sundayIn(5), status: 'draft', created_by_email: LOGINS.admin })
+        .insert({ group_id: GROUP_ID, title, rule_set: 'massdep', rule_sets: ['massdep'], week_start: mondayIn(weeks), closes_on: sundayIn(weeks + 1), status: 'draft', created_by_email: LOGINS.admin })
         .select('id')
         .single()
       if (error) throw new Error(`survey: ${error.message}`)
