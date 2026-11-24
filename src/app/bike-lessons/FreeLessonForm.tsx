@@ -7,6 +7,7 @@ import { gaEvent } from '@/lib/ga'
 import { trackAdConversion } from '@/lib/ad-pixels'
 import { translator, type SiteLocale } from '@/lib/site-i18n'
 import { bikeLessonsStrings } from '@/lib/site-strings/bike-lessons'
+import { emailSuggestion } from '@/lib/email-typo'
 
 /*
  * The free 1:1 street lesson, matched to an instructor (Shift 01750, Keith
@@ -62,6 +63,11 @@ export default function FreeLessonForm({
   const [picked, setPicked] = useState<string | null>(null)
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
+  // A likely typo in the email's domain (…@gmail.comt): asked about once the field is left or on Send.
+  const typo = useMemo(() => emailSuggestion(email), [email])
+  const [typoShown, setTypoShown] = useState(false)
+  const [keptEmail, setKeptEmail] = useState('')
+  const askTypo = typo !== null && typoShown && keptEmail !== email.trim()
   const [phone, setPhone] = useState('')
   const [note, setNote] = useState('')
   const [website, setWebsite] = useState('')
@@ -226,6 +232,10 @@ export default function FreeLessonForm({
     if (!chosen) return fail(t('lessons.err_teacher'), 'teacher')
     if (!name.trim()) return fail(t('lessons.err_name'), 'name')
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim())) return fail(t('lessons.err_email'), 'email')
+    if (typo && keptEmail !== email.trim()) {
+      setTypoShown(true)
+      return fail(t('lessons.typo_check'), 'email_typo')
+    }
     if (chosen.calls_first && phone.replace(/\D/g, '').length < 10) return fail(t('lessons.err_phone', { name: chosen.name }), 'phone')
     setStatus('sending')
     try {
@@ -282,7 +292,7 @@ export default function FreeLessonForm({
       <div role="status" ref={box}>
         <p className="text-[1.125rem] font-bold leading-snug text-forest">{t('lessons.sent_title', { name: name.trim().split(/\s+/)[0] })}</p>
         <p className={`${NOTE} mt-2`}>{t('lessons.sent_asked', { teacher: askedName })}</p>
-        <p className="mt-2 text-[0.9375rem] leading-relaxed text-navy/80">{t('lessons.sent_code')}</p>
+        <p className="mt-2 text-[0.9375rem] leading-relaxed text-navy/80">{t('lessons.sent_code', { email: email.trim() })}</p>
         {after}
       </div>
     )
@@ -517,12 +527,53 @@ export default function FreeLessonForm({
                     setEmail(e.target.value)
                     clearError()
                   }}
+                  onBlur={() => setTypoShown(true)}
                   placeholder="you@email.com"
                   autoComplete="email"
                   required
+                  aria-describedby={askTypo ? 'lesson-email-typo' : undefined}
                   className={FIELD}
                 />
               </label>
+              {askTypo && typo && (
+                <div id="lesson-email-typo" className="mt-2 rounded-xl bg-forest/10 px-4 py-3">
+                  <p className="text-[1rem] leading-[1.55] text-navy">
+                    {t('lessons.typo_ask_a')} <b className="break-all">{typo}</b>?
+                  </p>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEmail(typo)
+                        clearError()
+                        try {
+                          posthog.capture('free_lesson_email_typo', { choice: 'fixed' })
+                        } catch {
+                          /* analytics must never break the form */
+                        }
+                      }}
+                      className="min-h-[44px] rounded-full bg-forest px-4 text-[0.9375rem] font-bold text-white hover:opacity-90"
+                    >
+                      {t('lessons.typo_fix')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setKeptEmail(email.trim())
+                        clearError()
+                        try {
+                          posthog.capture('free_lesson_email_typo', { choice: 'kept' })
+                        } catch {
+                          /* analytics must never break the form */
+                        }
+                      }}
+                      className="min-h-[44px] rounded-full border border-navy/20 bg-white px-4 text-[0.9375rem] font-bold text-navy hover:border-forest"
+                    >
+                      {t('lessons.typo_keep')}
+                    </button>
+                  </div>
+                </div>
+              )}
               {chosen?.calls_first && (
                 <label className="mt-3 block">
                   <span className={LABEL}>{t('lessons.label_phone')}</span>
