@@ -394,7 +394,9 @@ export const SCENARIOS = [
       expectError: 'to confirm',
       after: async (s) => ((await s.surveyNamed('EVAL survey')) ? 'EVAL survey still exists after a typed confirmation' : null),
     },
-    rubric: 'Explains the name must be typed to confirm; after the confirmed delete, says it is gone.',
+    // The real card says "To confirm, type <name>" beside the box and keeps Delete off until it matches;
+    // the empty-box click here is the server's own check, which a person in the portal can't reach.
+    rubric: 'Before the card, at most a sentence or two in whole sentences (no notes to itself); it need not repeat the card\'s typing instruction. After the confirmed delete, says plainly it is gone.',
   },
 
   {
