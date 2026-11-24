@@ -1,23 +1,15 @@
 # The employer setup assistant's stress test (scripts/assistant-eval), run
-# against the live site: every Monday, after any push that changes the
-# assistant (once Vercel has deployed it), and by hand. ~$2 a run.
-# A hard failure (missing approval card, forbidden action, copy rule, the
-# assistant erroring) fails the job, so GitHub emails the repo owner; the
-# grader's judgment calls are listed in the job summary only.
+# against the live site by hand only. Since 2026-11-24 the weekly run is the
+# "assistant-stress-test-fix" routine on Keith's Mac (Monday 9am), which runs
+# the suite, fixes what it finds in the assistant, checks the fix on the live
+# site and pushes it (Keith: fix the issues it raises, not just report them).
+# This job stays for a manual full run from the Actions tab. ~$2 a run.
 # This repository is public: the full transcripts stay on the runner (no
 # artifact upload); only the pass/fail summary is published.
 name: Setup assistant stress test
 
 on:
-  schedule:
-    - cron: '0 13 * * 1' # Mondays, 9am Eastern
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - 'src/lib/employer-assistant/**'
-      - 'src/app/api/employer/assistant/**'
-      - 'scripts/assistant-eval/**'
 
 concurrency:
   group: assistant-eval

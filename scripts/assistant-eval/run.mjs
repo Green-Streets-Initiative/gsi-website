@@ -18,6 +18,10 @@ import { createClient } from '@supabase/supabase-js'
 import Anthropic from '@anthropic-ai/sdk'
 import { SCENARIOS } from './scenarios.mjs'
 
+// Work from the repository root whatever folder it is started from (the Monday
+// fixing routine runs it by full path).
+process.chdir(path.join(path.dirname(new URL(import.meta.url).pathname), '..', '..'))
+
 const GROUP_ID = 'a29e7697-be57-4e31-8197-a8a959ae4e0e' // GSI Test Co 1
 const LOGINS = {
   admin: 'keith+testco@gogreenstreets.org',
