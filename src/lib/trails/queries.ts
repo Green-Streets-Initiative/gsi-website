@@ -98,16 +98,26 @@ export interface TrailDetail {
    *  check or the weekly closure check (trail-research). */
   closures_checked_on: string | null
   notices: TrailNotice[]
+  /** How the daily details check drew the map line ('park paths', 'route'...), or null. */
+  line_via: string | null
 }
 
 const TRAIL_FIELDS =
-  'id, name, aka, kind, towns, full_miles, full_miles_source, surface, summary, agency, official_url, friends_url, access_points, parking_note, transit_note, bike_share_note, amenities, rules_note, hero_image_url, hero_image_attribution, hero_image_attribution_url, sources, facts_checked_on, notices'
+  'id, name, aka, kind, towns, full_miles, full_miles_source, surface, summary, agency, official_url, friends_url, access_points, parking_note, transit_note, bike_share_note, amenities, rules_note, hero_image_url, hero_image_attribution, hero_image_attribution_url, sources, facts_checked_on, notices, line_via:map_lines->>via'
 
 /** True when the first and last access points sit within 1.5 km: a loop or a
  *  network (the Charles paths), where "from X to Y" would mislead. Given the
  *  trail's length, ends also have to be close for its size, so a short
  *  end-to-end path (Salem's Bridge Street Path, 0.7 mi) keeps its "X to Y". */
-export function isLoopLike(pts: Array<{ lat: number; lng: number }>, fullMiles?: number | null): boolean {
+export function isLoopLike(
+  pts: Array<{ lat: number; lng: number }>,
+  fullMiles?: number | null,
+  shape?: { kind?: string | null; lineVia?: string | null },
+): boolean {
+  // A park loop or a park's paths has no two ends, wherever its entrances
+  // sit (Brookline Reservoir's three are 800 m apart round a 1 mile loop).
+  // lineVia is how the daily details check drew the map line (01896).
+  if (/\bloop\b/i.test(shape?.kind ?? '') || /^(park|shore) paths$/.test(shape?.lineVia ?? '')) return true
   if (pts.length < 2) return false
   const a = pts[0], b = pts[pts.length - 1]
   const dy = (b.lat - a.lat) * 111_000
@@ -128,7 +138,7 @@ export async function getTrails(): Promise<TrailSummary[]> {
   const [trailsRes, closedRes] = await Promise.all([
     supabase
       .from('trails')
-      .select('id, name, kind, towns, full_miles, summary, access_points')
+      .select('id, name, kind, towns, full_miles, summary, access_points, line_via:map_lines->>via')
       .eq('status', 'approved')
       .eq('active', true)
       .order('name')
@@ -144,7 +154,10 @@ export async function getTrails(): Promise<TrailSummary[]> {
   const closed = new Set(closedRows.map((r) => r.trail_id))
   return ((trailsRes.data ?? []) as Array<Record<string, unknown>>).map((t) => {
     const pts = (t.access_points as TrailAccessPoint[] | null) ?? []
-    const loop = isLoopLike(pts, t.full_miles != null ? Number(t.full_miles) : null)
+    const loop = isLoopLike(pts, t.full_miles != null ? Number(t.full_miles) : null, {
+      kind: t.kind as string | null,
+      lineVia: t.line_via as string | null,
+    })
     return {
       id: t.id as string,
       name: t.name as string,
@@ -310,6 +323,7 @@ export async function getTrail(id: string): Promise<{
       transit_note: (t.transit_note as string) ?? null,
       bike_share_note: (t.bike_share_note as string) ?? null,
       amenities: (t.amenities as TrailDetail['amenities']) ?? null,
+      line_via: (t.line_via as string | null) ?? null,
       rules_note: (t.rules_note as string) ?? null,
       hero_image_url: (t.hero_image_url as string) ?? null,
       hero_image_attribution: (t.hero_image_attribution as string) ?? null,
