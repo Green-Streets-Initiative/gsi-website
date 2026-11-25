@@ -210,7 +210,7 @@
     },
     {
       "id": "t-closures-adgroup",
-      "status": "LIVE 2026-10-17, read after the Oct 31 Green Line closure 10-21: 2 impressions so far. Has only 1 RSA, which breaks the 2-ads-per-ad-group rule; weekly item 1 adds a second. 10-28 weekly: still 1 RSA, 2 impressions MTD; recommended again as item 1 (draft headlines in the 10-28 report). 11-04 weekly: still 1 RSA (third week failing), 1 impression Nov MTD; recommended as item 2 with new draft headlines before the Nov 7 Green Line closure. DONE 2026-11-04 (Claude, Keith's 'do items 1-3'): second RSA added, Good, Eligible; see the 11-04 change entry. Judge both ads after the Nov 7 closure; do not edit before 11-18 (14-day rule). 11-18 weekly (judged): 0 clicks on 140 impressions Nov 1-18 across both ads, through the Oct 31 and Nov 7 Green Line closures. Recommended pausing the ad group (weekly item 3); the guide page stays.",
+      "status": "LIVE 2026-10-17, read after the Oct 31 Green Line closure 10-21: 2 impressions so far. Has only 1 RSA, which breaks the 2-ads-per-ad-group rule; weekly item 1 adds a second. 10-28 weekly: still 1 RSA, 2 impressions MTD; recommended again as item 1 (draft headlines in the 10-28 report). 11-04 weekly: still 1 RSA (third week failing), 1 impression Nov MTD; recommended as item 2 with new draft headlines before the Nov 7 Green Line closure. DONE 2026-11-04 (Claude, Keith's 'do items 1-3'): second RSA added, Good, Eligible; see the 11-04 change entry. Judge both ads after the Nov 7 closure; do not edit before 11-18 (14-day rule). 11-18 weekly (judged): 0 clicks on 140 impressions Nov 1-18 across both ads, through the Oct 31 and Nov 7 Green Line closures. Recommended pausing the ad group (weekly item 3); the guide page stays. 11-25 weekly: no change entry shows it paused; folded into weekly item 3.",
       "what": "Check impressions/CTR/search terms of How-to Guides > T closures after the Oct 31 and Nov 7 Green Line suspensions. Pause any keyword under 5% CTR after 300 impressions. Consider a conversion for guide_tool_used (trip planner use) if volume is real."
     },
     {
@@ -232,7 +232,7 @@
       "added": "2026-11-03",
       "from": "Launch venue-parking (Shift docs/programs/launches/venue-parking/plan.md), Keith approved 2026-11-02",
       "what": "Campaign 'Venue Parking' (24426572849): TD Garden, Fenway Park and Gillette Stadium ad groups -> /parking/<venue>, judged on venue_trip_planned (Primary, Engagement). Kill rules: pause any ad group under 5% CTR after 300 impressions; pause the campaign the same day if the account's month-to-date CTR falls under 6.5%; never undo a change younger than 14 days.",
-      "status": "BUILT 2026-11-03, serves from Wed 2026-11-04 at $25/day. Paid desk Wed Nov 11 (handoff h-launch-20261102-vp-ads): read search terms, add negatives (consider 'tickets' only if ticket-buyer searches show up), raise to $50/day if every ad group is >= 5% after 300 impressions, else pause the ones under. Check the six ads read 'Eligible' (policy review) once the campaign starts. 11-04 weekly: started, 'Eligible (Learning)', 9 impr / 0 clicks on day one; all 6 ads Eligible (3 pinned Ad 1s rated Poor, expected); 16 keywords eligible; venue_trip_planned Awaiting conversions. 11-11 weekly (paid desk read): Nov 1-11 600 impr / 25 clicks / 4.17% / 1 conv (first venue_trip_planned, Gillette); 'Limited by search volume', so the $50/day raise is moot. Only Gillette passed 300 impr (5.4%); TD Garden 3.1% and Fenway 2.8% under 150 each. Keith's 11-11 rewrite replaced the pinned Ad 1s; judge every group 11-25. Search terms on target (north station garage/parking, parking near fenway park); no ticket-buyer searches, so no 'tickets' negative. Account MTD 8.01% stays above the 6.5% campaign kill line. 11-18 weekly: Nov 1-18 1,198 impr / 48 clicks / 4.0% / 3 conv (Gillette 4.69%, TD Garden 3.68%, Fenway 3.27%). Script email 'Action required' on it; not a grant breach (account 7.91%). Judge 11-25. New ad group 'Logan: share a ride' appeared in this campaign (~11-17, not logged here): 1 RSA Pending, no keywords seen."
+      "status": "BUILT 2026-11-03, serves from Wed 2026-11-04 at $25/day. Paid desk Wed Nov 11 (handoff h-launch-20261102-vp-ads): read search terms, add negatives (consider 'tickets' only if ticket-buyer searches show up), raise to $50/day if every ad group is >= 5% after 300 impressions, else pause the ones under. Check the six ads read 'Eligible' (policy review) once the campaign starts. 11-04 weekly: started, 'Eligible (Learning)', 9 impr / 0 clicks on day one; all 6 ads Eligible (3 pinned Ad 1s rated Poor, expected); 16 keywords eligible; venue_trip_planned Awaiting conversions. 11-11 weekly (paid desk read): Nov 1-11 600 impr / 25 clicks / 4.17% / 1 conv (first venue_trip_planned, Gillette); 'Limited by search volume', so the $50/day raise is moot. Only Gillette passed 300 impr (5.4%); TD Garden 3.1% and Fenway 2.8% under 150 each. Keith's 11-11 rewrite replaced the pinned Ad 1s; judge every group 11-25. Search terms on target (north station garage/parking, parking near fenway park); no ticket-buyer searches, so no 'tickets' negative. Account MTD 8.01% stays above the 6.5% campaign kill line. 11-18 weekly: Nov 1-18 1,198 impr / 48 clicks / 4.0% / 3 conv (Gillette 4.69%, TD Garden 3.68%, Fenway 3.27%). Script email 'Action required' on it; not a grant breach (account 7.91%). Judge 11-25. New ad group 'Logan: share a ride' appeared in this campaign (~11-17, not logged here): 1 RSA Pending, no keywords seen. 11-25 weekly: script rolling 30d 61/1,618 (3.8%); 14-day mark for the rewrite reached; account unreachable, so groups not read. Recommended as weekly item 2: pause groups under 5% after 300 impr (Logan exempt until 12-04)."
     },
     {
       "id": "messaging-rewrite-2026-11-11",
@@ -244,7 +244,12 @@
     {
       "id": "harborwalk-qs1",
       "what": "Keyword \"boston harborwalk\" (phrase, Town Walking & Biking / Trails, keyword URL /trails/boston-harborwalk) is QS 1, 'Eligible (Limited) Rarely shown (low Quality Score)'; 3 clicks / 23 impr Nov. Grant forbids QS 1-2.",
-      "status": "OPEN 2026-11-18: recommended as weekly item 1 (pause). Emailed Keith."
+      "status": "OPEN 2026-11-18: recommended as weekly item 1 (pause). Emailed Keith. 11-25 weekly: the script no longer flags it, but no change entry records a pause; account unreachable, so unconfirmed. Folded into weekly item 3 (confirm or pause)."
+    },
+    {
+      "id": "tufts-qs2",
+      "what": "Keyword \"tufts mbta pass\" (Shift Your Semester — Students, school keyword) is QS 2 per the 11-25 script email. Grant forbids QS 1-2. Semester had 2 impr in 30 days.",
+      "status": "OPEN 2026-11-25: recommended as weekly item 1 (pause). Emailed Keith."
     },
     {
       "id": "logan-adgroup-2-ads",
@@ -3984,6 +3989,62 @@
       "emailed": true,
       "email_note": "Sent 11-18 ('[GSI] Ad Grants weekly — Act this week', 200 OK) because two grant rules fail: QS-1 keyword and a 1-ad ad group.",
       "verdict": "Act this week: November MTD 7.91% (419/5,297), 45 conversions; two rules fail (boston harborwalk QS 1; Logan ad group has 1 ad)."
+    },
+    {
+      "date": "2026-11-25",
+      "source": "scheduled weekly run: 11-25 script email only. Live account NOT read (third day): authuser=walkrideday%40gmail.com went to Google's 'Choose an account' page and walkrideday@gmail.com is not among the Chrome logins. Campaign, keyword, ad, conversion and search-term pages not read. GSC weekly-2026-11-20.",
+      "window": "rolling 30 days to 2026-11-25 (script); last live MTD read 2026-11-20 pulse",
+      "impressions": null,
+      "clicks": null,
+      "ctr_pct": null,
+      "mtd_last_known": {
+        "date": "2026-11-20",
+        "impressions": 6045,
+        "ctr_pct": 7.66
+      },
+      "rolling_30d_script": {
+        "impressions": 8344,
+        "clicks": 673,
+        "ctr_pct": 8.07,
+        "cost": 2852.86,
+        "conversions": 86
+      },
+      "by_campaign_rolling_30d": {
+        "How-to Guides": { "impressions": 5740, "clicks": 488, "ctr_pct": 8.5, "cost": 1487.95 },
+        "Venue Parking": { "impressions": 1618, "clicks": 61, "ctr_pct": 3.8, "cost": 309.81, "note": "script 'Action required'; 14-day mark for the 11-11 rewrite today" },
+        "Town Walking & Biking": { "impressions": 942, "clicks": 119, "ctr_pct": 12.6, "cost": 1035.94 },
+        "Shift App — Massachusetts": { "impressions": 27, "clicks": 0, "ctr_pct": 0, "cost": 0 },
+        "GSI — Brand": { "impressions": 14, "clicks": 4, "ctr_pct": 28.6, "cost": 11.77 },
+        "Shift Your Semester — Students": { "impressions": 2, "clicks": 1, "ctr_pct": 50, "cost": 7.39 },
+        "Shift Together - Start Biking": { "impressions": 0, "clicks": 0, "cost": 0, "note": "0 impr in 30 days (script warning); judge 12-03 per together-start-first-read" }
+      },
+      "keywords": {
+        "low_quality_score": [
+          "\"tufts mbta pass\" (Shift Your Semester — Students, QS 2 per script) -> weekly item 1"
+        ],
+        "note": "boston harborwalk no longer flagged by the script; no change-log entry shows it paused; confirm live (item 3)."
+      },
+      "sitelinks": 79,
+      "sitelinks_source": "script email",
+      "brand_search_gsc_week": {
+        "range": "2026-11-14..2026-11-20",
+        "impressions": 9,
+        "clicks": 6,
+        "note": "green streets initiative 7/5, green streets 2/1; from per-page top lists, lower bound"
+      },
+      "month_end_math": "Nov 20: ~463 clicks on 6,045 impr (7.66%). Pace ~294 impr/day -> ~8,800 for November; 5% needs ~440 clicks, already exceeded. October passed, so no two-month risk.",
+      "grant_utilization": "$2,852.86 in the last 30 days (~29% of $10,000); campaigns limited by search volume",
+      "search_terms": null,
+      "search_terms_note": "Not read: Google Ads account unreachable (walkrideday@gmail.com not signed in to Chrome).",
+      "recommended": [
+        "1 pause keyword 'tufts mbta pass' (QS 2; grant rule)",
+        "2 judge Venue Parking by ad group (Nov 11-25), pause groups under 5% after 300 impr per the launch kill rule; Logan group exempt (changed 11-20)",
+        "3 Keith signs walkrideday@gmail.com in to Chrome; then confirm/pause 'boston harborwalk' and pause T closures (last week's items 1 and 3, no record of either)"
+      ],
+      "not_recommended": "Shift Together 0 impr: rewrite 11-19, judge 12-03. Logan ad group changed 11-20: inside 14 days. Carried: Fares and passes ad group, winter Local Events ad groups.",
+      "emailed": true,
+      "email_note": "Sent 11-25 ('[GSI] Ad Grants weekly — Act this week', 200) because a QS-2 keyword breaks a grant rule and the account was unreachable.",
+      "verdict": "Act this week: 30-day CTR 8.1%, 86 conversions, November on track; 'tufts mbta pass' QS 2 fails the grant rule; live account unreachable for the third day."
     }
   ]
 }

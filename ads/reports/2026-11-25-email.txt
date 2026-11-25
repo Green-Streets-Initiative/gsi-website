@@ -1,0 +1,11 @@
+Ad Grants weekly, Nov 25: Act this week.
+
+Blocker: Google Ads would not open in Chrome for the third day (walkrideday@gmail.com is not signed in). This review used Google's script email only. Please sign walkrideday@gmail.com back in to Chrome.
+
+The account is healthy: 8.1% click rate over 30 days (7.66% for November as of Nov 20), 86 conversions. November will clear the 5% floor. One grant rule fails: the keyword "tufts mbta pass" has quality score 2.
+
+1. Pause the keyword "tufts mbta pass" (quality score 2; grant rule). Say "do ad grants item 1".
+2. Judge Venue Parking (3.8%) by ad group now that the Nov 11 rewrite is 14 days old; pause groups under 5% after 300 impressions, per the launch plan. Say "do ad grants item 2".
+3. Sign walkrideday@gmail.com back in to Chrome, then Claude confirms "boston harborwalk" is paused and pauses T closures (neither is recorded as done). Say "do ad grants item 3".
+
+Report: https://claude.ai/artifact/UuoYJsktAySt3HY5KinrbF
