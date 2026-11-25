@@ -155,7 +155,7 @@ export default async function TownChallengePage({ searchParams }: { searchParams
 
   const app: [typeof TrainFront, string, string][] = [
     [TrainFront, 'Live bus and train times', 'The next departures from the stops near them.'],
-    [Bike, 'Bike-friendly routes', 'The calmer streets and paths, and bike share where there is one.'],
+    [Bike, 'Bike-friendly routes', 'Low-stress streets and bike paths, and bike share where there is one.'],
     [MapPin, `What’s on in ${T}`, 'Local walks, rides and events, and a town page.'],
     [Satellite, 'Trips counted by GPS', 'Each trip with its distance and how they got there.'],
   ]
